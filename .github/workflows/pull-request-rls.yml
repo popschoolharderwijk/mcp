@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/**'
+      - 'tests/rls/**'
 
 jobs:
   pull-request-rls:
