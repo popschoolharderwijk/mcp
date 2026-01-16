@@ -38,14 +38,18 @@ jobs:
         if: steps.wait_for_preview.outputs.conclusion == 'success'
         run: |
           supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+          echo "=== Raw CLI output (redacted) ==="
+          supabase --experimental branches get "$GITHUB_HEAD_REF" -o env | sed 's/=.*/=***/'
+          echo "=== End raw output ==="
           supabase --experimental branches get "$GITHUB_HEAD_REF" -o env >> $GITHUB_ENV
 
       - name: Debug Branch Info
         if: steps.wait_for_preview.outputs.conclusion == 'success'
         run: |
           echo "Branch: $GITHUB_HEAD_REF"
+          echo "SUPABASE_URL set: ${{ env.SUPABASE_URL != '' }}"
+          echo "SUPABASE_SERVICE_ROLE_KEY set: ${{ env.SUPABASE_SERVICE_ROLE_KEY != '' }}"
           echo "API_URL set: ${{ env.API_URL != '' }}"
-          echo "SERVICE_ROLE_KEY set: ${{ env.SERVICE_ROLE_KEY != '' }}"
 
       - name: Install dependencies
         run: bun install
@@ -53,9 +57,6 @@ jobs:
       - name: Run RLS tests
         if: steps.wait_for_preview.outputs.conclusion == 'success'
         run: bun test rls
-        env:
-          SUPABASE_URL: ${{ env.API_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SERVICE_ROLE_KEY }}
 
       - name: Skip notice
         if: steps.wait_for_preview.outputs.conclusion != 'success'
