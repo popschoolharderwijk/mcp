@@ -1,4 +1,4 @@
-# MCP Boilerplate
+# Mplifi Community Portal
 
 Een React + Vite + Supabase boilerplate met volledige CI/CD setup, RLS testing, en Supabase branching.
 
@@ -233,24 +233,24 @@ supabase gen types typescript --project-id <project-id> > src/integrations/supab
 # Unit tests
 bun test code
 
-# RLS tests (lokaal, met .env.local)
-bun test rls
+# RLS tests op remote dev server
+bun test rls --env-file .env.local
 
 # Alle tests
-bun test
+bun test --env-file .env.local
 ```
 
 ### Biome Linting
 
 ```bash
 # Check
-bunx biome ci
+biome ci
 
 # Format
-bunx biome format --write .
+biome format --write .
 
 # Lint + fix
-bunx biome check --apply .
+biome check --write .
 ```
 
 ---
