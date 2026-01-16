@@ -180,6 +180,62 @@ supabase functions deploy <function-name>
 
 ---
 
+## Merge Workflow: Lovable → Main
+
+### Stap 1: Lokale voorbereiding (CLI)
+
+```bash
+# Switch naar lovable branch en haal laatste wijzigingen op
+git switch lovable
+git pull origin lovable
+
+# Run Biome check (format + lint + fix)
+biome check --write .
+
+# Commit en push eventuele fixes
+git add .
+git commit -m "fix: biome formatting and linting"
+git push origin lovable
+```
+
+### Stap 2: Open Pull Request op GitHub
+
+- Ga naar repository op GitHub
+- Klik "Compare & pull request" of maak nieuwe PR
+- Base: `main` ← Compare: `lovable`
+- Voeg beschrijving toe van de wijzigingen
+
+### Stap 3: Wacht op CI Checks
+
+| Check | Beschrijving |
+|-------|--------------|
+| **Biome Linting** | Code formatting en linting |
+| **Unit Tests** | Tests in `tests/code/` |
+| **Supabase Preview** | Alleen bij migration changes |
+| **RLS Tests** | Alleen bij migration changes |
+
+### Stap 4: Review en Fix
+
+- Bekijk CI resultaten in de PR
+- Fix eventuele failures lokaal en push opnieuw
+
+### Stap 5: Merge de PR
+
+- Kies "Squash and merge" of "Merge commit"
+- **Delete lovable branch NIET!**
+
+### Stap 6: Post-merge Sync
+
+```bash
+# Reset lovable branch naar main (verliest Lovable history awareness!)
+git checkout -B lovable origin/main
+git push -u origin lovable --force
+```
+
+> ⚠️ **Let op**: Deze force push reset de lovable branch volledig naar main. Lovable verliest hierdoor awareness van eerdere commits op de lovable branch.
+
+---
+
 ## Disabled Workflows
 
 In `.github/workflows-disabled/`:
