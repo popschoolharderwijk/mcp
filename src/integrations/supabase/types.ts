@@ -8,36 +8,102 @@ export type Database = {
 	};
 	public: {
 		Tables: {
-			todos: {
+			profiles: {
 				Row: {
-					completed: boolean;
+					avatar_url: string | null;
 					created_at: string;
+					display_name: string | null;
 					id: string;
-					title: string;
+					updated_at: string;
+					user_id: string;
 				};
 				Insert: {
-					completed?: boolean;
+					avatar_url?: string | null;
 					created_at?: string;
+					display_name?: string | null;
 					id?: string;
-					title: string;
+					updated_at?: string;
+					user_id: string;
 				};
 				Update: {
-					completed?: boolean;
+					avatar_url?: string | null;
 					created_at?: string;
+					display_name?: string | null;
 					id?: string;
-					title?: string;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			teacher_students: {
+				Row: {
+					student_id: string;
+					teacher_id: string;
+				};
+				Insert: {
+					student_id: string;
+					teacher_id: string;
+				};
+				Update: {
+					student_id?: string;
+					teacher_id?: string;
+				};
+				Relationships: [];
+			};
+			user_roles: {
+				Row: {
+					created_at: string;
+					role: Database['public']['Enums']['app_role'];
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					role?: Database['public']['Enums']['app_role'];
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					role?: Database['public']['Enums']['app_role'];
+					user_id?: string;
 				};
 				Relationships: [];
 			};
 		};
 		Views: {
-			[_ in never]: never;
+			teacher_student_profiles: {
+				Row: {
+					avatar_url: string | null;
+					created_at: string | null;
+					display_name: string | null;
+					student_id: string | null;
+					teacher_id: string | null;
+				};
+				Relationships: [];
+			};
 		};
 		Functions: {
-			[_ in never]: never;
+			_has_role: {
+				Args: {
+					_role: Database['public']['Enums']['app_role'];
+					_user_id: string;
+				};
+				Returns: boolean;
+			};
+			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
+			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
+			is_admin: { Args: { _user_id: string }; Returns: boolean };
+			is_site_admin: { Args: { _user_id: string }; Returns: boolean };
+			is_staff: { Args: { _user_id: string }; Returns: boolean };
+			is_student: { Args: { _user_id: string }; Returns: boolean };
+			is_teacher: { Args: { _user_id: string }; Returns: boolean };
+			policy_exists: {
+				Args: { p_policy_name: string; p_table_name: string };
+				Returns: boolean;
+			};
 		};
 		Enums: {
-			[_ in never]: never;
+			app_role: 'site_admin' | 'admin' | 'staff' | 'teacher' | 'student';
 		};
 		CompositeTypes: {
 			[_ in never]: never;
@@ -156,6 +222,8 @@ export type CompositeTypes<
 
 export const Constants = {
 	public: {
-		Enums: {},
+		Enums: {
+			app_role: ['site_admin', 'admin', 'staff', 'teacher', 'student'],
+		},
 	},
 } as const;
