@@ -3,6 +3,8 @@
 -- =============================================================================
 -- This file combines the initial database setup with all security hardening
 -- fixes. Use this as a single source of truth for the database schema.
+--
+-- Role model: One user = One role (enforced by PRIMARY KEY on user_id)
 -- =============================================================================
 
 -- =============================================================================
@@ -32,12 +34,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Simplified: user_id is PRIMARY KEY, ensuring one role per user
 CREATE TABLE IF NOT EXISTS public.user_roles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  role app_role NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  UNIQUE (user_id, role)
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  role app_role NOT NULL DEFAULT 'student',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS public.teacher_students (
@@ -231,8 +232,9 @@ USING (
 -- =============================================================================
 -- SECTION 6: RLS POLICIES - USER_ROLES
 -- =============================================================================
+-- Role changes are UPDATE operations, not INSERT+DELETE.
 
--- Users can view their own roles
+-- Users can view their own role
 CREATE POLICY roles_select_own
 ON public.user_roles FOR SELECT TO authenticated
 USING (auth.uid() = user_id);
@@ -266,24 +268,16 @@ USING (
   )
 );
 
--- Only site_admin can assign roles (prevents privilege escalation)
+-- Only site_admin can assign initial roles (for manual user creation)
 CREATE POLICY roles_insert_site_admin
 ON public.user_roles FOR INSERT TO authenticated
 WITH CHECK (public.is_site_admin(auth.uid()));
 
--- Only site_admin can modify role assignments
+-- Only site_admin can change roles (UPDATE instead of DELETE+INSERT)
 CREATE POLICY roles_update_site_admin
 ON public.user_roles FOR UPDATE TO authenticated
 USING (public.is_site_admin(auth.uid()))
 WITH CHECK (public.is_site_admin(auth.uid()));
-
--- Only site_admin can remove roles, but cannot remove their own site_admin role
-CREATE POLICY roles_delete_site_admin
-ON public.user_roles FOR DELETE TO authenticated
-USING (
-  public.is_site_admin(auth.uid())
-  AND user_id <> auth.uid()
-);
 
 -- =============================================================================
 -- SECTION 7: RLS POLICIES - TEACHER_STUDENTS
@@ -314,7 +308,7 @@ FROM public.teacher_students ts
 JOIN public.profiles p
   ON p.user_id = ts.student_id;
 
--- Grant appropriate permissions (DO NOT revoke authenticated access to profiles)
+-- Grant appropriate permissions
 GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT ON public.teacher_student_profiles TO authenticated;
 
@@ -379,7 +373,7 @@ BEGIN
 
   INSERT INTO public.user_roles (user_id, role)
   VALUES (NEW.id, 'student')
-  ON CONFLICT (user_id, role) DO NOTHING;
+  ON CONFLICT (user_id) DO NOTHING;
 
   RETURN NEW;
 END;
