@@ -2,8 +2,8 @@
 -- SEED DATA FOR RLS / CI TESTING
 -- =============================================================================
 -- NOTE:
--- - These UUIDs do NOT exist in auth.users
--- - They are used via Supabase User Impersonation
+-- - These users are seeded in auth.users for local/preview testing
+-- - Password for all users: "password"
 -- - RLS policies rely on auth.uid() matching these values
 -- =============================================================================
 
@@ -31,70 +31,358 @@
 --   00000000-0000-0000-0000-000000000103
 -- -----------------------------------------------------------------------------
 
-ALTER TABLE public.profiles
-DROP CONSTRAINT IF EXISTS profiles_user_id_fkey;
-
-ALTER TABLE public.user_roles
-DROP CONSTRAINT IF EXISTS user_roles_user_id_fkey;
-
-ALTER TABLE public.teacher_students
-DROP CONSTRAINT IF EXISTS teacher_students_teacher_id_fkey;
-
-ALTER TABLE public.teacher_students
-DROP CONSTRAINT IF EXISTS teacher_students_student_id_fkey;
-
+-- Pre-computed bcrypt hash for password "password" (cost 10)
+-- Generated with: SELECT crypt('password', gen_salt('bf', 10));
+DO $$
+DECLARE
+  password_hash TEXT := '$2a$10$PznXR4PluzW2H4t5oaQV6.gFckmqU0.c0xM.XcrQjGJ0gKWbpWV/m';
+BEGIN
 
 -- -----------------------------------------------------------------------------
--- PROFILES
+-- AUTH.USERS
 -- -----------------------------------------------------------------------------
-INSERT INTO public.profiles (user_id, display_name)
+INSERT INTO auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at,
+  confirmation_token,
+  email_change,
+  email_change_token_new,
+  recovery_token
+)
 VALUES
   -- site_admin
-  ('00000000-0000-0000-0000-000000000001', 'Site Admin'),
-
-  -- admins
-  ('00000000-0000-0000-0000-000000000010', 'Admin One'),
-  ('00000000-0000-0000-0000-000000000011', 'Admin Two'),
-
+  (
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'site-admin@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- admin one
+  (
+    '00000000-0000-0000-0000-000000000010',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'admin-one@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- admin two
+  (
+    '00000000-0000-0000-0000-000000000011',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'admin-two@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
   -- staff
-  ('00000000-0000-0000-0000-000000000020', 'Staff Member'),
-
-  -- teachers
-  ('00000000-0000-0000-0000-000000000030', 'Teacher Alice'),
-  ('00000000-0000-0000-0000-000000000031', 'Teacher Bob'),
-
-  -- students
-  ('00000000-0000-0000-0000-000000000100', 'Student A'),
-  ('00000000-0000-0000-0000-000000000101', 'Student B'),
-  ('00000000-0000-0000-0000-000000000102', 'Student C'),
-  ('00000000-0000-0000-0000-000000000103', 'Student D')
-ON CONFLICT (user_id) DO NOTHING;
+  (
+    '00000000-0000-0000-0000-000000000020',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'staff@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- teacher alice
+  (
+    '00000000-0000-0000-0000-000000000030',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'teacher-alice@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- teacher bob
+  (
+    '00000000-0000-0000-0000-000000000031',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'teacher-bob@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- student a
+  (
+    '00000000-0000-0000-0000-000000000100',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'student-a@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- student b
+  (
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'student-b@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- student c
+  (
+    '00000000-0000-0000-0000-000000000102',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'student-c@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  ),
+  -- student d
+  (
+    '00000000-0000-0000-0000-000000000103',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'student-d@test.local',
+    password_hash,
+    now(),
+    '{"provider":"email","providers":["email"]}',
+    '{}',
+    now(),
+    now(),
+    '',
+    '',
+    '',
+    ''
+  )
+ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- USER ROLES (one role per user)
+-- AUTH.IDENTITIES
 -- -----------------------------------------------------------------------------
-INSERT INTO public.user_roles (user_id, role)
+INSERT INTO auth.identities (
+  id,
+  user_id,
+  provider_id,
+  provider,
+  identity_data,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
 VALUES
-  -- site_admin
-  ('00000000-0000-0000-0000-000000000001', 'site_admin'),
+  (
+    '00000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
+    'site-admin@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000001","email":"site-admin@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000010',
+    '00000000-0000-0000-0000-000000000010',
+    'admin-one@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000010","email":"admin-one@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000011',
+    '00000000-0000-0000-0000-000000000011',
+    'admin-two@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000011","email":"admin-two@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000020',
+    '00000000-0000-0000-0000-000000000020',
+    'staff@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000020","email":"staff@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000030',
+    '00000000-0000-0000-0000-000000000030',
+    'teacher-alice@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000030","email":"teacher-alice@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000031',
+    '00000000-0000-0000-0000-000000000031',
+    'teacher-bob@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000031","email":"teacher-bob@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000100',
+    '00000000-0000-0000-0000-000000000100',
+    'student-a@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000100","email":"student-a@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000101',
+    '00000000-0000-0000-0000-000000000101',
+    'student-b@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000101","email":"student-b@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000102',
+    '00000000-0000-0000-0000-000000000102',
+    'student-c@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000102","email":"student-c@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  ),
+  (
+    '00000000-0000-0000-0000-000000000103',
+    '00000000-0000-0000-0000-000000000103',
+    'student-d@test.local',
+    'email',
+    '{"sub":"00000000-0000-0000-0000-000000000103","email":"student-d@test.local","email_verified":true,"provider":"email"}',
+    now(),
+    now(),
+    now()
+  )
+ON CONFLICT (id) DO NOTHING;
 
-  -- admins
-  ('00000000-0000-0000-0000-000000000010', 'admin'),
-  ('00000000-0000-0000-0000-000000000011', 'admin'),
+END $$;
 
-  -- staff
-  ('00000000-0000-0000-0000-000000000020', 'staff'),
+-- -----------------------------------------------------------------------------
+-- PROFILES (created by handle_new_user trigger, update display_name)
+-- -----------------------------------------------------------------------------
+UPDATE public.profiles SET display_name = 'Site Admin' WHERE user_id = '00000000-0000-0000-0000-000000000001';
+UPDATE public.profiles SET display_name = 'Admin One' WHERE user_id = '00000000-0000-0000-0000-000000000010';
+UPDATE public.profiles SET display_name = 'Admin Two' WHERE user_id = '00000000-0000-0000-0000-000000000011';
+UPDATE public.profiles SET display_name = 'Staff Member' WHERE user_id = '00000000-0000-0000-0000-000000000020';
+UPDATE public.profiles SET display_name = 'Teacher Alice' WHERE user_id = '00000000-0000-0000-0000-000000000030';
+UPDATE public.profiles SET display_name = 'Teacher Bob' WHERE user_id = '00000000-0000-0000-0000-000000000031';
+UPDATE public.profiles SET display_name = 'Student A' WHERE user_id = '00000000-0000-0000-0000-000000000100';
+UPDATE public.profiles SET display_name = 'Student B' WHERE user_id = '00000000-0000-0000-0000-000000000101';
+UPDATE public.profiles SET display_name = 'Student C' WHERE user_id = '00000000-0000-0000-0000-000000000102';
+UPDATE public.profiles SET display_name = 'Student D' WHERE user_id = '00000000-0000-0000-0000-000000000103';
 
-  -- teachers
-  ('00000000-0000-0000-0000-000000000030', 'teacher'),
-  ('00000000-0000-0000-0000-000000000031', 'teacher'),
-
-  -- students
-  ('00000000-0000-0000-0000-000000000100', 'student'),
-  ('00000000-0000-0000-0000-000000000101', 'student'),
-  ('00000000-0000-0000-0000-000000000102', 'student'),
-  ('00000000-0000-0000-0000-000000000103', 'student')
-ON CONFLICT (user_id) DO NOTHING;
+-- -----------------------------------------------------------------------------
+-- USER ROLES (update from default 'student' to correct role)
+-- -----------------------------------------------------------------------------
+UPDATE public.user_roles SET role = 'site_admin' WHERE user_id = '00000000-0000-0000-0000-000000000001';
+UPDATE public.user_roles SET role = 'admin' WHERE user_id = '00000000-0000-0000-0000-000000000010';
+UPDATE public.user_roles SET role = 'admin' WHERE user_id = '00000000-0000-0000-0000-000000000011';
+UPDATE public.user_roles SET role = 'staff' WHERE user_id = '00000000-0000-0000-0000-000000000020';
+UPDATE public.user_roles SET role = 'teacher' WHERE user_id = '00000000-0000-0000-0000-000000000030';
+UPDATE public.user_roles SET role = 'teacher' WHERE user_id = '00000000-0000-0000-0000-000000000031';
+-- Students keep the default 'student' role from handle_new_user trigger
 
 -- -----------------------------------------------------------------------------
 -- TEACHER ↔ STUDENT RELATIONSHIPS
