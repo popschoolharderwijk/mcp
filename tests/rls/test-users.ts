@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Test user UUIDs matching the seed data in supabase/seed.sql
@@ -9,21 +9,21 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  */
 export const TEST_USERS = {
 	// Students
-	STUDENT_1: "11111111-1111-1111-1111-111111111111",
-	STUDENT_2: "11111111-1111-1111-1111-222222222222",
+	STUDENT_1: '11111111-1111-1111-1111-111111111111',
+	STUDENT_2: '11111111-1111-1111-1111-222222222222',
 
 	// Teachers
-	TEACHER_1: "22222222-2222-2222-2222-222222222222",
-	TEACHER_2: "22222222-2222-2222-2222-333333333333",
+	TEACHER_1: '22222222-2222-2222-2222-222222222222',
+	TEACHER_2: '22222222-2222-2222-2222-333333333333',
 
 	// Staff
-	STAFF_1: "33333333-3333-3333-3333-333333333333",
+	STAFF_1: '33333333-3333-3333-3333-333333333333',
 
 	// Admin
-	ADMIN: "44444444-4444-4444-4444-444444444444",
+	ADMIN: '44444444-4444-4444-4444-444444444444',
 
 	// Site Admin
-	SITE_ADMIN: "55555555-5555-5555-5555-555555555555",
+	SITE_ADMIN: '55555555-5555-5555-5555-555555555555',
 } as const;
 
 /**
@@ -50,12 +50,8 @@ export const TEACHER_STUDENT_LINKS = {
  * @returns Array of result rows
  * @throws Error if query fails or is not a SELECT statement
  */
-export async function queryAs<T>(
-	supabase: SupabaseClient,
-	userId: string,
-	query: string,
-): Promise<T[]> {
-	const { data, error } = await supabase.rpc("run_as_user", {
+export async function queryAs<T>(supabase: SupabaseClient, userId: string, query: string): Promise<T[]> {
+	const { data, error } = await supabase.rpc('run_as_user', {
 		_user_id: userId,
 		_query: query,
 	});
@@ -81,7 +77,7 @@ export interface ProfileRow {
  */
 export interface UserRoleRow {
 	user_id: string;
-	role: "student" | "teacher" | "staff" | "admin" | "site_admin";
+	role: 'student' | 'teacher' | 'staff' | 'admin' | 'site_admin';
 }
 
 /**

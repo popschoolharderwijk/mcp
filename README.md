@@ -97,7 +97,7 @@ Tests draaien tegen preview branch
 Verifieert RLS policies
 ```
 
-### Wat wordt getest (`tests/rls/rls-baseline.test.ts`)
+### Wat wordt getest (alle tests in `tests/rls/`)
 
 - ✅ RLS is enabled op alle verwachte tabellen
 - ✅ Alle verwachte policies bestaan
