@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Function: run_as_user
 -- Purpose: Execute SELECT queries as a specified user for RLS behavior testing
--- 
+--
 -- SECURITY WARNING:
 --   This function is intended for CI/test environments ONLY.
 --   Never use with unvalidated input in production.
@@ -27,6 +27,7 @@ RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
+SET row_security = 'on'
 AS $$
 DECLARE
   result JSONB;
@@ -80,13 +81,12 @@ BEGIN
 END;
 $$;
 
--- Revoke all access from public roles - only service_role can call this
+-- Revoke all access from public roles
 REVOKE ALL ON FUNCTION public.run_as_user(UUID, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.run_as_user(UUID, TEXT) FROM authenticated;
 REVOKE ALL ON FUNCTION public.run_as_user(UUID, TEXT) FROM anon;
 
--- Add function comment for documentation
 COMMENT ON FUNCTION public.run_as_user(UUID, TEXT) IS
 'CI/TEST ONLY: Executes SELECT queries as a specified user by simulating JWT claims.
-Used for RLS behavior testing. Only SELECT statements are allowed.
+Enforces RLS via SET row_security = on. Only SELECT statements are allowed.
 Function owner must NOT be a superuser. Callable only by service_role.';

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { createTestDb } from './db';
+import { createDbBypassRLS } from './db';
 
-const supabase = createTestDb();
+const { supabase } = createDbBypassRLS();
 
 // Ground truth: expected security configuration from baseline migration
 const EXPECTED_RLS_TABLES = ['profiles', 'user_roles', 'teacher_students'];
