@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-
+const SUPABASE_PUBLISHABLE_DEFAULT_KEY =
+	process.env.SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 // Test user UUIDs matching the seeded auth.users
 export const USERS = {
 	site_admin: '00000000-0000-0000-0000-000000000001',
@@ -48,13 +48,13 @@ export type TestUser = keyof typeof USERS;
  * @returns Authenticated Supabase client
  */
 export async function signInAs(user: TestUser): Promise<SupabaseClient> {
-	if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+	if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_DEFAULT_KEY) {
 		throw new Error(
-			'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables',
+			'Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_DEFAULT_KEY environment variables',
 		);
 	}
 
-	const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+	const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_DEFAULT_KEY);
 
 	const { error } = await supabase.auth.signInWithPassword({
 		email: USER_EMAILS[user],
@@ -73,11 +73,11 @@ export async function signInAs(user: TestUser): Promise<SupabaseClient> {
  * Useful for testing public access and anon policies.
  */
 export function anonClient(): SupabaseClient {
-	if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+	if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_DEFAULT_KEY) {
 		throw new Error(
-			'Missing SUPABASE_URL or SUPABASE_ANON_KEY environment variables',
+			'Missing SUPABASE_URL or SUPABASE_PUBLISHABLE_DEFAULT_KEY environment variables',
 		);
 	}
 
-	return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+	return createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_DEFAULT_KEY);
 }
