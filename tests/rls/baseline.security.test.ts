@@ -1,5 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { describe, expect, it } from 'bun:test';
+import { createTestDb } from './db';
+
+const supabase = createTestDb();
 
 // Ground truth: expected security configuration from baseline migration
 const EXPECTED_RLS_TABLES = ['profiles', 'user_roles', 'teacher_students'];
@@ -44,23 +46,6 @@ const EXPECTED_FUNCTIONS = [
 	'get_table_policies',
 	'function_exists',
 ];
-
-let supabase: SupabaseClient;
-
-beforeAll(() => {
-	const url = process.env.SUPABASE_URL;
-	const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-	if (!url || !key) {
-		throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
-	}
-
-	supabase = createClient(url, key);
-});
-
-afterAll(() => {
-	// Clean up client connection
-});
 
 describe('RLS Baseline Security Checks', () => {
 	describe('RLS is enabled on all tables', () => {
