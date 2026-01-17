@@ -119,8 +119,7 @@ INSERT INTO auth.identities (
   provider,
   last_sign_in_at,
   created_at,
-  updated_at,
-  email
+  updated_at
 )
 VALUES
   (
@@ -131,8 +130,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'student1@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -142,8 +140,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'student2@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -153,8 +150,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'teacher1@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -164,8 +160,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'teacher2@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -175,8 +170,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'staff1@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -186,8 +180,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'admin@test.local'
+    now()
   ),
   (
     gen_random_uuid(),
@@ -197,8 +190,7 @@ VALUES
     'email',
     now(),
     now(),
-    now(),
-    'siteadmin@test.local'
+    now()
   );
 
 -- ============================================================================
