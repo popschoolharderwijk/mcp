@@ -107,6 +107,7 @@ export type Database = {
         Args: { p_policy_name: string; p_table_name: string }
         Returns: boolean
       }
+      run_as_user: { Args: { _query: string; _user_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "site_admin" | "admin" | "staff" | "teacher" | "student"

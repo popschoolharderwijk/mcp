@@ -45,6 +45,8 @@ const EXPECTED_FUNCTIONS = [
 	'policy_exists',
 	'get_table_policies',
 	'function_exists',
+	// RLS behavior testing function (service_role only)
+	'run_as_user',
 ];
 
 describe('RLS Baseline Security Checks', () => {

@@ -52,7 +52,27 @@ SET display_name = 'Site Admin'
 WHERE user_id = '55555555-5555-5555-5555-555555555555';
 
 -- ============================================================================
--- 3️⃣ TEACHER-STUDENT LINKS
+-- 3️⃣ UPDATE ROLES (TRIGGER CREATES ALL AS 'student')
+-- ============================================================================
+-- The handle_new_user trigger assigns 'student' role to all new users.
+-- We update the roles here to match our test user expectations.
+UPDATE user_roles SET role = 'teacher'
+WHERE user_id IN (
+  '22222222-2222-2222-2222-222222222222',
+  '22222222-2222-2222-2222-333333333333'
+);
+
+UPDATE user_roles SET role = 'staff'
+WHERE user_id = '33333333-3333-3333-3333-333333333333';
+
+UPDATE user_roles SET role = 'admin'
+WHERE user_id = '44444444-4444-4444-4444-444444444444';
+
+UPDATE user_roles SET role = 'site_admin'
+WHERE user_id = '55555555-5555-5555-5555-555555555555';
+
+-- ============================================================================
+-- 4️⃣ TEACHER-STUDENT LINKS
 -- ============================================================================
 INSERT INTO teacher_students (teacher_id, student_id)
 VALUES
@@ -62,10 +82,11 @@ VALUES
 ON CONFLICT (teacher_id, student_id) DO NOTHING;
 
 -- ============================================================================
--- 4️⃣ NOTES
+-- 5️⃣ NOTES
 -- ============================================================================
 -- 1. Do NOT insert directly into profiles or user_roles; triggers handle that.
 -- 2. Display names are updated via UPDATE statements above.
--- 3. Teacher-student links are inserted here; duplicates are ignored via ON CONFLICT.
--- 4. Run `supabase db reset` before seeding to ensure a clean database.
+-- 3. Roles are updated after trigger creates default 'student' role.
+-- 4. Teacher-student links are inserted here; duplicates are ignored via ON CONFLICT.
+-- 5. Run `supabase db reset` before seeding to ensure a clean database.
 
