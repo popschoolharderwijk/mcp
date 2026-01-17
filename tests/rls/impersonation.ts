@@ -23,16 +23,16 @@ export const USERS = {
 
 // Email addresses matching seeded auth.users
 export const USER_EMAILS: Record<TestUser, string> = {
-	site_admin: 'site_admin@test.local',
-	admin_1: 'admin1@test.local',
-	admin_2: 'admin2@test.local',
+	site_admin: 'site-admin@test.local',
+	admin_1: 'admin-one@test.local',
+	admin_2: 'admin-two@test.local',
 	staff: 'staff@test.local',
-	teacher_alice: 'teacher_alice@test.local',
-	teacher_bob: 'teacher_bob@test.local',
-	student_a: 'student_a@test.local',
-	student_b: 'student_b@test.local',
-	student_c: 'student_c@test.local',
-	student_d: 'student_d@test.local',
+	teacher_alice: 'teacher-alice@test.local',
+	teacher_bob: 'teacher-bob@test.local',
+	student_a: 'student-a@test.local',
+	student_b: 'student-b@test.local',
+	student_c: 'student-c@test.local',
+	student_d: 'student-d@test.local',
 };
 
 // All seeded users have this password
