@@ -38,21 +38,22 @@ BEGIN
   -- -------------------------------------------------------------------------
   CREATE TEMP TABLE new_users (
     id UUID,
-    email TEXT
+    email TEXT,
+	display_name TEXT
   );
 
-  INSERT INTO new_users (id, email)
+  INSERT INTO new_users (id, email, display_name)
   VALUES
-    (UUID '00000000-0000-0000-0000-000000000001', 'site-admin@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000010', 'admin-one@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000011', 'admin-two@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000020', 'staff@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000030', 'teacher-alice@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000031', 'teacher-bob@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000100', 'student-a@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000101', 'student-b@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000102', 'student-c@test.nl'),
-    (UUID '00000000-0000-0000-0000-000000000103', 'student-d@test.nl');
+    (UUID '00000000-0000-0000-0000-000000000001', 'site-admin@test.nl', 'Site Admin'),
+    (UUID '00000000-0000-0000-0000-000000000010', 'admin-one@test.nl', 'Admin One'),
+    (UUID '00000000-0000-0000-0000-000000000011', 'admin-two@test.nl', 'Admin Two'),
+    (UUID '00000000-0000-0000-0000-000000000020', 'staff@test.nl', 'Staff'),
+    (UUID '00000000-0000-0000-0000-000000000030', 'teacher-alice@test.nl', 'Teacher Alice'),
+    (UUID '00000000-0000-0000-0000-000000000031', 'teacher-bob@test.nl', 'Teacher Box'),
+    (UUID '00000000-0000-0000-0000-000000000100', 'student-a@test.nl', 'Student A'),
+    (UUID '00000000-0000-0000-0000-000000000101', 'student-b@test.nl', 'Student B'),
+    (UUID '00000000-0000-0000-0000-000000000102', 'student-c@test.nl', 'Student C'),
+    (UUID '00000000-0000-0000-0000-000000000103', 'student-d@test.nl', 'Student D');
 
   -- -------------------------------------------------------------------------
   -- INSERT INTO AUTH.USERS
@@ -83,7 +84,9 @@ BEGIN
     '$2a$10$yBzT6M450XE/0xAgYQHCpu8IMIh0mWzy02C6X231pYCRZm9TSCd5.',  -- encrypted_password
     now(),                                              -- email_confirmed_at
     '{"provider":"email","providers":["email"]}',       -- raw_app_meta_data
-    '{}',                                               -- raw_user_meta_data
+	json_build_object(         							-- raw_user_meta_data
+		'display_name', display_name
+    ),
     now(),                                              -- created_at
     now(),                                              -- updated_at
     '',                                                 -- confirmation_token
@@ -129,20 +132,6 @@ BEGIN
   DROP TABLE IF EXISTS new_users;
 
 END $$;
-
--- -----------------------------------------------------------------------------
--- PROFILES (created by handle_new_user trigger, update display_name)
--- -----------------------------------------------------------------------------
-UPDATE public.profiles SET display_name = 'Site Admin' WHERE user_id = '00000000-0000-0000-0000-000000000001';
-UPDATE public.profiles SET display_name = 'Admin One' WHERE user_id = '00000000-0000-0000-0000-000000000010';
-UPDATE public.profiles SET display_name = 'Admin Two' WHERE user_id = '00000000-0000-0000-0000-000000000011';
-UPDATE public.profiles SET display_name = 'Staff Member' WHERE user_id = '00000000-0000-0000-0000-000000000020';
-UPDATE public.profiles SET display_name = 'Teacher Alice' WHERE user_id = '00000000-0000-0000-0000-000000000030';
-UPDATE public.profiles SET display_name = 'Teacher Bob' WHERE user_id = '00000000-0000-0000-0000-000000000031';
-UPDATE public.profiles SET display_name = 'Student A' WHERE user_id = '00000000-0000-0000-0000-000000000100';
-UPDATE public.profiles SET display_name = 'Student B' WHERE user_id = '00000000-0000-0000-0000-000000000101';
-UPDATE public.profiles SET display_name = 'Student C' WHERE user_id = '00000000-0000-0000-0000-000000000102';
-UPDATE public.profiles SET display_name = 'Student D' WHERE user_id = '00000000-0000-0000-0000-000000000103';
 
 -- -----------------------------------------------------------------------------
 -- USER ROLES (update from default 'student' to correct role)

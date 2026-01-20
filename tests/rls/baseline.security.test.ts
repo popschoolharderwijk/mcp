@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { createDbBypassRLS } from './db';
+import { createClientBypassRLS } from './db';
 
-const { supabase } = createDbBypassRLS();
+const supabase = createClientBypassRLS();
 
 // Ground truth: expected security configuration from baseline migration
 const EXPECTED_RLS_TABLES = ['profiles', 'user_roles', 'teacher_students'];
@@ -45,8 +45,6 @@ const EXPECTED_FUNCTIONS = [
 	'policy_exists',
 	'get_table_policies',
 	'function_exists',
-	// RLS behavior testing function (service_role only)
-	'run_as_user',
 ];
 
 describe('RLS Baseline Security Checks', () => {

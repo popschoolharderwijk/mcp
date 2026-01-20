@@ -189,6 +189,10 @@ supabase functions deploy <function-name>
 git switch lovable
 git pull origin lovable
 
+# Eventueel types updaten
+supabase link --project-ref zdvscmogkfyddnnxzkdu
+supabase gen types typescript --linked > src/integrations/supabase/types.ts
+
 # Run Biome check (format + lint + fix)
 biome check --write .
 

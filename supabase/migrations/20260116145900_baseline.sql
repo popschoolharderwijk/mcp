@@ -28,13 +28,13 @@ CREATE TYPE public.app_role AS ENUM (
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT NOT NULL,
   display_name TEXT,
   avatar_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Simplified: user_id is PRIMARY KEY, ensuring one role per user
 CREATE TABLE IF NOT EXISTS public.user_roles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   role app_role NOT NULL DEFAULT 'student',
@@ -302,6 +302,7 @@ SELECT
   p.user_id     AS student_id,
   p.display_name,
   p.avatar_url,
+  p.email,
   p.created_at,
   ts.teacher_id
 FROM public.teacher_students ts
@@ -334,7 +335,7 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
--- Prevent user_id from being changed after creation
+-- user_id immutable
 CREATE OR REPLACE FUNCTION public.prevent_user_id_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -354,6 +355,26 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_user_id_change();
 
+-- email immutable
+CREATE OR REPLACE FUNCTION public.prevent_profile_email_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+    RAISE EXCEPTION 'profiles.email is read-only';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER prevent_profiles_email_change
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_profile_email_change();
+
 -- =============================================================================
 -- SECTION 10: NEW USER BOOTSTRAP
 -- =============================================================================
@@ -367,8 +388,9 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  INSERT INTO public.profiles (user_id)
-  VALUES (NEW.id)
+  -- use raw_user_meta_data.display_name (can be NULL) for atomic setting of profile name
+  INSERT INTO public.profiles (user_id, email, display_name)
+  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'display_name')
   ON CONFLICT (user_id) DO NOTHING;
 
   INSERT INTO public.user_roles (user_id, role)
@@ -385,6 +407,30 @@ CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_new_user();
+
+-- sync email updates
+CREATE OR REPLACE FUNCTION public.handle_auth_user_email_update()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NEW.email IS DISTINCT FROM OLD.email THEN
+    UPDATE public.profiles
+    SET email = NEW.email
+    WHERE user_id = NEW.id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.handle_auth_user_email_update() FROM PUBLIC;
+
+CREATE TRIGGER on_auth_user_email_updated
+AFTER UPDATE OF email ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_auth_user_email_update();
 
 -- =============================================================================
 -- END OF DATABASE SETUP
