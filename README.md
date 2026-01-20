@@ -205,10 +205,9 @@ git rebase origin/main
 #    git rebase --continue
 # Herhaal indien meerdere commits conflicten geven
 
-# Eventueel types opnieuw genereren na andere wijzigingen (nooit overslaan)
+# Types opnieuw genereren na andere wijzigingen (nooit overslaan)
 supabase link --project-ref zdvscmogkfyddnnxzkdu
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
-biome check --write src/integrations/supabase/types.ts
 
 # Run Biome check voor de rest van de code (format + lint + fix)
 biome check --write .
