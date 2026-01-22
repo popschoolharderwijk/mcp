@@ -271,11 +271,18 @@ USING (
 -- Roles can only be created via handle_new_user() trigger
 -- Roles can only be deleted via CASCADE when auth.users is deleted
 
--- Only site_admin can change roles (UPDATE instead of DELETE+INSERT)
+-- Only site_admin can change roles, but cannot modify their own role
+-- This prevents accidental self-lockout. See also SECTION 11 for additional protection.
 CREATE POLICY roles_update_site_admin
 ON public.user_roles FOR UPDATE TO authenticated
-USING (public.is_site_admin(auth.uid()))
-WITH CHECK (public.is_site_admin(auth.uid()));
+USING (
+  public.is_site_admin(auth.uid())
+  AND user_id != auth.uid()  -- Cannot modify own role
+)
+WITH CHECK (
+  public.is_site_admin(auth.uid())
+  AND user_id != auth.uid()
+);
 
 -- =============================================================================
 -- SECTION 7: RLS POLICIES - TEACHER_STUDENTS
@@ -460,6 +467,80 @@ CREATE TRIGGER on_auth_user_email_updated
 AFTER UPDATE OF email ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_auth_user_email_update();
+
+-- =============================================================================
+-- SECTION 11: SITE_ADMIN LOCKOUT PROTECTION
+-- =============================================================================
+-- Defense-in-depth protection to ensure at least one site_admin always exists.
+--
+-- PROTECTION LAYERS:
+-- 1. RLS Policy (SECTION 6): site_admin cannot modify their own role via API
+-- 2. Trigger (this section): prevents removal of the LAST site_admin at DB level
+--
+-- SCENARIOS BLOCKED BY THIS TRIGGER:
+-- - Direct SQL: DELETE FROM auth.users WHERE id = <last_site_admin>
+-- - Supabase Dashboard: Deleting user via UI
+-- - Supabase Admin API: supabase.auth.admin.deleteUser()
+-- - Any CASCADE delete from auth.users → user_roles
+--
+-- HOW IT WORKS WITH CASCADE DELETES:
+-- PostgreSQL executes all CASCADE deletes within the SAME transaction.
+-- When this trigger raises an exception, the ENTIRE transaction is rolled back:
+--
+--   DELETE FROM auth.users (last site_admin)
+--       ↓ CASCADE (same transaction)
+--   DELETE FROM auth.identities
+--       ↓ CASCADE (same transaction)
+--   DELETE FROM user_roles
+--       ↓ BEFORE DELETE trigger
+--   🔴 RAISE EXCEPTION → FULL ROLLBACK
+--
+-- Result: auth.users, auth.identities, AND user_roles all remain intact.
+-- No "half-deleted" state is possible.
+--
+-- TO REMOVE A SITE_ADMIN:
+-- 1. First promote another user to site_admin
+-- 2. Then the original site_admin can be removed/demoted
+--
+-- FIRST SITE_ADMIN:
+-- Must be created via direct database access (seed.sql or migration).
+
+CREATE OR REPLACE FUNCTION public.prevent_last_site_admin_removal()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+DECLARE
+  remaining_site_admins INTEGER;
+BEGIN
+  -- Only check when removing a site_admin role (DELETE or role change away from site_admin)
+  IF OLD.role = 'site_admin' AND (TG_OP = 'DELETE' OR NEW.role != 'site_admin') THEN
+    -- Count remaining site_admins (excluding the one being modified)
+    SELECT COUNT(*) INTO remaining_site_admins
+    FROM public.user_roles
+    WHERE role = 'site_admin'
+      AND user_id != OLD.user_id;
+
+    IF remaining_site_admins = 0 THEN
+      RAISE EXCEPTION 'Cannot remove the last site_admin. Promote another user to site_admin first.';
+    END IF;
+  END IF;
+
+  -- Return appropriate row based on operation
+  IF TG_OP = 'DELETE' THEN
+    RETURN OLD;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+-- Apply trigger to both UPDATE and DELETE operations
+CREATE TRIGGER protect_last_site_admin
+BEFORE UPDATE OR DELETE ON public.user_roles
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_last_site_admin_removal();
 
 -- =============================================================================
 -- END OF DATABASE SETUP
