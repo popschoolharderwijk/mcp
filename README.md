@@ -238,6 +238,7 @@ git rebase origin/main
 
 # Types opnieuw genereren na andere wijzigingen (nooit overslaan)
 supabase link --project-ref zdvscmogkfyddnnxzkdu
+supabase db reset --linked
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
 
 # Run Biome check voor de rest van de code (format + lint + fix)
