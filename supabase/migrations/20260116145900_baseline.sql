@@ -256,10 +256,9 @@ USING (
   )
 );
 
--- Only site_admin can assign initial roles (for manual user creation)
-CREATE POLICY roles_insert_site_admin
-ON public.user_roles FOR INSERT TO authenticated
-WITH CHECK (public.is_site_admin(auth.uid()));
+-- INSERT policy explicitly removed:
+-- Roles can only be created via handle_new_user() trigger
+-- Roles can only be deleted via CASCADE when auth.users is deleted
 
 -- Only site_admin can change roles (UPDATE instead of DELETE+INSERT)
 CREATE POLICY roles_update_site_admin
