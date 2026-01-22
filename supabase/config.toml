@@ -1,4 +1,14 @@
 project_id = "zdvscmogkfyddnnxzkdu"
 
-[db.seed]
+[remotes.dev]
+project_id = "zdvscmogkfyddnnxzkdu"
+
+[remotes.dev.db.seed]
 enabled = true
+sql_paths = ['./seeds/dev.sql']
+
+[remotes.prod]
+project_id = "bnagepkxryauifzyoxgo"
+
+[remotes.prod.db.seed]
+enabled = false
