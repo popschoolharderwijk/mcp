@@ -97,7 +97,7 @@ Tests draaien tegen preview branch
 Verifieert RLS policies
 ```
 
-### Wat wordt getest (`tests/rls/rls-baseline.test.ts`)
+### Wat wordt getest (alle tests in `tests/rls/`)
 
 - ✅ RLS is enabled op alle verwachte tabellen
 - ✅ Alle verwachte policies bestaan
@@ -185,17 +185,37 @@ supabase functions deploy <function-name>
 ### Stap 1: Lokale voorbereiding (CLI)
 
 ```bash
-# Switch naar lovable branch en haal laatste wijzigingen op
+# Switch naar lovable branch
 git switch lovable
-git pull origin lovable
 
-# Run Biome check (format + lint + fix)
+# Haal laatste wijzigingen van remote op (fetch)
+git fetch origin
+
+# Rebase lovable op de nieuwste origin/main (lineair, geen merge commit)
+git rebase origin/main
+
+# --- Mogelijke situatie: rebase conflicts ---
+# Als je een conflict krijgt in src/integrations/supabase/types.ts:
+# 1. Herstel conflict door types opnieuw te genereren:
+#    supabase gen types typescript --linked > src/integrations/supabase/types.ts
+# 2. Laat Biome types netjes formatteren
+#    biome check --write src/integrations/supabase/types.ts
+# 3. Voeg file toe en ga verder met rebase
+#    git add src/integrations/supabase/types.ts
+#    git rebase --continue
+# Herhaal indien meerdere commits conflicten geven
+
+# Types opnieuw genereren na andere wijzigingen (nooit overslaan)
+supabase link --project-ref zdvscmogkfyddnnxzkdu
+supabase gen types typescript --linked > src/integrations/supabase/types.ts
+
+# Run Biome check voor de rest van de code (format + lint + fix)
 biome check --write .
 
 # Commit en push eventuele fixes
 git add .
-git commit -m "fix: biome formatting and linting"
-git push origin lovable
+git commit -m "fix: regenerate and format Supabase types, lint fixes"
+git push --force-with-lease origin lovable
 ```
 
 ### Stap 2: Open Pull Request op GitHub

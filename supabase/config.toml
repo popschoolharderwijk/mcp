@@ -1,1 +1,13 @@
 project_id = "zdvscmogkfyddnnxzkdu"
+
+[remotes.dev]
+project_id = "zdvscmogkfyddnnxzkdu"
+
+[remotes.dev.db.seed]
+enabled = true
+
+[remotes.prod]
+project_id = "bnagepkxryauifzyoxgo"
+
+[remotes.prod.db.seed]
+enabled = false
