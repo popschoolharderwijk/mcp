@@ -73,10 +73,29 @@ jobs:
         run: bun install
 
       - name: Switch to and seed preview branch
+        if: steps.wait_for_preview.outputs.conclusion == 'success'
         run: |
           supabase unlink
-          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
-          supabase db push  --include-seed --yes
+
+          # Parse project-ref from SUPABASE_URL
+          # https://<projectid>.supabase.co -> projectid
+          PREVIEW_REF=$(echo "$SUPABASE_URL" | sed 's|https://||' | sed 's|\.supabase\.co.*||')
+          echo "Preview project-ref: $PREVIEW_REF"
+
+          # Validate PREVIEW_REF is not empty
+          if [ -z "$PREVIEW_REF" ]; then
+            echo "::error::Failed to parse PREVIEW_REF from SUPABASE_URL: $SUPABASE_URL"
+            exit 1
+          fi
+
+          # Link to preview branch (will fail if invalid)
+          if ! supabase link --project-ref "$PREVIEW_REF"; then
+            echo "::error::Failed to link to preview branch: $PREVIEW_REF"
+            exit 1
+          fi
+
+          # Push and seed
+          supabase db push --include-seed --yes
 
       - name: Run RLS tests
         if: steps.wait_for_preview.outputs.conclusion == 'success'
