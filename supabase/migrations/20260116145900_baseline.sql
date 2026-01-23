@@ -303,11 +303,12 @@ CREATE POLICY teacher_students_select_own
 ON public.teacher_students FOR SELECT TO authenticated
 USING (teacher_id = auth.uid());
 
--- Teachers can add students (only users with student role)
+-- Teachers can add students (must be teacher + target must be student)
 CREATE POLICY teacher_students_insert_own
 ON public.teacher_students FOR INSERT TO authenticated
 WITH CHECK (
   teacher_id = auth.uid()
+  AND public.is_teacher(auth.uid())
   AND public.is_student(student_id)
 );
 
@@ -398,7 +399,7 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_user_id_change();
 
--- email immutable
+-- email immutable (but allow internal auth trigger sync)
 CREATE OR REPLACE FUNCTION public.prevent_profile_email_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -408,7 +409,12 @@ SET row_security = off
 AS $$
 BEGIN
   IF NEW.email IS DISTINCT FROM OLD.email THEN
-    RAISE EXCEPTION 'profiles.email is read-only';
+    -- Block if this is a user request (via PostgREST/API)
+    -- Allow if this is an internal trigger (session_user = 'postgres')
+    -- In Supabase: API requests come through 'authenticator' role
+    IF session_user = 'authenticator' THEN
+      RAISE EXCEPTION 'profiles.email is read-only';
+    END IF;
   END IF;
   RETURN NEW;
 END;
