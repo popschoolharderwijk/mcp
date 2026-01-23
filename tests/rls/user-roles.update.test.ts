@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import { createClientAs } from './db';
 import { fixtures } from './fixtures';
+import { TestUsers } from './test-users';
 
-const { allUserRoles, getProfileByEmail, getUserIdByEmail } = fixtures;
+const { allUserRoles, getProfile, getUserId } = fixtures;
 
 // Get target user_id for role update tests (student-b)
-const targetUserId = getUserIdByEmail('student-b@test.nl');
+const targetUserId = getUserId(TestUsers.STUDENT_B);
 
 if (!targetUserId) {
 	throw new Error('Could not find student-b for role update tests');
@@ -13,7 +14,7 @@ if (!targetUserId) {
 
 describe('RLS: user_roles UPDATE - other users', () => {
 	it('student cannot update user roles', async () => {
-		const db = await createClientAs('student-a@test.nl');
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
 		const { data, error } = await db
 			.from('user_roles')
@@ -27,7 +28,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	});
 
 	it('teacher cannot update user roles', async () => {
-		const db = await createClientAs('teacher-alice@test.nl');
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		const { data, error } = await db
 			.from('user_roles')
@@ -41,7 +42,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	});
 
 	it('staff cannot update user roles', async () => {
-		const db = await createClientAs('staff@test.nl');
+		const db = await createClientAs(TestUsers.STAFF);
 
 		const { data, error } = await db
 			.from('user_roles')
@@ -55,7 +56,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	});
 
 	it('admin cannot update user roles', async () => {
-		const db = await createClientAs('admin-one@test.nl');
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
 		const { data, error } = await db
 			.from('user_roles')
@@ -69,7 +70,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	});
 
 	it('site_admin can update other user roles', async () => {
-		const db = await createClientAs('site-admin@test.nl');
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Change student-b to teacher
 		const { data, error } = await db
@@ -94,9 +95,9 @@ describe('RLS: user_roles UPDATE - other users', () => {
 
 describe('RLS: user_roles UPDATE - own role', () => {
 	it('student cannot update own role', async () => {
-		const db = await createClientAs('student-a@test.nl');
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
-		const studentProfile = getProfileByEmail('student-a@test.nl');
+		const studentProfile = getProfile(TestUsers.STUDENT_A);
 		if (!studentProfile) {
 			throw new Error('Could not find student-a profile');
 		}
@@ -112,9 +113,9 @@ describe('RLS: user_roles UPDATE - own role', () => {
 	});
 
 	it('teacher cannot update own role', async () => {
-		const db = await createClientAs('teacher-alice@test.nl');
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-		const teacherProfile = getProfileByEmail('teacher-alice@test.nl');
+		const teacherProfile = getProfile(TestUsers.TEACHER_ALICE);
 		if (!teacherProfile) {
 			throw new Error('Could not find teacher-alice profile');
 		}
@@ -130,9 +131,9 @@ describe('RLS: user_roles UPDATE - own role', () => {
 	});
 
 	it('staff cannot update own role', async () => {
-		const db = await createClientAs('staff@test.nl');
+		const db = await createClientAs(TestUsers.STAFF);
 
-		const staffProfile = getProfileByEmail('staff@test.nl');
+		const staffProfile = getProfile(TestUsers.STAFF);
 		if (!staffProfile) {
 			throw new Error('Could not find staff profile');
 		}
@@ -148,9 +149,9 @@ describe('RLS: user_roles UPDATE - own role', () => {
 	});
 
 	it('admin cannot update own role', async () => {
-		const db = await createClientAs('admin-one@test.nl');
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		const adminProfile = getProfileByEmail('admin-one@test.nl');
+		const adminProfile = getProfile(TestUsers.ADMIN_ONE);
 		if (!adminProfile) {
 			throw new Error('Could not find admin-one profile');
 		}
@@ -166,7 +167,7 @@ describe('RLS: user_roles UPDATE - own role', () => {
 	});
 
 	it('site_admin cannot demote themselves', async () => {
-		const db = await createClientAs('site-admin@test.nl');
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Get site_admin's own user_id
 		const siteAdminRole = allUserRoles.find((ur) => ur.role === 'site_admin');

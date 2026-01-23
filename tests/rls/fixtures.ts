@@ -1,4 +1,5 @@
 import { createClientBypassRLS } from './db';
+import type { TestUser } from './test-users';
 
 const dbNoRLS = createClientBypassRLS();
 
@@ -19,15 +20,15 @@ export const fixtures = {
 	allUserRoles,
 	userRoleMap: new Map(allUserRoles.map((ur) => [ur.user_id, ur.role])),
 
-	// Helper to find profile by email
-	getProfileByEmail: (email: string) => allProfiles.find((p) => p.email === email),
+	// Helper to find profile by user
+	getProfile: (user: TestUser) => allProfiles.find((p) => p.email === user),
 
-	// Helper to find user_id by email
-	getUserIdByEmail: (email: string) => allProfiles.find((p) => p.email === email)?.user_id,
+	// Helper to find user_id by user
+	getUserId: (user: TestUser) => allProfiles.find((p) => p.email === user)?.user_id,
 
-	// Helper to find role by email
-	getRoleByEmail: (email: string) => {
-		const profile = allProfiles.find((p) => p.email === email);
+	// Helper to find role by user
+	getRole: (user: TestUser) => {
+		const profile = allProfiles.find((p) => p.email === user);
 		if (!profile) return undefined;
 		return allUserRoles.find((ur) => ur.user_id === profile.user_id);
 	},

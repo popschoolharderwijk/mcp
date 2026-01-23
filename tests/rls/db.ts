@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../../src/integrations/supabase/types';
+import type { TestUser } from './test-users';
 
 export function createClientBypassRLS() {
 	const url = process.env.SUPABASE_URL;
@@ -23,18 +24,18 @@ export function createClientAnon() {
 	return createClient<Database>(url, key);
 }
 
-export async function createClientAs(emailAddress: string) {
+export async function createClientAs(user: TestUser) {
 	const TEST_PASSWORD = 'password';
 
 	const client = createClientAnon();
 
 	const { error } = await client.auth.signInWithPassword({
-		email: emailAddress,
+		email: user,
 		password: TEST_PASSWORD,
 	});
 
 	if (error) {
-		throw new Error(`Failed to sign in as ${emailAddress}: ${error.message}`);
+		throw new Error(`Failed to sign in as ${user}: ${error.message}`);
 	}
 
 	return client;
