@@ -75,7 +75,7 @@ describe('RLS: teacher_students INSERT', () => {
 		expect(data).toBeNull();
 	});
 
-	it('student cannot insert teacher-student links', async () => {
+	it('student cannot insert teacher-student links for other teachers', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_A);
 		const teacherId = requireUserId(TestUsers.TEACHER_BOB);
 		const studentId = requireUserId(TestUsers.STUDENT_A);
@@ -85,6 +85,22 @@ describe('RLS: teacher_students INSERT', () => {
 			.insert({ teacher_id: teacherId, student_id: studentId })
 			.select();
 
+		// RLS blocks - policy requires teacher_id = auth.uid()
+		expect(error).not.toBeNull();
+		expect(data).toBeNull();
+	});
+
+	it('student cannot add students to themselves as fake teacher', async () => {
+		const db = await createClientAs(TestUsers.STUDENT_A);
+		const studentAId = requireUserId(TestUsers.STUDENT_A); // trying to be "teacher"
+		const studentBId = requireUserId(TestUsers.STUDENT_B); // actual student
+
+		const { data, error } = await db
+			.from('teacher_students')
+			.insert({ teacher_id: studentAId, student_id: studentBId })
+			.select();
+
+		// RLS blocks - policy requires is_teacher(auth.uid())
 		expect(error).not.toBeNull();
 		expect(data).toBeNull();
 	});
