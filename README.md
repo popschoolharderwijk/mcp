@@ -86,16 +86,45 @@ De Supabase GitHub App draait automatisch bij PRs met migratie-wijzigingen:
 ```
 PR met migrations
        ↓
-Supabase Preview start
+Supabase Preview start (creëert preview branch database)
        ↓
 pull-request-rls.yml wacht op "Supabase Preview" check
        ↓
 Haalt credentials op: supabase branches get -o env
        ↓
-Tests draaien tegen preview branch
+Maakt key alias: SUPABASE_ANON_KEY → SUPABASE_PUBLISHABLE_DEFAULT_KEY
+       ↓
+Linkt CLI naar preview branch (niet hoofdproject!)
+       ↓
+Seedt preview database: supabase db push --include-seed
+       ↓
+Tests draaien tegen preview branch met seed data
        ↓
 Verifieert RLS policies
 ```
+
+### Seed Data voor RLS Tests
+
+De preview branch wordt automatisch geseeded met testgebruikers uit `supabase/seed.sql`:
+
+| Role | User ID | Email |
+|------|---------|-------|
+| site_admin | `00000000-...-000001` | site-admin@test.nl |
+| admin | `00000000-...-000010` | admin-one@test.nl |
+| admin | `00000000-...-000011` | admin-two@test.nl |
+| staff | `00000000-...-000020` | staff@test.nl |
+| teacher | `00000000-...-000030` | teacher-alice@test.nl |
+| teacher | `00000000-...-000031` | teacher-bob@test.nl |
+| student | `00000000-...-000100` | student-a@test.nl |
+| student | `00000000-...-000101` | student-b@test.nl |
+| student | `00000000-...-000102` | student-c@test.nl |
+| student | `00000000-...-000103` | student-d@test.nl |
+
+**Wachtwoord voor alle testgebruikers:** `password`
+
+De seed bevat ook teacher-student relaties voor het testen van RLS policies die afhankelijk zijn van deze koppelingen.
+
+> **Let op**: De Supabase CLI `branches get` command gebruikt nog de legacy naam `SUPABASE_ANON_KEY`. De workflow maakt automatisch een alias naar `SUPABASE_PUBLISHABLE_DEFAULT_KEY` voor forward compatibility.
 
 ### Wat wordt getest (alle tests in `tests/rls/`)
 
@@ -103,6 +132,8 @@ Verifieert RLS policies
 - ✅ Alle verwachte policies bestaan
 - ✅ Geen onverwachte policies aanwezig
 - ✅ Security helper functions bestaan (`is_admin`, `is_teacher`, etc.)
+- ✅ Seed data ground truth (correct aantal users per role)
+- ✅ RLS policies werken correct per user role
 
 ### Lokaal RLS tests draaien
 
@@ -207,6 +238,7 @@ git rebase origin/main
 
 # Types opnieuw genereren na andere wijzigingen (nooit overslaan)
 supabase link --project-ref zdvscmogkfyddnnxzkdu
+supabase db reset --linked
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
 
 # Run Biome check voor de rest van de code (format + lint + fix)
@@ -338,6 +370,8 @@ biome check --write .
 1. Check of Supabase Preview check geslaagd is
 2. Controleer of `supabase branches get` correcte output geeft
 3. Kijk naar workflow logs voor credential parsing errors
+4. Controleer of seeding is gelukt (`supabase db push --include-seed`)
+5. Verifieer dat `SUPABASE_PUBLISHABLE_DEFAULT_KEY` correct is gealiased van `SUPABASE_ANON_KEY`
 
 ### Migraties niet toegepast
 
