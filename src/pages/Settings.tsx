@@ -1,4 +1,4 @@
-import { Monitor, Moon, Sun } from 'lucide-react';
+import { LuMonitor, LuMoon, LuSun } from 'react-icons/lu';
 import { useTheme } from '@/components/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,7 +26,7 @@ export default function Settings() {
 							className={cn('flex-1', theme === 'light' && 'border-primary bg-primary/10')}
 							onClick={() => setTheme('light')}
 						>
-							<Sun className="mr-2 h-4 w-4" />
+							<LuSun className="mr-2 h-4 w-4" />
 							Licht
 						</Button>
 						<Button
@@ -34,7 +34,7 @@ export default function Settings() {
 							className={cn('flex-1', theme === 'dark' && 'border-primary bg-primary/10')}
 							onClick={() => setTheme('dark')}
 						>
-							<Moon className="mr-2 h-4 w-4" />
+							<LuMoon className="mr-2 h-4 w-4" />
 							Donker
 						</Button>
 						<Button
@@ -42,7 +42,7 @@ export default function Settings() {
 							className={cn('flex-1', theme === 'system' && 'border-primary bg-primary/10')}
 							onClick={() => setTheme('system')}
 						>
-							<Monitor className="mr-2 h-4 w-4" />
+							<LuMonitor className="mr-2 h-4 w-4" />
 							Systeem
 						</Button>
 					</div>

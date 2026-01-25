@@ -1,5 +1,5 @@
-import { Mail, MoreHorizontal, Phone, Plus, Search, Users } from 'lucide-react';
 import { useState } from 'react';
+import { LuEllipsis, LuMail, LuPhone, LuPlus, LuSearch, LuUsers } from 'react-icons/lu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -98,7 +98,7 @@ export default function Teachers() {
 					<p className="text-muted-foreground">Beheer docenten en hun beschikbaarheid</p>
 				</div>
 				<Button>
-					<Plus className="mr-2 h-4 w-4" />
+					<LuPlus className="mr-2 h-4 w-4" />
 					Nieuwe Docent
 				</Button>
 			</div>
@@ -108,7 +108,7 @@ export default function Teachers() {
 					<div className="flex items-center justify-between">
 						<CardTitle>Docenten Overzicht</CardTitle>
 						<div className="relative">
-							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+							<LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 							<input
 								type="text"
 								placeholder="Zoeken..."
@@ -150,7 +150,7 @@ export default function Teachers() {
 												<div>
 													<p className="font-medium">{teacher.name}</p>
 													<div className="flex items-center gap-2 text-sm text-muted-foreground">
-														<Mail className="h-3 w-3" />
+														<LuMail className="h-3 w-3" />
 														{teacher.email}
 													</div>
 												</div>
@@ -167,7 +167,7 @@ export default function Teachers() {
 										</td>
 										<td className="py-4">
 											<div className="flex items-center gap-1.5 text-muted-foreground">
-												<Users className="h-4 w-4" />
+												<LuUsers className="h-4 w-4" />
 												{teacher.studentCount}
 											</div>
 										</td>
@@ -181,14 +181,14 @@ export default function Teachers() {
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
 													<Button variant="ghost" size="icon" className="h-8 w-8">
-														<MoreHorizontal className="h-4 w-4" />
+														<LuEllipsis className="h-4 w-4" />
 													</Button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align="end">
 													<DropdownMenuItem>Bekijken</DropdownMenuItem>
 													<DropdownMenuItem>Bewerken</DropdownMenuItem>
 													<DropdownMenuItem>
-														<Phone className="mr-2 h-4 w-4" />
+														<LuPhone className="mr-2 h-4 w-4" />
 														Bellen
 													</DropdownMenuItem>
 													<DropdownMenuItem>Rooster bekijken</DropdownMenuItem>

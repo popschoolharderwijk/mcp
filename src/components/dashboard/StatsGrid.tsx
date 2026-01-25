@@ -1,4 +1,4 @@
-import { Calendar, CheckCircle, Clock, GraduationCap, UserCheck, Users } from 'lucide-react';
+import { LuCalendar, LuCheck, LuClock, LuGraduationCap, LuUserCheck, LuUsers } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -22,43 +22,43 @@ const defaultStats: StatItem[] = [
 	{
 		title: 'Totaal Leerlingen',
 		value: 28,
-		icon: Users,
+		icon: LuUsers,
 		description: '+2 deze maand',
 	},
 	{
 		title: 'Actieve Leerlingen',
 		value: 20,
-		icon: UserCheck,
+		icon: LuUserCheck,
 		description: '71% van totaal',
 	},
 	{
 		title: 'Proeflessen',
 		value: 8,
-		icon: Clock,
+		icon: LuClock,
 		description: 'Afgelopen maand',
 	},
 	{
 		title: 'Wachtlijst',
 		value: 0,
-		icon: Users,
+		icon: LuUsers,
 		description: 'Geen wachtenden',
 	},
 	{
 		title: 'Docenten',
 		value: 12,
-		icon: GraduationCap,
+		icon: LuGraduationCap,
 		description: '3 vakken gemiddeld',
 	},
 	{
 		title: 'Lessen Deze Week',
 		value: 3,
-		icon: Calendar,
+		icon: LuCalendar,
 		description: 'Nog 12 beschikbaar',
 	},
 	{
 		title: 'Beschikbare Slots',
 		value: 39,
-		icon: CheckCircle,
+		icon: LuCheck,
 		description: 'Voor nieuwe lessen',
 	},
 ];

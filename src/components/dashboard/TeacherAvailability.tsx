@@ -1,4 +1,4 @@
-import { CheckCircle, ChevronRight } from 'lucide-react';
+import { LuCheck, LuChevronRight } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -60,7 +60,7 @@ export function TeacherAvailability({ teachers = defaultTeachers, isLoading = fa
 						className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
 					>
 						Bekijk alle
-						<ChevronRight className="h-4 w-4" />
+						<LuChevronRight className="h-4 w-4" />
 					</Link>
 				</Button>
 			</CardHeader>
@@ -88,7 +88,7 @@ export function TeacherAvailability({ teachers = defaultTeachers, isLoading = fa
 								</div>
 							</div>
 							<div className="flex items-center gap-1 text-success shrink-0">
-								<CheckCircle className="h-4 w-4" />
+								<LuCheck className="h-4 w-4" />
 								<span className="text-sm font-medium">{teacher.availableHours} uur vrij</span>
 							</div>
 						</div>

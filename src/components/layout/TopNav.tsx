@@ -1,5 +1,5 @@
-import { LogOut, Moon, Search, Settings, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { LuLogOut, LuMoon, LuSearch, LuSettings, LuSun } from 'react-icons/lu';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/components/ThemeProvider';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -82,7 +82,7 @@ export function TopNav() {
 					className="relative h-9 w-full max-w-sm justify-start text-sm text-muted-foreground"
 					onClick={() => setOpen(true)}
 				>
-					<Search className="mr-2 h-4 w-4" />
+					<LuSearch className="mr-2 h-4 w-4" />
 					<span>Zoeken...</span>
 					<kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
 						<span className="text-xs">⌘</span>K
@@ -98,7 +98,7 @@ export function TopNav() {
 					className="h-9 w-9"
 					onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
 				>
-					{resolvedTheme === 'dark' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+					{resolvedTheme === 'dark' ? <LuMoon className="h-5 w-5" /> : <LuSun className="h-5 w-5" />}
 					<span className="sr-only">Toggle theme</span>
 				</Button>
 
@@ -127,12 +127,12 @@ export function TopNav() {
 						</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={() => navigate('/settings')}>
-							<Settings className="mr-2 h-4 w-4" />
+							<LuSettings className="mr-2 h-4 w-4" />
 							<span>Instellingen</span>
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={handleSignOut}>
-							<LogOut className="mr-2 h-4 w-4" />
+							<LuLogOut className="mr-2 h-4 w-4" />
 							<span>Uitloggen</span>
 						</DropdownMenuItem>
 					</DropdownMenuContent>

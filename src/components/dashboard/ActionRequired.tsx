@@ -1,4 +1,4 @@
-import { ClipboardList } from 'lucide-react';
+import { LuClipboardList } from 'react-icons/lu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,7 +32,7 @@ export function ActionRequired({ requests = defaultRequests, isLoading = false }
 			<Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
 				<CardHeader className="flex flex-row items-center justify-between pb-2">
 					<div className="flex items-center gap-2">
-						<ClipboardList className="h-5 w-5 text-primary" />
+						<LuClipboardList className="h-5 w-5 text-primary" />
 						<Skeleton className="h-5 w-48" />
 					</div>
 					<Skeleton className="h-6 w-6 rounded-full" />
@@ -54,7 +54,7 @@ export function ActionRequired({ requests = defaultRequests, isLoading = false }
 		<Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
 			<CardHeader className="flex flex-row items-center justify-between pb-2">
 				<div className="flex items-center gap-2">
-					<ClipboardList className="h-5 w-5 text-primary" />
+					<LuClipboardList className="h-5 w-5 text-primary" />
 					<CardTitle className="text-base font-semibold">Openstaande Proefles Aanvragen</CardTitle>
 				</div>
 				<Badge variant="default" className="rounded-full">

@@ -1,4 +1,4 @@
-import { ChevronLeft, GraduationCap, LayoutDashboard, Music, Users } from 'lucide-react';
+import { LuChevronLeft, LuGraduationCap, LuLayoutDashboard, LuMusic, LuUsers } from 'react-icons/lu';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -6,9 +6,9 @@ import { cn } from '@/lib/utils';
 
 // Navigation items configuration
 const mainNavItems = [
-	{ href: '/', label: 'Dashboard', icon: LayoutDashboard },
-	{ href: '/students', label: 'Leerlingen', icon: Users },
-	{ href: '/teachers', label: 'Docenten', icon: GraduationCap },
+	{ href: '/', label: 'Dashboard', icon: LuLayoutDashboard },
+	{ href: '/students', label: 'Leerlingen', icon: LuUsers },
+	{ href: '/teachers', label: 'Docenten', icon: LuGraduationCap },
 ];
 
 interface SidebarProps {
@@ -33,7 +33,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 					)}
 				>
 					<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-						<Music className="h-5 w-5" />
+						<LuMusic className="h-5 w-5" />
 					</div>
 					{!collapsed && (
 						<div className="flex flex-col">
@@ -53,7 +53,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 							className="ml-auto h-8 w-8 text-muted-foreground hover:text-foreground"
 							onClick={onToggle}
 						>
-							<ChevronLeft className="h-4 w-4 transition-transform" />
+							<LuChevronLeft className="h-4 w-4 transition-transform" />
 						</Button>
 					)}
 					{collapsed && (
@@ -63,7 +63,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 							className="absolute right-2 top-4 h-8 w-8 text-muted-foreground hover:text-foreground"
 							onClick={onToggle}
 						>
-							<ChevronLeft className="h-4 w-4 rotate-180 transition-transform" />
+							<LuChevronLeft className="h-4 w-4 rotate-180 transition-transform" />
 						</Button>
 					)}
 				</div>
