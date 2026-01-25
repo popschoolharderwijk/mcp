@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { createClientAs } from '../db';
+import { createClientAs } from '../../db';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 

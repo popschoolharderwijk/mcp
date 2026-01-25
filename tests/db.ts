@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../src/integrations/supabase/types';
-import type { TestUser } from './test-users';
+import type { Database } from '../src/integrations/supabase/types';
+import type { TestUser } from './rls/test-users';
 
 // Cache authenticated clients per user to avoid rate limiting
 const clientCache = new Map<TestUser, SupabaseClient<Database>>();
