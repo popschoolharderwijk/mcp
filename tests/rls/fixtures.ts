@@ -1,4 +1,4 @@
-import { createClientBypassRLS } from './db';
+import { createClientBypassRLS } from '../db';
 import type { TestUser } from './test-users';
 
 const dbNoRLS = createClientBypassRLS();
