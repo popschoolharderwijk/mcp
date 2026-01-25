@@ -22,8 +22,7 @@ describe('Password policy enforcement', () => {
 	// Track user IDs created during tests for cleanup
 	const createdUserIds: string[] = [];
 
-	const generateTestEmail = () =>
-		`test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+	const generateTestEmail = () => `test-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 
 	// Cleanup: delete any users created during tests
 	afterAll(async () => {
