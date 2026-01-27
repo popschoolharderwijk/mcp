@@ -70,15 +70,61 @@ Dit past toe:
 - ✅ Email (moet aan staan)
 - Andere providers naar wens
 
-### Password & OTP Security
+### Auth Settings via config.toml
 
-**Dashboard** → **Authentication** → **Policies**
+Alle authentication settings worden beheerd via `supabase/config.toml` en gepusht naar remote projects. **Geen handmatige Dashboard configuratie nodig!**
 
-| Instelling | Waarde |
-|------------|--------|
-| Minimum password length | `32` |
-| Password requirements | `letters, digits, and symbols` (meest complexe optie) |
-| Email OTP length | `8` |
+#### Lokale Development Settings
+
+De `[auth]` sectie in `config.toml` configureert lokale development:
+
+```toml
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+minimum_password_length = 32
+password_requirements = "lower_upper_letters_digits_symbols"
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+otp_length = 8
+```
+
+#### Remote Project Settings
+
+De `[remotes.dev.auth]` en `[remotes.prod.auth]` secties overschrijven de defaults voor remote projects:
+
+```toml
+[remotes.dev.auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://jouw-dev-url.com/**"]
+minimum_password_length = 32
+password_requirements = "lower_upper_letters_digits_symbols"
+
+[remotes.prod.auth]
+site_url = "https://jouw-domein.nl"
+additional_redirect_urls = ["https://jouw-domein.nl/**"]
+minimum_password_length = 32
+password_requirements = "lower_upper_letters_digits_symbols"
+```
+
+#### Settings Pushen naar Remote
+
+Na het configureren van `config.toml`, push de settings naar je remote project:
+
+```bash
+# Link aan het project (als nog niet gedaan)
+supabase link --project-ref <project-id>
+
+# Push configuratie naar remote
+supabase config push
+
+# Review de changes die gepusht worden
+# Type 'Y' om te bevestigen
+```
 
 > ⚠️ **Waarom zo complexe password requirements?**
 > 
@@ -93,21 +139,7 @@ Dit past toe:
 > - Wachtwoorden zonder symbolen, cijfers, of letters worden geweigerd
 > - Alleen wachtwoorden die aan alle eisen voldoen worden geaccepteerd
 
-### URL Configuration
-
-**Dashboard** → **Authentication** → **URL Configuration**
-
-| Veld | Development | Production |
-|------|-------------|------------|
-| Site URL | `http://localhost:5173` | `https://jouw-domein.nl` |
-| Redirect URLs | `http://localhost:5173/auth/callback` | `https://jouw-domein.nl/auth/callback` |
-
-### Auth Settings
-
-**Dashboard** → **Project Settings** → **Auth**
-
-- **JWT Expiry**: 3600 (standaard is prima)
-- **Refresh Token Rotation**: ✅ Enabled
+> 📝 **Belangrijk**: Wijzigingen in `config.toml` worden **niet automatisch** naar remote gepusht. Gebruik altijd `supabase config push` na wijzigingen en review de diff zorgvuldig voordat je bevestigt.
 
 ---
 
@@ -172,7 +204,7 @@ Voor Supabase branching en preview deployments:
 
 ## Stap 10: Config.toml Bijwerken
 
-Update `supabase/config.toml` met de nieuwe project ID:
+Update `supabase/config.toml` met de nieuwe project ID en auth settings:
 
 ```toml
 [remotes.nieuw]
@@ -180,6 +212,20 @@ project_id = "<nieuwe-project-id>"
 
 [remotes.nieuw.db.seed]
 enabled = true  # of false voor production
+
+[remotes.nieuw.auth]
+site_url = "https://jouw-domein.nl"
+additional_redirect_urls = ["https://jouw-domein.nl/**"]
+minimum_password_length = 32
+password_requirements = "lower_upper_letters_digits_symbols"
+```
+
+**Push de configuratie naar remote:**
+
+```bash
+supabase link --project-ref <nieuwe-project-id>
+supabase config push
+# Review de diff en type 'Y' om te bevestigen
 ```
 
 ---
@@ -189,11 +235,15 @@ enabled = true  # of false voor production
 - [ ] Project aangemaakt
 - [ ] Storage bucket `avatars` aangemaakt (`bun run create-storage-bucket`)
 - [ ] Migraties toegepast (`supabase db push`)
-- [ ] Email provider ingeschakeld
-- [ ] Password requirements op maximum (32 chars, letters+digits+symbols)
+- [ ] Email provider ingeschakeld (Dashboard)
+- [ ] `config.toml` bijgewerkt met project ID
+- [ ] Auth settings geconfigureerd in `config.toml`:
+  - [ ] `minimum_password_length = 32`
+  - [ ] `password_requirements = "lower_upper_letters_digits_symbols"`
+  - [ ] `otp_length = 8`
+  - [ ] `site_url` en `additional_redirect_urls` correct
+- [ ] Config gepusht naar remote (`supabase config push`)
 - [ ] Password policy tests draaien (`bun test tests/auth/password-signup.test.ts`)
-- [ ] Email OTP length op 8
-- [ ] URL configuratie correct
 - [ ] Email templates ingesteld
 - [ ] SMTP geconfigureerd (Resend)
 - [ ] API keys opgehaald
