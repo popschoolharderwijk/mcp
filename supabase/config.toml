@@ -39,3 +39,7 @@ otp_length = 8
 [remotes.dev.auth]
 site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**"]
+
+[remotes.prod.auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**"]
