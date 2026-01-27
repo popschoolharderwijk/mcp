@@ -76,40 +76,12 @@ Alle authentication settings worden beheerd via `supabase/config.toml` en gepush
 
 #### Lokale Development Settings
 
-De `[auth]` sectie in `config.toml` configureert lokale development:
+De `[auth]` sectie in `config.toml` configureert lokale development.
 
-```toml
-[auth]
-enabled = true
-site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173"]
-minimum_password_length = 32
-password_requirements = "lower_upper_letters_digits_symbols"
-
-[auth.email]
-enable_signup = true
-double_confirm_changes = true
-enable_confirmations = true
-otp_length = 8
-```
 
 #### Remote Project Settings
 
 De `[remotes.dev.auth]` en `[remotes.prod.auth]` secties overschrijven de defaults voor remote projects:
-
-```toml
-[remotes.dev.auth]
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["https://jouw-dev-url.com/**"]
-minimum_password_length = 32
-password_requirements = "lower_upper_letters_digits_symbols"
-
-[remotes.prod.auth]
-site_url = "https://jouw-domein.nl"
-additional_redirect_urls = ["https://jouw-domein.nl/**"]
-minimum_password_length = 32
-password_requirements = "lower_upper_letters_digits_symbols"
-```
 
 #### Settings Pushen naar Remote
 
@@ -143,11 +115,11 @@ supabase config push
 
 ---
 
-## Stap 5: Email Templates
+## Stap 5: Email Templates & SMTP
 
 Zie [email-templates.md](email-templates.md) voor:
 - Magic Link template instellen
-- Custom SMTP configureren (Resend)
+- SMTP configuratie via `config.toml` (Resend)
 
 ---
 
@@ -171,12 +143,15 @@ VITE_SUPABASE_URL=https://<project-id>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 
-### Voor lokale tests (.env.local)
+### Voor lokale tests en development (.env)
 
 ```bash
 SUPABASE_URL=https://<project-id>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+RESEND_API_KEY=<resend-api-key>
 ```
+
+> 📝 **Belangrijk**: De `RESEND_API_KEY` is nodig voor SMTP email delivery. Deze wordt gebruikt door de SMTP configuratie in `config.toml`.
 
 ---
 
@@ -245,7 +220,9 @@ supabase config push
 - [ ] Config gepusht naar remote (`supabase config push`)
 - [ ] Password policy tests draaien (`bun test tests/auth/password-signup.test.ts`)
 - [ ] Email templates ingesteld
-- [ ] SMTP geconfigureerd (Resend)
+- [ ] SMTP geconfigureerd in `config.toml` (Resend)
+- [ ] `RESEND_API_KEY` toegevoegd aan `.env`
+- [ ] Config gepusht naar remote (`supabase config push`)
 - [ ] API keys opgehaald
-- [ ] Environment files aangemaakt
+- [ ] Environment files aangemaakt (`.env`)
 - [ ] GitHub integratie (production)

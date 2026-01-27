@@ -12,6 +12,10 @@ project_id = "bnagepkxryauifzyoxgo"
 [remotes.prod.db.seed]
 enabled = false
 
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
 # -------------
 # Auth defaults
 
@@ -32,6 +36,16 @@ double_confirm_changes = true
 enable_confirmations = true
 max_frequency = "1s"
 otp_length = 8
+otp_expiry = 1800
+
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "noreply@popschoolharderwijk.nl"
+sender_name = "Popschool Harderwijk"
 
 # -------------
 # Remote Auth Overrides

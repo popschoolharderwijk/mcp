@@ -41,7 +41,7 @@ supabase gen types typescript --project-id <project-id> > src/integrations/supab
 ## Storage Buckets
 
 ```bash
-# Maak avatars storage bucket aan (vereist .env.local met SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY)
+# Maak avatars storage bucket aan (vereist .env met SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY)
 bun run create-storage-bucket
 ```
 
@@ -53,7 +53,7 @@ bun run create-storage-bucket
 
 ```bash
 # Maak nieuwe gebruiker aan (passwordless, alleen OTP/Magic Link)
-# Configureer in .env.local:
+# Configureer in .env:
 #   CREATE_USER_EMAIL=user@example.com
 #   CREATE_USER_FIRST_NAME=Voornaam
 #   CREATE_USER_LAST_NAME=Achternaam
@@ -69,10 +69,10 @@ bun run createuser
 bun test code
 
 # RLS tests op remote dev server
-bun test rls --env-file .env.local
+bun test rls --env-file .env
 
 # Alle tests
-bun test --env-file .env.local
+bun test --env-file .env
 ```
 
 ---
