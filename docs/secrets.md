@@ -26,20 +26,17 @@ Required for CI workflows. Add via:
 
 ---
 
-## Local Supabase Credentials (Safe to Commit)
+## Local Supabase Credentials (CI)
 
-The following credentials are used in CI for local Supabase testing. These are **standard demo keys** shipped with every Supabase installation and are publicly documented. They only work for local development.
+For local Supabase testing in CI, credentials are **dynamically fetched** from the running instance using `supabase status -o json`. This ensures the JWT keys always match the local instance's secret.
 
-| Variable | Value | Notes |
-|----------|-------|-------|
-| `SUPABASE_URL` | `http://localhost:54321` | Local API endpoint |
-| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | `eyJhbGci...` (anon) | Standard local anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGci...` (service) | Standard local service key |
+| Variable | Source | Notes |
+|----------|--------|-------|
+| `SUPABASE_URL` | `supabase status` → `API_URL` | Local API endpoint |
+| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | `supabase status` → `ANON_KEY` | Anon key from running instance |
+| `SUPABASE_SERVICE_ROLE_KEY` | `supabase status` → `SERVICE_ROLE_KEY` | Service key from running instance |
 
-These keys are hardcoded in `.github/workflows/pull-request-supabase.yml` and are safe to commit because:
-- They are the same for all local Supabase installations worldwide
-- They only work against `localhost:54321`
-- They are publicly documented in Supabase's official docs
+See `.github/workflows/pull-request-supabase.yml` for implementation.
 
 ⚠️ **Never commit production keys!** Production credentials should always be stored in GitHub Secrets or Supabase Dashboard.
 
