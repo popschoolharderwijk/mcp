@@ -22,6 +22,12 @@ jobs:
         with:
           version: latest
 
+      - name: Cache Docker images
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          # Increment version (v1 -> v2) to reset cache after major Supabase CLI updates
+          key: docker-${{ runner.os }}-supabase-v1
+
       - name: Install dependencies
         run: bun install
 
@@ -44,4 +50,11 @@ jobs:
           echo "Supabase started"
 
       - name: Run all tests
+        env:
+          # Standard local Supabase credentials (same for all local instances; not a secret)
+          SUPABASE_URL: http://localhost:54321
+          SUPABASE_PUBLISHABLE_DEFAULT_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+          SUPABASE_SERVICE_ROLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+          # Resend API key is a secret
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         run: bun test
