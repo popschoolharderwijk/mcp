@@ -2,13 +2,26 @@ name: PR - Test Code and Supabase
 
 on:
   pull_request:
-    paths:
-      - 'supabase/**'
-      - 'tests/**'
   workflow_dispatch:
 
 jobs:
-  pull-request-test-code-and-supabase:
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should_run: ${{ steps.filter.outputs.should_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            should_run:
+              - 'supabase/**'
+              - 'tests/**'
+
+  test-all:
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       # Required for Supabase SMTP config (env(RESEND_API_KEY) in config.toml)
@@ -32,8 +45,7 @@ jobs:
         run: bun install
 
       - name: Start Supabase (local)
-        # Start only the services that are needed for the tests
-        # This will reduce the startup time and the memory usage
+        # Start only the services needed for tests (reduces startup time and memory)
         run: supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,postgres-meta,supavisor
 
       - name: Wait for Supabase to start
@@ -60,3 +72,12 @@ jobs:
 
       - name: Run all tests
         run: bun test
+
+  # This job always runs and reports success, preventing "waiting for status" issues
+  skip-notice:
+    needs: check-changes
+    if: needs.check-changes.outputs.should_run != 'true' && github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip notice
+        run: echo "Skipped - no changes in supabase/** or tests/**"

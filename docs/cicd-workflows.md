@@ -14,9 +14,10 @@
 
 Draait alle tests tegen een lokale Supabase instance in GitHub Actions:
 
-- **Path filter**: Draait alleen bij wijzigingen in `supabase/**` of `tests/**`
+- **Path filter**: Draait alleen bij wijzigingen in `supabase/**` of `tests/**` (rapporteert altijd status)
 - **Handmatige trigger**: Kan ook handmatig gestart worden via `workflow_dispatch`
 - **Docker images**: Download Supabase images bij elke run (~3-5 min)
+- **Excluded services**: `realtime, storage-api, imgproxy, edge-runtime, logflare, vector, studio, postgres-meta, supavisor`
 - **Environment**: Credentials worden dynamisch opgehaald van draaiende Supabase instance (zie [secrets.md](./secrets.md))
 - **Vereiste secret**: `RESEND_API_KEY` voor email tests (SMTP config)
 
