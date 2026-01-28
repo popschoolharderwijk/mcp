@@ -32,7 +32,9 @@ jobs:
         run: bun install
 
       - name: Start Supabase (local)
-        run: supabase start
+        # Start only the services that are needed for the tests
+        # This will reduce the startup time and the memory usage
+        run: supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,postgres-meta,supavisor
 
       - name: Wait for Supabase to start
         run: |
