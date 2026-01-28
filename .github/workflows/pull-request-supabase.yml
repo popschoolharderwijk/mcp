@@ -1,4 +1,4 @@
-name: Pull Request - Supabase
+name: PR - Test Code and Supabase
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  pull-request-supabase:
+  pull-request-test-code-and-supabase:
     runs-on: ubuntu-latest
     env:
       # Required for Supabase SMTP config (env(RESEND_API_KEY) in config.toml)
