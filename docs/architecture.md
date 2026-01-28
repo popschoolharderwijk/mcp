@@ -22,5 +22,5 @@ Dit project gebruikt twee aparte Supabase omgevingen:
 ### Hoe dit werkt
 
 1. **Lovable** is verbonden met `mcp-dev` - een losse development database
-2. **CI tests** draaien tegen een **lokale Supabase** instance (niet remote)
+2. **CI tests** draaien tegen een **lokale Supabase** instance
 3. Bij **merge naar main** worden migraties handmatig toegepast op production via `supabase db push`
