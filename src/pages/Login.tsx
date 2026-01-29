@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
+import { Alert } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -77,11 +78,7 @@ export default function Login() {
 					<p className="text-muted-foreground mt-2">Geen wachtwoord nodig - we sturen je een link.</p>
 				</div>
 
-				{error && (
-					<div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded">
-						{error}
-					</div>
-				)}
+				{error && <Alert variant="error">{error}</Alert>}
 
 				{state === 'idle' || state === 'sending' ? (
 					<form onSubmit={handleSendMagicLink} className="space-y-4">

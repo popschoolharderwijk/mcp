@@ -84,8 +84,8 @@
 		--accent: 222 47% 18%;
 		--accent-foreground: 210 40% 98%;
 
-		--destructive: 0 63% 31%;
-		--destructive-foreground: 210 40% 98%;
+		--destructive: 0 72% 51%;
+		--destructive-foreground: 0 0% 100%;
 
 		/* Status colors (dark mode) */
 		--success: 142 70% 45%;
