@@ -46,7 +46,7 @@ jobs:
 
       - name: Start Supabase (local)
         # Start only the services needed for tests (reduces startup time and memory)
-        run: supabase start -x realtime,storage-api,imgproxy,edge-runtime,logflare,vector,studio,postgres-meta,supavisor
+        run: supabase start -x realtime,storage-api,imgproxy,logflare,vector,studio,postgres-meta,supavisor
 
       - name: Wait for Supabase to start
         run: |
