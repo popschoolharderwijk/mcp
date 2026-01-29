@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { type AppRole, getRoleDisplayName, getRoleIcon } from '@/lib/role-icons';
 
 // Quick navigation items for command palette
 const quickNavItems = [
@@ -155,9 +156,10 @@ export function TopNav() {
 								</p>
 								<p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
 								{role && (
-									<p className="text-xs leading-none text-muted-foreground capitalize mt-0.5">
-										{role.replace('_', ' ')}
-									</p>
+									<div className="flex items-center gap-1 text-xs leading-none text-muted-foreground mt-0.5">
+										{getRoleIcon(role as AppRole, 'h-3 w-3')}
+										<span>{getRoleDisplayName(role as AppRole)}</span>
+									</div>
 								)}
 							</div>
 						</DropdownMenuLabel>

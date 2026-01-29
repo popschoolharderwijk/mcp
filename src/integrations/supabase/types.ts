@@ -127,6 +127,17 @@ export type Database = {
 			};
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_rls_policies: {
+				Args: Record<never, never>;
+				Returns: Array<{
+					table_name: string;
+					policy_name: string;
+					command: string;
+					roles: string;
+					using_expression: string;
+					with_check_expression: string;
+				}>;
+			};
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
 			is_admin: { Args: { _user_id: string }; Returns: boolean };
 			is_site_admin: { Args: { _user_id: string }; Returns: boolean };

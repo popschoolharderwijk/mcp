@@ -8,6 +8,7 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import NotFound from './pages/NotFound';
+import RLSOverview from './pages/RLSOverview';
 import Settings from './pages/Settings';
 import Students from './pages/Students';
 import Teachers from './pages/Teachers';
@@ -32,6 +33,7 @@ const App = () => (
 						<Route path="/students" element={<Students />} />
 						<Route path="/teachers" element={<Teachers />} />
 						<Route path="/settings" element={<Settings />} />
+						<Route path="/rls-overview" element={<RLSOverview />} />
 					</Route>
 
 					<Route path="*" element={<NotFound />} />

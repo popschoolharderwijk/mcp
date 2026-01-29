@@ -1,7 +1,10 @@
-import { LuChevronLeft, LuGraduationCap, LuLayoutDashboard, LuMusic, LuUsers } from 'react-icons/lu';
+import { useEffect, useState } from 'react';
+import { LuChevronLeft, LuGraduationCap, LuLayoutDashboard, LuMusic, LuShield, LuUsers } from 'react-icons/lu';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
 // Navigation items configuration
@@ -17,6 +20,33 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
+	const { user } = useAuth();
+	const [isSiteAdmin, setIsSiteAdmin] = useState(false);
+
+	useEffect(() => {
+		async function checkSiteAdmin() {
+			if (!user) {
+				setIsSiteAdmin(false);
+				return;
+			}
+
+			const { data, error } = await supabase.rpc('is_site_admin', {
+				_user_id: user.id,
+			});
+
+			if (!error && data) {
+				setIsSiteAdmin(true);
+			}
+		}
+
+		checkSiteAdmin();
+	}, [user]);
+
+	const navItems = [...mainNavItems];
+	if (isSiteAdmin) {
+		navItems.push({ href: '/rls-overview', label: 'RLS Overzicht', icon: LuShield });
+	}
+
 	return (
 		<TooltipProvider delayDuration={0}>
 			<aside
@@ -71,7 +101,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 				{/* Navigation */}
 				<div className={cn('flex-1 overflow-auto py-4', collapsed ? 'px-0' : 'px-2')}>
 					<nav className={cn('flex flex-col gap-1', collapsed && 'items-center')}>
-						{mainNavItems.map((item) => (
+						{navItems.map((item) => (
 							<NavItem key={item.href} {...item} collapsed={collapsed} />
 						))}
 					</nav>
