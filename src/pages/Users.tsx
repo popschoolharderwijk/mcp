@@ -1,9 +1,9 @@
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
+import { LuLoaderCircle, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import {
@@ -14,13 +14,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { PhoneInput } from '@/components/ui/phone-input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RoleBadge } from '@/components/ui/role-badge';
+import { UserFormDialog } from '@/components/users/UserFormDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { type AppRole, allRoles, getIcon, roleLabels, rolePriority } from '@/lib/roles';
+import { type AppRole, getIcon, roleLabels, rolePriority } from '@/lib/roles';
 
 interface UserWithRole {
 	user_id: string;
@@ -38,121 +36,62 @@ export default function Users() {
 	const [users, setUsers] = useState<UserWithRole[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
-	const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
-	const [confirmDialog, setConfirmDialog] = useState<{
-		open: boolean;
-		userId: string;
-		userName: string;
-		oldRole: AppRole | null;
-		newRole: AppRole;
-	} | null>(null);
-	const [editDialog, setEditDialog] = useState<{
-		open: boolean;
-		user: UserWithRole | null;
-	} | null>(null);
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
 		user: UserWithRole | null;
 	} | null>(null);
-	const [createDialog, setCreateDialog] = useState(false);
-	const [editForm, setEditForm] = useState({
-		email: '',
-		first_name: '',
-		last_name: '',
-		phone_number: '',
-	});
-	const [createForm, setCreateForm] = useState({
-		email: '',
-		first_name: '',
-		last_name: '',
-		role: null as AppRole | null,
-	});
+	const [userFormDialog, setUserFormDialog] = useState<{
+		open: boolean;
+		user: UserWithRole | null;
+	}>({ open: false, user: null });
+	const [deletingUser, setDeletingUser] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
 	const hasAccess = isAdmin || isSiteAdmin;
 
-	useEffect(() => {
-		async function loadUsers() {
-			if (!hasAccess) return;
+	const loadUsers = useCallback(async () => {
+		if (!hasAccess) return;
 
-			setLoading(true);
+		setLoading(true);
 
-			// Fetch profiles and roles separately, then combine
-			const { data: profiles, error: profilesError } = await supabase
-				.from('profiles')
-				.select('user_id, email, first_name, last_name, phone_number, avatar_url, created_at')
-				.order('created_at', { ascending: false });
+		const { data: profiles, error: profilesError } = await supabase
+			.from('profiles')
+			.select('user_id, email, first_name, last_name, phone_number, avatar_url, created_at')
+			.order('created_at', { ascending: false });
 
-			if (profilesError) {
-				console.error('Error loading profiles:', profilesError);
-				toast.error('Fout bij laden gebruikers');
-				setLoading(false);
-				return;
-			}
-
-			const { data: roles, error: rolesError } = await supabase.from('user_roles').select('user_id, role');
-
-			if (rolesError) {
-				console.error('Error loading roles:', rolesError);
-				toast.error('Fout bij laden rollen');
-				setLoading(false);
-				return;
-			}
-
-			// Create a map of user_id to role
-			const roleMap = new Map(roles?.map((r) => [r.user_id, r.role]) ?? []);
-
-			// Combine profiles with roles
-			const usersWithRoles: UserWithRole[] =
-				profiles?.map((profile) => ({
-					...profile,
-					role: roleMap.get(profile.user_id) ?? null,
-				})) ?? [];
-
-			setUsers(usersWithRoles);
+		if (profilesError) {
+			console.error('Error loading profiles:', profilesError);
+			toast.error('Fout bij laden gebruikers');
 			setLoading(false);
+			return;
 		}
 
+		const { data: roles, error: rolesError } = await supabase.from('user_roles').select('user_id, role');
+
+		if (rolesError) {
+			console.error('Error loading roles:', rolesError);
+			toast.error('Fout bij laden rollen');
+			setLoading(false);
+			return;
+		}
+
+		const roleMap = new Map(roles?.map((r) => [r.user_id, r.role]) ?? []);
+
+		const usersWithRoles: UserWithRole[] =
+			profiles?.map((profile) => ({
+				...profile,
+				role: roleMap.get(profile.user_id) ?? null,
+			})) ?? [];
+
+		setUsers(usersWithRoles);
+		setLoading(false);
+	}, [hasAccess]);
+
+	useEffect(() => {
 		if (!authLoading) {
 			loadUsers();
 		}
-	}, [hasAccess, authLoading]);
-
-	const applyRoleChange = useCallback(
-		async (userId: string, newRole: AppRole) => {
-			setUpdatingUserId(userId);
-
-			// Check if user already has a role
-			const currentUser = users.find((u) => u.user_id === userId);
-			const hasRole = currentUser?.role !== null;
-
-			let error: { message: string } | null;
-			if (hasRole) {
-				// Update existing role
-				const result = await supabase.from('user_roles').update({ role: newRole }).eq('user_id', userId);
-				error = result.error;
-			} else {
-				// Insert new role
-				const result = await supabase.from('user_roles').insert({ user_id: userId, role: newRole });
-				error = result.error;
-			}
-
-			if (error) {
-				console.error('Error updating role:', error);
-				toast.error('Fout bij wijzigen rol', {
-					description: error.message,
-				});
-			} else {
-				// Update local state
-				setUsers((prev) => prev.map((u) => (u.user_id === userId ? { ...u, role: newRole } : u)));
-				toast.success('Rol gewijzigd');
-			}
-
-			setUpdatingUserId(null);
-			setConfirmDialog(null);
-		},
-		[users],
-	);
+	}, [authLoading, loadUsers]);
 
 	// Helper functions
 	const getUserInitials = useCallback((u: UserWithRole) => {
@@ -175,49 +114,6 @@ export default function Users() {
 		return u.email;
 	}, []);
 
-	const handleRoleChange = useCallback(
-		(userId: string, newRole: AppRole) => {
-			if (!isSiteAdmin) {
-				toast.error('Geen toegang', {
-					description: 'Alleen site admins kunnen rollen wijzigen.',
-				});
-				return;
-			}
-
-			if (userId === user?.id) {
-				toast.error('Niet toegestaan', {
-					description: 'Je kunt je eigen rol niet wijzigen.',
-				});
-				return;
-			}
-
-			const currentUser = users.find((u) => u.user_id === userId);
-			if (!currentUser) return;
-			const oldRole = currentUser.role ?? null;
-			const userName = getDisplayName(currentUser);
-
-			// Check if this is a promotion/demotion to/from admin or site_admin
-			const isAdminChange =
-				(oldRole === 'admin' || oldRole === 'site_admin' || newRole === 'admin' || newRole === 'site_admin') &&
-				oldRole !== newRole;
-
-			if (isAdminChange) {
-				// Show confirmation dialog
-				setConfirmDialog({
-					open: true,
-					userId,
-					userName,
-					oldRole,
-					newRole,
-				});
-			} else {
-				// Directly apply the change
-				applyRoleChange(userId, newRole);
-			}
-		},
-		[isSiteAdmin, user?.id, users, getDisplayName, applyRoleChange],
-	);
-
 	const columns: DataTableColumn<UserWithRole>[] = useMemo(
 		() => [
 			{
@@ -234,7 +130,12 @@ export default function Users() {
 							</AvatarFallback>
 						</Avatar>
 						<div>
-							<p className="font-medium">{getDisplayName(u)}</p>
+							<p className="font-medium">
+								{getDisplayName(u)}
+								{u.user_id === user?.id && (
+									<span className="text-muted-foreground font-normal"> (jij)</span>
+								)}
+							</p>
 						</div>
 					</div>
 				),
@@ -260,32 +161,7 @@ export default function Users() {
 				label: 'Rol',
 				sortable: true,
 				sortValue: (u) => (u.role ? rolePriority[u.role] : 0),
-				render: (u) =>
-					isSiteAdmin && u.user_id !== user?.id ? (
-						<Select
-							value={u.role ?? undefined}
-							onValueChange={(value: AppRole) => handleRoleChange(u.user_id, value)}
-							disabled={updatingUserId === u.user_id}
-						>
-							<SelectTrigger className="w-40">
-								<SelectValue placeholder="Geen rol" />
-							</SelectTrigger>
-							<SelectContent>
-								{allRoles.map((role) => (
-									<SelectItem key={role} value={role}>
-										{roleLabels[role].label}
-									</SelectItem>
-								))}
-							</SelectContent>
-						</Select>
-					) : u.role ? (
-						<Badge variant={roleLabels[u.role].variant}>
-							{roleLabels[u.role].label}
-							{u.user_id === user?.id && ' (jij)'}
-						</Badge>
-					) : (
-						<Badge variant="outline">Geen rol</Badge>
-					),
+				render: (u) => <RoleBadge role={u.role} />,
 			},
 			{
 				key: 'created_at',
@@ -304,19 +180,17 @@ export default function Users() {
 				className: 'text-muted-foreground',
 			},
 		],
-		[isSiteAdmin, user?.id, updatingUserId, getUserInitials, getDisplayName, handleRoleChange],
+		[user?.id, getUserInitials, getDisplayName],
 	);
 
 	const SiteAdminIcon = getIcon('site_admin');
 
-	const handleEdit = useCallback((user: UserWithRole) => {
-		setEditForm({
-			email: user.email,
-			first_name: user.first_name ?? '',
-			last_name: user.last_name ?? '',
-			phone_number: user.phone_number ?? '',
-		});
-		setEditDialog({ open: true, user });
+	const handleEdit = useCallback((targetUser: UserWithRole) => {
+		setUserFormDialog({ open: true, user: targetUser });
+	}, []);
+
+	const handleCreate = useCallback(() => {
+		setUserFormDialog({ open: true, user: null });
 	}, []);
 
 	const handleDelete = useCallback(
@@ -333,74 +207,62 @@ export default function Users() {
 		[user?.id],
 	);
 
-	const handleCreate = useCallback(() => {
-		setCreateForm({
-			email: '',
-			first_name: '',
-			last_name: '',
-			role: null,
-		});
-		setCreateDialog(true);
-	}, []);
-
-	const saveEdit = useCallback(async () => {
-		if (!editDialog?.user) return;
-
-		const { error } = await supabase
-			.from('profiles')
-			.update({
-				email: editForm.email,
-				first_name: editForm.first_name || null,
-				last_name: editForm.last_name || null,
-				phone_number: editForm.phone_number || null,
-			})
-			.eq('user_id', editDialog.user.user_id);
-
-		if (error) {
-			toast.error('Fout bij bijwerken gebruiker', {
-				description: error.message,
-			});
-			return;
-		}
-
-		// Update local state
-		setUsers((prev) =>
-			prev.map((u) =>
-				u.user_id === (editDialog.user?.user_id ?? '')
-					? {
-							...u,
-							email: editForm.email,
-							first_name: editForm.first_name || null,
-							last_name: editForm.last_name || null,
-							phone_number: editForm.phone_number || null,
-						}
-					: u,
-			),
-		);
-
-		toast.success('Gebruiker bijgewerkt');
-		setEditDialog(null);
-	}, [editDialog, editForm]);
-
-	const saveCreate = useCallback(async () => {
-		// TODO: Implement via Edge Function or Admin API
-		// For now, show a message that this needs to be implemented
-		toast.error('Nog niet geïmplementeerd', {
-			description: 'Gebruiker aanmaken vereist een Edge Function of Admin API.',
-		});
-		setCreateDialog(false);
-	}, []);
-
 	const confirmDelete = useCallback(async () => {
 		if (!deleteDialog?.user) return;
 
-		// TODO: Implement via Edge Function or Admin API
-		// For now, show a message that this needs to be implemented
-		toast.error('Nog niet geïmplementeerd', {
-			description: 'Gebruiker verwijderen vereist een Edge Function of Admin API.',
-		});
-		setDeleteDialog(null);
-	}, [deleteDialog]);
+		setDeletingUser(true);
+
+		try {
+			const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
+				body: { userId: deleteDialog.user.user_id },
+			});
+
+			if (invokeError) {
+				let errorMessage = isSiteAdmin ? invokeError.message : 'Er is een onbekende fout opgetreden.';
+
+				if (invokeError instanceof FunctionsHttpError) {
+					try {
+						const errorBody = await invokeError.context.json();
+						errorMessage = errorBody?.error || errorMessage;
+					} catch {
+						// Could not parse error body - for site_admin show raw message
+						if (isSiteAdmin) {
+							errorMessage = invokeError.message || String(invokeError);
+						}
+					}
+				} else if (isSiteAdmin) {
+					errorMessage = invokeError.message || String(invokeError);
+				}
+
+				toast.error('Fout bij verwijderen gebruiker', {
+					description: errorMessage,
+				});
+				return;
+			}
+
+			if (data?.error) {
+				toast.error('Fout bij verwijderen gebruiker', {
+					description: data.error,
+				});
+				return;
+			}
+
+			toast.success('Gebruiker verwijderd', {
+				description: `${getDisplayName(deleteDialog.user)} is verwijderd.`,
+			});
+
+			// Remove user from local state
+			setUsers((prev) => prev.filter((u) => u.user_id !== deleteDialog.user?.user_id));
+			setDeleteDialog(null);
+		} catch (error) {
+			console.error('Error deleting user:', error);
+			toast.error('Fout bij verwijderen gebruiker', {
+				description: 'Er is een netwerkfout opgetreden. Probeer het later opnieuw.',
+			});
+		} finally {
+			setDeletingUser(false);
+		}
+	}, [deleteDialog, getDisplayName, isSiteAdmin]);
 
 	// Redirect if no access
 	if (!hasAccess) {
@@ -422,12 +284,6 @@ export default function Users() {
 						)}
 					</p>
 				</div>
-				{isSiteAdmin && (
-					<Button onClick={handleCreate}>
-						<LuPlus className="mr-2 h-4 w-4" />
-						Gebruiker toevoegen
-					</Button>
-				)}
 			</div>
 
 			<DataTable
@@ -445,9 +301,18 @@ export default function Users() {
 				]}
 				loading={loading}
 				getRowKey={(u) => u.user_id}
+				getRowClassName={(u) => (u.user_id === user?.id ? 'bg-primary/15 hover:bg-primary/20' : undefined)}
 				emptyMessage="Geen gebruikers gevonden"
 				initialSortColumn="user"
 				initialSortDirection="asc"
+				headerActions={
+					isAdmin || isSiteAdmin ? (
+						<Button onClick={handleCreate}>
+							<LuPlus className="mr-2 h-4 w-4" />
+							Gebruiker toevoegen
+						</Button>
+					) : undefined
+				}
 				rowActions={
 					isSiteAdmin
 						? {
@@ -483,188 +348,14 @@ export default function Users() {
 				}
 			/>
 
-			{/* Confirmation Dialog for Admin/Site Admin Role Changes */}
-			{confirmDialog && (
-				<Dialog open={confirmDialog.open} onOpenChange={(open) => !open && setConfirmDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Bevestig rolwijziging
-							</DialogTitle>
-							<DialogDescription>
-								Je staat op het punt om de rol van <strong>{confirmDialog.userName}</strong> te wijzigen
-								van{' '}
-								{confirmDialog.oldRole ? (
-									<>
-										<strong>{roleLabels[confirmDialog.oldRole].label}</strong> naar{' '}
-										<strong>{roleLabels[confirmDialog.newRole].label}</strong>
-									</>
-								) : (
-									<>
-										<strong>Geen rol</strong> naar{' '}
-										<strong>{roleLabels[confirmDialog.newRole].label}</strong>
-									</>
-								)}
-								.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="py-4">
-							<p className="text-sm text-muted-foreground">
-								{(confirmDialog.newRole === 'admin' || confirmDialog.newRole === 'site_admin') && (
-									<>
-										Deze gebruiker krijgt <strong>administratieve rechten</strong> en kan gevoelige
-										acties uitvoeren.
-									</>
-								)}
-								{(confirmDialog.oldRole === 'admin' || confirmDialog.oldRole === 'site_admin') &&
-									confirmDialog.newRole !== 'admin' &&
-									confirmDialog.newRole !== 'site_admin' && (
-										<>
-											Deze gebruiker verliest <strong>administratieve rechten</strong> en kan geen
-											beheeracties meer uitvoeren.
-										</>
-									)}
-							</p>
-						</div>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => setConfirmDialog(null)}
-								disabled={updatingUserId !== null}
-							>
-								Annuleren
-							</Button>
-							<Button
-								variant="default"
-								onClick={() => applyRoleChange(confirmDialog.userId, confirmDialog.newRole)}
-								disabled={updatingUserId !== null}
-							>
-								{updatingUserId === confirmDialog.userId ? 'Wijzigen...' : 'Bevestigen'}
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			)}
-
-			{/* Edit User Dialog */}
-			{editDialog && (
-				<Dialog open={editDialog.open} onOpenChange={(open) => !open && setEditDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Gebruiker bewerken</DialogTitle>
-							<DialogDescription>
-								Wijzig de gegevens van {getDisplayName(editDialog.user)}.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="space-y-4 py-4">
-							<div className="space-y-2">
-								<Label htmlFor="edit-email">Email</Label>
-								<Input
-									id="edit-email"
-									type="email"
-									value={editForm.email}
-									onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="edit-first-name">Voornaam</Label>
-								<Input
-									id="edit-first-name"
-									value={editForm.first_name}
-									onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-								/>
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="edit-last-name">Achternaam</Label>
-								<Input
-									id="edit-last-name"
-									value={editForm.last_name}
-									onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-								/>
-							</div>
-							<PhoneInput
-								id="edit-phone-number"
-								label="Telefoonnummer"
-								value={editForm.phone_number}
-								onChange={(value) => setEditForm({ ...editForm, phone_number: value })}
-							/>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setEditDialog(null)}>
-								Annuleren
-							</Button>
-							<Button variant="default" onClick={saveEdit}>
-								Opslaan
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
-			)}
-
-			{/* Create User Dialog */}
-			<Dialog open={createDialog} onOpenChange={setCreateDialog}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Nieuwe gebruiker toevoegen</DialogTitle>
-						<DialogDescription>Voeg een nieuwe gebruiker toe aan het systeem.</DialogDescription>
-					</DialogHeader>
-					<div className="space-y-4 py-4">
-						<div className="space-y-2">
-							<Label htmlFor="create-email">Email *</Label>
-							<Input
-								id="create-email"
-								type="email"
-								value={createForm.email}
-								onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-								placeholder="gebruiker@voorbeeld.nl"
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="create-first-name">Voornaam</Label>
-							<Input
-								id="create-first-name"
-								value={createForm.first_name}
-								onChange={(e) => setCreateForm({ ...createForm, first_name: e.target.value })}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="create-last-name">Achternaam</Label>
-							<Input
-								id="create-last-name"
-								value={createForm.last_name}
-								onChange={(e) => setCreateForm({ ...createForm, last_name: e.target.value })}
-							/>
-						</div>
-						<div className="space-y-2">
-							<Label htmlFor="create-role">Rol</Label>
-							<Select
-								value={createForm.role ?? undefined}
-								onValueChange={(value: AppRole) => setCreateForm({ ...createForm, role: value })}
-							>
-								<SelectTrigger id="create-role">
-									<SelectValue placeholder="Geen rol" />
-								</SelectTrigger>
-								<SelectContent>
-									{allRoles.map((role) => (
-										<SelectItem key={role} value={role}>
-											{roleLabels[role].label}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
-					</div>
-					<DialogFooter>
-						<Button variant="outline" onClick={() => setCreateDialog(false)}>
-							Annuleren
-						</Button>
-						<Button variant="default" onClick={saveCreate} disabled={!createForm.email}>
-							Toevoegen
-						</Button>
-					</DialogFooter>
-				</DialogContent>
-			</Dialog>
+			{/* Create/Edit User Dialog */}
+			<UserFormDialog
+				open={userFormDialog.open}
+				onOpenChange={(open) => setUserFormDialog({ ...userFormDialog, open })}
+				onSuccess={loadUsers}
+				isSiteAdmin={isSiteAdmin}
+				user={userFormDialog.user ?? undefined}
+			/>
 
 			{/* Delete User Dialog */}
 			{deleteDialog && (
@@ -687,11 +378,18 @@ export default function Users() {
 							</p>
 						</div>
 						<DialogFooter>
-							<Button variant="outline" onClick={() => setDeleteDialog(null)}>
+							<Button variant="outline" onClick={() => setDeleteDialog(null)} disabled={deletingUser}>
 								Annuleren
 							</Button>
-							<Button variant="destructive" onClick={confirmDelete}>
-								Verwijderen
+							<Button variant="destructive" onClick={confirmDelete} disabled={deletingUser}>
+								{deletingUser ? (
+									<>
+										<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+										Verwijderen...
+									</>
+								) : (
+									'Verwijderen'
+								)}
 							</Button>
 						</DialogFooter>
 					</DialogContent>

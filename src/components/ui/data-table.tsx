@@ -32,6 +32,7 @@ interface DataTableProps<T> {
 	searchFields?: ((item: T) => string | null | undefined)[];
 	loading?: boolean;
 	getRowKey: (item: T) => string;
+	getRowClassName?: (item: T) => string | undefined;
 	emptyMessage?: string;
 	headerActions?: React.ReactNode;
 	initialSortColumn?: string;
@@ -49,6 +50,7 @@ export function DataTable<T>({
 	searchFields,
 	loading = false,
 	getRowKey,
+	getRowClassName,
 	emptyMessage = 'Geen resultaten gevonden',
 	headerActions,
 	initialSortColumn,
@@ -208,6 +210,7 @@ export function DataTable<T>({
 											className={cn(
 												'border-b last:border-0 transition-colors',
 												rowActions?.onEdit && 'cursor-pointer hover:bg-muted/50',
+												getRowClassName?.(item),
 											)}
 											onClick={() => rowActions?.onEdit?.(item)}
 											onKeyDown={(e) => {

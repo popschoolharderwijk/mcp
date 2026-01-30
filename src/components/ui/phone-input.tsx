@@ -49,9 +49,6 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 				{!error && !isValid && value !== '' && (
 					<p className="text-sm text-destructive">Telefoonnummer moet precies 10 cijfers zijn</p>
 				)}
-				{!error && isValid && value !== '' && (
-					<p className="text-sm text-muted-foreground">10 cijfers (bijv. 0612345678)</p>
-				)}
 			</div>
 		);
 	},

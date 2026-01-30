@@ -10,6 +10,7 @@ interface CreateUserRequest {
 	email: string;
 	first_name?: string;
 	last_name?: string;
+	phone_number?: string;
 	role?: 'site_admin' | 'admin' | 'staff' | 'teacher';
 }
 
@@ -20,7 +21,7 @@ Deno.serve(async (req) => {
 	}
 
 	try {
-		// Get the authorization header
+		// Get authorization header
 		const authHeader = req.headers.get('Authorization');
 		if (!authHeader) {
 			return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -29,7 +30,7 @@ Deno.serve(async (req) => {
 			});
 		}
 
-		// Parse request body first
+		// Parse request body
 		const body: CreateUserRequest = await req.json();
 
 		if (!body.email) {
@@ -39,20 +40,21 @@ Deno.serve(async (req) => {
 			});
 		}
 
-		// Create authenticated client FIRST to check authorization via RLS
-		// This ensures we verify permissions before doing anything else
+		// Validate email format
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(body.email)) {
+			return new Response(JSON.stringify({ error: 'Ongeldig e-mailadres' }), {
+				status: 400,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+			});
+		}
+
+		// Authenticated client for RLS-based checks
 		const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 		const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 		const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-			global: {
-				headers: {
-					Authorization: authHeader,
-				},
-			},
-			auth: {
-				autoRefreshToken: false,
-				persistSession: false,
-			},
+			global: { headers: { Authorization: authHeader } },
+			auth: { autoRefreshToken: false, persistSession: false },
 		});
 
 		// Get requesting user from JWT using authenticated client
@@ -68,17 +70,14 @@ Deno.serve(async (req) => {
 			});
 		}
 
-		// Check if user has permission to create users by trying to view their role
-		// RLS will only allow admins and site_admins to view roles
-		// This acts as an authorization check BEFORE we do anything else
+		// Check requester's role via RLS
 		const { data: rolesCheck, error: rolesCheckError } = await supabaseUser
 			.from('user_roles')
 			.select('role')
 			.eq('user_id', requestingUser.id)
 			.single();
 
-		// If user can't view their own role or doesn't have admin/site_admin role, deny access
-		if (rolesCheckError || !rolesCheck) {
+		if (rolesCheckError || !rolesCheck?.role) {
 			return new Response(JSON.stringify({ error: 'Je hebt geen rechten om gebruikers aan te maken.' }), {
 				status: 403,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -93,67 +92,81 @@ Deno.serve(async (req) => {
 			});
 		}
 
-		// Only NOW create admin client for user creation (after authorization is verified)
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-			{
-				auth: {
-					autoRefreshToken: false,
-					persistSession: false,
-				},
-			},
-		);
+		// Defense-in-depth: prevent admins from assigning site_admin
+		if (requesterRole === 'admin' && body.role === 'site_admin') {
+			return new Response(JSON.stringify({ error: 'Admins kunnen geen site_admin rollen toewijzen' }), {
+				status: 403,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+			});
+		}
 
-		// Create user via Admin API
-		// The handle_new_user trigger will automatically create the profile
+		// Admin client to create user
+		const supabaseAdmin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', {
+			auth: { autoRefreshToken: false, persistSession: false },
+		});
+
+		// Create user
 		const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
 			email: body.email,
-			email_confirm: true, // Auto-confirm email
+			email_confirm: true,
 			user_metadata: {
-				first_name: body.first_name || null,
-				last_name: body.last_name || null,
+				first_name: body.first_name ?? null,
+				last_name: body.last_name ?? null,
 			},
 		});
 
 		if (createError) {
+			// Friendly message for duplicate users
+			if (createError.message.includes('already') || createError.message.includes('duplicate')) {
+				return new Response(JSON.stringify({ error: 'Een gebruiker met dit e-mailadres bestaat al.' }), {
+					status: 409,
+					headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+				});
+			}
 			return new Response(JSON.stringify({ error: createError.message }), {
 				status: 400,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 			});
 		}
 
-		if (!newUser.user) {
+		const createdUser = newUser.user;
+		if (!createdUser) {
 			return new Response(JSON.stringify({ error: 'Gebruiker kon niet worden aangemaakt' }), {
 				status: 500,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 			});
 		}
 
+		// Update profile with phone_number if provided
+		// The profile is created by handle_new_user trigger, so we update it here
+		if (body.phone_number) {
+			const { error: profileUpdateError } = await supabaseAdmin
+				.from('profiles')
+				.update({ phone_number: body.phone_number })
+				.eq('user_id', createdUser.id);
+
+			if (profileUpdateError) {
+				console.error('Error updating phone_number:', profileUpdateError);
+				// Don't fail the request, just log the error
+			}
+		}
+
 		// Assign role if provided
-		// Use authenticated client so RLS policies enforce permissions
-		// RLS will automatically block admins from assigning site_admin roles
 		if (body.role) {
 			const { error: roleInsertError } = await supabaseUser.from('user_roles').insert({
-				user_id: newUser.user.id,
+				user_id: createdUser.id,
 				role: body.role,
 			});
 
 			if (roleInsertError) {
-				// If role assignment fails, we should still return success for user creation
-				// but log the error. The user can be created without a role.
 				console.error('Error assigning role:', roleInsertError);
-				// Don't fail the request, but return a warning
 				return new Response(
 					JSON.stringify({
 						message: 'Gebruiker aangemaakt, maar rol kon niet worden toegewezen.',
-						user_id: newUser.user.id,
+						user_id: createdUser.id,
 						warning: roleInsertError.message,
 					}),
-					{
-						status: 200,
-						headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-					},
+					{ status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
 				);
 			}
 		}
@@ -161,13 +174,10 @@ Deno.serve(async (req) => {
 		return new Response(
 			JSON.stringify({
 				message: 'Gebruiker succesvol aangemaakt',
-				user_id: newUser.user.id,
-				email: newUser.user.email,
+				user_id: createdUser.id,
+				email: createdUser.email,
 			}),
-			{
-				status: 200,
-				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-			},
+			{ status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
 		);
 	} catch (error) {
 		console.error('Error in create-user:', error);
