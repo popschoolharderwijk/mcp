@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuPlus, LuTriangleAlert } from 'react-icons/lu';
+import { LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -318,9 +319,19 @@ export default function Users() {
 		setEditDialog({ open: true, user });
 	}, []);
 
-	const handleDelete = useCallback((user: UserWithRole) => {
-		setDeleteDialog({ open: true, user });
-	}, []);
+	const handleDelete = useCallback(
+		(targetUser: UserWithRole) => {
+			// Prevent users from deleting themselves - they should use the settings flow
+			if (targetUser.user_id === user?.id) {
+				toast.error('Niet toegestaan', {
+					description: 'Je kunt jezelf niet verwijderen via dit menu. Gebruik de instellingen pagina.',
+				});
+				return;
+			}
+			setDeleteDialog({ open: true, user: targetUser });
+		},
+		[user?.id],
+	);
 
 	const handleCreate = useCallback(() => {
 		setCreateForm({
@@ -441,7 +452,32 @@ export default function Users() {
 					isSiteAdmin
 						? {
 								onEdit: handleEdit,
-								onDelete: handleDelete,
+								onDelete: (u) => {
+									// Prevent deleting yourself - use settings flow instead
+									if (u.user_id === user?.id) {
+										return;
+									}
+									handleDelete(u);
+								},
+								render: (u) => {
+									// Hide delete button for current user
+									if (u.user_id === user?.id) {
+										return null;
+									}
+									return (
+										<Button
+											variant="ghost"
+											size="icon"
+											className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+											onClick={(e) => {
+												e.stopPropagation();
+												handleDelete(u);
+											}}
+										>
+											<LuTrash2 className="h-4 w-4" />
+										</Button>
+									);
+								},
 							}
 						: undefined
 				}
@@ -547,16 +583,12 @@ export default function Users() {
 									onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
 								/>
 							</div>
-							<div className="space-y-2">
-								<Label htmlFor="edit-phone-number">Telefoonnummer</Label>
-								<Input
-									id="edit-phone-number"
-									type="tel"
-									value={editForm.phone_number}
-									onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
-									placeholder="0612345678"
-								/>
-							</div>
+							<PhoneInput
+								id="edit-phone-number"
+								label="Telefoonnummer"
+								value={editForm.phone_number}
+								onChange={(value) => setEditForm({ ...editForm, phone_number: value })}
+							/>
 						</div>
 						<DialogFooter>
 							<Button variant="outline" onClick={() => setEditDialog(null)}>
