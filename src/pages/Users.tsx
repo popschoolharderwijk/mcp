@@ -26,6 +26,7 @@ interface UserWithRole {
 	email: string;
 	first_name: string | null;
 	last_name: string | null;
+	phone_number: string | null;
 	avatar_url: string | null;
 	created_at: string;
 	role: AppRole | null;
@@ -57,6 +58,7 @@ export default function Users() {
 		email: '',
 		first_name: '',
 		last_name: '',
+		phone_number: '',
 	});
 	const [createForm, setCreateForm] = useState({
 		email: '',
@@ -77,7 +79,7 @@ export default function Users() {
 			// Fetch profiles and roles separately, then combine
 			const { data: profiles, error: profilesError } = await supabase
 				.from('profiles')
-				.select('user_id, email, first_name, last_name, avatar_url, created_at')
+				.select('user_id, email, first_name, last_name, phone_number, avatar_url, created_at')
 				.order('created_at', { ascending: false });
 
 			if (profilesError) {
@@ -232,10 +234,25 @@ export default function Users() {
 						</Avatar>
 						<div>
 							<p className="font-medium">{getDisplayName(u)}</p>
-							<p className="text-sm text-muted-foreground">{u.email}</p>
 						</div>
 					</div>
 				),
+			},
+			{
+				key: 'email',
+				label: 'Email',
+				sortable: true,
+				sortValue: (u) => u.email.toLowerCase(),
+				render: (u) => <span className="text-muted-foreground">{u.email}</span>,
+				className: 'text-muted-foreground',
+			},
+			{
+				key: 'phone_number',
+				label: 'Telefoonnummer',
+				sortable: true,
+				sortValue: (u) => u.phone_number?.toLowerCase() ?? '',
+				render: (u) => <span className="text-muted-foreground">{u.phone_number || '-'}</span>,
+				className: 'text-muted-foreground',
 			},
 			{
 				key: 'role',
@@ -296,6 +313,7 @@ export default function Users() {
 			email: user.email,
 			first_name: user.first_name ?? '',
 			last_name: user.last_name ?? '',
+			phone_number: user.phone_number ?? '',
 		});
 		setEditDialog({ open: true, user });
 	}, []);
@@ -323,6 +341,7 @@ export default function Users() {
 				email: editForm.email,
 				first_name: editForm.first_name || null,
 				last_name: editForm.last_name || null,
+				phone_number: editForm.phone_number || null,
 			})
 			.eq('user_id', editDialog.user.user_id);
 
@@ -342,6 +361,7 @@ export default function Users() {
 							email: editForm.email,
 							first_name: editForm.first_name || null,
 							last_name: editForm.last_name || null,
+							phone_number: editForm.phone_number || null,
 						}
 					: u,
 			),
@@ -409,6 +429,7 @@ export default function Users() {
 					(u) => u.email,
 					(u) => u.first_name ?? undefined,
 					(u) => u.last_name ?? undefined,
+					(u) => u.phone_number ?? undefined,
 					(u) => (u.role ? roleLabels[u.role].label : undefined),
 				]}
 				loading={loading}
@@ -524,6 +545,16 @@ export default function Users() {
 									id="edit-last-name"
 									value={editForm.last_name}
 									onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label htmlFor="edit-phone-number">Telefoonnummer</Label>
+								<Input
+									id="edit-phone-number"
+									type="tel"
+									value={editForm.phone_number}
+									onChange={(e) => setEditForm({ ...editForm, phone_number: e.target.value })}
+									placeholder="0612345678"
 								/>
 							</div>
 						</div>
