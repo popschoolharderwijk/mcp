@@ -215,18 +215,6 @@ export default function Users() {
 		[isSiteAdmin, user?.id, users, getDisplayName, applyRoleChange],
 	);
 
-	const filteredUsers = useMemo(
-		() =>
-			users.filter(
-				(u) =>
-					u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					u.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					u.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-					(u.role && roleLabels[u.role].label.toLowerCase().includes(searchQuery.toLowerCase())),
-			),
-		[users, searchQuery],
-	);
-
 	const columns: DataTableColumn<UserWithRole>[] = useMemo(
 		() => [
 			{
@@ -413,10 +401,16 @@ export default function Users() {
 
 			<DataTable
 				title="Gebruikers Overzicht"
-				data={filteredUsers}
+				data={users}
 				columns={columns}
 				searchQuery={searchQuery}
 				onSearchChange={setSearchQuery}
+				searchFields={[
+					(u) => u.email,
+					(u) => u.first_name ?? undefined,
+					(u) => u.last_name ?? undefined,
+					(u) => (u.role ? roleLabels[u.role].label : undefined),
+				]}
 				loading={loading}
 				getRowKey={(u) => u.user_id}
 				emptyMessage="Geen gebruikers gevonden"

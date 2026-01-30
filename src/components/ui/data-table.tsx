@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LuArrowDown, LuArrowUp, LuArrowUpDown, LuSearch, LuTrash2 } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +29,7 @@ interface DataTableProps<T> {
 	searchQuery?: string;
 	onSearchChange?: (query: string) => void;
 	searchPlaceholder?: string;
+	searchFields?: ((item: T) => string | null | undefined)[];
 	loading?: boolean;
 	getRowKey: (item: T) => string;
 	emptyMessage?: string;
@@ -45,6 +46,7 @@ export function DataTable<T>({
 	searchQuery,
 	onSearchChange,
 	searchPlaceholder = 'Zoeken...',
+	searchFields,
 	loading = false,
 	getRowKey,
 	emptyMessage = 'Geen resultaten gevonden',
@@ -58,6 +60,21 @@ export function DataTable<T>({
 		initialSortColumn ? (initialSortDirection ?? 'asc') : null,
 	);
 	const searchInputRef = useAutofocus<HTMLInputElement>(!!onSearchChange);
+
+	// Filter data based on search query if searchFields are provided
+	const filteredData = useMemo(() => {
+		if (!searchQuery || !searchFields || searchFields.length === 0) {
+			return data;
+		}
+
+		const query = searchQuery.toLowerCase();
+		return data.filter((item) =>
+			searchFields.some((field) => {
+				const value = field(item);
+				return value?.toLowerCase().includes(query);
+			}),
+		);
+	}, [data, searchQuery, searchFields]);
 
 	const handleSort = (columnKey: string) => {
 		const column = columns.find((col) => col.key === columnKey);
@@ -77,11 +94,12 @@ export function DataTable<T>({
 		}
 	};
 
-	const sortedData = [...data].sort((a, b) => {
-		if (!sortColumn || !sortDirection) return 0;
+	const sortedData = useMemo(() => {
+		const dataToSort = filteredData;
+		if (!sortColumn || !sortDirection) return dataToSort;
 
 		const column = columns.find((col) => col.key === sortColumn);
-		if (!column || column.sortable === false) return 0;
+		if (!column || column.sortable === false) return dataToSort;
 
 		const getValue = (item: T) => {
 			if (column.sortValue) {
@@ -94,17 +112,19 @@ export function DataTable<T>({
 			return String(value ?? '').toLowerCase();
 		};
 
-		const aValue = getValue(a);
-		const bValue = getValue(b);
+		return [...dataToSort].sort((a, b) => {
+			const aValue = getValue(a);
+			const bValue = getValue(b);
 
-		if (aValue < bValue) {
-			return sortDirection === 'asc' ? -1 : 1;
-		}
-		if (aValue > bValue) {
-			return sortDirection === 'asc' ? 1 : -1;
-		}
-		return 0;
-	});
+			if (aValue < bValue) {
+				return sortDirection === 'asc' ? -1 : 1;
+			}
+			if (aValue > bValue) {
+				return sortDirection === 'asc' ? 1 : -1;
+			}
+			return 0;
+		});
+	}, [filteredData, sortColumn, sortDirection, columns]);
 
 	return (
 		<Card>
