@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Alert } from '@/components/ui/alert';
+import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -155,6 +156,11 @@ export default function Login() {
 						</button>
 					</div>
 				)}
+			</div>
+
+			{/* Environment indicator */}
+			<div className="fixed bottom-4 left-4">
+				<EnvironmentBadge />
 			</div>
 		</div>
 	);

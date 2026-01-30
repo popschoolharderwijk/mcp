@@ -1,5 +1,39 @@
 # Handige Commands
 
+## Development Omgevingen
+
+Er zijn 3 omgevingen geconfigureerd:
+
+| Command | Omgeving | Env bestand | Gebruik |
+|---------|----------|-------------|---------|
+| `bun dev` | Remote development | `.env.development` | Lovable branch, remote dev server |
+| `bun dev:local` | Lokale Supabase | `.env.localdev` | Lokaal testen met `supabase start` |
+| `bun prod` | Productie | `.env.production` | Productie server |
+
+### Env bestanden aanmaken
+
+**`.env.development`** (remote dev):
+```env
+VITE_SUPABASE_URL=https://xyz-dev.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+
+**`.env.localdev`** (lokale Supabase - niet in git):
+```env
+VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_ANON_KEY=eyJ...lokale-anon-key
+```
+
+**`.env.production`** (productie):
+```env
+VITE_SUPABASE_URL=https://xyz-prod.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJ...
+```
+
+> 💡 `.env.localdev` staat in `.gitignore` en moet lokaal worden aangemaakt. De anon key vind je in de output van `supabase start`.
+
+---
+
 ## Git Branch Management
 
 ```bash

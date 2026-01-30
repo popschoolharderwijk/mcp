@@ -1,6 +1,7 @@
 import { LuChevronLeft, LuLayoutDashboard, LuMusic, LuShieldCheck, LuUserCog } from 'react-icons/lu';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
@@ -98,6 +99,11 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 							</>
 						)}
 					</nav>
+				</div>
+
+				{/* Environment indicator */}
+				<div className={cn('border-t border-sidebar-border p-2', collapsed ? 'flex justify-center' : 'px-4')}>
+					<EnvironmentBadge />
 				</div>
 			</aside>
 		</TooltipProvider>
