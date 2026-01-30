@@ -9,6 +9,31 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 
+// Map delete errors to safe user-friendly messages
+function getSafeDeleteErrorMessage(error: { message?: string }): { error: string; code?: string } {
+	const msg = error.message?.toLowerCase() ?? '';
+
+	// Check for last site_admin protection trigger
+	if (msg.includes('last site_admin') || msg.includes('laatste site_admin')) {
+		return {
+			error: 'Dit is de laatste site administrator. Maak eerst een andere gebruiker site_admin voordat dit account verwijderd kan worden.',
+			code: 'last_site_admin',
+		};
+	}
+
+	// Check for foreign key / dependency errors
+	if (msg.includes('foreign key') || msg.includes('constraint') || error.message?.includes('23503')) {
+		return {
+			error: 'Dit account kan niet worden verwijderd vanwege gekoppelde gegevens.',
+		};
+	}
+
+	// Generic fallback - don't expose internal details
+	return {
+		error: 'Er is een fout opgetreden bij het verwijderen van het account.',
+	};
+}
+
 Deno.serve(async (req) => {
 	// Handle CORS preflight
 	if (req.method === 'OPTIONS') {
@@ -99,24 +124,10 @@ Deno.serve(async (req) => {
 		const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 
 		if (deleteError) {
-			// Check if it's the "last site_admin" error from our trigger
-			const errorMessage = deleteError.message || 'Failed to delete account';
+			// Map errors to safe user-friendly messages
+			const safeMessage = getSafeDeleteErrorMessage(deleteError);
 
-			// The trigger raises: "Cannot remove the last site_admin. Promote another user to site_admin first."
-			if (errorMessage.includes('last site_admin')) {
-				return new Response(
-					JSON.stringify({
-						error: 'Dit is de laatste site administrator. Maak eerst een andere gebruiker site_admin voordat dit account verwijderd kan worden.',
-						code: 'last_site_admin',
-					}),
-					{
-						status: 400,
-						headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-					},
-				);
-			}
-
-			return new Response(JSON.stringify({ error: errorMessage }), {
+			return new Response(JSON.stringify(safeMessage), {
 				status: 400,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 			});

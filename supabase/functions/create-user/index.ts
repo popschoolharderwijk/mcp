@@ -14,6 +14,27 @@ interface CreateUserRequest {
 	role?: 'site_admin' | 'admin' | 'staff' | 'teacher';
 }
 
+// Map database/auth errors to safe user-friendly messages
+function getSafeErrorMessage(error: { message?: string; code?: string }): string {
+	const msg = error.message?.toLowerCase() ?? '';
+
+	if (msg.includes('already') || msg.includes('duplicate')) {
+		return 'Een gebruiker met dit e-mailadres bestaat al.';
+	}
+	if (msg.includes('invalid email')) {
+		return 'Ongeldig e-mailadres.';
+	}
+	if (error.code === '23505') {
+		return 'Deze gegevens bestaan al.';
+	}
+	if (error.code === '23503') {
+		return 'Deze actie kan niet worden uitgevoerd door een afhankelijkheid.';
+	}
+
+	// Generic fallback - don't expose internal details
+	return 'Er is een fout opgetreden bij het aanmaken van de gebruiker.';
+}
+
 Deno.serve(async (req) => {
 	// Handle CORS preflight
 	if (req.method === 'OPTIONS') {
@@ -116,15 +137,12 @@ Deno.serve(async (req) => {
 		});
 
 		if (createError) {
-			// Friendly message for duplicate users
-			if (createError.message.includes('already') || createError.message.includes('duplicate')) {
-				return new Response(JSON.stringify({ error: 'Een gebruiker met dit e-mailadres bestaat al.' }), {
-					status: 409,
-					headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-				});
-			}
-			return new Response(JSON.stringify({ error: createError.message }), {
-				status: 400,
+			// Map database errors to user-friendly messages
+			const safeErrorMessage = getSafeErrorMessage(createError);
+			const statusCode = createError.message.includes('already') || createError.message.includes('duplicate') ? 409 : 400;
+
+			return new Response(JSON.stringify({ error: safeErrorMessage }), {
+				status: statusCode,
 				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 			});
 		}
@@ -164,7 +182,6 @@ Deno.serve(async (req) => {
 					JSON.stringify({
 						message: 'Gebruiker aangemaakt, maar rol kon niet worden toegewezen.',
 						user_id: createdUser.id,
-						warning: roleInsertError.message,
 					}),
 					{ status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
 				);
