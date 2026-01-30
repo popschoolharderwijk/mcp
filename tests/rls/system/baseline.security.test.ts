@@ -37,6 +37,7 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'teacher_students_insert_own',
 		'teacher_students_delete_own',
 		// Admin/staff can view all links
+		'teacher_students_delete_admin',
 		'teacher_students_select_admin',
 		'teacher_students_select_staff',
 	],

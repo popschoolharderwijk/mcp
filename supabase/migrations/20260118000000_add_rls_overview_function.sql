@@ -71,6 +71,34 @@ REVOKE ALL ON FUNCTION public.get_rls_policies() FROM anon;
 -- Grant access to authenticated users (function checks internally for site_admin)
 GRANT EXECUTE ON FUNCTION public.get_rls_policies() TO authenticated;
 
+-- -----------------------------------------------------------------------------
+-- get_app_role_enum_values: Get all values from app_role enum
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_app_role_enum_values()
+RETURNS TEXT[]
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+  SELECT ARRAY_AGG(enumlabel ORDER BY enumsortorder)
+  FROM pg_enum
+  WHERE enumtypid = 'public.app_role'::regtype;
+$$;
+
+-- Set explicit ownership
+ALTER FUNCTION public.get_app_role_enum_values() OWNER TO postgres;
+
+-- Remove all public access
+REVOKE ALL ON FUNCTION public.get_app_role_enum_values() FROM PUBLIC;
+
+-- Explicitly revoke from anon
+REVOKE ALL ON FUNCTION public.get_app_role_enum_values() FROM anon;
+
+-- Grant access to authenticated users
+GRANT EXECUTE ON FUNCTION public.get_app_role_enum_values() TO authenticated;
+
 -- =============================================================================
 -- END RLS OVERVIEW FUNCTION
 -- =============================================================================

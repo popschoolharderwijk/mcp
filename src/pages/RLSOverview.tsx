@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
+	type AnalyzedPermission,
 	analyzeRolePermissions,
 	CATEGORY_DISPLAY,
 	getPermissionDisplay,
@@ -74,7 +75,19 @@ const CATEGORY_STYLES: Record<PermissionCategory, { bg: string; border: string; 
  * Roles Comparison Matrix Component
  */
 function RolesComparisonMatrix({ policies }: { policies: RLSPolicy[] }) {
-	const permissions = analyzeRolePermissions(policies);
+	const [permissions, setPermissions] = useState<AnalyzedPermission[]>([]);
+	const [loading, setLoading] = useState(true);
+
+	useEffect(() => {
+		async function loadPermissions() {
+			setLoading(true);
+			const perms = await analyzeRolePermissions(policies);
+			setPermissions(perms);
+			setLoading(false);
+		}
+		loadPermissions();
+	}, [policies]);
+
 	const groupedPermissions = groupPermissionsByCategory(permissions);
 
 	// Define category order
@@ -102,6 +115,17 @@ function RolesComparisonMatrix({ policies }: { policies: RLSPolicy[] }) {
 
 	if (policies.length === 0) {
 		return null;
+	}
+
+	if (loading) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Rollen Vergelijking</CardTitle>
+					<CardDescription>Bezig met analyseren van policies...</CardDescription>
+				</CardHeader>
+			</Card>
+		);
 	}
 
 	return (
