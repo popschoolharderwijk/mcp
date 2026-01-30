@@ -80,5 +80,5 @@ email_sent = 200
 # ---------
 # Edge function settings
 
-[functions.delete-account]
+[functions.delete-user]
 verify_jwt = false

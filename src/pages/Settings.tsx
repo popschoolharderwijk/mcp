@@ -257,7 +257,7 @@ export default function Settings() {
 			}
 
 			// Call the Edge Function using supabase.functions.invoke (handles auth automatically)
-			const { data, error: invokeError } = await supabase.functions.invoke('delete-account', {
+			const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
 				method: 'POST',
 			});
 
