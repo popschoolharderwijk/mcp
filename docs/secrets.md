@@ -61,3 +61,46 @@ Voor custom configuratie kun je extra secrets toevoegen:
 | `ALLOWED_ORIGINS` | Comma-separated origins voor CORS | `"http://localhost:5173,https://app.example.com"` |
 
 > ⚠️ **Belangrijk**: De automatisch beschikbare variabelen hebben **geen** `VITE_` prefix. Gebruik altijd de exacte namen zoals hierboven.
+
+---
+
+## Dev Login Bypass (alleen development)
+
+Voor snelle login in development omgevingen zonder Magic Link/OTP. Toe te voegen aan `.env.localdev` en/of `.env.development`:
+
+### Frontend variabelen (voor de Dev Login knop)
+
+| Variabele | Verplicht | Beschrijving |
+|-----------|-----------|--------------|
+| `VITE_DEV_LOGIN_EMAIL` | Ja | Email van de dev user |
+| `VITE_DEV_LOGIN_PASSWORD` | Nee | Wachtwoord voor directe login (zonder = knop disabled) |
+
+### Script variabelen (voor `bun run createuser`)
+
+| Variabele | Verplicht | Beschrijving |
+|-----------|-----------|--------------|
+| `SUPABASE_URL` | Ja | API URL (bijv. `http://localhost:54321`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Ja | Service role key van Supabase |
+| `DEV_LOGIN_FIRST_NAME` | Nee | Voornaam voor user metadata en profiles |
+| `DEV_LOGIN_LAST_NAME` | Nee | Achternaam voor user metadata en profiles |
+
+**Voorbeeld `.env.localdev`:**
+```env
+# Supabase connectie
+VITE_SUPABASE_URL=http://localhost:54321
+VITE_SUPABASE_ANON_KEY=eyJ...
+
+# Voor createuser script
+SUPABASE_URL=http://localhost:54321
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+
+# Dev login
+VITE_DEV_LOGIN_EMAIL=dev@example.com
+VITE_DEV_LOGIN_PASSWORD=mijn-dev-wachtwoord
+DEV_LOGIN_FIRST_NAME=Dev
+DEV_LOGIN_LAST_NAME=User
+```
+
+Maak de user aan met: `bun run createuser`
+
+> ⚠️ De `VITE_*` variabelen worden **nooit** gebruikt in production. De Dev Login knop wordt volledig uit production builds verwijderd via Vite's dead-code elimination.
