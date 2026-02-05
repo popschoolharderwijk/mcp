@@ -16,12 +16,24 @@ Er zijn 3 omgevingen geconfigureerd:
 ```env
 VITE_SUPABASE_URL=https://xyz-dev.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
+
+# Dev login bypass (optioneel, zie "Dev Login Bypass" sectie)
+VITE_DEV_LOGIN_EMAIL=dev@example.com
+VITE_DEV_LOGIN_PASSWORD=your-dev-password
 ```
 
-**`.env.localdev`** (lokale Supabase - niet in git):
+**`.env.localdev`** (lokale Supabase):
 ```env
-VITE_SUPABASE_URL=http://127.0.0.1:54321
+VITE_SUPABASE_URL=http://localhost:54321
 VITE_SUPABASE_ANON_KEY=eyJ...lokale-anon-key
+
+# Voor scripts (createuser, create-storage-bucket)
+SUPABASE_URL=http://localhost:54321
+SUPABASE_SERVICE_ROLE_KEY=eyJ...lokale-service-key
+
+# Dev login bypass (optioneel, zie "Dev Login Bypass" sectie)
+VITE_DEV_LOGIN_EMAIL=dev@example.com
+VITE_DEV_LOGIN_PASSWORD=your-dev-password
 ```
 
 **`.env.production`** (productie):
@@ -30,7 +42,24 @@ VITE_SUPABASE_URL=https://xyz-prod.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-> 💡 `.env.localdev` staat in `.gitignore` en moet lokaal worden aangemaakt. De anon key vind je in de output van `supabase start`.
+> 💡 Alleen `.env` staat in `.gitignore`. De `.env.localdev`, `.env.development` en `.env.production` bestanden worden wel gecommit (zonder secrets).
+
+### Lokale Supabase credentials ophalen
+
+Na `supabase start` verschijnen de credentials in de terminal. Je kunt ze ook opvragen met:
+
+```bash
+supabase status
+```
+
+| Waarde | URL | Gebruik |
+|--------|-----|---------|
+| `API URL` | `http://localhost:54321` | → `VITE_SUPABASE_URL` én `SUPABASE_URL` |
+| `Studio URL` | `http://localhost:54323` | Supabase Dashboard (database, auth, etc.) |
+| `anon key` | | → `VITE_SUPABASE_ANON_KEY` |
+| `service_role key` | | → `SUPABASE_SERVICE_ROLE_KEY` (voor scripts) |
+
+> ⚠️ **Let op**: De API draait op poort **54321**, het Dashboard op poort **54323**. Dit zijn verschillende poorten!
 
 ---
 
@@ -95,13 +124,52 @@ bun run create-storage-bucket
 ## User Management
 
 ```bash
-# Maak nieuwe gebruiker aan (passwordless, alleen OTP/Magic Link)
-# Configureer in .env:
-#   CREATE_USER_EMAIL=user@example.com
-#   CREATE_USER_FIRST_NAME=Voornaam
-#   CREATE_USER_LAST_NAME=Achternaam
+# Maak nieuwe gebruiker aan (of update bestaande)
+# Configureer in .env.localdev of .env.development:
+#   SUPABASE_URL=http://localhost:54321          (verplicht, API URL)
+#   SUPABASE_SERVICE_ROLE_KEY=eyJ...             (verplicht, service role key)
+#   VITE_DEV_LOGIN_EMAIL=user@example.com        (verplicht)
+#   VITE_DEV_LOGIN_PASSWORD=wachtwoord           (optioneel, zonder = passwordless user)
+#   DEV_LOGIN_FIRST_NAME=Voornaam                (optioneel)
+#   DEV_LOGIN_LAST_NAME=Achternaam               (optioneel)
 bun run createuser
 ```
+
+**Twee modes:**
+- **Met wachtwoord**: User kan inloggen via Dev Login knop én Magic Link/OTP
+- **Zonder wachtwoord**: User kan alleen inloggen via Magic Link/OTP
+
+> 💡 Bij een bestaande user worden wachtwoord en naam geüpdatet (zowel in `auth.users` als `profiles` tabel).
+
+---
+
+## Dev Login Bypass
+
+In development omgevingen (`localdev` en `development`) verschijnt een "Dev Login" knop op de login pagina. Hiermee kun je direct inloggen zonder Magic Link/OTP te hoeven afwachten.
+
+### Configuratie
+
+Voeg toe aan `.env.localdev` en/of `.env.development`:
+
+```env
+VITE_DEV_LOGIN_EMAIL=dev@example.com
+VITE_DEV_LOGIN_PASSWORD=your-dev-password
+```
+
+### Gebruiker aanmaken
+
+```bash
+# Maak user aan met wachtwoord
+bun run createuser
+```
+
+> ⚠️ De user moet bestaan in Supabase Auth én een wachtwoord hebben. Zonder `VITE_DEV_LOGIN_PASSWORD` wordt de knop disabled getoond.
+
+### Beveiliging
+
+- De Dev Login knop wordt **volledig verwijderd** uit production builds (Vite dead-code elimination)
+- Zonder de `VITE_DEV_LOGIN_*` env variabelen verschijnt de knop niet
+- Extra runtime check als fallback
 
 ---
 

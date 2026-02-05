@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { DevLoginButton } from '@/components/DevLoginButton';
 import { Alert } from '@/components/ui/alert';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { useAuth } from '@/hooks/useAuth';
@@ -158,9 +159,10 @@ export default function Login() {
 				)}
 			</div>
 
-			{/* Environment indicator */}
-			<div className="fixed bottom-4 left-4">
+			{/* Environment indicator and dev login */}
+			<div className="fixed bottom-4 left-4 flex items-center gap-3">
 				<EnvironmentBadge />
+				<DevLoginButton />
 			</div>
 		</div>
 	);
