@@ -51,11 +51,13 @@ BEGIN
     (UUID '00000000-0000-0000-0000-000000000011', 'admin-two@test.nl', 'Admin', 'Two', NULL),
     (UUID '00000000-0000-0000-0000-000000000020', 'staff@test.nl', 'Staff', NULL, '0634567890'),
     (UUID '00000000-0000-0000-0000-000000000030', 'teacher-alice@test.nl', 'Teacher', 'Alice', '0645678901'),
-    (UUID '00000000-0000-0000-0000-000000000031', 'teacher-bob@test.nl', 'Teacher', 'Box', NULL),
+    (UUID '00000000-0000-0000-0000-000000000031', 'teacher-bob@test.nl', 'Teacher', 'Bob', NULL),
     (UUID '00000000-0000-0000-0000-000000000100', 'student-a@test.nl', 'Student', 'A', '0656789012'),
     (UUID '00000000-0000-0000-0000-000000000101', 'student-b@test.nl', 'Student', 'B', NULL),
     (UUID '00000000-0000-0000-0000-000000000102', 'student-c@test.nl', 'Student', 'C', '0667890123'),
-    (UUID '00000000-0000-0000-0000-000000000103', 'student-d@test.nl', 'Student', 'D', NULL);
+    (UUID '00000000-0000-0000-0000-000000000103', 'student-d@test.nl', 'Student', 'D', NULL),
+    (UUID '00000000-0000-0000-0000-000000000200', 'user-a@test.nl', 'User', 'A', '0678901234'),
+    (UUID '00000000-0000-0000-0000-000000000201', 'user-b@test.nl', 'User', 'B', NULL);
 
   -- -------------------------------------------------------------------------
   -- INSERT INTO AUTH.USERS
@@ -150,13 +152,12 @@ END $$;
 -- USER ROLES (only for users with explicit roles)
 -- -----------------------------------------------------------------------------
 -- Note: New users do NOT get a role automatically.
+-- Note: Teachers are identified by the teachers table, not by a role.
 INSERT INTO public.user_roles (user_id, role) VALUES
   ('00000000-0000-0000-0000-000000000001', 'site_admin'),
   ('00000000-0000-0000-0000-000000000010', 'admin'),
   ('00000000-0000-0000-0000-000000000011', 'admin'),
-  ('00000000-0000-0000-0000-000000000020', 'staff'),
-  ('00000000-0000-0000-0000-000000000030', 'teacher'),
-  ('00000000-0000-0000-0000-000000000031', 'teacher')
+  ('00000000-0000-0000-0000-000000000020', 'staff')
 ON CONFLICT (user_id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
@@ -174,6 +175,57 @@ SELECT * FROM (VALUES
   ('Bandcoaching', NULL, 'HiUserGroup', '#6366F1', 60, 'biweekly'::public.lesson_frequency, 25.00, true, true)
 ) AS v(name, description, icon, color, duration_minutes, frequency, price_per_lesson, is_group_lesson, is_active)
 WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.name);
+
+-- -----------------------------------------------------------------------------
+-- STUDENTS (for test users without role)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.students (user_id)
+SELECT user_id FROM public.profiles
+WHERE email IN ('student-a@test.nl', 'student-b@test.nl', 'student-c@test.nl', 'student-d@test.nl')
+ON CONFLICT (user_id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- TEACHERS (for test users - teachers are identified by this table, not by role)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.teachers (user_id)
+SELECT user_id FROM public.profiles
+WHERE email IN ('teacher-alice@test.nl', 'teacher-bob@test.nl')
+ON CONFLICT (user_id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- LESSON AGREEMENTS (for RLS testing)
+-- -----------------------------------------------------------------------------
+-- Create lesson agreements between students and teachers for testing
+-- Student A has agreements with Teacher Alice and Teacher Bob
+-- Student B has agreement with Teacher Alice
+INSERT INTO public.lesson_agreements (student_id, teacher_id, lesson_type_id, day_of_week, start_time, start_date, is_active)
+SELECT
+  s.id AS student_id,
+  t.id AS teacher_id,
+  lt.id AS lesson_type_id,
+  agreement_data.day_of_week,
+  agreement_data.start_time::TIME,
+  agreement_data.start_date,
+  agreement_data.is_active
+FROM (VALUES
+  ('student-a@test.nl', 'teacher-alice@test.nl', 'Gitaar', 1, '14:00', CURRENT_DATE, true),
+  ('student-a@test.nl', 'teacher-bob@test.nl', 'Gitaar', 2, '15:00', CURRENT_DATE, true),
+  ('student-b@test.nl', 'teacher-alice@test.nl', 'Gitaar', 3, '16:00', CURRENT_DATE, true)
+) AS agreement_data(student_email, teacher_email, lesson_type_name, day_of_week, start_time, start_date, is_active)
+INNER JOIN public.profiles student_profile ON student_profile.email = agreement_data.student_email
+INNER JOIN public.students s ON s.user_id = student_profile.user_id
+INNER JOIN public.profiles teacher_profile ON teacher_profile.email = agreement_data.teacher_email
+INNER JOIN public.teachers t ON t.user_id = teacher_profile.user_id
+INNER JOIN public.lesson_types lt ON lt.name = agreement_data.lesson_type_name
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.lesson_agreements la
+  WHERE la.student_id = s.id
+    AND la.teacher_id = t.id
+    AND la.lesson_type_id = lt.id
+    AND la.day_of_week = agreement_data.day_of_week
+    AND la.start_time = agreement_data.start_time::TIME
+    AND la.start_date = agreement_data.start_date
+);
 
 -- =============================================================================
 -- END SEED

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { TestUsers } from '../test-users';
+import type { LessonTypeInsert } from '../types';
 
 /**
  * Lesson types INSERT/UPDATE/DELETE permissions:
@@ -10,11 +11,12 @@ import { TestUsers } from '../test-users';
  * - Can update lesson types
  * - Can delete lesson types
  *
- * All other roles (staff, teacher, user without role) cannot insert, update, or delete lesson types.
+ * All other roles (staff, user without role) cannot insert, update, or delete lesson types.
+ * Note: Teachers are identified by the teachers table, not by a role.
  */
 
 describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
-	const newLessonType = {
+	const newLessonType: LessonTypeInsert = {
 		name: 'Test Lesson Type',
 		description: 'Test description',
 		icon: 'test-icon',
@@ -27,7 +29,7 @@ describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
 	};
 
 	it('user without role cannot insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
 		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
 
@@ -56,7 +58,7 @@ describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
 });
 
 describe('RLS: lesson_types INSERT - admin permissions', () => {
-	const newLessonType = {
+	const newLessonType: LessonTypeInsert = {
 		name: 'Admin Test Lesson Type',
 		description: 'Test description',
 		icon: 'test-icon',
@@ -101,7 +103,7 @@ describe('RLS: lesson_types INSERT - admin permissions', () => {
 
 describe('RLS: lesson_types UPDATE - blocked for non-admin roles', () => {
 	it('user without role cannot update lesson type', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
 		// Get first lesson type to try updating
 		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
@@ -214,7 +216,7 @@ describe('RLS: lesson_types UPDATE - admin permissions', () => {
 
 describe('RLS: lesson_types DELETE - blocked for non-admin roles', () => {
 	it('user without role cannot delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
 		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
 		if (!lessonTypes || lessonTypes.length === 0) {
@@ -262,7 +264,7 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
 		// Create a lesson type to delete
-		const newLessonType = {
+		const newLessonType: LessonTypeInsert = {
 			name: 'Temporary Lesson Type for Delete Test',
 			description: 'Will be deleted',
 			icon: 'test-icon',
@@ -277,6 +279,9 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 		const { data: inserted, error: insertError } = await db.from('lesson_types').insert(newLessonType).select();
 		expect(insertError).toBeNull();
 		expect(inserted).toHaveLength(1);
+		if (!inserted || inserted.length === 0) {
+			throw new Error('Failed to insert lesson type');
+		}
 
 		const lessonTypeId = inserted[0].id;
 
@@ -292,7 +297,7 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Create a lesson type to delete
-		const newLessonType = {
+		const newLessonType: LessonTypeInsert = {
 			name: 'Temporary Lesson Type for Site Admin Delete Test',
 			description: 'Will be deleted',
 			icon: 'test-icon',
@@ -307,6 +312,9 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 		const { data: inserted, error: insertError } = await db.from('lesson_types').insert(newLessonType).select();
 		expect(insertError).toBeNull();
 		expect(inserted).toHaveLength(1);
+		if (!inserted || inserted.length === 0) {
+			throw new Error('Failed to insert lesson type');
+		}
 
 		const lessonTypeId = inserted[0].id;
 

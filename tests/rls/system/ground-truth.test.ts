@@ -4,14 +4,15 @@ import { fixtures } from '../fixtures';
 const { allProfiles, allUserRoles } = fixtures;
 
 describe('RLS: verify ground truth', () => {
-	it('should have exactly 10 profiles', () => {
-		expect(allProfiles).toHaveLength(10);
+	it('should have exactly 12 profiles', () => {
+		expect(allProfiles).toHaveLength(12);
 	});
 
-	it('should have exactly 6 user roles (only explicit roles)', () => {
-		// Only site_admin, admin (2), staff, teacher (2) have explicit roles
+	it('should have exactly 4 user roles (only explicit roles)', () => {
+		// Only site_admin, admin (2), staff have explicit roles
+		// Teachers are identified by the teachers table, not by a role
 		// Users A-D have no role entry
-		expect(allUserRoles).toHaveLength(6);
+		expect(allUserRoles).toHaveLength(4);
 	});
 
 	it('should have 1 site_admin', () => {
@@ -29,9 +30,9 @@ describe('RLS: verify ground truth', () => {
 		expect(staff).toHaveLength(1);
 	});
 
-	it('should have 2 teachers', () => {
+	it('should have 0 teachers in user_roles (teachers are in teachers table)', () => {
 		const teachers = allUserRoles.filter((ur) => ur.role === 'teacher');
-		expect(teachers).toHaveLength(2);
+		expect(teachers).toHaveLength(0);
 	});
 
 	it('should have profiles for all user roles', () => {
@@ -43,14 +44,24 @@ describe('RLS: verify ground truth', () => {
 		}
 	});
 
-	it('should have 4 users without explicit roles', () => {
-		// Users A-D exist in profiles but have no entry in user_roles
+	it('should have 8 users without explicit roles', () => {
+		// Teachers (alice, bob), students (A-D), and regular users (A-B) exist in profiles but have no entry in user_roles
+		// Teachers are identified by the teachers table, not by a role
 		const userIdsWithRoles = new Set(allUserRoles.map((ur) => ur.user_id));
 		const profilesWithoutRoles = allProfiles.filter((p) => !userIdsWithRoles.has(p.user_id));
-		expect(profilesWithoutRoles).toHaveLength(4);
+		expect(profilesWithoutRoles).toHaveLength(8);
 
 		const emails = profilesWithoutRoles.map((p) => p.email).sort();
-		expect(emails).toEqual(['student-a@test.nl', 'student-b@test.nl', 'student-c@test.nl', 'student-d@test.nl']);
+		expect(emails).toEqual([
+			'student-a@test.nl',
+			'student-b@test.nl',
+			'student-c@test.nl',
+			'student-d@test.nl',
+			'teacher-alice@test.nl',
+			'teacher-bob@test.nl',
+			'user-a@test.nl',
+			'user-b@test.nl',
+		]);
 	});
 
 	it('should have correct email for site_admin', () => {

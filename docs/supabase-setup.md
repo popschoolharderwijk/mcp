@@ -55,9 +55,14 @@ supabase db push
 ```
 
 Dit past toe:
-- `20260116145900_baseline.sql` - Basis tabellen, RLS policies en role management
+- `20260116145900_baseline.sql` - Basis tabellen (profiles, user_roles), RLS policies en role management
 - `20260116160000_add_security_introspection.sql` - Security helper functies voor testing
 - `20260117000000_create_avatars_storage.sql` - Storage bucket RLS policies
+- `20260206000000_lesson_types.sql` - Lestypes tabel met RLS policies
+- `20260207000000_students.sql` - Students tabel, helper functions (`is_student`, `get_student_id`)
+- `20260207000001_teachers.sql` - Teachers tabel, helper functions (`is_teacher`, `get_teacher_id`)
+- `20260207000002_lesson_agreements.sql` - Lesovereenkomsten tabel met RLS policies
+- `20260207000003_teacher_viewed_by_student.sql` - View voor beperkte docent-info voor leerlingen
 
 ---
 

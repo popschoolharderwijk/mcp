@@ -1,14 +1,7 @@
 import { describe, expect, it } from 'bun:test';
-import { createClientAs, createClientBypassRLS } from '../../db';
+import { createClientAs } from '../../db';
+import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-
-// Get ground truth: all lesson types from seed data
-const dbNoRLS = createClientBypassRLS();
-const { data: allLessonTypes, error: lessonTypesError } = await dbNoRLS.from('lesson_types').select('*');
-
-if (lessonTypesError || !allLessonTypes) {
-	throw new Error(`Failed to fetch lesson types: ${lessonTypesError?.message}`);
-}
 
 /**
  * Lesson types SELECT permissions:
@@ -23,7 +16,7 @@ describe('RLS: lesson_types SELECT', () => {
 		const { data, error } = await db.from('lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(allLessonTypes.length);
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
 	});
 
 	it('admin sees all lesson types', async () => {
@@ -32,7 +25,7 @@ describe('RLS: lesson_types SELECT', () => {
 		const { data, error } = await db.from('lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(allLessonTypes.length);
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
 	});
 
 	it('staff sees all lesson types', async () => {
@@ -41,16 +34,25 @@ describe('RLS: lesson_types SELECT', () => {
 		const { data, error } = await db.from('lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(allLessonTypes.length);
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
 	});
 
-	it('teacher sees all lesson types', async () => {
+	it('teacher without role sees all lesson types', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		const { data, error } = await db.from('lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(allLessonTypes.length);
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
+	});
+
+	it('student without role sees all lesson types', async () => {
+		const db = await createClientAs(TestUsers.STUDENT_A);
+
+		const { data, error } = await db.from('lesson_types').select('*');
+
+		expect(error).toBeNull();
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
 	});
 
 	it('user without role sees all lesson types', async () => {
@@ -59,6 +61,6 @@ describe('RLS: lesson_types SELECT', () => {
 		const { data, error } = await db.from('lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(allLessonTypes.length);
+		expect(data).toHaveLength(fixtures.allLessonTypes.length);
 	});
 });

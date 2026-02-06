@@ -5,34 +5,20 @@ import { TestUsers } from '../test-users';
 
 const { allUserRoles, getProfile, getUserId, requireUserId } = fixtures;
 
-// Get target user_id for role update tests (teacher-bob)
-const targetUserId = getUserId(TestUsers.TEACHER_BOB);
+// Get target user_id for role update tests (use staff user)
+const targetUserId = getUserId(TestUsers.STAFF);
 
 if (!targetUserId) {
-	throw new Error('Could not find teacher-bob for role update tests');
+	throw new Error('Could not find staff user for role update tests');
 }
 
 describe('RLS: user_roles UPDATE - other users', () => {
 	it('user without role cannot update user roles', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
 
 		const { data, error } = await db
 			.from('user_roles')
-			.update({ role: 'teacher' })
-			.eq('user_id', targetUserId)
-			.select();
-
-		// RLS should block - 0 rows affected
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
-	});
-
-	it('teacher cannot update user roles', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db
-			.from('user_roles')
-			.update({ role: 'admin' })
+			.update({ role: 'staff' })
 			.eq('user_id', targetUserId)
 			.select();
 
@@ -46,7 +32,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 
 		const { data, error } = await db
 			.from('user_roles')
-			.update({ role: 'teacher' })
+			.update({ role: 'admin' })
 			.eq('user_id', targetUserId)
 			.select();
 
@@ -58,21 +44,21 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	it('admin can update other user roles (except site_admin)', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Change teacher-bob to staff
+		// Change staff to admin
 		const { data, error } = await db
 			.from('user_roles')
-			.update({ role: 'staff' })
+			.update({ role: 'admin' })
 			.eq('user_id', targetUserId)
 			.select();
 
 		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.role).toBe('staff');
+		expect(data?.[0]?.role).toBe('admin');
 
-		// Restore back to teacher
+		// Restore back to staff
 		const { error: restoreError } = await db
 			.from('user_roles')
-			.update({ role: 'teacher' })
+			.update({ role: 'staff' })
 			.eq('user_id', targetUserId);
 
 		expect(restoreError).toBeNull();
@@ -116,21 +102,21 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	it('site_admin can update other user roles', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Change teacher-bob to staff
+		// Change staff to admin
 		const { data, error } = await db
 			.from('user_roles')
-			.update({ role: 'staff' })
+			.update({ role: 'admin' })
 			.eq('user_id', targetUserId)
 			.select();
 
 		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.role).toBe('staff');
+		expect(data?.[0]?.role).toBe('admin');
 
-		// Restore back to teacher
+		// Restore back to staff
 		const { error: restoreError } = await db
 			.from('user_roles')
-			.update({ role: 'teacher' })
+			.update({ role: 'staff' })
 			.eq('user_id', targetUserId);
 
 		expect(restoreError).toBeNull();
@@ -139,29 +125,11 @@ describe('RLS: user_roles UPDATE - other users', () => {
 
 describe('RLS: user_roles UPDATE - own role', () => {
 	it('user without role has no role to update', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
-		const userId = requireUserId(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
+		const userId = requireUserId(TestUsers.STUDENT_A);
 
 		// Users without a role have no entry in user_roles
-		const { data, error } = await db.from('user_roles').update({ role: 'teacher' }).eq('user_id', userId).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
-	});
-
-	it('teacher cannot update own role', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const teacherProfile = getProfile(TestUsers.TEACHER_ALICE);
-		if (!teacherProfile) {
-			throw new Error('Could not find teacher-alice profile');
-		}
-
-		const { data, error } = await db
-			.from('user_roles')
-			.update({ role: 'admin' })
-			.eq('user_id', teacherProfile.user_id)
-			.select();
+		const { data, error } = await db.from('user_roles').update({ role: 'staff' }).eq('user_id', userId).select();
 
 		expect(error).toBeNull();
 		expect(data).toHaveLength(0);

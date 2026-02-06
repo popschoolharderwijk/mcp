@@ -16,8 +16,7 @@ DROP TYPE IF EXISTS public.app_role CASCADE;
 CREATE TYPE public.app_role AS ENUM (
   'site_admin',
   'admin',
-  'staff',
-  'teacher'
+  'staff'
 );
 
 -- =============================================================================
@@ -112,24 +111,12 @@ AS $$
   SELECT public._has_role(_user_id, 'staff');
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_teacher(_user_id UUID)
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-SET row_security = off
-AS $$
-  SELECT public._has_role(_user_id, 'teacher');
-$$;
-
 -- Revoke public access, grant only to authenticated users
 REVOKE ALL ON FUNCTION
   public._has_role(UUID, app_role),
   public.is_site_admin(UUID),
   public.is_admin(UUID),
-  public.is_staff(UUID),
-  public.is_teacher(UUID)
+  public.is_staff(UUID)
 FROM PUBLIC;
 
 -- Explicitly revoke from anon (Supabase's anon role doesn't inherit from PUBLIC revokes)
@@ -137,8 +124,7 @@ REVOKE ALL ON FUNCTION
   public._has_role(UUID, app_role),
   public.is_site_admin(UUID),
   public.is_admin(UUID),
-  public.is_staff(UUID),
-  public.is_teacher(UUID)
+  public.is_staff(UUID)
 FROM anon;
 
 -- _has_role is an internal helper - no direct grant needed
@@ -146,12 +132,10 @@ FROM anon;
 GRANT EXECUTE ON FUNCTION public.is_site_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_staff(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_teacher(UUID) TO authenticated;
 
 ALTER FUNCTION public.is_site_admin(UUID) OWNER TO postgres;
 ALTER FUNCTION public.is_admin(UUID) OWNER TO postgres;
 ALTER FUNCTION public.is_staff(UUID) OWNER TO postgres;
-ALTER FUNCTION public.is_teacher(UUID) OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 4b: AUTHORIZATION HELPER FUNCTIONS
@@ -385,7 +369,7 @@ EXECUTE FUNCTION public.prevent_profile_email_change();
 -- SECTION 10: NEW USER BOOTSTRAP
 -- =============================================================================
 -- Automatically creates a profile when a new user signs up via Supabase Auth.
--- Note: No role is assigned. Explicit roles (admin, staff, teacher) are
+-- Note: No role is assigned. Explicit roles (admin, staff) are
 -- assigned manually by site_admin.
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()

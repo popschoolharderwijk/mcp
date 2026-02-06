@@ -7,8 +7,8 @@ const { requireProfile, requireUserId } = fixtures;
 
 describe('RLS: profiles UPDATE - own profile', () => {
 	it('user without role can update own profile', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
-		const profile = requireProfile(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.STUDENT_A);
+		const profile = requireProfile(TestUsers.STUDENT_A);
 
 		const { data, error } = await db
 			.from('profiles')
@@ -104,8 +104,8 @@ describe('RLS: profiles UPDATE - own profile', () => {
 
 describe('RLS: profiles UPDATE - other profiles', () => {
 	it('user without role cannot update other profiles', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
-		const targetUserId = requireUserId(TestUsers.USER_B);
+		const db = await createClientAs(TestUsers.STUDENT_A);
+		const targetUserId = requireUserId(TestUsers.STUDENT_B);
 
 		const { data, error } = await db
 			.from('profiles')
@@ -119,7 +119,7 @@ describe('RLS: profiles UPDATE - other profiles', () => {
 
 	it('teacher cannot update other profiles', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const targetUserId = requireUserId(TestUsers.USER_A);
+		const targetUserId = requireUserId(TestUsers.STUDENT_A);
 
 		const { data, error } = await db
 			.from('profiles')

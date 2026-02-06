@@ -28,6 +28,73 @@ export type Database = {
 	};
 	public: {
 		Tables: {
+			lesson_agreements: {
+				Row: {
+					created_at: string;
+					day_of_week: number;
+					end_date: string | null;
+					id: string;
+					is_active: boolean;
+					lesson_type_id: string;
+					notes: string | null;
+					start_date: string;
+					start_time: string;
+					student_id: string;
+					teacher_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					day_of_week: number;
+					end_date?: string | null;
+					id?: string;
+					is_active?: boolean;
+					lesson_type_id: string;
+					notes?: string | null;
+					start_date: string;
+					start_time: string;
+					student_id: string;
+					teacher_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					day_of_week?: number;
+					end_date?: string | null;
+					id?: string;
+					is_active?: boolean;
+					lesson_type_id?: string;
+					notes?: string | null;
+					start_date?: string;
+					start_time?: string;
+					student_id?: string;
+					teacher_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'lesson_agreements_lesson_type_id_fkey';
+						columns: ['lesson_type_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'lesson_agreements_student_id_fkey';
+						columns: ['student_id'];
+						isOneToOne: false;
+						referencedRelation: 'students';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'lesson_agreements_teacher_id_fkey';
+						columns: ['teacher_id'];
+						isOneToOne: false;
+						referencedRelation: 'teachers';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			lesson_types: {
 				Row: {
 					color: string;
@@ -112,6 +179,48 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			students: {
+				Row: {
+					created_at: string;
+					id: string;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
+			teachers: {
+				Row: {
+					created_at: string;
+					id: string;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 			user_roles: {
 				Row: {
 					created_at: string;
@@ -132,7 +241,16 @@ export type Database = {
 			};
 		};
 		Views: {
-			[_ in never]: never;
+			teacher_viewed_by_student: {
+				Row: {
+					avatar_url: string | null;
+					first_name: string | null;
+					last_name: string | null;
+					phone_number: string | null;
+					teacher_id: string | null;
+				};
+				Relationships: [];
+			};
 		};
 		Functions: {
 			_has_role: {
@@ -148,10 +266,23 @@ export type Database = {
 			};
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_student_id: { Args: { _user_id: string }; Returns: string };
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
+			get_teacher_id: { Args: { _user_id: string }; Returns: string };
+			get_teachers_viewed_by_student: {
+				Args: never;
+				Returns: {
+					avatar_url: string;
+					first_name: string;
+					last_name: string;
+					phone_number: string;
+					teacher_id: string;
+				}[];
+			};
 			is_admin: { Args: { _user_id: string }; Returns: boolean };
 			is_site_admin: { Args: { _user_id: string }; Returns: boolean };
 			is_staff: { Args: { _user_id: string }; Returns: boolean };
+			is_student: { Args: { _user_id: string }; Returns: boolean };
 			is_teacher: { Args: { _user_id: string }; Returns: boolean };
 			policy_exists: {
 				Args: { p_policy_name: string; p_table_name: string };
@@ -159,7 +290,7 @@ export type Database = {
 			};
 		};
 		Enums: {
-			app_role: 'site_admin' | 'admin' | 'staff' | 'teacher';
+			app_role: 'site_admin' | 'admin' | 'staff';
 			lesson_frequency: 'weekly' | 'biweekly' | 'monthly';
 		};
 		CompositeTypes: {
@@ -283,7 +414,7 @@ export const Constants = {
 	},
 	public: {
 		Enums: {
-			app_role: ['site_admin', 'admin', 'staff', 'teacher'],
+			app_role: ['site_admin', 'admin', 'staff'],
 			lesson_frequency: ['weekly', 'biweekly', 'monthly'],
 		},
 	},
