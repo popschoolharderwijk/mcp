@@ -88,8 +88,8 @@ export function LessonTypeFormDialog({ open, onOpenChange, onSuccess, lessonType
 				setForm({
 					name: lessonType.name,
 					description: lessonType.description ?? '',
-				icon: lessonType.icon,
-				color: lessonType.color,
+					icon: lessonType.icon,
+					color: lessonType.color,
 					duration_minutes: lessonType.duration_minutes.toString(),
 					frequency: lessonType.frequency,
 					price_per_lesson: lessonType.price_per_lesson.toString(),
