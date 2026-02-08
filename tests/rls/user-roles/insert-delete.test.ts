@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 import type { UserRoleInsert } from '../types';
@@ -48,13 +49,21 @@ describe('RLS: user_roles INSERT - blocked for non-admin roles', () => {
 
 describe('RLS: user_roles INSERT - admin permissions', () => {
 	const targetUserId = requireUserId(TestUsers.STUDENT_B);
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
 
 	it('admin can insert user_role (non-site_admin)', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// First ensure no role exists
-		await db.from('user_roles').delete().eq('user_id', targetUserId);
-
+		// STUDENT_B should not have a role in seed data
 		const newUserRole: UserRoleInsert = { user_id: targetUserId, role: 'staff' };
 		const { data, error } = await db.from('user_roles').insert(newUserRole).select();
 
@@ -80,9 +89,7 @@ describe('RLS: user_roles INSERT - admin permissions', () => {
 	it('site_admin can insert any role including site_admin', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// First ensure no role exists
-		await db.from('user_roles').delete().eq('user_id', targetUserId);
-
+		// STUDENT_B should not have a role in seed data
 		const newUserRole: UserRoleInsert = { user_id: targetUserId, role: 'admin' };
 		const { data, error } = await db.from('user_roles').insert(newUserRole).select();
 
@@ -120,12 +127,22 @@ describe('RLS: user_roles DELETE - blocked for non-admin roles', () => {
 
 describe('RLS: user_roles DELETE - admin permissions', () => {
 	const targetUserId = requireUserId(TestUsers.STUDENT_C);
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
 
 	it('admin can delete non-site_admin roles', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 		const siteAdminDb = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Setup: create a role to delete
+		// Setup: create a role to delete (STUDENT_C should not have a role in seed)
 		const newUserRole: UserRoleInsert = { user_id: targetUserId, role: 'staff' };
 		await siteAdminDb.from('user_roles').insert(newUserRole);
 
@@ -154,7 +171,7 @@ describe('RLS: user_roles DELETE - admin permissions', () => {
 	it('site_admin can delete any role', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Setup: create a role to delete
+		// Setup: create a role to delete (STUDENT_C should not have a role in seed)
 		const newUserRole: UserRoleInsert = { user_id: targetUserId, role: 'staff' };
 		await db.from('user_roles').insert(newUserRole);
 

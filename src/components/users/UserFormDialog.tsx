@@ -248,42 +248,49 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, isSiteAdmin, use
 					<DialogDescription>{dialogDescription}</DialogDescription>
 				</DialogHeader>
 				<div className="space-y-4 py-4">
-					<div className="space-y-2">
-						<Label htmlFor="user-email">Email *</Label>
-						<Input
-							id="user-email"
-							type="email"
-							value={form.email}
-							onChange={(e) => setForm({ ...form, email: e.target.value })}
-							placeholder="gebruiker@voorbeeld.nl"
-							disabled={isEditMode}
-						/>
-						{isEditMode && (
-							<p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>
-						)}
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label htmlFor="user-first-name">Voornaam</Label>
+							<Input
+								id="user-first-name"
+								value={form.first_name}
+								onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+								autoFocus
+							/>
+						</div>
+						<div className="space-y-2">
+							<Label htmlFor="user-last-name">Achternaam</Label>
+							<Input
+								id="user-last-name"
+								value={form.last_name}
+								onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+							/>
+						</div>
 					</div>
-					<div className="space-y-2">
-						<Label htmlFor="user-first-name">Voornaam</Label>
-						<Input
-							id="user-first-name"
-							value={form.first_name}
-							onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-						/>
+					<div className="grid grid-cols-2 gap-4">
+						<div className="space-y-2">
+							<Label htmlFor="user-email">Email *</Label>
+							<Input
+								id="user-email"
+								type="email"
+								value={form.email}
+								onChange={(e) => setForm({ ...form, email: e.target.value })}
+								placeholder="gebruiker@voorbeeld.nl"
+								disabled={isEditMode}
+							/>
+							{isEditMode && (
+								<p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>
+							)}
+						</div>
+						<div className="space-y-2">
+							<PhoneInput
+								id="user-phone-number"
+								label="Telefoonnummer"
+								value={form.phone_number}
+								onChange={(value) => setForm({ ...form, phone_number: value })}
+							/>
+						</div>
 					</div>
-					<div className="space-y-2">
-						<Label htmlFor="user-last-name">Achternaam</Label>
-						<Input
-							id="user-last-name"
-							value={form.last_name}
-							onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-						/>
-					</div>
-					<PhoneInput
-						id="user-phone-number"
-						label="Telefoonnummer"
-						value={form.phone_number}
-						onChange={(value) => setForm({ ...form, phone_number: value })}
-					/>
 					<div className="space-y-2">
 						<Label htmlFor="user-role">Rol</Label>
 						<Select

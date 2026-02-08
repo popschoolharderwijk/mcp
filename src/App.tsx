@@ -8,8 +8,13 @@ import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
+import MyAvailability from './pages/MyAvailability';
+import MyProfile from './pages/MyProfile';
+import MyStatistics from './pages/MyStatistics';
 import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
+import TeacherAvailability from './pages/TeacherAvailability';
+import Teachers from './pages/Teachers';
 import Users from './pages/Users';
 
 const App = () => (
@@ -32,6 +37,11 @@ const App = () => (
 						<Route path="/users" element={<Users />} />
 						<Route path="/lesson-types" element={<LessonTypes />} />
 						<Route path="/settings" element={<Settings />} />
+						<Route path="/teachers" element={<Teachers />} />
+						<Route path="/teachers/availability" element={<TeacherAvailability />} />
+						<Route path="/teachers/my-profile" element={<MyProfile />} />
+						<Route path="/teachers/my-availability" element={<MyAvailability />} />
+						<Route path="/teachers/my-statistics" element={<MyStatistics />} />
 					</Route>
 
 					<Route path="*" element={<NotFound />} />

@@ -4,7 +4,14 @@ import { createClientBypassRLS } from '../../db';
 const supabase = createClientBypassRLS();
 
 // Ground truth: expected security configuration from baseline migration
-const EXPECTED_RLS_TABLES = ['profiles', 'user_roles', 'lesson_types'];
+const EXPECTED_RLS_TABLES = [
+	'profiles',
+	'user_roles',
+	'lesson_types',
+	'teachers',
+	'teacher_availability',
+	'teacher_lesson_types',
+];
 
 const EXPECTED_POLICIES: Record<string, string[]> = {
 	profiles: [
@@ -40,6 +47,40 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		// DELETE policy - admin/site_admin can delete lesson types
 		'lesson_types_delete_admin',
 	],
+	teachers: [
+		// SELECT policies
+		'teachers_select_own',
+		'teachers_select_staff',
+		// INSERT policy
+		'teachers_insert_admin',
+		// UPDATE policy
+		'teachers_update_admin',
+		// DELETE policy
+		'teachers_delete_admin',
+	],
+	teacher_availability: [
+		// SELECT policies
+		'teacher_availability_select_own',
+		'teacher_availability_select_staff',
+		// INSERT policies
+		'teacher_availability_insert_own',
+		'teacher_availability_insert_admin',
+		// UPDATE policies
+		'teacher_availability_update_own',
+		'teacher_availability_update_admin',
+		// DELETE policies
+		'teacher_availability_delete_own',
+		'teacher_availability_delete_admin',
+	],
+	teacher_lesson_types: [
+		// SELECT policies
+		'teacher_lesson_types_select_own',
+		'teacher_lesson_types_select_staff',
+		// INSERT policy
+		'teacher_lesson_types_insert_admin',
+		// DELETE policy
+		'teacher_lesson_types_delete_admin',
+	],
 };
 
 const EXPECTED_FUNCTIONS = [
@@ -50,6 +91,7 @@ const EXPECTED_FUNCTIONS = [
 	'is_staff',
 	'is_privileged',
 	'is_teacher',
+	'get_teacher_id',
 	// User lifecycle
 	'handle_new_user',
 	'handle_auth_user_email_update',
@@ -65,6 +107,7 @@ const EXPECTED_FUNCTIONS = [
 	'policy_exists',
 	'get_table_policies',
 	'function_exists',
+	'get_public_table_names',
 ];
 
 describe('RLS Baseline Security Checks', () => {

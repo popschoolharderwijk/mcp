@@ -2,7 +2,7 @@
 -- LESSON AGREEMENTS TABLE
 -- =============================================================================
 -- This migration creates:
--- 1. lesson_agreements table for managing lesson agreements (lesovereenkomsten)
+-- 1. lesson_agreements table for managing lesson agreements
 -- 2. RLS policies for the table
 -- 3. Triggers for data integrity
 --
@@ -80,7 +80,7 @@ CREATE INDEX IF NOT EXISTS idx_lesson_agreements_lesson_type_id ON public.lesson
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_is_active ON public.lesson_agreements(is_active);
 
 -- Table and column documentation
-COMMENT ON TABLE public.lesson_agreements IS 'Lesson agreements (lesovereenkomsten) define scheduled recurring lessons between students and teachers. This table acts as the planning/contract layer for lessons.';
+COMMENT ON TABLE public.lesson_agreements IS 'Lesson agreements define scheduled recurring lessons between students and teachers. This table acts as the planning/contract layer for lessons.';
 
 COMMENT ON COLUMN public.lesson_agreements.id IS 'Primary key, UUID generated automatically';
 COMMENT ON COLUMN public.lesson_agreements.student_user_id IS 'Reference to auth.users(id). Note: No FK to students table - students are created automatically via triggers when the first lesson_agreement is inserted. This is a deliberate design choice where students are a consequence of agreements, not a prerequisite.';

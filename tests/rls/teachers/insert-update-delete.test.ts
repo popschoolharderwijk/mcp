@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 import type { TeacherInsert } from '../types';
@@ -58,6 +59,17 @@ describe('RLS: teachers INSERT - blocked for non-admin roles', () => {
 });
 
 describe('RLS: teachers INSERT - admin permissions', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
+
 	it('admin can insert teacher', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
@@ -70,7 +82,7 @@ describe('RLS: teachers INSERT - admin permissions', () => {
 
 		// Cleanup
 		if (data?.[0]?.id) {
-			await db.from('teachers').delete().eq('id', data[0].id);
+			await dbNoRLS.from('teachers').delete().eq('id', data[0].id);
 		}
 	});
 
@@ -86,7 +98,7 @@ describe('RLS: teachers INSERT - admin permissions', () => {
 
 		// Cleanup
 		if (data?.[0]?.id) {
-			await db.from('teachers').delete().eq('id', data[0].id);
+			await dbNoRLS.from('teachers').delete().eq('id', data[0].id);
 		}
 	});
 });
@@ -139,6 +151,17 @@ describe('RLS: teachers UPDATE - blocked for non-admin roles', () => {
 });
 
 describe('RLS: teachers UPDATE - admin permissions', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
+
 	it('admin can update teacher', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
@@ -218,16 +241,28 @@ describe('RLS: teachers DELETE - blocked for non-admin roles', () => {
 });
 
 describe('RLS: teachers DELETE - admin permissions', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
+
 	it('admin can delete teacher', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Insert a teacher to delete
-		await dbNoRLS.from('teachers').delete().eq('user_id', studentDUserId);
-
+		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
 		const newTeacher: TeacherInsert = { user_id: studentDUserId };
 		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
 		expect(insertError).toBeNull();
 		expect(inserted).toHaveLength(1);
+		if (!inserted || inserted.length === 0) {
+			throw new Error('Failed to insert teacher');
+		}
 
 		const teacherId = inserted[0].id;
 
@@ -242,13 +277,14 @@ describe('RLS: teachers DELETE - admin permissions', () => {
 	it('site_admin can delete teacher', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Insert a teacher to delete
-		await dbNoRLS.from('teachers').delete().eq('user_id', studentDUserId);
-
+		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
 		const newTeacher: TeacherInsert = { user_id: studentDUserId };
 		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
 		expect(insertError).toBeNull();
 		expect(inserted).toHaveLength(1);
+		if (!inserted || inserted.length === 0) {
+			throw new Error('Failed to insert teacher');
+		}
 
 		const teacherId = inserted[0].id;
 

@@ -198,22 +198,99 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			teachers: {
+			teacher_availability: {
 				Row: {
 					created_at: string;
+					day_of_week: number;
+					end_time: string;
 					id: string;
+					start_time: string;
+					teacher_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					day_of_week: number;
+					end_time: string;
+					id?: string;
+					start_time: string;
+					teacher_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					day_of_week?: number;
+					end_time?: string;
+					id?: string;
+					start_time?: string;
+					teacher_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'teacher_availability_teacher_id_fkey';
+						columns: ['teacher_id'];
+						isOneToOne: false;
+						referencedRelation: 'teachers';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			teacher_lesson_types: {
+				Row: {
+					created_at: string;
+					lesson_type_id: string;
+					teacher_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					lesson_type_id: string;
+					teacher_id: string;
+				};
+				Update: {
+					created_at?: string;
+					lesson_type_id?: string;
+					teacher_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'teacher_lesson_types_lesson_type_id_fkey';
+						columns: ['lesson_type_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'teacher_lesson_types_teacher_id_fkey';
+						columns: ['teacher_id'];
+						isOneToOne: false;
+						referencedRelation: 'teachers';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			teachers: {
+				Row: {
+					bio: string | null;
+					created_at: string;
+					id: string;
+					is_active: boolean;
 					updated_at: string;
 					user_id: string;
 				};
 				Insert: {
+					bio?: string | null;
 					created_at?: string;
 					id?: string;
+					is_active?: boolean;
 					updated_at?: string;
 					user_id: string;
 				};
 				Update: {
+					bio?: string | null;
 					created_at?: string;
 					id?: string;
+					is_active?: boolean;
 					updated_at?: string;
 					user_id?: string;
 				};
@@ -269,6 +346,12 @@ export type Database = {
 			};
 			ensure_student_exists: { Args: { _user_id: string }; Returns: undefined };
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_public_table_names: {
+				Args: never;
+				Returns: {
+					table_name: string;
+				}[];
+			};
 			get_student_id: { Args: { _user_id: string }; Returns: string };
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
 			get_teacher_id: { Args: { _user_id: string }; Returns: string };
