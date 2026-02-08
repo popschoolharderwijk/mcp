@@ -105,9 +105,7 @@ USING (user_id = (select auth.uid()));
 CREATE POLICY students_select_staff
 ON public.students FOR SELECT TO authenticated
 USING (
-  public.is_staff((select auth.uid()))
-  OR public.is_admin((select auth.uid()))
-  OR public.is_site_admin((select auth.uid()))
+  public.is_privileged((select auth.uid()))
 );
 
 -- Note: INSERT and DELETE policies are intentionally omitted.

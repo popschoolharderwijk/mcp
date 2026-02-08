@@ -105,9 +105,7 @@ USING (user_id = (select auth.uid()));
 CREATE POLICY teachers_select_staff
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  public.is_staff((select auth.uid()))
-  OR public.is_admin((select auth.uid()))
-  OR public.is_site_admin((select auth.uid()))
+  public.is_privileged((select auth.uid()))
 );
 
 -- Admins and site_admins can insert teachers
