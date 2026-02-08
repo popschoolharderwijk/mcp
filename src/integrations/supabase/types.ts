@@ -346,6 +346,12 @@ export type Database = {
 			};
 			ensure_student_exists: { Args: { _user_id: string }; Returns: undefined };
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_public_table_names: {
+				Args: never;
+				Returns: {
+					table_name: string;
+				}[];
+			};
 			get_student_id: { Args: { _user_id: string }; Returns: string };
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
 			get_teacher_id: { Args: { _user_id: string }; Returns: string };
