@@ -208,6 +208,32 @@ WHERE NOT EXISTS (
 );
 
 -- -----------------------------------------------------------------------------
+-- TEACHER AVAILABILITY (for RLS testing)
+-- -----------------------------------------------------------------------------
+-- Teacher Alice: Monday 09:00-12:00, Wednesday 14:00-17:00
+-- Teacher Bob: Tuesday 10:00-13:00
+INSERT INTO public.teacher_availability (teacher_id, day_of_week, start_time, end_time)
+SELECT
+  t.id AS teacher_id,
+  availability_data.day_of_week,
+  availability_data.start_time::TIME,
+  availability_data.end_time::TIME
+FROM (VALUES
+  ('teacher-alice@test.nl', 1, '09:00', '12:00'),
+  ('teacher-alice@test.nl', 3, '14:00', '17:00'),
+  ('teacher-bob@test.nl', 2, '10:00', '13:00')
+) AS availability_data(teacher_email, day_of_week, start_time, end_time)
+INNER JOIN public.profiles p ON p.email = availability_data.teacher_email
+INNER JOIN public.teachers t ON t.user_id = p.user_id
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.teacher_availability ta
+  WHERE ta.teacher_id = t.id
+    AND ta.day_of_week = availability_data.day_of_week
+    AND ta.start_time = availability_data.start_time::TIME
+    AND ta.end_time = availability_data.end_time::TIME
+);
+
+-- -----------------------------------------------------------------------------
 -- LESSON AGREEMENTS (for RLS testing)
 -- -----------------------------------------------------------------------------
 -- Create lesson agreements between students and teachers for testing

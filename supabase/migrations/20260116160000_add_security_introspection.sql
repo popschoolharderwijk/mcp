@@ -91,6 +91,26 @@ AS $$
   );
 $$;
 
+-- -----------------------------------------------------------------------------
+-- get_public_table_names: Get all public table names for dynamic iteration
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.get_public_table_names()
+RETURNS TABLE(table_name TEXT)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+  SELECT t.table_name::TEXT
+  FROM information_schema.tables t
+  WHERE t.table_schema = 'public'
+    AND t.table_type = 'BASE TABLE'
+    AND t.table_name NOT LIKE 'pg_%'
+    AND t.table_name NOT LIKE '_%'
+  ORDER BY t.table_name;
+$$;
+
 -- =============================================================================
 -- SECURITY: Ownership and Access Control
 -- =============================================================================
@@ -100,24 +120,35 @@ ALTER FUNCTION public.check_rls_enabled(TEXT) OWNER TO postgres;
 ALTER FUNCTION public.policy_exists(TEXT, TEXT) OWNER TO postgres;
 ALTER FUNCTION public.get_table_policies(TEXT) OWNER TO postgres;
 ALTER FUNCTION public.function_exists(TEXT) OWNER TO postgres;
+ALTER FUNCTION public.get_public_table_names() OWNER TO postgres;
 
 -- Remove all public access
 REVOKE ALL ON FUNCTION public.check_rls_enabled(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.policy_exists(TEXT, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_table_policies(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.function_exists(TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_public_table_names() FROM PUBLIC;
 
 -- Explicitly revoke from anon (Supabase's anon role doesn't inherit from PUBLIC revokes)
 REVOKE ALL ON FUNCTION public.check_rls_enabled(TEXT) FROM anon;
 REVOKE ALL ON FUNCTION public.policy_exists(TEXT, TEXT) FROM anon;
 REVOKE ALL ON FUNCTION public.get_table_policies(TEXT) FROM anon;
 REVOKE ALL ON FUNCTION public.function_exists(TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.get_public_table_names() FROM anon;
+
+-- Explicitly revoke from authenticated (defense in depth)
+REVOKE ALL ON FUNCTION public.check_rls_enabled(TEXT) FROM authenticated;
+REVOKE ALL ON FUNCTION public.policy_exists(TEXT, TEXT) FROM authenticated;
+REVOKE ALL ON FUNCTION public.get_table_policies(TEXT) FROM authenticated;
+REVOKE ALL ON FUNCTION public.function_exists(TEXT) FROM authenticated;
+REVOKE ALL ON FUNCTION public.get_public_table_names() FROM authenticated;
 
 -- Grant access only to service_role (CI/backend testing)
 GRANT EXECUTE ON FUNCTION public.check_rls_enabled(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.policy_exists(TEXT, TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.get_table_policies(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION public.function_exists(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_public_table_names() TO service_role;
 
 -- =============================================================================
 -- END SECURITY INTROSPECTION

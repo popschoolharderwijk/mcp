@@ -1,30 +1,12 @@
-import { describe, expect, it } from 'bun:test';
-import { createClientAs, createClientBypassRLS } from '../../db';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { createClientAs } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
-const dbNoRLS = createClientBypassRLS();
-
-// Setup: Create test availability records
+// Setup: Use seed data (from supabase/seed.sql)
 const aliceTeacherId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
 const bobTeacherId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
-
-// Create test availability before tests run
-await dbNoRLS.from('teacher_availability').delete().eq('teacher_id', aliceTeacherId);
-await dbNoRLS.from('teacher_availability').delete().eq('teacher_id', bobTeacherId);
-
-await dbNoRLS
-	.from('teacher_availability')
-	.insert([
-		{ teacher_id: aliceTeacherId, day_of_week: 1, start_time: '09:00', end_time: '12:00' },
-		{ teacher_id: aliceTeacherId, day_of_week: 3, start_time: '14:00', end_time: '17:00' },
-	])
-	.select();
-
-await dbNoRLS
-	.from('teacher_availability')
-	.insert([{ teacher_id: bobTeacherId, day_of_week: 2, start_time: '10:00', end_time: '13:00' }])
-	.select();
 
 /**
  * Teacher Availability SELECT permissions:
@@ -39,6 +21,16 @@ await dbNoRLS
  * - Cannot view any availability
  */
 describe('RLS: teacher_availability SELECT', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
 	it('site_admin sees all availability', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 

@@ -107,6 +107,7 @@ const EXPECTED_FUNCTIONS = [
 	'policy_exists',
 	'get_table_policies',
 	'function_exists',
+	'get_public_table_names',
 ];
 
 describe('RLS Baseline Security Checks', () => {

@@ -1,25 +1,12 @@
-import { describe, expect, it } from 'bun:test';
-import { createClientAs, createClientBypassRLS } from '../../db';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { createClientAs } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
-const dbNoRLS = createClientBypassRLS();
-
-// Setup: Create test lesson type links
+// Setup: Use seed data (from supabase/seed.sql)
 const aliceTeacherId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
 const bobTeacherId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
-const guitarLessonTypeId = fixtures.requireLessonTypeId('Gitaar');
-const drumsLessonTypeId = fixtures.requireLessonTypeId('Drums');
-
-// Create test links before tests run
-await dbNoRLS.from('teacher_lesson_types').delete().eq('teacher_id', aliceTeacherId);
-await dbNoRLS.from('teacher_lesson_types').delete().eq('teacher_id', bobTeacherId);
-
-await dbNoRLS.from('teacher_lesson_types').insert([
-	{ teacher_id: aliceTeacherId, lesson_type_id: guitarLessonTypeId },
-	{ teacher_id: aliceTeacherId, lesson_type_id: drumsLessonTypeId },
-	{ teacher_id: bobTeacherId, lesson_type_id: guitarLessonTypeId },
-]);
 
 /**
  * Teacher Lesson Types SELECT permissions:
@@ -34,6 +21,16 @@ await dbNoRLS.from('teacher_lesson_types').insert([
  * - Cannot view any lesson type links
  */
 describe('RLS: teacher_lesson_types SELECT', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
 	it('site_admin sees all lesson type links', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
@@ -67,7 +64,8 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBe(2);
+		// Alice has 1 lesson type (Guitar) from seed.sql
+		expect(data?.length).toBe(1);
 		expect(data?.every((lt) => lt.teacher_id === aliceTeacherId)).toBe(true);
 	});
 
