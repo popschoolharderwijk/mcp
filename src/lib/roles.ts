@@ -1,19 +1,18 @@
 import type { ComponentType } from 'react';
-import { LuGraduationCap, LuShieldCheck, LuStar, LuUser, LuUserCog } from 'react-icons/lu';
+import { LuShieldCheck, LuStar, LuUser, LuUserCog } from 'react-icons/lu';
 import type { Database } from '@/integrations/supabase/types';
 
 /** Application role type from Supabase database */
 export type AppRole = Database['public']['Enums']['app_role'];
 
 /** All available roles in the system */
-export const allRoles: AppRole[] = ['site_admin', 'admin', 'staff', 'teacher'];
+export const allRoles: AppRole[] = ['site_admin', 'admin', 'staff'];
 
 /** Role priority for sorting (higher number = higher priority) */
 export const rolePriority: Record<AppRole, number> = {
-	site_admin: 4,
-	admin: 3,
-	staff: 2,
-	teacher: 1,
+	site_admin: 3,
+	admin: 2,
+	staff: 1,
 };
 
 /** Badge variant type */
@@ -31,7 +30,6 @@ export const roleLabels: Record<AppRole, RoleConfig> = {
 	site_admin: { label: 'Site Admin', variant: 'destructive', icon: LuStar },
 	admin: { label: 'Admin', variant: 'default', icon: LuShieldCheck },
 	staff: { label: 'Medewerker', variant: 'secondary', icon: LuUserCog },
-	teacher: { label: 'Docent', variant: 'secondary', icon: LuGraduationCap },
 };
 
 /**

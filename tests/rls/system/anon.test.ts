@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { createClientAnon } from '../../db';
+import type { LessonTypeInsert, ProfileInsert, UserRoleInsert } from '../types';
 
 /**
  * All RLS policies are defined for 'authenticated' role only.
@@ -20,13 +21,12 @@ describe('RLS: anonymous user access', () => {
 		it('anon cannot insert profiles', async () => {
 			const db = createClientAnon();
 
-			const { data, error } = await db
-				.from('profiles')
-				.insert({
-					user_id: '00000000-0000-0000-0000-999999999999',
-					email: 'anon@test.nl',
-				})
-				.select();
+			const newProfile: ProfileInsert = {
+				user_id: '00000000-0000-0000-0000-999999999999',
+				email: 'anon@test.nl',
+			};
+
+			const { data, error } = await db.from('profiles').insert(newProfile).select();
 
 			// Should fail - no INSERT policy for anon
 			expect(error).not.toBeNull();
@@ -70,13 +70,12 @@ describe('RLS: anonymous user access', () => {
 		it('anon cannot insert user_roles', async () => {
 			const db = createClientAnon();
 
-			const { data, error } = await db
-				.from('user_roles')
-				.insert({
-					user_id: '00000000-0000-0000-0000-999999999999',
-					role: 'site_admin',
-				})
-				.select();
+			const newUserRole: UserRoleInsert = {
+				user_id: '00000000-0000-0000-0000-999999999999',
+				role: 'site_admin',
+			};
+
+			const { data, error } = await db.from('user_roles').insert(newUserRole).select();
 
 			expect(error).not.toBeNull();
 			expect(data).toBeNull();
@@ -98,7 +97,7 @@ describe('RLS: anonymous user access', () => {
 		it('anon cannot delete user_roles', async () => {
 			const db = createClientAnon();
 
-			const { data, error } = await db.from('user_roles').delete().eq('role', 'teacher').select();
+			const { data, error } = await db.from('user_roles').delete().eq('role', 'staff').select();
 
 			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
@@ -119,17 +118,16 @@ describe('RLS: anonymous user access', () => {
 		it('anon cannot insert lesson_types', async () => {
 			const db = createClientAnon();
 
-			const { data, error } = await db
-				.from('lesson_types')
-				.insert({
-					name: 'Hacked Lesson Type',
-					icon: 'test',
-					color: '#FF0000',
-					duration_minutes: 30,
-					frequency: 'weekly',
-					price_per_lesson: 25.0,
-				})
-				.select();
+			const newLessonType: LessonTypeInsert = {
+				name: 'Hacked Lesson Type',
+				icon: 'test',
+				color: '#FF0000',
+				duration_minutes: 30,
+				frequency: 'weekly',
+				price_per_lesson: 25.0,
+			};
+
+			const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
 
 			// Should fail - no INSERT policy for anon
 			expect(error).not.toBeNull();

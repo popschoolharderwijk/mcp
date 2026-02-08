@@ -48,6 +48,7 @@ const EXPECTED_FUNCTIONS = [
 	'is_site_admin',
 	'is_admin',
 	'is_staff',
+	'is_privileged',
 	'is_teacher',
 	// User lifecycle
 	'handle_new_user',
