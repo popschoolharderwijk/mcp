@@ -1,10 +1,9 @@
-import { describe, expect, it } from 'bun:test';
-import { createClientAs, createClientBypassRLS } from '../../db';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { createClientAs } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 import type { StudentInsert } from '../types';
-
-const dbNoRLS = createClientBypassRLS();
 
 // User IDs from fixtures for insert tests
 const studentBUserId = fixtures.requireUserId(TestUsers.STUDENT_B);
@@ -60,9 +59,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 	it('admin cannot insert student', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Ensure clean state
-		await dbNoRLS.from('students').delete().eq('user_id', studentCUserId);
-
+		// STUDENT_C should not be a student in seed data (or if it is, the insert should still fail)
 		const newStudent: StudentInsert = { user_id: studentCUserId };
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
@@ -74,9 +71,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 	it('site_admin cannot insert student', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Ensure clean state
-		await dbNoRLS.from('students').delete().eq('user_id', studentCUserId);
-
+		// STUDENT_C should not be a student in seed data (or if it is, the insert should still fail)
 		const newStudent: StudentInsert = { user_id: studentCUserId };
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
@@ -134,6 +129,17 @@ describe('RLS: students UPDATE - blocked for non-admin roles', () => {
 });
 
 describe('RLS: students UPDATE - admin permissions', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		await verifyState(initialState);
+	});
+
 	it('admin can update student', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
