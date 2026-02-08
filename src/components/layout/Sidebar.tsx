@@ -1,4 +1,12 @@
-import { LuChevronLeft, LuLayoutDashboard, LuMusic, LuMusic2, LuShieldCheck, LuUserCog } from 'react-icons/lu';
+import {
+	LuChevronLeft,
+	LuGraduationCap,
+	LuLayoutDashboard,
+	LuMusic,
+	LuMusic2,
+	LuShieldCheck,
+	LuUserCog,
+} from 'react-icons/lu';
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
@@ -22,8 +30,9 @@ interface SidebarProps {
 }
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
-	const { isAdmin, isSiteAdmin } = useAuth();
+	const { isAdmin, isSiteAdmin, isTeacher } = useAuth();
 	const showAdminNav = isAdmin || isSiteAdmin;
+	const showTeachersNav = isAdmin || isSiteAdmin || isTeacher;
 
 	return (
 		<TooltipProvider delayDuration={0}>
@@ -83,6 +92,27 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 						{mainNavItems.map((item) => (
 							<NavItem key={item.href} {...item} collapsed={collapsed} />
 						))}
+
+						{/* Teachers section */}
+						{showTeachersNav && (
+							<>
+								{!collapsed && (
+									<div className="mt-4 mb-2 px-3">
+										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+											<LuGraduationCap className="h-3.5 w-3.5" />
+											<span>Docenten</span>
+										</div>
+									</div>
+								)}
+								{collapsed && <Separator className="my-2" />}
+								<NavItem
+									href="/teachers"
+									label="Docenten"
+									icon={LuGraduationCap}
+									collapsed={collapsed}
+								/>
+							</>
+						)}
 
 						{/* Admin section */}
 						{showAdminNav && (

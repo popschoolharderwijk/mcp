@@ -10,6 +10,9 @@ interface AuthContextType {
 	isLoading: boolean;
 	isAdmin: boolean;
 	isSiteAdmin: boolean;
+	isStaff: boolean;
+	isTeacher: boolean;
+	teacherId: string | null;
 	signOut: () => Promise<void>;
 	refreshRole: () => Promise<void>;
 }
@@ -24,6 +27,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [user, setUser] = useState<User | null>(null);
 	const [session, setSession] = useState<Session | null>(null);
 	const [role, setRole] = useState<AppRole | null>(null);
+	const [teacherId, setTeacherId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 
 	const fetchRole = useCallback(async (userId: string) => {
@@ -37,11 +41,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		}
 	}, []);
 
+	const fetchTeacher = useCallback(async (userId: string) => {
+		const { data, error } = await supabase.from('teachers').select('id').eq('user_id', userId).single();
+
+		if (error) {
+			// User is not a teacher, which is fine
+			setTeacherId(null);
+		} else {
+			setTeacherId(data?.id ?? null);
+		}
+	}, []);
+
 	const refreshRole = useCallback(async () => {
 		if (user) {
-			await fetchRole(user.id);
+			await Promise.all([fetchRole(user.id), fetchTeacher(user.id)]);
 		}
-	}, [user, fetchRole]);
+	}, [user, fetchRole, fetchTeacher]);
 
 	useEffect(() => {
 		// Get initial session
@@ -49,9 +64,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			setSession(session);
 			setUser(session?.user ?? null);
 			if (session?.user) {
-				fetchRole(session.user.id);
+				Promise.all([fetchRole(session.user.id), fetchTeacher(session.user.id)]).finally(() => {
+					setIsLoading(false);
+				});
+			} else {
+				setIsLoading(false);
 			}
-			setIsLoading(false);
 		});
 
 		// Listen for auth changes
@@ -61,15 +79,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			setSession(session);
 			setUser(session?.user ?? null);
 			if (session?.user) {
-				fetchRole(session.user.id);
+				Promise.all([fetchRole(session.user.id), fetchTeacher(session.user.id)]).finally(() => {
+					setIsLoading(false);
+				});
 			} else {
 				setRole(null);
+				setTeacherId(null);
+				setIsLoading(false);
 			}
-			setIsLoading(false);
 		});
 
 		return () => subscription.unsubscribe();
-	}, [fetchRole]);
+	}, [fetchRole, fetchTeacher]);
 
 	const signOut = async () => {
 		await supabase.auth.signOut();
@@ -77,9 +98,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 	const isAdmin = role === 'admin';
 	const isSiteAdmin = role === 'site_admin';
+	const isStaff = role === 'staff';
+	const isTeacher = teacherId !== null;
 
 	return (
-		<AuthContext.Provider value={{ user, session, role, isLoading, isAdmin, isSiteAdmin, signOut, refreshRole }}>
+		<AuthContext.Provider
+			value={{
+				user,
+				session,
+				role,
+				isLoading,
+				isAdmin,
+				isSiteAdmin,
+				isStaff,
+				isTeacher,
+				teacherId,
+				signOut,
+				refreshRole,
+			}}
+		>
 			{children}
 		</AuthContext.Provider>
 	);

@@ -167,9 +167,9 @@ INSERT INTO public.lesson_types (name, description, icon, color, duration_minute
 SELECT * FROM (VALUES
   ('Gitaar', NULL, 'LuGuitar', '#FF9500', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
   ('Drums', NULL, 'LuDrum', '#DC2626', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Zang', 'Leer zingen', 'LuMic', '#EC4899', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
+  ('Zang', 'Learn to sing', 'LuMic', '#EC4899', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
   ('Bas', NULL, 'GiGuitarBassHead', '#9333EA', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Keyboard', 'Keyboard les', 'LuPiano', '#3B82F6', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
+  ('Keyboard', 'Keyboard lessons', 'LuPiano', '#3B82F6', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
   ('Saxofoon', NULL, 'GiSaxophone', '#14B8A6', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
   ('DJ / Beats', NULL, 'LuHeadphones', '#F59E0B', 45, 'weekly'::public.lesson_frequency, 25.00, false, true),
   ('Bandcoaching', NULL, 'HiUserGroup', '#6366F1', 60, 'biweekly'::public.lesson_frequency, 25.00, true, true)
@@ -183,6 +183,29 @@ INSERT INTO public.teachers (user_id)
 SELECT user_id FROM public.profiles
 WHERE email IN ('teacher-alice@test.nl', 'teacher-bob@test.nl')
 ON CONFLICT (user_id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- TEACHER LESSON TYPES (link teachers to lesson types they can teach)
+-- -----------------------------------------------------------------------------
+-- Teacher Alice: Guitar
+-- Teacher Bob: Bass and Singing
+INSERT INTO public.teacher_lesson_types (teacher_id, lesson_type_id)
+SELECT
+  t.id AS teacher_id,
+  lt.id AS lesson_type_id
+FROM (VALUES
+  ('teacher-alice@test.nl', 'Gitaar'),
+  ('teacher-bob@test.nl', 'Bas'),
+  ('teacher-bob@test.nl', 'Zang')
+) AS teacher_lesson_data(teacher_email, lesson_type_name)
+INNER JOIN public.profiles p ON p.email = teacher_lesson_data.teacher_email
+INNER JOIN public.teachers t ON t.user_id = p.user_id
+INNER JOIN public.lesson_types lt ON lt.name = teacher_lesson_data.lesson_type_name
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.teacher_lesson_types tlt
+  WHERE tlt.teacher_id = t.id
+    AND tlt.lesson_type_id = lt.id
+);
 
 -- -----------------------------------------------------------------------------
 -- LESSON AGREEMENTS (for RLS testing)
