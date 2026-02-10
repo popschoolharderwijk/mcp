@@ -20,14 +20,8 @@ import { resolveIconFromList } from '@/components/ui/icon-picker';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MUSIC_ICONS } from '@/constants/icons';
 import { useAuth } from '@/hooks/useAuth';
+import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
-
-interface LessonType {
-	id: string;
-	name: string;
-	icon: string;
-	color: string;
-}
 
 interface TeacherWithProfile {
 	id: string;
@@ -53,6 +47,8 @@ export default function Teachers() {
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+	const statusFilter = activeFilter;
+	const setStatusFilter = setActiveFilter;
 	const [selectedLessonTypeId, setSelectedLessonTypeId] = useState<string | null>(null);
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
@@ -248,40 +244,16 @@ export default function Teachers() {
 	}, [teachers, activeFilter, selectedLessonTypeId]);
 
 	// Quick filter groups configuration
+	const statusFilterGroup = useStatusFilter(statusFilter, setStatusFilter);
+	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, setSelectedLessonTypeId);
+
 	const quickFilterGroups: QuickFilterGroup[] = useMemo(() => {
-		const groups: QuickFilterGroup[] = [
-			{
-				label: 'Status',
-				value: activeFilter === 'all' ? null : activeFilter,
-				options: [
-					{ id: 'active', label: 'Actief' },
-					{ id: 'inactive', label: 'Inactief' },
-				],
-				onChange: (value) => {
-					setActiveFilter(value === null ? 'all' : (value as 'active' | 'inactive'));
-				},
-			},
-		];
-
-		if (lessonTypes.length > 0) {
-			groups.push({
-				label: 'Lessoorten',
-				value: selectedLessonTypeId,
-				options: lessonTypes.map((lt) => {
-					const Icon = lt.icon ? resolveIconFromList(MUSIC_ICONS, lt.icon) : undefined;
-					return {
-						id: lt.id,
-						label: lt.name,
-						icon: Icon,
-						color: lt.color,
-					};
-				}),
-				onChange: setSelectedLessonTypeId,
-			});
+		const groups: QuickFilterGroup[] = [statusFilterGroup];
+		if (lessonTypeFilterGroup) {
+			groups.push(lessonTypeFilterGroup);
 		}
-
 		return groups;
-	}, [activeFilter, lessonTypes, selectedLessonTypeId]);
+	}, [statusFilterGroup, lessonTypeFilterGroup]);
 
 	const columns: DataTableColumn<TeacherWithProfile>[] = useMemo(
 		() => [
@@ -331,7 +303,7 @@ export default function Teachers() {
 										<Tooltip key={lt.id}>
 											<TooltipTrigger asChild>
 												<div className="cursor-help">
-													<ColorIcon icon={Icon} color={lt.color} size="sm" />
+													<ColorIcon icon={Icon} color={lt.color} size="md" />
 												</div>
 											</TooltipTrigger>
 											<TooltipContent>

@@ -142,13 +142,17 @@ REVOKE ALL ON FUNCTION
   public.is_privileged(UUID)
 FROM anon;
 
--- _has_role is an internal helper - no direct grant needed
+-- _has_role is an internal helper - grant to authenticated so it can be called from other functions
+-- Note: Even though _has_role is called from other functions, we grant it explicitly
+-- to ensure it works correctly in all contexts (including RLS policies)
+GRANT EXECUTE ON FUNCTION public._has_role(UUID, app_role) TO authenticated;
 -- Public role helper functions are granted to authenticated users
 GRANT EXECUTE ON FUNCTION public.is_site_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_staff(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_privileged(UUID) TO authenticated;
 
+ALTER FUNCTION public._has_role(UUID, app_role) OWNER TO postgres;
 ALTER FUNCTION public.is_site_admin(UUID) OWNER TO postgres;
 ALTER FUNCTION public.is_admin(UUID) OWNER TO postgres;
 ALTER FUNCTION public.is_staff(UUID) OWNER TO postgres;

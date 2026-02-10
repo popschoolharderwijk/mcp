@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- References
-  student_user_id UUID NOT NULL REFERENCES auth.users(id),
+  student_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   teacher_id UUID NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id),
 
@@ -172,6 +172,13 @@ USING (
 );
 
 -- =============================================================================
+-- SECTION 4.5: ADDITIONAL RLS POLICIES FOR STUDENTS TABLE
+-- =============================================================================
+-- Note: No additional policies needed here.
+-- Teachers cannot view students directly - they can only view lesson_agreements
+-- which contain the student information they need.
+
+-- =============================================================================
 -- SECTION 5: HELPER FUNCTIONS FOR AUTOMATIC STUDENT MANAGEMENT
 -- =============================================================================
 
@@ -267,6 +274,32 @@ REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM PUBLIC
 REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) TO authenticated;
 ALTER FUNCTION public.cleanup_student_if_no_agreements(UUID) OWNER TO postgres;
+
+-- Helper function to get student status (active/inactive) based on lesson agreements
+-- Uses SECURITY DEFINER to bypass RLS on lesson_agreements table
+CREATE OR REPLACE FUNCTION public.get_student_status(_user_id UUID)
+RETURNS TEXT
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM public.lesson_agreements
+      WHERE student_user_id = _user_id
+        AND is_active = true
+    ) THEN 'active'
+    ELSE 'inactive'
+  END;
+$$;
+
+-- Revoke public access, grant only to authenticated users
+REVOKE ALL ON FUNCTION public.get_student_status(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_student_status(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_student_status(UUID) TO authenticated;
+ALTER FUNCTION public.get_student_status(UUID) OWNER TO postgres;
 
 -- Trigger function to cleanup student after deleting lesson agreement
 CREATE OR REPLACE FUNCTION public.trigger_cleanup_student_on_agreement_delete()

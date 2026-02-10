@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { DAY_NAMES } from '@/lib/dateHelpers';
 
 interface Availability {
 	id: string;
@@ -26,7 +27,7 @@ interface Availability {
 	end_time: string;
 }
 
-const dayNames = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+const dayNames = DAY_NAMES;
 
 export default function MyAvailability() {
 	const { isTeacher, teacherId, isLoading: authLoading } = useAuth();
