@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { fixtures } from '../fixtures';
+import { TEACHER_VIEWED_BY_STUDENT } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 const teacherAliceId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
 const teacherBobId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
+const teacherEveId = fixtures.requireTeacherId(TestUsers.TEACHER_EVE);
 const teacherAliceProfile = fixtures.requireProfile(TestUsers.TEACHER_ALICE);
 
 /**
@@ -24,16 +26,15 @@ const teacherAliceProfile = fixtures.requireProfile(TestUsers.TEACHER_ALICE);
  */
 describe('RLS: teacher_viewed_by_student SELECT', () => {
 	it('student sees only their own teachers', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_A);
+		// Student 009 has agreements with Teacher Alice and Teacher Diana
+		const db = await createClientAs(TestUsers.STUDENT_009);
 
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student A should see 2 teachers (Alice and Bob)
-		expect(data).toHaveLength(2);
+		expect(data?.length).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_009);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
 		expect(teacherIds).toContain(teacherAliceId);
-		expect(teacherIds).toContain(teacherBobId);
 
 		// Verify only allowed fields are present
 		const firstTeacher = data?.[0];
@@ -47,7 +48,8 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 	});
 
 	it('student sees correct teacher data', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_A);
+		// Student 009 has agreement with Teacher Alice
+		const db = await createClientAs(TestUsers.STUDENT_009);
 
 		const { data, error } = await db
 			.from('teacher_viewed_by_student')
@@ -65,16 +67,17 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 	});
 
 	it('student cannot see teachers they have no agreements with', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_B);
+		// Student 001 has only Bandcoaching with Teacher Eve, not with Alice or Bob
+		const db = await createClientAs(TestUsers.STUDENT_001);
 
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student B should see only 1 teacher (Alice)
-		expect(data).toHaveLength(1);
+		expect(data?.length).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_001);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
-		expect(teacherIds).toContain(teacherAliceId);
-		// Should NOT see Teacher Bob (no agreement)
+		expect(teacherIds).toContain(teacherEveId);
+		// Should NOT see Teacher Alice or Bob (no agreements with them)
+		expect(teacherIds).not.toContain(teacherAliceId);
 		expect(teacherIds).not.toContain(teacherBobId);
 	});
 
@@ -88,7 +91,7 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 	});
 
 	it('staff sees nothing via view', async () => {
-		const db = await createClientAs(TestUsers.STAFF);
+		const db = await createClientAs(TestUsers.STAFF_ONE);
 
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
@@ -116,7 +119,7 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 	});
 
 	it('user without role sees nothing via view', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.USER_001);
 
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
@@ -125,7 +128,8 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 	});
 
 	it('view does not expose email or other sensitive fields', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_A);
+		// Student 009 has agreement with Teacher Alice
+		const db = await createClientAs(TestUsers.STUDENT_009);
 
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*').limit(1).single();
 

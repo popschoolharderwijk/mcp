@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { TEACHER_LESSON_TYPES } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 // Setup: Use seed data (from supabase/seed.sql)
@@ -37,7 +38,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('admin sees all lesson type links', async () => {
@@ -46,16 +47,16 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('staff sees all lesson type links', async () => {
-		const db = await createClientAs(TestUsers.STAFF);
+		const db = await createClientAs(TestUsers.STAFF_ONE);
 
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('teacher can see only their own lesson type links', async () => {
@@ -64,8 +65,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		// Alice has 1 lesson type (Guitar) from seed.sql
-		expect(data?.length).toBe(1);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TEACHER_ALICE);
 		expect(data?.every((lt) => lt.teacher_id === aliceTeacherId)).toBe(true);
 	});
 
@@ -79,7 +79,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 	});
 
 	it('student cannot see any lesson type links', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_A);
+		const db = await createClientAs(TestUsers.STUDENT_001);
 
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
@@ -88,7 +88,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 	});
 
 	it('user without role cannot see any lesson type links', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.USER_001);
 
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 

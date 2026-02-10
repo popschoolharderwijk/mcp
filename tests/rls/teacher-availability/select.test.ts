@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { TEACHER_AVAILABILITY } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 // Setup: Use seed data (from supabase/seed.sql)
@@ -37,7 +38,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('admin sees all availability', async () => {
@@ -46,16 +47,16 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('staff sees all availability', async () => {
-		const db = await createClientAs(TestUsers.STAFF);
+		const db = await createClientAs(TestUsers.STAFF_ONE);
 
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('teacher can see only their own availability', async () => {
@@ -64,7 +65,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBe(2);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TEACHER_ALICE);
 		expect(data?.every((a) => a.teacher_id === aliceTeacherId)).toBe(true);
 	});
 
@@ -78,7 +79,7 @@ describe('RLS: teacher_availability SELECT', () => {
 	});
 
 	it('student cannot see any availability', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_A);
+		const db = await createClientAs(TestUsers.STUDENT_001);
 
 		const { data, error } = await db.from('teacher_availability').select('*');
 
@@ -87,7 +88,7 @@ describe('RLS: teacher_availability SELECT', () => {
 	});
 
 	it('user without role cannot see any availability', async () => {
-		const db = await createClientAs(TestUsers.USER_A);
+		const db = await createClientAs(TestUsers.USER_001);
 
 		const { data, error } = await db.from('teacher_availability').select('*');
 
