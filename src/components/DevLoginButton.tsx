@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LuZap } from 'react-icons/lu';
+import { LuLoaderCircle, LuZap } from 'react-icons/lu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -9,7 +9,15 @@ import { cn } from '@/lib/utils';
  * This component is completely removed from production builds via dead-code elimination.
  * Early return in production ensures all code below is tree-shaken.
  */
-export function DevLoginButton({ className }: { className?: string }) {
+export function DevLoginButton({
+	className,
+	showButton = true,
+	autoLogin = false,
+}: {
+	className?: string;
+	showButton?: boolean;
+	autoLogin?: boolean;
+}) {
 	// Production check - enables Vite dead code elimination
 	// This entire component will be tree-shaken out of production builds
 	// All code below (including imports usage) is eliminated in production
@@ -17,7 +25,7 @@ export function DevLoginButton({ className }: { className?: string }) {
 		return null;
 	}
 
-	return <DevLoginButtonInner className={className} />;
+	return <DevLoginButtonInner className={className} showButton={showButton} autoLogin={autoLogin} />;
 }
 
 // Constants defined outside but only used in non-production code
@@ -50,7 +58,15 @@ const ROLE_LABELS: Record<DevLoginRole, string> = {
  * Inner component to avoid hooks being called conditionally in the outer component.
  * All code here is only executed in non-production builds due to the parent check.
  */
-function DevLoginButtonInner({ className }: { className?: string }) {
+function DevLoginButtonInner({
+	className,
+	showButton = true,
+	autoLogin = false,
+}: {
+	className?: string;
+	showButton?: boolean;
+	autoLogin?: boolean;
+}) {
 	// Load last selected role from localStorage
 	const [selectedRole, setSelectedRole] = useState<DevLoginRole>(() => {
 		if (typeof window !== 'undefined') {
@@ -71,7 +87,7 @@ function DevLoginButtonInner({ className }: { className?: string }) {
 		}
 	}, [selectedRole]);
 
-	const handleDevLogin = async () => {
+	const handleDevLogin = async (role?: DevLoginRole) => {
 		// Runtime safety checks
 		if (import.meta.env.MODE === 'production') {
 			console.error('Dev login attempted in production - this should never happen');
@@ -81,7 +97,8 @@ function DevLoginButtonInner({ className }: { className?: string }) {
 		setIsLoading(true);
 		setError(null);
 
-		const email = ROLE_EMAILS[selectedRole];
+		const roleToUse = role || selectedRole;
+		const email = ROLE_EMAILS[roleToUse];
 		const password = import.meta.env.VITE_DEV_LOGIN_PASSWORD;
 
 		if (!password) {
@@ -118,16 +135,30 @@ function DevLoginButtonInner({ className }: { className?: string }) {
 		<div className={cn('flex flex-col w-full', className)}>
 			<div
 				className={cn(
-					'flex flex-col gap-1.5 rounded-md border p-2 w-full',
-					'bg-background',
-					isLocalDev
-						? 'border-green-500/30 dark:border-green-400/30'
-						: 'border-orange-500/30 dark:border-orange-400/30',
+					'flex flex-col w-full',
+					showButton ? 'gap-1.5 p-2 rounded-md border bg-background' : '',
+					showButton &&
+						(isLocalDev
+							? 'border-green-500/30 dark:border-green-400/30'
+							: 'border-orange-500/30 dark:border-orange-400/30'),
 				)}
 			>
-				<Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as DevLoginRole)}>
+				<Select
+					value={selectedRole}
+					onValueChange={(value) => {
+						const newRole = value as DevLoginRole;
+						setSelectedRole(newRole);
+						if (autoLogin) {
+							handleDevLogin(newRole);
+						}
+					}}
+					disabled={isLoading}
+				>
 					<SelectTrigger className="h-8 w-full text-xs">
-						<SelectValue />
+						<div className="flex items-center gap-1.5 w-full">
+							{isLoading && <LuLoaderCircle className="h-3 w-3 animate-spin" />}
+							<SelectValue />
+						</div>
 					</SelectTrigger>
 					<SelectContent>
 						{Object.entries(ROLE_LABELS).map(([role, label]) => (
@@ -137,22 +168,28 @@ function DevLoginButtonInner({ className }: { className?: string }) {
 						))}
 					</SelectContent>
 				</Select>
-				<button
-					type="button"
-					onClick={handleDevLogin}
-					disabled={isDisabled}
-					className={cn(
-						'inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
-						'focus:outline-none focus:ring-2 focus:ring-ring',
-						'disabled:opacity-50 disabled:cursor-not-allowed',
-						isLocalDev
-							? 'bg-green-500/20 text-green-600 hover:bg-green-500/30 dark:text-green-400'
-							: 'bg-orange-500/20 text-orange-600 hover:bg-orange-500/30 dark:text-orange-400',
-					)}
-				>
-					<LuZap className="h-3 w-3" />
-					{isLoading ? 'Inloggen...' : 'Dev Login'}
-				</button>
+				{showButton && (
+					<button
+						type="button"
+						onClick={() => handleDevLogin()}
+						disabled={isDisabled}
+						className={cn(
+							'inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+							'focus:outline-none focus:ring-2 focus:ring-ring',
+							'disabled:opacity-50 disabled:cursor-not-allowed',
+							isLocalDev
+								? 'bg-green-500/20 text-green-600 hover:bg-green-500/30 dark:text-green-400'
+								: 'bg-orange-500/20 text-orange-600 hover:bg-orange-500/30 dark:text-orange-400',
+						)}
+					>
+						{isLoading ? (
+							<LuLoaderCircle className="h-3 w-3 animate-spin" />
+						) : (
+							<LuZap className="h-3 w-3" />
+						)}
+						{isLoading ? 'Inloggen...' : 'Dev Login'}
+					</button>
+				)}
 			</div>
 			{error && <span className="text-xs text-red-500 mt-1">{error}</span>}
 		</div>

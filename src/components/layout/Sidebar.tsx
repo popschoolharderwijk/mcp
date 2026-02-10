@@ -168,7 +168,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 						collapsed ? 'flex justify-center p-2' : 'p-2 w-full',
 					)}
 				>
-					{!collapsed && <DevTools className="w-full" />}
+					{!collapsed && <DevTools className="w-full" showLoginButton={false} />}
 					{collapsed && <EnvironmentBadge />}
 				</div>
 			</aside>

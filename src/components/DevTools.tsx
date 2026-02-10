@@ -42,7 +42,7 @@ export function DevTools({ className }: { className?: string }) {
 			>
 				<EnvironmentBadge className="flex items-center gap-1 text-inherit" />
 			</div>
-			<DevLoginButton className="w-full" />
+			<DevLoginButton className="w-full" showButton={true} autoLogin={true} />
 		</div>
 	);
 }
