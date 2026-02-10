@@ -1,10 +1,20 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { LuArrowDown, LuArrowUp, LuArrowUpDown, LuFilter, LuSearch, LuTrash2 } from 'react-icons/lu';
+import {
+	LuArrowDown,
+	LuArrowUp,
+	LuArrowUpDown,
+	LuChevronLeft,
+	LuChevronRight,
+	LuFilter,
+	LuSearch,
+	LuTrash2,
+} from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorIcon } from '@/components/ui/color-icon';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAutofocus } from '@/hooks/useAutofocus';
 import { cn } from '@/lib/utils';
@@ -42,6 +52,15 @@ export interface QuickFilterGroup {
 	allOptionLabel?: string;
 }
 
+// Server-side pagination props (controlled mode)
+export interface ServerPaginationProps {
+	totalCount: number;
+	currentPage: number;
+	rowsPerPage: number;
+	onPageChange: (page: number) => void;
+	onRowsPerPageChange: (rowsPerPage: number) => void;
+}
+
 interface DataTableProps<T> {
 	title: string;
 	description?: React.ReactNode;
@@ -60,6 +79,11 @@ interface DataTableProps<T> {
 	initialSortDirection?: SortDirection;
 	rowActions?: DataTableRowActions<T>;
 	quickFilter?: QuickFilterGroup[];
+	rowsPerPage?: number;
+	// Server-side pagination (controlled mode)
+	serverPagination?: ServerPaginationProps;
+	// Debounce delay for search input (useful for server-side search)
+	searchDebounceMs?: number;
 }
 
 export function DataTable<T>({
@@ -80,13 +104,55 @@ export function DataTable<T>({
 	initialSortDirection = 'asc',
 	rowActions,
 	quickFilter,
+	rowsPerPage: initialRowsPerPage = 20,
+	serverPagination,
+	searchDebounceMs = 0,
 }: DataTableProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(initialSortColumn ?? null);
 	const [sortDirection, setSortDirection] = useState<SortDirection>(
 		initialSortColumn ? (initialSortDirection ?? 'asc') : null,
 	);
 	const [filterOpen, setFilterOpen] = useState(false);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
+	const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery ?? '');
 	const searchInputRef = useAutofocus<HTMLInputElement>(!!onSearchChange);
+	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+	// Determine if we're in server-side pagination mode
+	const isServerPagination = !!serverPagination;
+
+	// Handle debounced search
+	const handleSearchChange = (value: string) => {
+		setLocalSearchQuery(value);
+
+		if (searchDebounceMs > 0 && onSearchChange) {
+			if (searchTimeoutRef.current) {
+				clearTimeout(searchTimeoutRef.current);
+			}
+			searchTimeoutRef.current = setTimeout(() => {
+				onSearchChange(value);
+			}, searchDebounceMs);
+		} else if (onSearchChange) {
+			onSearchChange(value);
+		}
+	};
+
+	// Cleanup timeout on unmount
+	useEffect(() => {
+		return () => {
+			if (searchTimeoutRef.current) {
+				clearTimeout(searchTimeoutRef.current);
+			}
+		};
+	}, []);
+
+	// Sync local search query with prop (for controlled mode)
+	useEffect(() => {
+		if (searchQuery !== undefined && searchQuery !== localSearchQuery) {
+			setLocalSearchQuery(searchQuery);
+		}
+	}, [searchQuery, localSearchQuery]);
 
 	// Filter data based on search query if searchFields are provided
 	const filteredData = useMemo(() => {
@@ -102,6 +168,8 @@ export function DataTable<T>({
 			}),
 		);
 	}, [data, searchQuery, searchFields]);
+
+	const previousDataLengthRef = useRef(filteredData.length);
 
 	const handleSort = (columnKey: string) => {
 		const column = columns.find((col) => col.key === columnKey);
@@ -153,6 +221,60 @@ export function DataTable<T>({
 		});
 	}, [filteredData, sortColumn, sortDirection, columns]);
 
+	// Pagination calculations - use server-side values if available
+	const effectiveRowsPerPage = isServerPagination ? serverPagination.rowsPerPage : rowsPerPage;
+	const effectiveCurrentPage = isServerPagination ? serverPagination.currentPage : currentPage;
+	const effectiveTotalCount = isServerPagination ? serverPagination.totalCount : sortedData.length;
+
+	const totalPages = Math.max(1, Math.ceil(effectiveTotalCount / effectiveRowsPerPage));
+	const startIndex = (effectiveCurrentPage - 1) * effectiveRowsPerPage;
+	const endIndex = startIndex + effectiveRowsPerPage;
+
+	// For client-side pagination, slice the data; for server-side, use data as-is
+	const paginatedData = isServerPagination ? data : sortedData.slice(startIndex, endIndex);
+
+	// Track previous rows per page for client-side pagination reset
+	const previousRowsPerPageRef = useRef(rowsPerPage);
+	useEffect(() => {
+		if (!isServerPagination && previousRowsPerPageRef.current !== rowsPerPage) {
+			setCurrentPage(1);
+			previousRowsPerPageRef.current = rowsPerPage;
+		}
+	}, [isServerPagination, rowsPerPage]);
+
+	// Reset to page 1 when search/filter changes (client-side only)
+	useEffect(() => {
+		if (!isServerPagination && previousDataLengthRef.current !== filteredData.length) {
+			setCurrentPage(1);
+			previousDataLengthRef.current = filteredData.length;
+		}
+	}, [filteredData.length, isServerPagination]);
+
+	// Ensure current page is valid when data changes (client-side only)
+	useEffect(() => {
+		if (!isServerPagination && currentPage > totalPages) {
+			setCurrentPage(Math.max(1, totalPages));
+		}
+	}, [currentPage, totalPages, isServerPagination]);
+
+	// Page change handlers
+	const handlePageChange = (page: number) => {
+		if (isServerPagination) {
+			serverPagination.onPageChange(page);
+		} else {
+			setCurrentPage(page);
+		}
+	};
+
+	const handleRowsPerPageChange = (newRowsPerPage: number) => {
+		if (isServerPagination) {
+			serverPagination.onRowsPerPageChange(newRowsPerPage);
+		} else {
+			setRowsPerPage(newRowsPerPage);
+			setCurrentPage(1);
+		}
+	};
+
 	// Count active filters
 	const activeFilterCount = useMemo(() => {
 		if (!quickFilter) return 0;
@@ -192,8 +314,8 @@ export function DataTable<T>({
 									ref={searchInputRef}
 									type="text"
 									placeholder={searchPlaceholder}
-									value={searchQuery ?? ''}
-									onChange={(e) => onSearchChange(e.target.value)}
+									value={localSearchQuery}
+									onChange={(e) => handleSearchChange(e.target.value)}
 									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
 								/>
 							</div>
@@ -305,7 +427,7 @@ export function DataTable<T>({
 			<CardContent>
 				{loading ? (
 					<p className="text-muted-foreground">Laden...</p>
-				) : sortedData.length === 0 ? (
+				) : paginatedData.length === 0 ? (
 					<p className="text-muted-foreground">{emptyMessage}</p>
 				) : (
 					<>
@@ -358,7 +480,7 @@ export function DataTable<T>({
 									</tr>
 								</thead>
 								<tbody>
-									{sortedData.map((item) => (
+									{paginatedData.map((item) => (
 										<tr
 											key={getRowKey(item)}
 											className={cn(
@@ -421,7 +543,57 @@ export function DataTable<T>({
 								</tbody>
 							</table>
 						</div>
-						<div className="mt-4 text-sm text-muted-foreground">{sortedData.length} resultaten</div>
+						<div className="mt-4 flex items-center justify-between">
+							<div className="text-sm text-muted-foreground">
+								{effectiveTotalCount === 0
+									? 'Geen resultaten'
+									: effectiveTotalCount === 1
+										? '1 resultaat'
+										: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
+							</div>
+							<div className="flex items-center gap-4">
+								<div className="flex items-center gap-2">
+									<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
+									<Select
+										value={String(effectiveRowsPerPage)}
+										onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
+									>
+										<SelectTrigger className="h-8 w-[70px]">
+											<SelectValue />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="10">10</SelectItem>
+											<SelectItem value="20">20</SelectItem>
+											<SelectItem value="50">50</SelectItem>
+											<SelectItem value="100">100</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="flex items-center gap-2">
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-8 w-8"
+										onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
+										disabled={effectiveCurrentPage === 1}
+									>
+										<LuChevronLeft className="h-4 w-4" />
+									</Button>
+									<span className="text-sm text-muted-foreground">
+										Pagina {effectiveCurrentPage} van {totalPages}
+									</span>
+									<Button
+										variant="outline"
+										size="icon"
+										className="h-8 w-8"
+										onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
+										disabled={effectiveCurrentPage === totalPages}
+									>
+										<LuChevronRight className="h-4 w-4" />
+									</Button>
+								</div>
+							</div>
+						</div>
 					</>
 				)}
 			</CardContent>

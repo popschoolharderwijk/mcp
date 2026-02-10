@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -9,18 +9,20 @@ import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
+interface StudentProfile {
+	email: string;
+	first_name: string | null;
+	last_name: string | null;
+	phone_number: string | null;
+	avatar_url: string | null;
+}
+
 interface StudentWithAgreements {
 	id: string;
 	user_id: string;
 	created_at: string;
 	updated_at: string;
-	profile: {
-		email: string;
-		first_name: string | null;
-		last_name: string | null;
-		phone_number: string | null;
-		avatar_url: string | null;
-	};
+	profile: StudentProfile;
 	active_agreements_count: number;
 	lesson_types: Array<{
 		name: string;
@@ -30,11 +32,26 @@ interface StudentWithAgreements {
 	agreements: LessonAgreement[];
 }
 
+interface PaginatedStudentsResponse {
+	data: StudentWithAgreements[];
+	total_count: number;
+	limit: number;
+	offset: number;
+}
+
 export default function MyStudents() {
 	const { isTeacher, teacherId, isLoading: authLoading } = useAuth();
 	const [students, setStudents] = useState<StudentWithAgreements[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [totalCount, setTotalCount] = useState(0);
+
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [rowsPerPage, setRowsPerPage] = useState(20);
+
+	// Filter state
 	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
 	const loadStudents = useCallback(async () => {
 		if (!isTeacher || !teacherId) return;
@@ -42,210 +59,76 @@ export default function MyStudents() {
 		setLoading(true);
 
 		try {
-			// Get lesson agreements for this teacher with full data
-			const { data: agreementsData, error: agreementsError } = await supabase
-				.from('lesson_agreements')
-				.select(
-					`
-					id,
-					student_user_id,
-					day_of_week,
-					start_time,
-					start_date,
-					end_date,
-					is_active,
-					notes,
-					teachers!inner (
-						user_id
-					),
-					lesson_types!inner (
-						id,
-						name,
-						icon,
-						color
-					)
-				`,
-				)
-				.eq('teacher_id', teacherId)
-				.order('day_of_week', { ascending: true })
-				.order('start_time', { ascending: true });
+			const offset = (currentPage - 1) * rowsPerPage;
 
-			if (agreementsError) {
-				console.error('Error loading agreements:', agreementsError);
-				toast.error('Fout bij laden lesovereenkomsten');
-				setLoading(false);
-				return;
-			}
+			const { data, error } = await supabase.rpc('get_students_paginated', {
+				p_limit: rowsPerPage,
+				p_offset: offset,
+				p_search: debouncedSearchQuery || null,
+				p_status: 'all',
+				p_lesson_type_id: null,
+				p_teacher_id: teacherId,
+				p_sort_column: 'name',
+				p_sort_direction: 'asc',
+			});
 
-			if (!agreementsData || agreementsData.length === 0) {
-				setStudents([]);
-				setLoading(false);
-				return;
-			}
-
-			// Get unique student user IDs and teacher user IDs
-			const studentUserIds = Array.from(new Set(agreementsData.map((a) => a.student_user_id)));
-			const teacherUserIds = Array.from(
-				new Set(
-					agreementsData
-						.map((a) => {
-							// teachers is an array from Supabase join, get first element
-							const teacher = Array.isArray(a.teachers) ? a.teachers[0] : a.teachers;
-							return teacher?.user_id;
-						})
-						.filter((id): id is string => !!id),
-				),
-			);
-
-			// Get students, student profiles, and teacher profiles separately
-			const [studentsResult, studentProfilesResult, teacherProfilesResult] = await Promise.all([
-				supabase.from('students').select('id, user_id, created_at, updated_at').in('user_id', studentUserIds),
-				supabase
-					.from('profiles')
-					.select('user_id, email, first_name, last_name, phone_number, avatar_url')
-					.in('user_id', studentUserIds),
-				supabase
-					.from('profiles')
-					.select('user_id, first_name, last_name, avatar_url')
-					.in('user_id', teacherUserIds),
-			]);
-
-			if (studentsResult.error) {
-				console.error('Error loading students:', studentsResult.error);
+			if (error) {
+				console.error('Error loading students:', error);
 				toast.error('Fout bij laden leerlingen');
 				setLoading(false);
 				return;
 			}
 
-			if (studentProfilesResult.error) {
-				console.error('Error loading student profiles:', studentProfilesResult.error);
-				toast.error('Fout bij laden profielen');
-				setLoading(false);
-				return;
-			}
-
-			if (teacherProfilesResult.error) {
-				console.error('Error loading teacher profiles:', teacherProfilesResult.error);
-				toast.error('Fout bij laden docent profielen');
-				setLoading(false);
-				return;
-			}
-
-			// Create maps of user_id -> profile
-			const studentProfilesMap = new Map(
-				studentProfilesResult.data?.map((profile) => [profile.user_id, profile]) || [],
-			);
-			const teacherProfilesMap = new Map(
-				teacherProfilesResult.data?.map((profile) => [profile.user_id, profile]) || [],
-			);
-
-			// Count active agreements, collect lesson types, and group agreements per student
-			const agreementCounts = new Map<string, number>();
-			const lessonTypesMap = new Map<string, Set<{ name: string; icon: string | null; color: string | null }>>();
-			const agreementsMap = new Map<string, LessonAgreement[]>();
-
-			agreementsData.forEach((agreement) => {
-				const studentUserId = agreement.student_user_id;
-				const count = agreementCounts.get(studentUserId) || 0;
-				if (agreement.is_active) {
-					agreementCounts.set(studentUserId, count + 1);
-				}
-
-				// Collect lesson types
-				if (!lessonTypesMap.has(studentUserId)) {
-					lessonTypesMap.set(studentUserId, new Set());
-				}
-				const typesSet = lessonTypesMap.get(studentUserId);
-				// lesson_types is an array from Supabase join, get first element
-				const lessonType = Array.isArray(agreement.lesson_types)
-					? agreement.lesson_types[0]
-					: agreement.lesson_types;
-				if (typesSet && lessonType) {
-					typesSet.add({
-						name: lessonType.name,
-						icon: lessonType.icon,
-						color: lessonType.color,
-					});
-				}
-
-				// Group agreements per student
-				if (!agreementsMap.has(studentUserId)) {
-					agreementsMap.set(studentUserId, []);
-				}
-				const studentAgreements = agreementsMap.get(studentUserId);
-				if (studentAgreements) {
-					// teachers and lesson_types are arrays from Supabase join, get first element
-					const teacher = Array.isArray(agreement.teachers) ? agreement.teachers[0] : agreement.teachers;
-					const lessonType = Array.isArray(agreement.lesson_types)
-						? agreement.lesson_types[0]
-						: agreement.lesson_types;
-					const teacherUserId = teacher?.user_id;
-					const teacherProfile = teacherUserId ? teacherProfilesMap.get(teacherUserId) : null;
-					studentAgreements.push({
-						id: agreement.id,
-						day_of_week: agreement.day_of_week,
-						start_time: agreement.start_time,
-						start_date: agreement.start_date,
-						end_date: agreement.end_date,
-						is_active: agreement.is_active,
-						notes: agreement.notes,
-						teacher: {
-							first_name: teacherProfile?.first_name ?? null,
-							last_name: teacherProfile?.last_name ?? null,
-							avatar_url: teacherProfile?.avatar_url ?? null,
-						},
-						lesson_type: {
-							id: lessonType?.id ?? '',
-							name: lessonType?.name ?? '',
-							icon: lessonType?.icon ?? null,
-							color: lessonType?.color ?? null,
-						},
-					});
-				}
-			});
-
-			// Combine data
-			const studentsWithData: StudentWithAgreements[] = (studentsResult.data || [])
-				.map((student) => {
-					const profile = studentProfilesMap.get(student.user_id);
-					if (!profile) {
-						// Skip students without profiles (shouldn't happen, but handle gracefully)
-						return null;
-					}
-					const studentProfile = studentProfilesMap.get(student.user_id);
-					if (!studentProfile) {
-						return null;
-					}
-					return {
-						...student,
-						profile: {
-							email: studentProfile.email,
-							first_name: studentProfile.first_name,
-							last_name: studentProfile.last_name,
-							phone_number: studentProfile.phone_number,
-							avatar_url: studentProfile.avatar_url,
-						},
-						active_agreements_count: agreementCounts.get(student.user_id) || 0,
-						lesson_types: Array.from(lessonTypesMap.get(student.user_id) || []),
-						agreements: agreementsMap.get(student.user_id) || [],
-					};
-				})
-				.filter((s): s is StudentWithAgreements => s !== null);
-
-			setStudents(studentsWithData);
+			const result = data as unknown as PaginatedStudentsResponse;
+			setStudents(result.data ?? []);
+			setTotalCount(result.total_count ?? 0);
 			setLoading(false);
 		} catch (error) {
 			console.error('Error loading students:', error);
 			toast.error('Fout bij laden leerlingen');
 			setLoading(false);
 		}
-	}, [isTeacher, teacherId]);
+	}, [isTeacher, teacherId, currentPage, rowsPerPage, debouncedSearchQuery]);
 
+	// Load students when dependencies change
 	useEffect(() => {
 		if (!authLoading && isTeacher) {
 			loadStudents();
 		}
 	}, [authLoading, isTeacher, loadStudents]);
+
+	// Reset to page 1 when search changes - use a ref to track previous value
+	const prevSearchRef = React.useRef(debouncedSearchQuery);
+	useEffect(() => {
+		if (prevSearchRef.current !== debouncedSearchQuery) {
+			setCurrentPage(1);
+			prevSearchRef.current = debouncedSearchQuery;
+		}
+	}, [debouncedSearchQuery]);
+
+	// Handle search query change (debounced)
+	const handleSearchChange = useCallback((query: string) => {
+		setSearchQuery(query);
+	}, []);
+
+	// Debounce search query
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearchQuery(searchQuery);
+		}, 300);
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Handle page change
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
+
+	// Handle rows per page change
+	const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
+		setRowsPerPage(newRowsPerPage);
+		setCurrentPage(1);
+	}, []);
 
 	// Helper functions
 	const getUserInitials = useCallback((s: StudentWithAgreements) => {
@@ -270,13 +153,27 @@ export default function MyStudents() {
 		return profile.email;
 	}, []);
 
+	// Extract lesson types from agreements
+	const getLessonTypes = useCallback((s: StudentWithAgreements) => {
+		const types = new Map<string, { name: string; icon: string | null; color: string | null }>();
+		s.agreements.forEach((agreement) => {
+			if (agreement.lesson_type) {
+				types.set(agreement.lesson_type.id, {
+					name: agreement.lesson_type.name,
+					icon: agreement.lesson_type.icon,
+					color: agreement.lesson_type.color,
+				});
+			}
+		});
+		return Array.from(types.values());
+	}, []);
+
 	const columns: DataTableColumn<StudentWithAgreements>[] = useMemo(
 		() => [
 			{
 				key: 'student',
 				label: 'Leerling',
-				sortable: true,
-				sortValue: (s) => getDisplayName(s).toLowerCase(),
+				sortable: false, // Server-side sorting
 				className: 'w-48',
 				render: (s) => (
 					<div className="flex items-center gap-3">
@@ -296,8 +193,7 @@ export default function MyStudents() {
 			{
 				key: 'phone_number',
 				label: 'Telefoon',
-				sortable: true,
-				sortValue: (s) => s.profile.phone_number ?? '',
+				sortable: false,
 				render: (s) => <span className="text-muted-foreground">{s.profile.phone_number || '-'}</span>,
 				className: 'text-muted-foreground',
 			},
@@ -306,12 +202,13 @@ export default function MyStudents() {
 				label: 'Lessoorten',
 				sortable: false,
 				render: (s) => {
-					if (s.lesson_types.length === 0) {
+					const lessonTypes = getLessonTypes(s);
+					if (lessonTypes.length === 0) {
 						return <span className="text-muted-foreground text-sm">-</span>;
 					}
 					return (
 						<div className="flex flex-wrap gap-1">
-							{s.lesson_types.map((lt) => (
+							{lessonTypes.map((lt) => (
 								<Badge key={lt.name} variant="secondary" className="text-xs">
 									{lt.name}
 								</Badge>
@@ -323,8 +220,7 @@ export default function MyStudents() {
 			{
 				key: 'agreements',
 				label: 'Lesovereenkomsten',
-				sortable: true,
-				sortValue: (s) => s.active_agreements_count,
+				sortable: false,
 				className: 'min-w-96',
 				render: (s) => {
 					if (s.agreements.length === 0) {
@@ -344,7 +240,7 @@ export default function MyStudents() {
 				},
 			},
 		],
-		[getDisplayName, getUserInitials],
+		[getDisplayName, getUserInitials, getLessonTypes],
 	);
 
 	// Redirect if not a teacher
@@ -368,18 +264,17 @@ export default function MyStudents() {
 				data={students}
 				columns={columns}
 				searchQuery={searchQuery}
-				onSearchChange={setSearchQuery}
-				searchFields={[
-					(s) => s.profile.email,
-					(s) => s.profile.first_name ?? undefined,
-					(s) => s.profile.last_name ?? undefined,
-					(s) => s.profile.phone_number ?? undefined,
-				]}
+				onSearchChange={handleSearchChange}
 				loading={loading}
 				getRowKey={(s) => s.id}
 				emptyMessage="Geen leerlingen gevonden"
-				initialSortColumn="student"
-				initialSortDirection="asc"
+				serverPagination={{
+					totalCount,
+					currentPage,
+					rowsPerPage,
+					onPageChange: handlePageChange,
+					onRowsPerPageChange: handleRowsPerPageChange,
+				}}
 			/>
 		</div>
 	);

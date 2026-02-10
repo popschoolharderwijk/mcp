@@ -350,6 +350,36 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			view_profiles_with_display_name: {
+				Row: {
+					avatar_url: string | null;
+					display_name: string | null;
+					email: string | null;
+					first_name: string | null;
+					last_name: string | null;
+					phone_number: string | null;
+					user_id: string | null;
+				};
+				Insert: {
+					avatar_url?: string | null;
+					display_name?: never;
+					email?: string | null;
+					first_name?: string | null;
+					last_name?: string | null;
+					phone_number?: string | null;
+					user_id?: string | null;
+				};
+				Update: {
+					avatar_url?: string | null;
+					display_name?: never;
+					email?: string | null;
+					first_name?: string | null;
+					last_name?: string | null;
+					phone_number?: string | null;
+					user_id?: string | null;
+				};
+				Relationships: [];
+			};
 		};
 		Functions: {
 			_has_role: {
@@ -370,6 +400,20 @@ export type Database = {
 			};
 			ensure_student_exists: { Args: { _user_id: string }; Returns: undefined };
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_lesson_agreements_paginated: {
+				Args: {
+					p_is_active?: boolean;
+					p_lesson_type_id?: string;
+					p_limit?: number;
+					p_offset?: number;
+					p_search?: string;
+					p_sort_column?: string;
+					p_sort_direction?: string;
+					p_student_user_id?: string;
+					p_teacher_id?: string;
+				};
+				Returns: Json;
+			};
 			get_public_table_names: {
 				Args: never;
 				Returns: {
@@ -378,8 +422,33 @@ export type Database = {
 			};
 			get_student_id: { Args: { _user_id: string }; Returns: string };
 			get_student_status: { Args: { _user_id: string }; Returns: string };
+			get_students_paginated: {
+				Args: {
+					p_lesson_type_id?: string;
+					p_limit?: number;
+					p_offset?: number;
+					p_search?: string;
+					p_sort_column?: string;
+					p_sort_direction?: string;
+					p_status?: string;
+					p_teacher_id?: string;
+				};
+				Returns: Json;
+			};
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
 			get_teacher_id: { Args: { _user_id: string }; Returns: string };
+			get_teachers_paginated: {
+				Args: {
+					p_lesson_type_id?: string;
+					p_limit?: number;
+					p_offset?: number;
+					p_search?: string;
+					p_sort_column?: string;
+					p_sort_direction?: string;
+					p_status?: string;
+				};
+				Returns: Json;
+			};
 			get_teachers_viewed_by_student: {
 				Args: never;
 				Returns: {

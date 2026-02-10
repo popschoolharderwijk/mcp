@@ -21,7 +21,12 @@ import Teachers from './pages/Teachers';
 import Users from './pages/Users';
 
 const App = () => (
-	<BrowserRouter>
+	<BrowserRouter
+		future={{
+			v7_startTransition: true,
+			v7_relativeSplatPath: true,
+		}}
+	>
 		<ThemeProvider defaultTheme="system">
 			<AuthProvider>
 				<Routes>
