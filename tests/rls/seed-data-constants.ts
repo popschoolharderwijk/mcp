@@ -75,3 +75,22 @@ export const TEACHER_VIEWED_BY_STUDENT = {
 	STUDENT_001: 1, // Only Teacher Eve (Bandcoaching)
 	STUDENT_009: 2, // Teacher Alice (Gitaar) and Teacher Diana (DJ/Beats)
 } as const;
+
+/**
+ * Students counts
+ */
+export const STUDENTS = {
+	// Total number of students in seed data
+	TOTAL: 60, // students 001-060
+} as const;
+
+/**
+ * Teachers counts
+ */
+export const TEACHERS = {
+	// Total number of teachers in seed data
+	TOTAL: 10, // teachers 001-010 (Alice, Bob, Charlie, Diana, Eve, Frank, Grace, Henry, Iris, Jack)
+	// All teachers are active by default (is_active DEFAULT true)
+	ACTIVE: 10,
+	INACTIVE: 0,
+} as const;

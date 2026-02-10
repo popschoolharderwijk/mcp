@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -20,6 +20,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
 
+interface StudentProfile {
+	email: string;
+	first_name: string | null;
+	last_name: string | null;
+	phone_number: string | null;
+	avatar_url: string | null;
+}
+
 interface StudentWithProfile {
 	id: string;
 	user_id: string;
@@ -33,15 +41,16 @@ interface StudentWithProfile {
 	debtor_city: string | null;
 	created_at: string;
 	updated_at: string;
-	profile: {
-		email: string;
-		first_name: string | null;
-		last_name: string | null;
-		phone_number: string | null;
-		avatar_url: string | null;
-	};
+	profile: StudentProfile;
 	active_agreements_count: number;
 	agreements: LessonAgreement[];
+}
+
+interface PaginatedStudentsResponse {
+	data: StudentWithProfile[];
+	total_count: number;
+	limit: number;
+	offset: number;
 }
 
 export default function Students() {
@@ -49,9 +58,18 @@ export default function Students() {
 	const [students, setStudents] = useState<StudentWithProfile[]>([]);
 	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [totalCount, setTotalCount] = useState(0);
+
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [rowsPerPage, setRowsPerPage] = useState(20);
+
+	// Filter state
 	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 	const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
 	const [selectedLessonTypeId, setSelectedLessonTypeId] = useState<string | null>(null);
+
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
 		student: StudentWithProfile | null;
@@ -66,213 +84,108 @@ export default function Students() {
 	// Check access - only admin, site_admin and staff can view this page
 	const hasAccess = isAdmin || isSiteAdmin || isStaff;
 
+	// Load lesson types (only once)
+	useEffect(() => {
+		if (!hasAccess) return;
+
+		const loadLessonTypes = async () => {
+			const { data, error } = await supabase
+				.from('lesson_types')
+				.select('id, name, icon, color')
+				.eq('is_active', true)
+				.order('name', { ascending: true });
+
+			if (error) {
+				console.error('Error loading lesson types:', error);
+			} else {
+				setLessonTypes(data ?? []);
+			}
+		};
+
+		loadLessonTypes();
+	}, [hasAccess]);
+
+	// Load paginated students
 	const loadStudents = useCallback(async () => {
 		if (!hasAccess) return;
 
 		setLoading(true);
 
 		try {
-			// First get students
-			const { data: studentsData, error: studentsError } = await supabase
-				.from('students')
-				.select(
-					'id, user_id, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city, created_at, updated_at',
-				)
-				.order('created_at', { ascending: false });
+			const offset = (currentPage - 1) * rowsPerPage;
 
-			if (studentsError) {
-				console.error('Error loading students:', studentsError);
+			const { data, error } = await supabase.rpc('get_students_paginated', {
+				p_limit: rowsPerPage,
+				p_offset: offset,
+				p_search: debouncedSearchQuery || null,
+				p_status: statusFilter,
+				p_lesson_type_id: selectedLessonTypeId,
+				p_sort_column: 'name',
+				p_sort_direction: 'asc',
+			});
+
+			if (error) {
+				console.error('Error loading students:', error);
 				toast.error('Fout bij laden leerlingen');
 				setLoading(false);
 				return;
 			}
 
-			if (!studentsData || studentsData.length === 0) {
-				setStudents([]);
-				setLoading(false);
-				return;
-			}
-
-			// Extract user IDs for parallel queries
-			const userIds = studentsData.map((s) => s.user_id);
-
-			// Run queries in parallel - first get agreements to extract teacher user IDs
-			const agreementsResult = await supabase
-				.from('lesson_agreements')
-				.select(
-					`
-					id,
-					student_user_id,
-					day_of_week,
-					start_time,
-					start_date,
-					end_date,
-					is_active,
-					notes,
-					teachers!inner (
-						user_id
-					),
-					lesson_types!inner (
-						id,
-						name,
-						icon,
-						color
-					)
-				`,
-				)
-				.in('student_user_id', userIds)
-				.order('day_of_week', { ascending: true })
-				.order('start_time', { ascending: true });
-
-			if (agreementsResult.error) {
-				console.error('Error loading agreements:', agreementsResult.error);
-				toast.error('Fout bij laden lesovereenkomsten');
-				setLoading(false);
-				return;
-			}
-
-			// Extract teacher user IDs from agreements
-			const teacherUserIds = Array.from(
-				new Set(
-					(agreementsResult.data || [])
-						.map((a) => {
-							// teachers is an array from Supabase join, get first element
-							const teacher = Array.isArray(a.teachers) ? a.teachers[0] : a.teachers;
-							return teacher?.user_id;
-						})
-						.filter((id): id is string => !!id),
-				),
-			);
-
-			// Get profiles for students and teachers, and lesson types
-			const [profilesResult, teacherProfilesResult, lessonTypesResult] = await Promise.all([
-				// Get profiles for all user_ids
-				supabase
-					.from('profiles')
-					.select('user_id, email, first_name, last_name, phone_number, avatar_url')
-					.in('user_id', userIds),
-				// Get teacher profiles
-				supabase
-					.from('profiles')
-					.select('user_id, first_name, last_name, avatar_url')
-					.in('user_id', teacherUserIds),
-				// Get all active lesson types for filter
-				supabase
-					.from('lesson_types')
-					.select('id, name, icon, color')
-					.eq('is_active', true)
-					.order('name', { ascending: true }),
-			]);
-
-			if (profilesResult.error) {
-				console.error('Error loading profiles:', profilesResult.error);
-				toast.error('Fout bij laden profielen');
-				setLoading(false);
-				return;
-			}
-
-			if (teacherProfilesResult.error) {
-				console.error('Error loading teacher profiles:', teacherProfilesResult.error);
-				toast.error('Fout bij laden docent profielen');
-				setLoading(false);
-				return;
-			}
-
-			if (lessonTypesResult.error) {
-				console.error('Error loading lesson types:', lessonTypesResult.error);
-			} else {
-				setLessonTypes(lessonTypesResult.data ?? []);
-			}
-
-			// Create maps of user_id -> profile
-			const profilesMap = new Map(profilesResult.data?.map((profile) => [profile.user_id, profile]) || []);
-			const teacherProfilesMap = new Map(
-				teacherProfilesResult.data?.map((profile) => [profile.user_id, profile]) || [],
-			);
-
-			// Count active agreements and group agreements per student
-			const agreementCounts = new Map<string, number>();
-			const agreementsMap = new Map<string, LessonAgreement[]>();
-			(agreementsResult.data || []).forEach((agreement) => {
-				const studentUserId = agreement.student_user_id;
-				if (agreement.is_active) {
-					const count = agreementCounts.get(studentUserId) || 0;
-					agreementCounts.set(studentUserId, count + 1);
-				}
-
-				// Group agreements per student
-				if (!agreementsMap.has(studentUserId)) {
-					agreementsMap.set(studentUserId, []);
-				}
-				const studentAgreements = agreementsMap.get(studentUserId);
-				if (studentAgreements) {
-					// teachers and lesson_types are arrays from Supabase join, get first element
-					const teacher = Array.isArray(agreement.teachers) ? agreement.teachers[0] : agreement.teachers;
-					const lessonType = Array.isArray(agreement.lesson_types)
-						? agreement.lesson_types[0]
-						: agreement.lesson_types;
-					const teacherUserId = teacher?.user_id;
-					const teacherProfile = teacherUserId ? teacherProfilesMap.get(teacherUserId) : null;
-					studentAgreements.push({
-						id: agreement.id,
-						day_of_week: agreement.day_of_week,
-						start_time: agreement.start_time,
-						start_date: agreement.start_date,
-						end_date: agreement.end_date,
-						is_active: agreement.is_active,
-						notes: agreement.notes,
-						teacher: {
-							first_name: teacherProfile?.first_name ?? null,
-							last_name: teacherProfile?.last_name ?? null,
-							avatar_url: teacherProfile?.avatar_url ?? null,
-						},
-						lesson_type: {
-							id: lessonType?.id ?? '',
-							name: lessonType?.name ?? '',
-							icon: lessonType?.icon ?? null,
-							color: lessonType?.color ?? null,
-						},
-					});
-				}
-			});
-
-			// Combine data
-			const studentsWithCounts: StudentWithProfile[] = studentsData
-				.map((student) => {
-					const profile = profilesMap.get(student.user_id);
-					if (!profile) {
-						// Skip students without profiles (shouldn't happen, but handle gracefully)
-						return null;
-					}
-					return {
-						...student,
-						profile: {
-							email: profile.email,
-							first_name: profile.first_name,
-							last_name: profile.last_name,
-							phone_number: profile.phone_number,
-							avatar_url: profile.avatar_url,
-						},
-						active_agreements_count: agreementCounts.get(student.user_id) || 0,
-						agreements: agreementsMap.get(student.user_id) || [],
-					};
-				})
-				.filter((s): s is StudentWithProfile => s !== null);
-
-			setStudents(studentsWithCounts);
+			const result = data as unknown as PaginatedStudentsResponse;
+			setStudents(result.data ?? []);
+			setTotalCount(result.total_count ?? 0);
 			setLoading(false);
 		} catch (error) {
 			console.error('Error loading students:', error);
 			toast.error('Fout bij laden leerlingen');
 			setLoading(false);
 		}
-	}, [hasAccess]);
+	}, [hasAccess, currentPage, rowsPerPage, debouncedSearchQuery, statusFilter, selectedLessonTypeId]);
 
+	// Load students when dependencies change
 	useEffect(() => {
 		if (!authLoading) {
 			loadStudents();
 		}
 	}, [authLoading, loadStudents]);
+
+	// Reset to page 1 when filters change - use a ref to track previous values
+	const prevFiltersRef = React.useRef({ debouncedSearchQuery, statusFilter, selectedLessonTypeId });
+	useEffect(() => {
+		const prev = prevFiltersRef.current;
+		if (
+			prev.debouncedSearchQuery !== debouncedSearchQuery ||
+			prev.statusFilter !== statusFilter ||
+			prev.selectedLessonTypeId !== selectedLessonTypeId
+		) {
+			setCurrentPage(1);
+			prevFiltersRef.current = { debouncedSearchQuery, statusFilter, selectedLessonTypeId };
+		}
+	}, [debouncedSearchQuery, statusFilter, selectedLessonTypeId]);
+
+	// Handle search query change (debounced)
+	const handleSearchChange = useCallback((query: string) => {
+		setSearchQuery(query);
+	}, []);
+
+	// Debounce search query
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearchQuery(searchQuery);
+		}, 300);
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Handle page change
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
+
+	// Handle rows per page change
+	const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
+		setRowsPerPage(newRowsPerPage);
+		setCurrentPage(1);
+	}, []);
 
 	// Helper functions
 	const getUserInitials = useCallback((s: StudentWithProfile) => {
@@ -297,23 +210,6 @@ export default function Students() {
 		return profile.email;
 	}, []);
 
-	// Filter students based on status and lesson type
-	const filteredStudents = useMemo(() => {
-		let filtered = students;
-		if (statusFilter === 'active') {
-			filtered = students.filter((s) => s.active_agreements_count > 0);
-		} else if (statusFilter === 'inactive') {
-			filtered = students.filter((s) => s.active_agreements_count === 0);
-		}
-
-		// Filter by lesson type if selected
-		if (selectedLessonTypeId) {
-			filtered = filtered.filter((s) => s.agreements.some((a) => a.lesson_type.id === selectedLessonTypeId));
-		}
-
-		return filtered;
-	}, [students, statusFilter, selectedLessonTypeId]);
-
 	// Quick filter groups configuration
 	const statusFilterGroup = useStatusFilter(statusFilter, setStatusFilter);
 	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, setSelectedLessonTypeId);
@@ -331,8 +227,7 @@ export default function Students() {
 			{
 				key: 'student',
 				label: 'Leerling',
-				sortable: true,
-				sortValue: (s) => getDisplayName(s).toLowerCase(),
+				sortable: false, // Server-side sorting
 				className: 'w-48 max-w-48',
 				render: (s) => (
 					<div className="flex items-center gap-3">
@@ -352,16 +247,14 @@ export default function Students() {
 			{
 				key: 'phone_number',
 				label: 'Telefoon',
-				sortable: true,
-				sortValue: (s) => s.profile.phone_number ?? '',
+				sortable: false,
 				render: (s) => <span className="text-muted-foreground">{s.profile.phone_number || '-'}</span>,
 				className: 'text-muted-foreground w-32',
 			},
 			{
 				key: 'status',
 				label: 'Status',
-				sortable: true,
-				sortValue: (s) => (s.active_agreements_count > 0 ? 1 : 0),
+				sortable: false,
 				render: (s) => (
 					<Badge variant={s.active_agreements_count > 0 ? 'default' : 'secondary'}>
 						{s.active_agreements_count > 0 ? 'Actief' : 'Inactief'}
@@ -372,8 +265,7 @@ export default function Students() {
 			{
 				key: 'agreements',
 				label: 'Lesovereenkomsten',
-				sortable: true,
-				sortValue: (s) => s.active_agreements_count,
+				sortable: false,
 				className: '',
 				render: (s) => {
 					if (s.agreements.length === 0) {
@@ -456,9 +348,9 @@ export default function Students() {
 				toast.success('Leerling verwijderd');
 			}
 
-			// Remove student from local state
-			setStudents((prev) => prev.filter((s) => s.id !== deleteDialog.student?.id));
+			// Reload students to get updated data
 			setDeleteDialog(null);
+			loadStudents();
 		} catch (error) {
 			console.error('Error deleting student:', error);
 			toast.error('Fout bij verwijderen leerling', {
@@ -467,7 +359,7 @@ export default function Students() {
 		} finally {
 			setDeletingStudent(false);
 		}
-	}, [deleteDialog]);
+	}, [deleteDialog, loadStudents]);
 
 	// Redirect if no access
 	if (!authLoading && !hasAccess) {
@@ -479,22 +371,21 @@ export default function Students() {
 			<DataTable
 				title="Leerlingen"
 				description="Beheer alle leerlingen en hun gegevens"
-				data={filteredStudents}
+				data={students}
 				columns={columns}
 				searchQuery={searchQuery}
-				onSearchChange={setSearchQuery}
-				searchFields={[
-					(s) => s.profile.email,
-					(s) => s.profile.first_name ?? undefined,
-					(s) => s.profile.last_name ?? undefined,
-					(s) => s.profile.phone_number ?? undefined,
-				]}
+				onSearchChange={handleSearchChange}
 				loading={loading}
 				getRowKey={(s) => s.id}
 				emptyMessage="Geen leerlingen gevonden"
-				initialSortColumn="student"
-				initialSortDirection="asc"
 				quickFilter={quickFilterGroups}
+				serverPagination={{
+					totalCount,
+					currentPage,
+					rowsPerPage,
+					onPageChange: handlePageChange,
+					onRowsPerPageChange: handleRowsPerPageChange,
+				}}
 				headerActions={
 					(isAdmin || isSiteAdmin || isStaff) && (
 						<Button onClick={handleCreate}>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,6 +23,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
 
+interface TeacherProfile {
+	email: string;
+	first_name: string | null;
+	last_name: string | null;
+	phone_number: string | null;
+	avatar_url: string | null;
+}
+
 interface TeacherWithProfile {
 	id: string;
 	user_id: string;
@@ -30,14 +38,15 @@ interface TeacherWithProfile {
 	is_active: boolean;
 	created_at: string;
 	updated_at: string;
-	profile: {
-		email: string;
-		first_name: string | null;
-		last_name: string | null;
-		phone_number: string | null;
-		avatar_url: string | null;
-	};
+	profile: TeacherProfile;
 	lesson_types: LessonType[];
+}
+
+interface PaginatedTeachersResponse {
+	data: TeacherWithProfile[];
+	total_count: number;
+	limit: number;
+	offset: number;
 }
 
 export default function Teachers() {
@@ -45,11 +54,20 @@ export default function Teachers() {
 	const [teachers, setTeachers] = useState<TeacherWithProfile[]>([]);
 	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [totalCount, setTotalCount] = useState(0);
+
+	// Pagination state
+	const [currentPage, setCurrentPage] = useState(1);
+	const [rowsPerPage, setRowsPerPage] = useState(20);
+
+	// Filter state
 	const [searchQuery, setSearchQuery] = useState('');
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 	const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
 	const statusFilter = activeFilter;
 	const setStatusFilter = setActiveFilter;
 	const [selectedLessonTypeId, setSelectedLessonTypeId] = useState<string | null>(null);
+
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
 		teacher: TeacherWithProfile | null;
@@ -63,145 +81,108 @@ export default function Teachers() {
 	// Check access - only admin and site_admin can view this page
 	const hasAccess = isAdmin || isSiteAdmin;
 
+	// Load lesson types (only once)
+	useEffect(() => {
+		if (!hasAccess) return;
+
+		const loadLessonTypes = async () => {
+			const { data, error } = await supabase
+				.from('lesson_types')
+				.select('id, name, icon, color')
+				.eq('is_active', true)
+				.order('name', { ascending: true });
+
+			if (error) {
+				console.error('Error loading lesson types:', error);
+			} else {
+				setLessonTypes(data ?? []);
+			}
+		};
+
+		loadLessonTypes();
+	}, [hasAccess]);
+
+	// Load paginated teachers
 	const loadTeachers = useCallback(async () => {
 		if (!hasAccess) return;
 
 		setLoading(true);
 
 		try {
-			// First get teachers (needed to get user_ids and teacher_ids for subsequent queries)
-			const { data: teachersData, error: teachersError } = await supabase
-				.from('teachers')
-				.select('id, user_id, bio, is_active, created_at, updated_at')
-				.order('created_at', { ascending: false });
+			const offset = (currentPage - 1) * rowsPerPage;
 
-			if (teachersError) {
-				console.error('Error loading teachers:', teachersError);
+			const { data, error } = await supabase.rpc('get_teachers_paginated', {
+				p_limit: rowsPerPage,
+				p_offset: offset,
+				p_search: debouncedSearchQuery || null,
+				p_status: statusFilter,
+				p_lesson_type_id: selectedLessonTypeId,
+				p_sort_column: 'name',
+				p_sort_direction: 'asc',
+			});
+
+			if (error) {
+				console.error('Error loading teachers:', error);
 				toast.error('Fout bij laden docenten');
 				setLoading(false);
 				return;
 			}
 
-			if (!teachersData || teachersData.length === 0) {
-				setTeachers([]);
-				setLoading(false);
-				return;
-			}
-
-			// Extract IDs for parallel queries
-			const userIds = teachersData.map((t) => t.user_id);
-			const teacherIds = teachersData.map((t) => t.id);
-
-			// Run all remaining queries in parallel for better performance
-			const [profilesResult, teachersWithLessonTypesResult, allLessonTypesResult] = await Promise.all([
-				// Query 1: Get profiles for all user_ids
-				supabase
-					.from('profiles')
-					.select('user_id, email, first_name, last_name, phone_number, avatar_url')
-					.in('user_id', userIds),
-
-				// Query 2: Get teachers with nested lesson types (this nested select should work)
-				supabase
-					.from('teachers')
-					.select(`
-						id,
-						teacher_lesson_types (
-							lesson_type_id,
-							lesson_types (
-								id,
-								name,
-								icon,
-								color
-							)
-						)
-					`)
-					.in('id', teacherIds),
-
-				// Query 3: Get all active lesson types for filter (independent, can run in parallel)
-				supabase
-					.from('lesson_types')
-					.select('id, name, icon, color')
-					.eq('is_active', true)
-					.order('name', { ascending: true }),
-			]);
-
-			if (profilesResult.error) {
-				console.error('Error loading profiles:', profilesResult.error);
-				toast.error('Fout bij laden profielen');
-				setLoading(false);
-				return;
-			}
-
-			if (teachersWithLessonTypesResult.error) {
-				console.error('Error loading lesson type links:', teachersWithLessonTypesResult.error);
-				toast.error('Fout bij laden lessoorten');
-				setLoading(false);
-				return;
-			}
-
-			if (allLessonTypesResult.error) {
-				console.error('Error loading lesson types:', allLessonTypesResult.error);
-			} else {
-				setLessonTypes(allLessonTypesResult.data ?? []);
-			}
-
-			// Create maps for easy lookup
-			const profileMap = new Map(profilesResult.data?.map((p) => [p.user_id, p]) ?? []);
-			const lessonTypesByTeacher = new Map<string, LessonType[]>();
-
-			// Process nested lesson types data
-			if (teachersWithLessonTypesResult.data) {
-				for (const teacher of teachersWithLessonTypesResult.data) {
-					const lessonTypes: LessonType[] = [];
-					if (teacher.teacher_lesson_types && Array.isArray(teacher.teacher_lesson_types)) {
-						for (const link of teacher.teacher_lesson_types) {
-							if (link.lesson_types) {
-								if (Array.isArray(link.lesson_types)) {
-									lessonTypes.push(...link.lesson_types);
-								} else {
-									lessonTypes.push(link.lesson_types);
-								}
-							}
-						}
-					}
-					lessonTypesByTeacher.set(teacher.id, lessonTypes);
-				}
-			}
-
-			// Combine the data
-			const transformedData: TeacherWithProfile[] = teachersData.map((teacher) => {
-				return {
-					id: teacher.id,
-					user_id: teacher.user_id,
-					bio: teacher.bio,
-					is_active: teacher.is_active,
-					created_at: teacher.created_at,
-					updated_at: teacher.updated_at,
-					profile: profileMap.get(teacher.user_id) ?? {
-						email: '',
-						first_name: null,
-						last_name: null,
-						phone_number: null,
-						avatar_url: null,
-					},
-					lesson_types: lessonTypesByTeacher.get(teacher.id) ?? [],
-				};
-			});
-
-			setTeachers(transformedData);
+			const result = data as unknown as PaginatedTeachersResponse;
+			setTeachers(result.data ?? []);
+			setTotalCount(result.total_count ?? 0);
 			setLoading(false);
 		} catch (error) {
 			console.error('Error loading teachers:', error);
 			toast.error('Fout bij laden docenten');
 			setLoading(false);
 		}
-	}, [hasAccess]);
+	}, [hasAccess, currentPage, rowsPerPage, debouncedSearchQuery, statusFilter, selectedLessonTypeId]);
 
+	// Load teachers when dependencies change
 	useEffect(() => {
 		if (!authLoading) {
 			loadTeachers();
 		}
 	}, [authLoading, loadTeachers]);
+
+	// Reset to page 1 when filters change - use a ref to track previous values
+	const prevFiltersRef = React.useRef({ debouncedSearchQuery, statusFilter, selectedLessonTypeId });
+	useEffect(() => {
+		const prev = prevFiltersRef.current;
+		if (
+			prev.debouncedSearchQuery !== debouncedSearchQuery ||
+			prev.statusFilter !== statusFilter ||
+			prev.selectedLessonTypeId !== selectedLessonTypeId
+		) {
+			setCurrentPage(1);
+			prevFiltersRef.current = { debouncedSearchQuery, statusFilter, selectedLessonTypeId };
+		}
+	}, [debouncedSearchQuery, statusFilter, selectedLessonTypeId]);
+
+	// Handle search query change (debounced)
+	const handleSearchChange = useCallback((query: string) => {
+		setSearchQuery(query);
+	}, []);
+
+	// Debounce search query
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedSearchQuery(searchQuery);
+		}, 300);
+		return () => clearTimeout(timer);
+	}, [searchQuery]);
+
+	// Handle page change
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
+
+	// Handle rows per page change
+	const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
+		setRowsPerPage(newRowsPerPage);
+		setCurrentPage(1);
+	}, []);
 
 	// Helper functions
 	const getUserInitials = useCallback((t: TeacherWithProfile) => {
@@ -226,23 +207,6 @@ export default function Teachers() {
 		return profile.email;
 	}, []);
 
-	// Filter teachers based on active status and lesson type
-	const filteredTeachers = useMemo(() => {
-		let filtered = teachers;
-		if (activeFilter === 'active') {
-			filtered = teachers.filter((t) => t.is_active);
-		} else if (activeFilter === 'inactive') {
-			filtered = teachers.filter((t) => !t.is_active);
-		}
-
-		// Filter by lesson type if selected
-		if (selectedLessonTypeId) {
-			filtered = filtered.filter((t) => t.lesson_types.some((lt) => lt.id === selectedLessonTypeId));
-		}
-
-		return filtered;
-	}, [teachers, activeFilter, selectedLessonTypeId]);
-
 	// Quick filter groups configuration
 	const statusFilterGroup = useStatusFilter(statusFilter, setStatusFilter);
 	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, setSelectedLessonTypeId);
@@ -260,8 +224,7 @@ export default function Teachers() {
 			{
 				key: 'teacher',
 				label: 'Docent',
-				sortable: true,
-				sortValue: (t) => getDisplayName(t).toLowerCase(),
+				sortable: false, // Server-side sorting
 				render: (t) => (
 					<div className="flex items-center gap-3">
 						<Avatar className="h-9 w-9">
@@ -280,8 +243,7 @@ export default function Teachers() {
 			{
 				key: 'phone_number',
 				label: 'Telefoonnummer',
-				sortable: true,
-				sortValue: (t) => t.profile.phone_number?.toLowerCase() ?? '',
+				sortable: false,
 				render: (t) => <span className="text-muted-foreground">{t.profile.phone_number || '-'}</span>,
 				className: 'text-muted-foreground',
 			},
@@ -320,8 +282,7 @@ export default function Teachers() {
 			{
 				key: 'is_active',
 				label: 'Status',
-				sortable: true,
-				sortValue: (t) => (t.is_active ? 1 : 0),
+				sortable: false,
 				render: (t) => (
 					<Badge variant={t.is_active ? 'default' : 'secondary'}>{t.is_active ? 'Actief' : 'Inactief'}</Badge>
 				),
@@ -329,8 +290,7 @@ export default function Teachers() {
 			{
 				key: 'created_at',
 				label: 'Aangemaakt',
-				sortable: true,
-				sortValue: (t) => new Date(t.created_at),
+				sortable: false,
 				render: (t) => {
 					const date = new Date(t.created_at);
 					return (
@@ -378,9 +338,9 @@ export default function Teachers() {
 				description: `${getDisplayName(deleteDialog.teacher)} is verwijderd.`,
 			});
 
-			// Remove teacher from local state
-			setTeachers((prev) => prev.filter((t) => t.id !== deleteDialog.teacher?.id));
+			// Reload teachers to get updated data
 			setDeleteDialog(null);
+			loadTeachers();
 		} catch (error) {
 			console.error('Error deleting teacher:', error);
 			toast.error('Fout bij verwijderen docent', {
@@ -389,7 +349,7 @@ export default function Teachers() {
 		} finally {
 			setDeletingTeacher(false);
 		}
-	}, [deleteDialog, getDisplayName]);
+	}, [deleteDialog, getDisplayName, loadTeachers]);
 
 	// Redirect if no access
 	if (!hasAccess) {
@@ -401,22 +361,21 @@ export default function Teachers() {
 			<DataTable
 				title="Docenten"
 				description="Beheer alle docenten en hun profielgegevens"
-				data={filteredTeachers}
+				data={teachers}
 				columns={columns}
 				searchQuery={searchQuery}
-				onSearchChange={setSearchQuery}
-				searchFields={[
-					(t) => t.profile.email,
-					(t) => t.profile.first_name ?? undefined,
-					(t) => t.profile.last_name ?? undefined,
-					(t) => t.profile.phone_number ?? undefined,
-				]}
+				onSearchChange={handleSearchChange}
 				loading={loading}
 				getRowKey={(t) => t.id}
 				emptyMessage="Geen docenten gevonden"
-				initialSortColumn="teacher"
-				initialSortDirection="asc"
 				quickFilter={quickFilterGroups}
+				serverPagination={{
+					totalCount,
+					currentPage,
+					rowsPerPage,
+					onPageChange: handlePageChange,
+					onRowsPerPageChange: handleRowsPerPageChange,
+				}}
 				headerActions={
 					<Button onClick={handleCreate}>
 						<LuPlus className="mr-2 h-4 w-4" />
