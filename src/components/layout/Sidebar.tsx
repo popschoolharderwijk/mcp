@@ -9,8 +9,8 @@ import {
 	LuUsers,
 } from 'react-icons/lu';
 import { NavLink } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { DevTools } from '@/components/DevTools';
+import { Button } from '@/components/ui/button';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -162,7 +162,12 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 				</div>
 
 				{/* Development tools */}
-				<div className={cn('border-t border-sidebar-border', collapsed ? 'flex justify-center p-2' : 'p-2 w-full')}>
+				<div
+					className={cn(
+						'border-t border-sidebar-border',
+						collapsed ? 'flex justify-center p-2' : 'p-2 w-full',
+					)}
+				>
 					{!collapsed && <DevTools className="w-full" />}
 					{collapsed && <EnvironmentBadge />}
 				</div>
