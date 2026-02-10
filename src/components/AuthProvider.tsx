@@ -31,7 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [isLoading, setIsLoading] = useState(true);
 
 	const fetchRole = useCallback(async (userId: string) => {
-		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).single();
+		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
 
 		if (error) {
 			console.error('Error fetching user role:', error);
@@ -42,10 +42,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	}, []);
 
 	const fetchTeacher = useCallback(async (userId: string) => {
-		const { data, error } = await supabase.from('teachers').select('id').eq('user_id', userId).single();
+		const { data, error } = await supabase.from('teachers').select('id').eq('user_id', userId).maybeSingle();
 
 		if (error) {
-			// User is not a teacher, which is fine
+			console.error('Error fetching teacher:', error);
 			setTeacherId(null);
 		} else {
 			setTeacherId(data?.id ?? null);
