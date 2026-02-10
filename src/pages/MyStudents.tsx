@@ -67,7 +67,6 @@ export default function MyStudents() {
 				p_search: debouncedSearchQuery || null,
 				p_status: 'all',
 				p_lesson_type_id: null,
-				p_teacher_id: teacherId,
 				p_sort_column: 'name',
 				p_sort_direction: 'asc',
 			});

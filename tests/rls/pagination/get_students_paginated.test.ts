@@ -34,8 +34,8 @@ interface PaginatedStudentsResponse {
  * is allowed to see according to RLS policies.
  *
  * Expected behavior:
- * - STUDENTS: Cannot see any students (students table has no SELECT policy for students)
- * - TEACHERS: Cannot see any students (students table has no SELECT policy for teachers)
+ * - STUDENTS: Can see only their own record
+ * - TEACHERS: Automatically see only their own students (teacher_id is determined from logged-in user, cannot be spoofed)
  * - STAFF/ADMIN/SITE_ADMIN: Can see all students
  */
 describe('RLS: get_students_paginated', () => {
@@ -115,7 +115,7 @@ describe('RLS: get_students_paginated', () => {
 		expect(result.data[0]?.user_id).toBe(student001UserId);
 	});
 
-	it('teacher cannot see any students (no SELECT policy for teachers)', async () => {
+	it('teacher can see their own students (automatically determined from logged-in user)', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		const { data, error } = await db.rpc('get_students_paginated', {
@@ -127,7 +127,55 @@ describe('RLS: get_students_paginated', () => {
 		expect(data).not.toBeNull();
 		const result = data as unknown as PaginatedStudentsResponse;
 		expect(result.data).toBeInstanceOf(Array);
-		// Teachers cannot see any students via RLS, so should return empty
+		// Teachers automatically see their own students (teacher_id is determined from logged-in user)
+		// Teacher Alice should see her students (she has students in seed data)
+		expect(result.total_count).toBeGreaterThan(0);
+		expect(result.data.length).toBeGreaterThan(0);
+		// All returned students should have agreements with Teacher Alice
+		result.data.forEach((student) => {
+			const hasAgreementWithAlice = student.agreements?.some(
+				(agreement) => agreement.teacher?.first_name === 'Alice',
+			);
+			expect(hasAgreementWithAlice).toBe(true);
+		});
+	});
+
+	it('teacher cannot see other teachers students (security: teacher_id is automatically determined)', async () => {
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+
+		const { data, error } = await db.rpc('get_students_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+		});
+
+		expect(error).toBeNull();
+		expect(data).not.toBeNull();
+		const result = data as unknown as PaginatedStudentsResponse;
+		expect(result.data).toBeInstanceOf(Array);
+		// Teacher Alice should only see her own students, not Teacher Bob's students
+		// Security: teacher_id is automatically determined from logged-in user, cannot be spoofed
+		result.data.forEach((student) => {
+			const hasAgreementWithAlice = student.agreements?.some(
+				(agreement) => agreement.teacher?.first_name === 'Alice',
+			);
+			// All students returned must have at least one agreement with Teacher Alice
+			expect(hasAgreementWithAlice).toBe(true);
+		});
+	});
+
+	it('teacher without students sees empty list', async () => {
+		const db = await createClientAs(TestUsers.TEACHER_JACK);
+
+		const { data, error } = await db.rpc('get_students_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+		});
+
+		expect(error).toBeNull();
+		expect(data).not.toBeNull();
+		const result = data as unknown as PaginatedStudentsResponse;
+		expect(result.data).toBeInstanceOf(Array);
+		// Teacher Jack has no students in seed data
 		expect(result.total_count).toBe(0);
 		expect(result.data.length).toBe(0);
 	});
@@ -223,25 +271,19 @@ describe('RLS: get_students_paginated', () => {
 		});
 	});
 
-	it('teacher filter works (for MyStudents page)', async () => {
+	it('staff/admin can see all students (no teacher filter applied)', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
-		const teacherAliceId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
 
 		const { data, error } = await db.rpc('get_students_paginated', {
 			p_limit: 100,
 			p_offset: 0,
-			p_teacher_id: teacherAliceId,
 		});
 
 		expect(error).toBeNull();
 		expect(data).not.toBeNull();
 		const result = data as unknown as PaginatedStudentsResponse;
-		// All returned students should have agreements with Teacher Alice
-		result.data.forEach((student) => {
-			const hasAgreementWithAlice = student.agreements?.some(
-				(agreement) => agreement.teacher?.first_name === 'Alice',
-			);
-			expect(hasAgreementWithAlice).toBe(true);
-		});
+		// Staff/admin see all students (no teacher filter)
+		expect(result.total_count).toBe(STUDENTS.TOTAL);
+		expect(result.data.length).toBe(STUDENTS.TOTAL);
 	});
 });

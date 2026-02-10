@@ -23,16 +23,16 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-// Quick navigation items for command palette
-const quickNavItems = [
-	{ href: '/', label: 'Dashboard', group: 'Navigatie' },
-	{ href: '/teachers', label: 'Docenten', group: 'Navigatie' },
-];
-
 const quickActions: Array<{ action: string; label: string; group: string }> = [];
 
 export function TopNav() {
-	const { user, signOut } = useAuth();
+	const { user, signOut, isAdmin, isSiteAdmin } = useAuth();
+
+	// Quick navigation items for command palette (filtered by permissions)
+	const quickNavItems = [
+		{ href: '/', label: 'Dashboard', group: 'Navigatie' },
+		...(isAdmin || isSiteAdmin ? [{ href: '/teachers', label: 'Docenten', group: 'Navigatie' }] : []),
+	];
 	const { setTheme, resolvedTheme } = useTheme();
 	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
