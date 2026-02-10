@@ -86,7 +86,15 @@ export default function MyStudents() {
 			// Get unique student user IDs and teacher user IDs
 			const studentUserIds = Array.from(new Set(agreementsData.map((a) => a.student_user_id)));
 			const teacherUserIds = Array.from(
-				new Set(agreementsData.map((a) => a.teachers?.user_id).filter((id): id is string => !!id)),
+				new Set(
+					agreementsData
+						.map((a) => {
+							// teachers is an array from Supabase join, get first element
+							const teacher = Array.isArray(a.teachers) ? a.teachers[0] : a.teachers;
+							return teacher?.user_id;
+						})
+						.filter((id): id is string => !!id),
+				),
 			);
 
 			// Get students, student profiles, and teacher profiles separately
@@ -148,11 +156,15 @@ export default function MyStudents() {
 					lessonTypesMap.set(studentUserId, new Set());
 				}
 				const typesSet = lessonTypesMap.get(studentUserId);
-				if (typesSet && agreement.lesson_types) {
+				// lesson_types is an array from Supabase join, get first element
+				const lessonType = Array.isArray(agreement.lesson_types)
+					? agreement.lesson_types[0]
+					: agreement.lesson_types;
+				if (typesSet && lessonType) {
 					typesSet.add({
-						name: agreement.lesson_types.name,
-						icon: agreement.lesson_types.icon,
-						color: agreement.lesson_types.color,
+						name: lessonType.name,
+						icon: lessonType.icon,
+						color: lessonType.color,
 					});
 				}
 
@@ -162,7 +174,12 @@ export default function MyStudents() {
 				}
 				const studentAgreements = agreementsMap.get(studentUserId);
 				if (studentAgreements) {
-					const teacherUserId = agreement.teachers?.user_id;
+					// teachers and lesson_types are arrays from Supabase join, get first element
+					const teacher = Array.isArray(agreement.teachers) ? agreement.teachers[0] : agreement.teachers;
+					const lessonType = Array.isArray(agreement.lesson_types)
+						? agreement.lesson_types[0]
+						: agreement.lesson_types;
+					const teacherUserId = teacher?.user_id;
 					const teacherProfile = teacherUserId ? teacherProfilesMap.get(teacherUserId) : null;
 					studentAgreements.push({
 						id: agreement.id,
@@ -178,10 +195,10 @@ export default function MyStudents() {
 							avatar_url: teacherProfile?.avatar_url ?? null,
 						},
 						lesson_type: {
-							id: agreement.lesson_types?.id ?? '',
-							name: agreement.lesson_types?.name ?? '',
-							icon: agreement.lesson_types?.icon ?? null,
-							color: agreement.lesson_types?.color ?? null,
+							id: lessonType?.id ?? '',
+							name: lessonType?.name ?? '',
+							icon: lessonType?.icon ?? null,
+							color: lessonType?.color ?? null,
 						},
 					});
 				}
@@ -190,7 +207,7 @@ export default function MyStudents() {
 			// Combine data
 			const studentsWithData: StudentWithAgreements[] = (studentsResult.data || [])
 				.map((student) => {
-					const profile = profilesMap.get(student.user_id);
+					const profile = studentProfilesMap.get(student.user_id);
 					if (!profile) {
 						// Skip students without profiles (shouldn't happen, but handle gracefully)
 						return null;
@@ -260,17 +277,18 @@ export default function MyStudents() {
 				label: 'Leerling',
 				sortable: true,
 				sortValue: (s) => getDisplayName(s).toLowerCase(),
+				className: 'w-48',
 				render: (s) => (
 					<div className="flex items-center gap-3">
-						<Avatar className="h-9 w-9">
+						<Avatar className="h-9 w-9 flex-shrink-0">
 							<AvatarImage src={s.profile.avatar_url ?? undefined} alt={getDisplayName(s)} />
 							<AvatarFallback className="bg-primary/10 text-primary text-sm">
 								{getUserInitials(s)}
 							</AvatarFallback>
 						</Avatar>
-						<div>
-							<p className="font-medium">{getDisplayName(s)}</p>
-							<p className="text-xs text-muted-foreground">{s.profile.email}</p>
+						<div className="min-w-0 flex-1">
+							<p className="font-medium break-words">{getDisplayName(s)}</p>
+							<p className="text-xs text-muted-foreground break-words">{s.profile.email}</p>
 						</div>
 					</div>
 				),
@@ -307,6 +325,7 @@ export default function MyStudents() {
 				label: 'Lesovereenkomsten',
 				sortable: true,
 				sortValue: (s) => s.active_agreements_count,
+				className: 'min-w-96',
 				render: (s) => {
 					if (s.agreements.length === 0) {
 						return <span className="text-muted-foreground text-sm">-</span>;

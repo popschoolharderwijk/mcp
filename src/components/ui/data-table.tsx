@@ -310,7 +310,7 @@ export function DataTable<T>({
 				) : (
 					<>
 						<div className="overflow-x-auto">
-							<table className="w-full">
+							<table className="w-full table-fixed">
 								<thead>
 									<tr className="border-b text-left text-sm text-muted-foreground">
 										{columns.map((column) => {
