@@ -37,7 +37,8 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
+		expect(data?.length).toBe(12);
 	});
 
 	it('admin sees all lesson type links', async () => {
@@ -46,7 +47,8 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
+		expect(data?.length).toBe(12);
 	});
 
 	it('staff sees all lesson type links', async () => {
@@ -55,7 +57,8 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
+		expect(data?.length).toBe(12);
 	});
 
 	it('teacher can see only their own lesson type links', async () => {

@@ -31,8 +31,9 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student 009 should see at least 1 teacher (Alice)
-		expect(data?.length).toBeGreaterThanOrEqual(1);
+		// Student 009 has exactly 2 agreements: one with Teacher Alice (Gitaar) and one with Teacher Diana (DJ / Beats)
+		// So they should see exactly 2 teachers
+		expect(data?.length).toBe(2);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
 		expect(teacherIds).toContain(teacherAliceId);
 
@@ -73,8 +74,9 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student 001 should see only Teacher Eve (from Bandcoaching)
-		expect(data?.length).toBeGreaterThanOrEqual(1);
+		// Student 001 has exactly 1 agreement: Bandcoaching with Teacher Eve
+		// So they should see exactly 1 teacher
+		expect(data?.length).toBe(1);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
 		expect(teacherIds).toContain(teacherEveId);
 		// Should NOT see Teacher Alice or Bob (no agreements with them)

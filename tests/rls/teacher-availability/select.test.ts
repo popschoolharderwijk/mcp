@@ -37,7 +37,8 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
+		expect(data?.length).toBe(17);
 	});
 
 	it('admin sees all availability', async () => {
@@ -46,7 +47,8 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
+		expect(data?.length).toBe(17);
 	});
 
 	it('staff sees all availability', async () => {
@@ -55,7 +57,8 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
+		expect(data?.length).toBe(17);
 	});
 
 	it('teacher can see only their own availability', async () => {

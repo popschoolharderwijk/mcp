@@ -29,9 +29,10 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Student 009 should see their own agreements (with Teacher Alice and/or Teacher Diana)
-		expect(data?.length).toBeGreaterThanOrEqual(1);
+		// Student 009 has exactly 2 agreements: one with Teacher Alice (Gitaar) and one with Teacher Diana (DJ / Beats)
+		expect(data?.length).toBe(2);
 		const agreementIds = data?.map((a) => a.id) ?? [];
+		expect(agreementIds).toContain(agreementStudent009TeacherAlice);
 		// Should NOT see agreement for Student 010
 		expect(agreementIds).not.toContain(agreementStudent010TeacherAlice);
 	});
@@ -42,8 +43,8 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Student 010 should see their own agreements
-		expect(data?.length).toBeGreaterThanOrEqual(1);
+		// Student 010 has exactly 2 agreements: one with Teacher Alice (Gitaar) and one with Teacher Diana (DJ / Beats)
+		expect(data?.length).toBe(2);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent010TeacherAlice);
 		// Should NOT see agreements for Student 009
@@ -56,8 +57,9 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Teacher Alice should see multiple agreements (with various students)
-		expect(data?.length).toBeGreaterThanOrEqual(2);
+		// Teacher Alice has 28 agreements total (from seed.sql: students 009-025 with various lesson types)
+		// 9 students with 1 agreement + 5 students with 2 agreements + 3 students with 3 agreements = 9 + 10 + 9 = 28
+		expect(data?.length).toBe(28);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent009TeacherAlice);
 		expect(agreementIds).toContain(agreementStudent010TeacherAlice);
@@ -71,8 +73,9 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Teacher Bob should see multiple agreements (with various students)
-		expect(data?.length).toBeGreaterThanOrEqual(1);
+		// Teacher Bob has 28 agreements total (from seed.sql: students 026-042 with Bas and Keyboard)
+		// 9 students with 1 agreement + 5 students with 2 agreements + 3 students with 3 agreements = 9 + 10 + 9 = 28
+		expect(data?.length).toBe(28);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent026TeacherBob);
 		// Should NOT see agreements where Teacher Alice is the teacher
@@ -86,8 +89,9 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Staff should see all agreements (at least 125 total)
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Staff should see all 184 lesson agreements (from seed.sql)
+		// Total: 8 (Bandcoaching) + 28 (Alice) + 28 (Bob) + 21 (Charlie) + 21 (Diana) + 21 (Frank) + 21 (Grace) + 21 (Henry) + 15 (Iris) = 184
+		expect(data?.length).toBe(184);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent009TeacherAlice);
 		expect(agreementIds).toContain(agreementStudent010TeacherAlice);
@@ -100,8 +104,9 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Admin should see all agreements (at least 125 total)
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Admin should see all 184 lesson agreements (from seed.sql)
+		// Total: 8 (Bandcoaching) + 28 (Alice) + 28 (Bob) + 21 (Charlie) + 21 (Diana) + 21 (Frank) + 21 (Grace) + 21 (Henry) + 15 (Iris) = 184
+		expect(data?.length).toBe(184);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent009TeacherAlice);
 		expect(agreementIds).toContain(agreementStudent010TeacherAlice);
@@ -114,8 +119,9 @@ describe('RLS: lesson_agreements SELECT', () => {
 		const { data, error } = await db.from('lesson_agreements').select('*');
 
 		expect(error).toBeNull();
-		// Site admin should see all agreements (at least 125 total)
-		expect(data?.length).toBeGreaterThanOrEqual(3);
+		// Site admin should see all 184 lesson agreements (from seed.sql)
+		// Total: 8 (Bandcoaching) + 28 (Alice) + 28 (Bob) + 21 (Charlie) + 21 (Diana) + 21 (Frank) + 21 (Grace) + 21 (Henry) + 15 (Iris) = 184
+		expect(data?.length).toBe(184);
 		const agreementIds = data?.map((a) => a.id) ?? [];
 		expect(agreementIds).toContain(agreementStudent009TeacherAlice);
 		expect(agreementIds).toContain(agreementStudent010TeacherAlice);
