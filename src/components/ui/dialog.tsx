@@ -35,7 +35,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 const DialogContent = React.forwardRef<
 	React.ElementRef<typeof DialogPrimitive.Content>,
 	React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, onClick, ...props }, ref) => (
 	<DialogPortal>
 		<DialogOverlay />
 		<div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -45,6 +45,11 @@ const DialogContent = React.forwardRef<
 					'relative grid w-full max-w-lg gap-4 border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-lg',
 					className,
 				)}
+				onClick={(e) => {
+					// Prevent clicks inside dialog from propagating to underlying elements
+					e.stopPropagation();
+					onClick?.(e);
+				}}
 				{...props}
 			>
 				{children}

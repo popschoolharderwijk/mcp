@@ -134,7 +134,13 @@ export default function Students() {
 			// Extract teacher user IDs from agreements
 			const teacherUserIds = Array.from(
 				new Set(
-					agreementsResult.data?.map((a) => a.teachers?.user_id).filter((id): id is string => !!id) || [],
+					(agreementsResult.data || [])
+						.map((a) => {
+							// teachers is an array from Supabase join, get first element
+							const teacher = Array.isArray(a.teachers) ? a.teachers[0] : a.teachers;
+							return teacher?.user_id;
+						})
+						.filter((id): id is string => !!id),
 				),
 			);
 
@@ -200,7 +206,12 @@ export default function Students() {
 				}
 				const studentAgreements = agreementsMap.get(studentUserId);
 				if (studentAgreements) {
-					const teacherUserId = agreement.teachers?.user_id;
+					// teachers and lesson_types are arrays from Supabase join, get first element
+					const teacher = Array.isArray(agreement.teachers) ? agreement.teachers[0] : agreement.teachers;
+					const lessonType = Array.isArray(agreement.lesson_types)
+						? agreement.lesson_types[0]
+						: agreement.lesson_types;
+					const teacherUserId = teacher?.user_id;
 					const teacherProfile = teacherUserId ? teacherProfilesMap.get(teacherUserId) : null;
 					studentAgreements.push({
 						id: agreement.id,
@@ -216,10 +227,10 @@ export default function Students() {
 							avatar_url: teacherProfile?.avatar_url ?? null,
 						},
 						lesson_type: {
-							id: agreement.lesson_types?.id ?? '',
-							name: agreement.lesson_types?.name ?? '',
-							icon: agreement.lesson_types?.icon ?? null,
-							color: agreement.lesson_types?.color ?? null,
+							id: lessonType?.id ?? '',
+							name: lessonType?.name ?? '',
+							icon: lessonType?.icon ?? null,
+							color: lessonType?.color ?? null,
 						},
 					});
 				}
@@ -322,17 +333,18 @@ export default function Students() {
 				label: 'Leerling',
 				sortable: true,
 				sortValue: (s) => getDisplayName(s).toLowerCase(),
+				className: 'w-48 max-w-48',
 				render: (s) => (
 					<div className="flex items-center gap-3">
-						<Avatar className="h-9 w-9">
+						<Avatar className="h-9 w-9 flex-shrink-0">
 							<AvatarImage src={s.profile.avatar_url ?? undefined} alt={getDisplayName(s)} />
 							<AvatarFallback className="bg-primary/10 text-primary text-sm">
 								{getUserInitials(s)}
 							</AvatarFallback>
 						</Avatar>
-						<div>
-							<p className="font-medium">{getDisplayName(s)}</p>
-							<p className="text-xs text-muted-foreground">{s.profile.email}</p>
+						<div className="min-w-0 flex-1 overflow-hidden">
+							<p className="font-medium break-words line-clamp-2">{getDisplayName(s)}</p>
+							<p className="text-xs text-muted-foreground break-words truncate">{s.profile.email}</p>
 						</div>
 					</div>
 				),
@@ -343,7 +355,7 @@ export default function Students() {
 				sortable: true,
 				sortValue: (s) => s.profile.phone_number ?? '',
 				render: (s) => <span className="text-muted-foreground">{s.profile.phone_number || '-'}</span>,
-				className: 'text-muted-foreground',
+				className: 'text-muted-foreground w-32',
 			},
 			{
 				key: 'status',
@@ -355,12 +367,14 @@ export default function Students() {
 						{s.active_agreements_count > 0 ? 'Actief' : 'Inactief'}
 					</Badge>
 				),
+				className: 'w-24',
 			},
 			{
 				key: 'agreements',
 				label: 'Lesovereenkomsten',
 				sortable: true,
 				sortValue: (s) => s.active_agreements_count,
+				className: '',
 				render: (s) => {
 					if (s.agreements.length === 0) {
 						return <span className="text-muted-foreground text-sm">-</span>;
