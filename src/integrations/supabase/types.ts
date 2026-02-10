@@ -180,19 +180,43 @@ export type Database = {
 			students: {
 				Row: {
 					created_at: string;
+					debtor_address: string | null;
+					debtor_city: string | null;
+					debtor_info_same_as_student: boolean;
+					debtor_name: string | null;
+					debtor_postal_code: string | null;
 					id: string;
+					parent_email: string | null;
+					parent_name: string | null;
+					parent_phone_number: string | null;
 					updated_at: string;
 					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
+					debtor_address?: string | null;
+					debtor_city?: string | null;
+					debtor_info_same_as_student?: boolean;
+					debtor_name?: string | null;
+					debtor_postal_code?: string | null;
 					id?: string;
+					parent_email?: string | null;
+					parent_name?: string | null;
+					parent_phone_number?: string | null;
 					updated_at?: string;
 					user_id: string;
 				};
 				Update: {
 					created_at?: string;
+					debtor_address?: string | null;
+					debtor_city?: string | null;
+					debtor_info_same_as_student?: boolean;
+					debtor_name?: string | null;
+					debtor_postal_code?: string | null;
 					id?: string;
+					parent_email?: string | null;
+					parent_name?: string | null;
+					parent_phone_number?: string | null;
 					updated_at?: string;
 					user_id?: string;
 				};
@@ -353,6 +377,7 @@ export type Database = {
 				}[];
 			};
 			get_student_id: { Args: { _user_id: string }; Returns: string };
+			get_student_status: { Args: { _user_id: string }; Returns: string };
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
 			get_teacher_id: { Args: { _user_id: string }; Returns: string };
 			get_teachers_viewed_by_student: {

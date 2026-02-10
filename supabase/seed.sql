@@ -252,7 +252,7 @@ SELECT
 FROM (VALUES
   ('student-a@test.nl', 'teacher-alice@test.nl', 'Gitaar', 1, '14:00', CURRENT_DATE, true),
   ('student-a@test.nl', 'teacher-bob@test.nl', 'Gitaar', 2, '15:00', CURRENT_DATE, true),
-  ('student-b@test.nl', 'teacher-alice@test.nl', 'Gitaar', 3, '16:00', CURRENT_DATE, true)
+  ('student-b@test.nl', 'teacher-alice@test.nl', 'Drums', 3, '16:00', CURRENT_DATE, true)
 ) AS agreement_data(student_email, teacher_email, lesson_type_name, day_of_week, start_time, start_date, is_active)
 INNER JOIN public.profiles student_profile ON student_profile.email = agreement_data.student_email
 INNER JOIN public.profiles teacher_profile ON teacher_profile.email = agreement_data.teacher_email

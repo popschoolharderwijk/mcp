@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { DAY_NAMES } from '@/lib/dateHelpers';
 
 interface Teacher {
 	id: string;
@@ -25,7 +26,7 @@ interface Availability {
 	end_time: string;
 }
 
-const dayNames = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+const dayNames = DAY_NAMES;
 
 export default function TeacherAvailability() {
 	const { isAdmin, isSiteAdmin, isStaff, isLoading: authLoading } = useAuth();

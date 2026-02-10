@@ -25,6 +25,18 @@ CREATE TABLE IF NOT EXISTS public.students (
   -- User reference
   user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
 
+  -- Parent/guardian information (for minors)
+  parent_name TEXT,
+  parent_email TEXT,
+  parent_phone_number TEXT CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$')),
+
+  -- Debtor information (for billing)
+  debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true,
+  debtor_name TEXT,
+  debtor_address TEXT,
+  debtor_postal_code TEXT,
+  debtor_city TEXT,
+
   -- Timestamps
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -92,6 +104,7 @@ REVOKE ALL ON FUNCTION public.get_student_id(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_student_id(UUID) TO authenticated;
 ALTER FUNCTION public.get_student_id(UUID) OWNER TO postgres;
 
+
 -- =============================================================================
 -- SECTION 5: RLS POLICIES
 -- =============================================================================
@@ -108,15 +121,22 @@ USING (
   public.is_privileged((select auth.uid()))
 );
 
--- Note: INSERT and DELETE policies are intentionally omitted.
--- Students are automatically created/deleted via triggers on lesson_agreements.
--- No one can manually insert or delete students.
+-- Note: INSERT policy is intentionally omitted.
+-- Students are automatically created via triggers on lesson_agreements.
+-- No one can manually insert students.
+
+-- Note: DELETE policy is intentionally omitted.
+-- Students are automatically deleted via triggers on lesson_agreements.
+-- No one can manually delete students.
 
 -- Admins and site_admins can update students (for future fields)
 CREATE POLICY students_update_admin
 ON public.students FOR UPDATE TO authenticated
 USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
 WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+
+-- Note: Teachers cannot view students directly. They can view lesson_agreements
+-- which contain the student information they need.
 
 -- =============================================================================
 -- SECTION 6: TRIGGERS
@@ -135,8 +155,51 @@ EXECUTE FUNCTION public.update_updated_at_column();
 -- GRANT gives table-level permissions, but RLS policies (above) are what
 -- actually control access. GRANT is required for RLS to work, but RLS is the
 -- security boundary. Without matching RLS policies, GRANT alone does NOT grant access.
--- Note: INSERT and DELETE are not granted - students are managed automatically via triggers.
-GRANT SELECT, UPDATE ON public.students TO authenticated;
+-- Note: INSERT is not granted - students are managed automatically via triggers.
+GRANT SELECT, UPDATE, DELETE ON public.students TO authenticated;
+
+-- =============================================================================
+-- SECTION 8: ALTER TABLE FOR EXISTING DATABASES
+-- =============================================================================
+-- These ALTER TABLE statements are safe to run on existing databases
+-- They add new columns with default values or nullable constraints
+
+-- Add parent/guardian columns
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'parent_name') THEN
+    ALTER TABLE public.students ADD COLUMN parent_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'parent_email') THEN
+    ALTER TABLE public.students ADD COLUMN parent_email TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'parent_phone_number') THEN
+    ALTER TABLE public.students ADD COLUMN parent_phone_number TEXT;
+    -- Add check constraint if column was just created
+    ALTER TABLE public.students ADD CONSTRAINT students_parent_phone_number_check
+      CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$'));
+  END IF;
+END $$;
+
+-- Add debtor columns
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_info_same_as_student') THEN
+    ALTER TABLE public.students ADD COLUMN debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_name') THEN
+    ALTER TABLE public.students ADD COLUMN debtor_name TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_address') THEN
+    ALTER TABLE public.students ADD COLUMN debtor_address TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_postal_code') THEN
+    ALTER TABLE public.students ADD COLUMN debtor_postal_code TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_city') THEN
+    ALTER TABLE public.students ADD COLUMN debtor_city TEXT;
+  END IF;
+END $$;
 
 -- =============================================================================
 -- END OF STUDENTS MIGRATION
