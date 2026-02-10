@@ -392,7 +392,7 @@ export default function Users() {
 					) : undefined
 				}
 				rowActions={
-					isSiteAdmin
+					isAdmin || isSiteAdmin
 						? {
 								onEdit: handleEdit,
 								onDelete: (u) => {
@@ -431,6 +431,7 @@ export default function Users() {
 				open={userFormDialog.open}
 				onOpenChange={(open) => setUserFormDialog({ ...userFormDialog, open })}
 				onSuccess={loadUsers}
+				isAdmin={isAdmin}
 				isSiteAdmin={isSiteAdmin}
 				user={userFormDialog.user ?? undefined}
 			/>

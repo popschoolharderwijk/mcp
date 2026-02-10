@@ -31,6 +31,7 @@ interface UserFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	onSuccess: () => void;
+	isAdmin: boolean;
 	isSiteAdmin: boolean;
 	/** User data for edit mode. If undefined, dialog is in create mode. */
 	user?: UserData;
@@ -52,7 +53,7 @@ const emptyForm: FormState = {
 	role: null,
 };
 
-export function UserFormDialog({ open, onOpenChange, onSuccess, isSiteAdmin, user }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, onSuccess, isAdmin, isSiteAdmin, user }: UserFormDialogProps) {
 	const isEditMode = !!user;
 	const [form, setForm] = useState<FormState>(emptyForm);
 	const [saving, setSaving] = useState(false);
@@ -298,26 +299,43 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, isSiteAdmin, use
 							onValueChange={(value) =>
 								setForm({ ...form, role: value === 'none' ? null : (value as AppRole) })
 							}
+							disabled={
+								// Admins cannot modify site_admin roles
+								isEditMode && isAdmin && !isSiteAdmin && user?.role === 'site_admin'
+							}
 						>
 							<SelectTrigger id="user-role">
 								<SelectValue placeholder="Geen rol" />
 							</SelectTrigger>
 							<SelectContent>
 								<SelectItem value="none">Geen rol</SelectItem>
-								{allRoles.map((role) => {
-									const config = roleLabels[role];
-									const Icon = config.icon;
-									return (
-										<SelectItem key={role} value={role}>
-											<span className="flex items-center gap-2">
-												<Icon className="h-4 w-4" />
-												{config.label}
-											</span>
-										</SelectItem>
-									);
-								})}
+								{allRoles
+									.filter((role) => {
+										// Admins cannot assign site_admin role
+										if (role === 'site_admin' && !isSiteAdmin) {
+											return false;
+										}
+										return true;
+									})
+									.map((role) => {
+										const config = roleLabels[role];
+										const Icon = config.icon;
+										return (
+											<SelectItem key={role} value={role}>
+												<span className="flex items-center gap-2">
+													<Icon className="h-4 w-4" />
+													{config.label}
+												</span>
+											</SelectItem>
+										);
+									})}
 							</SelectContent>
 						</Select>
+						{isEditMode && isAdmin && !isSiteAdmin && user?.role === 'site_admin' && (
+							<p className="text-xs text-muted-foreground">
+								Je kunt de rol van een site_admin niet wijzigen.
+							</p>
+						)}
 					</div>
 				</div>
 				<DialogFooter>
