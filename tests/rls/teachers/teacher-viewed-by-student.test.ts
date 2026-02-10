@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { fixtures } from '../fixtures';
+import { TEACHER_VIEWED_BY_STUDENT } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 const teacherAliceId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
@@ -31,9 +32,7 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student 009 has exactly 2 agreements: one with Teacher Alice (Gitaar) and one with Teacher Diana (DJ / Beats)
-		// So they should see exactly 2 teachers
-		expect(data?.length).toBe(2);
+		expect(data?.length).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_009);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
 		expect(teacherIds).toContain(teacherAliceId);
 
@@ -74,9 +73,7 @@ describe('RLS: teacher_viewed_by_student SELECT', () => {
 		const { data, error } = await db.from('teacher_viewed_by_student').select('*');
 
 		expect(error).toBeNull();
-		// Student 001 has exactly 1 agreement: Bandcoaching with Teacher Eve
-		// So they should see exactly 1 teacher
-		expect(data?.length).toBe(1);
+		expect(data?.length).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_001);
 		const teacherIds = data?.map((t) => t.teacher_id) ?? [];
 		expect(teacherIds).toContain(teacherEveId);
 		// Should NOT see Teacher Alice or Bob (no agreements with them)

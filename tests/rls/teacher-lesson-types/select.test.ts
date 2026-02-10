@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { TEACHER_LESSON_TYPES } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 // Setup: Use seed data (from supabase/seed.sql)
@@ -37,8 +38,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
-		expect(data?.length).toBe(12);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('admin sees all lesson type links', async () => {
@@ -47,8 +47,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
-		expect(data?.length).toBe(12);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('staff sees all lesson type links', async () => {
@@ -57,8 +56,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		// Total: 12 lesson type links (9 teachers: 3+2+1+1+1+1+1+1+1, teacher 10 has none)
-		expect(data?.length).toBe(12);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TOTAL);
 	});
 
 	it('teacher can see only their own lesson type links', async () => {
@@ -67,8 +65,7 @@ describe('RLS: teacher_lesson_types SELECT', () => {
 		const { data, error } = await db.from('teacher_lesson_types').select('*');
 
 		expect(error).toBeNull();
-		// Alice has 3 lesson types (Gitaar, Drums, Zang) from seed.sql
-		expect(data?.length).toBe(3);
+		expect(data?.length).toBe(TEACHER_LESSON_TYPES.TEACHER_ALICE);
 		expect(data?.every((lt) => lt.teacher_id === aliceTeacherId)).toBe(true);
 	});
 

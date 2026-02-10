@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { TEACHER_AVAILABILITY } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 // Setup: Use seed data (from supabase/seed.sql)
@@ -37,8 +38,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
-		expect(data?.length).toBe(17);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('admin sees all availability', async () => {
@@ -47,8 +47,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
-		expect(data?.length).toBe(17);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('staff sees all availability', async () => {
@@ -57,8 +56,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		// Total: 17 availability slots (9 teachers, teacher 10 has none, teacher 5 has 1 slot, others have 2)
-		expect(data?.length).toBe(17);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TOTAL);
 	});
 
 	it('teacher can see only their own availability', async () => {
@@ -67,7 +65,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const { data, error } = await db.from('teacher_availability').select('*');
 
 		expect(error).toBeNull();
-		expect(data?.length).toBe(2);
+		expect(data?.length).toBe(TEACHER_AVAILABILITY.TEACHER_ALICE);
 		expect(data?.every((a) => a.teacher_id === aliceTeacherId)).toBe(true);
 	});
 
