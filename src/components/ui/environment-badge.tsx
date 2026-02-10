@@ -21,13 +21,7 @@ export function EnvironmentBadge({ className }: { className?: string }) {
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger asChild>
-					<span
-						className={cn(
-							'flex items-center gap-1 rounded-md px-0 py-0 text-xs font-medium cursor-help',
-							config.color,
-							className,
-						)}
-					>
+					<span className={cn('flex items-center gap-1 text-[10px] font-medium cursor-help', className)}>
 						<LuDatabase className="h-3 w-3" />
 						{config.label}
 					</span>

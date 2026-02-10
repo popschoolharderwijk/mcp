@@ -40,7 +40,7 @@ export function DevTools({ className }: { className?: string }) {
 						: 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/20',
 				)}
 			>
-				<EnvironmentBadge className="flex items-center gap-1" />
+				<EnvironmentBadge className="flex items-center gap-1 text-inherit" />
 			</div>
 			<DevLoginButton className="w-full" />
 		</div>
