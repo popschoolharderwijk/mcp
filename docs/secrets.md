@@ -66,7 +66,7 @@ Voor custom configuratie kun je extra secrets toevoegen:
 
 ## Dev Login Bypass (alleen development)
 
-Voor snelle login in development omgevingen zonder Magic Link/OTP. Toe te voegen aan `.env.localdev` en/of `.env.development`:
+Voor snelle login in development omgevingen zonder Magic Link/OTP. Toe te voegen aan `.env.test` en/of `.env.development`:
 
 ### Frontend variabelen (voor de Dev Login knop)
 
@@ -83,14 +83,24 @@ Voor snelle login in development omgevingen zonder Magic Link/OTP. Toe te voegen
 | `DEV_LOGIN_FIRST_NAME` | Nee | Voornaam voor user metadata en profiles |
 | `DEV_LOGIN_LAST_NAME` | Nee | Achternaam voor user metadata en profiles |
 
-**Voorbeeld `.env.localdev`:**
+**Voorbeeld `.env.test`:**
 ```env
 # Supabase connectie
-VITE_SUPABASE_URL=http://localhost:54321
+VITE_SUPABASE_URL=https://jserlqacarlgtdzrblic.supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
+
+# Dev login bypass
+VITE_DEV_LOGIN_PASSWORD=mijn-test-wachtwoord
+```
+
+**Voorbeeld `.env.development` (voor createuser script):**
+```env
+# Supabase connectie
+VITE_SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 
 # Voor createuser script
-SUPABASE_URL=http://localhost:54321
+SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 DEV_LOGIN_EMAIL=dev@example.com
