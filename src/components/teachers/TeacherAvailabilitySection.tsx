@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuTrash2 } from 'react-icons/lu';
+import { LuLoaderCircle, LuPencil } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -52,6 +52,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 	const [loading, setLoading] = useState(true);
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [selectedSlot, setSelectedSlot] = useState<{ day: number; time: string } | null>(null);
+	const [editingBlock, setEditingBlock] = useState<AvailabilityBlock | null>(null);
 	const [form, setForm] = useState({
 		start_time: DEFAULT_START_TIME,
 		end_time: DEFAULT_END_TIME,
@@ -117,6 +118,34 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 		toast.success('Beschikbaarheid toegevoegd');
 		setAddDialogOpen(false);
 		setSelectedSlot(null);
+		setEditingBlock(null);
+		setForm({ start_time: DEFAULT_START_TIME, end_time: DEFAULT_END_TIME });
+		loadAvailability();
+	};
+
+	const handleUpdate = async () => {
+		if (!editingBlock) return;
+		if (form.start_time >= form.end_time) {
+			toast.error('Eindtijd moet na starttijd zijn');
+			return;
+		}
+
+		const { error } = await supabase
+			.from('teacher_availability')
+			.update({ start_time: form.start_time, end_time: form.end_time })
+			.eq('id', editingBlock.id);
+
+		if (error) {
+			console.error('Error updating availability:', error);
+			toast.error('Fout bij wijzigen beschikbaarheid', {
+				description: error.message,
+			});
+			return;
+		}
+
+		toast.success('Beschikbaarheid bijgewerkt');
+		setAddDialogOpen(false);
+		setEditingBlock(null);
 		setForm({ start_time: DEFAULT_START_TIME, end_time: DEFAULT_END_TIME });
 		loadAvailability();
 	};
@@ -133,6 +162,8 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 		}
 
 		toast.success('Beschikbaarheid verwijderd');
+		setAddDialogOpen(false);
+		setEditingBlock(null);
 		loadAvailability();
 	};
 
@@ -194,7 +225,9 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 				<CardHeader className="pb-3">
 					<CardTitle>Beschikbaarheid</CardTitle>
 					<CardDescription>
-						{canEdit ? 'Klik om tijdslot toe te voegen of te verwijderen' : 'Beschikbare tijdsloten'}
+						{canEdit
+							? 'Klik op lege cel om toe te voegen, op tijdslot om te wijzigen'
+							: 'Beschikbare tijdsloten'}
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -299,10 +332,19 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 											onClick={(e) => {
 												e.stopPropagation();
 												if (canEdit) {
-													handleDelete(block.id);
+													setEditingBlock(block);
+													setSelectedSlot({ day: block.displayDay, time: block.startTime });
+													// Normalize to HH:MM so Select options match (DB may return HH:MM:SS)
+													const start = block.startTime.slice(0, 5);
+													const end = block.endTime.slice(0, 5);
+													setForm({
+														start_time: start,
+														end_time: end,
+													});
+													setAddDialogOpen(true);
 												}
 											}}
-											title={`${dayName} ${block.startTime} - ${block.endTime}${canEdit ? ' (klik om te verwijderen)' : ''}`}
+											title={`${dayName} ${block.startTime} - ${block.endTime}${canEdit ? ' (klik om te wijzigen)' : ''}`}
 										>
 											{/* Block content */}
 											<div className="absolute inset-0 flex items-center justify-center p-0.5 overflow-hidden">
@@ -311,10 +353,10 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 												</span>
 											</div>
 
-											{/* Delete overlay on hover */}
+											{/* Edit overlay on hover */}
 											{canEdit && (
-												<div className="absolute inset-0 flex items-center justify-center bg-destructive/90 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-													<LuTrash2 className="h-4 w-4 text-white" />
+												<div className="absolute inset-0 flex items-center justify-center bg-primary/90 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+													<LuPencil className="h-4 w-4 text-white" />
 												</div>
 											)}
 										</button>
@@ -342,19 +384,25 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 						setAddDialogOpen(open);
 						if (!open) {
 							setSelectedSlot(null);
+							setEditingBlock(null);
 						}
 					}}
 				>
 					<DialogContent>
 						<DialogHeader>
-							<DialogTitle>Nieuw tijdslot toevoegen</DialogTitle>
+							<DialogTitle>{editingBlock ? 'Tijdslot wijzigen' : 'Nieuw tijdslot toevoegen'}</DialogTitle>
 							<DialogDescription>
-								{selectedSlot && (
-									<>
-										Voeg beschikbaarheid toe voor <strong>{dayNames[selectedSlot.day]}</strong>{' '}
-										vanaf <strong>{selectedSlot.time}</strong>
-									</>
-								)}
+								{selectedSlot &&
+									(editingBlock ? (
+										<>
+											Wijzig beschikbaarheid voor <strong>{dayNames[selectedSlot.day]}</strong>
+										</>
+									) : (
+										<>
+											Voeg beschikbaarheid toe voor <strong>{dayNames[selectedSlot.day]}</strong>{' '}
+											vanaf <strong>{selectedSlot.time}</strong>
+										</>
+									))}
 							</DialogDescription>
 						</DialogHeader>
 						<div className="space-y-4 py-4">
@@ -396,6 +444,15 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 									</Select>
 								</div>
 							</div>
+							{editingBlock && (
+								<Button
+									variant="destructive"
+									className="w-full"
+									onClick={() => handleDelete(editingBlock.id)}
+								>
+									Verwijder tijdslot
+								</Button>
+							)}
 						</div>
 						<DialogFooter>
 							<Button
@@ -403,11 +460,16 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 								onClick={() => {
 									setAddDialogOpen(false);
 									setSelectedSlot(null);
+									setEditingBlock(null);
 								}}
 							>
 								Annuleren
 							</Button>
-							<Button onClick={handleAdd}>Toevoegen</Button>
+							{editingBlock ? (
+								<Button onClick={handleUpdate}>Opslaan</Button>
+							) : (
+								<Button onClick={handleAdd}>Toevoegen</Button>
+							)}
 						</DialogFooter>
 					</DialogContent>
 				</Dialog>

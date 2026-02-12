@@ -6,3 +6,7 @@ alwaysApply: true
   - ❌ `cd dir && bun dev` (Unix)
   - ✅ `cd dir; bun dev` (PowerShell)
   - ✅ Or run commands separately
+
+* Run Biome directly, never via npx:
+  - ❌ `npx biome ...`
+  - ✅ `biome ...`
