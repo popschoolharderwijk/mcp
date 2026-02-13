@@ -363,19 +363,53 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 		// Update if a row already exists (unique on agreement_id + original_date); otherwise insert
 		if (existingDeviation) {
 			if (isRestoringToOriginal) {
-				// Explicit DELETE so deviation is removed; no reliance on DB trigger
-				const { error } = await supabase
-					.from('lesson_appointment_deviations')
-					.delete()
-					.eq('id', existingDeviation.id);
+				// Recurring deviation + "only this" = recurring starts next week; this week shows original (no deviation)
+				if (existingDeviation.recurring && !recurring) {
+					const thisWeekOriginal = originalDateStr;
+					const nextWeekDate = new Date(thisWeekOriginal + 'T12:00:00');
+					nextWeekDate.setDate(nextWeekDate.getDate() + 7);
+					const nextWeekOriginalStr = nextWeekDate.toISOString().split('T')[0];
+					const actualDayOfWeek = new Date(existingDeviation.actual_date).getDay();
+					const nextWeekActualDate = getDateForDayOfWeek(actualDayOfWeek, nextWeekDate);
+					const nextWeekActualStr = nextWeekActualDate.toISOString().split('T')[0];
 
-				if (error) {
-					console.error('Error removing deviation:', error);
-					toast.error('Fout bij terugzetten');
-					setPendingEvent(null);
-					return;
+					await supabase.from('lesson_appointment_deviations').delete().eq('id', existingDeviation.id);
+
+					const { error: insertError } = await supabase.from('lesson_appointment_deviations').insert({
+						lesson_agreement_id: agreement.id,
+						original_date: nextWeekOriginalStr,
+						original_start_time: normalizeTime(agreement.start_time),
+						actual_date: nextWeekActualStr,
+						actual_start_time: existingDeviation.actual_start_time,
+						recurring: true,
+						created_by_user_id: user.id,
+						last_updated_by_user_id: user.id,
+					});
+					if (insertError) {
+						console.error('Error inserting recurring from next week:', insertError);
+						toast.error('Fout bij bewaren terugkerende wijziging');
+						setPendingEvent(null);
+						return;
+					}
+					toast.success('Alleen deze afspraak teruggezet; terugkerende wijziging start volgende week');
+				} else {
+					// Single deviation or "this and future" for recurring: remove the deviation
+					const { error } = await supabase
+						.from('lesson_appointment_deviations')
+						.delete()
+						.eq('id', existingDeviation.id);
+
+					if (error) {
+						console.error('Error removing deviation:', error);
+						toast.error('Fout bij terugzetten');
+						setPendingEvent(null);
+						return;
+					}
+					toast.success('Les teruggezet naar originele planning');
 				}
-				toast.success('Les teruggezet naar originele planning');
+				await loadData(false);
+				setPendingEvent(null);
+				return;
 			} else {
 				const { error } = await supabase
 					.from('lesson_appointment_deviations')
