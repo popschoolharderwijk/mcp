@@ -465,6 +465,15 @@ export type Database = {
 				Returns: string;
 			};
 			ensure_student_exists: { Args: { _user_id: string }; Returns: undefined };
+			ensure_week_shows_original_slot: {
+				Args: {
+					p_lesson_agreement_id: string;
+					p_scope: string;
+					p_user_id: string;
+					p_week_date: string;
+				};
+				Returns: string;
+			};
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
 			get_lesson_agreements_paginated: {
 				Args: {

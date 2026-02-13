@@ -300,36 +300,34 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			return;
 		}
 
-		// Check if we're restoring a recurring deviation to original for "this and future"
-		// In that case, we set recurring_end_date instead of deleting.
-		// Use isRestoringRecurringToOriginalSlot so we also catch later occurrences (where originalStartTime is :01).
-		const recurringDeviationToEnd =
-			recurring &&
-			event.resource.isRecurring &&
-			event.resource.deviationId &&
-			(isRestoringToOriginal || isRestoringRecurringToOriginalSlot)
-				? deviations.find((d) => d.id === event.resource.deviationId)
-				: null;
-
-		if (recurringDeviationToEnd) {
+		// Restore to original slot: one DB rule handles all cases (recurring/single, only this/this and future)
+		if (isRestoringToOriginal || isRestoringRecurringToOriginalSlot) {
 			const weekWhereUserDropped = occurrenceWeekOriginalDateStr ?? originalDateStr;
+			const scopeParam = recurring ? 'this_and_future' : 'only_this';
 
-			const { data: result, error } = await supabase.rpc('end_recurring_deviation_from_week', {
-				p_deviation_id: recurringDeviationToEnd.id,
+			const { data: result, error } = await supabase.rpc('ensure_week_shows_original_slot', {
+				p_lesson_agreement_id: agreement.id,
 				p_week_date: weekWhereUserDropped,
 				p_user_id: user.id,
+				p_scope: scopeParam,
 			});
 
 			if (error) {
-				console.error('Error ending recurring deviation:', error);
-				toast.error('Fout bij beëindigen terugkerende wijziging');
+				console.error('Error restoring to original:', error);
+				toast.error('Fout bij terugzetten');
 				setPendingEvent(null);
 				return;
 			}
-			if (result === 'deleted') {
-				toast.success('Terugkerende wijziging verwijderd');
+			if (result === 'recurring_deleted' || result === 'recurring_ended') {
+				toast.success(
+					result === 'recurring_deleted'
+						? 'Terugkerende wijziging verwijderd'
+						: 'Terugkerende wijziging beëindigd vanaf deze week',
+				);
+			} else if (result === 'recurring_shifted') {
+				toast.success('Alleen deze afspraak teruggezet; terugkerende wijziging start volgende week');
 			} else {
-				toast.success('Terugkerende wijziging beëindigd vanaf deze week');
+				toast.success('Les teruggezet naar originele planning');
 			}
 			await loadData(false);
 			setPendingEvent(null);
@@ -338,95 +336,23 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 
 		// Update if a row already exists (unique on agreement_id + original_date); otherwise insert
 		if (existingDeviation) {
-			if (isRestoringToOriginal) {
-				// Recurring deviation + "only this" = recurring starts next week; this week shows original (no deviation)
-				if (existingDeviation.recurring && !recurring) {
-					// Use atomic database function to shift recurring deviation to next week
-					const { error: rpcError } = await supabase.rpc('shift_recurring_deviation_to_next_week', {
-						p_deviation_id: existingDeviation.id,
-						p_user_id: user.id,
-					});
-					if (rpcError) {
-						console.error('Error shifting recurring deviation:', rpcError);
-						toast.error('Fout bij bewaren terugkerende wijziging');
-						setPendingEvent(null);
-						return;
-					}
-					toast.success('Alleen deze afspraak teruggezet; terugkerende wijziging start volgende week');
-				} else if (!existingDeviation.recurring && recurringByAgreement.get(agreement.id)?.some(
-					(d) =>
-						d.original_date <= originalDateStr &&
-						(d.recurring_end_date === null ||
-							d.recurring_end_date === undefined ||
-							d.recurring_end_date >= originalDateStr),
-				)) {
-					// Single deviation that overrode a recurring deviation for this week; user restored to original (Monday).
-					// If we only delete, the recurring would apply and the lesson would show on Tuesday. Instead: delete
-					// the single deviation and insert an override with actual = original so this week shows Monday (green).
-					const { error: delError } = await supabase
-						.from('lesson_appointment_deviations')
-						.delete()
-						.eq('id', existingDeviation.id);
-					if (delError) {
-						console.error('Error removing deviation:', delError);
-						toast.error('Fout bij terugzetten');
-						setPendingEvent(null);
-						return;
-					}
-					const { error: insertError } = await supabase.from('lesson_appointment_deviations').insert({
-						lesson_agreement_id: agreement.id,
-						original_date: originalDateStr,
-						original_start_time: normalizeTime(agreement.start_time),
-						actual_date: actualDateStr,
-						actual_start_time: actualStartTime,
-						recurring: false,
-						created_by_user_id: user.id,
-						last_updated_by_user_id: user.id,
-					});
-					if (insertError) {
-						console.error('Error inserting override deviation:', insertError);
-						toast.error('Fout bij terugzetten');
-						setPendingEvent(null);
-						return;
-					}
-					toast.success('Les teruggezet naar originele planning');
-				} else {
-					// Single deviation or "this and future" for recurring: remove the deviation
-					const { error } = await supabase
-						.from('lesson_appointment_deviations')
-						.delete()
-						.eq('id', existingDeviation.id);
+			const { error } = await supabase
+				.from('lesson_appointment_deviations')
+				.update({
+					actual_date: actualDateStr,
+					actual_start_time: actualStartTime,
+					recurring,
+					last_updated_by_user_id: user.id,
+				})
+				.eq('id', existingDeviation.id);
 
-					if (error) {
-						console.error('Error removing deviation:', error);
-						toast.error('Fout bij terugzetten');
-						setPendingEvent(null);
-						return;
-					}
-					toast.success('Les teruggezet naar originele planning');
-				}
-				await loadData(false);
+			if (error) {
+				console.error('Error updating deviation:', error);
+				toast.error('Fout bij bijwerken afwijking');
 				setPendingEvent(null);
 				return;
-			} else {
-				const { error } = await supabase
-					.from('lesson_appointment_deviations')
-					.update({
-						actual_date: actualDateStr,
-						actual_start_time: actualStartTime,
-						recurring,
-						last_updated_by_user_id: user.id,
-					})
-					.eq('id', existingDeviation.id);
-
-				if (error) {
-					console.error('Error updating deviation:', error);
-					toast.error('Fout bij bijwerken afwijking');
-					setPendingEvent(null);
-					return;
-				}
-				toast.success('Afspraak bijgewerkt');
 			}
+			toast.success('Afspraak bijgewerkt');
 		} else {
 			const { error } = await supabase.from('lesson_appointment_deviations').insert({
 				lesson_agreement_id: agreement.id,

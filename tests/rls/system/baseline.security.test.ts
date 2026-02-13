@@ -148,6 +148,7 @@ const EXPECTED_FUNCTIONS = [
 	'enforce_deviation_validity',
 	'shift_recurring_deviation_to_next_week',
 	'end_recurring_deviation_from_week',
+	'ensure_week_shows_original_slot',
 	// Authorization helpers
 	'can_delete_user',
 	// Introspection functions for CI testing

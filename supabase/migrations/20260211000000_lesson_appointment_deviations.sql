@@ -540,6 +540,152 @@ ALTER FUNCTION public.end_recurring_deviation_from_week(UUID, DATE, UUID) OWNER 
 -- Grant execute permission to authenticated users
 GRANT EXECUTE ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE, UUID) TO authenticated;
 
+-- Unified function: ensure that for a given week the lesson shows on the agreement's original slot (e.g. Monday).
+-- Handles all cases: recurring first/later week, single override, "only this" vs "this and future".
+--
+-- Parameters:
+--   p_lesson_agreement_id: The lesson agreement
+--   p_week_date: The agreement's original date for that week (e.g. the Monday of that week)
+--   p_user_id: User performing the action (audit)
+--   p_scope: 'only_this' = affect only this week; 'this_and_future' = this week and all following
+--
+-- Returns: recurring_deleted | recurring_shifted | recurring_ended | single_deleted | single_replaced_with_override | override_inserted
+CREATE OR REPLACE FUNCTION public.ensure_week_shows_original_slot(
+  p_lesson_agreement_id UUID,
+  p_week_date DATE,
+  p_user_id UUID,
+  p_scope TEXT
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_agreement_start_time TIME;
+  v_row RECORD;
+  v_recurring RECORD;
+  v_has_recurring_for_week BOOLEAN;
+  v_recurring_end_date DATE;
+BEGIN
+  IF p_scope IS DISTINCT FROM 'only_this' AND p_scope IS DISTINCT FROM 'this_and_future' THEN
+    RAISE EXCEPTION 'p_scope must be only_this or this_and_future, got: %', p_scope;
+  END IF;
+
+  SELECT start_time INTO v_agreement_start_time
+  FROM public.lesson_agreements
+  WHERE id = p_lesson_agreement_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Lesson agreement not found: %', p_lesson_agreement_id;
+  END IF;
+
+  -- Is there an exact deviation row for this week (agreement + original_date = p_week_date)?
+  SELECT * INTO v_row
+  FROM public.lesson_appointment_deviations
+  WHERE lesson_agreement_id = p_lesson_agreement_id
+    AND original_date = p_week_date
+  LIMIT 1;
+
+  IF FOUND THEN
+    IF v_row.recurring THEN
+      IF p_scope = 'this_and_future' THEN
+        DELETE FROM public.lesson_appointment_deviations WHERE id = v_row.id;
+        RETURN 'recurring_deleted';
+      ELSE
+        PERFORM public.shift_recurring_deviation_to_next_week(v_row.id, p_user_id);
+        RETURN 'recurring_shifted';
+      END IF;
+    ELSE
+      -- Single deviation for this week: delete it
+      DELETE FROM public.lesson_appointment_deviations WHERE id = v_row.id;
+
+      -- If a recurring applies to this week, insert override so week shows original (not recurring's day)
+      SELECT EXISTS (
+        SELECT 1
+        FROM public.lesson_appointment_deviations d
+        WHERE d.lesson_agreement_id = p_lesson_agreement_id
+          AND d.recurring = true
+          AND d.original_date <= p_week_date
+          AND (d.recurring_end_date IS NULL OR d.recurring_end_date >= p_week_date)
+      ) INTO v_has_recurring_for_week;
+
+      IF v_has_recurring_for_week THEN
+        INSERT INTO public.lesson_appointment_deviations (
+          lesson_agreement_id,
+          original_date,
+          original_start_time,
+          actual_date,
+          actual_start_time,
+          recurring,
+          created_by_user_id,
+          last_updated_by_user_id
+        ) VALUES (
+          p_lesson_agreement_id,
+          p_week_date,
+          v_agreement_start_time,
+          p_week_date,
+          v_agreement_start_time,
+          false,
+          p_user_id,
+          p_user_id
+        );
+        RETURN 'single_replaced_with_override';
+      END IF;
+      RETURN 'single_deleted';
+    END IF;
+  END IF;
+
+  -- No row for this week: the event is a later occurrence of a recurring. Find that recurring.
+  SELECT * INTO v_recurring
+  FROM public.lesson_appointment_deviations
+  WHERE lesson_agreement_id = p_lesson_agreement_id
+    AND recurring = true
+    AND original_date <= p_week_date
+    AND (recurring_end_date IS NULL OR recurring_end_date >= p_week_date)
+  ORDER BY original_date DESC
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN 'no_op';
+  END IF;
+
+  IF p_scope = 'this_and_future' THEN
+    v_recurring_end_date := p_week_date - INTERVAL '7 days';
+    UPDATE public.lesson_appointment_deviations
+    SET recurring_end_date = v_recurring_end_date,
+        last_updated_by_user_id = p_user_id
+    WHERE id = v_recurring.id;
+    RETURN 'recurring_ended';
+  END IF;
+
+  -- only_this: insert override for this week so it shows original
+  INSERT INTO public.lesson_appointment_deviations (
+    lesson_agreement_id,
+    original_date,
+    original_start_time,
+    actual_date,
+    actual_start_time,
+    recurring,
+    created_by_user_id,
+    last_updated_by_user_id
+  ) VALUES (
+    p_lesson_agreement_id,
+    p_week_date,
+    v_agreement_start_time,
+    p_week_date,
+    v_agreement_start_time,
+    false,
+    p_user_id,
+    p_user_id
+  );
+  RETURN 'override_inserted';
+END;
+$$;
+
+ALTER FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, UUID, TEXT) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, UUID, TEXT) TO authenticated;
+
 -- =============================================================================
 -- SECTION 7: PERMISSIONS
 -- =============================================================================

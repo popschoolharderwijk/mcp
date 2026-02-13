@@ -448,22 +448,21 @@ describe('deviation scenarios: override recurring deviation with actual=original
 
 	it('restore single deviation (that overrode recurring) back to original: week shows Monday green', async () => {
 		// Edge case: recurring Mon→Tue, then single for one week moved to Wed. User drags Wed back to Mon.
-		// We must delete the single and insert an override (actual=original) so that week shows Monday (green),
-		// not Tuesday (recurring would apply if we only deleted).
+		// Use ensure_week_shows_original_slot RPC; use weeks that don't conflict with beforeAll (2026-02-02, 2026-02-16).
 		const agreement = getAgreement();
 		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
-		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-02'));
-		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-09'));
-		const week2Wednesday = getActualDateInOriginalWeek(week2Monday, new Date('2026-02-11T14:00:00'));
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-09'));
+		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-23'));
+		const week2Wednesday = getActualDateInOriginalWeek(week2Monday, new Date('2026-02-25T14:00:00'));
 
-		// Create recurring Mon→Tue
+		// Create recurring Mon→Tue for week 1
 		const { data: recurData } = await dbNoRLS
 			.from('lesson_appointment_deviations')
 			.insert({
 				lesson_agreement_id: agreementId,
 				original_date: week1Monday,
 				original_start_time: agreement.start_time,
-				actual_date: getActualDateInOriginalWeek(week1Monday, new Date('2026-02-03T14:00:00')),
+				actual_date: getActualDateInOriginalWeek(week1Monday, new Date('2026-02-10T14:00:00')),
 				actual_start_time: '14:00',
 				recurring: true,
 				created_by_user_id: userId,
@@ -492,30 +491,27 @@ describe('deviation scenarios: override recurring deviation with actual=original
 		const singleId = (singleData as { id: string } | null)?.id;
 		if (!singleId) throw new Error('Single deviation not created');
 
-		// Restore to original: delete single and insert override so week 2 shows Monday
+		// Restore to original via RPC: delete single and insert override so week 2 shows Monday
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const { error: delError } = await db.from('lesson_appointment_deviations').delete().eq('id', singleId);
-		expect(delError).toBeNull();
+		const { data: rpcResult, error: rpcError } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week2Monday,
+			p_user_id: userId,
+			p_scope: 'only_this',
+		});
 
-		const { data: overrideData, error: insertError } = await db
+		expect(rpcError).toBeNull();
+		expect(rpcResult).toBe('single_replaced_with_override');
+
+		// Override row exists with actual_date = original_date = week2Monday
+		const { data: overrideRows } = await dbNoRLS
 			.from('lesson_appointment_deviations')
-			.insert({
-				lesson_agreement_id: agreementId,
-				original_date: week2Monday,
-				original_start_time: agreement.start_time,
-				actual_date: week2Monday,
-				actual_start_time: agreement.start_time,
-				recurring: false,
-				created_by_user_id: userId,
-				last_updated_by_user_id: userId,
-			})
-			.select()
-			.single();
-
-		expect(insertError).toBeNull();
-		expect(overrideData).not.toBeNull();
-		expect(overrideData?.actual_date).toBe(week2Monday);
-		expect(overrideData?.original_date).toBe(week2Monday);
+			.select('id, original_date, actual_date')
+			.eq('lesson_agreement_id', agreementId)
+			.eq('original_date', week2Monday)
+			.eq('recurring', false);
+		expect((overrideRows ?? []).length).toBe(1);
+		expect((overrideRows ?? [])[0]).toMatchObject({ original_date: week2Monday, actual_date: week2Monday });
 
 		// Recurring still exists; override for week 2 shows Monday (green in UI)
 		const { data: recurringRow } = await dbNoRLS
@@ -525,9 +521,9 @@ describe('deviation scenarios: override recurring deviation with actual=original
 			.maybeSingle();
 		expect(recurringRow).not.toBeNull();
 
-		// Cleanup
-		if (overrideData?.id)
-			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', overrideData.id);
+		// Cleanup: override row and recurring created in this test
+		const overrideId = (overrideRows ?? [])[0]?.id;
+		if (overrideId) await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', overrideId);
 		await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', recurringId);
 	});
 
@@ -740,5 +736,319 @@ describe('deviation scenarios: restore only this occurrence in first week', () =
 		expect(recurringRows.length).toBe(1);
 		expect((recurringRows[0] as { original_date: string }).original_date).toBe(nextWeekOriginalStr);
 		recurringDeviationId = null;
+	});
+});
+
+describe('deviation scenarios: ensure_week_shows_original_slot RPC', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+	const createdIds: string[] = [];
+
+	beforeAll(async () => {
+		initialState = await setupState();
+	});
+
+	afterAll(async () => {
+		for (const id of createdIds) {
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', id);
+		}
+		await verifyState(initialState);
+	});
+
+	it('recurring first week + this_and_future → recurring_deleted', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-05-04'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-05-07T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const devId = (data as { id: string } | null)?.id;
+		if (devId) createdIds.push(devId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week1Monday,
+			p_user_id: userId,
+			p_scope: 'this_and_future',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('recurring_deleted');
+		const { data: after } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', devId)
+			.maybeSingle();
+		expect(after).toBeNull();
+		createdIds.length = 0;
+	});
+
+	it('recurring first week + only_this → recurring_shifted', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-06-01'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-06-04T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const devId = (data as { id: string } | null)?.id;
+		if (devId) createdIds.push(devId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week1Monday,
+			p_user_id: userId,
+			p_scope: 'only_this',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('recurring_shifted');
+		// Old row deleted, new row exists for next week
+		const { data: oldRow } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', devId)
+			.maybeSingle();
+		expect(oldRow).toBeNull();
+		const nextWeekMonday = originalDateForWeek(agreement.day_of_week, new Date('2026-06-08'));
+		const { data: newRows } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('lesson_agreement_id', agreementId)
+			.eq('original_date', nextWeekMonday)
+			.eq('recurring', true);
+		expect((newRows ?? []).length).toBe(1);
+		if ((newRows ?? [])[0]?.id) createdIds.push((newRows as { id: string }[])[0].id);
+	});
+
+	it('recurring later week + this_and_future → recurring_ended', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-07-06'));
+		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-07-13'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-07-09T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const devId = (data as { id: string } | null)?.id;
+		if (devId) createdIds.push(devId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week2Monday,
+			p_user_id: userId,
+			p_scope: 'this_and_future',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('recurring_ended');
+		const expectedEnd = '2026-07-06';
+		const { data: row } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('recurring_end_date')
+			.eq('id', devId)
+			.single();
+		expect((row as { recurring_end_date: string } | null)?.recurring_end_date).toBe(expectedEnd);
+	});
+
+	it('single (no recurring) + restore → single_deleted', async () => {
+		// Use a week before any recurring left by earlier tests (e.g. 2026-06-08 from recurring_shifted)
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const weekMonday = originalDateForWeek(agreement.day_of_week, new Date('2026-05-25'));
+		const actualDate = getActualDateInOriginalWeek(weekMonday, new Date('2026-05-28T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: weekMonday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const devId = (data as { id: string } | null)?.id;
+		if (devId) createdIds.push(devId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: weekMonday,
+			p_user_id: userId,
+			p_scope: 'only_this',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('single_deleted');
+		const { data: after } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', devId)
+			.maybeSingle();
+		expect(after).toBeNull();
+		createdIds.length = 0;
+	});
+
+	it('single that overrode recurring + restore → single_replaced_with_override and week shows original', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-09-07'));
+		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-09-14'));
+		const week2Wed = getActualDateInOriginalWeek(week2Monday, new Date('2026-09-16T14:00:00'));
+
+		const { data: recurData } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: getActualDateInOriginalWeek(week1Monday, new Date('2026-09-08T14:00:00')),
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const recurringId = (recurData as { id: string } | null)?.id;
+		if (recurringId) createdIds.push(recurringId);
+
+		const { data: singleData } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week2Monday,
+				original_start_time: agreement.start_time,
+				actual_date: week2Wed,
+				actual_start_time: '14:00',
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const singleId = (singleData as { id: string } | null)?.id;
+		if (singleId) createdIds.push(singleId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week2Monday,
+			p_user_id: userId,
+			p_scope: 'only_this',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('single_replaced_with_override');
+		// Single row gone; override row exists with actual_date = original_date = week2Monday
+		const { data: afterSingle } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', singleId)
+			.maybeSingle();
+		expect(afterSingle).toBeNull();
+		const { data: overrideRows } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id, original_date, actual_date, actual_start_time')
+			.eq('lesson_agreement_id', agreementId)
+			.eq('original_date', week2Monday)
+			.eq('recurring', false);
+		expect((overrideRows ?? []).length).toBe(1);
+		const override = (overrideRows ?? [])[0] as { id: string; original_date: string; actual_date: string; actual_start_time: string };
+		expect(override.original_date).toBe(week2Monday);
+		expect(override.actual_date).toBe(week2Monday);
+		expect(override.actual_start_time).toBe(agreement.start_time);
+		if (override.id) createdIds.push(override.id);
+	});
+
+	it('later occurrence of recurring + only_this → override_inserted', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-10-05'));
+		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-10-12'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-10-08T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const devId = (data as { id: string } | null)?.id;
+		if (devId) createdIds.push(devId);
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: result, error } = await db.rpc('ensure_week_shows_original_slot', {
+			p_lesson_agreement_id: agreementId,
+			p_week_date: week2Monday,
+			p_user_id: userId,
+			p_scope: 'only_this',
+		});
+
+		expect(error).toBeNull();
+		expect(result).toBe('override_inserted');
+		const { data: overrideRows } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id, original_date, actual_date, recurring')
+			.eq('lesson_agreement_id', agreementId)
+			.eq('original_date', week2Monday)
+			.eq('recurring', false);
+		expect((overrideRows ?? []).length).toBe(1);
+		const override = (overrideRows ?? [])[0] as { id: string; actual_date: string };
+		expect(override.actual_date).toBe(week2Monday);
+		if (override.id) createdIds.push(override.id);
 	});
 });
