@@ -201,7 +201,8 @@ export default function TeacherAvailability() {
 															className="rounded-md border bg-muted/50 p-2 text-sm"
 														>
 															<div className="font-medium">
-																{formatTimeString(avail.start_time)} - {formatTimeString(avail.end_time)}
+																{formatTimeString(avail.start_time)} -{' '}
+																{formatTimeString(avail.end_time)}
 															</div>
 															{selectedTeacherId === 'all' && teacher && (
 																<div className="text-xs text-muted-foreground">

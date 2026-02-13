@@ -178,7 +178,8 @@ export default function MyAvailability() {
 												className="flex items-center justify-between rounded-md border bg-muted/50 p-2 text-sm"
 											>
 												<div className="font-medium">
-													{formatTimeString(avail.start_time)} - {formatTimeString(avail.end_time)}
+													{formatTimeString(avail.start_time)} -{' '}
+													{formatTimeString(avail.end_time)}
 												</div>
 												<Button
 													variant="ghost"

@@ -7,6 +7,5 @@ alwaysApply: true
   - ✅ `cd dir; bun dev` (PowerShell)
   - ✅ Or run commands separately
 
-* Run Biome directly, never via npx:
-  - ❌ `npx biome ...`
-  - ✅ `biome ...`
+* CRITICAL: don't use `npx biome ...`, use `biome ...` instead
+* CRITICAL: never use `cd` to the project folder; we are already in the project folder
