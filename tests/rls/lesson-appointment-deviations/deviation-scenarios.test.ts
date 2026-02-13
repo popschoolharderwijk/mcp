@@ -446,6 +446,91 @@ describe('deviation scenarios: override recurring deviation with actual=original
 		if (data?.id) overrideDeviationId = data.id;
 	});
 
+	it('restore single deviation (that overrode recurring) back to original: week shows Monday green', async () => {
+		// Edge case: recurring Mon→Tue, then single for one week moved to Wed. User drags Wed back to Mon.
+		// We must delete the single and insert an override (actual=original) so that week shows Monday (green),
+		// not Tuesday (recurring would apply if we only deleted).
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-02'));
+		const week2Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-09'));
+		const week2Wednesday = getActualDateInOriginalWeek(week2Monday, new Date('2026-02-11T14:00:00'));
+
+		// Create recurring Mon→Tue
+		const { data: recurData } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: getActualDateInOriginalWeek(week1Monday, new Date('2026-02-03T14:00:00')),
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const recurringId = (recurData as { id: string } | null)?.id;
+		if (!recurringId) throw new Error('Recurring deviation not created');
+
+		// Create single for week 2: move that week to Wednesday
+		const { data: singleData } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week2Monday,
+				original_start_time: agreement.start_time,
+				actual_date: week2Wednesday,
+				actual_start_time: '14:00',
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		const singleId = (singleData as { id: string } | null)?.id;
+		if (!singleId) throw new Error('Single deviation not created');
+
+		// Restore to original: delete single and insert override so week 2 shows Monday
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { error: delError } = await db.from('lesson_appointment_deviations').delete().eq('id', singleId);
+		expect(delError).toBeNull();
+
+		const { data: overrideData, error: insertError } = await db
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week2Monday,
+				original_start_time: agreement.start_time,
+				actual_date: week2Monday,
+				actual_start_time: agreement.start_time,
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+
+		expect(insertError).toBeNull();
+		expect(overrideData).not.toBeNull();
+		expect(overrideData?.actual_date).toBe(week2Monday);
+		expect(overrideData?.original_date).toBe(week2Monday);
+
+		// Recurring still exists; override for week 2 shows Monday (green in UI)
+		const { data: recurringRow } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', recurringId)
+			.maybeSingle();
+		expect(recurringRow).not.toBeNull();
+
+		// Cleanup
+		if (overrideData?.id)
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', overrideData.id);
+		await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', recurringId);
+	});
+
 	it('insert deviation with actual=original is rejected when there is no recurring deviation to override', async () => {
 		// This tests that the trigger correctly rejects no-op deviations
 		const agreement = getAgreement();

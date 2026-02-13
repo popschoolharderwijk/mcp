@@ -353,6 +353,43 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 						return;
 					}
 					toast.success('Alleen deze afspraak teruggezet; terugkerende wijziging start volgende week');
+				} else if (!existingDeviation.recurring && recurringByAgreement.get(agreement.id)?.some(
+					(d) =>
+						d.original_date <= originalDateStr &&
+						(d.recurring_end_date === null ||
+							d.recurring_end_date === undefined ||
+							d.recurring_end_date >= originalDateStr),
+				)) {
+					// Single deviation that overrode a recurring deviation for this week; user restored to original (Monday).
+					// If we only delete, the recurring would apply and the lesson would show on Tuesday. Instead: delete
+					// the single deviation and insert an override with actual = original so this week shows Monday (green).
+					const { error: delError } = await supabase
+						.from('lesson_appointment_deviations')
+						.delete()
+						.eq('id', existingDeviation.id);
+					if (delError) {
+						console.error('Error removing deviation:', delError);
+						toast.error('Fout bij terugzetten');
+						setPendingEvent(null);
+						return;
+					}
+					const { error: insertError } = await supabase.from('lesson_appointment_deviations').insert({
+						lesson_agreement_id: agreement.id,
+						original_date: originalDateStr,
+						original_start_time: normalizeTime(agreement.start_time),
+						actual_date: actualDateStr,
+						actual_start_time: actualStartTime,
+						recurring: false,
+						created_by_user_id: user.id,
+						last_updated_by_user_id: user.id,
+					});
+					if (insertError) {
+						console.error('Error inserting override deviation:', insertError);
+						toast.error('Fout bij terugzetten');
+						setPendingEvent(null);
+						return;
+					}
+					toast.success('Les teruggezet naar originele planning');
 				} else {
 					// Single deviation or "this and future" for recurring: remove the deviation
 					const { error } = await supabase
