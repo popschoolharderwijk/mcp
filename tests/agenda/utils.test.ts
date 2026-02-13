@@ -284,7 +284,8 @@ describe('agenda utils: generateRecurringEvents', () => {
 		const rangeEnd = new Date('2025-02-28');
 		const events = generateRecurringEvents([agreement], rangeStart, rangeEnd, deviationsMap);
 		const event = events.find(
-			(e) => e.resource.type !== undefined && new Date(e.start as Date).toISOString().split('T')[0] === '2025-02-17',
+			(e) =>
+				e.resource.type !== undefined && new Date(e.start as Date).toISOString().split('T')[0] === '2025-02-17',
 		);
 		expect(event).toBeDefined();
 		expect(event?.resource.type).toBe('agreement');

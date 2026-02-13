@@ -245,15 +245,10 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			// For "only this" on a later occurrence: create a NEW deviation for this week.
 			// The original_date must be the AGREEMENT's original day for this week
 			// because the deviations Map is keyed by agreement_id + agreement's original date.
-			//
-			// To satisfy the DB constraint (actual must differ from original), we use
-			// original_start_time with :01 seconds. This ensures that even if the user
-			// drags back to the agreement's original day+time, the constraint is satisfied
-			// because 10:00:01 != 10:00:00.
+			// The DB trigger (enforce_deviation_validity) allows actual = original when
+			// it serves as an override for a recurring deviation.
 			originalDateStr = occurrenceWeekOriginalDateStr;
-			// Add :01 second to differentiate from actual_start_time when on same day
-			const baseTime = normalizeTime(agreement.start_time);
-			originalStartTime = baseTime.replace(/:00$/, ':01');
+			originalStartTime = normalizeTime(agreement.start_time);
 		}
 
 		// Keep actual_date within original_date ± 7 days (deviation_date_check); use same weekday as dropped date
@@ -286,7 +281,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			originalDateStr === actualDateStr && normalizeTime(originalStartTime) === normalizeTime(actualStartTime);
 
 		// For recurring deviation "this and future" restore: user dropped on agreement's original slot.
-		// We cannot use isRestoringToOriginal for later occurrences because originalStartTime is set to :01 there.
+		// This checks if the user is restoring to the agreement's original schedule for this week.
 		const isRestoringRecurringToOriginalSlot =
 			isRecurringDeviation &&
 			actualDateStr === occurrenceWeekOriginalDateStr &&
@@ -365,28 +360,13 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			if (isRestoringToOriginal) {
 				// Recurring deviation + "only this" = recurring starts next week; this week shows original (no deviation)
 				if (existingDeviation.recurring && !recurring) {
-					const thisWeekOriginal = originalDateStr;
-					const nextWeekDate = new Date(thisWeekOriginal + 'T12:00:00');
-					nextWeekDate.setDate(nextWeekDate.getDate() + 7);
-					const nextWeekOriginalStr = nextWeekDate.toISOString().split('T')[0];
-					const actualDayOfWeek = new Date(existingDeviation.actual_date).getDay();
-					const nextWeekActualDate = getDateForDayOfWeek(actualDayOfWeek, nextWeekDate);
-					const nextWeekActualStr = nextWeekActualDate.toISOString().split('T')[0];
-
-					await supabase.from('lesson_appointment_deviations').delete().eq('id', existingDeviation.id);
-
-					const { error: insertError } = await supabase.from('lesson_appointment_deviations').insert({
-						lesson_agreement_id: agreement.id,
-						original_date: nextWeekOriginalStr,
-						original_start_time: normalizeTime(agreement.start_time),
-						actual_date: nextWeekActualStr,
-						actual_start_time: existingDeviation.actual_start_time,
-						recurring: true,
-						created_by_user_id: user.id,
-						last_updated_by_user_id: user.id,
+					// Use atomic database function to shift recurring deviation to next week
+					const { error: rpcError } = await supabase.rpc('shift_recurring_deviation_to_next_week', {
+						p_deviation_id: existingDeviation.id,
+						p_user_id: user.id,
 					});
-					if (insertError) {
-						console.error('Error inserting recurring from next week:', insertError);
+					if (rpcError) {
+						console.error('Error shifting recurring deviation:', rpcError);
 						toast.error('Fout bij bewaren terugkerende wijziging');
 						setPendingEvent(null);
 						return;

@@ -60,13 +60,10 @@ CREATE TABLE IF NOT EXISTS public.lesson_appointment_deviations (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   -- Data integrity constraints
-  CONSTRAINT deviation_date_check CHECK (actual_date >= original_date - INTERVAL '7 days' AND actual_date <= original_date + INTERVAL '7 days'),
-  -- Deviation must either be cancelled, or actually deviate from the original schedule
-  CONSTRAINT deviation_must_actually_deviate_or_be_cancelled CHECK (
-    is_cancelled = true
-    OR actual_date IS DISTINCT FROM original_date
-    OR actual_start_time IS DISTINCT FROM original_start_time
-  )
+  CONSTRAINT deviation_date_check CHECK (actual_date >= original_date - INTERVAL '7 days' AND actual_date <= original_date + INTERVAL '7 days')
+  -- Note: The constraint "deviation_must_actually_deviate_or_be_cancelled" has been replaced
+  -- by the trigger "enforce_deviation_validity_trigger" which allows "restore to original"
+  -- overrides for recurring deviations. See SECTION 5 for details.
 );
 
 -- Indexes
@@ -107,8 +104,9 @@ COMMENT ON COLUMN public.lesson_appointment_deviations.last_updated_by_user_id I
 COMMENT ON COLUMN public.lesson_appointment_deviations.created_at IS 'Timestamp when this record was created';
 COMMENT ON COLUMN public.lesson_appointment_deviations.updated_at IS 'Timestamp when this record was last updated (automatically maintained by trigger)';
 
-COMMENT ON CONSTRAINT deviation_must_actually_deviate_or_be_cancelled ON public.lesson_appointment_deviations
-IS 'Prevents creating deviations that do not actually deviate from the original schedule, unless the lesson is cancelled. If is_cancelled is false and actual_date = original_date AND actual_start_time = original_start_time, the deviation is useless and should not exist.';
+-- Note: The constraint "deviation_must_actually_deviate_or_be_cancelled" has been replaced
+-- by the trigger "enforce_deviation_validity_trigger" which is more flexible and allows
+-- "restore to original" overrides for recurring deviations.
 
 -- =============================================================================
 -- SECTION 3: ENABLE RLS
@@ -318,8 +316,174 @@ BEFORE UPDATE ON public.lesson_appointment_deviations
 FOR EACH ROW
 EXECUTE FUNCTION public.auto_delete_noop_deviation();
 
+-- Trigger function to enforce deviation validity on INSERT
+-- This replaces the CHECK constraint "deviation_must_actually_deviate_or_be_cancelled"
+-- with smarter logic that allows "restore to original" overrides for recurring deviations.
+--
+-- A deviation with actual = original is valid ONLY if:
+-- 1. is_cancelled = true (cancelled lesson), OR
+-- 2. It serves as an override for a recurring deviation (restores this occurrence to original)
+--
+-- This allows the scenario: recurring deviation maandag→dinsdag exists, user wants to
+-- restore a later week back to maandag. A new single deviation is inserted with
+-- actual = original (maandag), which overrides the recurring deviation for that week.
+CREATE OR REPLACE FUNCTION public.enforce_deviation_validity()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_has_recurring_override BOOLEAN;
+BEGIN
+  -- If actual differs from original, always valid
+  IF NEW.actual_date IS DISTINCT FROM NEW.original_date
+     OR NEW.actual_start_time IS DISTINCT FROM NEW.original_start_time THEN
+    RETURN NEW;
+  END IF;
+
+  -- If cancelled, always valid (actual = original is expected for cancelled)
+  IF NEW.is_cancelled = true THEN
+    RETURN NEW;
+  END IF;
+
+  -- actual = original AND not cancelled: check if this is an override for a recurring deviation
+  -- An override is valid if there exists a recurring deviation for the same agreement
+  -- that would apply to this date (original_date < NEW.original_date AND recurring = true
+  -- AND (recurring_end_date IS NULL OR recurring_end_date >= NEW.original_date))
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.lesson_appointment_deviations d
+    WHERE d.lesson_agreement_id = NEW.lesson_agreement_id
+      AND d.id IS DISTINCT FROM NEW.id  -- Exclude self (for UPDATE scenarios)
+      AND d.recurring = true
+      AND d.original_date < NEW.original_date
+      AND (d.recurring_end_date IS NULL OR d.recurring_end_date >= NEW.original_date)
+  ) INTO v_has_recurring_override;
+
+  IF v_has_recurring_override THEN
+    -- Valid: this deviation overrides a recurring deviation, restoring this week to original
+    RETURN NEW;
+  END IF;
+
+  -- Invalid: no-op deviation with no purpose
+  RAISE EXCEPTION 'Deviation must actually deviate from the original schedule, be cancelled, or serve as an override for a recurring deviation. actual_date=%, original_date=%, actual_start_time=%, original_start_time=%',
+    NEW.actual_date, NEW.original_date, NEW.actual_start_time, NEW.original_start_time;
+END;
+$$;
+
+-- Set function owner to postgres for SECURITY DEFINER
+ALTER FUNCTION public.enforce_deviation_validity() OWNER TO postgres;
+
+-- Create trigger to enforce deviation validity on INSERT
+-- Runs BEFORE INSERT to validate new rows
+CREATE TRIGGER enforce_deviation_validity_trigger
+BEFORE INSERT ON public.lesson_appointment_deviations
+FOR EACH ROW
+EXECUTE FUNCTION public.enforce_deviation_validity();
+
 -- =============================================================================
--- SECTION 6: PERMISSIONS
+-- SECTION 6: DATABASE FUNCTIONS
+-- =============================================================================
+
+-- Function to shift a recurring deviation to start from the next week
+-- Used when a user selects "only this appointment" to restore a recurring deviation
+-- in its first week. The current week reverts to the original schedule, and the
+-- recurring deviation continues from the next week.
+--
+-- Parameters:
+--   p_deviation_id: The ID of the recurring deviation to shift
+--   p_user_id: The user performing this action (for audit trail)
+--
+-- Returns: The ID of the newly created deviation (starting next week)
+--
+-- This function performs an atomic delete + insert:
+-- 1. Deletes the existing recurring deviation
+-- 2. Creates a new recurring deviation with original_date = next week
+CREATE OR REPLACE FUNCTION public.shift_recurring_deviation_to_next_week(
+  p_deviation_id UUID,
+  p_user_id UUID
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_dev RECORD;
+  v_agreement RECORD;
+  v_next_week_original DATE;
+  v_next_week_actual DATE;
+  v_new_id UUID;
+BEGIN
+  -- Get the existing deviation
+  SELECT * INTO v_dev
+  FROM public.lesson_appointment_deviations
+  WHERE id = p_deviation_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Deviation not found: %', p_deviation_id;
+  END IF;
+
+  IF NOT v_dev.recurring THEN
+    RAISE EXCEPTION 'Deviation is not recurring: %', p_deviation_id;
+  END IF;
+
+  -- Get the agreement for start_time
+  SELECT * INTO v_agreement
+  FROM public.lesson_agreements
+  WHERE id = v_dev.lesson_agreement_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Agreement not found for deviation: %', p_deviation_id;
+  END IF;
+
+  -- Calculate next week's dates
+  v_next_week_original := v_dev.original_date + INTERVAL '7 days';
+  v_next_week_actual := v_dev.actual_date + INTERVAL '7 days';
+
+  -- Delete the existing deviation
+  DELETE FROM public.lesson_appointment_deviations WHERE id = p_deviation_id;
+
+  -- Insert new deviation starting from next week
+  INSERT INTO public.lesson_appointment_deviations (
+    lesson_agreement_id,
+    original_date,
+    original_start_time,
+    actual_date,
+    actual_start_time,
+    is_cancelled,
+    recurring,
+    reason,
+    created_by_user_id,
+    last_updated_by_user_id
+  ) VALUES (
+    v_agreement.id,
+    v_next_week_original,
+    v_agreement.start_time,
+    v_next_week_actual,
+    v_dev.actual_start_time,
+    v_dev.is_cancelled,
+    true,
+    v_dev.reason,
+    p_user_id,
+    p_user_id
+  )
+  RETURNING id INTO v_new_id;
+
+  RETURN v_new_id;
+END;
+$$;
+
+-- Set function owner to postgres for SECURITY DEFINER
+ALTER FUNCTION public.shift_recurring_deviation_to_next_week(UUID, UUID) OWNER TO postgres;
+
+-- Grant execute permission to authenticated users
+-- RLS on the underlying table still controls which deviations can be modified
+GRANT EXECUTE ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID, UUID) TO authenticated;
+
+-- =============================================================================
+-- SECTION 7: PERMISSIONS
 -- =============================================================================
 
 -- GRANT gives table-level permissions, but RLS policies (above) are what

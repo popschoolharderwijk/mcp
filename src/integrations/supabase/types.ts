@@ -549,6 +549,10 @@ export type Database = {
 				Args: { p_policy_name: string; p_table_name: string };
 				Returns: boolean;
 			};
+			shift_recurring_deviation_to_next_week: {
+				Args: { p_deviation_id: string; p_user_id: string };
+				Returns: string;
+			};
 		};
 		Enums: {
 			app_role: 'site_admin' | 'admin' | 'staff';

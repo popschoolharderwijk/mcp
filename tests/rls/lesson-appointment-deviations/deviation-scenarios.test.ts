@@ -4,10 +4,7 @@
  * Verifies the DB state after the operations the UI would perform.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import {
-	getActualDateInOriginalWeek,
-	getDateForDayOfWeek,
-} from '../../../src/components/teachers/agenda/utils';
+import { getActualDateInOriginalWeek, getDateForDayOfWeek } from '../../../src/components/teachers/agenda/utils';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
@@ -99,6 +96,70 @@ describe('deviation scenarios: change single and recurring', () => {
 		expect(data).not.toBeNull();
 		expect(data?.recurring).toBe(true);
 		if (data?.id) createdIds.push(data.id);
+	});
+});
+
+describe('deviation scenarios: unique index (lesson_agreement_id, original_date)', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+	let firstDeviationId: string | null = null;
+
+	beforeAll(async () => {
+		initialState = await setupState();
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const weekMonday = originalDateForWeek(agreement.day_of_week, new Date('2025-08-18'));
+		const actualDate = getActualDateInOriginalWeek(weekMonday, new Date('2025-08-21T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: weekMonday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		if (data?.id) firstDeviationId = data.id;
+	});
+
+	afterAll(async () => {
+		if (firstDeviationId) {
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', firstDeviationId);
+		}
+		await verifyState(initialState);
+	});
+
+	it('second INSERT with same (lesson_agreement_id, original_date) fails with unique violation', async () => {
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const weekMonday = originalDateForWeek(agreement.day_of_week, new Date('2025-08-18'));
+		const otherActualDate = getActualDateInOriginalWeek(weekMonday, new Date('2025-08-22T15:00:00'));
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data, error } = await db
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: weekMonday,
+				original_start_time: agreement.start_time,
+				actual_date: otherActualDate,
+				actual_start_time: '15:00',
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+
+		expect(error).not.toBeNull();
+		expect(error?.code).toBe('23505'); // unique_violation
+		expect(data).toBeNull();
 	});
 });
 
@@ -250,6 +311,193 @@ describe('deviation scenarios: restore to original in a later week (recurring_en
 	});
 });
 
+describe('deviation scenarios: override recurring deviation with actual=original', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+	let recurringDeviationId: string | null = null;
+	let overrideDeviationId: string | null = null;
+
+	beforeAll(async () => {
+		initialState = await setupState();
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		// Create a recurring deviation: move from Monday to Thursday
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-02'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-02-05T14:00:00')); // Thursday
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		if (data?.id) recurringDeviationId = data.id;
+	});
+
+	afterAll(async () => {
+		if (overrideDeviationId)
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', overrideDeviationId);
+		if (recurringDeviationId)
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', recurringDeviationId);
+		await verifyState(initialState);
+	});
+
+	it('insert deviation with actual=original is allowed when overriding a recurring deviation', async () => {
+		// This tests the new enforce_deviation_validity trigger
+		// Normally actual=original would be rejected, but it's allowed when overriding a recurring deviation
+		if (!recurringDeviationId) throw new Error('Recurring deviation not created');
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+
+		// Week 3: we want to override the recurring deviation and restore to original (Monday)
+		const week3Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-02-16'));
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data, error } = await db
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week3Monday,
+				original_start_time: agreement.start_time,
+				// actual = original: this should be allowed because it overrides the recurring deviation
+				actual_date: week3Monday,
+				actual_start_time: agreement.start_time,
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+
+		expect(error).toBeNull();
+		expect(data).not.toBeNull();
+		expect(data?.actual_date).toBe(week3Monday);
+		expect(data?.actual_start_time).toBe(agreement.start_time);
+		if (data?.id) overrideDeviationId = data.id;
+	});
+
+	it('insert deviation with actual=original is rejected when there is no recurring deviation to override', async () => {
+		// This tests that the trigger correctly rejects no-op deviations
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+
+		// Week in 2027 where there's no recurring deviation (outside the scope of our recurring deviation)
+		// Actually, the recurring deviation applies forever (no end date), so we need a different agreement
+		// or we need to set recurring_end_date. For simplicity, let's just test with a week before the recurring starts
+		const weekBeforeRecurring = originalDateForWeek(agreement.day_of_week, new Date('2026-01-26'));
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data, error } = await db
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: weekBeforeRecurring,
+				original_start_time: agreement.start_time,
+				// actual = original: should be rejected because there's no recurring deviation to override
+				actual_date: weekBeforeRecurring,
+				actual_start_time: agreement.start_time,
+				recurring: false,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+
+		expect(error).not.toBeNull();
+		expect(error?.message).toContain('Deviation must actually deviate');
+		expect(data).toBeNull();
+	});
+});
+
+describe('deviation scenarios: shift_recurring_deviation_to_next_week function', () => {
+	let initialState: DatabaseState;
+	const { setupState, verifyState } = setupDatabaseStateVerification();
+	let recurringDeviationId: string | null = null;
+
+	beforeAll(async () => {
+		initialState = await setupState();
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const week1Monday = originalDateForWeek(agreement.day_of_week, new Date('2026-03-02'));
+		const actualDate = getActualDateInOriginalWeek(week1Monday, new Date('2026-03-05T14:00:00'));
+
+		const { data } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert({
+				lesson_agreement_id: agreementId,
+				original_date: week1Monday,
+				original_start_time: agreement.start_time,
+				actual_date: actualDate,
+				actual_start_time: '14:00',
+				recurring: true,
+				created_by_user_id: userId,
+				last_updated_by_user_id: userId,
+			})
+			.select()
+			.single();
+		if (data?.id) recurringDeviationId = data.id;
+	});
+
+	afterAll(async () => {
+		const { data: rows } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('lesson_agreement_id', agreementId)
+			.gte('original_date', '2026-03-01');
+		for (const row of rows ?? []) {
+			await dbNoRLS
+				.from('lesson_appointment_deviations')
+				.delete()
+				.eq('id', (row as { id: string }).id);
+		}
+		await verifyState(initialState);
+	});
+
+	it('shift_recurring_deviation_to_next_week atomically moves deviation to next week', async () => {
+		if (!recurringDeviationId) throw new Error('Recurring deviation not created');
+		const agreement = getAgreement();
+		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+		const nextWeekMonday = originalDateForWeek(agreement.day_of_week, new Date('2026-03-09'));
+
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const { data: newId, error } = await db.rpc('shift_recurring_deviation_to_next_week', {
+			p_deviation_id: recurringDeviationId,
+			p_user_id: userId,
+		});
+
+		expect(error).toBeNull();
+		expect(newId).not.toBeNull();
+
+		// Old deviation should be gone
+		const { data: oldRow } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id')
+			.eq('id', recurringDeviationId)
+			.maybeSingle();
+		expect(oldRow).toBeNull();
+
+		// New deviation should exist with original_date = next week
+		const { data: newRow } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.select('id, original_date, recurring')
+			.eq('id', newId as string)
+			.single();
+		expect(newRow).not.toBeNull();
+		expect(newRow?.original_date).toBe(nextWeekMonday);
+		expect(newRow?.recurring).toBe(true);
+
+		recurringDeviationId = null; // Already deleted by the function
+	});
+});
+
 describe('deviation scenarios: restore only this occurrence in first week', () => {
 	let initialState: DatabaseState;
 	const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -286,7 +534,10 @@ describe('deviation scenarios: restore only this occurrence in first week', () =
 			.eq('lesson_agreement_id', agreementId)
 			.gte('original_date', '2026-01-01');
 		for (const row of rows ?? []) {
-			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', (row as { id: string }).id);
+			await dbNoRLS
+				.from('lesson_appointment_deviations')
+				.delete()
+				.eq('id', (row as { id: string }).id);
 		}
 		await verifyState(initialState);
 	});
