@@ -14,16 +14,17 @@ import { Button } from '@/components/ui/button';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
-// Navigation items configuration
-const mainNavItems = [{ href: '/', label: 'Dashboard', icon: LuLayoutDashboard }];
+// Navigation items configuration (labels uit centrale config)
+const mainNavItems = [{ href: '/', label: NAV_LABELS.dashboard, icon: LuLayoutDashboard }];
 
 // Admin-only navigation items
 const adminNavItems = [
-	{ href: '/users', label: 'Gebruikers', icon: LuUserCog },
-	{ href: '/lesson-types', label: 'Lessoorten', icon: LuMusic2 },
+	{ href: '/users', label: NAV_LABELS.users, icon: LuUserCog },
+	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: LuMusic2 },
 ];
 
 interface SidebarProps {
@@ -103,14 +104,14 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 									<div className="mt-4 mb-2 px-3">
 										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 											<LuGraduationCap className="h-3.5 w-3.5" />
-											<span>Docenten</span>
+											<span>{NAV_LABELS.teachers}</span>
 										</div>
 									</div>
 								)}
 								{collapsed && <Separator className="my-2" />}
 								<NavItem
 									href="/teachers"
-									label="Docenten"
+									label={NAV_LABELS.teachers}
 									icon={LuGraduationCap}
 									collapsed={collapsed}
 								/>
@@ -131,7 +132,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								{collapsed && <Separator className="my-2" />}
 								<NavItem
 									href="/students/my-students"
-									label="Mijn Leerlingen"
+									label={NAV_LABELS.myStudents}
 									icon={LuUsers}
 									collapsed={collapsed}
 								/>
@@ -145,12 +146,17 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 									<div className="mt-4 mb-2 px-3">
 										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
 											<LuUsers className="h-3.5 w-3.5" />
-											<span>Leerlingen</span>
+											<span>{NAV_LABELS.students}</span>
 										</div>
 									</div>
 								)}
 								{collapsed && <Separator className="my-2" />}
-								<NavItem href="/students" label="Leerlingen" icon={LuUsers} collapsed={collapsed} />
+								<NavItem
+									href="/students"
+									label={NAV_LABELS.students}
+									icon={LuUsers}
+									collapsed={collapsed}
+								/>
 							</>
 						)}
 

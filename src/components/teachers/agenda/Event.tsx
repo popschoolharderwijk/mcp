@@ -12,10 +12,7 @@ export function AgendaEvent({ event, title }: AgendaEventProps) {
 	const view = useCalendarView();
 	const { isDeviation, isCancelled, isRecurring } = event.resource;
 
-	const displayTitle =
-		view === 'month' && event.start
-			? `${displayTimeFromDate(event.start)} ${title}`
-			: title;
+	const displayTitle = view === 'month' && event.start ? `${displayTimeFromDate(event.start)} ${title}` : title;
 
 	return (
 		<div className="h-full w-full overflow-hidden">

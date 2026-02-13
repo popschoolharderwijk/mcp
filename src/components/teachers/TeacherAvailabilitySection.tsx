@@ -212,6 +212,15 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 		return availabilityBlocks.filter((b) => b.displayDay === displayDay);
 	};
 
+	// Tijden weglaten alleen voor blokjes van precies 30 min; grotere blokken tonen start en eind op twee regels
+	const blockDurationMinutes = (startTime: string, endTime: string): number => {
+		const [sh, sm] = startTime.split(':').map(Number);
+		const [eh, em] = endTime.split(':').map(Number);
+		return (eh - sh) * 60 + (em - sm);
+	};
+	const showTimeInBlock = (startTime: string, endTime: string) =>
+		blockDurationMinutes(startTime, endTime) > 30;
+
 	if (loading) {
 		return (
 			<div className="flex items-center justify-center py-12">
@@ -359,23 +368,33 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 											}}
 											title={`${dayName} ${displayTime(block.startTime)} - ${displayTime(block.endTime)}`}
 										>
-											{/* Single line: smaller font; two lines: normal font (container query) */}
-											<div
-												className="block-content-single absolute inset-0 flex items-center justify-center p-0.5 overflow-hidden min-w-0"
-												title={`${displayTime(block.startTime)} - ${displayTime(block.endTime)}`}
-											>
-												<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-													{displayTime(block.startTime)} – {displayTime(block.endTime)}
-												</span>
-											</div>
-											<div
-												className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0"
-												title={`${displayTime(block.startTime)} - ${displayTime(block.endTime)}`}
-											>
-												<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-													{displayTime(block.startTime)} – {displayTime(block.endTime)}
-												</span>
-											</div>
+											{/* Tijden op twee regels; alleen tonen bij hele uren (niet bij :30) */}
+											{showTimeInBlock(block.startTime, block.endTime) && (
+												<>
+													<div
+														className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0"
+														title={`${displayTime(block.startTime)} – ${displayTime(block.endTime)}`}
+													>
+														<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
+															{displayTime(block.startTime)}
+														</span>
+														<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
+															{displayTime(block.endTime)}
+														</span>
+													</div>
+													<div
+														className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0"
+														title={`${displayTime(block.startTime)} – ${displayTime(block.endTime)}`}
+													>
+														<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
+															{displayTime(block.startTime)}
+														</span>
+														<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
+															{displayTime(block.endTime)}
+														</span>
+													</div>
+												</>
+											)}
 
 											{/* Orange overlay on hover; small icon for single-line blocks, normal icon for taller blocks */}
 											{canEdit && (
