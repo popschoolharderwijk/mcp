@@ -51,6 +51,26 @@ if (lovableExists) {
 		console.log(`\nNothing to do. main and lovable already point to ${shortRef}.`);
 		process.exit(0);
 	}
+
+	// Check if lovable has commits that are not in main (would be lost)
+	const lovableOnlyCommits = (await $`git log main..origin/lovable --oneline`.text()).trim();
+	if (lovableOnlyCommits !== '') {
+		const commitCount = lovableOnlyCommits.split('\n').length;
+		console.warn(`\nWarning: lovable has ${commitCount} commit(s) not in main that will be lost:`);
+		console.warn(lovableOnlyCommits);
+		console.warn('');
+		
+		// Prompt for confirmation
+		process.stdout.write('Continue with reset? [y/N] ');
+		const response = await new Promise<string>((resolve) => {
+			process.stdin.once('data', (data) => resolve(data.toString().trim().toLowerCase()));
+		});
+		
+		if (response !== 'y' && response !== 'yes') {
+			console.log('Aborted.');
+			process.exit(0);
+		}
+	}
 }
 
 console.log('Reset lovable branch to origin/main...');
