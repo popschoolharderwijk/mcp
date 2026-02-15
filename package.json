@@ -15,6 +15,7 @@
 		"format": "npx @biomejs/biome format --write",
 		"lint": "npx @biomejs/biome lint --write",
 		"check": "npx @biomejs/biome check --write",
+		"lint:sql": "squawk supabase/migrations/*.sql",
 		"reset-db:dev": "bun run scripts/reset-db.ts",
 		"reset-branch:lovable": "bun run scripts/reset-branch-lovable.ts",
 		"preview": "vite preview"
@@ -60,6 +61,7 @@
 		"autoprefixer": "^10.4.21",
 		"lovable-tagger": "^1.1.13",
 		"postcss": "^8.5.6",
+		"squawk-cli": "^2.40.1",
 		"tailwindcss": "^3.4.17",
 		"typescript": "^5.8.3",
 		"vite": "^5.4.19"

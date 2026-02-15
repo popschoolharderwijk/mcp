@@ -45,7 +45,7 @@ const lovableExists = (await $`git branch --list lovable`.text()).trim() !== '';
 if (lovableExists) {
 	const currentLovable = (await $`git rev-parse lovable`.text()).trim();
 	const originLovable = (await $`git rev-parse origin/lovable`.text()).trim();
-	
+
 	if (currentLovable === localMain && originLovable === localMain) {
 		const shortRef = localMain.slice(0, 7);
 		console.log(`\nNothing to do. main and lovable already point to ${shortRef}.`);
@@ -59,13 +59,13 @@ if (lovableExists) {
 		console.warn(`\nWarning: lovable has ${commitCount} commit(s) not in main that will be lost:`);
 		console.warn(lovableOnlyCommits);
 		console.warn('');
-		
+
 		// Prompt for confirmation
 		process.stdout.write('Continue with reset? [y/N] ');
 		const response = await new Promise<string>((resolve) => {
 			process.stdin.once('data', (data) => resolve(data.toString().trim().toLowerCase()));
 		});
-		
+
 		if (response !== 'y' && response !== 'yes') {
 			console.log('Aborted.');
 			process.exit(0);
