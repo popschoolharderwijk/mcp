@@ -1,0 +1,22 @@
+# Squawk config for Supabase migrations
+# https://squawkhq.com/docs/cli
+
+# Supabase/Postgres version (Supabase uses PG 15)
+pg_version = "15.0"
+
+# Migrations run in a transaction
+assume_in_transaction = true
+
+# Security & safety rules are enabled by default (ban-drop-database, ban-drop-table,
+# ban-drop-column, ban-truncate-cascade, etc.).
+#
+# Excluded rules that are too strict for Supabase migrations:
+# - require-timeout-settings: Supabase handles timeouts at infrastructure level
+# - prefer-bigint-over-int: INT is fine for bounded values (day_of_week, duration_minutes)
+excluded_rules = [
+  "require-timeout-settings",
+  "prefer-bigint-over-int",
+]
+
+# Only lint migration files (paths are passed via CLI; optional glob exclude)
+# excluded_paths = []

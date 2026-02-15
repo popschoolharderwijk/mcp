@@ -176,15 +176,18 @@ bun test
 
 ---
 
-## Biome Linting
+## Linting
 
 ```bash
-# Check
-biome ci
+# TypeScript/JS (Biome)
+biome ci .                    # Check
+biome check --write .         # Fix
 
-# Format
-biome format --write .
+# SQL migraties (Squawk)
+bun run lint:sql
 
-# Lint + fix
-biome check --write .
+# PL/pgSQL functies (tegen database)
+supabase db lint --linked
 ```
+
+> 📖 Zie [cicd-workflows.md](./cicd-workflows.md#linting) voor uitgebreide documentatie over alle linters.
