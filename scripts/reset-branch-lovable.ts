@@ -40,6 +40,19 @@ if (localMain !== originMain) {
 
 console.log('Main is up-to-date with origin/main.');
 
+// Check if lovable already points to the same commit as main
+const lovableExists = (await $`git branch --list lovable`.text()).trim() !== '';
+if (lovableExists) {
+	const currentLovable = (await $`git rev-parse lovable`.text()).trim();
+	const originLovable = (await $`git rev-parse origin/lovable`.text()).trim();
+	
+	if (currentLovable === localMain && originLovable === localMain) {
+		const shortRef = localMain.slice(0, 7);
+		console.log(`\nNothing to do. main and lovable already point to ${shortRef}.`);
+		process.exit(0);
+	}
+}
+
 console.log('Reset lovable branch to origin/main...');
 await $`git checkout -B lovable origin/main`;
 
