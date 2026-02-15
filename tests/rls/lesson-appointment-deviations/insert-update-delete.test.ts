@@ -8,6 +8,10 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+import { fixtures } from '../fixtures';
+import { TestUsers } from '../test-users';
+import type { LessonAppointmentDeviationInsert } from '../types';
 import {
 	buildDeviationData,
 	buildDeviationDataAsUser,
@@ -16,10 +20,6 @@ import {
 	getTestAgreementBob,
 	originalDateForWeek,
 } from './utils';
-import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
-import { fixtures } from '../fixtures';
-import { TestUsers } from '../test-users';
-import type { LessonAppointmentDeviationInsert } from '../types';
 
 const dbNoRLS = createClientBypassRLS();
 const { agreementId: aliceAgreementId, agreement: aliceAgreement } = getTestAgreement();
@@ -275,12 +275,17 @@ describe('RLS: lesson_appointment_deviations DELETE', () => {
 			},
 			adminUserId,
 		);
-		const { data: adminData } = await dbNoRLS.from('lesson_appointment_deviations').insert(adminRow).select().single();
+		const { data: adminData } = await dbNoRLS
+			.from('lesson_appointment_deviations')
+			.insert(adminRow)
+			.select()
+			.single();
 		if (adminData) adminDeviationId = adminData.id;
 	});
 
 	afterAll(async () => {
-		if (teacherDeviationId) await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', teacherDeviationId);
+		if (teacherDeviationId)
+			await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', teacherDeviationId);
 		if (adminDeviationId) await dbNoRLS.from('lesson_appointment_deviations').delete().eq('id', adminDeviationId);
 		await verifyState(initialState);
 	});

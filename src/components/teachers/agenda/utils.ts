@@ -285,9 +285,9 @@ export function generateRecurringEvents(
 								type: 'deviation',
 								agreementId: firstAgreement.id,
 								deviationId: recurringDeviation.id,
-							studentName: recurringStudentName,
-							studentInfo: recurringStudentInfo,
-							lessonTypeName: recurringDeviation.lesson_agreements.lesson_types.name,
+								studentName: recurringStudentName,
+								studentInfo: recurringStudentInfo,
+								lessonTypeName: recurringDeviation.lesson_agreements.lesson_types.name,
 								lessonTypeColor: recurringDeviation.lesson_agreements.lesson_types.color,
 								lessonTypeIcon: recurringDeviation.lesson_agreements.lesson_types.icon,
 								isDeviation: !isCancelled,
@@ -312,9 +312,9 @@ export function generateRecurringEvents(
 					? `${firstAgreement.lesson_types.name} (${group.length} deelnemers)`
 					: `${firstAgreement.lesson_types.name} - ${studentNames[0]}`;
 
-			const studentInfoList = group
-				.map((a) => buildStudentInfo(a.profiles as Profile | null, a.student_user_id))
-				.filter((info): info is StudentEventInfo => info !== undefined);
+				const studentInfoList = group
+					.map((a) => buildStudentInfo(a.profiles as Profile | null, a.student_user_id))
+					.filter((info): info is StudentEventInfo => info !== undefined);
 
 				events.push({
 					title,

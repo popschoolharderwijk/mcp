@@ -3,9 +3,9 @@
  */
 import { getActualDateInOriginalWeek } from '../../../src/components/teachers/agenda/utils';
 import { dateDaysFromNow, getDateForDayOfWeek, toLocalDateString } from '../../../src/lib/dateHelpers';
-import type { LessonAppointmentDeviationInsert } from '../types';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
+import type { LessonAppointmentDeviationInsert } from '../types';
 
 export { dateDaysFromNow, getDateForDayOfWeek, getActualDateInOriginalWeek };
 

@@ -5,6 +5,9 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+import { fixtures } from '../fixtures';
+import { TestUsers } from '../test-users';
 import {
 	buildDeviationData,
 	dateDaysFromNow,
@@ -13,9 +16,6 @@ import {
 	getTestAgreement,
 	originalDateForWeek,
 } from './utils';
-import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
-import { fixtures } from '../fixtures';
-import { TestUsers } from '../test-users';
 
 const dbNoRLS = createClientBypassRLS();
 const { agreementId, agreement } = getTestAgreement();
@@ -761,7 +761,6 @@ describe('deviation scenarios: ensure_week_shows_original_slot RPC', () => {
 			.single();
 		expect((row as { recurring_end_date: string } | null)?.recurring_end_date).toBe(week1Monday);
 	});
-
 
 	it('single that overrode recurring + restore → single_replaced_with_override and week shows original', async () => {
 		const userId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
