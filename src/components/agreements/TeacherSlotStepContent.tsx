@@ -165,7 +165,10 @@ export function TeacherSlotStepContent({
 								Vrij
 							</span>
 							<span className="inline-flex items-center gap-1">
-								<LuTriangleAlert className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
+								<LuTriangleAlert
+									className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400"
+									aria-hidden
+								/>
 								Deels bezet
 							</span>
 							<span className="inline-flex items-center gap-1">
@@ -195,7 +198,8 @@ export function TeacherSlotStepContent({
 													const isCurrentAgreementSlot =
 														currentAgreementSlot != null &&
 														currentAgreementSlot.day_of_week === slot.day_of_week &&
-														formatTime(currentAgreementSlot.start_time) === formatTime(slot.start_time);
+														formatTime(currentAgreementSlot.start_time) ===
+															formatTime(slot.start_time);
 													const isOccupied = slot.status === 'occupied';
 													return (
 														<button
@@ -218,7 +222,9 @@ export function TeacherSlotStepContent({
 																	'border-amber-200 dark:border-amber-800',
 															)}
 															title={
-																(isCurrentAgreementSlot ? 'Huidige slot van deze overeenkomst. ' : '') +
+																(isCurrentAgreementSlot
+																	? 'Huidige slot van deze overeenkomst. '
+																	: '') +
 																SLOT_STATUS_TITLE[slot.status] +
 																(slot.status === 'partial'
 																	? ` (${slot.occupiedOccurrences}/${slot.totalOccurrences})`

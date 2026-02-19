@@ -667,8 +667,12 @@ export default function AgreementWizard() {
 						<p className="text-muted-foreground mb-6">
 							Dit tijdslot is deels bezet in de gekozen periode
 							{form.slot?.totalOccurrences != null && form.slot?.occupiedOccurrences != null && (
-								<> ({form.slot.occupiedOccurrences} van {form.slot.totalOccurrences} momenten bezet)</>
-							)}. Weet je zeker dat je dit tijdslot wilt gebruiken?
+								<>
+									{' '}
+									({form.slot.occupiedOccurrences} van {form.slot.totalOccurrences} momenten bezet)
+								</>
+							)}
+							. Weet je zeker dat je dit tijdslot wilt gebruiken?
 						</p>
 						<div className="flex justify-end gap-2">
 							<Button variant="outline" onClick={() => setPartialConfirmOpen(false)}>
