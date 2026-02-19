@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { LuCircleCheck, LuCircleX, LuLoaderCircle, LuTriangleAlert } from 'react-icons/lu';
 import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { UsersSelect } from '@/components/ui/users-select';
 import type { SlotStatus, SlotWithStatus } from '@/lib/agreementSlots';
 import { DAY_NAMES } from '@/lib/date/day-index';
@@ -176,7 +177,8 @@ export function TeacherSlotStepContent({
 								Bezet
 							</span>
 						</div>
-						<div className="max-h-72 overflow-y-auto rounded-md border p-2 space-y-3">
+						<ScrollArea className="h-72 rounded-md border">
+							<div className="p-2 space-y-3">
 							{slotsWithStatus.length === 0 ? (
 								<p className="text-sm text-muted-foreground py-2">
 									Geen beschikbare slots voor deze docent in de gekozen periode.
@@ -247,7 +249,8 @@ export function TeacherSlotStepContent({
 									);
 								})
 							)}
-						</div>
+							</div>
+						</ScrollArea>
 					</div>
 				)}
 			</div>
