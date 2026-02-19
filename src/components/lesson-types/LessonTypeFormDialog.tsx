@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MUSIC_ICONS } from '@/constants/icons';
 import { supabase } from '@/integrations/supabase/client';
+import { frequencyOptions } from '@/lib/frequencies';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
 interface LessonType {
@@ -68,13 +69,6 @@ const emptyForm: FormState = {
 	is_group_lesson: false,
 	is_active: true,
 };
-
-const frequencyOptions: { value: LessonFrequency; label: string }[] = [
-	{ value: 'daily', label: 'Dagelijks' },
-	{ value: 'weekly', label: 'Wekelijks' },
-	{ value: 'biweekly', label: 'Tweewekelijks' },
-	{ value: 'monthly', label: 'Maandelijks' },
-];
 
 export function LessonTypeFormDialog({ open, onOpenChange, onSuccess, lessonType }: LessonTypeFormDialogProps) {
 	const isEditMode = !!lessonType;

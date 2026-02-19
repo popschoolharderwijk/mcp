@@ -3,10 +3,8 @@ import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TeacherFormDialog } from '@/components/teachers/TeacherFormDialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ColorIcon } from '@/components/ui/color-icon';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
 import {
 	Dialog,
@@ -16,10 +14,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
+import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { NAV_LABELS } from '@/config/nav-labels';
-import { MUSIC_ICONS } from '@/constants/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
 import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
@@ -34,13 +31,7 @@ export default function Teachers() {
 	const [loading, setLoading] = useState(true);
 	const [totalCount, setTotalCount] = useState(0);
 
-	// Filter state
-	const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
-	const statusFilter = activeFilter;
-	const setStatusFilter = setActiveFilter;
-	const [selectedLessonTypeId, setSelectedLessonTypeId] = useState<string | null>(null);
-
-	// Server-side table state (pagination, sorting, search)
+	// Server-side table state (pagination, sorting, search, filters)
 	const {
 		searchQuery,
 		debouncedSearchQuery,
@@ -52,11 +43,17 @@ export default function Teachers() {
 		sortColumn,
 		sortDirection,
 		handleSortChange,
+		filters,
+		setFilters,
 	} = useServerTableState({
+		storageKey: 'teachers',
 		initialSortColumn: 'teacher',
 		initialSortDirection: 'asc',
-		additionalFilters: { statusFilter, selectedLessonTypeId },
+		initialFilters: { statusFilter: 'all', selectedLessonTypeId: null },
 	});
+
+	const statusFilter = (filters.statusFilter as 'all' | 'active' | 'inactive') ?? 'all';
+	const selectedLessonTypeId = (filters.selectedLessonTypeId as string | null) ?? null;
 
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
@@ -155,32 +152,13 @@ export default function Teachers() {
 		}
 	}, [authLoading, loadTeachers]);
 
-	// Helper functions
-	const getUserInitials = useCallback((t: TeacherWithProfileAndLessonTypes) => {
-		const profile = t.profile;
-		if (profile.first_name && profile.last_name) {
-			return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
-		}
-		if (profile.first_name) {
-			return profile.first_name.slice(0, 2).toUpperCase();
-		}
-		return profile.email.slice(0, 2).toUpperCase();
-	}, []);
-
-	const getDisplayName = useCallback((t: TeacherWithProfileAndLessonTypes) => {
-		const profile = t.profile;
-		if (profile.first_name && profile.last_name) {
-			return `${profile.first_name} ${profile.last_name}`;
-		}
-		if (profile.first_name) {
-			return profile.first_name;
-		}
-		return profile.email;
-	}, []);
-
 	// Quick filter groups configuration
-	const statusFilterGroup = useStatusFilter(statusFilter, setStatusFilter);
-	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, setSelectedLessonTypeId);
+	const statusFilterGroup = useStatusFilter(statusFilter, (v) =>
+		setFilters((prev) => ({ ...prev, statusFilter: v })),
+	);
+	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, (v) =>
+		setFilters((prev) => ({ ...prev, selectedLessonTypeId: v })),
+	);
 
 	const quickFilterGroups: QuickFilterGroup[] = useMemo(() => {
 		const groups: QuickFilterGroup[] = [statusFilterGroup];
@@ -196,20 +174,7 @@ export default function Teachers() {
 				key: 'teacher',
 				label: 'Docent',
 				sortable: true, // Server-side sorting
-				render: (t) => (
-					<div className="flex items-center gap-3">
-						<Avatar className="h-9 w-9">
-							<AvatarImage src={t.profile.avatar_url ?? undefined} alt={getDisplayName(t)} />
-							<AvatarFallback className="bg-primary/10 text-primary text-sm">
-								{getUserInitials(t)}
-							</AvatarFallback>
-						</Avatar>
-						<div>
-							<p className="font-medium">{getDisplayName(t)}</p>
-							<p className="text-xs text-muted-foreground">{t.profile.email}</p>
-						</div>
-					</div>
-				),
+				render: (t) => <UserDisplay profile={t.profile} showEmail />,
 			},
 			{
 				key: 'phone_number',
@@ -228,25 +193,17 @@ export default function Teachers() {
 					}
 
 					return (
-						<TooltipProvider>
-							<div className="flex items-center gap-1.5">
-								{t.lesson_types.map((lt) => {
-									const Icon = lt.icon ? resolveIconFromList(MUSIC_ICONS, lt.icon) : undefined;
-									return (
-										<Tooltip key={lt.id}>
-											<TooltipTrigger asChild>
-												<div className="cursor-help">
-													<ColorIcon icon={Icon} color={lt.color} size="md" />
-												</div>
-											</TooltipTrigger>
-											<TooltipContent>
-												<p>{lt.name}</p>
-											</TooltipContent>
-										</Tooltip>
-									);
-								})}
-							</div>
-						</TooltipProvider>
+						<div className="flex items-center gap-1.5">
+							{t.lesson_types.map((lt) => (
+								<LessonTypeBadge
+									key={lt.id}
+									name={lt.name}
+									icon={lt.icon}
+									color={lt.color}
+									showName={false}
+								/>
+							))}
+						</div>
 					);
 				},
 			},
@@ -274,7 +231,7 @@ export default function Teachers() {
 				className: 'text-muted-foreground',
 			},
 		],
-		[getUserInitials, getDisplayName],
+		[],
 	);
 
 	const handleEdit = useCallback(
@@ -309,7 +266,7 @@ export default function Teachers() {
 			}
 
 			toast.success('Docent verwijderd', {
-				description: `${getDisplayName(deleteDialog.teacher)} is verwijderd.`,
+				description: `${getDisplayName(deleteDialog.teacher.profile)} is verwijderd.`,
 			});
 
 			// Reload teachers to get updated data
@@ -323,7 +280,7 @@ export default function Teachers() {
 		} finally {
 			setDeletingTeacher(false);
 		}
-	}, [deleteDialog, getDisplayName, loadTeachers]);
+	}, [deleteDialog, loadTeachers]);
 
 	// Redirect if no access
 	if (!hasAccess) {
@@ -383,8 +340,8 @@ export default function Teachers() {
 								Docent verwijderen
 							</DialogTitle>
 							<DialogDescription>
-								Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher)}</strong> wilt
-								verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+								Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher.profile)}</strong>{' '}
+								wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 							</DialogDescription>
 						</DialogHeader>
 						<div className="py-4">

@@ -24,6 +24,11 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/', items: [] },
 	{ pattern: '/users', items: [{ label: NAV_LABELS.users, href: '/users' }] },
 	{ pattern: '/lesson-types', items: [{ label: NAV_LABELS.lessonTypes, href: '/lesson-types' }] },
+	{ pattern: '/agreements', items: [{ label: NAV_LABELS.agreements, href: '/agreements' }] },
+	{
+		pattern: /^\/agreements\/[^/]+$/,
+		items: [{ label: NAV_LABELS.agreements, href: '/agreements' }],
+	},
 	{ pattern: '/settings', items: [{ label: NAV_LABELS.settings, href: '/settings' }] },
 	{ pattern: '/teachers', items: [{ label: NAV_LABELS.teachers, href: '/teachers' }] },
 	{

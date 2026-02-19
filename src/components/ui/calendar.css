@@ -1,0 +1,5 @@
+.rdp-root {
+	--rdp-accent-color: hsl(var(--primary));
+	--rdp-day_button-height: 28px;
+	--rdp-day-height: 28px;
+}

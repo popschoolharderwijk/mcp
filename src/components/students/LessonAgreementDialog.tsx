@@ -1,10 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ColorIcon } from '@/components/ui/color-icon';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
-import { MUSIC_ICONS } from '@/constants/icons';
-import { DAY_NAMES, displayTime } from '@/lib/dateHelpers';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
+import { DAY_NAMES } from '@/lib/date/day-index';
+import { formatTime } from '@/lib/time/time-format';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 
 export type { LessonAgreementWithTeacher as LessonAgreement };
@@ -48,7 +47,6 @@ export function LessonAgreementDialog({ open, onOpenChange, agreement }: LessonA
 		return null;
 	}
 
-	const Icon = agreement.lesson_type.icon ? resolveIconFromList(MUSIC_ICONS, agreement.lesson_type.icon) : undefined;
 	const teacherName = getTeacherDisplayName(agreement.teacher);
 	const teacherInitials = getTeacherInitials(agreement.teacher);
 
@@ -63,7 +61,13 @@ export function LessonAgreementDialog({ open, onOpenChange, agreement }: LessonA
 				<div className="space-y-6 py-4">
 					{/* Lesson Type */}
 					<div className="flex items-center gap-3">
-						<ColorIcon icon={Icon} color={agreement.lesson_type.color} size="lg" />
+						<LessonTypeBadge
+							name={agreement.lesson_type.name}
+							icon={agreement.lesson_type.icon}
+							color={agreement.lesson_type.color}
+							iconSize="lg"
+							showName={false}
+						/>
 						<div>
 							<h3 className="font-semibold text-lg">{agreement.lesson_type.name}</h3>
 							<Badge variant={agreement.is_active ? 'default' : 'secondary'} className="mt-1">
@@ -94,7 +98,7 @@ export function LessonAgreementDialog({ open, onOpenChange, agreement }: LessonA
 						</div>
 						<div>
 							<p className="text-sm font-medium text-muted-foreground">Tijd</p>
-							<p className="font-medium">{displayTime(agreement.start_time)}</p>
+							<p className="font-medium">{formatTime(agreement.start_time)}</p>
 						</div>
 						<div>
 							<p className="text-sm font-medium text-muted-foreground">Startdatum</p>

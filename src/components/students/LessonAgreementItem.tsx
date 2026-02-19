@@ -3,7 +3,8 @@ import { ColorIcon } from '@/components/ui/color-icon';
 import { resolveIconFromList } from '@/components/ui/icon-picker';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { MUSIC_ICONS } from '@/constants/icons';
-import { DAY_NAMES_DISPLAY, displayTime, getDayName } from '@/lib/dateHelpers';
+import { DAY_NAMES_DISPLAY, getDayNameFromDbIndex } from '@/lib/date/day-index';
+import { formatTime } from '@/lib/time/time-format';
 import { cn } from '@/lib/utils';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { LessonAgreement } from './LessonAgreementDialog';
@@ -29,8 +30,8 @@ function getTeacherDisplayName(teacher: LessonAgreementWithTeacher['teacher']): 
 }
 
 function getTooltipText(agreement: LessonAgreementWithTeacher, teacherName: string): string {
-	const dayName = getDayName(agreement.day_of_week);
-	const time = displayTime(agreement.start_time);
+	const dayName = getDayNameFromDbIndex(agreement.day_of_week);
+	const time = formatTime(agreement.start_time);
 	return `${agreement.lesson_type.name}\n${teacherName}\n${dayName} om ${time}`;
 }
 

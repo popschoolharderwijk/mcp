@@ -357,3 +357,68 @@ describe('RLS: lesson_agreements DELETE - staff permissions', () => {
 		expect(data?.[0]?.id).toBe(agreementId);
 	});
 });
+
+describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
+	// Teacher Alice's user_id - she cannot be a student in her own lesson
+	const teacherAliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
+
+	it('cannot insert lesson agreement where teacher is their own student', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+
+		const selfAgreement: LessonAgreementInsert = {
+			student_user_id: teacherAliceUserId, // Teacher Alice as student
+			teacher_id: teacherAliceId, // Teacher Alice as teacher
+			lesson_type_id: lessonTypeId,
+			day_of_week: 1,
+			start_time: '10:00',
+			start_date: '2024-01-01',
+			is_active: true,
+		};
+
+		const { data, error } = await db.from('lesson_agreements').insert(selfAgreement).select();
+
+		// Should fail - teacher cannot be their own student
+		expect(error).not.toBeNull();
+		expect(error?.message).toContain('teacher cannot be their own student');
+		expect(data).toBeNull();
+	});
+
+	it('cannot update lesson agreement to make teacher their own student', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+
+		// First create a valid agreement
+		const validAgreement: LessonAgreementInsert = {
+			student_user_id: studentAUserId,
+			teacher_id: teacherAliceId,
+			lesson_type_id: lessonTypeId,
+			day_of_week: 1,
+			start_time: '11:00',
+			start_date: '2024-01-01',
+			is_active: true,
+		};
+
+		const { data: inserted, error: insertError } = await db
+			.from('lesson_agreements')
+			.insert(validAgreement)
+			.select();
+		expect(insertError).toBeNull();
+		expect(inserted).toHaveLength(1);
+
+		const agreementId = inserted?.[0].id;
+
+		// Try to update student_user_id to be the teacher's user_id
+		const { data, error } = await db
+			.from('lesson_agreements')
+			.update({ student_user_id: teacherAliceUserId })
+			.eq('id', agreementId)
+			.select();
+
+		// Should fail - teacher cannot be their own student
+		expect(error).not.toBeNull();
+		expect(error?.message).toContain('teacher cannot be their own student');
+		expect(data).toBeNull();
+
+		// Cleanup
+		await db.from('lesson_agreements').delete().eq('id', agreementId);
+	});
+});

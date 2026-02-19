@@ -15,15 +15,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import {
-	AVAILABILITY_SETTINGS,
-	DAY_NAMES_DISPLAY,
-	DEFAULT_END_TIME,
-	DEFAULT_START_TIME,
-	displayDayToDbDay,
-	displayTime,
-	generateAvailabilityTimeSlots,
-} from '@/lib/dateHelpers';
+import { AVAILABILITY_CONFIG, DEFAULT_END_TIME, DEFAULT_START_TIME } from '@/lib/availability';
+import { DAY_NAMES_DISPLAY, displayDayToDbDay } from '@/lib/date/day-index';
+import { formatTime } from '@/lib/time/time-format';
 
 type Availability = Tables<'teacher_availability'>;
 
@@ -42,10 +36,24 @@ interface TeacherAvailabilitySectionProps {
 }
 
 const dayNames = DAY_NAMES_DISPLAY;
-const TIME_SLOTS = generateAvailabilityTimeSlots();
+
+function generateTimeSlots(): string[] {
+	const slots: string[] = [];
+	const totalMinutes = (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
+	const slotCount = Math.floor(totalMinutes / AVAILABILITY_CONFIG.SLOT_DURATION_MINUTES);
+	for (let i = 0; i <= slotCount; i++) {
+		const totalMinutesFromStart = i * AVAILABILITY_CONFIG.SLOT_DURATION_MINUTES;
+		const hour = AVAILABILITY_CONFIG.START_HOUR + Math.floor(totalMinutesFromStart / 60);
+		const minute = totalMinutesFromStart % 60;
+		slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+	}
+	return slots;
+}
+
+const TIME_SLOTS = generateTimeSlots();
 const HOURS = Array.from(
-	{ length: AVAILABILITY_SETTINGS.END_HOUR - AVAILABILITY_SETTINGS.START_HOUR + 1 },
-	(_, i) => AVAILABILITY_SETTINGS.START_HOUR + i,
+	{ length: AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR + 1 },
+	(_, i) => AVAILABILITY_CONFIG.START_HOUR + i,
 );
 
 export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvailabilitySectionProps) {
@@ -179,7 +187,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 
 	// Calculate availability blocks with positioning
 	const availabilityBlocks = useMemo((): AvailabilityBlock[] => {
-		const totalMinutes = (AVAILABILITY_SETTINGS.END_HOUR - AVAILABILITY_SETTINGS.START_HOUR) * 60;
+		const totalMinutes = (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
 
 		return availability.map((a) => {
 			// Convert db day to display day
@@ -190,8 +198,8 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 			const [endHour, endMin] = a.end_time.split(':').map(Number);
 
 			// Calculate positions
-			const startMinutes = (startHour - AVAILABILITY_SETTINGS.START_HOUR) * 60 + startMin;
-			const endMinutes = (endHour - AVAILABILITY_SETTINGS.START_HOUR) * 60 + endMin;
+			const startMinutes = (startHour - AVAILABILITY_CONFIG.START_HOUR) * 60 + startMin;
+			const endMinutes = (endHour - AVAILABILITY_CONFIG.START_HOUR) * 60 + endMin;
 
 			const topPercent = (startMinutes / totalMinutes) * 100;
 			const heightPercent = ((endMinutes - startMinutes) / totalMinutes) * 100;
@@ -274,7 +282,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 									key={hour}
 									className="absolute left-0 right-0 text-xs text-muted-foreground leading-none"
 									style={{
-										top: `${((hour - AVAILABILITY_SETTINGS.START_HOUR) / (AVAILABILITY_SETTINGS.END_HOUR - AVAILABILITY_SETTINGS.START_HOUR)) * 100}%`,
+										top: `${((hour - AVAILABILITY_CONFIG.START_HOUR) / (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR)) * 100}%`,
 										transform: 'translateY(-50%)',
 									}}
 								>
@@ -295,7 +303,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 											key={hour}
 											className="absolute left-0 right-0 border-t border-border/40"
 											style={{
-												top: `${((hour - AVAILABILITY_SETTINGS.START_HOUR) / (AVAILABILITY_SETTINGS.END_HOUR - AVAILABILITY_SETTINGS.START_HOUR)) * 100}%`,
+												top: `${((hour - AVAILABILITY_CONFIG.START_HOUR) / (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR)) * 100}%`,
 											}}
 										/>
 									))}
@@ -304,11 +312,10 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 									{canEdit &&
 										TIME_SLOTS.slice(0, -1).map((time) => {
 											const totalMinutes =
-												(AVAILABILITY_SETTINGS.END_HOUR - AVAILABILITY_SETTINGS.START_HOUR) *
-												60;
+												(AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
 											const [hour, minute] = time.split(':').map(Number);
 											const minutesFromStart =
-												(hour - AVAILABILITY_SETTINGS.START_HOUR) * 60 + minute;
+												(hour - AVAILABILITY_CONFIG.START_HOUR) * 60 + minute;
 											const topPercent = (minutesFromStart / totalMinutes) * 100;
 											const heightPercent = (30 / totalMinutes) * 100;
 
@@ -359,37 +366,37 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 													setEditingBlock(block);
 													setSelectedSlot({ day: block.displayDay, time: block.startTime });
 													setForm({
-														start_time: displayTime(block.startTime),
-														end_time: displayTime(block.endTime),
+														start_time: formatTime(block.startTime),
+														end_time: formatTime(block.endTime),
 													});
 													setAddDialogOpen(true);
 												}
 											}}
-											title={`${dayName} ${displayTime(block.startTime)} - ${displayTime(block.endTime)}`}
+											title={`${dayName} ${formatTime(block.startTime)} - ${formatTime(block.endTime)}`}
 										>
 											{/* Times on two lines; only show for full hours (not at :30) */}
 											{showTimeInBlock(block.startTime, block.endTime) && (
 												<>
 													<div
 														className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0"
-														title={`${displayTime(block.startTime)} – ${displayTime(block.endTime)}`}
+														title={`${formatTime(block.startTime)} – ${formatTime(block.endTime)}`}
 													>
 														<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-															{displayTime(block.startTime)}
+															{formatTime(block.startTime)}
 														</span>
 														<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-															{displayTime(block.endTime)}
+															{formatTime(block.endTime)}
 														</span>
 													</div>
 													<div
 														className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0"
-														title={`${displayTime(block.startTime)} – ${displayTime(block.endTime)}`}
+														title={`${formatTime(block.startTime)} – ${formatTime(block.endTime)}`}
 													>
 														<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-															{displayTime(block.startTime)}
+															{formatTime(block.startTime)}
 														</span>
 														<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-															{displayTime(block.endTime)}
+															{formatTime(block.endTime)}
 														</span>
 													</div>
 												</>
@@ -447,7 +454,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 									) : (
 										<>
 											Voeg beschikbaarheid toe voor <strong>{dayNames[selectedSlot.day]}</strong>{' '}
-											vanaf <strong>{displayTime(selectedSlot.time)}</strong>
+											vanaf <strong>{formatTime(selectedSlot.time)}</strong>
 										</>
 									))}
 							</DialogDescription>

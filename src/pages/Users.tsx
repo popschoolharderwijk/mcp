@@ -4,7 +4,6 @@ import type { IconType } from 'react-icons';
 import { LuLoaderCircle, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
 import {
@@ -16,7 +15,7 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { RoleBadge } from '@/components/ui/role-badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { UserFormDialog } from '@/components/users/UserFormDialog';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
@@ -48,10 +47,7 @@ export default function Users() {
 	const [loading, setLoading] = useState(true);
 	const [totalCount, setTotalCount] = useState(0);
 
-	// Filter state
-	const [selectedRole, setSelectedRole] = useState<AppRole | null | 'none'>(null);
-
-	// Server-side table state (pagination, sorting, search)
+	// Server-side table state (pagination, sorting, search, filters)
 	const {
 		searchQuery,
 		debouncedSearchQuery,
@@ -63,11 +59,16 @@ export default function Users() {
 		sortColumn,
 		sortDirection,
 		handleSortChange,
+		filters,
+		setFilters,
 	} = useServerTableState({
-		initialSortColumn: 'user',
-		initialSortDirection: 'asc',
-		additionalFilters: { selectedRole },
+		storageKey: 'users',
+		initialSortColumn: 'created_at',
+		initialSortDirection: 'desc',
+		initialFilters: { selectedRole: null },
 	});
+
+	const selectedRole = (filters.selectedRole as AppRole | null | 'none') ?? null;
 
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
@@ -136,27 +137,6 @@ export default function Users() {
 		}
 	}, [authLoading, loadUsers]);
 
-	// Helper functions
-	const getUserInitials = useCallback((u: UserWithRole) => {
-		if (u.first_name && u.last_name) {
-			return `${u.first_name[0]}${u.last_name[0]}`.toUpperCase();
-		}
-		if (u.first_name) {
-			return u.first_name.slice(0, 2).toUpperCase();
-		}
-		return u.email.slice(0, 2).toUpperCase();
-	}, []);
-
-	const getDisplayName = useCallback((u: UserWithRole) => {
-		if (u.first_name && u.last_name) {
-			return `${u.first_name} ${u.last_name}`;
-		}
-		if (u.first_name) {
-			return u.first_name;
-		}
-		return u.email;
-	}, []);
-
 	// Quick filter groups configuration
 	const quickFilterGroups: QuickFilterGroup[] = useMemo(() => {
 		const roleOptions: Array<{ id: string; label: string; icon?: IconType }> = allRoles.map((role) => {
@@ -181,11 +161,14 @@ export default function Users() {
 				value: selectedRole === null ? null : selectedRole,
 				options: roleOptions,
 				onChange: (value) => {
-					setSelectedRole(value === null ? null : (value as AppRole | 'none'));
+					setFilters((prev) => ({
+						...prev,
+						selectedRole: value === null ? null : (value as AppRole | 'none'),
+					}));
 				},
 			},
 		];
-	}, [selectedRole]);
+	}, [selectedRole, setFilters]);
 
 	const columns: DataTableColumn<UserWithRole>[] = useMemo(
 		() => [
@@ -193,44 +176,17 @@ export default function Users() {
 				key: 'user',
 				label: 'Gebruiker',
 				sortable: true, // Server-side sorting
-				render: (u) => {
-					const displayName = getDisplayName(u);
-					const fullName = displayName + (u.user_id === user?.id ? ' (jij)' : '');
-					return (
-						<div className="flex items-center gap-3">
-							<Avatar className="h-9 w-9 flex-shrink-0">
-								<AvatarImage src={u.avatar_url ?? undefined} alt={displayName} />
-								<AvatarFallback className="bg-primary/10 text-primary text-sm">
-									{getUserInitials(u)}
-								</AvatarFallback>
-							</Avatar>
-							<div className="min-w-0 flex-1 overflow-hidden">
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<p className="font-medium truncate">
-												{displayName}
-												{u.user_id === user?.id && (
-													<span className="text-muted-foreground font-normal"> (jij)</span>
-												)}
-											</p>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>{fullName}</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							</div>
-						</div>
-					);
-				},
-			},
-			{
-				key: 'email',
-				label: 'Email',
-				sortable: true, // Server-side sorting
-				render: (u) => <span className="text-muted-foreground">{u.email}</span>,
-				className: 'text-muted-foreground',
+				render: (u) => (
+					<UserDisplay
+						profile={u}
+						showEmail
+						nameSuffix={
+							u.user_id === user?.id ? (
+								<span className="text-muted-foreground font-normal"> (jij)</span>
+							) : undefined
+						}
+					/>
+				),
 			},
 			{
 				key: 'phone_number',
@@ -261,7 +217,7 @@ export default function Users() {
 				className: 'text-muted-foreground',
 			},
 		],
-		[user?.id, getUserInitials, getDisplayName],
+		[user?.id],
 	);
 
 	const SiteAdminIcon = getIcon('site_admin');
@@ -343,7 +299,7 @@ export default function Users() {
 		} finally {
 			setDeletingUser(false);
 		}
-	}, [deleteDialog, getDisplayName, isSiteAdmin, loadUsers]);
+	}, [deleteDialog, isSiteAdmin, loadUsers]);
 
 	// Redirect if no access
 	if (!hasAccess) {
@@ -432,8 +388,6 @@ export default function Users() {
 				open={userFormDialog.open}
 				onOpenChange={(open) => setUserFormDialog({ ...userFormDialog, open })}
 				onSuccess={loadUsers}
-				isAdmin={isAdmin}
-				isSiteAdmin={isSiteAdmin}
 				user={userFormDialog.user ?? undefined}
 			/>
 
