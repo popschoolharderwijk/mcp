@@ -4,7 +4,6 @@ import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type LessonAgreement, LessonAgreementItem } from '@/components/students/LessonAgreementItem';
 import { StudentFormDialog } from '@/components/students/StudentFormDialog';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
@@ -16,7 +15,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
@@ -63,11 +62,7 @@ export default function Students() {
 	const [loading, setLoading] = useState(true);
 	const [totalCount, setTotalCount] = useState(0);
 
-	// Filter state
-	const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-	const [selectedLessonTypeId, setSelectedLessonTypeId] = useState<string | null>(null);
-
-	// Server-side table state (pagination, sorting, search)
+	// Server-side table state (pagination, sorting, search, filters)
 	const {
 		searchQuery,
 		debouncedSearchQuery,
@@ -79,11 +74,17 @@ export default function Students() {
 		sortColumn,
 		sortDirection,
 		handleSortChange,
+		filters,
+		setFilters,
 	} = useServerTableState({
+		storageKey: 'students',
 		initialSortColumn: 'student',
 		initialSortDirection: 'asc',
-		additionalFilters: { statusFilter, selectedLessonTypeId },
+		initialFilters: { statusFilter: 'all', selectedLessonTypeId: null },
 	});
+
+	const statusFilter = (filters.statusFilter as 'all' | 'active' | 'inactive') ?? 'all';
+	const selectedLessonTypeId = (filters.selectedLessonTypeId as string | null) ?? null;
 
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
@@ -183,32 +184,13 @@ export default function Students() {
 		}
 	}, [authLoading, loadStudents]);
 
-	// Helper functions
-	const getUserInitials = useCallback((s: StudentWithProfile) => {
-		const profile = s.profile;
-		if (profile.first_name && profile.last_name) {
-			return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
-		}
-		if (profile.first_name) {
-			return profile.first_name.slice(0, 2).toUpperCase();
-		}
-		return profile.email.slice(0, 2).toUpperCase();
-	}, []);
-
-	const getDisplayName = useCallback((s: StudentWithProfile) => {
-		const profile = s.profile;
-		if (profile.first_name && profile.last_name) {
-			return `${profile.first_name} ${profile.last_name}`;
-		}
-		if (profile.first_name) {
-			return profile.first_name;
-		}
-		return profile.email;
-	}, []);
-
 	// Quick filter groups configuration
-	const statusFilterGroup = useStatusFilter(statusFilter, setStatusFilter);
-	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, setSelectedLessonTypeId);
+	const statusFilterGroup = useStatusFilter(statusFilter, (v) =>
+		setFilters((prev) => ({ ...prev, statusFilter: v })),
+	);
+	const lessonTypeFilterGroup = useLessonTypeFilter(lessonTypes, selectedLessonTypeId, (v) =>
+		setFilters((prev) => ({ ...prev, selectedLessonTypeId: v })),
+	);
 
 	const quickFilterGroups: QuickFilterGroup[] = useMemo(() => {
 		const groups: QuickFilterGroup[] = [statusFilterGroup];
@@ -225,41 +207,7 @@ export default function Students() {
 				label: 'Leerling',
 				sortable: true, // Server-side sorting
 				className: 'w-64 max-w-64',
-				render: (s) => {
-					const displayName = getDisplayName(s);
-					return (
-						<div className="flex items-center gap-3">
-							<Avatar className="h-9 w-9 flex-shrink-0">
-								<AvatarImage src={s.profile.avatar_url ?? undefined} alt={displayName} />
-								<AvatarFallback className="bg-primary/10 text-primary text-sm">
-									{getUserInitials(s)}
-								</AvatarFallback>
-							</Avatar>
-							<div className="min-w-0 flex-1 overflow-hidden">
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<p className="font-medium truncate">{displayName}</p>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>{displayName}</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-								<TooltipProvider>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<p className="text-xs text-muted-foreground truncate">{s.profile.email}</p>
-										</TooltipTrigger>
-										<TooltipContent>
-											<p>{s.profile.email}</p>
-										</TooltipContent>
-									</Tooltip>
-								</TooltipProvider>
-							</div>
-						</div>
-					);
-				},
+				render: (s) => <UserDisplay profile={s.profile} showEmail />,
 			},
 			{
 				key: 'phone_number',
@@ -302,7 +250,7 @@ export default function Students() {
 				},
 			},
 		],
-		[getDisplayName, getUserInitials],
+		[],
 	);
 
 	const handleEdit = useCallback((student: StudentWithProfile) => {
@@ -428,7 +376,9 @@ export default function Students() {
 							<DialogDescription>
 								Weet je zeker dat je{' '}
 								<strong>
-									{deleteDialog.student ? getDisplayName(deleteDialog.student) : 'deze leerling'}
+									{deleteDialog.student
+										? getDisplayName(deleteDialog.student.profile)
+										: 'deze leerling'}
 								</strong>{' '}
 								wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 							</DialogDescription>

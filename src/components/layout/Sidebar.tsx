@@ -1,5 +1,6 @@
 import {
 	LuChevronLeft,
+	LuClipboardList,
 	LuGraduationCap,
 	LuLayoutDashboard,
 	LuMusic,
@@ -27,6 +28,7 @@ const mainNavItems = [{ href: '/', label: NAV_LABELS.dashboard, icon: LuLayoutDa
 const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: LuUserCog },
 	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: LuMusic2 },
+	{ href: '/agreements', label: NAV_LABELS.agreements, icon: LuClipboardList },
 ];
 
 interface SidebarProps {

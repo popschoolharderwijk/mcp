@@ -15,8 +15,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { type AppRole, allRoles, roleLabels } from '@/lib/roles';
+import type { UserProfileDisplay } from '@/types/user';
 
 interface UserData {
 	user_id: string;
@@ -30,9 +32,8 @@ interface UserData {
 interface UserFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSuccess: () => void;
-	isAdmin: boolean;
-	isSiteAdmin: boolean;
+	/** Called when save succeeds. In create mode, receives the new user (Supabase profile display) so caller can select them. */
+	onSuccess: (createdUser?: UserProfileDisplay) => void;
 	/** User data for edit mode. If undefined, dialog is in create mode. */
 	user?: UserData;
 }
@@ -53,7 +54,8 @@ const emptyForm: FormState = {
 	role: null,
 };
 
-export function UserFormDialog({ open, onOpenChange, onSuccess, isAdmin, isSiteAdmin, user }: UserFormDialogProps) {
+export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserFormDialogProps) {
+	const { isAdmin, isSiteAdmin } = useAuth();
 	const isEditMode = !!user;
 	const [form, setForm] = useState<FormState>(emptyForm);
 	const [saving, setSaving] = useState(false);
@@ -162,9 +164,16 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, isAdmin, isSiteA
 			});
 		}
 
+		const createdUserInfo: UserProfileDisplay = {
+			user_id: data.user_id,
+			email: data.email ?? form.email,
+			first_name: form.first_name || null,
+			last_name: form.last_name || null,
+			avatar_url: null,
+		};
 		setForm(emptyForm);
 		onOpenChange(false);
-		onSuccess();
+		onSuccess(createdUserInfo);
 	};
 
 	const handleEdit = async () => {

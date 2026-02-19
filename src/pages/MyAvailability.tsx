@@ -18,7 +18,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
-import { DAY_NAMES, DEFAULT_END_TIME, DEFAULT_START_TIME, displayTime } from '@/lib/dateHelpers';
+import { DEFAULT_END_TIME, DEFAULT_START_TIME } from '@/lib/availability';
+import { DAY_NAMES } from '@/lib/date/day-index';
+import { formatTime } from '@/lib/time/time-format';
 
 type Availability = Tables<'teacher_availability'>;
 
@@ -178,7 +180,7 @@ export default function MyAvailability() {
 												className="flex items-center justify-between rounded-md border bg-muted/50 p-2 text-sm"
 											>
 												<div className="font-medium">
-													{displayTime(avail.start_time)} - {displayTime(avail.end_time)}
+													{formatTime(avail.start_time)} - {formatTime(avail.end_time)}
 												</div>
 												<Button
 													variant="ghost"

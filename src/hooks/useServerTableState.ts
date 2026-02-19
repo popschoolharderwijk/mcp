@@ -1,13 +1,46 @@
+import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { SortDirection } from '@/components/ui/data-table';
+
+const STORAGE_PREFIX = 'table-state:';
+
+interface StoredTableState {
+	sortColumn: string | null;
+	sortDirection: SortDirection;
+	currentPage: number;
+	rowsPerPage: number;
+	searchQuery: string;
+	/** Active filters (e.g. statusFilter, selectedLessonTypeId) – table-specific keys */
+	filters?: Record<string, unknown>;
+}
+
+function readStoredState(storageKey: string): Partial<StoredTableState> | null {
+	try {
+		const raw = sessionStorage.getItem(STORAGE_PREFIX + storageKey);
+		if (!raw) return null;
+		return JSON.parse(raw) as Partial<StoredTableState>;
+	} catch {
+		return null;
+	}
+}
+
+function writeStoredState(storageKey: string, state: StoredTableState): void {
+	try {
+		sessionStorage.setItem(STORAGE_PREFIX + storageKey, JSON.stringify(state));
+	} catch {
+		// ignore quota / private mode
+	}
+}
 
 interface UseServerTableStateOptions {
 	initialSortColumn?: string;
 	initialSortDirection?: SortDirection;
 	searchDebounceMs?: number;
 	initialRowsPerPage?: number;
-	// Additional filter values to track for page reset
-	additionalFilters?: Record<string, unknown>;
+	/** Unique key for this table; when set, sort/pagination/search/filters are persisted in sessionStorage */
+	storageKey?: string;
+	/** Default filter values when nothing is stored; also defines which filter keys exist (e.g. statusFilter, selectedLessonTypeId) */
+	initialFilters?: Record<string, unknown>;
 }
 
 interface UseServerTableStateReturn {
@@ -26,6 +59,10 @@ interface UseServerTableStateReturn {
 	sortColumn: string | null;
 	sortDirection: SortDirection;
 	handleSortChange: (column: string | null, direction: SortDirection) => void;
+
+	// Filter state (persisted when storageKey is set)
+	filters: Record<string, unknown>;
+	setFilters: Dispatch<SetStateAction<Record<string, unknown>>>;
 }
 
 /**
@@ -38,20 +75,43 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 		initialSortDirection = 'asc',
 		searchDebounceMs = 300,
 		initialRowsPerPage = 20,
-		additionalFilters = {},
+		storageKey,
+		initialFilters = {},
 	} = options;
 
-	// Search state
-	const [searchQuery, setSearchQuery] = useState('');
-	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-
-	// Pagination state
-	const [currentPage, setCurrentPage] = useState(1);
-	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
-
-	// Sorting state
-	const [sortColumn, setSortColumn] = useState<string | null>(initialSortColumn ?? null);
-	const [sortDirection, setSortDirection] = useState<SortDirection>(initialSortColumn ? initialSortDirection : null);
+	// Restore from sessionStorage once on mount (lazy init)
+	const [searchQuery, setSearchQuery] = useState(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.searchQuery ?? '';
+	});
+	const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.searchQuery ?? '';
+	});
+	const [currentPage, setCurrentPage] = useState(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.currentPage ?? 1;
+	});
+	const [rowsPerPage, setRowsPerPage] = useState(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.rowsPerPage ?? initialRowsPerPage;
+	});
+	const [sortColumn, setSortColumn] = useState<string | null>(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.sortColumn ?? initialSortColumn ?? null;
+	});
+	const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		return s?.sortDirection ?? (initialSortColumn ? initialSortDirection : null);
+	});
+	const [filters, setFilters] = useState<Record<string, unknown>>(() => {
+		const s = storageKey ? readStoredState(storageKey) : null;
+		const stored = s?.filters;
+		if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+			return { ...initialFilters, ...stored };
+		}
+		return { ...initialFilters };
+	});
 
 	// Debounce search query
 	useEffect(() => {
@@ -88,17 +148,17 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 		debouncedSearchQuery,
 		sortColumn,
 		sortDirection,
-		additionalFiltersString: JSON.stringify(additionalFilters),
+		filtersString: JSON.stringify(filters),
 	});
 
 	useEffect(() => {
 		const prev = prevStateRef.current;
-		const currentFiltersString = JSON.stringify(additionalFilters);
+		const currentFiltersString = JSON.stringify(filters);
 		const hasChanged =
 			prev.debouncedSearchQuery !== debouncedSearchQuery ||
 			prev.sortColumn !== sortColumn ||
 			prev.sortDirection !== sortDirection ||
-			prev.additionalFiltersString !== currentFiltersString;
+			prev.filtersString !== currentFiltersString;
 
 		if (hasChanged) {
 			setCurrentPage(1);
@@ -106,10 +166,23 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 				debouncedSearchQuery,
 				sortColumn,
 				sortDirection,
-				additionalFiltersString: currentFiltersString,
+				filtersString: currentFiltersString,
 			};
 		}
-	}, [debouncedSearchQuery, sortColumn, sortDirection, additionalFilters]);
+	}, [debouncedSearchQuery, sortColumn, sortDirection, filters]);
+
+	// Persist to sessionStorage when storageKey is set
+	useEffect(() => {
+		if (!storageKey) return;
+		writeStoredState(storageKey, {
+			sortColumn,
+			sortDirection,
+			currentPage,
+			rowsPerPage,
+			searchQuery,
+			filters,
+		});
+	}, [storageKey, sortColumn, sortDirection, currentPage, rowsPerPage, searchQuery, filters]);
 
 	return {
 		// Search
@@ -127,5 +200,9 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 		sortColumn,
 		sortDirection,
 		handleSortChange,
+
+		// Filters (persisted when storageKey is set)
+		filters,
+		setFilters,
 	};
 }

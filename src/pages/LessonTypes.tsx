@@ -5,7 +5,6 @@ import { toast } from 'sonner';
 import { LessonTypeFormDialog } from '@/components/lesson-types/LessonTypeFormDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ColorIcon } from '@/components/ui/color-icon';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
 import {
 	Dialog,
@@ -15,11 +14,11 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { NAV_LABELS } from '@/config/nav-labels';
-import { MUSIC_ICONS } from '@/constants/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { frequencyLabels } from '@/lib/frequencies';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
 interface LessonType {
@@ -37,13 +36,6 @@ interface LessonType {
 	created_at: string;
 	updated_at: string;
 }
-
-const frequencyLabels: Record<LessonFrequency, string> = {
-	daily: 'Dagelijks',
-	weekly: 'Wekelijks',
-	biweekly: 'Tweewekelijks',
-	monthly: 'Maandelijks',
-};
 
 export default function LessonTypes() {
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
@@ -94,18 +86,15 @@ export default function LessonTypes() {
 				label: 'Naam',
 				sortable: true,
 				sortValue: (lt) => lt.name.toLowerCase(),
-				render: (lt) => {
-					const Icon = lt.icon ? resolveIconFromList(MUSIC_ICONS, lt.icon) : undefined;
-					return (
-						<div className="flex items-center gap-3">
-							<ColorIcon icon={Icon} color={lt.color} />
-							<div>
-								<p className="font-medium">{lt.name}</p>
-								{lt.description && <p className="text-xs text-muted-foreground">{lt.description}</p>}
-							</div>
+				render: (lt) => (
+					<div className="flex items-center gap-3">
+						<LessonTypeBadge name={lt.name} icon={lt.icon} color={lt.color} showName={false} />
+						<div>
+							<p className="font-medium">{lt.name}</p>
+							{lt.description && <p className="text-xs text-muted-foreground">{lt.description}</p>}
 						</div>
-					);
-				},
+					</div>
+				),
 			},
 			{
 				key: 'duration',

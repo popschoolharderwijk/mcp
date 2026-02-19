@@ -4,6 +4,8 @@ import { AuthProvider } from './components/AuthProvider';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { ThemeProvider } from './components/ThemeProvider';
+import Agreements from './pages/Agreements';
+import AgreementWizard from './pages/AgreementWizard';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
 import LessonTypes from './pages/LessonTypes';
@@ -44,6 +46,9 @@ const App = () => (
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/users" element={<Users />} />
 						<Route path="/lesson-types" element={<LessonTypes />} />
+						<Route path="/agreements" element={<Agreements />} />
+						<Route path="/agreements/new" element={<AgreementWizard />} />
+						<Route path="/agreements/:id" element={<AgreementWizard />} />
 						<Route path="/settings" element={<Settings />} />
 						<Route path="/teachers" element={<Teachers />} />
 						<Route path="/teachers/availability" element={<TeacherAvailability />} />

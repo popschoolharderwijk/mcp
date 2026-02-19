@@ -6,14 +6,10 @@ import { toast } from 'sonner';
 import { StudentInfoModal, type StudentInfoModalData } from '@/components/students/StudentInfoModal';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import {
-	AVAILABILITY_SETTINGS,
-	calendarLocalizer,
-	getDateForDayOfWeek,
-	normalizeTime,
-	normalizeTimeFromDate,
-	toLocalDateString,
-} from '@/lib/dateHelpers';
+import { AVAILABILITY_CONFIG } from '@/lib/availability';
+import { calendarLocalizer } from '@/lib/calendar';
+import { formatDateToDb, getDateForDayOfWeek } from '@/lib/date/date-format';
+import { normalizeTime, normalizeTimeFromDate } from '@/lib/time/time-format';
 import type { LessonAgreementWithStudent, LessonAppointmentDeviationWithAgreement } from '@/types/lesson-agreements';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
@@ -230,7 +226,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			originalDateStr = event.resource.originalDate;
 			originalStartTime = event.resource.originalStartTime;
 		} else {
-			originalDateStr = event.start ? toLocalDateString(event.start) : toLocalDateString(start);
+			originalDateStr = event.start ? formatDateToDb(event.start) : formatDateToDb(start);
 			originalStartTime = agreement.start_time;
 		}
 
@@ -239,7 +235,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			? getDateForDayOfWeek(agreement.day_of_week, new Date(event.start))
 			: null;
 		const occurrenceWeekOriginalDateStr = occurrenceWeekOriginalDate
-			? toLocalDateString(occurrenceWeekOriginalDate)
+			? formatDateToDb(occurrenceWeekOriginalDate)
 			: '';
 
 		// Are we editing a later occurrence of a recurring deviation? (e.g., week 4 when deviation is from week 1)
@@ -257,7 +253,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 		}
 
 		// Use dropped date (DB: actual_date >= CURRENT_DATE).
-		const actualDateStr = toLocalDateString(start);
+		const actualDateStr = formatDateToDb(start);
 		const actualStartTime = normalizeTimeFromDate(start);
 
 		const pendingEventData: CalendarEvent = {
@@ -297,7 +293,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			? actualDateStr === existingDeviation.actual_date &&
 				normalizeTime(actualStartTime) === normalizeTime(existingDeviation.actual_start_time)
 			: event.start &&
-				actualDateStr === toLocalDateString(event.start) &&
+				actualDateStr === formatDateToDb(event.start) &&
 				normalizeTime(actualStartTime) === normalizeTimeFromDate(event.start);
 
 		if (droppedOnSameSlot) {
@@ -420,7 +416,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 		const eventWeekOriginalDate = event.start
 			? getDateForDayOfWeek(agreement.day_of_week, new Date(event.start))
 			: null;
-		const eventWeekOriginalDateStr = eventWeekOriginalDate ? toLocalDateString(eventWeekOriginalDate) : '';
+		const eventWeekOriginalDateStr = eventWeekOriginalDate ? formatDateToDb(eventWeekOriginalDate) : '';
 
 		// For recurring deviations, the "original slot" to restore to is the agreement's slot for this week
 		// For regular deviations, use the stored original_date
@@ -435,11 +431,11 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			originalDateStr = event.resource.originalDate;
 			originalStartTime = event.resource.originalStartTime;
 		} else {
-			originalDateStr = event.start ? toLocalDateString(event.start) : '';
+			originalDateStr = event.start ? formatDateToDb(event.start) : '';
 			originalStartTime = agreement.start_time;
 		}
 
-		const actualDateStr = toLocalDateString(start);
+		const actualDateStr = formatDateToDb(start);
 		const actualStartTime = normalizeTimeFromDate(start);
 		return actualDateStr === originalDateStr && normalizeTime(actualStartTime) === normalizeTime(originalStartTime);
 	};
@@ -679,8 +675,8 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 
 	const scrollToTime = useMemo(() => {
 		const now = new Date();
-		if (now.getHours() >= AVAILABILITY_SETTINGS.END_HOUR) {
-			return new Date(0, 0, 0, AVAILABILITY_SETTINGS.START_HOUR, 0, 0);
+		if (now.getHours() >= AVAILABILITY_CONFIG.END_HOUR) {
+			return new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0);
 		}
 		return now;
 	}, []);
@@ -720,8 +716,8 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 								// biome-ignore lint/suspicious/noExplicitAny: react-big-calendar event component typing is complex
 								event: AgendaEvent as unknown as React.ComponentType<any>,
 							}}
-							min={new Date(0, 0, 0, 9, 0, 0)}
-							max={new Date(0, 0, 0, 21, 0, 0)}
+							min={new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0)}
+							max={new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0)}
 							scrollToTime={scrollToTime}
 							step={30}
 							timeslots={1}

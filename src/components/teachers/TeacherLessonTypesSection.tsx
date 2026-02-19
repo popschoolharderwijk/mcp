@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { LuLoaderCircle } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ColorIcon } from '@/components/ui/color-icon';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
-import { MUSIC_ICONS } from '@/constants/icons';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LessonType {
@@ -72,20 +70,14 @@ export function TeacherLessonTypesSection({ teacherId, canEdit: _canEdit }: Teac
 					<p className="text-sm text-muted-foreground">Geen lessoorten toegewezen</p>
 				) : (
 					<div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-						{lessonTypes.map((lt) => {
-							const Icon = lt.icon ? resolveIconFromList(MUSIC_ICONS, lt.icon) : undefined;
-							return (
-								<div
-									key={lt.id}
-									className="flex min-w-0 items-center gap-3 overflow-hidden rounded-md border p-3"
-								>
-									<ColorIcon icon={Icon} color={lt.color} size="md" className="shrink-0" />
-									<span className="min-w-0 truncate font-medium" title={lt.name}>
-										{lt.name}
-									</span>
-								</div>
-							);
-						})}
+						{lessonTypes.map((lt) => (
+							<div
+								key={lt.id}
+								className="flex min-w-0 items-center gap-3 overflow-hidden rounded-md border p-3"
+							>
+								<LessonTypeBadge name={lt.name} icon={lt.icon} color={lt.color} />
+							</div>
+						))}
 					</div>
 				)}
 			</CardContent>

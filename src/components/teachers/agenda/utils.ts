@@ -1,7 +1,8 @@
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import type { Formats } from 'react-big-calendar';
-import { displayTime, formatDate, getDateForDayOfWeek, toLocalDateString } from '@/lib/dateHelpers';
+import { formatDateToDb, formatDbDateLong, getDateForDayOfWeek } from '@/lib/date/date-format';
+import { formatTime } from '@/lib/time/time-format';
 import type {
 	LessonAgreementWithStudent,
 	LessonAppointmentDeviationWithAgreement,
@@ -41,7 +42,7 @@ export function getActualDateInOriginalWeek(originalDateStr: string, referenceDa
 	const originalDate = new Date(originalDateStr + 'T12:00:00');
 	const targetDayOfWeek = referenceDate.getDay();
 	const actualDate = getDateForDayOfWeek(targetDayOfWeek, originalDate);
-	return toLocalDateString(actualDate);
+	return formatDateToDb(actualDate);
 }
 
 export const dutchFormats: Formats = {
@@ -202,7 +203,7 @@ export function generateRecurringEvents(
 
 		while (currentLessonDate <= rangeEnd) {
 			if (currentLessonDate >= earliestStartDate && (!latestEndDate || currentLessonDate <= latestEndDate)) {
-				const lessonDateStr = toLocalDateString(currentLessonDate);
+				const lessonDateStr = formatDateToDb(currentLessonDate);
 
 				if (!isGroupLesson && group.length === 1) {
 					const deviation = deviations.get(`${firstAgreement.id}-${lessonDateStr}`);
@@ -379,7 +380,7 @@ export function buildTooltipText(event: CalendarEvent): string {
 		lines.push('');
 		lines.push('⚠ Gewijzigde afspraak');
 		if (originalDate && originalStartTime) {
-			lines.push(`Origineel: ${formatDate(originalDate)} om ${displayTime(originalStartTime)}`);
+			lines.push(`Origineel: ${formatDbDateLong(originalDate)} om ${formatTime(originalStartTime)}`);
 		}
 		if (reason) {
 			lines.push(`Reden: ${reason}`);

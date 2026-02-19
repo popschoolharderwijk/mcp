@@ -73,6 +73,49 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
   CONSTRAINT lesson_agreements_end_date_check CHECK (end_date IS NULL OR end_date >= start_date)
 );
 
+-- =============================================================================
+-- SECTION 2.1: CONSTRAINT FUNCTIONS
+-- =============================================================================
+
+-- Function to check that teacher is not their own student
+-- Returns true if the teacher's user_id matches the student_user_id (invalid)
+CREATE OR REPLACE FUNCTION public.check_teacher_not_own_student()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+DECLARE
+  teacher_user_id UUID;
+BEGIN
+  -- Get the user_id of the teacher
+  SELECT user_id INTO teacher_user_id
+  FROM public.teachers
+  WHERE id = NEW.teacher_id;
+
+  -- Check if teacher is trying to be their own student
+  IF teacher_user_id = NEW.student_user_id THEN
+    RAISE EXCEPTION 'A teacher cannot be their own student'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Set function ownership and permissions
+ALTER FUNCTION public.check_teacher_not_own_student() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.check_teacher_not_own_student() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.check_teacher_not_own_student() FROM anon;
+GRANT EXECUTE ON FUNCTION public.check_teacher_not_own_student() TO authenticated;
+
+-- Trigger to enforce the constraint on INSERT and UPDATE
+CREATE TRIGGER check_teacher_not_own_student_trigger
+BEFORE INSERT OR UPDATE ON public.lesson_agreements
+FOR EACH ROW
+EXECUTE FUNCTION public.check_teacher_not_own_student();
+
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_student_user_id ON public.lesson_agreements(student_user_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_teacher_id ON public.lesson_agreements(teacher_id);

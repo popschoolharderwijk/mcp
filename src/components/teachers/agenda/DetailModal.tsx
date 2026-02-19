@@ -1,7 +1,6 @@
 import { LuBan, LuLoaderCircle, LuTriangleAlert, LuUndo2 } from 'react-icons/lu';
 import { StudentInfoCard } from '@/components/students/StudentInfoCard';
 import { Button } from '@/components/ui/button';
-import { ColorIcon } from '@/components/ui/color-icon';
 import {
 	Dialog,
 	DialogContent,
@@ -10,9 +9,9 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
-import { MUSIC_ICONS } from '@/constants/icons';
-import { displayTime, formatDate } from '@/lib/dateHelpers';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
+import { formatDateLong, formatDbDateLong } from '@/lib/date/date-format';
+import { formatTime } from '@/lib/time/time-format';
 import type { StudentInfoModalData } from '@/types/students';
 import type { CalendarEvent } from './types';
 
@@ -48,14 +47,12 @@ export function DetailModal({
 			<DialogContent>
 				<DialogHeader>
 					<div className="flex items-center gap-3">
-						<ColorIcon
-							icon={
-								selectedEvent?.resource.lessonTypeIcon
-									? resolveIconFromList(MUSIC_ICONS, selectedEvent.resource.lessonTypeIcon)
-									: undefined
-							}
-							color={selectedEvent?.resource.lessonTypeColor ?? null}
-							size="lg"
+						<LessonTypeBadge
+							name={selectedEvent?.resource.lessonTypeName ?? ''}
+							icon={selectedEvent?.resource.lessonTypeIcon}
+							color={selectedEvent?.resource.lessonTypeColor}
+							iconSize="lg"
+							showName={false}
 						/>
 						<div>
 							<DialogTitle>{selectedEvent?.resource.lessonTypeName}</DialogTitle>
@@ -153,9 +150,7 @@ export function DetailModal({
 						<div className="flex justify-between">
 							<span className="text-sm text-muted-foreground">Datum</span>
 							<span className="font-medium">
-								{selectedEvent?.start
-									? formatDate(new Date(selectedEvent.start).toISOString().split('T')[0])
-									: ''}
+								{selectedEvent?.start ? formatDateLong(selectedEvent.start) : ''}
 							</span>
 						</div>
 						<div className="flex justify-between">
@@ -188,8 +183,8 @@ export function DetailModal({
 								</span>
 								{selectedEvent.resource.originalDate && selectedEvent.resource.originalStartTime && (
 									<p className="text-xs">
-										Origineel: {formatDate(selectedEvent.resource.originalDate)} om{' '}
-										{displayTime(selectedEvent.resource.originalStartTime)}
+										Origineel: {formatDbDateLong(selectedEvent.resource.originalDate)} om{' '}
+										{formatTime(selectedEvent.resource.originalStartTime)}
 									</p>
 								)}
 								{selectedEvent.resource.reason && (

@@ -475,7 +475,7 @@ export function DataTable<T>({
 										<th
 											key={column.key}
 											className={cn(
-												'pb-3 pr-4 font-medium first:pl-2 last:pr-2',
+												'py-2 pr-4 font-medium first:pl-2 last:pr-2',
 												column.className,
 											)}
 										>
@@ -503,10 +503,10 @@ export function DataTable<T>({
 										</th>
 									);
 								})}
-								{rowActions && <th className="pb-3 font-medium w-12" />}
+								{rowActions && <th className="py-3 font-medium w-12" />}
 							</tr>
 						</thead>
-						<tbody>
+						<tbody className="text-sm">
 							{loading && paginatedData.length === 0 ? (
 								// Show skeleton loaders when loading and no data
 								Array.from({ length: effectiveRowsPerPage }, () => (

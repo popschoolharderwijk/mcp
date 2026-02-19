@@ -1,11 +1,9 @@
 import { useMemo, useState } from 'react';
 import { LuSearch, LuX } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
-import { ColorIcon } from '@/components/ui/color-icon';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
+import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MUSIC_ICONS } from '@/constants/icons';
 import { cn } from '@/lib/utils';
 
 export interface LessonTypeOption {
@@ -102,23 +100,21 @@ export function LessonTypeSelector({
 							<CommandList className="max-h-[350px] overflow-y-auto">
 								<CommandEmpty>Geen lessoort gevonden.</CommandEmpty>
 								<CommandGroup>
-									{filteredOptions.map((option) => {
-										const Icon = option.icon
-											? resolveIconFromList(MUSIC_ICONS, option.icon)
-											: undefined;
-
-										return (
-											<CommandItem
-												key={option.id}
-												value={option.id}
-												onSelect={() => handleSelect(option.id)}
-												className="flex items-center gap-2"
-											>
-												<ColorIcon icon={Icon} color={option.color} size="sm" />
-												<span>{option.name}</span>
-											</CommandItem>
-										);
-									})}
+									{filteredOptions.map((option) => (
+										<CommandItem
+											key={option.id}
+											value={option.id}
+											onSelect={() => handleSelect(option.id)}
+											className="flex items-center gap-2"
+										>
+											<LessonTypeBadge
+												name={option.name}
+												icon={option.icon}
+												color={option.color}
+												iconSize="sm"
+											/>
+										</CommandItem>
+									))}
 								</CommandGroup>
 							</CommandList>
 						</Command>
@@ -129,28 +125,24 @@ export function LessonTypeSelector({
 			{/* Selected lesson types as tags */}
 			{selectedOptions.length > 0 && (
 				<div className="flex flex-wrap gap-2">
-					{selectedOptions.map((option) => {
-						const Icon = option.icon ? resolveIconFromList(MUSIC_ICONS, option.icon) : undefined;
-						return (
-							<div
-								key={option.id}
-								className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-sm"
-							>
-								<ColorIcon icon={Icon} color={option.color} size="sm" />
-								<span>{option.name}</span>
-								{!disabled && (
-									<button
-										type="button"
-										onClick={() => handleRemove(option.id)}
-										className="ml-1 rounded-sm hover:bg-accent p-0.5 transition-colors"
-										aria-label={`Verwijder ${option.name}`}
-									>
-										<LuX className="h-3 w-3" />
-									</button>
-								)}
-							</div>
-						);
-					})}
+					{selectedOptions.map((option) => (
+						<div
+							key={option.id}
+							className="inline-flex items-center gap-1.5 rounded-md border bg-background px-2.5 py-1 text-sm"
+						>
+							<LessonTypeBadge name={option.name} icon={option.icon} color={option.color} iconSize="sm" />
+							{!disabled && (
+								<button
+									type="button"
+									onClick={() => handleRemove(option.id)}
+									className="ml-1 rounded-sm hover:bg-accent p-0.5 transition-colors"
+									aria-label={`Verwijder ${option.name}`}
+								>
+									<LuX className="h-3 w-3" />
+								</button>
+							)}
+						</div>
+					))}
 				</div>
 			)}
 		</div>
