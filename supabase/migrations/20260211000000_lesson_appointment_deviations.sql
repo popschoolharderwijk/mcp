@@ -124,8 +124,8 @@ ALTER TABLE public.lesson_appointment_deviations FORCE ROW LEVEL SECURITY;
 -- SECTION 4: RLS POLICIES
 -- =============================================================================
 
--- Teachers can view deviations for their own lessons
-CREATE POLICY lesson_appointment_deviations_select_teacher
+-- Combined SELECT policy for teachers, students, and privileged users
+CREATE POLICY lesson_appointment_deviations_select
 ON public.lesson_appointment_deviations FOR SELECT TO authenticated
 USING (
   EXISTS (
@@ -134,55 +134,43 @@ USING (
     WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
       AND la.teacher_id = public.get_teacher_id((select auth.uid()))
   )
-);
-
--- Students can view deviations for their own lessons
-CREATE POLICY lesson_appointment_deviations_select_student
-ON public.lesson_appointment_deviations FOR SELECT TO authenticated
-USING (
-  EXISTS (
+  OR EXISTS (
     SELECT 1
     FROM public.lesson_agreements la
     WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
       AND la.student_user_id = (select auth.uid())
   )
+  OR public.is_privileged((select auth.uid()))
 );
 
--- Staff, admins and site_admins can view all deviations
-CREATE POLICY lesson_appointment_deviations_select_staff
-ON public.lesson_appointment_deviations FOR SELECT TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
-);
-
--- Teachers can insert deviations for their own lessons
-CREATE POLICY lesson_appointment_deviations_insert_teacher
+-- Combined INSERT policy for teachers and privileged users
+-- Uses OR to allow either:
+-- - Teachers can insert deviations for their own lessons
+-- - Staff, admins and site_admins can insert deviations for any lesson
+CREATE POLICY lesson_appointment_deviations_insert
 ON public.lesson_appointment_deviations FOR INSERT TO authenticated
 WITH CHECK (
-  EXISTS (
-    SELECT 1
-    FROM public.lesson_agreements la
-    WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
-      AND la.teacher_id = public.get_teacher_id((select auth.uid()))
+  (
+    EXISTS (
+      SELECT 1
+      FROM public.lesson_agreements la
+      WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
+        AND la.teacher_id = public.get_teacher_id((select auth.uid()))
+    )
+    AND created_by_user_id = (select auth.uid())
+    AND last_updated_by_user_id = (select auth.uid())
   )
-  AND created_by_user_id = (select auth.uid())
-  AND last_updated_by_user_id = (select auth.uid())
+  OR (
+    public.is_privileged((select auth.uid()))
+    AND created_by_user_id = (select auth.uid())
+    AND last_updated_by_user_id = (select auth.uid()))
 );
 
--- Staff, admins and site_admins can insert deviations for any lesson
-CREATE POLICY lesson_appointment_deviations_insert_staff
-ON public.lesson_appointment_deviations FOR INSERT TO authenticated
-WITH CHECK (
-  public.is_privileged((select auth.uid()))
-  AND created_by_user_id = (select auth.uid())
-  AND last_updated_by_user_id = (select auth.uid())
-);
-
--- Teachers can update deviations for their own lessons
+-- Combined UPDATE policy for teachers and privileged users
 -- Note: We use a simple USING clause for authorization. The WITH CHECK ensures
 -- the teacher owns the lesson and is updating the last_updated_by_user_id correctly.
 -- Immutability of original_date, original_start_time, created_by_user_id is enforced via trigger.
-CREATE POLICY lesson_appointment_deviations_update_teacher
+CREATE POLICY lesson_appointment_deviations_update
 ON public.lesson_appointment_deviations FOR UPDATE TO authenticated
 USING (
   EXISTS (
@@ -191,31 +179,28 @@ USING (
     WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
       AND la.teacher_id = public.get_teacher_id((select auth.uid()))
   )
+  OR public.is_privileged((select auth.uid()))
 )
 WITH CHECK (
-  EXISTS (
-    SELECT 1
-    FROM public.lesson_agreements la
-    WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
-      AND la.teacher_id = public.get_teacher_id((select auth.uid()))
+  (
+    EXISTS (
+      SELECT 1
+      FROM public.lesson_agreements la
+      WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
+        AND la.teacher_id = public.get_teacher_id((select auth.uid()))
+    )
+    AND last_updated_by_user_id = (select auth.uid())
   )
-  AND last_updated_by_user_id = (select auth.uid())
+  OR (
+    public.is_privileged((select auth.uid()))
+    AND last_updated_by_user_id = (select auth.uid()))
 );
 
--- Staff, admins and site_admins can update deviations for any lesson
--- Immutability of original_date, original_start_time, created_by_user_id is enforced via trigger.
-CREATE POLICY lesson_appointment_deviations_update_staff
-ON public.lesson_appointment_deviations FOR UPDATE TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
-)
-WITH CHECK (
-  public.is_privileged((select auth.uid()))
-  AND last_updated_by_user_id = (select auth.uid())
-);
-
--- Teachers can delete deviations for their own lessons
-CREATE POLICY lesson_appointment_deviations_delete_teacher
+-- Combined DELETE policy for teachers and privileged users
+-- Uses OR to allow either:
+-- - Teachers can delete deviations for their own lessons
+-- - Staff, admins and site_admins can delete any deviation
+CREATE POLICY lesson_appointment_deviations_delete
 ON public.lesson_appointment_deviations FOR DELETE TO authenticated
 USING (
   EXISTS (
@@ -224,13 +209,7 @@ USING (
     WHERE la.id = lesson_appointment_deviations.lesson_agreement_id
       AND la.teacher_id = public.get_teacher_id((select auth.uid()))
   )
-);
-
--- Staff, admins and site_admins can delete deviations for any lesson
-CREATE POLICY lesson_appointment_deviations_delete_staff
-ON public.lesson_appointment_deviations FOR DELETE TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
+  OR public.is_privileged((select auth.uid()))
 );
 
 -- =============================================================================

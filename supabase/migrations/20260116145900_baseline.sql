@@ -199,32 +199,25 @@ ALTER FUNCTION public.can_delete_user(UUID, UUID) OWNER TO postgres;
 -- SECTION 5: RLS POLICIES - PROFILES
 -- =============================================================================
 
--- Users can view their own profile
-CREATE POLICY profiles_select_own
+-- Combined SELECT policy: users can view own profile, privileged users can view all
+CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
-USING ((select auth.uid()) = user_id);
+USING (
+  (select auth.uid()) = user_id
+  OR public.is_privileged((select auth.uid()))
+);
 
--- Admins and site_admins can view all profiles
-CREATE POLICY profiles_select_admin
-ON public.profiles FOR SELECT TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
-
--- Staff can view all profiles
-CREATE POLICY profiles_select_staff
-ON public.profiles FOR SELECT TO authenticated
-USING (public.is_staff((select auth.uid())));
-
--- Users can update their own profile
-CREATE POLICY profiles_update_own
+-- Combined UPDATE policy: users can update own profile, admins can update any profile
+CREATE POLICY profiles_update
 ON public.profiles FOR UPDATE TO authenticated
-USING ((select auth.uid()) = user_id)
-WITH CHECK ((select auth.uid()) = user_id);
-
--- Admins and site_admins can update any profile
-CREATE POLICY profiles_update_admin
-ON public.profiles FOR UPDATE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (
+  (select auth.uid()) = user_id
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+)
+WITH CHECK (
+  (select auth.uid()) = user_id
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+);
 
 -- INSERT and DELETE policies explicitly removed:
 -- Profiles can only be created via handle_new_user() trigger
@@ -247,20 +240,13 @@ WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select
 --
 -- Note: PRIMARY KEY on user_id ensures only one role per user.
 
--- Users can view their own role
-CREATE POLICY roles_select_own
+-- Combined SELECT policy: users can view own role, privileged users can view all
+CREATE POLICY roles_select
 ON public.user_roles FOR SELECT TO authenticated
-USING ((select auth.uid()) = user_id);
-
--- Admins and site_admins can view all roles
-CREATE POLICY roles_select_admin
-ON public.user_roles FOR SELECT TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
-
--- Staff can view all roles
-CREATE POLICY roles_select_staff
-ON public.user_roles FOR SELECT TO authenticated
-USING (public.is_staff((select auth.uid())));
+USING (
+  (select auth.uid()) = user_id
+  OR public.is_privileged((select auth.uid()))
+);
 
 -- Allow admins to insert roles (but NOT site_admin)
 -- Allow site_admins to insert any role

@@ -26,6 +26,8 @@ interface UsersSelectProps {
 	filter?: UserFilter;
 	/** Pre-loaded options to use instead of fetching */
 	options?: UserOption[];
+	/** User IDs to exclude from the list (e.g. existing teachers when adding a teacher) */
+	excludeUserIds?: string[];
 	/** Placeholder when nothing selected */
 	placeholder?: string;
 	/** Disable the select */
@@ -43,6 +45,7 @@ export function UsersSelect({
 	onChange,
 	filter = 'all',
 	options,
+	excludeUserIds = [],
 	placeholder = 'Selecteer gebruiker...',
 	disabled = false,
 	className,
@@ -54,8 +57,12 @@ export function UsersSelect({
 	// Keep track of the selected user separately to display even when popover hasn't been opened
 	const [cachedSelectedUser, setCachedSelectedUser] = useState<UserOption | null>(null);
 
-	// Use provided options or fetched users
-	const users = options ?? fetchedUsers;
+	const excludeSet = new Set(excludeUserIds);
+	const filterExcluded = (list: UserOption[]) =>
+		excludeUserIds.length === 0 ? list : list.filter((u) => !excludeSet.has(u.user_id));
+
+	// Use provided options or fetched users (with optional exclude filter)
+	const users = filterExcluded(options ?? fetchedUsers);
 	// Try to find in users list, or fall back to cached selected user
 	const selectedUser =
 		users.find((u) => u.user_id === value) ?? (value === cachedSelectedUser?.user_id ? cachedSelectedUser : null);

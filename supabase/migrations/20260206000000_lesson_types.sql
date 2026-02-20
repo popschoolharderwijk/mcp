@@ -96,6 +96,44 @@ FOR EACH ROW
 EXECUTE FUNCTION public.update_updated_at_column();
 
 -- =============================================================================
+-- RESTRICT DELETE: lesson_types can only be deleted if no agreements exist
+-- =============================================================================
+
+-- Function to check if lesson_type has agreements before deletion
+CREATE OR REPLACE FUNCTION public.check_lesson_type_has_no_agreements()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  -- Check if any lesson_agreements exist for this lesson_type
+  IF EXISTS (
+    SELECT 1
+    FROM public.lesson_agreements
+    WHERE lesson_type_id = OLD.id
+  ) THEN
+    RAISE EXCEPTION 'Cannot delete lesson type: there are existing lesson agreements using this lesson type'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN OLD;
+END;
+$$;
+
+ALTER FUNCTION public.check_lesson_type_has_no_agreements() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.check_lesson_type_has_no_agreements() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.check_lesson_type_has_no_agreements() FROM anon;
+GRANT EXECUTE ON FUNCTION public.check_lesson_type_has_no_agreements() TO authenticated;
+
+-- Trigger to enforce the constraint on DELETE
+CREATE TRIGGER check_lesson_type_has_no_agreements_trigger
+BEFORE DELETE ON public.lesson_types
+FOR EACH ROW
+EXECUTE FUNCTION public.check_lesson_type_has_no_agreements();
+
+-- =============================================================================
 -- SECTION 6: PERMISSIONS
 -- =============================================================================
 

@@ -1,6 +1,18 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAnon } from '../../db';
-import type { LessonTypeInsert, ProfileInsert, UserRoleInsert } from '../types';
+import type { LessonTypeInsert, ProfileInsert, UserRoleInsert } from '../../types';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 /**
  * All RLS policies are defined for 'authenticated' role only.

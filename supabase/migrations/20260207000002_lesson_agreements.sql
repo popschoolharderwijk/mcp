@@ -166,26 +166,17 @@ ALTER TABLE public.lesson_agreements FORCE ROW LEVEL SECURITY;
 -- SECTION 4: RLS POLICIES
 -- =============================================================================
 
--- Students can only view their own lesson agreements
-CREATE POLICY lesson_agreements_select_student
+-- Combined SELECT policy for students, teachers, and privileged users
+-- Uses OR to allow any of the three user types to view lesson agreements:
+-- - Students can view their own lesson agreements
+-- - Teachers can view lesson agreements where they are the teacher
+-- - Staff, admins and site_admins can view all lesson agreements
+CREATE POLICY lesson_agreements_select
 ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
   student_user_id = (select auth.uid())
-);
-
--- Teachers can only view lesson agreements where they are the teacher
--- Uses helper function to bypass RLS on teachers table
-CREATE POLICY lesson_agreements_select_teacher
-ON public.lesson_agreements FOR SELECT TO authenticated
-USING (
-  teacher_id = public.get_teacher_id((select auth.uid()))
-);
-
--- Staff, admins and site_admins can view all lesson agreements
-CREATE POLICY lesson_agreements_select_staff
-ON public.lesson_agreements FOR SELECT TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
+  OR teacher_id = public.get_teacher_id((select auth.uid()))
+  OR public.is_privileged((select auth.uid()))
 );
 
 -- Staff, admins and site_admins can insert lesson agreements
@@ -213,6 +204,47 @@ ON public.lesson_agreements FOR DELETE TO authenticated
 USING (
   public.is_privileged((select auth.uid()))
 );
+
+-- =============================================================================
+-- SECTION 4.5: RESTRICT DELETE ON teacher_lesson_types
+-- =============================================================================
+-- teacher_lesson_types can only be deleted if no agreements exist for that teacher+lesson_type
+-- This function and trigger are defined here because lesson_agreements table must exist first
+
+-- Function to check if teacher_lesson_type has agreements before deletion
+CREATE OR REPLACE FUNCTION public.check_teacher_lesson_type_has_no_agreements()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  -- Check if any lesson_agreements exist for this teacher and lesson_type combination
+  IF EXISTS (
+    SELECT 1
+    FROM public.lesson_agreements
+    WHERE teacher_id = OLD.teacher_id
+      AND lesson_type_id = OLD.lesson_type_id
+  ) THEN
+    RAISE EXCEPTION 'Cannot remove lesson type from teacher: there are existing lesson agreements using this teacher and lesson type combination'
+      USING ERRCODE = 'check_violation';
+  END IF;
+
+  RETURN OLD;
+END;
+$$;
+
+ALTER FUNCTION public.check_teacher_lesson_type_has_no_agreements() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() FROM anon;
+GRANT EXECUTE ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() TO authenticated;
+
+-- Trigger to enforce the constraint on DELETE
+CREATE TRIGGER check_teacher_lesson_type_has_no_agreements_trigger
+BEFORE DELETE ON public.teacher_lesson_types
+FOR EACH ROW
+EXECUTE FUNCTION public.check_teacher_lesson_type_has_no_agreements();
 
 -- =============================================================================
 -- SECTION 4.5: ADDITIONAL RLS POLICIES FOR STUDENTS TABLE

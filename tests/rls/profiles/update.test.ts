@@ -4,8 +4,6 @@ import { type DatabaseState, setupDatabaseStateVerification } from '../db-state'
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
-const { requireProfile, requireUserId } = fixtures;
-
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
 
@@ -16,6 +14,8 @@ beforeAll(async () => {
 afterAll(async () => {
 	await verifyState(initialState);
 });
+
+const { requireProfile, requireUserId } = fixtures;
 
 describe('RLS: profiles UPDATE - own profile', () => {
 	it('user without role can update own profile', async () => {

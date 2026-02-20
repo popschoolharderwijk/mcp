@@ -166,16 +166,12 @@ ALTER FUNCTION public.get_teacher_id(UUID) OWNER TO postgres;
 -- SECTION 5: RLS POLICIES
 -- =============================================================================
 
--- Teachers can view their own record
-CREATE POLICY teachers_select_own
-ON public.teachers FOR SELECT TO authenticated
-USING (user_id = (select auth.uid()));
-
--- Staff, admins and site_admins can view all teachers
-CREATE POLICY teachers_select_staff
+-- Combined SELECT policy: teachers can view own record, privileged users can view all
+CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  public.is_privileged((select auth.uid()))
+  user_id = (select auth.uid())
+  OR public.is_privileged((select auth.uid()))
 );
 
 -- Admins and site_admins can insert teachers
@@ -183,17 +179,17 @@ CREATE POLICY teachers_insert_admin
 ON public.teachers FOR INSERT TO authenticated
 WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
 
--- Teachers can update their own record (especially for bio)
-CREATE POLICY teachers_update_own
+-- Combined UPDATE policy: teachers can update own record, admins can update any
+CREATE POLICY teachers_update
 ON public.teachers FOR UPDATE TO authenticated
-USING (user_id = (select auth.uid()))
-WITH CHECK (user_id = (select auth.uid()));
-
--- Admins and site_admins can update teachers
-CREATE POLICY teachers_update_admin
-ON public.teachers FOR UPDATE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (
+  user_id = (select auth.uid())
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+)
+WITH CHECK (
+  user_id = (select auth.uid())
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+);
 
 -- Admins and site_admins can delete teachers
 CREATE POLICY teachers_delete_admin
@@ -204,84 +200,52 @@ USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth
 -- SECTION 5B: RLS POLICIES FOR teacher_availability
 -- =============================================================================
 
--- Teachers can view their own availability
-CREATE POLICY teacher_availability_select_own
+-- Combined SELECT policy: teachers can view own availability, privileged users can view all
+CREATE POLICY teacher_availability_select
 ON public.teacher_availability FOR SELECT TO authenticated
 USING (
   teacher_id = public.get_teacher_id((select auth.uid()))
+  OR public.is_privileged((select auth.uid()))
 );
 
--- Staff, admins and site_admins can view all availability
-CREATE POLICY teacher_availability_select_staff
-ON public.teacher_availability FOR SELECT TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
-);
-
--- Teachers can insert their own availability
-CREATE POLICY teacher_availability_insert_own
+-- Combined INSERT policy: teachers can insert own availability, admins can insert for any
+CREATE POLICY teacher_availability_insert
 ON public.teacher_availability FOR INSERT TO authenticated
 WITH CHECK (
   teacher_id = public.get_teacher_id((select auth.uid()))
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
 );
 
--- Admins and site_admins can insert availability for any teacher
-CREATE POLICY teacher_availability_insert_admin
-ON public.teacher_availability FOR INSERT TO authenticated
-WITH CHECK (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
-);
-
--- Teachers can update their own availability
-CREATE POLICY teacher_availability_update_own
+-- Combined UPDATE policy: teachers can update own availability, admins can update any
+CREATE POLICY teacher_availability_update
 ON public.teacher_availability FOR UPDATE TO authenticated
 USING (
   teacher_id = public.get_teacher_id((select auth.uid()))
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
 )
 WITH CHECK (
   teacher_id = public.get_teacher_id((select auth.uid()))
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
 );
 
--- Admins and site_admins can update availability for any teacher
-CREATE POLICY teacher_availability_update_admin
-ON public.teacher_availability FOR UPDATE TO authenticated
-USING (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
-)
-WITH CHECK (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
-);
-
--- Teachers can delete their own availability
-CREATE POLICY teacher_availability_delete_own
+-- Combined DELETE policy: teachers can delete own availability, admins can delete any
+CREATE POLICY teacher_availability_delete
 ON public.teacher_availability FOR DELETE TO authenticated
 USING (
   teacher_id = public.get_teacher_id((select auth.uid()))
-);
-
--- Admins and site_admins can delete availability for any teacher
-CREATE POLICY teacher_availability_delete_admin
-ON public.teacher_availability FOR DELETE TO authenticated
-USING (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
 );
 
 -- =============================================================================
 -- SECTION 5C: RLS POLICIES FOR teacher_lesson_types
 -- =============================================================================
 
--- Teachers can view their own lesson types
-CREATE POLICY teacher_lesson_types_select_own
+-- Combined SELECT policy: teachers can view own lesson types, privileged users can view all
+CREATE POLICY teacher_lesson_types_select
 ON public.teacher_lesson_types FOR SELECT TO authenticated
 USING (
   teacher_id = public.get_teacher_id((select auth.uid()))
-);
-
--- Staff, admins and site_admins can view all lesson type links
-CREATE POLICY teacher_lesson_types_select_staff
-ON public.teacher_lesson_types FOR SELECT TO authenticated
-USING (
-  public.is_privileged((select auth.uid()))
+  OR public.is_privileged((select auth.uid()))
 );
 
 -- Admins and site_admins can insert lesson type links

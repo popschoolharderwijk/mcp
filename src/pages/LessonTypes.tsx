@@ -167,8 +167,14 @@ export default function LessonTypes() {
 			const { error } = await supabase.from('lesson_types').delete().eq('id', deleteDialog.lessonType.id);
 
 			if (error) {
+				let translatedMessage = error.message;
+				if (error.message.includes('Cannot delete lesson type')) {
+					translatedMessage =
+						'Kan lestype niet verwijderen: er zijn bestaande lesovereenkomsten die dit lestype gebruiken';
+				}
+
 				toast.error('Fout bij verwijderen lessoort', {
-					description: error.message,
+					description: translatedMessage,
 				});
 				return;
 			}

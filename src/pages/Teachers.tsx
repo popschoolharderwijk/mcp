@@ -326,7 +326,12 @@ export default function Teachers() {
 			<TeacherFormDialog
 				open={teacherFormDialog.open}
 				onOpenChange={(open) => setTeacherFormDialog({ ...teacherFormDialog, open })}
-				onSuccess={loadTeachers}
+				onSuccess={(teacherId) => {
+					loadTeachers();
+					if (teacherId) {
+						navigate(`/teachers/${teacherId}`);
+					}
+				}}
 				teacher={teacherFormDialog.teacher ?? undefined}
 			/>
 
