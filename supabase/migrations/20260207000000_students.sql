@@ -109,16 +109,12 @@ ALTER FUNCTION public.get_student_id(UUID) OWNER TO postgres;
 -- SECTION 5: RLS POLICIES
 -- =============================================================================
 
--- Students can view their own record
-CREATE POLICY students_select_own
-ON public.students FOR SELECT TO authenticated
-USING (user_id = (select auth.uid()));
-
--- Staff, admins and site_admins can view all students
-CREATE POLICY students_select_staff
+-- Combined SELECT policy: students can view own record, privileged users can view all
+CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
-  public.is_privileged((select auth.uid()))
+  user_id = (select auth.uid())
+  OR public.is_privileged((select auth.uid()))
 );
 
 -- Note: INSERT policy is intentionally omitted.

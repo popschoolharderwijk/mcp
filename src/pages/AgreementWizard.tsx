@@ -8,7 +8,6 @@ import { TeacherSlotStepContent } from '@/components/agreements/TeacherSlotStepC
 import { UserStepContent } from '@/components/agreements/UserStepContent';
 import { STEP_ORDER, WizardStep, WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
 import { Button } from '@/components/ui/button';
-import { UserFormDialog } from '@/components/users/UserFormDialog';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAutofocus } from '@/hooks/useAutofocus';
 import { supabase } from '@/integrations/supabase/client';
@@ -321,8 +320,6 @@ export default function AgreementWizard() {
 	const [highestStep, setHighestStep] = useState(0);
 	const [partialConfirmOpen, setPartialConfirmOpen] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [newUserDialogOpen, setNewUserDialogOpen] = useState(false);
-
 	const startDatePickerRef = useAutofocus<HTMLButtonElement>(step === WizardStep.Period);
 
 	// Derived state
@@ -549,7 +546,6 @@ export default function AgreementWizard() {
 						onStudentUserIdChange={(v) => setForm((f) => ({ ...f, studentUserId: v }))}
 						onUserChange={(v) => setForm((f) => ({ ...f, user: v }))}
 						onLessonTypeChange={(v) => setForm((f) => ({ ...f, lessonTypeId: v }))}
-						onNewUserClick={() => setNewUserDialogOpen(true)}
 					/>
 				)}
 
@@ -683,27 +679,6 @@ export default function AgreementWizard() {
 					</div>
 				</div>
 			)}
-
-			<UserFormDialog
-				open={newUserDialogOpen}
-				onOpenChange={setNewUserDialogOpen}
-				onSuccess={(createdUser) => {
-					if (createdUser) {
-						setForm((f) => ({
-							...f,
-							studentUserId: createdUser.user_id,
-							user: {
-								user_id: createdUser.user_id,
-								email: createdUser.email,
-								first_name: createdUser.first_name,
-								last_name: createdUser.last_name,
-								avatar_url: createdUser.avatar_url,
-							},
-						}));
-					}
-					setNewUserDialogOpen(false);
-				}}
-			/>
 		</>
 	);
 }

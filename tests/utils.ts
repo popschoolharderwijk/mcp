@@ -2,7 +2,38 @@
  * Shared test utilities and helper functions.
  */
 
-import type { User } from '@supabase/supabase-js';
+import { expect } from 'bun:test';
+import type { PostgrestError, User } from '@supabase/supabase-js';
+
+export function expectNonNull<T>(data: T | null | undefined): asserts data is T {
+	expect(data).toBeDefined();
+	expect(data).not.toBeNull();
+}
+
+export function expectError<T>(data: T | null, error: PostgrestError | null): asserts error is PostgrestError {
+	expect(error).not.toBeNull();
+	expect(data).toBeNull();
+}
+
+export function expectNoError<T>(data: T | null | undefined, error: PostgrestError | null): asserts data is T {
+	expect(error).toBeNull();
+	expect(data).toBeDefined();
+}
+
+type PostgressResult<T> = {
+	data: T | undefined | null;
+	error: PostgrestError | null;
+};
+
+export function unwrap<T>({ data, error }: PostgressResult<T | null>): T {
+	expectNoError(data, error);
+	return data;
+}
+
+export function unwrapError<T>(result: PostgressResult<T>): PostgrestError {
+	expectError(result.data, result.error);
+	return result.error;
+}
 
 /**
  * Helper to safely extract user from createUser response.

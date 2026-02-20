@@ -18,10 +18,11 @@
 -- 5. Tests in tests/rls/teachers/teacher-viewed-by-student.test.ts verify that
 --    unauthorized callers cannot retrieve rows
 --
--- LINTER WARNING:
--- The Supabase linter will report: "View public.teacher_viewed_by_student is
--- defined with the SECURITY DEFINER property". This is a FALSE POSITIVE for this
--- specific case because security is enforced via explicit auth.uid() checks.
+-- LINTER WARNING (suppressed):
+-- The Supabase linter reports: "View public.teacher_viewed_by_student is
+-- defined with the SECURITY DEFINER property". This warning is suppressed
+-- via -- pgt-ignore lint/security/securityDefinerView comment above.
+-- This is safe because security is enforced via explicit auth.uid() checks.
 --
 -- WHITELIST ENTRY:
 -- This view is registered in the ALLOWED_SECURITY_DEFINER_VIEWS whitelist in
@@ -41,6 +42,7 @@
 -- BUT with explicit security checks: only returns data for the calling user (auth.uid())
 -- and only if they are a student (have lesson_agreements)
 -- This is more secure than unrestricted SECURITY DEFINER because it validates the caller
+-- pgt-ignore lint/security/securityDefinerView: Intentional SECURITY DEFINER with explicit auth.uid() checks
 CREATE OR REPLACE FUNCTION public.get_teachers_viewed_by_student()
 RETURNS TABLE (
   teacher_id UUID,

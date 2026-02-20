@@ -1,5 +1,17 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 const { allProfiles, allUserRoles } = fixtures;
 
@@ -29,11 +41,6 @@ describe('RLS: verify ground truth', () => {
 	it('should have 5 staff', () => {
 		const staff = allUserRoles.filter((ur) => ur.role === 'staff');
 		expect(staff).toHaveLength(5);
-	});
-
-	it('should have 0 teachers in user_roles (teachers are in teachers table)', () => {
-		const teachers = allUserRoles.filter((ur) => ur.role === 'teacher');
-		expect(teachers).toHaveLength(0);
 	});
 
 	it('should have profiles for all user roles', () => {

@@ -3,7 +3,7 @@ import { createClientAs, createClientBypassRLS } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import { buildDeviationData } from './utils';
+import { buildDeviationData, getTestAgreementAlice, getTestAgreementBob } from './utils';
 
 const dbNoRLS = createClientBypassRLS();
 
@@ -36,12 +36,8 @@ describe('RLS: lesson_appointment_deviations SELECT', () => {
 		initialState = await setupState();
 
 		// Get agreement details
-		const agreementAlice = fixtures.allLessonAgreements.find((a) => a.id === agreementStudent009TeacherAlice);
-		const agreementBob = fixtures.allLessonAgreements.find((a) => a.id === agreementStudent026TeacherBob);
-
-		if (!agreementAlice || !agreementBob) {
-			throw new Error('Agreements not found');
-		}
+		const agreementAlice = getTestAgreementAlice();
+		const agreementBob = getTestAgreementBob();
 
 		// Create test deviations using dynamic dates
 		const { insertRow: insertAlice } = buildDeviationData({

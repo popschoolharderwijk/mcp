@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import type { TeacherInsert } from '../../types';
+import { expectError, expectNoError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import type { TeacherInsert } from '../types';
 
 const dbNoRLS = createClientBypassRLS();
 
@@ -38,8 +39,7 @@ describe('RLS: teachers INSERT - blocked for non-admin roles', () => {
 		const { data, error } = await db.from('teachers').insert(newTeacher).select();
 
 		// Should fail - no INSERT policy for regular users
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('teacher cannot insert teacher', async () => {
@@ -47,8 +47,7 @@ describe('RLS: teachers INSERT - blocked for non-admin roles', () => {
 
 		const { data, error } = await db.from('teachers').insert(newTeacher).select();
 
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('staff cannot insert teacher', async () => {
@@ -56,8 +55,7 @@ describe('RLS: teachers INSERT - blocked for non-admin roles', () => {
 
 		const { data, error } = await db.from('teachers').insert(newTeacher).select();
 
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 });
 
@@ -79,7 +77,7 @@ describe('RLS: teachers INSERT - admin permissions', () => {
 		const newTeacher: TeacherInsert = { user_id: studentCUserId };
 		const { data, error } = await db.from('teachers').insert(newTeacher).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.user_id).toBe(newTeacher.user_id);
 
@@ -95,7 +93,7 @@ describe('RLS: teachers INSERT - admin permissions', () => {
 		const newTeacher: TeacherInsert = { user_id: studentCUserId };
 		const { data, error } = await db.from('teachers').insert(newTeacher).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.user_id).toBe(newTeacher.user_id);
 
@@ -178,7 +176,7 @@ describe('RLS: teachers UPDATE - teacher own record', () => {
 		const newBio = 'Updated bio by teacher';
 		const { data, error } = await db.from('teachers').update({ bio: newBio }).eq('id', aliceTeacherId).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.bio).toBe(newBio);
 
@@ -226,7 +224,7 @@ describe('RLS: teachers UPDATE - admin permissions', () => {
 			.eq('id', originalTeacher.id)
 			.select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.id).toBe(originalTeacher.id);
 	});
@@ -247,7 +245,7 @@ describe('RLS: teachers UPDATE - admin permissions', () => {
 			.eq('id', originalTeacher.id)
 			.select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.id).toBe(originalTeacher.id);
 	});
@@ -306,7 +304,7 @@ describe('RLS: teachers DELETE - admin permissions', () => {
 		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
 		const newTeacher: TeacherInsert = { user_id: studentDUserId };
 		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
-		expect(insertError).toBeNull();
+		expectNoError(inserted, insertError);
 		expect(inserted).toHaveLength(1);
 		if (!inserted || inserted.length === 0) {
 			throw new Error('Failed to insert teacher');
@@ -317,7 +315,7 @@ describe('RLS: teachers DELETE - admin permissions', () => {
 		// Delete
 		const { data, error } = await db.from('teachers').delete().eq('id', teacherId).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.id).toBe(teacherId);
 	});
@@ -328,7 +326,7 @@ describe('RLS: teachers DELETE - admin permissions', () => {
 		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
 		const newTeacher: TeacherInsert = { user_id: studentDUserId };
 		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
-		expect(insertError).toBeNull();
+		expectNoError(inserted, insertError);
 		expect(inserted).toHaveLength(1);
 		if (!inserted || inserted.length === 0) {
 			throw new Error('Failed to insert teacher');
@@ -339,7 +337,7 @@ describe('RLS: teachers DELETE - admin permissions', () => {
 		// Delete
 		const { data, error } = await db.from('teachers').delete().eq('id', teacherId).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data?.[0]?.id).toBe(teacherId);
 	});

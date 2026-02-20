@@ -1,9 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import type { StudentInsert } from '../../types';
+import { expectError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import type { StudentInsert } from '../types';
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 // User IDs from fixtures for insert tests
 const studentBUserId = fixtures.requireUserId(TestUsers.STUDENT_002);
@@ -34,8 +46,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
 		// Should fail - no INSERT policy (students are managed automatically)
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('teacher cannot insert student', async () => {
@@ -43,8 +54,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('staff cannot insert student', async () => {
@@ -52,8 +62,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('admin cannot insert student', async () => {
@@ -64,8 +73,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
 		// Should fail - no INSERT policy (students are managed automatically)
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 
 	it('site_admin cannot insert student', async () => {
@@ -76,8 +84,7 @@ describe('RLS: students INSERT - blocked for all roles', () => {
 		const { data, error } = await db.from('students').insert(newStudent).select();
 
 		// Should fail - no INSERT policy (students are managed automatically)
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expectError(data, error);
 	});
 });
 

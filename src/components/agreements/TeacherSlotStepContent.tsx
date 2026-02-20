@@ -179,76 +179,77 @@ export function TeacherSlotStepContent({
 						</div>
 						<ScrollArea className="h-72 rounded-md border">
 							<div className="p-2 space-y-3">
-							{slotsWithStatus.length === 0 ? (
-								<p className="text-sm text-muted-foreground py-2">
-									Geen beschikbare slots voor deze docent in de gekozen periode.
-								</p>
-							) : (
-								dayOrder.map((dayOfWeek) => {
-									const daySlots = slotsByDay.get(dayOfWeek);
-									if (!daySlots?.length) return null;
-									return (
-										<div key={dayOfWeek} className="space-y-1.5">
-											<div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background py-0.5">
-												{DAY_NAMES[dayOfWeek]}
+								{slotsWithStatus.length === 0 ? (
+									<p className="text-sm text-muted-foreground py-2">
+										Geen beschikbare slots voor deze docent in de gekozen periode.
+									</p>
+								) : (
+									dayOrder.map((dayOfWeek) => {
+										const daySlots = slotsByDay.get(dayOfWeek);
+										if (!daySlots?.length) return null;
+										return (
+											<div key={dayOfWeek} className="space-y-1.5">
+												<div className="text-xs font-medium text-muted-foreground sticky top-0 bg-background py-0.5">
+													{DAY_NAMES[dayOfWeek]}
+												</div>
+												<div className="flex flex-wrap gap-1.5">
+													{daySlots.map((slot, idx) => {
+														const isSelected =
+															selectedSlot?.day_of_week === slot.day_of_week &&
+															selectedSlot?.start_time === slot.start_time;
+														const isCurrentAgreementSlot =
+															currentAgreementSlot != null &&
+															currentAgreementSlot.day_of_week === slot.day_of_week &&
+															formatTime(currentAgreementSlot.start_time) ===
+																formatTime(slot.start_time);
+														const isOccupied = slot.status === 'occupied';
+														return (
+															<button
+																key={`${slot.day_of_week}-${slot.start_time}-${idx}`}
+																type="button"
+																disabled={isOccupied}
+																onClick={() => onSlotClick(slot)}
+																className={cn(
+																	'rounded border px-2 py-1 text-xs transition-colors inline-flex items-center gap-1.5',
+																	isOccupied &&
+																		'cursor-not-allowed bg-muted opacity-60',
+																	!isOccupied && 'hover:bg-accent',
+																	isSelected && 'ring-2 ring-primary',
+																	isCurrentAgreementSlot &&
+																		'bg-primary/30 dark:bg-primary/40 border-primary dark:border-primary',
+																	slot.status === 'free' &&
+																		!isCurrentAgreementSlot &&
+																		'border-green-200 dark:border-green-800',
+																	slot.status === 'partial' &&
+																		!isCurrentAgreementSlot &&
+																		'border-amber-200 dark:border-amber-800',
+																)}
+																title={
+																	(isCurrentAgreementSlot
+																		? 'Huidige slot van deze overeenkomst. '
+																		: '') +
+																	SLOT_STATUS_TITLE[slot.status] +
+																	(slot.status === 'partial'
+																		? ` (${slot.occupiedOccurrences}/${slot.totalOccurrences})`
+																		: '')
+																}
+															>
+																<SlotStatusIcon
+																	status={slot.status}
+																	occupiedOccurrences={slot.occupiedOccurrences}
+																	totalOccurrences={slot.totalOccurrences}
+																/>
+																<span className="font-medium tabular-nums">
+																	{formatTime(slot.start_time)}
+																</span>
+															</button>
+														);
+													})}
+												</div>
 											</div>
-											<div className="flex flex-wrap gap-1.5">
-												{daySlots.map((slot, idx) => {
-													const isSelected =
-														selectedSlot?.day_of_week === slot.day_of_week &&
-														selectedSlot?.start_time === slot.start_time;
-													const isCurrentAgreementSlot =
-														currentAgreementSlot != null &&
-														currentAgreementSlot.day_of_week === slot.day_of_week &&
-														formatTime(currentAgreementSlot.start_time) ===
-															formatTime(slot.start_time);
-													const isOccupied = slot.status === 'occupied';
-													return (
-														<button
-															key={`${slot.day_of_week}-${slot.start_time}-${idx}`}
-															type="button"
-															disabled={isOccupied}
-															onClick={() => onSlotClick(slot)}
-															className={cn(
-																'rounded border px-2 py-1 text-xs transition-colors inline-flex items-center gap-1.5',
-																isOccupied && 'cursor-not-allowed bg-muted opacity-60',
-																!isOccupied && 'hover:bg-accent',
-																isSelected && 'ring-2 ring-primary',
-																isCurrentAgreementSlot &&
-																	'bg-primary/30 dark:bg-primary/40 border-primary dark:border-primary',
-																slot.status === 'free' &&
-																	!isCurrentAgreementSlot &&
-																	'border-green-200 dark:border-green-800',
-																slot.status === 'partial' &&
-																	!isCurrentAgreementSlot &&
-																	'border-amber-200 dark:border-amber-800',
-															)}
-															title={
-																(isCurrentAgreementSlot
-																	? 'Huidige slot van deze overeenkomst. '
-																	: '') +
-																SLOT_STATUS_TITLE[slot.status] +
-																(slot.status === 'partial'
-																	? ` (${slot.occupiedOccurrences}/${slot.totalOccurrences})`
-																	: '')
-															}
-														>
-															<SlotStatusIcon
-																status={slot.status}
-																occupiedOccurrences={slot.occupiedOccurrences}
-																totalOccurrences={slot.totalOccurrences}
-															/>
-															<span className="font-medium tabular-nums">
-																{formatTime(slot.start_time)}
-															</span>
-														</button>
-													);
-												})}
-											</div>
-										</div>
-									);
-								})
-							)}
+										);
+									})
+								)}
 							</div>
 						</ScrollArea>
 					</div>

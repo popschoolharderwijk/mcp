@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import type { LessonAgreementInsert } from '../../types';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import type { LessonAgreementInsert } from '../types';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();

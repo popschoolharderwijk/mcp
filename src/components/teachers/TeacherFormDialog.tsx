@@ -10,12 +10,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
+import { ExistingOrNewUserSelect } from '@/components/ui/existing-or-new-user-select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type LessonTypeOption, LessonTypeSelector } from '@/components/ui/lesson-type-selector';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Textarea } from '@/components/ui/textarea';
-import { UserSelector } from '@/components/ui/user-selector';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TeacherData {
@@ -34,7 +34,7 @@ interface TeacherData {
 interface TeacherFormDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSuccess: () => void;
+	onSuccess: (teacherId?: string) => void;
 	/** Teacher data for edit mode. If undefined, dialog is in create mode. */
 	teacher?: TeacherData;
 }
@@ -57,16 +57,14 @@ const emptyForm: FormState = {
 	lesson_type_ids: [],
 };
 
-type TeacherFormMode = 'new-user' | 'existing-user';
-
 export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: TeacherFormDialogProps) {
 	const isEditMode = !!teacher;
 	const [form, setForm] = useState<FormState>(emptyForm);
 	const [lessonTypes, setLessonTypes] = useState<LessonTypeOption[]>([]);
 	const [loadingLessonTypes, setLoadingLessonTypes] = useState(false);
 	const [saving, setSaving] = useState(false);
-	const [mode, setMode] = useState<TeacherFormMode>('new-user');
 	const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+	const [teacherUserIds, setTeacherUserIds] = useState<string[]>([]);
 
 	// Load lesson types
 	useEffect(() => {
@@ -119,14 +117,21 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 					bio: teacher.bio ?? '',
 					lesson_type_ids: [],
 				});
-				setMode('new-user');
 				setSelectedUserId(null);
 			} else {
 				setForm(emptyForm);
-				setMode('new-user');
 				setSelectedUserId(null);
 			}
 		}
+	}, [open, teacher]);
+
+	// Load teacher user IDs for exclude list when adding new teacher
+	useEffect(() => {
+		if (!open || teacher) return;
+		supabase
+			.from('teachers')
+			.select('user_id')
+			.then(({ data }) => setTeacherUserIds((data ?? []).map((r) => r.user_id)));
 	}, [open, teacher]);
 
 	// Load user data when existing user is selected (only for email, not for form fields)
@@ -160,7 +165,6 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 		if (!saving) {
 			if (!newOpen) {
 				setForm(emptyForm);
-				setMode('new-user');
 				setSelectedUserId(null);
 			}
 			onOpenChange(newOpen);
@@ -168,15 +172,9 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 	};
 
 	const handleSubmit = async () => {
-		if (!isEditMode) {
-			if (mode === 'existing-user' && !selectedUserId) {
-				toast.error('Selecteer een gebruiker');
-				return;
-			}
-			if (mode === 'new-user' && !form.email) {
-				toast.error('Email is verplicht');
-				return;
-			}
+		if (!isEditMode && !selectedUserId) {
+			toast.error('Selecteer een bestaande gebruiker of maak een nieuwe aan');
+			return;
 		}
 
 		setSaving(true);
@@ -193,51 +191,8 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 	};
 
 	const handleCreate = async () => {
-		let userId: string;
-
-		if (mode === 'existing-user' && selectedUserId) {
-			// Use existing user - no need to update profile, just use the user_id
-			userId = selectedUserId;
-		} else {
-			// Create new user via Supabase Auth Admin API
-			const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-				email: form.email,
-				email_confirm: true,
-				user_metadata: {
-					first_name: form.first_name || undefined,
-					last_name: form.last_name || undefined,
-				},
-			});
-
-			if (authError || !authData.user) {
-				toast.error('Fout bij aanmaken gebruiker', {
-					description: authError?.message || 'Onbekende fout',
-				});
-				return;
-			}
-
-			userId = authData.user.id;
-
-			// Update profile with phone number
-			if (form.first_name || form.last_name || form.phone_number) {
-				const { error: profileError } = await supabase
-					.from('profiles')
-					.update({
-						first_name: form.first_name || null,
-						last_name: form.last_name || null,
-						phone_number: form.phone_number || null,
-					})
-					.eq('user_id', userId);
-
-				if (profileError) {
-					console.error('Error updating profile:', profileError);
-					toast.error('Fout bij bijwerken profiel', {
-						description: profileError.message,
-					});
-					return;
-				}
-			}
-		}
+		if (!selectedUserId) return;
+		const userId = selectedUserId;
 
 		// Create teacher record
 		const { data: teacherData, error: teacherError } = await supabase
@@ -274,15 +229,12 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 			}
 		}
 
-		toast.success('Docent aangemaakt', {
-			description: `Docent ${form.email} is succesvol aangemaakt.`,
-		});
+		toast.success('Docent aangemaakt');
 
 		setForm(emptyForm);
-		setMode('new-user');
 		setSelectedUserId(null);
 		onOpenChange(false);
-		onSuccess();
+		onSuccess(teacherData.id);
 	};
 
 	const handleEdit = async () => {
@@ -388,62 +340,28 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 					)}
 				</DialogHeader>
 				<div className="space-y-3 py-2">
-					{/* Mode selector for new teachers */}
+					{/* Existing or new user for new teachers (new user via modal in component) */}
 					{!isEditMode && (
-						<div className="space-y-1.5">
-							<Label className="text-sm">Type docent</Label>
-							<div className="flex gap-2">
-								<Button
-									type="button"
-									variant={mode === 'new-user' ? 'default' : 'outline'}
-									onClick={() => {
-										setMode('new-user');
-										setSelectedUserId(null);
-										setForm(emptyForm);
-									}}
-									className="flex-1"
-								>
-									Nieuwe gebruiker
-								</Button>
-								<Button
-									type="button"
-									variant={mode === 'existing-user' ? 'default' : 'outline'}
-									onClick={() => {
-										setMode('existing-user');
-										setSelectedUserId(null);
-										setForm(emptyForm);
-									}}
-									className="flex-1"
-								>
-									Bestaande gebruiker
-								</Button>
-							</div>
-						</div>
+						<ExistingOrNewUserSelect
+							value={selectedUserId}
+							onChange={(userId, _user) => {
+								setSelectedUserId(userId);
+								if (userId) {
+									loadUserData(userId);
+								} else {
+									setForm(emptyForm);
+								}
+							}}
+							filter="all"
+							excludeUserIds={teacherUserIds}
+							placeholder="Selecteer een bestaande gebruiker..."
+							label="Gebruiker"
+							required
+						/>
 					)}
 
-					{/* User selector for existing users */}
-					{!isEditMode && mode === 'existing-user' && (
-						<div className="space-y-1.5">
-							<Label className="text-sm">Gebruiker *</Label>
-							<UserSelector
-								value={selectedUserId}
-								onChange={(userId) => {
-									setSelectedUserId(userId);
-									if (userId) {
-										// Load user data (only for bio, not for form fields)
-										loadUserData(userId);
-									} else {
-										setForm(emptyForm);
-									}
-								}}
-								placeholder="Selecteer een bestaande gebruiker..."
-								searchPlaceholder="Zoek op naam of email..."
-							/>
-						</div>
-					)}
-
-					{/* Name, email, phone fields - only show for new users or edit mode */}
-					{(isEditMode || mode === 'new-user') && (
+					{/* Name, email, phone - only in edit mode (new user comes from modal) */}
+					{isEditMode && (
 						<>
 							<div className="grid grid-cols-2 gap-3">
 								<div className="space-y-1.5">
@@ -455,7 +373,7 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 										value={form.first_name}
 										onChange={(e) => setForm({ ...form, first_name: e.target.value })}
 										className="h-9"
-										autoFocus={isEditMode || mode === 'new-user'}
+										autoFocus
 									/>
 								</div>
 								<div className="space-y-1.5">
@@ -501,6 +419,7 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 							</div>
 						</>
 					)}
+
 					<div className="space-y-1.5">
 						<Label htmlFor="teacher-bio" className="text-sm">
 							Bio
@@ -538,7 +457,11 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 					<Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
 						Annuleren
 					</Button>
-					<Button variant="default" onClick={handleSubmit} disabled={!form.email || saving}>
+					<Button
+						variant="default"
+						onClick={handleSubmit}
+						disabled={isEditMode ? !form.email || saving : !selectedUserId || saving}
+					>
 						{saving ? (
 							<>
 								<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />

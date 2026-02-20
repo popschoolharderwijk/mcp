@@ -1,9 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import type { LessonAgreementInsert } from '../../types';
+import { expectNoError, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { TestUsers } from '../test-users';
-import type { LessonAgreementInsert } from '../types';
+import { type TestUser, TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -46,21 +47,12 @@ describe('RLS: lesson_agreements INSERT - blocked for students and teachers', ()
 
 	it('student cannot insert lesson agreement', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data, error } = await db.from('lesson_agreements').insert(newAgreement).select();
-
-		// Should fail - no INSERT policy for students
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(await db.from('lesson_agreements').insert(newAgreement).select());
 	});
 
 	it('teacher cannot insert lesson agreement', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db.from('lesson_agreements').insert(newAgreement).select();
-
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(await db.from('lesson_agreements').insert(newAgreement).select());
 	});
 });
 
@@ -75,52 +67,27 @@ describe('RLS: lesson_agreements INSERT - staff permissions', () => {
 		is_active: true,
 	};
 
-	it('staff can insert lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
+	async function insert(user: TestUser) {
+		const db = await createClientAs(user);
+		const [data] = unwrap(await db.from('lesson_agreements').insert(newAgreement).select());
 
-		const { data, error } = await db.from('lesson_agreements').insert(newAgreement).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.student_user_id).toBe(newAgreement.student_user_id);
-		expect(data?.[0]?.teacher_id).toBe(newAgreement.teacher_id);
+		expect(data.student_user_id).toBe(newAgreement.student_user_id);
+		expect(data.teacher_id).toBe(newAgreement.teacher_id);
 
 		// Cleanup
-		if (data?.[0]?.id) {
-			await db.from('lesson_agreements').delete().eq('id', data[0].id);
-		}
+		unwrap(await db.from('lesson_agreements').delete().eq('id', data.id).select());
+	}
+
+	it('staff can insert lesson agreement', async () => {
+		await insert(TestUsers.STAFF_ONE);
 	});
 
 	it('admin can insert lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		const { data, error } = await db.from('lesson_agreements').insert(newAgreement).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.student_user_id).toBe(newAgreement.student_user_id);
-		expect(data?.[0]?.teacher_id).toBe(newAgreement.teacher_id);
-
-		// Cleanup
-		if (data?.[0]?.id) {
-			await db.from('lesson_agreements').delete().eq('id', data[0].id);
-		}
+		await insert(TestUsers.ADMIN_ONE);
 	});
 
 	it('site_admin can insert lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		const { data, error } = await db.from('lesson_agreements').insert(newAgreement).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.student_user_id).toBe(newAgreement.student_user_id);
-		expect(data?.[0]?.teacher_id).toBe(newAgreement.teacher_id);
-
-		// Cleanup
-		if (data?.[0]?.id) {
-			await db.from('lesson_agreements').delete().eq('id', data[0].id);
-		}
+		await insert(TestUsers.SITE_ADMIN);
 	});
 });
 
@@ -130,14 +97,11 @@ describe('RLS: lesson_agreements UPDATE - blocked for students and teachers', ()
 		const db = await createClientAs(TestUsers.STUDENT_009);
 
 		// Use agreement ID that student can see but cannot update
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ notes: 'Hacked notes' })
-			.eq('id', testAgreementId)
-			.select();
+		const data = unwrap(
+			await db.from('lesson_agreements').update({ notes: 'Hacked notes' }).eq('id', testAgreementId).select(),
+		);
 
 		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
 		expect(data).toHaveLength(0);
 	});
 
@@ -145,97 +109,45 @@ describe('RLS: lesson_agreements UPDATE - blocked for students and teachers', ()
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		// Use agreement ID that teacher can see but cannot update
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ notes: 'Hacked notes' })
-			.eq('id', testAgreementId)
-			.select();
+		const data = unwrap(
+			await db.from('lesson_agreements').update({ notes: 'Hacked notes' }).eq('id', testAgreementId).select(),
+		);
 
-		expect(error).toBeNull();
+		// RLS blocks - 0 rows affected
 		expect(data).toHaveLength(0);
 	});
 });
 
 describe('RLS: lesson_agreements UPDATE - staff permissions', () => {
-	it('staff can update lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
+	async function update(user: TestUser) {
+		const db = await createClientAs(user);
 
 		// Get first agreement to update
-		const { data: agreements } = await db.from('lesson_agreements').select('*').limit(1);
-		if (!agreements || agreements.length === 0) {
-			throw new Error('No lesson agreements found for test');
-		}
+		const resultAgreement = await db.from('lesson_agreements').select('*').limit(1).single();
+		const agreement = unwrap(resultAgreement);
 
-		const originalAgreement = agreements[0];
-		const newNotes = 'Updated by Staff';
+		const newNotes = `Updated by ${user}`;
+		const data = unwrap(
+			await db.from('lesson_agreements').update({ notes: newNotes }).eq('id', agreement.id).select(),
+		);
 
-		// Update
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ notes: newNotes })
-			.eq('id', originalAgreement.id)
-			.select();
-
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.notes).toBe(newNotes);
+		expect(data[0].notes).toBe(newNotes);
 
 		// Restore original notes
-		await db.from('lesson_agreements').update({ notes: originalAgreement.notes }).eq('id', originalAgreement.id);
+		unwrap(await db.from('lesson_agreements').update({ notes: agreement.notes }).eq('id', agreement.id));
+	}
+
+	it('staff can update lesson agreement', async () => {
+		await update(TestUsers.STAFF_ONE);
 	});
 
 	it('admin can update lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		// Get first agreement to update
-		const { data: agreements } = await db.from('lesson_agreements').select('*').limit(1);
-		if (!agreements || agreements.length === 0) {
-			throw new Error('No lesson agreements found for test');
-		}
-
-		const originalAgreement = agreements[0];
-		const newNotes = 'Updated by Admin';
-
-		// Update
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ notes: newNotes })
-			.eq('id', originalAgreement.id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.notes).toBe(newNotes);
-
-		// Restore original notes
-		await db.from('lesson_agreements').update({ notes: originalAgreement.notes }).eq('id', originalAgreement.id);
+		await update(TestUsers.ADMIN_ONE);
 	});
 
 	it('site_admin can update lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		// Get first agreement to update
-		const { data: agreements } = await db.from('lesson_agreements').select('*').limit(1);
-		if (!agreements || agreements.length === 0) {
-			throw new Error('No lesson agreements found for test');
-		}
-
-		const originalAgreement = agreements[0];
-		const newNotes = 'Updated by Site Admin';
-
-		// Update
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ notes: newNotes })
-			.eq('id', originalAgreement.id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.notes).toBe(newNotes);
-
-		// Restore original notes
-		await db.from('lesson_agreements').update({ notes: originalAgreement.notes }).eq('id', originalAgreement.id);
+		await update(TestUsers.SITE_ADMIN);
 	});
 });
 
@@ -245,10 +157,9 @@ describe('RLS: lesson_agreements DELETE - blocked for students and teachers', ()
 		const db = await createClientAs(TestUsers.STUDENT_009);
 
 		// Use agreement ID that student can see but cannot delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', testAgreementId).select();
+		const data = unwrap(await db.from('lesson_agreements').delete().eq('id', testAgreementId).select());
 
 		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
 		expect(data).toHaveLength(0);
 	});
 
@@ -256,16 +167,15 @@ describe('RLS: lesson_agreements DELETE - blocked for students and teachers', ()
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		// Use agreement ID that teacher can see but cannot delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', testAgreementId).select();
+		const data = unwrap(await db.from('lesson_agreements').delete().eq('id', testAgreementId).select());
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(0);
 	});
 });
 
 describe('RLS: lesson_agreements DELETE - staff permissions', () => {
-	it('staff can delete lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
+	async function remove(user: TestUser) {
+		const db = await createClientAs(user);
 
 		// Create an agreement to delete
 		const newAgreement: LessonAgreementInsert = {
@@ -278,83 +188,31 @@ describe('RLS: lesson_agreements DELETE - staff permissions', () => {
 			is_active: true,
 		};
 
-		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(newAgreement).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson agreement');
-		}
-
-		const agreementId = inserted[0].id;
+		const { data: inserted, error: insertError } = await db
+			.from('lesson_agreements')
+			.insert(newAgreement)
+			.select()
+			.single();
+		expectNoError(inserted, insertError);
 
 		// Delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', agreementId).select();
+		const { data, error } = await db.from('lesson_agreements').delete().eq('id', inserted.id).select();
 
-		expect(error).toBeNull();
+		expectNoError(data, error);
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.id).toBe(agreementId);
+		expect(data[0].id).toBe(inserted.id);
+	}
+
+	it('staff can delete lesson agreement', async () => {
+		await remove(TestUsers.STAFF_ONE);
 	});
 
 	it('admin can delete lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		// Create an agreement to delete
-		const newAgreement: LessonAgreementInsert = {
-			student_user_id: studentAUserId,
-			teacher_id: teacherAliceId,
-			lesson_type_id: lessonTypeId,
-			day_of_week: 6,
-			start_time: '19:00',
-			start_date: '2024-01-01',
-			is_active: true,
-		};
-
-		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(newAgreement).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson agreement');
-		}
-
-		const agreementId = inserted[0].id;
-
-		// Delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', agreementId).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.id).toBe(agreementId);
+		await remove(TestUsers.ADMIN_ONE);
 	});
 
 	it('site_admin can delete lesson agreement', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		// Create an agreement to delete
-		const newAgreement: LessonAgreementInsert = {
-			student_user_id: studentAUserId,
-			teacher_id: teacherAliceId,
-			lesson_type_id: lessonTypeId,
-			day_of_week: 0,
-			start_time: '20:00',
-			start_date: '2024-01-01',
-			is_active: true,
-		};
-
-		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(newAgreement).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson agreement');
-		}
-
-		const agreementId = inserted[0].id;
-
-		// Delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', agreementId).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.id).toBe(agreementId);
+		await remove(TestUsers.SITE_ADMIN);
 	});
 });
 
@@ -375,12 +233,10 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 			is_active: true,
 		};
 
-		const { data, error } = await db.from('lesson_agreements').insert(selfAgreement).select();
+		const error = unwrapError(await db.from('lesson_agreements').insert(selfAgreement).select());
 
 		// Should fail - teacher cannot be their own student
-		expect(error).not.toBeNull();
-		expect(error?.message).toContain('teacher cannot be their own student');
-		expect(data).toBeNull();
+		expect(error.message).toContain('teacher cannot be their own student');
 	});
 
 	it('cannot update lesson agreement to make teacher their own student', async () => {
@@ -397,28 +253,22 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 			is_active: true,
 		};
 
-		const { data: inserted, error: insertError } = await db
-			.from('lesson_agreements')
-			.insert(validAgreement)
-			.select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-
-		const agreementId = inserted?.[0].id;
+		const result = await db.from('lesson_agreements').insert(validAgreement).select().single();
+		const inserted = unwrap(result);
 
 		// Try to update student_user_id to be the teacher's user_id
-		const { data, error } = await db
-			.from('lesson_agreements')
-			.update({ student_user_id: teacherAliceUserId })
-			.eq('id', agreementId)
-			.select();
+		const error = unwrapError(
+			await db
+				.from('lesson_agreements')
+				.update({ student_user_id: teacherAliceUserId })
+				.eq('id', inserted.id)
+				.select(),
+		);
 
 		// Should fail - teacher cannot be their own student
-		expect(error).not.toBeNull();
-		expect(error?.message).toContain('teacher cannot be their own student');
-		expect(data).toBeNull();
+		expect(error.message).toContain('teacher cannot be their own student');
 
 		// Cleanup
-		await db.from('lesson_agreements').delete().eq('id', agreementId);
+		await db.from('lesson_agreements').delete().eq('id', inserted.id);
 	});
 });

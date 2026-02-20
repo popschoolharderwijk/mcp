@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import type { UserRoleInsert } from '../../types';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import type { UserRoleInsert } from '../types';
 
 const { requireUserId, allUserRoles } = fixtures;
 

@@ -8,22 +8,22 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import type { LessonAppointmentDeviationInsert } from '../../types';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import type { LessonAppointmentDeviationInsert } from '../types';
 import {
 	buildDeviationData,
 	buildDeviationDataAsUser,
 	dateDaysFromNow,
-	getTestAgreement,
+	getTestAgreementAlice,
 	getTestAgreementBob,
 	originalDateForWeek,
 } from './utils';
 
 const dbNoRLS = createClientBypassRLS();
-const { agreementId: aliceAgreementId, agreement: aliceAgreement } = getTestAgreement();
-const { agreementId: bobAgreementId, agreement: bobAgreement } = getTestAgreementBob();
+const aliceAgreement = getTestAgreementAlice();
+const bobAgreement = getTestAgreementBob();
 
 // =============================================================================
 // INSERT TESTS
@@ -52,7 +52,7 @@ describe('RLS: lesson_appointment_deviations INSERT', () => {
 	])('%s cannot insert deviation', async (_role, user) => {
 		const db = await createClientAs(user);
 		const { insertRow } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 7,
@@ -70,7 +70,7 @@ describe('RLS: lesson_appointment_deviations INSERT', () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 		const aliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 		const { insertRow } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 14,
@@ -90,7 +90,7 @@ describe('RLS: lesson_appointment_deviations INSERT', () => {
 		const aliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 		const { insertRow } = buildDeviationDataAsUser(
 			{
-				agreementId: bobAgreementId,
+				agreementId: bobAgreement.id,
 				dayOfWeek: bobAgreement.day_of_week,
 				startTime: bobAgreement.start_time,
 				refDays: 21,
@@ -114,7 +114,7 @@ describe('RLS: lesson_appointment_deviations INSERT', () => {
 		const userId = fixtures.requireUserId(user);
 		const { insertRow } = buildDeviationDataAsUser(
 			{
-				agreementId: aliceAgreementId,
+				agreementId: aliceAgreement.id,
 				dayOfWeek: aliceAgreement.day_of_week,
 				startTime: aliceAgreement.start_time,
 				refDays: 28 + createdIds.length * 7,
@@ -144,7 +144,7 @@ describe('RLS: lesson_appointment_deviations UPDATE', () => {
 	beforeAll(async () => {
 		initialState = await setupState();
 		const { insertRow, originalDate: origDate } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 49,
@@ -248,7 +248,7 @@ describe('RLS: lesson_appointment_deviations DELETE', () => {
 
 		// Create deviation for teacher delete test
 		const { insertRow: teacherRow } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 63,
@@ -266,7 +266,7 @@ describe('RLS: lesson_appointment_deviations DELETE', () => {
 		const adminUserId = fixtures.requireUserId(TestUsers.ADMIN_ONE);
 		const { insertRow: adminRow } = buildDeviationDataAsUser(
 			{
-				agreementId: aliceAgreementId,
+				agreementId: aliceAgreement.id,
 				dayOfWeek: aliceAgreement.day_of_week,
 				startTime: aliceAgreement.start_time,
 				refDays: 70,
@@ -353,7 +353,7 @@ describe('RLS: lesson_appointment_deviations is_cancelled', () => {
 
 		// Create deviation for update tests
 		const { insertRow, originalDate } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 98,
@@ -380,7 +380,7 @@ describe('RLS: lesson_appointment_deviations is_cancelled', () => {
 		const originalDate = originalDateForWeek(aliceAgreement.day_of_week, refDate);
 
 		const newDeviation: LessonAppointmentDeviationInsert = {
-			lesson_agreement_id: aliceAgreementId,
+			lesson_agreement_id: aliceAgreement.id,
 			original_date: originalDate,
 			original_start_time: aliceAgreement.start_time,
 			actual_date: originalDate,
@@ -403,7 +403,7 @@ describe('RLS: lesson_appointment_deviations is_cancelled', () => {
 		const originalDate = originalDateForWeek(aliceAgreement.day_of_week, refDate);
 
 		const newDeviation: LessonAppointmentDeviationInsert = {
-			lesson_agreement_id: aliceAgreementId,
+			lesson_agreement_id: aliceAgreement.id,
 			original_date: originalDate,
 			original_start_time: aliceAgreement.start_time,
 			actual_date: originalDate,
@@ -481,7 +481,7 @@ describe('RLS: lesson_appointment_deviations auto-delete trigger', () => {
 		const { data: insertData } = await dbNoRLS
 			.from('lesson_appointment_deviations')
 			.insert({
-				lesson_agreement_id: aliceAgreementId,
+				lesson_agreement_id: aliceAgreement.id,
 				original_date: originalDate,
 				original_start_time: aliceAgreement.start_time,
 				actual_date: originalDate,
@@ -508,7 +508,7 @@ describe('RLS: lesson_appointment_deviations auto-delete trigger', () => {
 	it('non-cancelled deviation IS auto-deleted when updated to match original', async () => {
 		const aliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 		const { insertRow, originalDate } = buildDeviationData({
-			agreementId: aliceAgreementId,
+			agreementId: aliceAgreement.id,
 			dayOfWeek: aliceAgreement.day_of_week,
 			startTime: aliceAgreement.start_time,
 			refDays: 112,

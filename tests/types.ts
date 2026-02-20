@@ -1,9 +1,12 @@
-import type { Database } from '../../src/integrations/supabase/types';
+import type { Database } from '../src/integrations/supabase/types';
 
 /**
- * Centralized Supabase type definitions for RLS tests.
+ * Centralized Supabase type definitions for tests.
  * Import these types instead of defining them in each test file.
  */
+
+// Row types
+export type LessonAppointmentDeviationRow = Database['public']['Tables']['lesson_appointment_deviations']['Row'];
 
 // Insert types
 export type LessonAgreementInsert = Database['public']['Tables']['lesson_agreements']['Insert'];
@@ -15,3 +18,6 @@ export type TeacherAvailabilityInsert = Database['public']['Tables']['teacher_av
 export type TeacherLessonTypeInsert = Database['public']['Tables']['teacher_lesson_types']['Insert'];
 export type UserRoleInsert = Database['public']['Tables']['user_roles']['Insert'];
 export type LessonAppointmentDeviationInsert = Database['public']['Tables']['lesson_appointment_deviations']['Insert'];
+
+// RPC function types
+export type DatabaseRpcFunction = keyof Database['public']['Functions'];

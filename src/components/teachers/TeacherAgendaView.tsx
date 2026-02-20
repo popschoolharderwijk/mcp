@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { StudentInfoModal, type StudentInfoModalData } from '@/components/students/StudentInfoModal';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { PostgresErrorCodes } from '@/integrations/supabase/errorcodes';
 import { AVAILABILITY_CONFIG } from '@/lib/availability';
 import { calendarLocalizer } from '@/lib/calendar';
 import { formatDateToDb, getDateForDayOfWeek } from '@/lib/date/date-format';
@@ -23,9 +24,6 @@ import type { CalendarEvent, TeacherAgendaViewProps } from './agenda/types';
 import { buildTooltipText, dutchFormats, generateRecurringEvents } from './agenda/utils';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
-
-/** Postgres SQLSTATE for check constraint violation (e.g. deviation_date_check). */
-const PG_CHECK_VIOLATION = '23514';
 
 export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps) {
 	const { user } = useAuth();
@@ -350,7 +348,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			if (error) {
 				console.error('Error updating deviation:', error);
 				const isDateCheck =
-					error.code === PG_CHECK_VIOLATION ||
+					error.code === PostgresErrorCodes.CHECK_VIOLATION ||
 					(error.message ?? '').toLowerCase().includes('deviation_date_check');
 				toast.error(
 					isDateCheck
@@ -376,7 +374,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			if (error) {
 				console.error('Error creating deviation:', error);
 				const isDateCheck =
-					error.code === PG_CHECK_VIOLATION ||
+					error.code === PostgresErrorCodes.CHECK_VIOLATION ||
 					(error.message ?? '').toLowerCase().includes('deviation_date_check');
 				toast.error(
 					isDateCheck ? 'Afspraak kan niet in het verleden worden geplaatst.' : 'Fout bij aanmaken afwijking',

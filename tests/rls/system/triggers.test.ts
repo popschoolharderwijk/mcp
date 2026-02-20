@@ -4,8 +4,6 @@ import { type DatabaseState, setupDatabaseStateVerification } from '../db-state'
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
-const { requireProfile, allUserRoles } = fixtures;
-
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
 
@@ -16,6 +14,8 @@ beforeAll(async () => {
 afterAll(async () => {
 	await verifyState(initialState);
 });
+
+const { requireProfile, allUserRoles } = fixtures;
 
 describe('Triggers: profiles immutability', () => {
 	it('user_id cannot be changed', async () => {

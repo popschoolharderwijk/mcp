@@ -1,5 +1,18 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientBypassRLS } from '../../db';
+
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 const supabase = createClientBypassRLS();
 
@@ -18,21 +31,16 @@ const EXPECTED_RLS_TABLES = [
 
 const EXPECTED_POLICIES: Record<string, string[]> = {
 	profiles: [
-		// SELECT policies
-		'profiles_select_own',
-		'profiles_select_admin',
-		'profiles_select_staff',
-		// UPDATE policies
-		'profiles_update_own',
-		'profiles_update_admin',
+		// SELECT policy - combined: users can view own profile, privileged users can view all
+		'profiles_select',
+		// UPDATE policy - combined: users can update own profile, admins can update any
+		'profiles_update',
 		// Intentionally NO INSERT policy - profiles are only created via handle_new_user() trigger
 		// Intentionally NO DELETE policy - profiles are only removed via CASCADE from auth.users
 	],
 	user_roles: [
-		// SELECT policies
-		'roles_select_own',
-		'roles_select_admin',
-		'roles_select_staff',
+		// SELECT policy - combined: users can view own role, privileged users can view all
+		'roles_select',
 		// INSERT policy - admin/site_admin can assign roles (admin cannot assign site_admin)
 		'roles_insert_admin',
 		// UPDATE policy - admin/site_admin can change roles (admin cannot modify site_admin roles)
@@ -51,45 +59,36 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'lesson_types_delete_admin',
 	],
 	teachers: [
-		// SELECT policies
-		'teachers_select_own',
-		'teachers_select_staff',
+		// SELECT policy - combined: teachers can view own record, privileged users can view all
+		'teachers_select',
 		// INSERT policy
 		'teachers_insert_admin',
-		// UPDATE policies
-		'teachers_update_own',
-		'teachers_update_admin',
+		// UPDATE policy - combined: teachers can update own record, admins can update any
+		'teachers_update',
 		// DELETE policy
 		'teachers_delete_admin',
 	],
 	teacher_availability: [
-		// SELECT policies
-		'teacher_availability_select_own',
-		'teacher_availability_select_staff',
-		// INSERT policies
-		'teacher_availability_insert_own',
-		'teacher_availability_insert_admin',
-		// UPDATE policies
-		'teacher_availability_update_own',
-		'teacher_availability_update_admin',
-		// DELETE policies
-		'teacher_availability_delete_own',
-		'teacher_availability_delete_admin',
+		// SELECT policy - combined: teachers can view own availability, privileged users can view all
+		'teacher_availability_select',
+		// INSERT policy - combined: teachers can insert own availability, admins can insert for any
+		'teacher_availability_insert',
+		// UPDATE policy - combined: teachers can update own availability, admins can update any
+		'teacher_availability_update',
+		// DELETE policy - combined: teachers can delete own availability, admins can delete any
+		'teacher_availability_delete',
 	],
 	teacher_lesson_types: [
-		// SELECT policies
-		'teacher_lesson_types_select_own',
-		'teacher_lesson_types_select_staff',
+		// SELECT policy - combined: teachers can view own lesson types, privileged users can view all
+		'teacher_lesson_types_select',
 		// INSERT policy
 		'teacher_lesson_types_insert_admin',
 		// DELETE policy
 		'teacher_lesson_types_delete_admin',
 	],
 	lesson_agreements: [
-		// SELECT policies
-		'lesson_agreements_select_student',
-		'lesson_agreements_select_teacher',
-		'lesson_agreements_select_staff',
+		// SELECT policy - combined: students, teachers, and privileged users can view agreements
+		'lesson_agreements_select',
 		// INSERT policy
 		'lesson_agreements_insert_staff',
 		// UPDATE policy
@@ -98,27 +97,21 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'lesson_agreements_delete_staff',
 	],
 	students: [
-		// SELECT policies
-		'students_select_own',
-		'students_select_staff',
+		// SELECT policy - combined: students can view own record, privileged users can view all
+		'students_select',
 		// UPDATE policy - admin can update student notes
 		'students_update_admin',
 		// No INSERT/DELETE policies - students are managed via triggers
 	],
 	lesson_appointment_deviations: [
-		// SELECT policies
-		'lesson_appointment_deviations_select_teacher',
-		'lesson_appointment_deviations_select_student',
-		'lesson_appointment_deviations_select_staff',
-		// INSERT policies
-		'lesson_appointment_deviations_insert_teacher',
-		'lesson_appointment_deviations_insert_staff',
-		// UPDATE policies
-		'lesson_appointment_deviations_update_teacher',
-		'lesson_appointment_deviations_update_staff',
-		// DELETE policies
-		'lesson_appointment_deviations_delete_teacher',
-		'lesson_appointment_deviations_delete_staff',
+		// SELECT policy - combined: teachers, students, and privileged users can view deviations
+		'lesson_appointment_deviations_select',
+		// INSERT policy - combined: teachers and privileged users can insert deviations
+		'lesson_appointment_deviations_insert',
+		// UPDATE policy - combined: teachers and privileged users can update deviations
+		'lesson_appointment_deviations_update',
+		// DELETE policy - combined: teachers and privileged users can delete deviations
+		'lesson_appointment_deviations_delete',
 	],
 };
 

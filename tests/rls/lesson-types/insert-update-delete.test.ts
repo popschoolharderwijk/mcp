@@ -1,8 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs } from '../../db';
+import type { LessonTypeInsert } from '../../types';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+import { fixtures } from '../fixtures';
+import type { TestUser } from '../test-users';
 import { TestUsers } from '../test-users';
-import type { LessonTypeInsert } from '../types';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -27,6 +31,77 @@ afterAll(async () => {
  * Note: Teachers are identified by the teachers table, not by a role.
  */
 
+// Use a specific lesson type from fixtures for deterministic tests
+const TEST_LESSON_TYPE_ID = fixtures.requireLessonTypeId('Gitaar');
+
+// Helper for INSERT that should fail (blocked by RLS)
+async function expectInsertBlocked(user: TestUser, lessonType: LessonTypeInsert) {
+	const db = await createClientAs(user);
+	const error = unwrapError(await db.from('lesson_types').insert(lessonType).select());
+
+	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+}
+
+// Helper for UPDATE that should fail (blocked by RLS)
+async function expectUpdateBlocked(user: TestUser, lessonTypeId: string) {
+	const db = await createClientAs(user);
+	const data = unwrap(await db.from('lesson_types').update({ name: 'Hacked Name' }).eq('id', lessonTypeId).select());
+
+	// RLS blocks - 0 rows affected
+	expect(data).toHaveLength(0);
+}
+
+// Helper for DELETE that should fail (blocked by RLS)
+async function expectDeleteBlocked(user: TestUser, lessonTypeId: string) {
+	const db = await createClientAs(user);
+	const data = unwrap(await db.from('lesson_types').delete().eq('id', lessonTypeId).select());
+
+	// RLS blocks - 0 rows affected
+	expect(data).toHaveLength(0);
+}
+
+// Helper for successful INSERT with automatic cleanup
+async function insertLessonType(user: TestUser, lessonType: LessonTypeInsert) {
+	const db = await createClientAs(user);
+	const [data] = unwrap(await db.from('lesson_types').insert(lessonType).select());
+	expect(data.name).toBe(lessonType.name);
+
+	return {
+		data,
+		cleanup: async () => {
+			unwrap(await db.from('lesson_types').delete().eq('id', data.id));
+		},
+	};
+}
+
+// Helper for successful UPDATE with automatic restore
+async function updateLessonType(
+	user: TestUser,
+	lessonTypeId: string,
+	updates: Partial<LessonTypeInsert>,
+	originalValues: Partial<LessonTypeInsert>,
+) {
+	const db = await createClientAs(user);
+	const data = unwrap(await db.from('lesson_types').update(updates).eq('id', lessonTypeId).select());
+	expect(data).toHaveLength(1);
+
+	// Restore original values
+	unwrap(await db.from('lesson_types').update(originalValues).eq('id', lessonTypeId));
+
+	return data[0];
+}
+
+// Helper for successful DELETE (insert + delete in one)
+async function deleteLessonType(user: TestUser, lessonType: LessonTypeInsert) {
+	const db = await createClientAs(user);
+
+	const [inserted] = unwrap(await db.from('lesson_types').insert(lessonType).select());
+
+	const data = unwrap(await db.from('lesson_types').delete().eq('id', inserted.id).select());
+	expect(data).toHaveLength(1);
+	expect(data[0].id).toBe(inserted.id);
+}
+
 describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
 	const newLessonType: LessonTypeInsert = {
 		name: 'Test Lesson Type',
@@ -41,31 +116,15 @@ describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
 	};
 
 	it('user without role cannot insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
-
-		// Should fail - no INSERT policy for regular users
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		await expectInsertBlocked(TestUsers.STUDENT_001, newLessonType);
 	});
 
 	it('teacher cannot insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
-
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		await expectInsertBlocked(TestUsers.TEACHER_ALICE, newLessonType);
 	});
 
 	it('staff cannot insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
-
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		await expectInsertBlocked(TestUsers.STAFF_ONE, newLessonType);
 	});
 });
 
@@ -83,200 +142,91 @@ describe('RLS: lesson_types INSERT - admin permissions', () => {
 	};
 
 	it('admin can insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.name).toBe(newLessonType.name);
-
-		// Cleanup
-		if (data?.[0]?.id) {
-			await db.from('lesson_types').delete().eq('id', data[0].id);
-		}
+		const { cleanup } = await insertLessonType(TestUsers.ADMIN_ONE, newLessonType);
+		await cleanup();
 	});
 
 	it('site_admin can insert lesson type', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		const { data, error } = await db.from('lesson_types').insert(newLessonType).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.name).toBe(newLessonType.name);
-
-		// Cleanup
-		if (data?.[0]?.id) {
-			await db.from('lesson_types').delete().eq('id', data[0].id);
-		}
+		const { cleanup } = await insertLessonType(TestUsers.SITE_ADMIN, newLessonType);
+		await cleanup();
 	});
 });
 
 describe('RLS: lesson_types UPDATE - blocked for non-admin roles', () => {
 	it('user without role cannot update lesson type', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		// Get first lesson type to try updating
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db
-			.from('lesson_types')
-			.update({ name: 'Hacked Name' })
-			.eq('id', lessonTypes[0].id)
-			.select();
-
-		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.STUDENT_001, TEST_LESSON_TYPE_ID);
 	});
 
 	it('teacher cannot update lesson type', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db
-			.from('lesson_types')
-			.update({ name: 'Hacked Name' })
-			.eq('id', lessonTypes[0].id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.TEACHER_ALICE, TEST_LESSON_TYPE_ID);
 	});
 
 	it('staff cannot update lesson type', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db
-			.from('lesson_types')
-			.update({ name: 'Hacked Name' })
-			.eq('id', lessonTypes[0].id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.STAFF_ONE, TEST_LESSON_TYPE_ID);
 	});
 });
 
 describe('RLS: lesson_types UPDATE - admin permissions', () => {
 	it('admin can update lesson type', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
+		// Create a temporary lesson type for update test to avoid affecting fixtures
+		const { cleanup, data: tempType } = await insertLessonType(TestUsers.ADMIN_ONE, {
+			name: 'Temp Type for Update Test',
+			description: 'Will be updated',
+			icon: 'test-icon',
+			color: '#999999',
+			duration_minutes: 30,
+			frequency: 'weekly' as const,
+			price_per_lesson: 25.0,
+			is_group_lesson: false,
+			is_active: true,
+		});
 
-		// Get first lesson type to update
-		const { data: lessonTypes } = await db.from('lesson_types').select('*').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
+		await updateLessonType(TestUsers.ADMIN_ONE, tempType.id, { name: 'Updated by Admin' }, { name: tempType.name });
 
-		const originalLessonType = lessonTypes[0];
-		const newName = 'Updated by Admin';
-
-		// Update
-		const { data, error } = await db
-			.from('lesson_types')
-			.update({ name: newName })
-			.eq('id', originalLessonType.id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.name).toBe(newName);
-
-		// Restore original name
-		await db.from('lesson_types').update({ name: originalLessonType.name }).eq('id', originalLessonType.id);
+		await cleanup();
 	});
 
 	it('site_admin can update lesson type', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
+		const { cleanup, data: tempType } = await insertLessonType(TestUsers.SITE_ADMIN, {
+			name: 'Temp Type for Site Admin Update',
+			description: 'Will be updated',
+			icon: 'test-icon',
+			color: '#888888',
+			duration_minutes: 30,
+			frequency: 'weekly' as const,
+			price_per_lesson: 25.0,
+			is_group_lesson: false,
+			is_active: true,
+		});
 
-		const { data: lessonTypes } = await db.from('lesson_types').select('*').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
+		await updateLessonType(
+			TestUsers.SITE_ADMIN,
+			tempType.id,
+			{ name: 'Updated by Site Admin' },
+			{ name: tempType.name },
+		);
 
-		const originalLessonType = lessonTypes[0];
-		const newName = 'Updated by Site Admin';
-
-		// Update
-		const { data, error } = await db
-			.from('lesson_types')
-			.update({ name: newName })
-			.eq('id', originalLessonType.id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.name).toBe(newName);
-
-		// Restore original name
-		await db.from('lesson_types').update({ name: originalLessonType.name }).eq('id', originalLessonType.id);
+		await cleanup();
 	});
 });
 
 describe('RLS: lesson_types DELETE - blocked for non-admin roles', () => {
 	it('user without role cannot delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db.from('lesson_types').delete().eq('id', lessonTypes[0].id).select();
-
-		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.STUDENT_001, TEST_LESSON_TYPE_ID);
 	});
 
 	it('teacher cannot delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db.from('lesson_types').delete().eq('id', lessonTypes[0].id).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.TEACHER_ALICE, TEST_LESSON_TYPE_ID);
 	});
 
 	it('staff cannot delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data: lessonTypes } = await db.from('lesson_types').select('id').limit(1);
-		if (!lessonTypes || lessonTypes.length === 0) {
-			throw new Error('No lesson types found for test');
-		}
-
-		const { data, error } = await db.from('lesson_types').delete().eq('id', lessonTypes[0].id).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.STAFF_ONE, TEST_LESSON_TYPE_ID);
 	});
 });
 
 describe('RLS: lesson_types DELETE - admin permissions', () => {
 	it('admin can delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		// Create a lesson type to delete
-		const newLessonType: LessonTypeInsert = {
+		await deleteLessonType(TestUsers.ADMIN_ONE, {
 			name: 'Temporary Lesson Type for Delete Test',
 			description: 'Will be deleted',
 			icon: 'test-icon',
@@ -286,30 +236,11 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 			price_per_lesson: 20.0,
 			is_group_lesson: false,
 			is_active: true,
-		};
-
-		const { data: inserted, error: insertError } = await db.from('lesson_types').insert(newLessonType).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson type');
-		}
-
-		const lessonTypeId = inserted[0].id;
-
-		// Delete
-		const { data, error } = await db.from('lesson_types').delete().eq('id', lessonTypeId).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.id).toBe(lessonTypeId);
+		});
 	});
 
 	it('site_admin can delete lesson type', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		// Create a lesson type to delete
-		const newLessonType: LessonTypeInsert = {
+		await deleteLessonType(TestUsers.SITE_ADMIN, {
 			name: 'Temporary Lesson Type for Site Admin Delete Test',
 			description: 'Will be deleted',
 			icon: 'test-icon',
@@ -319,22 +250,47 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 			price_per_lesson: 20.0,
 			is_group_lesson: false,
 			is_active: true,
-		};
+		});
+	});
+});
 
-		const { data: inserted, error: insertError } = await db.from('lesson_types').insert(newLessonType).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson type');
-		}
+/**
+ * TRIGGER: lesson_types DELETE - blocked when agreements exist
+ * A lesson_type can only be deleted if there are no lesson agreements
+ * using that lesson type.
+ */
+describe('TRIGGER: lesson_types DELETE - blocked when agreements exist', () => {
+	const lessonTypeId = fixtures.requireLessonTypeId('Gitaar');
 
-		const lessonTypeId = inserted[0].id;
+	it('admin cannot delete lesson_type when agreements exist for that lesson type', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Delete
-		const { data, error } = await db.from('lesson_types').delete().eq('id', lessonTypeId).select();
+		const error = unwrapError(await db.from('lesson_types').delete().eq('id', lessonTypeId).select());
 
-		expect(error).toBeNull();
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.id).toBe(lessonTypeId);
+		expect(error.message).toContain('Cannot delete lesson type');
+	});
+
+	it('admin can delete lesson_type when no agreements exist for that lesson type', async () => {
+		// Use existing helper for consistency and proper cleanup
+		await deleteLessonType(TestUsers.ADMIN_ONE, {
+			name: 'Test Lesson Type Without Agreements',
+			description: 'For delete test',
+			icon: 'test-icon',
+			color: '#123456',
+			duration_minutes: 30,
+			frequency: 'weekly',
+			price_per_lesson: 25.0,
+			is_group_lesson: false,
+			is_active: true,
+		});
+	});
+
+	// Symmetry: also test site_admin for trigger
+	it('site_admin cannot delete lesson_type when agreements exist for that lesson type', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const error = unwrapError(await db.from('lesson_types').delete().eq('id', lessonTypeId).select());
+
+		expect(error.message).toContain('Cannot delete lesson type');
 	});
 });

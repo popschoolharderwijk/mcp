@@ -1,11 +1,10 @@
-import { LuTrash2, LuUserPlus } from 'react-icons/lu';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ExistingOrNewUserSelect } from '@/components/ui/existing-or-new-user-select';
 import { Label } from '@/components/ui/label';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { type LessonTypeOption, LessonTypeSelect } from '@/components/ui/lesson-type-select';
 import { UserDisplay } from '@/components/ui/user-display';
-import { type UserOption, UsersSelect } from '@/components/ui/users-select';
+import type { UserOption } from '@/components/ui/users-select';
 import { frequencyLabels } from '@/lib/frequencies';
 import type { WizardLessonTypeInfo } from '@/types/lesson-agreements';
 
@@ -19,7 +18,6 @@ interface UserStepContentProps {
 	onStudentUserIdChange: (userId: string | null) => void;
 	onUserChange: (user: UserOption | null) => void;
 	onLessonTypeChange: (lessonTypeId: string | null) => void;
-	onNewUserClick: () => void;
 }
 
 export function UserStepContent({
@@ -32,7 +30,6 @@ export function UserStepContent({
 	onStudentUserIdChange,
 	onUserChange,
 	onLessonTypeChange,
-	onNewUserClick,
 }: UserStepContentProps) {
 	if (isEditMode) {
 		return (
@@ -77,43 +74,16 @@ export function UserStepContent({
 
 	return (
 		<div id="wizard-step-user" className="space-y-6 py-6">
-			<div className="space-y-3">
-				<Label className="text-base">Leerling</Label>
-				<div className="flex gap-2">
-					<div className="flex-1">
-						<UsersSelect
-							value={selectedStudentUserId}
-							onChange={(userId, user) => {
-								onStudentUserIdChange(userId);
-								onUserChange(user);
-							}}
-							filter="all"
-							placeholder="Selecteer bestaande gebruiker..."
-						/>
-					</div>
-					{selectedStudentUserId && (
-						<Button
-							type="button"
-							variant="outline"
-							size="icon"
-							onClick={() => {
-								onStudentUserIdChange(null);
-								onUserChange(null);
-							}}
-							className="h-10 w-10 flex-shrink-0"
-							title="Selectie wissen"
-						>
-							<LuTrash2 className="h-4 w-4 text-muted-foreground" />
-						</Button>
-					)}
-				</div>
-				{!selectedStudentUserId && (
-					<Button type="button" variant="outline" size="sm" onClick={onNewUserClick} className="w-full">
-						<LuUserPlus className="mr-2 h-4 w-4" />
-						Nieuwe gebruiker aanmaken
-					</Button>
-				)}
-			</div>
+			<ExistingOrNewUserSelect
+				value={selectedStudentUserId}
+				onChange={(userId, user) => {
+					onStudentUserIdChange(userId);
+					onUserChange(user);
+				}}
+				filter="all"
+				placeholder="Selecteer bestaande gebruiker..."
+				label="Leerling"
+			/>
 			<div className="space-y-3">
 				<Label className="text-base">Lessoort</Label>
 				<LessonTypeSelect

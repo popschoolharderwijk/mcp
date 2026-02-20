@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
@@ -108,7 +109,7 @@ describe('RLS: user_roles UPDATE - other users', () => {
 		// RLS WITH CHECK blocks this - returns an error (not just 0 rows)
 		// because the USING clause passes but WITH CHECK fails
 		expect(error).not.toBeNull();
-		expect(error?.code).toBe('42501'); // RLS violation
+		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 
 	it('site_admin can update other user roles', async () => {
