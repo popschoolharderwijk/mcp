@@ -62,7 +62,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			const { data: agreementsData, error: agreementsError } = await supabase
 				.from('lesson_agreements')
 				.select(
-					'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, lesson_types(id, name, icon, color, is_group_lesson, duration_minutes, frequency)',
+					'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, lesson_types(id, name, icon, color, is_group_lesson)',
 				)
 				.eq('teacher_id', teacherId)
 				.eq('is_active', true);
@@ -93,7 +93,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 			const { data: deviationsData, error: deviationsError } = await supabase
 				.from('lesson_appointment_deviations')
 				.select(
-					'id, lesson_agreement_id, original_date, original_start_time, actual_date, actual_start_time, reason, is_cancelled, recurring, recurring_end_date, lesson_agreements(id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, lesson_types(id, name, icon, color, frequency))',
+					'id, lesson_agreement_id, original_date, original_start_time, actual_date, actual_start_time, reason, is_cancelled, recurring, recurring_end_date, lesson_agreements(id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, lesson_types(id, name, icon, color))',
 				)
 				.eq('lesson_agreements.teacher_id', teacherId);
 

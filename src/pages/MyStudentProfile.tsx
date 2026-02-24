@@ -88,6 +88,9 @@ export default function MyStudentProfile() {
 					end_date,
 					is_active,
 					notes,
+					duration_minutes,
+					frequency,
+					price_per_lesson,
 					teachers!inner (
 						profiles!inner (
 							first_name,
@@ -123,6 +126,9 @@ export default function MyStudentProfile() {
 				end_date: string | null;
 				is_active: boolean;
 				notes: string | null;
+				duration_minutes: number;
+				frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+				price_per_lesson: number;
 				teachers?: {
 					profiles?:
 						| { first_name: string | null; last_name: string | null; avatar_url: string | null }
@@ -144,6 +150,9 @@ export default function MyStudentProfile() {
 					end_date: row.end_date,
 					is_active: row.is_active,
 					notes: row.notes,
+					duration_minutes: row.duration_minutes,
+					frequency: row.frequency,
+					price_per_lesson: row.price_per_lesson,
 					teacher: {
 						first_name: p?.first_name ?? null,
 						last_name: p?.last_name ?? null,

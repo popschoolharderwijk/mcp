@@ -66,8 +66,7 @@ export const dutchFormats: Formats = {
 };
 
 function getFrequency(agreement: LessonAgreementWithStudent): LessonFrequency {
-	const freq = agreement.lesson_types?.frequency;
-	return freq === 'daily' || freq === 'biweekly' || freq === 'monthly' ? freq : 'weekly';
+	return agreement.frequency;
 }
 
 /** First occurrence date in range for the given agreement and frequency. */
@@ -188,7 +187,7 @@ export function generateRecurringEvents(
 		const firstAgreement = group[0];
 		const frequency = getFrequency(firstAgreement);
 		const isGroupLesson = firstAgreement.lesson_types.is_group_lesson;
-		const durationMinutes = firstAgreement.lesson_types.duration_minutes || 30;
+		const durationMinutes = firstAgreement.duration_minutes;
 
 		const studentNames = group.map((a) => formatStudentName(a.profiles));
 

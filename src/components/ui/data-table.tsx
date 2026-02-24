@@ -87,6 +87,10 @@ interface DataTableProps<T> {
 	searchDebounceMs?: number;
 	// Callback for server-side sorting (called when sort changes)
 	onSortChange?: (column: string | null, direction: SortDirection) => void;
+	/** Tighter row padding for dense tables (e.g. lesson type options) */
+	compactRows?: boolean;
+	/** If false, show all rows and hide the pagination footer. Default true. */
+	paginated?: boolean;
 }
 
 export function DataTable<T>({
@@ -111,6 +115,8 @@ export function DataTable<T>({
 	serverPagination,
 	searchDebounceMs = 0,
 	onSortChange,
+	compactRows = false,
+	paginated = true,
 }: DataTableProps<T>) {
 	const [sortColumn, setSortColumn] = useState<string | null>(initialSortColumn ?? null);
 	const [sortDirection, setSortDirection] = useState<SortDirection>(
@@ -262,8 +268,8 @@ export function DataTable<T>({
 	const startIndex = (effectiveCurrentPage - 1) * effectiveRowsPerPage;
 	const endIndex = startIndex + effectiveRowsPerPage;
 
-	// For client-side pagination, slice the data; for server-side, use data as-is
-	const paginatedData = isServerPagination ? data : sortedData.slice(startIndex, endIndex);
+	// For client-side pagination, slice the data; for server-side, use data as-is; when paginated=false show all
+	const paginatedData = !paginated ? sortedData : isServerPagination ? data : sortedData.slice(startIndex, endIndex);
 
 	// Track previous rows per page for client-side pagination reset
 	const previousRowsPerPageRef = useRef(rowsPerPage);
@@ -503,7 +509,7 @@ export function DataTable<T>({
 										</th>
 									);
 								})}
-								{rowActions && <th className="py-3 font-medium w-12" />}
+								{rowActions && <th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />}
 							</tr>
 						</thead>
 						<tbody className="text-sm">
@@ -517,12 +523,16 @@ export function DataTable<T>({
 										{columns.map((column) => (
 											<td
 												key={column.key}
-												className={cn('py-4 pr-4 first:pl-2 last:pr-2', column.className)}
+												className={cn(
+													'pr-4 first:pl-2 last:pr-2',
+													compactRows ? 'py-2' : 'py-4',
+													column.className,
+												)}
 											>
 												<Skeleton className="h-4 w-full" />
 											</td>
 										))}
-										{rowActions && <td className="py-4" />}
+										{rowActions && <td className={compactRows ? 'py-2' : 'py-4'} />}
 									</tr>
 								))
 							) : paginatedData.length === 0 ? (
@@ -530,7 +540,10 @@ export function DataTable<T>({
 								<tr>
 									<td
 										colSpan={columns.length + (rowActions ? 1 : 0)}
-										className="py-12 text-center text-muted-foreground"
+										className={cn(
+											'text-center text-muted-foreground',
+											compactRows ? 'py-6' : 'py-12',
+										)}
 									>
 										{emptyMessage}
 									</td>
@@ -559,7 +572,11 @@ export function DataTable<T>({
 										{columns.map((column) => (
 											<td
 												key={column.key}
-												className={cn('py-4 pr-4 first:pl-2 last:pr-2', column.className)}
+												className={cn(
+													'pr-4 first:pl-2 last:pr-2',
+													compactRows ? 'py-1.5' : 'py-4',
+													column.className,
+												)}
 											>
 												{column.render
 													? column.render(item)
@@ -568,7 +585,7 @@ export function DataTable<T>({
 										))}
 										{rowActions && (
 											<td
-												className="py-4"
+												className={compactRows ? 'py-1.5' : 'py-4'}
 												onClick={(e) => {
 													e.stopPropagation();
 												}}
@@ -602,57 +619,59 @@ export function DataTable<T>({
 						</tbody>
 					</table>
 				</div>
-				<div className="mt-4 flex items-center justify-between">
-					<div className="text-sm text-muted-foreground">
-						{effectiveTotalCount === 0
-							? 'Geen resultaten'
-							: effectiveTotalCount === 1
-								? '1 resultaat'
-								: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
-					</div>
-					<div className="flex items-center gap-4">
-						<div className="flex items-center gap-2">
-							<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
-							<Select
-								value={String(effectiveRowsPerPage)}
-								onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
-							>
-								<SelectTrigger className="h-8 w-[70px]">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="10">10</SelectItem>
-									<SelectItem value="20">20</SelectItem>
-									<SelectItem value="50">50</SelectItem>
-									<SelectItem value="100">100</SelectItem>
-								</SelectContent>
-							</Select>
+				{paginated && (
+					<div className="mt-4 flex items-center justify-between">
+						<div className="text-sm text-muted-foreground">
+							{effectiveTotalCount === 0
+								? 'Geen resultaten'
+								: effectiveTotalCount === 1
+									? '1 resultaat'
+									: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
 						</div>
-						<div className="flex items-center gap-2">
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-8 w-8"
-								onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
-								disabled={effectiveCurrentPage === 1 || loading}
-							>
-								<LuChevronLeft className="h-4 w-4" />
-							</Button>
-							<span className="text-sm text-muted-foreground">
-								Pagina {effectiveCurrentPage} van {totalPages}
-							</span>
-							<Button
-								variant="outline"
-								size="icon"
-								className="h-8 w-8"
-								onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
-								disabled={effectiveCurrentPage === totalPages || loading}
-							>
-								<LuChevronRight className="h-4 w-4" />
-							</Button>
+						<div className="flex items-center gap-4">
+							<div className="flex items-center gap-2">
+								<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
+								<Select
+									value={String(effectiveRowsPerPage)}
+									onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
+								>
+									<SelectTrigger className="h-8 w-[70px]">
+										<SelectValue />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value="10">10</SelectItem>
+										<SelectItem value="20">20</SelectItem>
+										<SelectItem value="50">50</SelectItem>
+										<SelectItem value="100">100</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+							<div className="flex items-center gap-2">
+								<Button
+									variant="outline"
+									size="icon"
+									className="h-8 w-8"
+									onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
+									disabled={effectiveCurrentPage === 1 || loading}
+								>
+									<LuChevronLeft className="h-4 w-4" />
+								</Button>
+								<span className="text-sm text-muted-foreground">
+									Pagina {effectiveCurrentPage} van {totalPages}
+								</span>
+								<Button
+									variant="outline"
+									size="icon"
+									className="h-8 w-8"
+									onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
+									disabled={effectiveCurrentPage === totalPages || loading}
+								>
+									<LuChevronRight className="h-4 w-4" />
+								</Button>
+							</div>
 						</div>
 					</div>
-				</div>
+				)}
 			</CardContent>
 		</Card>
 	);

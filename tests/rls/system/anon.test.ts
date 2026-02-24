@@ -134,9 +134,6 @@ describe('RLS: anonymous user access', () => {
 				name: 'Hacked Lesson Type',
 				icon: 'test',
 				color: '#FF0000',
-				duration_minutes: 30,
-				frequency: 'weekly',
-				price_per_lesson: 25.0,
 			};
 
 			const { data, error } = await db.from('lesson_types').insert(newLessonType).select();

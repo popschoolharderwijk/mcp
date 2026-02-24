@@ -109,6 +109,7 @@ BEGIN
     ),
     student_agreements AS (
       -- Get all agreements for these students with teacher and lesson type info
+      -- Lesson type name/icon/color from lesson_types; duration/frequency/price from agreement (snapshot)
       SELECT
         la.student_user_id,
         la.id AS agreement_id,
@@ -119,6 +120,9 @@ BEGIN
         la.end_date,
         la.is_active,
         la.notes,
+        la.duration_minutes,
+        la.frequency,
+        la.price_per_lesson,
         lt.id AS lesson_type_id,
         lt.name AS lesson_type_name,
         lt.icon AS lesson_type_icon,
@@ -232,7 +236,10 @@ BEGIN
                   'id', sa.lesson_type_id,
                   'name', sa.lesson_type_name,
                   'icon', sa.lesson_type_icon,
-                  'color', sa.lesson_type_color
+                  'color', sa.lesson_type_color,
+                  'duration_minutes', sa.duration_minutes,
+                  'frequency', sa.frequency,
+                  'price_per_lesson', sa.price_per_lesson
                 )
               )
               ORDER BY sa.day_of_week, sa.start_time

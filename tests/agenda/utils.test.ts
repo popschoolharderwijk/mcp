@@ -36,8 +36,6 @@ const defaultLessonTypes = {
 	icon: 'piano',
 	color: '#10b981',
 	is_group_lesson: false,
-	duration_minutes: 30,
-	frequency: 'weekly' as const,
 };
 
 function mockAgreement(overrides: Partial<LessonAgreementWithStudent> = {}): LessonAgreementWithStudent {
@@ -51,6 +49,9 @@ function mockAgreement(overrides: Partial<LessonAgreementWithStudent> = {}): Les
 		is_active: true,
 		student_user_id: 'user-1',
 		lesson_type_id: 'lt-1',
+		duration_minutes: 30,
+		frequency: 'weekly',
+		price_per_lesson: 30,
 		profiles: { first_name: 'Jan', last_name: 'Jansen', email: 'jan@example.com' },
 		lesson_types: { ...defaultLessonTypes, ...lt },
 		...rest,
@@ -105,7 +106,7 @@ describe('agenda utils: generateRecurringEvents', () => {
 		const agreement = mockAgreement({
 			start_date: '2025-02-03',
 			end_date: '2025-03-31',
-			lesson_types: { ...defaultLessonTypes, frequency: 'biweekly' },
+			frequency: 'biweekly',
 		});
 		const rangeStart = new Date('2025-02-01');
 		const rangeEnd = new Date('2025-03-31');
@@ -122,7 +123,7 @@ describe('agenda utils: generateRecurringEvents', () => {
 		const agreement = mockAgreement({
 			start_date: '2025-02-10',
 			end_date: '2025-02-14',
-			lesson_types: { ...defaultLessonTypes, frequency: 'daily' },
+			frequency: 'daily',
 		});
 		const rangeStart = new Date('2025-02-10');
 		const rangeEnd = new Date('2025-02-14');

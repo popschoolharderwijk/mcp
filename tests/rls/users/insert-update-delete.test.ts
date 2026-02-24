@@ -141,6 +141,9 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 					start_time: '14:00',
 					start_date: formatDateToDb(now()),
 					is_active: true,
+					duration_minutes: 30,
+					frequency: 'weekly',
+					price_per_lesson: 30,
 				})
 				.select();
 
@@ -159,9 +162,6 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 					name: 'Hacked Type',
 					icon: 'test',
 					color: '#FF0000',
-					duration_minutes: 30,
-					frequency: 'weekly',
-					price_per_lesson: 25.0,
 				})
 				.select();
 

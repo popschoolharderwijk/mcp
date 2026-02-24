@@ -37,11 +37,14 @@ export type Database = {
 				Row: {
 					created_at: string;
 					day_of_week: number;
+					duration_minutes: number;
 					end_date: string | null;
+					frequency: Database['public']['Enums']['lesson_frequency'];
 					id: string;
 					is_active: boolean;
 					lesson_type_id: string;
 					notes: string | null;
+					price_per_lesson: number;
 					start_date: string;
 					start_time: string;
 					student_user_id: string;
@@ -51,11 +54,14 @@ export type Database = {
 				Insert: {
 					created_at?: string;
 					day_of_week: number;
+					duration_minutes: number;
 					end_date?: string | null;
+					frequency: Database['public']['Enums']['lesson_frequency'];
 					id?: string;
 					is_active?: boolean;
 					lesson_type_id: string;
 					notes?: string | null;
+					price_per_lesson: number;
 					start_date: string;
 					start_time: string;
 					student_user_id: string;
@@ -65,11 +71,14 @@ export type Database = {
 				Update: {
 					created_at?: string;
 					day_of_week?: number;
+					duration_minutes?: number;
 					end_date?: string | null;
+					frequency?: Database['public']['Enums']['lesson_frequency'];
 					id?: string;
 					is_active?: boolean;
 					lesson_type_id?: string;
 					notes?: string | null;
+					price_per_lesson?: number;
 					start_date?: string;
 					start_time?: string;
 					student_user_id?: string;
@@ -152,20 +161,55 @@ export type Database = {
 					},
 				];
 			};
+			lesson_type_options: {
+				Row: {
+					created_at: string;
+					duration_minutes: number;
+					frequency: Database['public']['Enums']['lesson_frequency'];
+					id: string;
+					lesson_type_id: string;
+					price_per_lesson: number;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					duration_minutes: number;
+					frequency: Database['public']['Enums']['lesson_frequency'];
+					id?: string;
+					lesson_type_id: string;
+					price_per_lesson: number;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					duration_minutes?: number;
+					frequency?: Database['public']['Enums']['lesson_frequency'];
+					id?: string;
+					lesson_type_id?: string;
+					price_per_lesson?: number;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'lesson_type_options_lesson_type_id_fkey';
+						columns: ['lesson_type_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			lesson_types: {
 				Row: {
 					color: string;
 					cost_center: string | null;
 					created_at: string;
 					description: string | null;
-					duration_minutes: number;
-					frequency: Database['public']['Enums']['lesson_frequency'];
 					icon: string;
 					id: string;
 					is_active: boolean;
 					is_group_lesson: boolean;
 					name: string;
-					price_per_lesson: number;
 					updated_at: string;
 				};
 				Insert: {
@@ -173,14 +217,11 @@ export type Database = {
 					cost_center?: string | null;
 					created_at?: string;
 					description?: string | null;
-					duration_minutes?: number;
-					frequency?: Database['public']['Enums']['lesson_frequency'];
 					icon: string;
 					id?: string;
 					is_active?: boolean;
 					is_group_lesson?: boolean;
 					name: string;
-					price_per_lesson: number;
 					updated_at?: string;
 				};
 				Update: {
@@ -188,14 +229,11 @@ export type Database = {
 					cost_center?: string | null;
 					created_at?: string;
 					description?: string | null;
-					duration_minutes?: number;
-					frequency?: Database['public']['Enums']['lesson_frequency'];
 					icon?: string;
 					id?: string;
 					is_active?: boolean;
 					is_group_lesson?: boolean;
 					name?: string;
-					price_per_lesson?: number;
 					updated_at?: string;
 				};
 				Relationships: [];

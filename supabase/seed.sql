@@ -309,25 +309,103 @@ INSERT INTO public.user_roles (user_id, role) VALUES
 ON CONFLICT (user_id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- LESSON TYPES (default lesson types)
+-- LESSON TYPES (no duration/frequency/price; those live in lesson_type_options)
 -- -----------------------------------------------------------------------------
--- Logic: Insert all 8 lesson types if they don't exist
--- - Gitaar, Drums, Zang, Bas, Keyboard, Saxofoon, DJ / Beats, Bandcoaching
--- - Bandcoaching is the only group lesson (is_group_lesson = true)
--- - Durations: 30 min (most), 45 min (DJ / Beats), 60 min (Bandcoaching)
+-- Insert all 8 lesson types if they don't exist.
+-- Bandcoaching is the only group lesson (is_group_lesson = true).
 -- -----------------------------------------------------------------------------
-INSERT INTO public.lesson_types (name, description, icon, color, duration_minutes, frequency, price_per_lesson, is_group_lesson, is_active)
+INSERT INTO public.lesson_types (name, description, icon, color, cost_center, is_group_lesson, is_active)
 SELECT * FROM (VALUES
-  ('Gitaar', NULL, 'LuGuitar', '#FF9500', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Drums', NULL, 'LuDrum', '#DC2626', 30, 'biweekly'::public.lesson_frequency, 25.00, false, true),
-  ('Zang', 'Learn to sing', 'LuMic', '#EC4899', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Bas', NULL, 'GiGuitarBassHead', '#9333EA', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Keyboard', 'Keyboard lessons', 'LuPiano', '#3B82F6', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('Saxofoon', NULL, 'GiSaxophone', '#14B8A6', 30, 'weekly'::public.lesson_frequency, 25.00, false, true),
-  ('DJ / Beats', NULL, 'LuHeadphones', '#F59E0B', 45, 'monthly'::public.lesson_frequency, 25.00, false, true),
-  ('Bandcoaching', NULL, 'HiUserGroup', '#6366F1', 60, 'biweekly'::public.lesson_frequency, 25.00, true, true)
-) AS v(name, description, icon, color, duration_minutes, frequency, price_per_lesson, is_group_lesson, is_active)
+  ('Gitaar', NULL, 'LuGuitar', '#FF9500', NULL, false, true),
+  ('Drums', NULL, 'LuDrum', '#DC2626', NULL, false, true),
+  ('Zang', 'Learn to sing', 'LuMic', '#EC4899', NULL, false, true),
+  ('Bas', NULL, 'GiGuitarBassHead', '#9333EA', NULL, false, true),
+  ('Keyboard', 'Keyboard lessons', 'LuPiano', '#3B82F6', NULL, false, true),
+  ('Saxofoon', NULL, 'GiSaxophone', '#FFB8A6', NULL, false, true),
+  ('DJ / Beats', NULL, 'LuHeadphones', '#F59E0B', NULL, false, true),
+  ('Bandcoaching', NULL, 'HiUserGroup', '#6366F1', NULL, true, true)
+) AS v(name, description, icon, color, cost_center, is_group_lesson, is_active)
 WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.name);
+
+-- -----------------------------------------------------------------------------
+-- LESSON TYPE OPTIONS
+-- Not all lesson types have all 15 options (30/45/60/90/120 x weekly/biweekly/monthly).
+-- - Gitaar, Drums, Zang, Bas, Keyboard, Bandcoaching: all 15 options (price = duration).
+-- - Saxofoon: 6 options (30 and 45 min only) — agreements use 30 min weekly.
+-- - DJ / Beats: 3 options (45 min only, all frequencies) — agreements use 45 min monthly.
+-- -----------------------------------------------------------------------------
+
+-- Full 15 options for: Gitaar, Drums, Zang, Bas, Keyboard, Bandcoaching
+INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
+SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
+FROM public.lesson_types lt
+CROSS JOIN (
+  VALUES
+    (30, 'weekly'::public.lesson_frequency, 30.00),
+    (30, 'biweekly'::public.lesson_frequency, 30.00),
+    (30, 'monthly'::public.lesson_frequency, 30.00),
+    (45, 'weekly'::public.lesson_frequency, 45.00),
+    (45, 'biweekly'::public.lesson_frequency, 45.00),
+    (45, 'monthly'::public.lesson_frequency, 45.00),
+    (60, 'weekly'::public.lesson_frequency, 60.00),
+    (60, 'biweekly'::public.lesson_frequency, 60.00),
+    (60, 'monthly'::public.lesson_frequency, 60.00),
+    (90, 'weekly'::public.lesson_frequency, 90.00),
+    (90, 'biweekly'::public.lesson_frequency, 90.00),
+    (90, 'monthly'::public.lesson_frequency, 90.00),
+    (120, 'weekly'::public.lesson_frequency, 120.00),
+    (120, 'biweekly'::public.lesson_frequency, 120.00),
+    (120, 'monthly'::public.lesson_frequency, 120.00)
+) AS opt(duration_minutes, frequency, price_per_lesson)
+WHERE lt.name IN ('Gitaar', 'Drums', 'Zang', 'Bas', 'Keyboard', 'Bandcoaching')
+  AND NOT EXISTS (
+    SELECT 1 FROM public.lesson_type_options lto
+    WHERE lto.lesson_type_id = lt.id
+      AND lto.duration_minutes = opt.duration_minutes
+      AND lto.frequency = opt.frequency
+      AND lto.price_per_lesson = opt.price_per_lesson
+  );
+
+-- Saxofoon: only 30 and 45 min (6 options) — agreements use 30 min weekly
+INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
+SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
+FROM public.lesson_types lt
+CROSS JOIN (
+  VALUES
+    (30, 'weekly'::public.lesson_frequency, 30.00),
+    (30, 'biweekly'::public.lesson_frequency, 30.00),
+    (30, 'monthly'::public.lesson_frequency, 30.00),
+    (45, 'weekly'::public.lesson_frequency, 45.00),
+    (45, 'biweekly'::public.lesson_frequency, 45.00),
+    (45, 'monthly'::public.lesson_frequency, 45.00)
+) AS opt(duration_minutes, frequency, price_per_lesson)
+WHERE lt.name = 'Saxofoon'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.lesson_type_options lto
+    WHERE lto.lesson_type_id = lt.id
+      AND lto.duration_minutes = opt.duration_minutes
+      AND lto.frequency = opt.frequency
+      AND lto.price_per_lesson = opt.price_per_lesson
+  );
+
+-- DJ / Beats: only 45 min, all 3 frequencies (3 options) — agreements use 45 min monthly
+INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
+SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
+FROM public.lesson_types lt
+CROSS JOIN (
+  VALUES
+    (45, 'weekly'::public.lesson_frequency, 45.00),
+    (45, 'biweekly'::public.lesson_frequency, 45.00),
+    (45, 'monthly'::public.lesson_frequency, 45.00)
+) AS opt(duration_minutes, frequency, price_per_lesson)
+WHERE lt.name = 'DJ / Beats'
+  AND NOT EXISTS (
+    SELECT 1 FROM public.lesson_type_options lto
+    WHERE lto.lesson_type_id = lt.id
+      AND lto.duration_minutes = opt.duration_minutes
+      AND lto.frequency = opt.frequency
+      AND lto.price_per_lesson = opt.price_per_lesson
+  );
 
 -- -----------------------------------------------------------------------------
 -- TEACHERS (for test users - teachers are identified by this table, not by role)
@@ -507,41 +585,17 @@ WHERE NOT EXISTS (
 -- -----------------------------------------------------------------------------
 -- LESSON AGREEMENTS (for RLS testing)
 -- -----------------------------------------------------------------------------
--- Logic: Create lesson agreements between 9 teachers and 60 students
--- - Teacher 10 (Jack) has NO students
--- - All 8 lesson types are represented
--- - STRICT RULE: Each (teacher, day_of_week, start_time) is unique (except Bandcoaching)
--- - Bandcoaching is a group lesson with 8 students at the same time
--- - Students can have 1-2 lesson agreements
---
--- Total lesson agreements: 88
---   - Bandcoaching: 8 students × 1 slot = 8 agreements (group lesson)
---   - Alice: 12 unique slots = 12 agreements
---   - Bob: 12 unique slots = 12 agreements
---   - Charlie: 12 unique slots = 12 agreements
---   - Diana: 8 unique slots = 8 agreements (45 min lessons = fewer slots)
---   - Frank: 12 unique slots = 12 agreements
---   - Grace: 12 unique slots = 12 agreements
---   - Henry: 12 unique slots = 12 agreements
---   - Iris: 12 unique slots = 12 agreements
---   Total: 8 + 12×8 = 8 + 96 = 104 agreements
---
--- Time slot allocation (30 min slots):
---   - 09:00, 09:30, 10:00, 10:30, 11:00, 11:30 (morning block: 6 slots)
---   - 14:00, 14:30, 15:00, 15:30, 16:00, 16:30 (afternoon block: 6 slots)
+-- Snapshot (duration_minutes, frequency, price_per_lesson) per agreement:
+--   Bandcoaching: 60 min, biweekly, 60; DJ / Beats: 45 min, monthly, 45; others: 30 min, weekly, 30.
 -- -----------------------------------------------------------------------------
--- start_date/end_date: all relative to CURRENT_DATE (no hardcoded dates).
--- End-date categories (for tests):
---   Already ended:     student-001, 002, 009, 010, 021  (end_date = CURRENT_DATE - 7 days)
---   Ends within week:  student-003, 011, 022, 033, 045  (end_date = CURRENT_DATE + 3 days)
---   Most (future):     all others                        (end_date = CURRENT_DATE + 6 months)
--- Start-date: most CURRENT_DATE - 45 days; student-004 starts +3 days, student-007 starts +1 month.
--- -----------------------------------------------------------------------------
-INSERT INTO public.lesson_agreements (student_user_id, teacher_id, lesson_type_id, day_of_week, start_time, start_date, end_date, is_active)
+INSERT INTO public.lesson_agreements (student_user_id, teacher_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, day_of_week, start_time, start_date, end_date, is_active)
 SELECT
   student_profile.user_id AS student_user_id,
   t.id AS teacher_id,
   lt.id AS lesson_type_id,
+  snap.duration_minutes,
+  snap.frequency,
+  snap.price_per_lesson,
   agreement_data.day_of_week,
   agreement_data.start_time::TIME,
   agreement_data.start_date,
@@ -706,6 +760,18 @@ FROM (VALUES
   -- NOTE: Teacher 10 (Jack) has NO lesson agreements (no students)
   -- ========================================================================
 ) AS agreement_data(student_email, teacher_email, lesson_type_name, day_of_week, start_time, start_date, end_date, is_active)
+INNER JOIN (
+  VALUES
+    ('Bandcoaching', 60, 'biweekly'::public.lesson_frequency, 60.00),
+    ('DJ / Beats', 45, 'monthly'::public.lesson_frequency, 45.00),
+    ('Gitaar', 30, 'weekly'::public.lesson_frequency, 30.00),
+    ('Drums', 30, 'weekly'::public.lesson_frequency, 30.00),
+    ('Zang', 30, 'weekly'::public.lesson_frequency, 30.00),
+    ('Bas', 30, 'weekly'::public.lesson_frequency, 30.00),
+    ('Keyboard', 30, 'weekly'::public.lesson_frequency, 30.00),
+    ('Saxofoon', 30, 'weekly'::public.lesson_frequency, 30.00)
+) AS snap(lesson_type_name, duration_minutes, frequency, price_per_lesson)
+  ON snap.lesson_type_name = agreement_data.lesson_type_name
 INNER JOIN public.profiles student_profile ON student_profile.email = agreement_data.student_email
 INNER JOIN public.profiles teacher_profile ON teacher_profile.email = agreement_data.teacher_email
 INNER JOIN public.teachers t ON t.user_id = teacher_profile.user_id
