@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LessonTypeFormDialog } from '@/components/lesson-types/LessonTypeFormDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
@@ -38,6 +37,7 @@ interface LessonType {
 }
 
 export default function LessonTypes() {
+	const navigate = useNavigate();
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -46,10 +46,6 @@ export default function LessonTypes() {
 		open: boolean;
 		lessonType: LessonType | null;
 	} | null>(null);
-	const [lessonTypeFormDialog, setLessonTypeFormDialog] = useState<{
-		open: boolean;
-		lessonType: LessonType | null;
-	}>({ open: false, lessonType: null });
 	const [deletingLessonType, setDeletingLessonType] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
@@ -146,13 +142,16 @@ export default function LessonTypes() {
 		[],
 	);
 
-	const handleEdit = useCallback((lessonType: LessonType) => {
-		setLessonTypeFormDialog({ open: true, lessonType });
-	}, []);
+	const handleEdit = useCallback(
+		(lessonType: LessonType) => {
+			navigate(`/lesson-types/${lessonType.id}`);
+		},
+		[navigate],
+	);
 
 	const handleCreate = useCallback(() => {
-		setLessonTypeFormDialog({ open: true, lessonType: null });
-	}, []);
+		navigate('/lesson-types/new');
+	}, [navigate]);
 
 	const handleDelete = useCallback((lessonType: LessonType) => {
 		setDeleteDialog({ open: true, lessonType });
@@ -230,14 +229,6 @@ export default function LessonTypes() {
 					onEdit: handleEdit,
 					onDelete: handleDelete,
 				}}
-			/>
-
-			{/* Create/Edit Lesson Type Dialog */}
-			<LessonTypeFormDialog
-				open={lessonTypeFormDialog.open}
-				onOpenChange={(open) => setLessonTypeFormDialog({ ...lessonTypeFormDialog, open })}
-				onSuccess={loadLessonTypes}
-				lessonType={lessonTypeFormDialog.lessonType ?? undefined}
 			/>
 
 			{/* Delete Lesson Type Dialog */}
