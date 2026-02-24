@@ -74,7 +74,12 @@ export default function MyProfile() {
 			id: teacherData.id,
 			bio: teacherData.bio,
 			profile: profileData,
-			lesson_types: teacherData.teacher_lesson_types || [],
+			lesson_types: (teacherData.teacher_lesson_types || []).map(
+				(t: { lesson_type_id: string; lesson_types: { name: string } | { name: string }[] }) => ({
+					lesson_type_id: t.lesson_type_id,
+					lesson_types: Array.isArray(t.lesson_types) ? (t.lesson_types[0] ?? { name: '' }) : t.lesson_types,
+				}),
+			),
 		});
 		setForm({
 			bio: teacherData.bio || '',
