@@ -1,0 +1,6 @@
+---
+alwaysApply: true
+---
+
+* Prefer **ReadLints** for quick feedback when editing files; for a full check/format use the commands below.
+* After bigger changes: run **`bun run check`** (applies auto-fixes), then **`bun run ci`** (lint + typecheck, no fixes). If ci fails, fix the reported errors and repeat until `bun run ci` passes.
