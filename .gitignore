@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+*.tsbuildinfo
+
 # Use .development and .production
 .env
 

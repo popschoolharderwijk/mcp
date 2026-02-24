@@ -14,7 +14,7 @@
 		"create-storage-bucket": "bun run scripts/create-storage-bucket.ts",
 		"format": "npx @biomejs/biome format --write",
 		"lint": "npx @biomejs/biome lint --write",
-		"check": "npx @biomejs/biome check --write",
+		"check": "npx @biomejs/biome check --write && bunx tsc -b --noEmit && rm *.tsbuildinfo",
 		"lint:sql": "squawk supabase/migrations/*.sql",
 		"reset-db:dev": "bun run scripts/reset-db.ts",
 		"reset-branch:lovable": "bun run scripts/reset-branch-lovable.ts",
