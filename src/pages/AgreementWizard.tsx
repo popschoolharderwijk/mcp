@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LuArrowLeft, LuTriangleAlert } from 'react-icons/lu';
+import { LuTriangleAlert } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmStepContent } from '@/components/agreements/ConfirmStepContent';
@@ -7,7 +7,9 @@ import { PeriodStepContent } from '@/components/agreements/PeriodStepContent';
 import { TeacherSlotStepContent } from '@/components/agreements/TeacherSlotStepContent';
 import { UserStepContent } from '@/components/agreements/UserStepContent';
 import { STEP_ORDER, WizardStep, WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAutofocus } from '@/hooks/useAutofocus';
 import { supabase } from '@/integrations/supabase/client';
@@ -578,18 +580,38 @@ export default function AgreementWizard() {
 		);
 	}
 
+	const studentName =
+		isEditMode && agreement
+			? [agreement.student.first_name, agreement.student.last_name].filter(Boolean).join(' ') ||
+				agreement.student.email
+			: null;
+	const studentInitials =
+		isEditMode && agreement
+			? agreement.student.first_name && agreement.student.last_name
+				? `${agreement.student.first_name[0]}${agreement.student.last_name[0]}`.toUpperCase()
+				: agreement.student.first_name
+					? agreement.student.first_name.slice(0, 2).toUpperCase()
+					: agreement.student.email.slice(0, 2).toUpperCase()
+			: '?';
+
 	return (
 		<>
 			{/* Header */}
-			<div className="mb-6 flex items-center gap-4">
-				<Button variant="ghost" size="icon" onClick={() => navigate('/agreements')}>
-					<LuArrowLeft className="h-5 w-5" />
-				</Button>
-				<h1 className="text-2xl font-bold">
-					{isEditMode && agreement
-						? `Overeenkomst: ${agreement.student.first_name} ${agreement.student.last_name} (${agreement.lesson_type.name})`
-						: 'Nieuwe overeenkomst'}
-				</h1>
+			<div className="mb-6">
+				<PageHeader
+					icon={
+						<Avatar className="h-16 w-16">
+							{isEditMode && agreement?.student.avatar_url && (
+								<AvatarImage src={agreement.student.avatar_url} alt={studentName ?? ''} />
+							)}
+							<AvatarFallback className="bg-primary/10 text-primary text-xl">
+								{studentInitials}
+							</AvatarFallback>
+						</Avatar>
+					}
+					title={isEditMode && agreement ? studentName : 'Nieuwe overeenkomst'}
+					subtitle={isEditMode && agreement ? agreement.lesson_type.name : undefined}
+				/>
 			</div>
 
 			{/* Steps */}

@@ -18,6 +18,7 @@ import {
 import { IconPicker, resolveIconFromList } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageHeader } from '@/components/ui/page-header';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MUSIC_ICONS } from '@/constants/icons';
@@ -524,22 +525,21 @@ export default function LessonTypeInfo() {
 	const submitLabel = isEditMode ? 'Opslaan' : 'Toevoegen';
 	const savingLabel = isEditMode ? 'Opslaan...' : 'Toevoegen...';
 
+	const lessonTypeTitle = form.name.trim() || (isEditMode ? (lessonType?.name ?? 'Lessoort') : 'Nieuwe lessoort');
+
 	return (
 		<div className="space-y-6">
-			{/* Header: icon + name (like Teacher Info) */}
-			<div className="flex items-center gap-4">
-				<ColorIcon
-					icon={form.icon ? resolveIconFromList(MUSIC_ICONS, form.icon) : undefined}
-					color={form.color || null}
-					size="lg"
-					className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8"
-				/>
-				<div>
-					<h1 className="text-3xl font-bold">
-						{form.name.trim() || (isEditMode ? (lessonType?.name ?? 'Lessoort') : 'Nieuwe lessoort')}
-					</h1>
-				</div>
-			</div>
+			<PageHeader
+				icon={
+					<ColorIcon
+						icon={form.icon ? resolveIconFromList(MUSIC_ICONS, form.icon) : undefined}
+						color={form.color || null}
+						size="lg"
+						className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8"
+					/>
+				}
+				title={lessonTypeTitle}
+			/>
 
 			{/* Two-column grid: both columns equal width (same as Teacher page) */}
 			<div className="grid gap-6 lg:grid-cols-2">
