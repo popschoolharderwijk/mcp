@@ -122,8 +122,8 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 		it('USER_A cannot insert lesson agreements', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			// Get valid IDs using bypass RLS
-			const { data: student } = await dbNoRLS.from('students').select('id').limit(1).single();
+			// Get valid IDs using bypass RLS (lesson_agreements uses student_user_id, not student id)
+			const { data: student } = await dbNoRLS.from('students').select('user_id').limit(1).single();
 			const { data: teacher } = await dbNoRLS.from('teachers').select('id').limit(1).single();
 			const { data: lessonType } = await dbNoRLS.from('lesson_types').select('id').limit(1).single();
 
@@ -134,7 +134,7 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 			const { data, error } = await db
 				.from('lesson_agreements')
 				.insert({
-					student_id: student.id,
+					student_user_id: student.user_id,
 					teacher_id: teacher.id,
 					lesson_type_id: lessonType.id,
 					day_of_week: 1,

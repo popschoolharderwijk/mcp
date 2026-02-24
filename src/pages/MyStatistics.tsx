@@ -44,7 +44,12 @@ export default function MyStatistics() {
 
 		// Calculate statistics
 		const uniqueStudents = new Set(agreements?.map((a) => a.student_user_id) || []);
-		const groupLessons = agreements?.filter((a) => a.lesson_types?.is_group_lesson) || [];
+		const groupLessons =
+			agreements?.filter((a) =>
+				Array.isArray(a.lesson_types)
+					? a.lesson_types[0]?.is_group_lesson
+					: (a.lesson_types as { is_group_lesson?: boolean })?.is_group_lesson,
+			) || [];
 		const upcomingLessons =
 			agreements?.filter((_a) => {
 				// Simple check - in real implementation, calculate actual upcoming lesson dates

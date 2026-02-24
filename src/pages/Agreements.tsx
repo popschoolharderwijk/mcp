@@ -170,7 +170,7 @@ export default function Agreements() {
 
 			// Default empty profiles
 			const emptyStudent = { first_name: null, last_name: null, avatar_url: null, email: '' };
-			const emptyTeacher = { first_name: null, last_name: null, avatar_url: null };
+			const emptyTeacher = { first_name: null, last_name: null, avatar_url: null, email: '' };
 
 			if (allUserIds.length === 0) {
 				setAgreements(

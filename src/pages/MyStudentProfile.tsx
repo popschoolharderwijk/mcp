@@ -114,27 +114,49 @@ export default function MyStudentProfile() {
 				return;
 			}
 
-			// Transform agreements data
-			const transformedAgreements: LessonAgreement[] = (agreementsData || []).map((agreement) => ({
-				id: agreement.id,
-				day_of_week: agreement.day_of_week,
-				start_time: agreement.start_time,
-				start_date: agreement.start_date,
-				end_date: agreement.end_date,
-				is_active: agreement.is_active,
-				notes: agreement.notes,
-				teacher: {
-					first_name: agreement.teachers?.profiles?.first_name ?? null,
-					last_name: agreement.teachers?.profiles?.last_name ?? null,
-					avatar_url: agreement.teachers?.profiles?.avatar_url ?? null,
-				},
-				lesson_type: {
-					id: agreement.lesson_types?.id ?? '',
-					name: agreement.lesson_types?.name ?? '',
-					icon: agreement.lesson_types?.icon ?? null,
-					color: agreement.lesson_types?.color ?? null,
-				},
-			}));
+			// Supabase returns FK relations as arrays
+			type AgreementRow = {
+				id: string;
+				day_of_week: number;
+				start_time: string;
+				start_date: string;
+				end_date: string | null;
+				is_active: boolean;
+				notes: string | null;
+				teachers?: {
+					profiles?:
+						| { first_name: string | null; last_name: string | null; avatar_url: string | null }
+						| { first_name: string | null; last_name: string | null; avatar_url: string | null }[];
+				}[];
+				lesson_types?: { id: string; name: string; icon: string | null; color: string | null }[];
+			};
+			const transformedAgreements: LessonAgreement[] = (agreementsData || []).map((agreement) => {
+				const row = agreement as AgreementRow;
+				const t = row.teachers?.[0];
+				const profiles = t?.profiles;
+				const p = Array.isArray(profiles) ? profiles[0] : profiles;
+				const lt = row.lesson_types?.[0];
+				return {
+					id: row.id,
+					day_of_week: row.day_of_week,
+					start_time: row.start_time,
+					start_date: row.start_date,
+					end_date: row.end_date,
+					is_active: row.is_active,
+					notes: row.notes,
+					teacher: {
+						first_name: p?.first_name ?? null,
+						last_name: p?.last_name ?? null,
+						avatar_url: p?.avatar_url ?? null,
+					},
+					lesson_type: {
+						id: lt?.id ?? '',
+						name: lt?.name ?? '',
+						icon: lt?.icon ?? null,
+						color: lt?.color ?? null,
+					},
+				};
+			});
 
 			setAgreements(transformedAgreements);
 			setLoading(false);
