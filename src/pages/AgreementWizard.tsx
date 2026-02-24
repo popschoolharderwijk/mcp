@@ -14,7 +14,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSlotStatuses, type SlotWithStatus } from '@/lib/agreementSlots';
 import { dateDaysFromNow, dateYearsFromNow, formatDateToDb } from '@/lib/date/date-format';
 import { formatTime } from '@/lib/time/time-format';
-import type { AgreementTableRow, LessonFrequency, WizardTeacherInfo } from '@/types/lesson-agreements';
+import type {
+	AgreementTableRow,
+	LessonFrequency,
+	LessonTypeOptionSnapshot,
+	WizardLessonTypeInfo,
+	WizardTeacherInfo,
+} from '@/types/lesson-agreements';
 
 // ============ Helpers ============
 
@@ -45,8 +51,8 @@ function useAgreement(id: string | undefined, isEditMode: boolean) {
 				.from('lesson_agreements')
 				.select(
 					`id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, 
-					student_user_id, teacher_id, lesson_type_id, 
-					lesson_types(id, name, icon, color, frequency, duration_minutes), 
+					student_user_id, teacher_id, lesson_type_id, duration_minutes, frequency, price_per_lesson,
+					lesson_types(id, name, icon, color), 
 					teachers(user_id)`,
 				)
 				.eq('id', id)
@@ -91,6 +97,9 @@ function useAgreement(id: string | undefined, isEditMode: boolean) {
 				student_user_id: data.student_user_id,
 				teacher_id: data.teacher_id,
 				lesson_type_id: data.lesson_type_id,
+				duration_minutes: data.duration_minutes,
+				frequency: data.frequency,
+				price_per_lesson: data.price_per_lesson,
 				student: {
 					first_name: studentProfile.data?.first_name ?? null,
 					last_name: studentProfile.data?.last_name ?? null,
@@ -108,8 +117,6 @@ function useAgreement(id: string | undefined, isEditMode: boolean) {
 					name: lessonType.name,
 					icon: lessonType.icon,
 					color: lessonType.color,
-					frequency: lessonType.frequency,
-					duration_minutes: lessonType.duration_minutes,
 				},
 			});
 			setLoading(false);
@@ -122,18 +129,38 @@ function useAgreement(id: string | undefined, isEditMode: boolean) {
 }
 
 function useLessonTypes() {
-	const [types, setTypes] = useState<AgreementTableRow['lesson_type'][]>([]);
+	const [types, setTypes] = useState<Array<{ id: string; name: string; icon: string; color: string }>>([]);
 
 	useEffect(() => {
 		supabase
 			.from('lesson_types')
-			.select('id, name, icon, color, frequency, duration_minutes')
+			.select('id, name, icon, color')
 			.eq('is_active', true)
 			.order('name')
 			.then(({ data }) => setTypes(data ?? []));
 	}, []);
 
 	return types;
+}
+
+function useLessonTypeOptions(lessonTypeId: string | null) {
+	const [options, setOptions] = useState<LessonTypeOptionSnapshot[]>([]);
+
+	useEffect(() => {
+		if (!lessonTypeId) {
+			setOptions([]);
+			return;
+		}
+		supabase
+			.from('lesson_type_options')
+			.select('id, duration_minutes, frequency, price_per_lesson')
+			.eq('lesson_type_id', lessonTypeId)
+			.order('duration_minutes')
+			.order('frequency')
+			.then(({ data }) => setOptions(data ?? []));
+	}, [lessonTypeId]);
+
+	return options;
 }
 
 function useTeacherSlots(
@@ -165,9 +192,7 @@ function useTeacherSlots(
 					.eq('teacher_id', teacherId),
 				supabase
 					.from('lesson_agreements')
-					.select(
-						'id, day_of_week, start_time, start_date, end_date, lesson_types(frequency, duration_minutes)',
-					)
+					.select('id, day_of_week, start_time, start_date, end_date, duration_minutes, frequency')
 					.eq('teacher_id', teacherId)
 					.lte('start_date', endDate),
 			]);
@@ -181,20 +206,22 @@ function useTeacherSlots(
 			const filteredAgreements = (agreements.data ?? [])
 				.filter((a) => a.start_date <= endDate && (a.end_date === null || a.end_date >= startDate))
 				.filter((a) => !initialAgreement || a.id !== initialAgreement.id)
-				.map((a) => {
-					const lt = Array.isArray(a.lesson_types) ? a.lesson_types[0] : a.lesson_types;
-					return {
-						day_of_week: a.day_of_week,
-						start_time: a.start_time,
-						start_date: a.start_date,
-						end_date: a.end_date,
-						frequency: lt?.frequency ?? 'weekly',
-						duration_minutes: lt?.duration_minutes ?? 30,
-					};
-				});
+				.map((a) => ({
+					day_of_week: a.day_of_week,
+					start_time: a.start_time,
+					start_date: a.start_date,
+					end_date: a.end_date,
+					frequency: a.frequency,
+					duration_minutes: a.duration_minutes,
+				}));
 
-			const duration = selectedLessonType?.duration_minutes ?? 30;
-			const frequency = selectedLessonType?.frequency ?? 'weekly';
+			if (!selectedLessonType) {
+				setSlots([]);
+				setLoading(false);
+				return;
+			}
+			const duration = selectedLessonType.duration_minutes;
+			const frequency = selectedLessonType.frequency;
 			const statuses = getSlotStatuses(
 				new Date(startDate),
 				new Date(endDate),
@@ -311,6 +338,12 @@ export default function AgreementWizard() {
 			avatar_url: string | null;
 		} | null,
 		lessonTypeId: null as string | null,
+		/** Snapshot from chosen option (for new agreement); in edit mode comes from agreement */
+		selectedOptionSnapshot: null as {
+			duration_minutes: number;
+			frequency: LessonFrequency;
+			price_per_lesson: number;
+		} | null,
 		startDate: tomorrow(),
 		endDate: oneYearFromToday(),
 		teacherId: null as string | null,
@@ -324,6 +357,34 @@ export default function AgreementWizard() {
 
 	// Derived state
 	const teachers = useTeachers(step, form.lessonTypeId);
+	const lessonTypeOptions = useLessonTypeOptions(form.lessonTypeId);
+
+	const selectedLessonType = useMemo((): WizardLessonTypeInfo | undefined => {
+		if (agreement) {
+			return {
+				id: agreement.lesson_type_id,
+				name: agreement.lesson_type.name,
+				icon: agreement.lesson_type.icon,
+				color: agreement.lesson_type.color,
+				duration_minutes: agreement.duration_minutes,
+				frequency: agreement.frequency,
+				price_per_lesson: agreement.price_per_lesson,
+			};
+		}
+		const type = lessonTypes.find((lt) => lt.id === form.lessonTypeId);
+		const snap = form.selectedOptionSnapshot;
+		if (!type || !snap) return undefined;
+		return {
+			id: type.id,
+			name: type.name,
+			icon: type.icon,
+			color: type.color,
+			duration_minutes: snap.duration_minutes,
+			frequency: snap.frequency,
+			price_per_lesson: snap.price_per_lesson,
+		};
+	}, [agreement, lessonTypes, form.lessonTypeId, form.selectedOptionSnapshot]);
+
 	const { slots: slotsWithStatus, loading: loadingSlots } = useTeacherSlots(
 		step,
 		form.teacherId,
@@ -331,13 +392,9 @@ export default function AgreementWizard() {
 		form.startDate,
 		form.endDate,
 		agreement,
-		lessonTypes.find((lt) => lt.id === form.lessonTypeId),
+		selectedLessonType,
 	);
 
-	const selectedLessonType = useMemo(
-		() => lessonTypes.find((lt) => lt.id === form.lessonTypeId),
-		[lessonTypes, form.lessonTypeId],
-	);
 	const selectedTeacher = useMemo(() => {
 		if (teachers.length > 0) return teachers.find((t) => t.id === form.teacherId);
 		if (agreement?.teacher) {
@@ -408,6 +465,11 @@ export default function AgreementWizard() {
 					avatar_url: agreement.student.avatar_url,
 				},
 				lessonTypeId: agreement.lesson_type_id,
+				selectedOptionSnapshot: {
+					duration_minutes: agreement.duration_minutes,
+					frequency: agreement.frequency,
+					price_per_lesson: agreement.price_per_lesson,
+				},
 				startDate: agreement.start_date,
 				endDate: agreement.end_date?.trim() ? agreement.end_date : oneYearFromToday(),
 				teacherId: agreement.teacher_id,
@@ -434,7 +496,9 @@ export default function AgreementWizard() {
 		(s: WizardStep) => {
 			switch (s) {
 				case WizardStep.User:
-					return Boolean(form.studentUserId && form.lessonTypeId);
+					return Boolean(
+						form.studentUserId && form.lessonTypeId && (isEditMode || form.selectedOptionSnapshot),
+					);
 				case WizardStep.Period:
 					return Boolean(
 						form.startDate && form.endDate && new Date(form.endDate) >= new Date(form.startDate),
@@ -447,7 +511,7 @@ export default function AgreementWizard() {
 					return false;
 			}
 		},
-		[form, isTeacherOwnStudent],
+		[form, isTeacherOwnStudent, isEditMode],
 	);
 
 	const nextStep = () => {
@@ -491,6 +555,9 @@ export default function AgreementWizard() {
 					...payload,
 					student_user_id: form.studentUserId,
 					lesson_type_id: form.lessonTypeId,
+					duration_minutes: form.selectedOptionSnapshot ? form.selectedOptionSnapshot.duration_minutes : 30,
+					frequency: form.selectedOptionSnapshot ? form.selectedOptionSnapshot.frequency : 'weekly',
+					price_per_lesson: form.selectedOptionSnapshot ? form.selectedOptionSnapshot.price_per_lesson : 30,
 					is_active: true,
 				});
 
@@ -542,10 +609,20 @@ export default function AgreementWizard() {
 						selectedUser={form.user}
 						selectedLessonTypeId={form.lessonTypeId}
 						selectedLessonType={selectedLessonType}
-						lessonTypes={lessonTypes}
+						lessonTypes={lessonTypes.map((lt) => ({
+							id: lt.id,
+							name: lt.name,
+							icon: lt.icon,
+							color: lt.color,
+						}))}
+						lessonTypeOptions={lessonTypeOptions}
+						selectedOptionSnapshot={form.selectedOptionSnapshot}
 						onStudentUserIdChange={(v) => setForm((f) => ({ ...f, studentUserId: v }))}
 						onUserChange={(v) => setForm((f) => ({ ...f, user: v }))}
-						onLessonTypeChange={(v) => setForm((f) => ({ ...f, lessonTypeId: v }))}
+						onLessonTypeChange={(v) =>
+							setForm((f) => ({ ...f, lessonTypeId: v, selectedOptionSnapshot: null }))
+						}
+						onOptionSnapshotChange={(snap) => setForm((f) => ({ ...f, selectedOptionSnapshot: snap }))}
 					/>
 				)}
 
@@ -612,8 +689,7 @@ export default function AgreementWizard() {
 							initialAgreement={agreement}
 							loadedPeriod={loadedPeriod.current}
 							selectedUser={form.user}
-							selectedLessonTypeId={form.lessonTypeId}
-							lessonTypes={lessonTypes}
+							selectedLessonType={selectedLessonType}
 							startDate={form.startDate}
 							endDate={form.endDate}
 							selectedTeacherId={form.teacherId}

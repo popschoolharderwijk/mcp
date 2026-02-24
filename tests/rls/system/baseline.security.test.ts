@@ -24,6 +24,7 @@ const EXPECTED_RLS_TABLES = [
 	'teachers',
 	'teacher_availability',
 	'teacher_lesson_types',
+	'lesson_type_options',
 	'lesson_agreements',
 	'students',
 	'lesson_appointment_deviations',
@@ -85,6 +86,12 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'teacher_lesson_types_insert_admin',
 		// DELETE policy
 		'teacher_lesson_types_delete_admin',
+	],
+	lesson_type_options: [
+		'lesson_type_options_select_all',
+		'lesson_type_options_insert_admin',
+		'lesson_type_options_update_admin',
+		'lesson_type_options_delete_admin',
 	],
 	lesson_agreements: [
 		// SELECT policy - combined: students, teachers, and privileged users can view agreements

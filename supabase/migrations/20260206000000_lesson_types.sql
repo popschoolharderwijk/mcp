@@ -24,6 +24,7 @@ CREATE TYPE public.lesson_frequency AS ENUM ('daily', 'weekly', 'biweekly', 'mon
 -- =============================================================================
 
 -- Lesson types table - defines different types of music lessons
+-- Duration/frequency/price live in lesson_type_options (multiple options per lesson type).
 CREATE TABLE IF NOT EXISTS public.lesson_types (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
@@ -33,10 +34,7 @@ CREATE TABLE IF NOT EXISTS public.lesson_types (
   icon TEXT NOT NULL CHECK (length(icon) > 0),
   color TEXT NOT NULL CHECK (color ~ '^#[0-9A-Fa-f]{6}$'),
 
-  -- Lesson configuration
-  duration_minutes INTEGER NOT NULL DEFAULT 30,
-  frequency public.lesson_frequency NOT NULL DEFAULT 'weekly',
-  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0),
+  -- Configuration (no duration/frequency/price here; use lesson_type_options)
   cost_center TEXT,
   is_group_lesson BOOLEAN NOT NULL DEFAULT false,
   is_active BOOLEAN NOT NULL DEFAULT true,
@@ -49,6 +47,27 @@ CREATE TABLE IF NOT EXISTS public.lesson_types (
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_lesson_types_is_active ON public.lesson_types(is_active);
 CREATE INDEX IF NOT EXISTS idx_lesson_types_is_group_lesson ON public.lesson_types(is_group_lesson);
+
+-- =============================================================================
+-- SECTION 2B: LESSON TYPE OPTIONS (duration/frequency/price per lesson type)
+-- =============================================================================
+-- Each lesson type can have multiple options (e.g. 30 min/week/25€, 60 min/month/40€).
+-- Agreements reference lesson_types and store a snapshot of the chosen option at creation time.
+CREATE TABLE IF NOT EXISTS public.lesson_type_options (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id) ON DELETE CASCADE,
+  duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
+  frequency public.lesson_frequency NOT NULL,
+  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lesson_type_options_lesson_type_id ON public.lesson_type_options(lesson_type_id);
+
+-- One option per (lesson_type, duration, frequency, price) — same duration+frequency with different price allowed
+CREATE UNIQUE INDEX IF NOT EXISTS idx_lesson_type_options_unique_duration_frequency_price
+ON public.lesson_type_options(lesson_type_id, duration_minutes, frequency, price_per_lesson);
 
 -- =============================================================================
 -- SECTION 3: ENABLE RLS
@@ -83,6 +102,32 @@ WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select
 -- Admins and site_admins can delete lesson types
 CREATE POLICY lesson_types_delete_admin
 ON public.lesson_types FOR DELETE TO authenticated
+USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+
+-- =============================================================================
+-- SECTION 3B: RLS FOR lesson_type_options
+-- =============================================================================
+
+ALTER TABLE public.lesson_type_options ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lesson_type_options FORCE ROW LEVEL SECURITY;
+
+-- All authenticated users can view lesson type options
+CREATE POLICY lesson_type_options_select_all
+ON public.lesson_type_options FOR SELECT TO authenticated
+USING (true);
+
+-- Admins and site_admins can insert/update/delete lesson type options
+CREATE POLICY lesson_type_options_insert_admin
+ON public.lesson_type_options FOR INSERT TO authenticated
+WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+
+CREATE POLICY lesson_type_options_update_admin
+ON public.lesson_type_options FOR UPDATE TO authenticated
+USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
+WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+
+CREATE POLICY lesson_type_options_delete_admin
+ON public.lesson_type_options FOR DELETE TO authenticated
 USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
 
 -- =============================================================================
@@ -133,6 +178,12 @@ BEFORE DELETE ON public.lesson_types
 FOR EACH ROW
 EXECUTE FUNCTION public.check_lesson_type_has_no_agreements();
 
+-- Trigger to maintain updated_at on lesson_type_options
+CREATE TRIGGER update_lesson_type_options_updated_at
+BEFORE UPDATE ON public.lesson_type_options
+FOR EACH ROW
+EXECUTE FUNCTION public.update_updated_at_column();
+
 -- =============================================================================
 -- SECTION 6: PERMISSIONS
 -- =============================================================================
@@ -141,6 +192,7 @@ EXECUTE FUNCTION public.check_lesson_type_has_no_agreements();
 -- actually control access. GRANT is required for RLS to work, but RLS is the
 -- security boundary. Without matching RLS policies, GRANT alone does NOT grant access.
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_types TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_type_options TO authenticated;
 
 -- =============================================================================
 -- END OF LESSON TYPES MIGRATION

@@ -90,11 +90,10 @@ export default function Agreements() {
 		setLoading(true);
 
 		try {
-			// Build query with filters
 			let query = supabase
 				.from('lesson_agreements')
 				.select(
-					'id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, student_user_id, teacher_id, lesson_type_id, lesson_types(id, name, icon, color, frequency, duration_minutes), teachers(user_id)',
+					'id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, student_user_id, teacher_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, lesson_types(id, name, icon, color), teachers(user_id)',
 					{ count: 'exact' },
 				);
 
@@ -121,6 +120,8 @@ export default function Agreements() {
 				query = query.order('day_of_week', { ascending: sortAsc }).order('start_time', { ascending: sortAsc });
 			} else if (sortColumn === 'end_date') {
 				query = query.order('end_date', { ascending: sortAsc, nullsFirst: false });
+			} else if (sortColumn === 'duration_minutes') {
+				query = query.order('duration_minutes', { ascending: sortAsc });
 			} else if (sortColumn === 'status') {
 				query = query.order('is_active', { ascending: sortAsc });
 			} else {
@@ -148,13 +149,14 @@ export default function Agreements() {
 				student_user_id: string;
 				teacher_id: string;
 				lesson_type_id: string;
+				duration_minutes: number;
+				frequency: LessonFrequency;
+				price_per_lesson: number;
 				lesson_types: {
 					id: string;
 					name: string;
 					icon: string;
 					color: string;
-					frequency: LessonFrequency;
-					duration_minutes: number;
 				};
 				teachers: { user_id: string } | null;
 			};
@@ -188,6 +190,9 @@ export default function Agreements() {
 							student_user_id: a.student_user_id,
 							teacher_id: a.teacher_id,
 							lesson_type_id: a.lesson_type_id,
+							duration_minutes: a.duration_minutes,
+							frequency: a.frequency,
+							price_per_lesson: a.price_per_lesson,
 							student: emptyStudent,
 							teacher: emptyTeacher,
 							lesson_type: {
@@ -195,8 +200,6 @@ export default function Agreements() {
 								name: lt.name,
 								icon: lt.icon,
 								color: lt.color,
-								duration_minutes: lt.duration_minutes,
-								frequency: lt.frequency,
 							},
 						};
 					}),
@@ -249,6 +252,9 @@ export default function Agreements() {
 					student_user_id: a.student_user_id,
 					teacher_id: a.teacher_id,
 					lesson_type_id: a.lesson_type_id,
+					duration_minutes: a.duration_minutes,
+					frequency: a.frequency,
+					price_per_lesson: a.price_per_lesson,
 					student: studentProfile ?? emptyStudent,
 					teacher: teacherProfile ?? emptyTeacher,
 					lesson_type: {
@@ -256,8 +262,6 @@ export default function Agreements() {
 						name: lt.name,
 						icon: lt.icon,
 						color: lt.color,
-						duration_minutes: lt.duration_minutes,
-						frequency: lt.frequency,
 					},
 				};
 			});
@@ -397,10 +401,18 @@ export default function Agreements() {
 								<span>{DAY_NAMES[r.day_of_week]?.slice(0, 2)}</span>
 								<span className="text-muted-foreground"> {formatTime(r.start_time)}</span>
 							</div>
-							<p className="text-xs text-muted-foreground">{frequencyLabels[r.lesson_type.frequency]}</p>
+							<p className="text-xs text-muted-foreground">{frequencyLabels[r.frequency]}</p>
 						</div>
 					</div>
 				),
+			},
+			{
+				key: 'duration_minutes',
+				label: 'Duur',
+				sortable: true,
+				sortValue: (r) => r.duration_minutes,
+				className: 'w-24',
+				render: (r) => `${r.duration_minutes} min`,
 			},
 			{
 				key: 'end_date',

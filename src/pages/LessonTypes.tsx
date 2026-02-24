@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { LessonTypeFormDialog } from '@/components/lesson-types/LessonTypeFormDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
@@ -18,8 +17,6 @@ import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { frequencyLabels } from '@/lib/frequencies';
-import type { LessonFrequency } from '@/types/lesson-agreements';
 
 interface LessonType {
 	id: string;
@@ -27,17 +24,16 @@ interface LessonType {
 	description: string | null;
 	icon: string;
 	color: string;
-	duration_minutes: number;
-	frequency: LessonFrequency;
-	price_per_lesson: number;
 	cost_center: string | null;
 	is_group_lesson: boolean;
 	is_active: boolean;
 	created_at: string;
 	updated_at: string;
+	options_count?: number;
 }
 
 export default function LessonTypes() {
+	const navigate = useNavigate();
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -46,10 +42,6 @@ export default function LessonTypes() {
 		open: boolean;
 		lessonType: LessonType | null;
 	} | null>(null);
-	const [lessonTypeFormDialog, setLessonTypeFormDialog] = useState<{
-		open: boolean;
-		lessonType: LessonType | null;
-	}>({ open: false, lessonType: null });
 	const [deletingLessonType, setDeletingLessonType] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
@@ -69,7 +61,23 @@ export default function LessonTypes() {
 			return;
 		}
 
-		setLessonTypes(data ?? []);
+		const types = data ?? [];
+		if (types.length > 0) {
+			const { data: counts } = await supabase
+				.from('lesson_type_options')
+				.select('lesson_type_id')
+				.in(
+					'lesson_type_id',
+					types.map((t) => t.id),
+				);
+			const countMap = new Map<string, number>();
+			for (const row of counts ?? []) {
+				countMap.set(row.lesson_type_id, (countMap.get(row.lesson_type_id) ?? 0) + 1);
+			}
+			setLessonTypes(types.map((t) => ({ ...t, options_count: countMap.get(t.id) ?? 0 })));
+		} else {
+			setLessonTypes(types);
+		}
 		setLoading(false);
 	}, [hasAccess]);
 
@@ -97,27 +105,11 @@ export default function LessonTypes() {
 				),
 			},
 			{
-				key: 'duration',
-				label: 'Duur',
+				key: 'options_count',
+				label: 'Lesopties',
 				sortable: true,
-				sortValue: (lt) => lt.duration_minutes,
-				render: (lt) => <span className="text-muted-foreground">{lt.duration_minutes} min</span>,
-				className: 'text-muted-foreground',
-			},
-			{
-				key: 'frequency',
-				label: 'Frequentie',
-				sortable: true,
-				sortValue: (lt) => lt.frequency,
-				render: (lt) => <span className="text-muted-foreground">{frequencyLabels[lt.frequency]}</span>,
-				className: 'text-muted-foreground',
-			},
-			{
-				key: 'price',
-				label: 'Prijs / les',
-				sortable: true,
-				sortValue: (lt) => lt.price_per_lesson,
-				render: (lt) => <span className="text-muted-foreground">€{lt.price_per_lesson.toFixed(2)}</span>,
+				sortValue: (lt) => lt.options_count ?? 0,
+				render: (lt) => <span className="text-muted-foreground">{lt.options_count ?? 0} opties</span>,
 				className: 'text-muted-foreground',
 			},
 			{
@@ -146,13 +138,16 @@ export default function LessonTypes() {
 		[],
 	);
 
-	const handleEdit = useCallback((lessonType: LessonType) => {
-		setLessonTypeFormDialog({ open: true, lessonType });
-	}, []);
+	const handleEdit = useCallback(
+		(lessonType: LessonType) => {
+			navigate(`/lesson-types/${lessonType.id}`);
+		},
+		[navigate],
+	);
 
 	const handleCreate = useCallback(() => {
-		setLessonTypeFormDialog({ open: true, lessonType: null });
-	}, []);
+		navigate('/lesson-types/new');
+	}, [navigate]);
 
 	const handleDelete = useCallback((lessonType: LessonType) => {
 		setDeleteDialog({ open: true, lessonType });
@@ -230,14 +225,6 @@ export default function LessonTypes() {
 					onEdit: handleEdit,
 					onDelete: handleDelete,
 				}}
-			/>
-
-			{/* Create/Edit Lesson Type Dialog */}
-			<LessonTypeFormDialog
-				open={lessonTypeFormDialog.open}
-				onOpenChange={(open) => setLessonTypeFormDialog({ ...lessonTypeFormDialog, open })}
-				onSuccess={loadLessonTypes}
-				lessonType={lessonTypeFormDialog.lessonType ?? undefined}
 			/>
 
 			{/* Delete Lesson Type Dialog */}

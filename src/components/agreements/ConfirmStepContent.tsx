@@ -16,8 +16,7 @@ interface ConfirmStepContentProps {
 	initialAgreement: WizardInitialAgreement | null;
 	loadedPeriod: { start_date: string; end_date: string | null } | null;
 	selectedUser: (StudentCardProfileFields & { user_id?: string }) | null;
-	selectedLessonTypeId: string | null;
-	lessonTypes: WizardLessonTypeInfo[];
+	selectedLessonType: WizardLessonTypeInfo | undefined;
 	startDate: string;
 	endDate: string;
 	selectedTeacherId: string | null;
@@ -31,8 +30,7 @@ export function ConfirmStepContent({
 	initialAgreement,
 	loadedPeriod,
 	selectedUser,
-	selectedLessonTypeId,
-	lessonTypes,
+	selectedLessonType,
 	startDate,
 	endDate,
 	selectedTeacherId,
@@ -64,7 +62,21 @@ export function ConfirmStepContent({
 						<ConfirmStepRow label="Lessoort" alwaysSame>
 							<span>
 								{initialAgreement.lesson_type?.name
-									? `${initialAgreement.lesson_type.name} (${frequencyLabels[initialAgreement.lesson_type.frequency || 'weekly']})`
+									? `${initialAgreement.lesson_type.name} (${frequencyLabels[initialAgreement.frequency]})`
+									: '-'}
+							</span>
+						</ConfirmStepRow>
+						<ConfirmStepRow label="Duur" alwaysSame>
+							<span>
+								{initialAgreement.duration_minutes != null
+									? `${initialAgreement.duration_minutes} min`
+									: '-'}
+							</span>
+						</ConfirmStepRow>
+						<ConfirmStepRow label="Prijs" alwaysSame>
+							<span>
+								{initialAgreement.price_per_lesson != null
+									? `€ ${Number(initialAgreement.price_per_lesson).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per les`
 									: '-'}
 							</span>
 						</ConfirmStepRow>
@@ -129,8 +141,18 @@ export function ConfirmStepContent({
 						</ConfirmStepRow>
 						<ConfirmStepRow label="Lessoort" alwaysSame>
 							<span>
-								{lessonTypes.find((l) => l.id === selectedLessonTypeId)
-									? `${lessonTypes.find((l) => l.id === selectedLessonTypeId)?.name} (${frequencyLabels[lessonTypes.find((l) => l.id === selectedLessonTypeId)?.frequency || 'weekly']})`
+								{selectedLessonType
+									? `${selectedLessonType.name} (${frequencyLabels[selectedLessonType.frequency]})`
+									: '-'}
+							</span>
+						</ConfirmStepRow>
+						<ConfirmStepRow label="Duur" alwaysSame>
+							<span>{selectedLessonType ? `${selectedLessonType.duration_minutes} min` : '-'}</span>
+						</ConfirmStepRow>
+						<ConfirmStepRow label="Prijs" alwaysSame>
+							<span>
+								{selectedLessonType?.price_per_lesson != null
+									? `€ ${Number(selectedLessonType.price_per_lesson).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per les`
 									: '-'}
 							</span>
 						</ConfirmStepRow>
@@ -214,8 +236,18 @@ export function ConfirmStepContent({
 			</ConfirmStepRow>
 			<ConfirmStepRow label="Lessoort">
 				<p className="font-medium">
-					{lessonTypes.find((l) => l.id === selectedLessonTypeId)
-						? `${lessonTypes.find((l) => l.id === selectedLessonTypeId)?.name} (${frequencyLabels[lessonTypes.find((l) => l.id === selectedLessonTypeId)?.frequency || 'weekly']})`
+					{selectedLessonType
+						? `${selectedLessonType.name} (${frequencyLabels[selectedLessonType.frequency]})`
+						: '-'}
+				</p>
+			</ConfirmStepRow>
+			<ConfirmStepRow label="Duur">
+				<p className="font-medium">{selectedLessonType ? `${selectedLessonType.duration_minutes} min` : '-'}</p>
+			</ConfirmStepRow>
+			<ConfirmStepRow label="Prijs">
+				<p className="font-medium">
+					{selectedLessonType?.price_per_lesson != null
+						? `€ ${Number(selectedLessonType.price_per_lesson).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per les`
 						: '-'}
 				</p>
 			</ConfirmStepRow>

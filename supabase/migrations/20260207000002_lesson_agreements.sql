@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
   teacher_id UUID NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id),
 
+  -- Snapshot of chosen option at creation time (duration/frequency/price; "a deal is a deal")
+  duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
+  frequency public.lesson_frequency NOT NULL,
+  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0),
+
   -- Scheduling
   day_of_week INTEGER NOT NULL CHECK (day_of_week >= 0 AND day_of_week <= 6),
   start_time TIME NOT NULL,
@@ -129,6 +134,9 @@ COMMENT ON COLUMN public.lesson_agreements.id IS 'Primary key, UUID generated au
 COMMENT ON COLUMN public.lesson_agreements.student_user_id IS 'Reference to auth.users(id). Note: No FK to students table - students are created automatically via triggers when the first lesson_agreement is inserted. This is a deliberate design choice where students are a consequence of agreements, not a prerequisite.';
 COMMENT ON COLUMN public.lesson_agreements.teacher_id IS 'Reference to teachers table. CASCADE delete: if teacher is deleted, all their lesson agreements are deleted.';
 COMMENT ON COLUMN public.lesson_agreements.lesson_type_id IS 'Reference to lesson_types table (e.g., Guitar, Piano, etc.)';
+COMMENT ON COLUMN public.lesson_agreements.duration_minutes IS 'Snapshot: lesson duration in minutes at agreement creation (from chosen lesson_type_option).';
+COMMENT ON COLUMN public.lesson_agreements.frequency IS 'Snapshot: lesson frequency at agreement creation (from chosen lesson_type_option).';
+COMMENT ON COLUMN public.lesson_agreements.price_per_lesson IS 'Snapshot: price per lesson at agreement creation (from chosen lesson_type_option).';
 COMMENT ON COLUMN public.lesson_agreements.day_of_week IS 'Day of week (0=Sunday, 1=Monday, ..., 6=Saturday) when the lesson occurs';
 COMMENT ON COLUMN public.lesson_agreements.start_time IS 'Time when the lesson starts (TIME format, e.g., 14:00). Note: No end_time or duration field currently - may be added later for conflict prevention.';
 COMMENT ON COLUMN public.lesson_agreements.start_date IS 'Date when this lesson agreement becomes active';

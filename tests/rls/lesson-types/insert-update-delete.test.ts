@@ -108,9 +108,6 @@ describe('RLS: lesson_types INSERT - blocked for non-admin roles', () => {
 		description: 'Test description',
 		icon: 'test-icon',
 		color: '#FF0000',
-		duration_minutes: 30,
-		frequency: 'weekly' as const,
-		price_per_lesson: 25.0,
 		is_group_lesson: false,
 		is_active: true,
 	};
@@ -134,9 +131,6 @@ describe('RLS: lesson_types INSERT - admin permissions', () => {
 		description: 'Test description',
 		icon: 'test-icon',
 		color: '#00FF00',
-		duration_minutes: 45,
-		frequency: 'weekly' as const,
-		price_per_lesson: 30.0,
 		is_group_lesson: false,
 		is_active: true,
 	};
@@ -174,9 +168,6 @@ describe('RLS: lesson_types UPDATE - admin permissions', () => {
 			description: 'Will be updated',
 			icon: 'test-icon',
 			color: '#999999',
-			duration_minutes: 30,
-			frequency: 'weekly' as const,
-			price_per_lesson: 25.0,
 			is_group_lesson: false,
 			is_active: true,
 		});
@@ -192,9 +183,6 @@ describe('RLS: lesson_types UPDATE - admin permissions', () => {
 			description: 'Will be updated',
 			icon: 'test-icon',
 			color: '#888888',
-			duration_minutes: 30,
-			frequency: 'weekly' as const,
-			price_per_lesson: 25.0,
 			is_group_lesson: false,
 			is_active: true,
 		});
@@ -231,9 +219,6 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 			description: 'Will be deleted',
 			icon: 'test-icon',
 			color: '#0000FF',
-			duration_minutes: 30,
-			frequency: 'weekly' as const,
-			price_per_lesson: 20.0,
 			is_group_lesson: false,
 			is_active: true,
 		});
@@ -245,9 +230,6 @@ describe('RLS: lesson_types DELETE - admin permissions', () => {
 			description: 'Will be deleted',
 			icon: 'test-icon',
 			color: '#FFFF00',
-			duration_minutes: 30,
-			frequency: 'weekly' as const,
-			price_per_lesson: 20.0,
 			is_group_lesson: false,
 			is_active: true,
 		});
@@ -277,9 +259,6 @@ describe('TRIGGER: lesson_types DELETE - blocked when agreements exist', () => {
 			description: 'For delete test',
 			icon: 'test-icon',
 			color: '#123456',
-			duration_minutes: 30,
-			frequency: 'weekly',
-			price_per_lesson: 25.0,
 			is_group_lesson: false,
 			is_active: true,
 		});

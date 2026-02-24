@@ -8,6 +8,7 @@ import Agreements from './pages/Agreements';
 import AgreementWizard from './pages/AgreementWizard';
 import AuthCallback from './pages/AuthCallback';
 import Dashboard from './pages/Dashboard';
+import LessonTypeInfo from './pages/LessonTypeInfo';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
 import MyAvailability from './pages/MyAvailability';
@@ -46,6 +47,8 @@ const App = () => (
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/users" element={<Users />} />
 						<Route path="/lesson-types" element={<LessonTypes />} />
+						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />
+						<Route path="/lesson-types/:id" element={<LessonTypeInfo />} />
 						<Route path="/agreements" element={<Agreements />} />
 						<Route path="/agreements/new" element={<AgreementWizard />} />
 						<Route path="/agreements/:id" element={<AgreementWizard />} />

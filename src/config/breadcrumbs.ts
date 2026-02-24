@@ -23,6 +23,18 @@ interface RouteBreadcrumb {
 const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/', items: [] },
 	{ pattern: '/users', items: [{ label: NAV_LABELS.users, href: '/users' }] },
+	{
+		pattern: '/lesson-types/new',
+		items: [
+			{ label: NAV_LABELS.lessonTypes, href: '/lesson-types' },
+			{ label: 'Nieuwe lessoort', href: '/lesson-types/new' },
+		],
+	},
+	// /lesson-types/:id – base only; page adds lesson type name via suffix
+	{
+		pattern: /^\/lesson-types\/[^/]+$/,
+		items: [{ label: NAV_LABELS.lessonTypes, href: '/lesson-types' }],
+	},
 	{ pattern: '/lesson-types', items: [{ label: NAV_LABELS.lessonTypes, href: '/lesson-types' }] },
 	{ pattern: '/agreements', items: [{ label: NAV_LABELS.agreements, href: '/agreements' }] },
 	{
