@@ -1,20 +1,11 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { IconType } from 'react-icons';
-import { LuLoaderCircle, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
+import { LuPlus, LuTrash2 } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-	AlertDialog,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogMedia,
-	AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
 import { RoleBadge } from '@/components/ui/role-badge';
 import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
@@ -23,6 +14,7 @@ import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateTimeShort } from '@/lib/date/date-format';
 import { type AppRole, allRoles, getIcon, roleLabels } from '@/lib/roles';
 
 interface UserWithRole {
@@ -80,7 +72,6 @@ export default function Users() {
 		open: boolean;
 		user: UserWithRole | null;
 	}>({ open: false, user: null });
-	const [deletingUser, setDeletingUser] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
 	const hasAccess = isAdmin || isSiteAdmin;
@@ -207,15 +198,9 @@ export default function Users() {
 				key: 'created_at',
 				label: 'Aangemaakt',
 				sortable: true, // Server-side sorting
-				render: (u) => {
-					const date = new Date(u.created_at);
-					return (
-						<span className="text-muted-foreground">
-							{date.toLocaleDateString('nl-NL')}{' '}
-							{date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-						</span>
-					);
-				},
+				render: (u) => (
+					<span className="text-muted-foreground">{formatDateTimeShort(new Date(u.created_at))}</span>
+				),
 				className: 'text-muted-foreground',
 			},
 		],
@@ -249,8 +234,6 @@ export default function Users() {
 	const confirmDelete = useCallback(async () => {
 		if (!deleteDialog?.user) return;
 
-		setDeletingUser(true);
-
 		try {
 			const { data, error: invokeError } = await supabase.functions.invoke('delete-user', {
 				body: { userId: deleteDialog.user.user_id },
@@ -276,14 +259,14 @@ export default function Users() {
 				toast.error('Fout bij verwijderen gebruiker', {
 					description: errorMessage,
 				});
-				return;
+				throw new Error(errorMessage);
 			}
 
 			if (data?.error) {
 				toast.error('Fout bij verwijderen gebruiker', {
 					description: data.error,
 				});
-				return;
+				throw new Error(data.error);
 			}
 
 			toast.success('Gebruiker verwijderd', {
@@ -298,8 +281,7 @@ export default function Users() {
 			toast.error('Fout bij verwijderen gebruiker', {
 				description: 'Er is een netwerkfout opgetreden. Probeer het later opnieuw.',
 			});
-		} finally {
-			setDeletingUser(false);
+			throw error;
 		}
 	}, [deleteDialog, isSiteAdmin, loadUsers]);
 
@@ -395,43 +377,22 @@ export default function Users() {
 
 			{/* Delete User Dialog */}
 			{deleteDialog && (
-				<AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogMedia className="bg-destructive/10 text-destructive">
-								<LuTriangleAlert className="h-6 w-6" />
-							</AlertDialogMedia>
-							<AlertDialogTitle>Gebruiker verwijderen</AlertDialogTitle>
-							<AlertDialogDescription asChild>
-								<div>
-									Weet je zeker dat je <strong>{getDisplayName(deleteDialog.user)}</strong> wilt
-									verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-									<p className="mt-2 text-muted-foreground">
-										Alle gegevens van deze gebruiker worden permanent verwijderd, inclusief rollen
-										en gerelateerde data.
-									</p>
-								</div>
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter>
-							<AlertDialogCancel asChild>
-								<Button variant="outline" disabled={deletingUser}>
-									Annuleren
-								</Button>
-							</AlertDialogCancel>
-							<Button variant="destructive" onClick={confirmDelete} disabled={deletingUser}>
-								{deletingUser ? (
-									<>
-										<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-										Verwijderen...
-									</>
-								) : (
-									'Verwijderen'
-								)}
-							</Button>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
+				<ConfirmDeleteDialog
+					open={deleteDialog.open}
+					onOpenChange={(open) => !open && setDeleteDialog(null)}
+					title="Gebruiker verwijderen"
+					description={
+						<>
+							Weet je zeker dat je <strong>{getDisplayName(deleteDialog.user)}</strong> wilt verwijderen?
+							Deze actie kan niet ongedaan worden gemaakt.
+							<p className="mt-2 text-muted-foreground">
+								Alle gegevens van deze gebruiker worden permanent verwijderd, inclusief rollen en
+								gerelateerde data.
+							</p>
+						</>
+					}
+					onConfirm={confirmDelete}
+				/>
 			)}
 		</div>
 	);

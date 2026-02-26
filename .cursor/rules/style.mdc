@@ -10,17 +10,87 @@ alwaysApply: true
 * For loading spinners, always use `LuLoaderCircle` from `react-icons/lu` with `animate-spin` class.
 * Never use `any`, always deduce the required type and use that.
 
+## End pages (detail pages)
+
+**End pages** are detail pages for a single entity: e.g. TeacherInfo, LessonTypeInfo, a student detail page, AgreementWizard for one agreement. For these pages:
+
+### PageHeader at the top
+
+- Use **PageHeader** from `@/components/ui/page-header` and place it **always as the first element** in the main page content (directly under any layout wrapper, before tabs/cards/content).
+- Props: `title` (entity name), `icon` (Avatar or ColorIcon, caller supplies `h-16 w-16`), optional `subtitle` (e.g. email, lessoort name).
+- Do not put other content above the PageHeader on end pages.
+
+```tsx
+import { PageHeader } from '@/components/ui/page-header';
+
+return (
+  <div className="space-y-6">
+    <PageHeader
+      icon={<Avatar className="h-16 w-16">...</Avatar>}
+      title={entityName}
+      subtitle={optionalSubtitle}
+    />
+    {/* Tabs, cards, etc. follow below */}
+  </div>
+);
+```
+
+### Breadcrumbs
+
+- Base breadcrumb items are defined in `./src/config/breadcrumbs.ts` per route (using NAV_LABELS). The top nav renders base + suffix.
+- On **end pages** (detail pages with a single entity), the page must set the **suffix** so the current entity appears in the breadcrumb (e.g. teacher name, lesson type name, agreement label).
+- Use `useBreadcrumb()` from `@/contexts/BreadcrumbContext`: call `setBreadcrumbSuffix([{ label: '...', href?: '...' }])` when the entity is loaded, and `setBreadcrumbSuffix([])` on cleanup (e.g. in a `useEffect` return) so other routes don’t show the suffix.
+
+```tsx
+import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+
+const { setBreadcrumbSuffix } = useBreadcrumb();
+useEffect(() => {
+  if (!entity) {
+    setBreadcrumbSuffix([]);
+    return;
+  }
+  setBreadcrumbSuffix([{ label: entity.name }]);
+  return () => setBreadcrumbSuffix([]);
+}, [entity, setBreadcrumbSuffix]);
+```
+
+- For new routes, add the base items in `breadcrumbs.ts`; the page only sets the suffix (last segment).
+
 ## Loading States: Skeleton vs Spinner
 
-Use **Skeleton** for content loading (modals, cards, lists) and **Spinner** for actions/operations.
+For **larger UI elements** (whole pages, sections, modals, cards, lists) **always use skeletons** for loading states. We have dedicated components for this—use them instead of building ad-hoc skeleton layouts:
 
-### When to use Skeleton
+- **PageSkeleton** (`@/components/ui/page-skeleton`) – whole page loading
+- **SectionSkeleton** (same file) – a single section (e.g. profile block, lesson types list)
 
-- Loading modal content
-- Loading card content
-- Loading list items
-- Loading page sections
-- Any case where you know the layout structure beforehand
+For small or unknown layout (e.g. button action), use a **Spinner**. Do not use skeletons for actions/operations.
+
+### PageSkeleton: full-page loading
+
+When a **whole page** is loading (e.g. data fetch before render), use **PageSkeleton** and pick the variant that matches the page layout:
+
+| Variant | Use when |
+|--------|----------|
+| `header-and-cards` | Page has a header + card grid or card-like content (profiles, dashboards, stats). **Default.** |
+| `header-and-tabs` | Page has a header + tabs + content below (detail pages with tabs, agenda views). |
+| `header-only` | Page has only a header and no standard content block. |
+
+```tsx
+import { PageSkeleton } from '@/components/ui/page-skeleton';
+
+if (loading) return <PageSkeleton variant="header-and-cards" />;
+if (loading) return <PageSkeleton variant="header-and-tabs" />;
+```
+
+### SectionSkeleton: section loading
+
+Use **SectionSkeleton** from the same file when only a **section** of the page is loading (e.g. profile block, lesson types list), not the whole page.
+
+### When to use Skeleton (inline)
+
+- Loading modal content, card content, list items
+- Any case where you know the layout structure—use **PageSkeleton** / **SectionSkeleton** for page/section, or inline **Skeleton** from `@/components/ui/skeleton` for smaller blocks
 
 ```tsx
 import { Skeleton } from '@/components/ui/skeleton';

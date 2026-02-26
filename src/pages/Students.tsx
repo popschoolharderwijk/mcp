@@ -1,27 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type LessonAgreement, LessonAgreementItem } from '@/components/students/LessonAgreementItem';
 import { StudentFormDialog } from '@/components/students/StudentFormDialog';
-import {
-	AlertDialog,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogMedia,
-	AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
 import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { NAV_LABELS } from '@/config/nav-labels';
+import { useActiveLessonTypes } from '@/hooks/useActiveLessonTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
-import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
+import { useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
 
 interface StudentProfile {
@@ -60,7 +50,6 @@ interface PaginatedStudentsResponse {
 export default function Students() {
 	const { isAdmin, isSiteAdmin, isStaff, isLoading: authLoading } = useAuth();
 	const [students, setStudents] = useState<StudentWithProfile[]>([]);
-	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [totalCount, setTotalCount] = useState(0);
 
@@ -97,31 +86,10 @@ export default function Students() {
 		open: boolean;
 		student: StudentWithProfile | null;
 	}>({ open: false, student: null });
-	const [deletingStudent, setDeletingStudent] = useState(false);
 
 	// Check access - only admin, site_admin and staff can view this page
 	const hasAccess = isAdmin || isSiteAdmin || isStaff;
-
-	// Load lesson types (only once)
-	useEffect(() => {
-		if (!hasAccess) return;
-
-		const loadLessonTypes = async () => {
-			const { data, error } = await supabase
-				.from('lesson_types')
-				.select('id, name, icon, color')
-				.eq('is_active', true)
-				.order('name', { ascending: true });
-
-			if (error) {
-				console.error('Error loading lesson types:', error);
-			} else {
-				setLessonTypes(data ?? []);
-			}
-		};
-
-		loadLessonTypes();
-	}, [hasAccess]);
+	const { lessonTypes } = useActiveLessonTypes(hasAccess);
 
 	// Load paginated students
 	const loadStudents = useCallback(async () => {
@@ -266,8 +234,6 @@ export default function Students() {
 	const confirmDelete = useCallback(async () => {
 		if (!deleteDialog?.student) return;
 
-		setDeletingStudent(true);
-
 		try {
 			// If also delete user, call delete-user function which will cascade delete everything
 			if (deleteDialog.deleteUser) {
@@ -280,8 +246,7 @@ export default function Students() {
 					toast.error('Fout bij verwijderen gebruiker', {
 						description: userDeleteError.message,
 					});
-					setDeletingStudent(false);
-					return;
+					throw new Error(userDeleteError.message);
 				}
 
 				toast.success('Leerling en gebruiker verwijderd');
@@ -302,8 +267,7 @@ export default function Students() {
 						toast.error('Fout bij verwijderen lesovereenkomsten', {
 							description: agreementsError.message,
 						});
-						setDeletingStudent(false);
-						return;
+						throw new Error(agreementsError.message);
 					}
 				}
 
@@ -319,8 +283,7 @@ export default function Students() {
 			toast.error('Fout bij verwijderen leerling', {
 				description: 'Er is een netwerkfout opgetreden. Probeer het later opnieuw.',
 			});
-		} finally {
-			setDeletingStudent(false);
+			throw error;
 		}
 	}, [deleteDialog, loadStudents]);
 
@@ -368,30 +331,26 @@ export default function Students() {
 
 			{/* Delete Student Dialog */}
 			{deleteDialog && (
-				<AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<AlertDialogContent>
-						<AlertDialogHeader>
-							<AlertDialogMedia className="bg-destructive/10 text-destructive">
-								<LuTriangleAlert className="h-6 w-6" />
-							</AlertDialogMedia>
-							<AlertDialogTitle>Leerling verwijderen</AlertDialogTitle>
-							<AlertDialogDescription>
-								Weet je zeker dat je{' '}
-								<strong>
-									{deleteDialog.student
-										? getDisplayName(deleteDialog.student.profile)
-										: 'deze leerling'}
-								</strong>{' '}
-								wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<div className="space-y-4 py-4">
+				<ConfirmDeleteDialog
+					open={deleteDialog.open}
+					onOpenChange={(open) => !open && setDeleteDialog(null)}
+					title="Leerling verwijderen"
+					description={
+						<>
+							Weet je zeker dat je{' '}
+							<strong>
+								{deleteDialog.student ? getDisplayName(deleteDialog.student.profile) : 'deze leerling'}
+							</strong>{' '}
+							wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+						</>
+					}
+					onConfirm={confirmDelete}
+					extraContent={
+						<>
 							<p className="text-sm text-muted-foreground">
 								Alle gegevens van deze leerling worden permanent verwijderd, inclusief{' '}
 								{deleteDialog.student?.agreements.length || 0} lesovereenkomst(en).
 							</p>
-
-							{/* Show all agreements that will be deleted */}
 							{deleteDialog.student && deleteDialog.student.agreements.length > 0 && (
 								<div className="space-y-2">
 									<p className="text-sm font-medium">
@@ -409,7 +368,6 @@ export default function Students() {
 									</div>
 								</div>
 							)}
-
 							<div className="flex items-center space-x-2">
 								<input
 									type="checkbox"
@@ -422,26 +380,9 @@ export default function Students() {
 									Ook de gebruiker verwijderen
 								</label>
 							</div>
-						</div>
-						<AlertDialogFooter>
-							<AlertDialogCancel asChild>
-								<Button variant="outline" disabled={deletingStudent}>
-									Annuleren
-								</Button>
-							</AlertDialogCancel>
-							<Button variant="destructive" onClick={confirmDelete} disabled={deletingStudent}>
-								{deletingStudent ? (
-									<>
-										<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-										Verwijderen...
-									</>
-								) : (
-									'Verwijderen'
-								)}
-							</Button>
-						</AlertDialogFooter>
-					</AlertDialogContent>
-				</AlertDialog>
+						</>
+					}
+				/>
 			)}
 		</div>
 	);

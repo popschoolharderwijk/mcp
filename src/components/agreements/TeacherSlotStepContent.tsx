@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { LuCircleCheck, LuCircleX, LuLoaderCircle, LuTriangleAlert } from 'react-icons/lu';
+import { LuCircleCheck, LuCircleX, LuTriangleAlert } from 'react-icons/lu';
 import { Label } from '@/components/ui/label';
+import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { UsersSelect } from '@/components/ui/users-select';
 import type { SlotStatus, SlotWithStatus } from '@/lib/agreementSlots';
@@ -155,9 +156,7 @@ export function TeacherSlotStepContent({
 			<div className="space-y-2">
 				<Label>Tijdslot</Label>
 				{loadingStep3 ? (
-					<div className="flex justify-center py-6">
-						<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-					</div>
+					<SectionSkeleton className="py-6" />
 				) : (
 					<div className="space-y-2">
 						<div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

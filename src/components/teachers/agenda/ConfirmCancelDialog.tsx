@@ -1,4 +1,3 @@
-import { LuLoaderCircle } from 'react-icons/lu';
 import {
 	AlertDialog,
 	AlertDialogCancel,
@@ -9,6 +8,7 @@ import {
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ConfirmCancelDialogProps {
 	open: boolean;
@@ -42,14 +42,7 @@ export function ConfirmCancelDialog({ open, onOpenChange, onConfirm, disabled = 
 						}}
 						disabled={disabled}
 					>
-						{disabled ? (
-							<span className="inline-flex items-center gap-2">
-								<LuLoaderCircle className="h-4 w-4 animate-spin" />
-								Bezig...
-							</span>
-						) : (
-							'Ja, les annuleren'
-						)}
+						{disabled ? <LoadingSpinner size="md" label="Bezig..." /> : 'Ja, les annuleren'}
 					</Button>
 				</AlertDialogFooter>
 			</AlertDialogContent>

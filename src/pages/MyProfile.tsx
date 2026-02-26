@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -140,11 +140,7 @@ export default function MyProfile() {
 	};
 
 	if (authLoading || loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-cards" />;
 	}
 
 	if (!teacherProfile) {
@@ -181,16 +177,9 @@ export default function MyProfile() {
 							value={form.phone_number}
 							onChange={(value) => setForm({ ...form, phone_number: value })}
 						/>
-						<Button onClick={handleSave} disabled={saving}>
-							{saving ? (
-								<>
-									<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-									Opslaan...
-								</>
-							) : (
-								'Opslaan'
-							)}
-						</Button>
+						<SubmitButton onClick={handleSave} loading={saving} loadingLabel="Opslaan...">
+							Opslaan
+						</SubmitButton>
 					</CardContent>
 				</Card>
 

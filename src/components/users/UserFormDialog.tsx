@@ -1,6 +1,5 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { type AppRole, allRoles, roleLabels } from '@/lib/roles';
@@ -351,16 +351,15 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 					<Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
 						Annuleren
 					</Button>
-					<Button variant="default" onClick={handleSubmit} disabled={!form.email || saving}>
-						{saving ? (
-							<>
-								<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-								{savingLabel}
-							</>
-						) : (
-							submitLabel
-						)}
-					</Button>
+					<SubmitButton
+						variant="default"
+						onClick={handleSubmit}
+						loading={saving}
+						loadingLabel={savingLabel}
+						disabled={!form.email}
+					>
+						{submitLabel}
+					</SubmitButton>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
