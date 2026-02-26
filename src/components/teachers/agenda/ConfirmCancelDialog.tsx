@@ -1,13 +1,14 @@
 import { LuLoaderCircle } from 'react-icons/lu';
-import { Button } from '@/components/ui/button';
 import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 interface ConfirmCancelDialogProps {
 	open: boolean;
@@ -18,19 +19,21 @@ interface ConfirmCancelDialogProps {
 
 export function ConfirmCancelDialog({ open, onOpenChange, onConfirm, disabled = false }: ConfirmCancelDialogProps) {
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Les annuleren?</DialogTitle>
-					<DialogDescription>
+		<AlertDialog open={open} onOpenChange={onOpenChange}>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogTitle>Les annuleren?</AlertDialogTitle>
+					<AlertDialogDescription>
 						Weet je zeker dat je deze les wilt annuleren? De afspraak blijft zichtbaar in de agenda als
 						geannuleerd.
-					</DialogDescription>
-				</DialogHeader>
-				<DialogFooter>
-					<Button variant="outline" onClick={() => onOpenChange(false)} disabled={disabled}>
-						Nee
-					</Button>
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel asChild>
+						<Button variant="outline" disabled={disabled}>
+							Nee
+						</Button>
+					</AlertDialogCancel>
 					<Button
 						variant="destructive"
 						onClick={() => {
@@ -48,8 +51,8 @@ export function ConfirmCancelDialog({ open, onOpenChange, onConfirm, disabled = 
 							'Ja, les annuleren'
 						)}
 					</Button>
-				</DialogFooter>
-			</DialogContent>
-		</Dialog>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

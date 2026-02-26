@@ -3,17 +3,19 @@ import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TeacherFormDialog } from '@/components/teachers/TeacherFormDialog';
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogMedia,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { NAV_LABELS } from '@/config/nav-labels';
@@ -337,28 +339,30 @@ export default function Teachers() {
 
 			{/* Delete Teacher Dialog */}
 			{deleteDialog && (
-				<Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Docent verwijderen
-							</DialogTitle>
-							<DialogDescription>
-								Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher.profile)}</strong>{' '}
-								wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="py-4">
-							<p className="text-sm text-muted-foreground">
-								Alle gegevens van deze docent worden permanent verwijderd, inclusief beschikbaarheid en
-								lesovereenkomsten.
-							</p>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setDeleteDialog(null)} disabled={deletingTeacher}>
-								Annuleren
-							</Button>
+				<AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogMedia className="bg-destructive/10 text-destructive">
+								<LuTriangleAlert className="h-6 w-6" />
+							</AlertDialogMedia>
+							<AlertDialogTitle>Docent verwijderen</AlertDialogTitle>
+							<AlertDialogDescription asChild>
+								<div>
+									Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher.profile)}</strong>{' '}
+									wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+									<p className="mt-2 text-muted-foreground">
+										Alle gegevens van deze docent worden permanent verwijderd, inclusief
+										beschikbaarheid en lesovereenkomsten.
+									</p>
+								</div>
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel asChild>
+								<Button variant="outline" disabled={deletingTeacher}>
+									Annuleren
+								</Button>
+							</AlertDialogCancel>
 							<Button variant="destructive" onClick={confirmDelete} disabled={deletingTeacher}>
 								{deletingTeacher ? (
 									<>
@@ -369,9 +373,9 @@ export default function Teachers() {
 									'Verwijderen'
 								)}
 							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			)}
 		</div>
 	);

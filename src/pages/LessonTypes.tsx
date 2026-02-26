@@ -2,17 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogMedia,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
@@ -229,31 +231,29 @@ export default function LessonTypes() {
 
 			{/* Delete Lesson Type Dialog */}
 			{deleteDialog && (
-				<Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Lessoort verwijderen
-							</DialogTitle>
-							<DialogDescription>
-								Weet je zeker dat je <strong>{deleteDialog.lessonType?.name}</strong> wilt verwijderen?
-								Deze actie kan niet ongedaan worden gemaakt.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="py-4">
-							<p className="text-sm text-muted-foreground">
-								Alle gegevens van deze lessoort worden permanent verwijderd.
-							</p>
-						</div>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => setDeleteDialog(null)}
-								disabled={deletingLessonType}
-							>
-								Annuleren
-							</Button>
+				<AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogMedia className="bg-destructive/10 text-destructive">
+								<LuTriangleAlert className="h-6 w-6" />
+							</AlertDialogMedia>
+							<AlertDialogTitle>Lessoort verwijderen</AlertDialogTitle>
+							<AlertDialogDescription asChild>
+								<div>
+									Weet je zeker dat je <strong>{deleteDialog.lessonType?.name}</strong> wilt
+									verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+									<p className="mt-2 text-muted-foreground">
+										Alle gegevens van deze lessoort worden permanent verwijderd.
+									</p>
+								</div>
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel asChild>
+								<Button variant="outline" disabled={deletingLessonType}>
+									Annuleren
+								</Button>
+							</AlertDialogCancel>
 							<Button variant="destructive" onClick={confirmDelete} disabled={deletingLessonType}>
 								{deletingLessonType ? (
 									<>
@@ -264,9 +264,9 @@ export default function LessonTypes() {
 									'Verwijderen'
 								)}
 							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			)}
 		</div>
 	);
