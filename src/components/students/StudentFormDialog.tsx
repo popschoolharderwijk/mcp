@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +12,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { UserSelector } from '@/components/ui/user-selector';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -559,16 +559,9 @@ export function StudentFormDialog({ open, onOpenChange, onSuccess, student }: St
 					<Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
 						Annuleren
 					</Button>
-					<Button onClick={handleSubmit} disabled={saving}>
-						{saving ? (
-							<>
-								<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-								{savingLabel}
-							</>
-						) : (
-							submitLabel
-						)}
-					</Button>
+					<SubmitButton onClick={handleSubmit} loading={saving} loadingLabel={savingLabel}>
+						{submitLabel}
+					</SubmitButton>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

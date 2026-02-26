@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -139,11 +139,7 @@ export function TeacherProfileSection({
 	};
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <SectionSkeleton />;
 	}
 
 	return (
@@ -192,16 +188,9 @@ export function TeacherProfileSection({
 					/>
 				</div>
 				{canEdit && (
-					<Button onClick={handleSave} disabled={saving} size="sm">
-						{saving ? (
-							<>
-								<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-								Opslaan...
-							</>
-						) : (
-							'Opslaan'
-						)}
-					</Button>
+					<SubmitButton onClick={handleSave} loading={saving} size="sm" loadingLabel="Opslaan...">
+						Opslaan
+					</SubmitButton>
 				)}
 			</CardContent>
 		</Card>

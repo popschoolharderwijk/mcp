@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuPlus, LuX } from 'react-icons/lu';
+import { LuPlus, LuX } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -171,11 +173,7 @@ export function TeacherLessonTypesSection({ teacherId, canEdit }: TeacherLessonT
 	);
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <SectionSkeleton />;
 	}
 
 	return (
@@ -187,11 +185,13 @@ export function TeacherLessonTypesSection({ teacherId, canEdit }: TeacherLessonT
 						<PopoverTrigger asChild>
 							<Button variant="outline" size="sm" disabled={saving}>
 								{saving ? (
-									<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+									<LoadingSpinner size="md" label="Toevoegen" />
 								) : (
-									<LuPlus className="mr-2 h-4 w-4" />
+									<>
+										<LuPlus className="mr-2 h-4 w-4" />
+										Toevoegen
+									</>
 								)}
-								Toevoegen
 							</Button>
 						</PopoverTrigger>
 						<PopoverContent className="w-64 p-2" align="end">

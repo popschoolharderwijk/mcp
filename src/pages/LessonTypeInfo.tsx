@@ -2,22 +2,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import {
+	AlertDialog,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogMedia,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorIcon } from '@/components/ui/color-icon';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { IconPicker, resolveIconFromList } from '@/components/ui/icon-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageHeader } from '@/components/ui/page-header';
 import { PriceInput } from '@/components/ui/price-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MUSIC_ICONS } from '@/constants/icons';
@@ -524,22 +528,21 @@ export default function LessonTypeInfo() {
 	const submitLabel = isEditMode ? 'Opslaan' : 'Toevoegen';
 	const savingLabel = isEditMode ? 'Opslaan...' : 'Toevoegen...';
 
+	const lessonTypeTitle = form.name.trim() || (isEditMode ? (lessonType?.name ?? 'Lessoort') : 'Nieuwe lessoort');
+
 	return (
 		<div className="space-y-6">
-			{/* Header: icon + name (like Teacher Info) */}
-			<div className="flex items-center gap-4">
-				<ColorIcon
-					icon={form.icon ? resolveIconFromList(MUSIC_ICONS, form.icon) : undefined}
-					color={form.color || null}
-					size="lg"
-					className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8"
-				/>
-				<div>
-					<h1 className="text-3xl font-bold">
-						{form.name.trim() || (isEditMode ? (lessonType?.name ?? 'Lessoort') : 'Nieuwe lessoort')}
-					</h1>
-				</div>
-			</div>
+			<PageHeader
+				icon={
+					<ColorIcon
+						icon={form.icon ? resolveIconFromList(MUSIC_ICONS, form.icon) : undefined}
+						color={form.color || null}
+						size="lg"
+						className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8"
+					/>
+				}
+				title={lessonTypeTitle}
+			/>
 
 			{/* Two-column grid: both columns equal width (same as Teacher page) */}
 			<div className="grid gap-6 lg:grid-cols-2">
@@ -678,14 +681,14 @@ export default function LessonTypeInfo() {
 
 			{/* Delete option confirmation */}
 			{optionToDelete && (
-				<Dialog open={!!optionToDelete} onOpenChange={(open) => !open && setOptionToDelete(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Lesoptie verwijderen
-							</DialogTitle>
-							<DialogDescription>
+				<AlertDialog open={!!optionToDelete} onOpenChange={(open) => !open && setOptionToDelete(null)}>
+					<AlertDialogContent>
+						<AlertDialogHeader>
+							<AlertDialogMedia className="bg-destructive/10 text-destructive">
+								<LuTriangleAlert className="h-6 w-6" />
+							</AlertDialogMedia>
+							<AlertDialogTitle>Lesoptie verwijderen</AlertDialogTitle>
+							<AlertDialogDescription>
 								Weet je zeker dat je deze optie (
 								<strong>
 									{optionToDelete.duration_minutes} min, {frequencyLabels[optionToDelete.frequency]},{' '}
@@ -698,12 +701,14 @@ export default function LessonTypeInfo() {
 											})}
 								</strong>
 								) wilt verwijderen?
-							</DialogDescription>
-						</DialogHeader>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setOptionToDelete(null)} disabled={saving}>
-								Annuleren
-							</Button>
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter>
+							<AlertDialogCancel asChild>
+								<Button variant="outline" disabled={saving}>
+									Annuleren
+								</Button>
+							</AlertDialogCancel>
 							<Button variant="destructive" onClick={confirmRemoveOption} disabled={saving}>
 								{saving ? (
 									<>
@@ -714,9 +719,9 @@ export default function LessonTypeInfo() {
 									'Verwijderen'
 								)}
 							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+						</AlertDialogFooter>
+					</AlertDialogContent>
+				</AlertDialog>
 			)}
 
 			<Dialog open={!!editingOption} onOpenChange={(open) => !open && setEditingOption(null)}>

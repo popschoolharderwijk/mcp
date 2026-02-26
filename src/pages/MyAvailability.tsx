@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuLoaderCircle, LuPlus, LuTrash2 } from 'react-icons/lu';
+import { LuPlus, LuTrash2 } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -134,11 +136,7 @@ export default function MyAvailability() {
 	}
 
 	if (authLoading || loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-cards" />;
 	}
 
 	return (
@@ -190,7 +188,7 @@ export default function MyAvailability() {
 													disabled={deletingId === avail.id}
 												>
 													{deletingId === avail.id ? (
-														<LuLoaderCircle className="h-3 w-3 animate-spin" />
+														<LoadingSpinner size="sm" />
 													) : (
 														<LuTrash2 className="h-3 w-3" />
 													)}

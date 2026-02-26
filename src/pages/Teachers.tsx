@@ -1,33 +1,27 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { TeacherFormDialog } from '@/components/teachers/TeacherFormDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { getDisplayName, UserDisplay } from '@/components/ui/user-display';
 import { NAV_LABELS } from '@/config/nav-labels';
+import { useActiveLessonTypes } from '@/hooks/useActiveLessonTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
-import { type LessonType, useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
+import { useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateTimeShort } from '@/lib/date/date-format';
 import type { PaginatedTeachersResponse, TeacherWithProfileAndLessonTypes } from '@/types/teachers';
 
 export default function Teachers() {
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const navigate = useNavigate();
 	const [teachers, setTeachers] = useState<TeacherWithProfileAndLessonTypes[]>([]);
-	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [totalCount, setTotalCount] = useState(0);
 
@@ -63,31 +57,10 @@ export default function Teachers() {
 		open: boolean;
 		teacher: TeacherWithProfileAndLessonTypes | null;
 	}>({ open: false, teacher: null });
-	const [deletingTeacher, setDeletingTeacher] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
 	const hasAccess = isAdmin || isSiteAdmin;
-
-	// Load lesson types (only once)
-	useEffect(() => {
-		if (!hasAccess) return;
-
-		const loadLessonTypes = async () => {
-			const { data, error } = await supabase
-				.from('lesson_types')
-				.select('id, name, icon, color')
-				.eq('is_active', true)
-				.order('name', { ascending: true });
-
-			if (error) {
-				console.error('Error loading lesson types:', error);
-			} else {
-				setLessonTypes(data ?? []);
-			}
-		};
-
-		loadLessonTypes();
-	}, [hasAccess]);
+	const { lessonTypes } = useActiveLessonTypes(hasAccess);
 
 	// Load paginated teachers
 	const loadTeachers = useCallback(async () => {
@@ -219,15 +192,9 @@ export default function Teachers() {
 				key: 'created_at',
 				label: 'Aangemaakt',
 				sortable: true,
-				render: (t) => {
-					const date = new Date(t.created_at);
-					return (
-						<span className="text-muted-foreground">
-							{date.toLocaleDateString('nl-NL')}{' '}
-							{date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
-						</span>
-					);
-				},
+				render: (t) => (
+					<span className="text-muted-foreground">{formatDateTimeShort(new Date(t.created_at))}</span>
+				),
 				className: 'text-muted-foreground',
 			},
 		],
@@ -252,8 +219,6 @@ export default function Teachers() {
 	const confirmDelete = useCallback(async () => {
 		if (!deleteDialog?.teacher) return;
 
-		setDeletingTeacher(true);
-
 		try {
 			const { error } = await supabase.from('teachers').delete().eq('id', deleteDialog.teacher.id);
 
@@ -262,7 +227,7 @@ export default function Teachers() {
 				toast.error('Fout bij verwijderen docent', {
 					description: error.message,
 				});
-				return;
+				throw new Error(error.message);
 			}
 
 			toast.success('Docent verwijderd', {
@@ -277,8 +242,7 @@ export default function Teachers() {
 			toast.error('Fout bij verwijderen docent', {
 				description: 'Er is een netwerkfout opgetreden. Probeer het later opnieuw.',
 			});
-		} finally {
-			setDeletingTeacher(false);
+			throw error;
 		}
 	}, [deleteDialog, loadTeachers]);
 
@@ -337,41 +301,22 @@ export default function Teachers() {
 
 			{/* Delete Teacher Dialog */}
 			{deleteDialog && (
-				<Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Docent verwijderen
-							</DialogTitle>
-							<DialogDescription>
-								Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher.profile)}</strong>{' '}
-								wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="py-4">
-							<p className="text-sm text-muted-foreground">
+				<ConfirmDeleteDialog
+					open={deleteDialog.open}
+					onOpenChange={(open) => !open && setDeleteDialog(null)}
+					title="Docent verwijderen"
+					description={
+						<>
+							Weet je zeker dat je <strong>{getDisplayName(deleteDialog.teacher.profile)}</strong> wilt
+							verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+							<p className="mt-2 text-muted-foreground">
 								Alle gegevens van deze docent worden permanent verwijderd, inclusief beschikbaarheid en
 								lesovereenkomsten.
 							</p>
-						</div>
-						<DialogFooter>
-							<Button variant="outline" onClick={() => setDeleteDialog(null)} disabled={deletingTeacher}>
-								Annuleren
-							</Button>
-							<Button variant="destructive" onClick={confirmDelete} disabled={deletingTeacher}>
-								{deletingTeacher ? (
-									<>
-										<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-										Verwijderen...
-									</>
-								) : (
-									'Verwijderen'
-								)}
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+						</>
+					}
+					onConfirm={confirmDelete}
+				/>
 			)}
 		</div>
 	);

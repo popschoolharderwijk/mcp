@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { Navigate, useParams } from 'react-router-dom';
 import { TeacherAgendaView } from '@/components/teachers/TeacherAgendaView';
 import { TeacherAvailabilitySection } from '@/components/teachers/TeacherAvailabilitySection';
 import { TeacherLessonTypesSection } from '@/components/teachers/TeacherLessonTypesSection';
 import { TeacherProfileSection } from '@/components/teachers/TeacherProfileSection';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PageHeader } from '@/components/ui/page-header';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -125,11 +126,7 @@ export default function TeacherInfo() {
 
 	// Show loading while auth is loading or while we're determining targetTeacherId
 	if (authLoading || !targetTeacherId) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-tabs" />;
 	}
 
 	// Check access after we know targetTeacherId
@@ -139,11 +136,7 @@ export default function TeacherInfo() {
 
 	// Show loading while fetching teacher profile
 	if (loading || !teacherProfile) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-tabs" />;
 	}
 
 	const teacherName =
@@ -160,17 +153,18 @@ export default function TeacherInfo() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
-			<div className="flex items-center gap-4">
-				<Avatar className="h-16 w-16">
-					<AvatarImage src={teacherProfile.profile.avatar_url ?? undefined} alt={teacherName} />
-					<AvatarFallback className="bg-primary/10 text-primary text-xl">{teacherInitials}</AvatarFallback>
-				</Avatar>
-				<div>
-					<h1 className="text-3xl font-bold">{teacherName}</h1>
-					<p className="text-muted-foreground">{teacherProfile.profile.email}</p>
-				</div>
-			</div>
+			<PageHeader
+				icon={
+					<Avatar className="h-16 w-16">
+						<AvatarImage src={teacherProfile.profile.avatar_url ?? undefined} alt={teacherName} />
+						<AvatarFallback className="bg-primary/10 text-primary text-xl">
+							{teacherInitials}
+						</AvatarFallback>
+					</Avatar>
+				}
+				title={teacherName}
+				subtitle={teacherProfile.profile.email}
+			/>
 
 			{/* Tabs */}
 			<Tabs defaultValue="profile" className="space-y-2">

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,9 @@ import { ExistingOrNewUserSelect } from '@/components/ui/existing-or-new-user-se
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { type LessonTypeOption, LessonTypeSelector } from '@/components/ui/lesson-type-selector';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { SubmitButton } from '@/components/ui/submit-button';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -437,8 +438,7 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 						<Label className="text-sm">Lessoorten</Label>
 						{loadingLessonTypes ? (
 							<div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-								<LuLoaderCircle className="h-4 w-4 animate-spin" />
-								Lessoorten laden...
+								<LoadingSpinner size="md" label="Lessoorten laden..." />
 							</div>
 						) : lessonTypes.length === 0 ? (
 							<p className="text-sm text-muted-foreground py-2">Geen actieve lessoorten beschikbaar.</p>
@@ -457,20 +457,15 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 					<Button variant="outline" onClick={() => handleOpenChange(false)} disabled={saving}>
 						Annuleren
 					</Button>
-					<Button
+					<SubmitButton
 						variant="default"
 						onClick={handleSubmit}
-						disabled={isEditMode ? !form.email || saving : !selectedUserId || saving}
+						loading={saving}
+						loadingLabel={savingLabel}
+						disabled={isEditMode ? !form.email : !selectedUserId}
 					>
-						{saving ? (
-							<>
-								<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-								{savingLabel}
-							</>
-						) : (
-							submitLabel
-						)}
-					</Button>
+						{submitLabel}
+					</SubmitButton>
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>

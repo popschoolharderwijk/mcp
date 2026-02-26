@@ -1,18 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuPlus, LuTriangleAlert } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from '@/components/ui/dialog';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,7 +35,6 @@ export default function LessonTypes() {
 		open: boolean;
 		lessonType: LessonType | null;
 	} | null>(null);
-	const [deletingLessonType, setDeletingLessonType] = useState(false);
 
 	// Check access - only admin and site_admin can view this page
 	const hasAccess = isAdmin || isSiteAdmin;
@@ -156,8 +148,6 @@ export default function LessonTypes() {
 	const confirmDelete = useCallback(async () => {
 		if (!deleteDialog?.lessonType) return;
 
-		setDeletingLessonType(true);
-
 		try {
 			const { error } = await supabase.from('lesson_types').delete().eq('id', deleteDialog.lessonType.id);
 
@@ -171,7 +161,7 @@ export default function LessonTypes() {
 				toast.error('Fout bij verwijderen lessoort', {
 					description: translatedMessage,
 				});
-				return;
+				throw new Error(translatedMessage);
 			}
 
 			toast.success('Lessoort verwijderd', {
@@ -186,8 +176,7 @@ export default function LessonTypes() {
 			toast.error('Fout bij verwijderen lessoort', {
 				description: 'Er is een netwerkfout opgetreden. Probeer het later opnieuw.',
 			});
-		} finally {
-			setDeletingLessonType(false);
+			throw error;
 		}
 	}, [deleteDialog]);
 
@@ -229,44 +218,21 @@ export default function LessonTypes() {
 
 			{/* Delete Lesson Type Dialog */}
 			{deleteDialog && (
-				<Dialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle className="flex items-center gap-2">
-								<LuTriangleAlert className="h-5 w-5 text-destructive" />
-								Lessoort verwijderen
-							</DialogTitle>
-							<DialogDescription>
-								Weet je zeker dat je <strong>{deleteDialog.lessonType?.name}</strong> wilt verwijderen?
-								Deze actie kan niet ongedaan worden gemaakt.
-							</DialogDescription>
-						</DialogHeader>
-						<div className="py-4">
-							<p className="text-sm text-muted-foreground">
+				<ConfirmDeleteDialog
+					open={deleteDialog.open}
+					onOpenChange={(open) => !open && setDeleteDialog(null)}
+					title="Lessoort verwijderen"
+					description={
+						<>
+							Weet je zeker dat je <strong>{deleteDialog.lessonType?.name}</strong> wilt verwijderen? Deze
+							actie kan niet ongedaan worden gemaakt.
+							<p className="mt-2 text-muted-foreground">
 								Alle gegevens van deze lessoort worden permanent verwijderd.
 							</p>
-						</div>
-						<DialogFooter>
-							<Button
-								variant="outline"
-								onClick={() => setDeleteDialog(null)}
-								disabled={deletingLessonType}
-							>
-								Annuleren
-							</Button>
-							<Button variant="destructive" onClick={confirmDelete} disabled={deletingLessonType}>
-								{deletingLessonType ? (
-									<>
-										<LuLoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-										Verwijderen...
-									</>
-								) : (
-									'Verwijderen'
-								)}
-							</Button>
-						</DialogFooter>
-					</DialogContent>
-				</Dialog>
+						</>
+					}
+					onConfirm={confirmDelete}
+				/>
 			)}
 		</div>
 	);

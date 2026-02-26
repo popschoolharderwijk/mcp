@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { type LessonAgreement, LessonAgreementItem } from '@/components/students/LessonAgreementItem';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -193,11 +193,7 @@ export default function MyStudentProfile() {
 	}
 
 	if (authLoading || loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-cards" />;
 	}
 
 	if (!profile) {

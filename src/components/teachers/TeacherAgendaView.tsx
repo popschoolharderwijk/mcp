@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Calendar, type View } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
-import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { StudentInfoModal, type StudentInfoModalData } from '@/components/students/StudentInfoModal';
+import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { PostgresErrorCodes } from '@/integrations/supabase/errorcodes';
@@ -678,11 +678,7 @@ export function TeacherAgendaView({ teacherId, canEdit }: TeacherAgendaViewProps
 	}, []);
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <PageSkeleton variant="header-and-tabs" />;
 	}
 
 	return (

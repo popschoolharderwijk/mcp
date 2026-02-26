@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuLoaderCircle, LuPencil } from 'react-icons/lu';
+import { LuPencil } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +12,7 @@ import {
 	DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
@@ -229,11 +230,7 @@ export function TeacherAvailabilitySection({ teacherId, canEdit }: TeacherAvaila
 	const showTimeInBlock = (startTime: string, endTime: string) => blockDurationMinutes(startTime, endTime) > 30;
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center py-12">
-				<LuLoaderCircle className="h-8 w-8 animate-spin text-muted-foreground" />
-			</div>
-		);
+		return <SectionSkeleton />;
 	}
 
 	return (

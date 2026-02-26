@@ -31,6 +31,12 @@ export function formatDateLong(date: Date) {
 	return format(date, 'EEEE d MMMM', { locale: nl });
 }
 
+/** Short date + time for tables/lists (nl-NL style: dd-MM-yyyy HH:mm). */
+export function formatDateTimeShort(date: Date): string {
+	if (Number.isNaN(date.getTime())) return '-';
+	return format(date, 'dd-MM-yyyy HH:mm', { locale: nl });
+}
+
 export function dateDaysFromDate(date: Date, days: number) {
 	const d = new Date(date);
 	d.setDate(d.getDate() + days);
