@@ -14,13 +14,16 @@ When making an implementation plan, apply these constraints **in this order**:
 2. **UI components**
    - Use existing components from `./src/components/ui` first before introducing new ones.
 
-3. **Data overviews**
+3. **Icons**
+   - Use only icons from **react-icons** (e.g. `react-icons/lu`, `react-icons/fi`); do **not** use `lucide-react`.
+
+4. **Data overviews**
    - Use the DataTable component (`data-table.tsx`) for any data overview or table.
 
-4. **Date/time formatting**
+5. **Date/time formatting**
    - Use the helpers in `./src/lib/date` and `./src/lib/time` only; do not format dates/times inline.
 
-5. **Completion**
+6. **Completion**
    - Plan must include a final step: run `bun run check`, then `bun run ci`; fix any reported errors until `bun run ci` passes.
 
 ## Checklist for plans
@@ -29,6 +32,7 @@ Before implementing, the plan should satisfy:
 
 - [ ] Types: reused from `./src/types` or Supabase; new types only in `./src/types` when reused.
 - [ ] UI: existing components from `./src/components/ui` used where possible.
+- [ ] Icons: from `react-icons` only (e.g. `react-icons/lu`); not from `lucide-react`.
 - [ ] Data overviews: DataTable (`data-table.tsx`) used.
 - [ ] Date/time: helpers from `./src/lib/date` and `./src/lib/time` used.
 - [ ] Final step: `bun run check` then `bun run ci` until passing.
