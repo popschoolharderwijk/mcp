@@ -1,0 +1,34 @@
+---
+description: Constraints to apply when making an implementation plan
+alwaysApply: true
+---
+
+# Plan Constraints
+
+When making an implementation plan, apply these constraints **in this order**:
+
+1. **Types**
+   - Reuse types from `./src/types` or from `./src/integrations/supabase/types.ts` (Supabase generated types).
+   - Only add new types to `./src/types` if the type will be reused; base new types on Supabase types where applicable.
+
+2. **UI components**
+   - Use existing components from `./src/components/ui` first before introducing new ones.
+
+3. **Data overviews**
+   - Use the DataTable component (`data-table.tsx`) for any data overview or table.
+
+4. **Date/time formatting**
+   - Use the helpers in `./src/lib/date` and `./src/lib/time` only; do not format dates/times inline.
+
+5. **Completion**
+   - Plan must include a final step: run `bun run check`, then `bun run ci`; fix any reported errors until `bun run ci` passes.
+
+## Checklist for plans
+
+Before implementing, the plan should satisfy:
+
+- [ ] Types: reused from `./src/types` or Supabase; new types only in `./src/types` when reused.
+- [ ] UI: existing components from `./src/components/ui` used where possible.
+- [ ] Data overviews: DataTable (`data-table.tsx`) used.
+- [ ] Date/time: helpers from `./src/lib/date` and `./src/lib/time` used.
+- [ ] Final step: `bun run check` then `bun run ci` until passing.
