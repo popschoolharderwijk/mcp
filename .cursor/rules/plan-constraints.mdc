@@ -14,6 +14,7 @@ When making an implementation plan, apply these constraints **in this order**:
    - Only add new types to `./src/types` if the type will be reused; base new types on Supabase types where applicable.
 
 2. **Database / Supabase types**
+   - Do database changes **as much as possible in *existing* migrations**; avoid adding new migration files. We always do a database reset, so migration history is not preserved.
    - After **any database changes** (migrations, schema): the plan must include running **`bun run reset-db:dev`**. This resets the local database and regenerates the Supabase types.
    - **Never** edit `./src/integrations/supabase/types.ts` by hand; it is generated.
 
@@ -39,7 +40,7 @@ Before implementing, the plan should satisfy:
 
 - [ ] DRY: no duplication of logic, types, or UI; reuse existing components, types, and helpers.
 - [ ] Types: reused from `./src/types` or Supabase; new types only in `./src/types` when reused.
-- [ ] Database: if schema changed, plan includes `bun run reset-db:dev`; never edit `./src/integrations/supabase/types.ts` by hand.
+- [ ] Database: changes in *existing* migrations where possible (no new migration files); if schema changed, plan includes `bun run reset-db:dev`; never edit `./src/integrations/supabase/types.ts` by hand.
 - [ ] UI: plan includes reviewing `./src/components/ui` first; existing components used where possible; skeletons (PageSkeleton/SectionSkeleton) for larger loading; end pages have PageHeader at top and set breadcrumb suffix.
 - [ ] Icons: from `react-icons` only (e.g. `react-icons/lu`); not from `lucide-react`.
 - [ ] Data overviews: DataTable (`data-table.tsx`) used.
