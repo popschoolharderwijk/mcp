@@ -19,6 +19,16 @@ import { frequencyLabels } from '@/lib/frequencies';
 import { formatTime } from '@/lib/time/time-format';
 import type { AgreementTableRow, LessonFrequency } from '@/types/lesson-agreements';
 
+/** Sortable column keys for the agreements table (used for useServerTableState generic) */
+type AgreementSortColumn =
+	| 'student'
+	| 'teacher'
+	| 'created_at'
+	| 'dayAndTime'
+	| 'end_date'
+	| 'duration_minutes'
+	| 'status';
+
 export default function Agreements() {
 	const { isAdmin, isSiteAdmin, isStaff, isLoading: authLoading } = useAuth();
 	const navigate = useNavigate();
@@ -40,7 +50,7 @@ export default function Agreements() {
 		handleSortChange,
 		filters,
 		setFilters,
-	} = useServerTableState({
+	} = useServerTableState<AgreementSortColumn>({
 		storageKey: 'agreements',
 		initialSortColumn: 'created_at',
 		initialSortDirection: 'desc',

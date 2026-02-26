@@ -10,20 +10,7 @@ import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-
-interface LessonType {
-	id: string;
-	name: string;
-	description: string | null;
-	icon: string;
-	color: string;
-	cost_center: string | null;
-	is_group_lesson: boolean;
-	is_active: boolean;
-	created_at: string;
-	updated_at: string;
-	options_count?: number;
-}
+import type { LessonType } from '@/types/lesson-agreements';
 
 export default function LessonTypes() {
 	const navigate = useNavigate();

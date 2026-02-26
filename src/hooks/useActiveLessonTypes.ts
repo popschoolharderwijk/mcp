@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { LessonType } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
+import type { LessonTypeFilter } from '@/types/lesson-agreements';
 
 export function useActiveLessonTypes(enabled = true): {
-	lessonTypes: LessonType[];
+	lessonTypes: LessonTypeFilter[];
 	loading: boolean;
 	error: Error | null;
 } {
-	const [lessonTypes, setLessonTypes] = useState<LessonType[]>([]);
+	const [lessonTypes, setLessonTypes] = useState<LessonTypeFilter[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<Error | null>(null);
 
@@ -29,7 +29,7 @@ export function useActiveLessonTypes(enabled = true): {
 			setError(fetchError);
 			setLessonTypes([]);
 		} else {
-			setLessonTypes((data ?? []) as LessonType[]);
+			setLessonTypes((data ?? []) as LessonTypeFilter[]);
 		}
 		setLoading(false);
 	}, [enabled]);

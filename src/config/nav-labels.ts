@@ -14,7 +14,9 @@ export const NAV_LABELS = {
 	myStatistics: 'Mijn statistieken',
 	students: 'Leerlingen',
 	myStudents: 'Mijn leerlingen',
+	myTrialLessons: 'Proeflessen',
 	agreements: 'Overeenkomsten',
+	trialLessons: 'Proeflessen',
 } as const;
 
 export type NavLabelKey = keyof typeof NAV_LABELS;

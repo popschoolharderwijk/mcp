@@ -1,5 +1,6 @@
 import {
 	LuChevronLeft,
+	LuClipboardCheck,
 	LuClipboardList,
 	LuGraduationCap,
 	LuLayoutDashboard,
@@ -143,6 +144,12 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 									icon={LuUsers}
 									collapsed={collapsed}
 								/>
+								<NavItem
+									href="/teachers/my-trial-lessons"
+									label={NAV_LABELS.myTrialLessons}
+									icon={LuClipboardCheck}
+									collapsed={collapsed}
+								/>
 							</>
 						)}
 
@@ -182,6 +189,12 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								{adminNavItems.map((item) => (
 									<NavItem key={item.href} {...item} collapsed={collapsed} />
 								))}
+								<NavItem
+									href="/trial-lessons"
+									label={NAV_LABELS.trialLessons}
+									icon={LuClipboardCheck}
+									collapsed={collapsed}
+								/>
 							</>
 						)}
 					</nav>

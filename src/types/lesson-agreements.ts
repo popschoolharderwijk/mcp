@@ -8,6 +8,10 @@ import type { Database } from '@/integrations/supabase/types';
 // Base types from Supabase
 type LessonAgreementRow = Database['public']['Tables']['lesson_agreements']['Row'];
 export type LessonTypeRow = Database['public']['Tables']['lesson_types']['Row'];
+/** Lesson type row with optional computed options_count (e.g. from list views) */
+export type LessonType = LessonTypeRow & { options_count?: number };
+/** Minimal lesson type for filters/selects (id, name, icon, color) */
+export type LessonTypeFilter = Pick<LessonTypeRow, 'id' | 'name' | 'icon' | 'color'>;
 export type LessonTypeOptionRow = Database['public']['Tables']['lesson_type_options']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type LessonAppointmentDeviationRow = Database['public']['Tables']['lesson_appointment_deviations']['Row'];

@@ -88,6 +88,11 @@ CREATE POLICY lesson_types_select_all
 ON public.lesson_types FOR SELECT TO authenticated
 USING (true);
 
+-- Anon can view active lesson types only (for public /trial page dropdown)
+CREATE POLICY lesson_types_select_anon_active
+ON public.lesson_types FOR SELECT TO anon
+USING (is_active = true);
+
 -- Admins and site_admins can insert lesson types
 CREATE POLICY lesson_types_insert_admin
 ON public.lesson_types FOR INSERT TO authenticated
@@ -192,6 +197,7 @@ EXECUTE FUNCTION public.update_updated_at_column();
 -- actually control access. GRANT is required for RLS to work, but RLS is the
 -- security boundary. Without matching RLS policies, GRANT alone does NOT grant access.
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_types TO authenticated;
+GRANT SELECT ON public.lesson_types TO anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_type_options TO authenticated;
 
 -- =============================================================================

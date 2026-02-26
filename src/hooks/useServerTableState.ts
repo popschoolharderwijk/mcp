@@ -32,8 +32,8 @@ function writeStoredState(storageKey: string, state: StoredTableState): void {
 	}
 }
 
-interface UseServerTableStateOptions {
-	initialSortColumn?: string;
+interface UseServerTableStateOptions<K extends string = string> {
+	initialSortColumn?: K;
 	initialSortDirection?: SortDirection;
 	searchDebounceMs?: number;
 	initialRowsPerPage?: number;
@@ -43,7 +43,7 @@ interface UseServerTableStateOptions {
 	initialFilters?: Record<string, unknown>;
 }
 
-interface UseServerTableStateReturn {
+interface UseServerTableStateReturn<K extends string = string> {
 	// Search state
 	searchQuery: string;
 	debouncedSearchQuery: string;
@@ -56,9 +56,9 @@ interface UseServerTableStateReturn {
 	handleRowsPerPageChange: (newRowsPerPage: number) => void;
 
 	// Sorting state
-	sortColumn: string | null;
+	sortColumn: K | null;
 	sortDirection: SortDirection;
-	handleSortChange: (column: string | null, direction: SortDirection) => void;
+	handleSortChange: (column: K | null, direction: SortDirection) => void;
 
 	// Filter state (persisted when storageKey is set)
 	filters: Record<string, unknown>;
@@ -68,8 +68,11 @@ interface UseServerTableStateReturn {
 /**
  * Custom hook for managing server-side table state (pagination, sorting, search).
  * Handles debouncing, state synchronization, and automatic page reset on filter/sort changes.
+ * Pass the sort column key union as K so sortColumn and handleSortChange are type-safe.
  */
-export function useServerTableState(options: UseServerTableStateOptions = {}): UseServerTableStateReturn {
+export function useServerTableState<K extends string = string>(
+	options: UseServerTableStateOptions<K> = {},
+): UseServerTableStateReturn<K> {
 	const {
 		initialSortColumn,
 		initialSortDirection = 'asc',
@@ -96,9 +99,9 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 		const s = storageKey ? readStoredState(storageKey) : null;
 		return s?.rowsPerPage ?? initialRowsPerPage;
 	});
-	const [sortColumn, setSortColumn] = useState<string | null>(() => {
+	const [sortColumn, setSortColumn] = useState<K | null>(() => {
 		const s = storageKey ? readStoredState(storageKey) : null;
-		return s?.sortColumn ?? initialSortColumn ?? null;
+		return (s?.sortColumn ?? initialSortColumn ?? null) as K | null;
 	});
 	const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
 		const s = storageKey ? readStoredState(storageKey) : null;
@@ -138,7 +141,7 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 	}, []);
 
 	// Handle sort change
-	const handleSortChange = useCallback((column: string | null, direction: SortDirection) => {
+	const handleSortChange = useCallback((column: K | null, direction: SortDirection) => {
 		setSortColumn(column);
 		setSortDirection(direction);
 	}, []);
@@ -171,11 +174,11 @@ export function useServerTableState(options: UseServerTableStateOptions = {}): U
 		}
 	}, [debouncedSearchQuery, sortColumn, sortDirection, filters]);
 
-	// Persist to sessionStorage when storageKey is set
+	// Persist to sessionStorage when storageKey is set (sortColumn is string at runtime)
 	useEffect(() => {
 		if (!storageKey) return;
 		writeStoredState(storageKey, {
-			sortColumn,
+			sortColumn: sortColumn as string | null,
 			sortDirection,
 			currentPage,
 			rowsPerPage,

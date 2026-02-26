@@ -10,6 +10,8 @@ const { data: allStudents, error: studentsError } = await dbNoRLS.from('students
 const { data: allTeachers, error: teachersError } = await dbNoRLS.from('teachers').select('*');
 const { data: allLessonTypes, error: lessonTypesError } = await dbNoRLS.from('lesson_types').select('*');
 const { data: allLessonAgreements, error: agreementsError } = await dbNoRLS.from('lesson_agreements').select('*');
+const { data: allTrialLessonRequests, error: trialError } = await dbNoRLS.from('trial_lesson_requests').select('*');
+const { data: allPendingTrialRequests, error: pendingError } = await dbNoRLS.from('pending_trial_requests').select('*');
 
 if (profilesError || !allProfiles) {
 	throw new Error(`Failed to fetch profiles: ${profilesError?.message}`);
@@ -35,6 +37,14 @@ if (agreementsError || !allLessonAgreements) {
 	throw new Error(`Failed to fetch lesson agreements: ${agreementsError?.message}`);
 }
 
+if (trialError || !allTrialLessonRequests) {
+	throw new Error(`Failed to fetch trial lesson requests: ${trialError?.message}`);
+}
+
+if (pendingError || !allPendingTrialRequests) {
+	throw new Error(`Failed to fetch pending trial requests: ${pendingError?.message}`);
+}
+
 // Build lookup maps for fast access
 const profileByEmail = new Map(allProfiles.map((p) => [p.email, p]));
 const studentByUserId = new Map(allStudents.map((s) => [s.user_id, s]));
@@ -47,6 +57,8 @@ export const fixtures = {
 	allTeachers,
 	allLessonTypes,
 	allLessonAgreements,
+	allTrialLessonRequests,
+	allPendingTrialRequests,
 
 	userRoleMap: new Map(allUserRoles.map((ur) => [ur.user_id, ur.role])),
 
@@ -134,5 +146,14 @@ export const fixtures = {
 			throw new Error(`Lesson agreement not found for ${studentUser} with ${teacherUser}`);
 		}
 		return agreement.id;
+	},
+
+	requireTrialRequestId: (user: TestUser, status: string) => {
+		const userId = fixtures.requireUserId(user);
+		const row = allTrialLessonRequests.find((r) => r.user_id === userId && r.status === status);
+		if (!row) {
+			throw new Error(`Trial lesson request not found for ${user} with status ${status}`);
+		}
+		return row.id;
 	},
 };

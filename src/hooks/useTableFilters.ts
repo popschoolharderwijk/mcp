@@ -2,13 +2,7 @@ import { useMemo } from 'react';
 import type { QuickFilterGroup } from '@/components/ui/data-table';
 import { resolveIconFromList } from '@/components/ui/icon-picker';
 import { MUSIC_ICONS } from '@/constants/icons';
-
-export interface LessonType {
-	id: string;
-	name: string;
-	icon: string;
-	color: string;
-}
+import type { LessonTypeFilter } from '@/types/lesson-agreements';
 
 /**
  * Creates a status filter group for active/inactive filtering
@@ -37,7 +31,7 @@ export function useStatusFilter(
  * Creates a lesson type filter group
  */
 export function useLessonTypeFilter(
-	lessonTypes: LessonType[],
+	lessonTypes: LessonTypeFilter[],
 	selectedLessonTypeId: string | null,
 	setSelectedLessonTypeId: (value: string | null) => void,
 ): QuickFilterGroup | null {

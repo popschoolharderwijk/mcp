@@ -786,6 +786,113 @@ WHERE NOT EXISTS (
     AND la.start_date = agreement_data.start_date
 );
 
+-- -----------------------------------------------------------------------------
+-- TRIAL LESSON REQUESTS (trial lessons for users 60000000-0004 through 60000000-0008)
+-- -----------------------------------------------------------------------------
+-- user-004: requested (no proposal yet)
+-- user-005: proposed, neither confirmed
+-- user-006: proposed, teacher confirmed, student not
+-- user-007: confirmed (both confirmed)
+-- user-008: completed (for "Convert to lesson agreement")
+-- Teacher Alice (40000000-0001) is proposed_teacher for proposed/confirmed/completed.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.trial_lesson_requests (
+  user_id,
+  lesson_type_id,
+  status,
+  proposed_teacher_id,
+  proposed_day_of_week,
+  proposed_start_time,
+  proposed_start_date,
+  teacher_confirmed_at,
+  student_confirmed_at,
+  completed_at
+)
+SELECT * FROM (VALUES
+  (
+    (SELECT user_id FROM public.profiles WHERE email = 'user-004@test.nl' LIMIT 1),
+    (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+    'requested'::public.trial_lesson_status,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    (SELECT user_id FROM public.profiles WHERE email = 'user-005@test.nl' LIMIT 1),
+    (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+    'proposed'::public.trial_lesson_status,
+    (SELECT t.id FROM public.teachers t INNER JOIN public.profiles p ON p.user_id = t.user_id WHERE p.email = 'teacher-alice@test.nl' LIMIT 1),
+    1,
+    '14:00:00'::time,
+    (CURRENT_DATE + 7),
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    (SELECT user_id FROM public.profiles WHERE email = 'user-006@test.nl' LIMIT 1),
+    (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+    'proposed'::public.trial_lesson_status,
+    (SELECT t.id FROM public.teachers t INNER JOIN public.profiles p ON p.user_id = t.user_id WHERE p.email = 'teacher-alice@test.nl' LIMIT 1),
+    1,
+    '15:00:00'::time,
+    (CURRENT_DATE + 14),
+    now(),
+    NULL,
+    NULL
+  ),
+  (
+    (SELECT user_id FROM public.profiles WHERE email = 'user-007@test.nl' LIMIT 1),
+    (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+    'confirmed'::public.trial_lesson_status,
+    (SELECT t.id FROM public.teachers t INNER JOIN public.profiles p ON p.user_id = t.user_id WHERE p.email = 'teacher-alice@test.nl' LIMIT 1),
+    2,
+    '16:00:00'::time,
+    (CURRENT_DATE + 21),
+    now(),
+    now(),
+    NULL
+  ),
+  (
+    (SELECT user_id FROM public.profiles WHERE email = 'user-008@test.nl' LIMIT 1),
+    (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+    'completed'::public.trial_lesson_status,
+    (SELECT t.id FROM public.teachers t INNER JOIN public.profiles p ON p.user_id = t.user_id WHERE p.email = 'teacher-alice@test.nl' LIMIT 1),
+    3,
+    '17:00:00'::time,
+    (CURRENT_DATE - 7),
+    now(),
+    now(),
+    now()
+  )
+) AS v(user_id, lesson_type_id, status, proposed_teacher_id, proposed_day_of_week, proposed_start_time, proposed_start_date, teacher_confirmed_at, student_confirmed_at, completed_at)
+WHERE v.user_id IS NOT NULL
+  AND v.lesson_type_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM public.trial_lesson_requests tlr
+    WHERE tlr.user_id = v.user_id
+      AND tlr.lesson_type_id = v.lesson_type_id
+  );
+
+-- -----------------------------------------------------------------------------
+-- PENDING TRIAL REQUESTS (one row that will be cleaned up by cron after 24h)
+-- -----------------------------------------------------------------------------
+INSERT INTO public.pending_trial_requests (email, lesson_type_id, first_name, last_name, created_at)
+SELECT
+  'expired-pending@test.nl',
+  (SELECT id FROM public.lesson_types WHERE name = 'Gitaar' LIMIT 1),
+  'Expired',
+  'Pending',
+  now() - interval '24 hours'
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.pending_trial_requests
+  WHERE email = 'expired-pending@test.nl'
+);
+
 -- =============================================================================
 -- END SEED
 -- =============================================================================

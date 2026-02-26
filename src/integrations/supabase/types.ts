@@ -238,6 +238,41 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			pending_trial_requests: {
+				Row: {
+					created_at: string;
+					email: string;
+					first_name: string | null;
+					id: string;
+					last_name: string | null;
+					lesson_type_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					email: string;
+					first_name?: string | null;
+					id?: string;
+					last_name?: string | null;
+					lesson_type_id: string;
+				};
+				Update: {
+					created_at?: string;
+					email?: string;
+					first_name?: string | null;
+					id?: string;
+					last_name?: string | null;
+					lesson_type_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'pending_trial_requests_lesson_type_id_fkey';
+						columns: ['lesson_type_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			profiles: {
 				Row: {
 					avatar_url: string | null;
@@ -417,6 +452,69 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			trial_lesson_requests: {
+				Row: {
+					completed_at: string | null;
+					created_at: string;
+					id: string;
+					lesson_type_id: string;
+					proposed_day_of_week: number | null;
+					proposed_start_date: string | null;
+					proposed_start_time: string | null;
+					proposed_teacher_id: string | null;
+					status: Database['public']['Enums']['trial_lesson_status'];
+					student_confirmed_at: string | null;
+					teacher_confirmed_at: string | null;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					completed_at?: string | null;
+					created_at?: string;
+					id?: string;
+					lesson_type_id: string;
+					proposed_day_of_week?: number | null;
+					proposed_start_date?: string | null;
+					proposed_start_time?: string | null;
+					proposed_teacher_id?: string | null;
+					status?: Database['public']['Enums']['trial_lesson_status'];
+					student_confirmed_at?: string | null;
+					teacher_confirmed_at?: string | null;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					completed_at?: string | null;
+					created_at?: string;
+					id?: string;
+					lesson_type_id?: string;
+					proposed_day_of_week?: number | null;
+					proposed_start_date?: string | null;
+					proposed_start_time?: string | null;
+					proposed_teacher_id?: string | null;
+					status?: Database['public']['Enums']['trial_lesson_status'];
+					student_confirmed_at?: string | null;
+					teacher_confirmed_at?: string | null;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'trial_lesson_requests_lesson_type_id_fkey';
+						columns: ['lesson_type_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'trial_lesson_requests_proposed_teacher_id_fkey';
+						columns: ['proposed_teacher_id'];
+						isOneToOne: false;
+						referencedRelation: 'teachers';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			user_roles: {
 				Row: {
 					created_at: string;
@@ -494,6 +592,11 @@ export type Database = {
 				Returns: boolean;
 			};
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
+			claim_pending_trial_requests: { Args: never; Returns: number };
+			cleanup_expired_pending_trial_requests: {
+				Args: never;
+				Returns: undefined;
+			};
 			cleanup_student_if_no_agreements: {
 				Args: { _user_id: string };
 				Returns: undefined;
@@ -608,6 +711,7 @@ export type Database = {
 		Enums: {
 			app_role: 'site_admin' | 'admin' | 'staff';
 			lesson_frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+			trial_lesson_status: 'requested' | 'proposed' | 'confirmed' | 'completed';
 		};
 		CompositeTypes: {
 			[_ in never]: never;
@@ -732,6 +836,7 @@ export const Constants = {
 		Enums: {
 			app_role: ['site_admin', 'admin', 'staff'],
 			lesson_frequency: ['daily', 'weekly', 'biweekly', 'monthly'],
+			trial_lesson_status: ['requested', 'proposed', 'confirmed', 'completed'],
 		},
 	},
 } as const;

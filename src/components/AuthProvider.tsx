@@ -1,5 +1,5 @@
 import type { Session, User } from '@supabase/supabase-js';
-import { createContext, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from '@/lib/roles';
 
@@ -29,6 +29,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [role, setRole] = useState<AppRole | null>(null);
 	const [teacherId, setTeacherId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const claimTrialRequestedRef = useRef(false);
 
 	const fetchRole = useCallback(async (userId: string) => {
 		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
@@ -67,6 +68,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				Promise.all([fetchRole(session.user.id), fetchTeacher(session.user.id)]).finally(() => {
 					setIsLoading(false);
 				});
+				if (!claimTrialRequestedRef.current) {
+					claimTrialRequestedRef.current = true;
+					supabase.rpc('claim_pending_trial_requests').then(() => {});
+				}
 			} else {
 				setIsLoading(false);
 			}
@@ -82,7 +87,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				Promise.all([fetchRole(session.user.id), fetchTeacher(session.user.id)]).finally(() => {
 					setIsLoading(false);
 				});
+				// Claim pending trial requests once per session
+				if (!claimTrialRequestedRef.current) {
+					claimTrialRequestedRef.current = true;
+					supabase.rpc('claim_pending_trial_requests').then(() => {
+						// No need to update UI; trial list will be fetched when user visits relevant pages
+					});
+				}
 			} else {
+				claimTrialRequestedRef.current = false;
 				setRole(null);
 				setTeacherId(null);
 				setIsLoading(false);

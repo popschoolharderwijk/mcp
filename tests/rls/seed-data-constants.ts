@@ -99,6 +99,25 @@ export const TEACHERS = {
 } as const;
 
 /**
+ * Trial lesson requests (proeflessen) counts from seed
+ * user-004: 1 requested, user-005: 1 proposed, user-006: 1 proposed, user-007: 1 confirmed, user-008: 1 completed
+ * Teacher Alice is proposed_teacher for 005, 006, 007, 008
+ */
+export const TRIAL_LESSON_REQUESTS = {
+	TOTAL: 5,
+
+	// Per learner (user_id)
+	USER_004: 1, // status requested
+	USER_005: 1, // status proposed
+	USER_006: 1, // status proposed
+	USER_007: 1, // status confirmed
+	USER_008: 1, // status completed
+
+	// Per teacher (proposed_teacher_id) – Teacher Alice has 4 trials (005, 006, 007, 008)
+	TEACHER_ALICE: 4,
+} as const;
+
+/**
  * Users counts
  */
 export const USERS = {

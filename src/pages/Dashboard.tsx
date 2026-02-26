@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ActionRequired } from '@/components/dashboard/ActionRequired';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { StatsGrid } from '@/components/dashboard/StatsGrid';
 import { TeacherAvailability } from '@/components/dashboard/TeacherAvailability';
@@ -23,7 +22,6 @@ export default function Dashboard() {
 
 		loadFirstName();
 
-		// Listen for profile updates
 		const handleProfileUpdate = () => {
 			loadFirstName();
 		};
@@ -37,7 +35,6 @@ export default function Dashboard() {
 
 	return (
 		<div className="space-y-6 animate-in">
-			{/* Page header */}
 			<div>
 				<h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 				<p className="text-muted-foreground">
@@ -51,13 +48,8 @@ export default function Dashboard() {
 				</p>
 			</div>
 
-			{/* Action Required section */}
-			<ActionRequired />
-
-			{/* Stats Grid */}
 			<StatsGrid />
 
-			{/* Two-column section */}
 			<div className="grid gap-6 md:grid-cols-2">
 				<RecentStudents />
 				<TeacherAvailability />

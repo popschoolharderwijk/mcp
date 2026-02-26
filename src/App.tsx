@@ -15,12 +15,16 @@ import MyAvailability from './pages/MyAvailability';
 import MyStatistics from './pages/MyStatistics';
 import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
+import MyTrialLessons from './pages/MyTrialLessons';
 import NotFound from './pages/NotFound';
 import Settings from './pages/Settings';
 import Students from './pages/Students';
 import TeacherAvailability from './pages/TeacherAvailability';
 import TeacherInfo from './pages/TeacherInfo';
 import Teachers from './pages/Teachers';
+import Trial from './pages/Trial';
+import TrialLessons from './pages/TrialLessons';
+import TrialLessonsPropose from './pages/TrialLessonsPropose';
 import Users from './pages/Users';
 
 const App = () => (
@@ -34,6 +38,7 @@ const App = () => (
 			<AuthProvider>
 				<Routes>
 					<Route path="/login" element={<Login />} />
+					<Route path="/trial" element={<Trial />} />
 					<Route path="/auth/callback" element={<AuthCallback />} />
 
 					{/* Protected dashboard routes */}
@@ -58,7 +63,10 @@ const App = () => (
 						<Route path="/teachers/my-profile" element={<TeacherInfo />} />
 						<Route path="/teachers/my-availability" element={<MyAvailability />} />
 						<Route path="/teachers/my-statistics" element={<MyStatistics />} />
+						<Route path="/teachers/my-trial-lessons" element={<MyTrialLessons />} />
 						<Route path="/teachers/:id" element={<TeacherInfo />} />
+						<Route path="/trial-lessons" element={<TrialLessons />} />
+						<Route path="/trial-lessons/:id/propose" element={<TrialLessonsPropose />} />
 						<Route path="/students" element={<Students />} />
 						<Route path="/students/my-students" element={<MyStudents />} />
 						<Route path="/students/my-profile" element={<MyStudentProfile />} />

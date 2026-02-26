@@ -77,6 +77,15 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		items: [{ label: NAV_LABELS.teachers, href: '/teachers' }],
 	},
 	{ pattern: '/students', items: [{ label: NAV_LABELS.students, href: '/students' }] },
+	// Trial lessons (admin): list and propose subpage
+	{
+		pattern: /^\/trial-lessons\/[^/]+\/propose$/,
+		items: [
+			{ label: NAV_LABELS.trialLessons, href: '/trial-lessons' },
+			{ label: 'Voorstel doen', href: '' },
+		],
+	},
+	{ pattern: '/trial-lessons', items: [{ label: NAV_LABELS.trialLessons, href: '/trial-lessons' }] },
 	{
 		pattern: '/students/my-students',
 		items: [

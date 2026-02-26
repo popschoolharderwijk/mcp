@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmStepContent } from '@/components/agreements/ConfirmStepContent';
 import { PeriodStepContent } from '@/components/agreements/PeriodStepContent';
@@ -319,10 +319,13 @@ function useTeachers(step: WizardStep, lessonTypeId: string | null) {
 
 export default function AgreementWizard() {
 	const { id } = useParams<{ id: string }>();
+	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const { setBreadcrumbSuffix } = useBreadcrumb();
 
 	const isEditMode = id !== undefined && id !== 'new';
+	const prefillStudentUserId = searchParams.get('studentUserId');
+	const prefillLessonTypeId = searchParams.get('lessonTypeId');
 
 	// Data loading
 	const { agreement, loading: loadingAgreement, loadedPeriod } = useAgreement(id, isEditMode);
@@ -355,7 +358,64 @@ export default function AgreementWizard() {
 	const [highestStep, setHighestStep] = useState(0);
 	const [partialConfirmOpen, setPartialConfirmOpen] = useState(false);
 	const [saving, setSaving] = useState(false);
+	const [prefillLoaded, setPrefillLoaded] = useState(false);
 	const startDatePickerRef = useAutofocus<HTMLButtonElement>(step === WizardStep.Period);
+
+	// Prefill from trial conversion: /agreements/new?studentUserId=...&lessonTypeId=...
+	useEffect(() => {
+		if (isEditMode || loadingAgreement || !prefillStudentUserId) return;
+
+		let cancelled = false;
+		(async () => {
+			const { data: profile } = await supabase
+				.from('profiles')
+				.select('user_id, first_name, last_name, email, avatar_url')
+				.eq('user_id', prefillStudentUserId)
+				.single();
+
+			if (cancelled || !profile) return;
+
+			setForm((f) => ({
+				...f,
+				studentUserId: prefillStudentUserId,
+				user: {
+					user_id: profile.user_id,
+					first_name: profile.first_name,
+					last_name: profile.last_name,
+					email: profile.email ?? '',
+					avatar_url: profile.avatar_url,
+				},
+				lessonTypeId: prefillLessonTypeId || null,
+			}));
+
+			if (prefillLessonTypeId) {
+				const { data: opts } = await supabase
+					.from('lesson_type_options')
+					.select('duration_minutes, frequency, price_per_lesson')
+					.eq('lesson_type_id', prefillLessonTypeId)
+					.limit(1);
+				const first = opts?.[0];
+				if (first && !cancelled) {
+					setForm((f) => ({
+						...f,
+						selectedOptionSnapshot: {
+							duration_minutes: first.duration_minutes,
+							frequency: first.frequency as LessonFrequency,
+							price_per_lesson: Number(first.price_per_lesson),
+						},
+					}));
+				}
+			}
+			if (!cancelled) {
+				setStep(WizardStep.User);
+				setHighestStep(STEP_ORDER.indexOf(WizardStep.User));
+				setPrefillLoaded(true);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [isEditMode, loadingAgreement, prefillStudentUserId, prefillLessonTypeId]);
 
 	// Derived state
 	const teachers = useTeachers(step, form.lessonTypeId);
@@ -626,7 +686,7 @@ export default function AgreementWizard() {
 			<div className="mt-6 max-w-2xl rounded-lg border bg-card p-6">
 				{step === WizardStep.User && (
 					<UserStepContent
-						isEditMode={isEditMode}
+						isEditMode={isEditMode || (!!prefillStudentUserId && prefillLoaded)}
 						selectedStudentUserId={form.studentUserId}
 						selectedUser={form.user}
 						selectedLessonTypeId={form.lessonTypeId}

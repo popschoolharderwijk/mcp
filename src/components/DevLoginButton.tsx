@@ -60,6 +60,14 @@ const DEV_USERS: DevUser[] = [
 	{ email: 'user-003@test.nl', firstName: 'Tim' },
 ];
 
+const DEV_TRIAL_USERS: DevUser[] = [
+	{ email: 'user-004@test.nl', firstName: 'Sander', description: 'Proefles: aangevraagd' },
+	{ email: 'user-005@test.nl', firstName: 'Rick', description: 'Proefles: voorgesteld (nog niet bevestigd)' },
+	{ email: 'user-006@test.nl', firstName: 'Tom', description: 'Proefles: docent bevestigd, leerling nog niet' },
+	{ email: 'user-007@test.nl', firstName: 'Nick', description: 'Proefles: bevestigd' },
+	{ email: 'user-008@test.nl', firstName: 'Bas', description: 'Proefles: voltooid' },
+];
+
 // Roles with first names
 const DEV_ROLES: DevUser[] = [
 	{ email: 'site-admin@test.nl', firstName: 'Jan-Willem', description: 'Site Admin' },
@@ -99,7 +107,13 @@ function DevLoginButtonInner({
 
 			// Check if a dev user is stored
 			if (storedDevUser) {
-				const allDevEmails = [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS].map((u) => u.email);
+				const allDevEmails = [
+					...DEV_ROLES,
+					...DEV_TEACHERS,
+					...DEV_STUDENTS,
+					...DEV_USERS,
+					...DEV_TRIAL_USERS,
+				].map((u) => u.email);
 				if (allDevEmails.includes(storedDevUser)) {
 					return storedDevUser;
 				}
@@ -123,7 +137,9 @@ function DevLoginButtonInner({
 	// Save selected value to localStorage when it changes
 	useEffect(() => {
 		if (typeof window !== 'undefined') {
-			const allDevEmails = [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS].map((u) => u.email);
+			const allDevEmails = [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS, ...DEV_TRIAL_USERS].map(
+				(u) => u.email,
+			);
 			if (allDevEmails.includes(selectedValue)) {
 				// It's a dev user email
 				localStorage.setItem(STORAGE_KEY_DEV_USER, selectedValue);
@@ -150,7 +166,9 @@ function DevLoginButtonInner({
 		let email: string;
 
 		// Check if it's a dev user email
-		const allDevEmails = [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS].map((u) => u.email);
+		const allDevEmails = [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS, ...DEV_TRIAL_USERS].map(
+			(u) => u.email,
+		);
 		if (allDevEmails.includes(valueToUse)) {
 			email = valueToUse;
 		} else if (valueToUse in ROLE_EMAILS) {
@@ -251,6 +269,18 @@ function DevLoginButtonInner({
 						{DEV_STUDENTS.map((student) => (
 							<SelectItem key={student.email} value={student.email}>
 								{student.firstName} {student.description && `(${student.description})`}
+							</SelectItem>
+						))}
+
+						{/* Separator */}
+						<div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1 pt-2">
+							Proefles (portal preview)
+						</div>
+
+						{/* Trial users */}
+						{DEV_TRIAL_USERS.map((u) => (
+							<SelectItem key={u.email} value={u.email}>
+								{u.firstName} {u.description && `(${u.description})`}
 							</SelectItem>
 						))}
 
