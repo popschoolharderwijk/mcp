@@ -9,7 +9,7 @@ import {
 	subQuarters,
 } from 'date-fns';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { LuChartBar, LuClock, LuTrash2, LuUsers } from 'react-icons/lu';
+import { LuClock, LuTrash2, LuUsers } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { UserDisplay } from '@/components/ui/user-display';
 import { type UserOption, UsersSelect } from '@/components/ui/users-select';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import { MUSIC_ICONS } from '@/constants/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -449,12 +450,7 @@ export default function Reports() {
 	return (
 		<div className="space-y-6">
 			<PageHeader
-				icon={
-					<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
-						<LuChartBar className="h-8 w-8 text-primary" />
-					</div>
-				}
-				title="Rapportage"
+				title={NAV_LABELS.reports}
 				subtitle="Urenrapportage per docent, lessoort en leeftijdscategorie"
 			/>
 
@@ -542,7 +538,7 @@ export default function Reports() {
 				<Card>
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-							<LuChartBar className="h-4 w-4" />
+							<NAV_ICONS.reports className="h-4 w-4" />
 							Totaal lessen
 						</CardTitle>
 					</CardHeader>

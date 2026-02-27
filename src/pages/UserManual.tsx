@@ -1,18 +1,7 @@
-import {
-	LuBookOpen,
-	LuCalendar,
-	LuChartBar,
-	LuClipboardList,
-	LuGraduationCap,
-	LuLayoutDashboard,
-	LuMusic2,
-	LuShieldCheck,
-	LuUserCog,
-	LuUsers,
-} from 'react-icons/lu';
+import { LuCalendar, LuShieldCheck } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { PageHeader } from '@/components/ui/page-header';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
 interface ManualSection {
 	icon: React.ElementType;
@@ -23,7 +12,7 @@ interface ManualSection {
 
 const sections: ManualSection[] = [
 	{
-		icon: LuLayoutDashboard,
+		icon: NAV_ICONS.dashboard,
 		title: NAV_LABELS.dashboard,
 		description: 'Het dashboard biedt een overzicht van de belangrijkste gegevens en actiepunten.',
 		details: [
@@ -34,7 +23,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuUserCog,
+		icon: NAV_ICONS.users,
 		title: NAV_LABELS.users,
 		description: 'Beheer alle gebruikers van het systeem: medewerkers, docenten en leerlingen.',
 		details: [
@@ -45,7 +34,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuMusic2,
+		icon: NAV_ICONS.lessonTypes,
 		title: NAV_LABELS.lessonTypes,
 		description: 'Definieer de soorten lessen die de muziekschool aanbiedt.',
 		details: [
@@ -57,7 +46,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuGraduationCap,
+		icon: NAV_ICONS.teachers,
 		title: NAV_LABELS.teachers,
 		description: 'Beheer het docentenbestand en hun beschikbaarheid.',
 		details: [
@@ -69,7 +58,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuUsers,
+		icon: NAV_ICONS.students,
 		title: NAV_LABELS.students,
 		description: 'Beheer leerlinggegevens en bekijk hun lesovereenkomsten.',
 		details: [
@@ -80,7 +69,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuClipboardList,
+		icon: NAV_ICONS.agreements,
 		title: NAV_LABELS.agreements,
 		description: 'Lesovereenkomsten vastleggen en beheren via de overeenkomsten-wizard.',
 		details: [
@@ -105,7 +94,7 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: LuChartBar,
+		icon: NAV_ICONS.reports,
 		title: NAV_LABELS.reports,
 		description: 'Rapportages over lesuren, leeftijdscategorieën en BTW.',
 		details: [
@@ -132,20 +121,10 @@ const sections: ManualSection[] = [
 export default function UserManual() {
 	return (
 		<div className="space-y-6">
-			{/* Page header */}
-			<div className="flex items-center gap-3">
-				<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-					<LuBookOpen className="h-6 w-6" />
-				</div>
-				<div>
-					<h1 className="text-2xl font-bold tracking-tight">Gebruikershandleiding</h1>
-					<p className="text-sm text-muted-foreground">
-						Functionele beschrijving van alle onderdelen van POPschool
-					</p>
-				</div>
-			</div>
-
-			<Separator />
+			<PageHeader
+				title={NAV_LABELS.manual}
+				subtitle="Functionele beschrijving van alle onderdelen van POPschool"
+			/>
 
 			{/* Sections */}
 			<div className="grid gap-6">

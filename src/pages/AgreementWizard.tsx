@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LuClipboardList, LuTriangleAlert } from 'react-icons/lu';
+import { LuTriangleAlert } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmStepContent } from '@/components/agreements/ConfirmStepContent';
@@ -7,6 +7,7 @@ import { PeriodStepContent } from '@/components/agreements/PeriodStepContent';
 import { TeacherSlotStepContent } from '@/components/agreements/TeacherSlotStepContent';
 import { UserStepContent } from '@/components/agreements/UserStepContent';
 import { STEP_ORDER, WizardStep, WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
+import { NavPageHeaderIcon } from '@/components/layout/NavPageHeaderIcon';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
@@ -610,9 +611,7 @@ export default function AgreementWizard() {
 								</AvatarFallback>
 							</Avatar>
 						) : (
-							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
-								<LuClipboardList className="h-8 w-8 text-primary" />
-							</div>
+							<NavPageHeaderIcon name="agreements" />
 						)
 					}
 					title={isEditMode && agreement ? studentName : 'Nieuwe overeenkomst'}

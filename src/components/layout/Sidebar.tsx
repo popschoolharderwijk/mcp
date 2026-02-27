@@ -1,37 +1,25 @@
-import {
-	LuBookOpen,
-	LuChartBar,
-	LuChevronLeft,
-	LuClipboardList,
-	LuGraduationCap,
-	LuLayoutDashboard,
-	LuMusic,
-	LuMusic2,
-	LuShieldCheck,
-	LuUserCog,
-	LuUsers,
-} from 'react-icons/lu';
+import { LuChevronLeft, LuMusic, LuShieldCheck } from 'react-icons/lu';
 import { DevTools } from '@/components/DevTools';
 import { NavItem } from '@/components/layout/NavItem';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 // Single value for all vertical spacing between nav items (padding + gap)
 const NAV_GAP = '1rem';
 
-// Main nav items (labels from central config)
-const mainNavItems = [{ href: '/', label: NAV_LABELS.dashboard, icon: LuLayoutDashboard }];
+// Main nav items (labels and icons from central config)
+const mainNavItems = [{ href: '/', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard }];
 
 // Admin-only navigation items
 const adminNavItems = [
-	{ href: '/users', label: NAV_LABELS.users, icon: LuUserCog },
-	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: LuMusic2 },
-	{ href: '/agreements', label: NAV_LABELS.agreements, icon: LuClipboardList },
-	{ href: '/manual', label: NAV_LABELS.manual, icon: LuBookOpen },
+	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },
+	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: NAV_ICONS.lessonTypes },
+	{ href: '/agreements', label: NAV_LABELS.agreements, icon: NAV_ICONS.agreements },
+	{ href: '/manual', label: NAV_LABELS.manual, icon: NAV_ICONS.manual },
 ];
 
 interface SidebarProps {
@@ -114,7 +102,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								{!collapsed && (
 									<div className="mt-4 mb-2 px-3">
 										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-											<LuGraduationCap className="h-3.5 w-3.5" />
+											<NAV_ICONS.teachers className="h-3.5 w-3.5" />
 											<span>{NAV_LABELS.teachers}</span>
 										</div>
 									</div>
@@ -123,7 +111,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								<NavItem
 									href="/teachers"
 									label={NAV_LABELS.teachers}
-									icon={LuGraduationCap}
+									icon={NAV_ICONS.teachers}
 									collapsed={collapsed}
 								/>
 							</>
@@ -135,7 +123,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								{!collapsed && (
 									<div className="mt-4 mb-2 px-3">
 										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-											<LuUsers className="h-3.5 w-3.5" />
+											<NAV_ICONS.myStudents className="h-3.5 w-3.5" />
 											<span>Mijn Overzicht</span>
 										</div>
 									</div>
@@ -144,7 +132,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								<NavItem
 									href="/students/my-students"
 									label={NAV_LABELS.myStudents}
-									icon={LuUsers}
+									icon={NAV_ICONS.myStudents}
 									collapsed={collapsed}
 								/>
 							</>
@@ -156,7 +144,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								{!collapsed && (
 									<div className="mt-4 mb-2 px-3">
 										<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-											<LuUsers className="h-3.5 w-3.5" />
+											<NAV_ICONS.students className="h-3.5 w-3.5" />
 											<span>{NAV_LABELS.students}</span>
 										</div>
 									</div>
@@ -165,7 +153,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								<NavItem
 									href="/students"
 									label={NAV_LABELS.students}
-									icon={LuUsers}
+									icon={NAV_ICONS.students}
 									collapsed={collapsed}
 								/>
 							</>
@@ -178,7 +166,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 								<NavItem
 									href="/reports"
 									label={NAV_LABELS.reports}
-									icon={LuChartBar}
+									icon={NAV_ICONS.reports}
 									collapsed={collapsed}
 								/>
 							</>
