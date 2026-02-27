@@ -81,7 +81,7 @@ fixtures.requireAgreementId(student, teacher) // agreement.id op basis van stude
 
 #### Profiles (`profiles/`)
 
-- ✅ SELECT: eigen profiel zichtbaar, staff/admin/site_admin zien alles
+- ✅ SELECT: student ziet eigen profiel + profielen van eigen docenten; teacher ziet eigen profiel + profielen van eigen studenten; staff/admin/site_admin zien alles
 - ✅ UPDATE: eigen profiel aanpasbaar, staff/admin/site_admin kunnen alles aanpassen
 - ✅ INSERT/DELETE: geblokkeerd voor alle rollen (trigger/cascade)
 - ✅ Validatie: telefoonnummer (10 cijfers)
@@ -95,14 +95,14 @@ fixtures.requireAgreementId(student, teacher) // agreement.id op basis van stude
 
 #### Students (`students/`)
 
-- ✅ SELECT: studenten zien eigen record, staff/admin/site_admin zien alles
+- ✅ SELECT: studenten zien eigen record; docenten zien eigen studenten (via lesson_agreements); staff/admin/site_admin zien alles
 - ✅ INSERT: geblokkeerd voor alle rollen (automatisch aangemaakt via triggers op lesson_agreements)
 - ✅ UPDATE: alleen admin/site_admin
 - ✅ DELETE: geblokkeerd voor alle rollen, inclusief site_admin (automatisch verwijderd via triggers wanneer alle lesson_agreements zijn verwijderd)
 
 #### Teachers (`teachers/`)
 
-- ✅ SELECT: alleen staff/admin/site_admin
+- ✅ SELECT: studenten zien eigen docenten (via lesson_agreements); docenten zien eigen record; staff/admin/site_admin zien alles
 - ✅ INSERT/UPDATE/DELETE: alleen admin/site_admin
 
 #### Lesson Types (`lesson-types/`)
@@ -115,13 +115,6 @@ fixtures.requireAgreementId(student, teacher) // agreement.id op basis van stude
 - ✅ SELECT: studenten zien eigen overeenkomsten, docenten zien eigen overeenkomsten, staff/admin/site_admin zien alles
 - ✅ INSERT/UPDATE/DELETE: alleen staff/admin/site_admin
 - ✅ Studenten en docenten kunnen geen overeenkomsten wijzigen
-
-#### Teacher Viewed by Student (`teachers/teacher-viewed-by-student`)
-
-- ✅ Studenten zien alleen docenten waarmee zij een overeenkomst hebben
-- ✅ Alleen beperkte velden zichtbaar (naam, avatar, telefoon — geen email)
-- ✅ Docenten zien niets via de view
-- ✅ Staff/admin/site_admin zien alle docenten
 
 #### Users zonder rol (`users/`)
 

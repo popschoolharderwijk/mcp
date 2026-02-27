@@ -1,4 +1,6 @@
 import {
+	LuBookOpen,
+	LuChartBar,
 	LuChevronLeft,
 	LuClipboardList,
 	LuGraduationCap,
@@ -29,6 +31,7 @@ const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: LuUserCog },
 	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: LuMusic2 },
 	{ href: '/agreements', label: NAV_LABELS.agreements, icon: LuClipboardList },
+	{ href: '/manual', label: NAV_LABELS.manual, icon: LuBookOpen },
 ];
 
 interface SidebarProps {
@@ -41,6 +44,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 	const showAdminNav = isAdmin || isSiteAdmin;
 	const showTeachersNav = isAdmin || isSiteAdmin;
 	const showStudentsNav = isAdmin || isSiteAdmin || isStaff;
+	const showReportsNav = isAdmin || isSiteAdmin || isStaff || isTeacher;
 
 	return (
 		<TooltipProvider delayDuration={0}>
@@ -162,6 +166,19 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 									href="/students"
 									label={NAV_LABELS.students}
 									icon={LuUsers}
+									collapsed={collapsed}
+								/>
+							</>
+						)}
+
+						{/* Reports section */}
+						{showReportsNav && (
+							<>
+								{collapsed && <Separator />}
+								<NavItem
+									href="/reports"
+									label={NAV_LABELS.reports}
+									icon={LuChartBar}
 									collapsed={collapsed}
 								/>
 							</>

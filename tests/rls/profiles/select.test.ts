@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { LESSON_AGREEMENTS } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -45,23 +46,33 @@ describe('RLS: profiles SELECT', () => {
 		expect(data).toHaveLength(allProfiles.length);
 	});
 
-	it('teacher sees only own profile', async () => {
+	it('teacher sees own profile and profiles of their students', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 		const { data, error } = await db.from('profiles').select('*');
 
 		expect(error).toBeNull();
-		// Teacher sees only their own profile
-		expect(data).toHaveLength(1);
+		// Teacher sees own profile + profiles of students they have a lesson_agreement with (seed: Alice has students 009–020)
+		const teacherAliceStudentEmails = Array.from(
+			{ length: LESSON_AGREEMENTS.TEACHER_ALICE },
+			(_, i) => `student-${String(i + 9).padStart(3, '0')}@test.nl`,
+		);
+		const allowedEmails = new Set([TestUsers.TEACHER_ALICE, ...teacherAliceStudentEmails]);
 
-		const [profile] = data ?? [];
-		expect(profile?.email).toBe(TestUsers.TEACHER_ALICE);
+		expect(data).toHaveLength(allowedEmails.size);
+
+		for (const profile of data ?? []) {
+			expect(allowedEmails.has(profile.email)).toBe(true);
+		}
+		// No duplicates
+		const emails = (data ?? []).map((p) => p.email);
+		expect(emails).toHaveLength(new Set(emails).size);
 	});
 
 	it('user without role sees only own profile', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
+		const db = await createClientAs(TestUsers.USER_001);
 
-		// Query profiles - RLS should filter to only their row
+		// Query profiles - RLS should filter to only their row (no role = no teacher/student profile access)
 		const { data, error } = await db.from('profiles').select('*');
 
 		expect(error).toBeNull();
@@ -69,18 +80,19 @@ describe('RLS: profiles SELECT', () => {
 
 		const [user] = data ?? [];
 		expect(user).toBeDefined();
-		expect(user.email).toBe(TestUsers.STUDENT_001);
+		expect(user.email).toBe(TestUsers.USER_001);
 	});
 
-	it('user cannot see other user profiles', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
+	it('user sees only own profile (no other users)', async () => {
+		const db = await createClientAs(TestUsers.USER_001);
 
 		const { data, error } = await db.from('profiles').select('*');
 
 		expect(error).toBeNull();
+		expect(data).toHaveLength(1);
 
-		const emails = data?.map((p) => p.email) ?? [];
-		expect(emails).not.toContain(TestUsers.STUDENT_002);
-		expect(emails).not.toContain(TestUsers.TEACHER_ALICE);
+		const [profile] = data ?? [];
+		expect(profile).toBeDefined();
+		expect(profile.email).toBe(TestUsers.USER_001);
 	});
 });

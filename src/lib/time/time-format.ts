@@ -22,3 +22,14 @@ export function formatTimeFromDate(date: Date): string {
 export function normalizeTimeFromDate(date: Date): string {
 	return format(date, 'HH:mm:ss');
 }
+
+const DURATION_HOURS_FORMATTER = new Intl.NumberFormat('nl-NL', {
+	minimumFractionDigits: 2,
+	maximumFractionDigits: 2,
+});
+
+/** Format duration in minutes as decimal hours, 2 decimal places, Dutch (e.g. 690 → "11,50"). */
+export function formatDurationMinutes(minutes: number): string {
+	const hours = minutes / 60;
+	return DURATION_HOURS_FORMATTER.format(hours);
+}

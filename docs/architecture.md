@@ -25,7 +25,6 @@ students ──┐
 teachers ──┼── lesson_agreements (N:M via koppeltabel)
 lesson_types ─┘
 
-teachers + profiles ──► teacher_viewed_by_student (view, beperkte velden)
 ```
 
 ### Tabellen
@@ -43,7 +42,7 @@ teachers + profiles ──► teacher_viewed_by_student (view, beperkte velden)
 
 | View | Beschrijving |
 |------|-------------|
-| `teacher_viewed_by_student` | Beperkte docent-informatie voor leerlingen. Toont alleen: `teacher_id`, `first_name`, `last_name`, `avatar_url`, `phone_number`. Geen email of andere gevoelige velden. |
+| `view_profiles_with_display_name` | Profielgegevens met berekend `display_name`. Gebruikt `security_invoker = on` zodat RLS op profiles wordt gerespecteerd. |
 
 ---
 
@@ -77,32 +76,36 @@ De applicatie gebruikt een role-based access control (RBAC) systeem met de volge
 
 ### profiles
 
-| Actie | Eigen profiel | staff | admin | site_admin |
-|-------|:------------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ | ✅ (alle) | ✅ (alle) | ✅ (alle) |
-| UPDATE | ✅ | ✅ (alle) | ✅ (alle) | ✅ (alle) |
-| INSERT | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) |
-| DELETE | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) |
+| Actie | student | teacher | staff | admin | site_admin |
+|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
+| SELECT | ✅ (eigen + eigen docenten) | ✅ (eigen + eigen studenten) | ✅ (alle) | ✅ (alle) | ✅ (alle) |
+| UPDATE | ✅ (eigen) | ✅ (eigen) | ✅ (alle) | ✅ (alle) | ✅ (alle) |
+| INSERT | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) |
+| DELETE | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) |
+
+> **Eigen docenten** = profielen van teachers waarmee de student een lesson_agreement heeft. **Eigen studenten** = profielen van studenten waarmee de teacher een lesson_agreement heeft.
 
 ### students
 
 | Actie | student | teacher | staff | admin | site_admin |
 |-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen) | ❌ | ✅ | ✅ | ✅ |
+| SELECT | ✅ (eigen) | ✅ (eigen studenten) | ✅ | ✅ | ✅ |
 | INSERT | ❌ | ❌ | ❌ | ❌ | ❌ |
 | UPDATE | ❌ | ❌ | ❌ | ✅ | ✅ |
 | DELETE | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-> **Belangrijk**: Students kunnen **NIET** handmatig worden verwijderd, zelfs niet door site_admin. Students worden automatisch aangemaakt wanneer een lesovereenkomst wordt ingevoegd en automatisch verwijderd wanneer alle lesovereenkomsten zijn verwijderd. Om een student te verwijderen, moeten eerst alle bijbehorende lesovereenkomsten worden verwijderd.
+> **Eigen studenten** = studenten waarmee de teacher een lesson_agreement heeft. Students kunnen **NIET** handmatig worden verwijderd; ze worden automatisch aangemaakt/verwijderd via triggers op lesson_agreements.
 
 ### teachers
 
 | Actie | student | teacher | staff | admin | site_admin |
 |-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ❌ | ❌ | ✅ | ✅ | ✅ |
+| SELECT | ✅ (eigen docenten) | ✅ (eigen) | ✅ | ✅ | ✅ |
 | INSERT | ❌ | ❌ | ❌ | ✅ | ✅ |
 | UPDATE | ❌ | ❌ | ❌ | ✅ | ✅ |
 | DELETE | ❌ | ❌ | ❌ | ✅ | ✅ |
+
+> **Eigen docenten** = teachers waarmee de student een lesson_agreement heeft.
 
 ### lesson_types
 
@@ -124,14 +127,6 @@ De applicatie gebruikt een role-based access control (RBAC) systeem met de volge
 
 > **Eigen** = student ziet alleen overeenkomsten waar zij de student zijn; teacher ziet alleen overeenkomsten waar zij de docent zijn.
 
-### teacher_viewed_by_student (view)
-
-| Actie | student | teacher | staff | admin | site_admin |
-|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen docenten) | ❌ | ✅ (alle) | ✅ (alle) | ✅ (alle) |
-
-> **Eigen docenten** = alleen docenten waarmee de student een actieve lesovereenkomst heeft.
-
 ---
 
 ## Helper Functions
@@ -145,7 +140,6 @@ De applicatie gebruikt een role-based access control (RBAC) systeem met de volge
 | `is_teacher(uuid)` | Check of gebruiker een teacher-record heeft | `SECURITY DEFINER` |
 | `get_student_id(uuid)` | Haal student ID op basis van user_id | `SECURITY DEFINER` |
 | `get_teacher_id(uuid)` | Haal teacher ID op basis van user_id | `SECURITY DEFINER` |
-| `get_teachers_viewed_by_student()` | Retourneer beperkte docent-info voor huidige gebruiker | `SECURITY DEFINER` |
 | `can_delete_user(uuid, uuid)` | Check of gebruiker een ander account mag verwijderen | `SECURITY DEFINER` |
 
 > Alle helper functions gebruiken `SECURITY DEFINER` met vaste `search_path` om search_path injection te voorkomen. Toegang is beperkt tot `authenticated` gebruikers.
@@ -193,9 +187,7 @@ PostgreSQL views en functions kunnen `SECURITY DEFINER` gebruiken, wat betekent 
 
 ### Toegestane SECURITY DEFINER Views
 
-| View | Reden | Mitigaties |
-|------|-------|------------|
-| `teacher_viewed_by_student` | Studenten hebben geen directe RLS toegang tot teachers/profiles, maar moeten beperkte info van hun docenten kunnen zien | Expliciete `auth.uid()` checks, beperkte kolommen (geen email), verificatie dat caller een student is |
+Geen. Alle views gebruiken `security_invoker = on` of zijn verwijderd; studenten zien hun teachers via RLS op de `teachers`- en `profiles`-tabellen.
 
 ### Linter Warnings
 

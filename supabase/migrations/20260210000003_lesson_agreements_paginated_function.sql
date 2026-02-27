@@ -14,7 +14,7 @@ CREATE OR REPLACE FUNCTION get_lesson_agreements_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
@@ -53,8 +53,7 @@ BEGIN
   -- Using COUNT(*) OVER() to get total count in the same query pass
   v_query := format($q$
     WITH     agreement_base AS (
-      -- Get base agreement data with all related entities
-      -- Apply RLS: students see only their own, teachers see only where they are teacher, staff/admin see all
+      -- Get base agreement data. RLS on lesson_agreements filters by role (student=own, teacher=own, staff=all).
       SELECT
         la.id,
         la.student_user_id,
@@ -91,12 +90,6 @@ BEGIN
       INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
       INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
       WHERE (
-        -- RLS: students see only their own, teachers see only where they are teacher, staff/admin see all
-        la.student_user_id = (SELECT auth.uid())
-        OR la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
-        OR public.is_privileged((SELECT auth.uid()))
-      )
-      AND (
         -- Search filter (on student or teacher name/email)
         $1 IS NULL
         OR LOWER(sp.display_name) LIKE $1
@@ -195,4 +188,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_lesson_agreements_paginated TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with all related data (student profile, teacher profile, lesson type) in a single efficient query. Supports search, filtering by student, teacher, lesson type, and active status, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting.';
+COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with all related data (student profile, teacher profile, lesson type) in a single efficient query. SECURITY INVOKER: access enforced by RLS on lesson_agreements. Supports search, filtering by student, teacher, lesson type, and active status, and sorting.';

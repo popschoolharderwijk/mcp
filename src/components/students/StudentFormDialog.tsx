@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import {
 	Dialog,
 	DialogContent,
@@ -19,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface StudentData {
 	id: string;
 	user_id: string;
+	date_of_birth: string | null;
 	parent_name: string | null;
 	parent_email: string | null;
 	parent_phone_number: string | null;
@@ -48,6 +50,7 @@ interface FormState {
 	first_name: string;
 	last_name: string;
 	phone_number: string;
+	date_of_birth: string | null;
 	parent_name: string;
 	parent_email: string;
 	parent_phone_number: string;
@@ -63,6 +66,7 @@ const emptyForm: FormState = {
 	first_name: '',
 	last_name: '',
 	phone_number: '',
+	date_of_birth: null,
 	parent_name: '',
 	parent_email: '',
 	parent_phone_number: '',
@@ -91,6 +95,7 @@ export function StudentFormDialog({ open, onOpenChange, onSuccess, student }: St
 					first_name: student.profile.first_name ?? '',
 					last_name: student.profile.last_name ?? '',
 					phone_number: student.profile.phone_number ?? '',
+					date_of_birth: student.date_of_birth ?? null,
 					parent_name: student.parent_name ?? '',
 					parent_email: student.parent_email ?? '',
 					parent_phone_number: student.parent_phone_number ?? '',
@@ -255,6 +260,7 @@ export function StudentFormDialog({ open, onOpenChange, onSuccess, student }: St
 			.from('students')
 			.insert({
 				user_id: userId,
+				date_of_birth: form.date_of_birth || null,
 				parent_name: form.parent_name || null,
 				parent_email: form.parent_email || null,
 				parent_phone_number: form.parent_phone_number || null,
@@ -309,6 +315,7 @@ export function StudentFormDialog({ open, onOpenChange, onSuccess, student }: St
 		const { error: studentError } = await supabase
 			.from('students')
 			.update({
+				date_of_birth: form.date_of_birth || null,
 				parent_name: form.parent_name || null,
 				parent_email: form.parent_email || null,
 				parent_phone_number: form.parent_phone_number || null,
@@ -444,6 +451,14 @@ export function StudentFormDialog({ open, onOpenChange, onSuccess, student }: St
 									label="Telefoonnummer"
 									value={form.phone_number}
 									onChange={(value) => setForm({ ...form, phone_number: value })}
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<Label htmlFor="student-dob">Geboortedatum</Label>
+								<DatePicker
+									id="student-dob"
+									value={form.date_of_birth}
+									onChange={(value) => setForm({ ...form, date_of_birth: value })}
 								/>
 							</div>
 						</div>

@@ -125,15 +125,4 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 			expect(data).toHaveLength(0);
 		});
 	});
-
-	describe('teacher_viewed_by_student view', () => {
-		it('USER_A cannot see any teachers via view', async () => {
-			const db = await createClientAs(TestUsers.USER_001);
-
-			const { data, error } = await db.from('teacher_viewed_by_student').select('*');
-
-			expect(error).toBeNull();
-			expect(data).toHaveLength(0);
-		});
-	});
 });

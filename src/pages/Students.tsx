@@ -13,32 +13,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useServerTableState } from '@/hooks/useServerTableState';
 import { useLessonTypeFilter, useStatusFilter } from '@/hooks/useTableFilters';
 import { supabase } from '@/integrations/supabase/client';
+import type { StudentWithProfile as StudentWithProfileBase } from '@/types/students';
 
-interface StudentProfile {
-	email: string;
-	first_name: string | null;
-	last_name: string | null;
-	phone_number: string | null;
-	avatar_url: string | null;
-}
-
-interface StudentWithProfile {
-	id: string;
-	user_id: string;
-	parent_name: string | null;
-	parent_email: string | null;
-	parent_phone_number: string | null;
-	debtor_info_same_as_student: boolean;
-	debtor_name: string | null;
-	debtor_address: string | null;
-	debtor_postal_code: string | null;
-	debtor_city: string | null;
-	created_at: string;
-	updated_at: string;
-	profile: StudentProfile;
+/** Student row + profile from Supabase types, plus RPC-only fields from get_students_paginated */
+type StudentWithProfile = StudentWithProfileBase & {
 	active_agreements_count: number;
 	agreements: LessonAgreement[];
-}
+};
 
 interface PaginatedStudentsResponse {
 	data: StudentWithProfile[];

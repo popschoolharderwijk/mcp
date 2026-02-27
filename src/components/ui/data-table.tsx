@@ -333,17 +333,21 @@ export function DataTable<T>({
 			});
 	}, [quickFilter]);
 
+	const showTitleBlock = (title?.trim() ?? '') !== '' || description != null || headerActions != null;
+
 	return (
 		<Card>
 			<CardHeader>
 				<div className="space-y-4">
-					<div className="flex items-center justify-between">
-						<div>
-							<CardTitle>{title}</CardTitle>
-							{description && <CardDescription className="mt-1">{description}</CardDescription>}
+					{showTitleBlock && (
+						<div className="flex items-center justify-between">
+							<div>
+								<CardTitle>{title}</CardTitle>
+								{description && <CardDescription className="mt-1">{description}</CardDescription>}
+							</div>
+							{headerActions}
 						</div>
-						{headerActions}
-					</div>
+					)}
 					{onSearchChange && (
 						<div className="relative flex items-center gap-2">
 							<div className="relative flex-1">

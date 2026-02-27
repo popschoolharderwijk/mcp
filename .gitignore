@@ -14,8 +14,12 @@ dist-ssr
 
 *.tsbuildinfo
 
+# Lovable files
+.lovable
+
 # Use .development and .production
 .env
+
 
 # Editor directories and files
 .vscode/*
@@ -30,3 +34,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+

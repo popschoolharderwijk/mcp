@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { TEACHERS } from '../seed-data-constants';
+import { TEACHER_VIEWED_BY_STUDENT, TEACHERS } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 interface PaginatedTeachersResponse {
@@ -30,8 +30,8 @@ interface PaginatedTeachersResponse {
  *
  * Expected behavior:
  * - TEACHERS: Can see only their own teacher record
- * - STAFF/ADMIN/SITE_ADMIN: Can see all teachers
- * - STUDENTS: Cannot see any teachers (unless via special view)
+ * - STAFF/ADMIN/SITE_ADMIN: Can see all teachers (including profile.email)
+ * - STUDENTS: Can see only teachers they have a lesson_agreement with (all profile fields)
  * - OTHER USERS: Cannot see any teachers
  */
 describe('RLS: get_teachers_paginated', () => {
@@ -129,7 +129,7 @@ describe('RLS: get_teachers_paginated', () => {
 		expect(bobInResults).toBe(false);
 	});
 
-	it('student cannot see any teachers', async () => {
+	it('student sees only their own teachers (no others)', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 
 		const { data, error } = await db.rpc('get_teachers_paginated', {
@@ -141,8 +141,8 @@ describe('RLS: get_teachers_paginated', () => {
 		expect(data).not.toBeNull();
 		const result = data as unknown as PaginatedTeachersResponse;
 		expect(result.data).toBeInstanceOf(Array);
-		expect(result.total_count).toBe(0);
-		expect(result.data.length).toBe(0);
+		expect(result.total_count).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_001);
+		expect(result.data.length).toBe(TEACHER_VIEWED_BY_STUDENT.STUDENT_001);
 	});
 
 	it('user without role cannot see any teachers', async () => {

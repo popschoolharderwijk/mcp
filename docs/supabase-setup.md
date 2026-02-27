@@ -62,7 +62,10 @@ Dit past toe:
 - `20260207000000_students.sql` - Students tabel, helper functions (`is_student`, `get_student_id`)
 - `20260207000001_teachers.sql` - Teachers tabel, helper functions (`is_teacher`, `get_teacher_id`)
 - `20260207000002_lesson_agreements.sql` - Lesovereenkomsten tabel met RLS policies
-- `20260207000003_teacher_viewed_by_student.sql` - View voor beperkte docent-info voor leerlingen
+- `20260210000000_shared_pagination_views.sql` - Gedeelde paginatie-views
+- `20260210000001_students_paginated_function.sql` t/m `20260210000004_users_paginated_function.sql` - Paginated functies
+- `20260211000000_lesson_appointment_deviations.sql` - Lesson appointment deviations (agenda)
+- `20260226155756_reports.sql` - Reports tabel met RLS policies
 
 ---
 
