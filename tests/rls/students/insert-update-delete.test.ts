@@ -263,7 +263,7 @@ describe('RLS: students INSERT/DELETE via RPC - privileged user allowed', () => 
 		await dbNoRLS.from('students').delete().eq('user_id', user001UserId);
 	});
 
-	it('staff can delete another user\'s student via cleanup_student_if_no_agreements when student has no agreements', async () => {
+	it("staff can delete another user's student via cleanup_student_if_no_agreements when student has no agreements", async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
 
 		unwrap(await staffDb.rpc('ensure_student_exists', { _user_id: user001UserId }));
@@ -292,7 +292,7 @@ describe('RLS: students INSERT/DELETE via RPC - trigger-only, unprivileged user 
 		expect(error.message).toContain('Permission denied');
 	});
 
-	it('unprivileged user (student) cannot delete another user\'s student via cleanup_student_if_no_agreements', async () => {
+	it("unprivileged user (student) cannot delete another user's student via cleanup_student_if_no_agreements", async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
 		const studentDb = await createClientAs(TestUsers.STUDENT_001);
 

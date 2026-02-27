@@ -8,17 +8,13 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { parseISO } from 'date-fns';
+import { dateDaysFromDate, formatDateToDb, getDateForDayOfWeek } from '../../../src/lib/date/date-format';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { LessonAppointmentDeviationInsert } from '../../types';
 import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
-import {
-	dateDaysFromDate,
-	formatDateToDb,
-	getDateForDayOfWeek,
-} from '../../../src/lib/date/date-format';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -55,9 +51,7 @@ type AgreementTimeRow = {
 	start_date: string;
 };
 
-function assertIsAgreementTimeRow(
-	value: unknown,
-): asserts value is AgreementTimeRow {
+function assertIsAgreementTimeRow(value: unknown): asserts value is AgreementTimeRow {
 	if (
 		typeof value !== 'object' ||
 		value === null ||
@@ -82,7 +76,7 @@ describe('deviation RPCs require authorization', () => {
 
 		const agreementRow = requireAgreementTimeRow(
 			unwrap(
-			await dbNoRLS.from('lesson_agreements').select('start_time, start_date').eq('id', agreementId).single(),
+				await dbNoRLS.from('lesson_agreements').select('start_time, start_date').eq('id', agreementId).single(),
 			),
 		);
 		const weekDate = nextMonday();
@@ -100,9 +94,7 @@ describe('deviation RPCs require authorization', () => {
 			last_updated_by_user_id: staffUserId,
 		};
 
-		const [inserted] = unwrap(
-			await staffDb.from('lesson_appointment_deviations').insert(insertRow).select('id'),
-		);
+		const [inserted] = unwrap(await staffDb.from('lesson_appointment_deviations').insert(insertRow).select('id'));
 
 		const shiftResult = await studentDb.rpc('shift_recurring_deviation_to_next_week', {
 			p_deviation_id: inserted.id,
@@ -111,9 +103,7 @@ describe('deviation RPCs require authorization', () => {
 
 		const deviationIdsToDelete = [inserted.id, shiftResult.data].filter((id): id is string => id != null);
 		await Promise.all(
-			deviationIdsToDelete.map((id) =>
-				staffDb.from('lesson_appointment_deviations').delete().eq('id', id),
-			),
+			deviationIdsToDelete.map((id) => staffDb.from('lesson_appointment_deviations').delete().eq('id', id)),
 		);
 
 		const error = unwrapError(shiftResult);
@@ -126,7 +116,7 @@ describe('deviation RPCs require authorization', () => {
 
 		const agreementRow = requireAgreementTimeRow(
 			unwrap(
-			await dbNoRLS.from('lesson_agreements').select('start_time, start_date').eq('id', agreementId).single(),
+				await dbNoRLS.from('lesson_agreements').select('start_time, start_date').eq('id', agreementId).single(),
 			),
 		);
 		const weekDate = nextMonday();
@@ -144,9 +134,7 @@ describe('deviation RPCs require authorization', () => {
 			last_updated_by_user_id: staffUserId,
 		};
 
-		const [inserted] = unwrap(
-			await staffDb.from('lesson_appointment_deviations').insert(insertRow).select('id'),
-		);
+		const [inserted] = unwrap(await staffDb.from('lesson_appointment_deviations').insert(insertRow).select('id'));
 
 		const endResult = await studentDb.rpc('end_recurring_deviation_from_week', {
 			p_deviation_id: inserted.id,
@@ -160,7 +148,7 @@ describe('deviation RPCs require authorization', () => {
 		expect(error.message).toContain('Permission denied');
 	});
 
-	it('unprivileged user (student) cannot call ensure_week_shows_original_slot for another teacher\'s agreement', async () => {
+	it("unprivileged user (student) cannot call ensure_week_shows_original_slot for another teacher's agreement", async () => {
 		const studentDb = await createClientAs(TestUsers.STUDENT_001);
 
 		const weekDate = nextMonday();
