@@ -328,6 +328,13 @@ SET search_path = public
 SET row_security = off
 AS $$
 BEGIN
+  -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
+  IF auth.uid() IS NOT NULL
+     AND auth.uid() IS DISTINCT FROM _user_id
+     AND NOT public.is_privileged(auth.uid()) THEN
+    RAISE EXCEPTION 'Permission denied';
+  END IF;
+
   INSERT INTO public.students (user_id)
   VALUES (_user_id)
   ON CONFLICT (user_id) DO NOTHING;
@@ -378,6 +385,13 @@ SET search_path = public
 SET row_security = off
 AS $$
 BEGIN
+  -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
+  IF auth.uid() IS NOT NULL
+     AND auth.uid() IS DISTINCT FROM _user_id
+     AND NOT public.is_privileged(auth.uid()) THEN
+    RAISE EXCEPTION 'Permission denied';
+  END IF;
+
   -- Check if there are any lesson agreements remaining
   IF EXISTS (
     SELECT 1
