@@ -1,3 +1,18 @@
+import type { IconType } from 'react-icons';
+import {
+	LuBookOpen,
+	LuCalendar,
+	LuChartBar,
+	LuClipboardList,
+	LuGraduationCap,
+	LuLayoutDashboard,
+	LuMusic2,
+	LuSettings,
+	LuUser,
+	LuUserCog,
+	LuUsers,
+} from 'react-icons/lu';
+
 /**
  * Central source for navigation labels (sidebar, breadcrumbs, page titles, command palette).
  * Use these constants everywhere to stay DRY and avoid typos like "Lestypen" vs "Lessoorten".
@@ -20,3 +35,23 @@ export const NAV_LABELS = {
 } as const;
 
 export type NavLabelKey = keyof typeof NAV_LABELS;
+
+/**
+ * Icon per nav item (sidebar, PageHeader, etc.). Single source of truth for nav icons.
+ */
+export const NAV_ICONS: Record<NavLabelKey, IconType> = {
+	dashboard: LuLayoutDashboard,
+	users: LuUserCog,
+	lessonTypes: LuMusic2,
+	settings: LuSettings,
+	teachers: LuGraduationCap,
+	availability: LuCalendar,
+	myProfile: LuUser,
+	myAvailability: LuCalendar,
+	myStatistics: LuChartBar,
+	students: LuUsers,
+	myStudents: LuUsers,
+	agreements: LuClipboardList,
+	reports: LuChartBar,
+	manual: LuBookOpen,
+};
