@@ -36,6 +36,10 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'profiles_select',
 		// UPDATE policy - combined: users can update own profile, admins can update any
 		'profiles_update',
+		// SELECT - students can view profiles of teachers they have a lesson_agreement with
+		'students_select_teacher_profiles',
+		// SELECT - teachers can view profiles of students they have a lesson_agreement with
+		'teachers_select_student_profiles',
 		// Intentionally NO INSERT policy - profiles are only created via handle_new_user() trigger
 		// Intentionally NO DELETE policy - profiles are only removed via CASCADE from auth.users
 	],
@@ -62,6 +66,8 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 	teachers: [
 		// SELECT policy - combined: teachers can view own record, privileged users can view all
 		'teachers_select',
+		// SELECT - students can view teachers they have a lesson_agreement with
+		'students_select_own_teachers',
 		// INSERT policy
 		'teachers_insert_admin',
 		// UPDATE policy - combined: teachers can update own record, admins can update any
@@ -106,6 +112,8 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 	students: [
 		// SELECT policy - combined: students can view own record, privileged users can view all
 		'students_select',
+		// SELECT - teachers can view students they have a lesson_agreement with
+		'teachers_select_own_students',
 		// UPDATE policy - admin can update student notes
 		'students_update_admin',
 		// No INSERT/DELETE policies - students are managed via triggers
@@ -170,10 +178,7 @@ const EXPECTED_FUNCTIONS = [
 // 1. Documentation in the migration explaining WHY security_definer is needed
 // 2. Explicit authorization checks within the view/function (e.g., auth.uid() checks)
 // 3. Tests verifying that unauthorized users cannot access data through the view
-//
-// teacher_viewed_by_student: Intentional SECURITY DEFINER - uses explicit auth.uid() checks
-// and only exposes limited fields (name, avatar, phone). See migration 20260207000003.
-const ALLOWED_SECURITY_DEFINER_VIEWS = ['teacher_viewed_by_student'];
+const ALLOWED_SECURITY_DEFINER_VIEWS: string[] = [];
 
 describe('RLS Baseline Security Checks', () => {
 	describe('RLS is enabled on all tables', () => {

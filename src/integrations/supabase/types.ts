@@ -277,6 +277,7 @@ export type Database = {
 			students: {
 				Row: {
 					created_at: string;
+					date_of_birth: string | null;
 					debtor_address: string | null;
 					debtor_city: string | null;
 					debtor_info_same_as_student: boolean;
@@ -291,6 +292,7 @@ export type Database = {
 				};
 				Insert: {
 					created_at?: string;
+					date_of_birth?: string | null;
 					debtor_address?: string | null;
 					debtor_city?: string | null;
 					debtor_info_same_as_student?: boolean;
@@ -305,6 +307,7 @@ export type Database = {
 				};
 				Update: {
 					created_at?: string;
+					date_of_birth?: string | null;
 					debtor_address?: string | null;
 					debtor_city?: string | null;
 					debtor_info_same_as_student?: boolean;
@@ -437,16 +440,6 @@ export type Database = {
 			};
 		};
 		Views: {
-			teacher_viewed_by_student: {
-				Row: {
-					avatar_url: string | null;
-					first_name: string | null;
-					last_name: string | null;
-					phone_number: string | null;
-					teacher_id: string | null;
-				};
-				Relationships: [];
-			};
 			view_profiles_with_display_name: {
 				Row: {
 					avatar_url: string | null;
@@ -513,6 +506,14 @@ export type Database = {
 				Returns: string;
 			};
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
+			get_hours_report: {
+				Args: {
+					p_end_date: string;
+					p_start_date: string;
+					p_teacher_id?: string;
+				};
+				Returns: Json;
+			};
 			get_lesson_agreements_paginated: {
 				Args: {
 					p_is_active?: boolean;
@@ -568,16 +569,6 @@ export type Database = {
 					p_status?: string;
 				};
 				Returns: Json;
-			};
-			get_teachers_viewed_by_student: {
-				Args: never;
-				Returns: {
-					avatar_url: string;
-					first_name: string;
-					last_name: string;
-					phone_number: string;
-					teacher_id: string;
-				}[];
 			};
 			get_users_paginated: {
 				Args: {

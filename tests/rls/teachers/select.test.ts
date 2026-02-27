@@ -9,10 +9,13 @@ import { TestUsers } from '../test-users';
  * TEACHERS:
  * - Can view their own teacher record only
  *
+ * STUDENTS:
+ * - Can view teachers they have a lesson_agreement with
+ *
  * STAFF/ADMIN/SITE_ADMIN:
  * - Can view all teacher records
  *
- * OTHER USERS (students, users without role):
+ * USER WITHOUT ROLE:
  * - Cannot view any teacher records
  */
 describe('RLS: teachers SELECT', () => {
@@ -64,13 +67,19 @@ describe('RLS: teachers SELECT', () => {
 		expect(data).toHaveLength(0);
 	});
 
-	it('student cannot see any teachers', async () => {
+	it('student sees only teachers they have a lesson_agreement with', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
+		// STUDENT_001 has 1 agreement (Bandcoaching with Teacher Eve) → 1 teacher
+		const expectedTeacherCount = 1;
 
 		const { data, error } = await db.from('teachers').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(data).toHaveLength(expectedTeacherCount);
+		// Should be Teacher Eve (student 001's only teacher in seed)
+		const teacherUserIds = data?.map((t) => t.user_id) ?? [];
+		const eveUserId = fixtures.requireUserId(TestUsers.TEACHER_EVE);
+		expect(teacherUserIds).toContain(eveUserId);
 	});
 
 	it('user without role cannot see any teachers', async () => {

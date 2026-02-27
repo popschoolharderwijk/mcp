@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LuTriangleAlert } from 'react-icons/lu';
+import { LuClipboardList, LuTriangleAlert } from 'react-icons/lu';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ConfirmStepContent } from '@/components/agreements/ConfirmStepContent';
@@ -600,14 +600,20 @@ export default function AgreementWizard() {
 			<div className="mb-6">
 				<PageHeader
 					icon={
-						<Avatar className="h-16 w-16">
-							{isEditMode && agreement?.student.avatar_url && (
-								<AvatarImage src={agreement.student.avatar_url} alt={studentName ?? ''} />
-							)}
-							<AvatarFallback className="bg-primary/10 text-primary text-xl">
-								{studentInitials}
-							</AvatarFallback>
-						</Avatar>
+						isEditMode && agreement ? (
+							<Avatar className="h-16 w-16">
+								{agreement.student.avatar_url && (
+									<AvatarImage src={agreement.student.avatar_url} alt={studentName ?? ''} />
+								)}
+								<AvatarFallback className="bg-primary/10 text-primary text-xl">
+									{studentInitials}
+								</AvatarFallback>
+							</Avatar>
+						) : (
+							<div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10">
+								<LuClipboardList className="h-8 w-8 text-primary" />
+							</div>
+						)
 					}
 					title={isEditMode && agreement ? studentName : 'Nieuwe overeenkomst'}
 					subtitle={isEditMode && agreement ? agreement.lesson_type.name : undefined}

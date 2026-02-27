@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION get_teachers_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
@@ -48,8 +48,7 @@ BEGIN
   -- Using COUNT(*) OVER() to get total count in the same query pass
   v_query := format($q$
     WITH     teacher_base AS (
-      -- Get base teacher data with profile using shared view
-      -- Apply RLS: teachers can only see their own record, staff/admin can see all
+      -- Get base teacher data with profile. RLS on teachers filters by role (teacher=own, staff=all).
       SELECT
         t.id,
         t.user_id,
@@ -66,11 +65,6 @@ BEGIN
       FROM teachers t
       INNER JOIN view_profiles_with_display_name p ON t.user_id = p.user_id
       WHERE (
-        -- RLS: teachers can only see their own record, staff/admin can see all
-        t.user_id = (SELECT auth.uid())
-        OR public.is_privileged((SELECT auth.uid()))
-      )
-      AND (
         $1 IS NULL
         OR LOWER(p.email) LIKE $1
         OR LOWER(COALESCE(p.first_name, '')) LIKE $1
@@ -171,4 +165,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_teachers_paginated TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_teachers_paginated IS 'Get paginated teachers with all related data (profile, lesson types) in a single efficient query. Supports search, status filter, lesson type filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting.';
+COMMENT ON FUNCTION get_teachers_paginated IS 'Get paginated teachers with all related data (profile, lesson types) in a single efficient query. SECURITY INVOKER: access enforced by RLS on teachers. Supports search, status filter, lesson type filter, and sorting.';

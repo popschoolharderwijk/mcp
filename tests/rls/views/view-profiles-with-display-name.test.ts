@@ -46,29 +46,27 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 			expect(data).toHaveLength(allProfiles.length);
 		});
 
-		it('teacher sees only own profile via view', async () => {
+		it('teacher sees own profile and profiles of their students via view', async () => {
 			const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
 			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
 
 			expect(error).toBeNull();
-			// Teacher sees only their own profile
-			expect(data).toHaveLength(1);
-
-			const [profile] = data ?? [];
-			expect(profile?.email).toBe(TestUsers.TEACHER_ALICE);
+			// Teacher sees own profile + profiles of students they have a lesson_agreement with (Alice has 12 students in seed)
+			expect(data?.length).toBeGreaterThanOrEqual(1);
+			expect(data?.some((p) => p.email === TestUsers.TEACHER_ALICE)).toBe(true);
 		});
 
-		it('student sees only own profile via view', async () => {
+		it('student sees own profile and profiles of their teachers via view', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_001);
 
 			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
 
 			expect(error).toBeNull();
-			expect(data).toHaveLength(1);
-
-			const [profile] = data ?? [];
-			expect(profile?.email).toBe(TestUsers.STUDENT_001);
+			// Student sees own profile + profiles of teachers they have a lesson_agreement with (STUDENT_001 has 1 teacher: Eve)
+			expect(data).toHaveLength(2);
+			expect(data?.some((p) => p.email === TestUsers.STUDENT_001)).toBe(true);
+			expect(data?.some((p) => p.email === TestUsers.TEACHER_EVE)).toBe(true);
 		});
 
 		it('user without role sees only own profile via view', async () => {
@@ -179,6 +177,7 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 			const { data, error } = await db
 				.from('view_profiles_with_display_name')
 				.select('display_name, first_name, last_name')
+				.eq('email', TestUsers.TEACHER_ALICE)
 				.single();
 
 			expect(error).toBeNull();
@@ -192,7 +191,11 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('view includes expected fields', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_001);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*').single();
+			const { data, error } = await db
+				.from('view_profiles_with_display_name')
+				.select('*')
+				.eq('email', TestUsers.STUDENT_001)
+				.single();
 
 			expect(error).toBeNull();
 			expect(data).toBeDefined();

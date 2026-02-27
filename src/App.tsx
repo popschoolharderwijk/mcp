@@ -16,11 +16,13 @@ import MyStatistics from './pages/MyStatistics';
 import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
 import NotFound from './pages/NotFound';
+import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Students from './pages/Students';
 import TeacherAvailability from './pages/TeacherAvailability';
 import TeacherInfo from './pages/TeacherInfo';
 import Teachers from './pages/Teachers';
+import UserManual from './pages/UserManual';
 import Users from './pages/Users';
 
 const App = () => (
@@ -62,6 +64,8 @@ const App = () => (
 						<Route path="/students" element={<Students />} />
 						<Route path="/students/my-students" element={<MyStudents />} />
 						<Route path="/students/my-profile" element={<MyStudentProfile />} />
+						<Route path="/reports" element={<Reports />} />
+						<Route path="/manual" element={<UserManual />} />
 					</Route>
 
 					<Route path="*" element={<NotFound />} />

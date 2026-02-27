@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuMail, LuPhone, LuUser, LuUsers, LuWallet } from 'react-icons/lu';
+import { LuCalendar, LuMail, LuPhone, LuUser, LuUsers, LuWallet } from 'react-icons/lu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDbDateToUi } from '@/lib/date/date-format';
 import { cn } from '@/lib/utils';
 import type { FullStudentData, StudentInfoModalData } from '@/types/students';
 
@@ -104,7 +105,7 @@ export function StudentInfoModal({ open, onOpenChange, student }: StudentInfoMod
 			const { data: studentData, error: studentError } = await supabase
 				.from('students')
 				.select(
-					'id, user_id, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city, created_at, updated_at',
+					'id, user_id, date_of_birth, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city, created_at, updated_at',
 				)
 				.eq('user_id', student.user_id)
 				.single();
@@ -257,6 +258,13 @@ export function StudentInfoModal({ open, onOpenChange, student }: StudentInfoMod
 								value={formatPhoneNumber(profile.phone_number)}
 								icon={<LuPhone className="h-4 w-4" />}
 							/>
+							{fullData?.date_of_birth && (
+								<InfoRow
+									label="Geboortedatum"
+									value={formatDbDateToUi(fullData.date_of_birth)}
+									icon={<LuCalendar className="h-4 w-4" />}
+								/>
+							)}
 						</InfoSection>
 
 						{/* Parent/Guardian Information - only visible for privileged users */}

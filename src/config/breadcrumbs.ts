@@ -91,6 +91,8 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: NAV_LABELS.myProfile, href: '/students/my-profile' },
 		],
 	},
+	{ pattern: '/reports', items: [{ label: NAV_LABELS.reports, href: '/reports' }] },
+	{ pattern: '/manual', items: [{ label: NAV_LABELS.manual, href: '/manual' }] },
 ];
 
 function matchesPattern(pathname: string, pattern: PathPattern): boolean {

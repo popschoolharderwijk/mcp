@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { LESSON_AGREEMENTS } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -21,10 +22,13 @@ afterAll(async () => {
  * STUDENTS:
  * - Can view their own student record only
  *
+ * TEACHERS:
+ * - Can view student records for students they have a lesson_agreement with
+ *
  * STAFF/ADMIN/SITE_ADMIN:
  * - Can view all student records
  *
- * OTHER USERS (teachers, users without role):
+ * USERS WITHOUT ROLE:
  * - Cannot view any student records
  */
 describe('RLS: students SELECT', () => {
@@ -76,13 +80,23 @@ describe('RLS: students SELECT', () => {
 		expect(data).toHaveLength(0);
 	});
 
-	it('teacher cannot see any students', async () => {
+	it('teacher sees only their own students (with lesson_agreement)', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+
+		const aliceTeacherId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
+		const allowedStudentUserIds = new Set(
+			fixtures.allLessonAgreements.filter((a) => a.teacher_id === aliceTeacherId).map((a) => a.student_user_id),
+		);
 
 		const { data, error } = await db.from('students').select('*');
 
 		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(data).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE);
+		expect(data).toHaveLength(allowedStudentUserIds.size);
+
+		for (const row of data ?? []) {
+			expect(allowedStudentUserIds.has(row.user_id)).toBe(true);
+		}
 	});
 
 	it('user without role cannot see any students', async () => {

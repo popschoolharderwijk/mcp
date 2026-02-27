@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   parent_name TEXT,
   parent_email TEXT,
   parent_phone_number TEXT CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$')),
+  date_of_birth DATE,
 
   -- Debtor information (for billing)
   debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true,
@@ -175,6 +176,9 @@ BEGIN
     -- Add check constraint if column was just created
     ALTER TABLE public.students ADD CONSTRAINT students_parent_phone_number_check
       CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$'));
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'date_of_birth') THEN
+    ALTER TABLE public.students ADD COLUMN date_of_birth DATE;
   END IF;
 END $$;
 

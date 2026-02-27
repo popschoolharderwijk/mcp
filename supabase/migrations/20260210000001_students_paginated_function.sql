@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION get_students_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
@@ -21,11 +21,8 @@ DECLARE
   v_sort_column TEXT;
   v_sort_direction TEXT;
   v_query TEXT;
-  v_teacher_id UUID; -- Automatically determined from logged-in user
 BEGIN
-  -- Automatically get teacher_id from logged-in user (security: cannot be spoofed)
-  -- This ensures teachers can only see their own students
-  v_teacher_id := public.get_teacher_id((SELECT auth.uid()));
+  -- SECURITY INVOKER: RLS on students and lesson_agreements enforces access (student=own, teacher=own students, staff=all).
   -- Validate and whitelist sort column
   v_sort_column := CASE p_sort_column
     WHEN 'name' THEN 'display_name'
@@ -52,9 +49,7 @@ BEGIN
   -- Using COUNT(*) OVER() to get total count in the same query pass
   v_query := format($q$
     WITH     student_base AS (
-      -- Get base student data with profile using shared view
-      -- Apply RLS: students can only see their own record, staff/admin can see all
-      -- Teachers automatically see students via lesson_agreements (using their own teacher_id)
+      -- Get base student data with profile. RLS on students filters by role (student=own, teacher=own students, staff=all).
       SELECT DISTINCT
         s.id,
         s.user_id,
@@ -77,28 +72,6 @@ BEGIN
       FROM students s
       INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
       WHERE (
-        -- RLS: students can only see their own record
-        s.user_id = (SELECT auth.uid())
-        -- Staff/admin can see all students
-        OR public.is_privileged((SELECT auth.uid()))
-        -- Teachers can see students via lesson_agreements (automatically using their own teacher_id)
-        -- Security: v_teacher_id is automatically determined from logged-in user, cannot be spoofed
-        OR (
-          $4 IS NOT NULL
-          AND EXISTS (
-            SELECT 1 FROM lesson_agreements la
-            WHERE la.student_user_id = s.user_id
-            AND la.teacher_id = $4
-            -- Additional RLS check: ensure the logged-in user can see this agreement
-            AND (
-              la.student_user_id = (SELECT auth.uid())
-              OR la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
-              OR public.is_privileged((SELECT auth.uid()))
-            )
-          )
-        )
-      )
-      AND (
         $1 IS NULL
         OR LOWER(p.email) LIKE $1
         OR LOWER(COALESCE(p.first_name, '')) LIKE $1
@@ -135,12 +108,7 @@ BEGIN
       INNER JOIN teachers t ON la.teacher_id = t.id
       INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
       INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
-      WHERE (
-        -- Teacher filter: if user is a teacher, only get agreements for that teacher
-        -- If user is staff/admin, get all agreements (no filter)
-        $4 IS NULL
-        OR la.teacher_id = $4
-      )
+      -- RLS on lesson_agreements restricts to own (student) / own (teacher) / all (staff)
     ),
     student_active_counts AS (
       -- Count active agreements per student
@@ -172,16 +140,6 @@ BEGIN
           AND sa.lesson_type_id = $3
         )
       )
-      AND (
-        -- Teacher filter: if user is a teacher, only show students with agreements for that teacher
-        -- If user is staff/admin, show all students (no filter)
-        $4 IS NULL
-        OR EXISTS (
-          SELECT 1 FROM student_agreements sa
-          WHERE sa.student_user_id = sb.user_id
-          AND sa.teacher_id = $4
-        )
-      )
     ),
     paginated_students AS (
       -- Apply sorting, pagination, and get total count in one pass
@@ -190,8 +148,8 @@ BEGIN
         COUNT(*) OVER () AS total_count
       FROM filtered_students fs
       ORDER BY %I %s NULLS LAST, display_name ASC, id ASC
-      LIMIT $5
-      OFFSET $6
+      LIMIT $4
+      OFFSET $5
     ),
     students_with_agreements AS (
       SELECT
@@ -275,16 +233,14 @@ BEGIN
         '[]'::JSON
       ),
       'total_count', COALESCE((SELECT total_count FROM students_with_agreements LIMIT 1), 0),
-      'limit', $5,
-      'offset', $6
+      'limit', $4,
+      'offset', $5
     )
   $q$, v_sort_column, v_sort_direction);
 
-  -- Execute with parameters
-  -- Note: $4 is v_teacher_id (automatically determined, cannot be spoofed)
   EXECUTE v_query
   INTO v_result
-  USING v_search_pattern, p_status, p_lesson_type_id, v_teacher_id, p_limit, p_offset;
+  USING v_search_pattern, p_status, p_lesson_type_id, p_limit, p_offset;
 
   RETURN v_result;
 END;
@@ -294,4 +250,4 @@ $$;
 GRANT EXECUTE ON FUNCTION get_students_paginated TO authenticated;
 
 -- Add comment
-COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with all related data (profile, agreements, teachers, lesson types) in a single efficient query. Supports search, status filter, lesson type filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting. Teachers automatically see only their own students (teacher_id is determined from logged-in user, cannot be spoofed). Staff/admin see all students.';
+COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with all related data (profile, agreements, teachers, lesson types) in a single efficient query. Supports search, status filter, lesson type filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting. Access is enforced by RLS on students and lesson_agreements (student=own, teacher=own students, staff=all).';

@@ -257,9 +257,62 @@ EXECUTE FUNCTION public.check_teacher_lesson_type_has_no_agreements();
 -- =============================================================================
 -- SECTION 4.5: ADDITIONAL RLS POLICIES FOR STUDENTS TABLE
 -- =============================================================================
--- Note: No additional policies needed here.
--- Teachers cannot view students directly - they can only view lesson_agreements
--- which contain the student information they need.
+-- Teachers can view student records for students they have a lesson_agreement with.
+-- (students table and lesson_agreements must both exist; this migration runs after students.)
+
+CREATE POLICY teachers_select_own_students
+ON public.students FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.lesson_agreements la
+    WHERE la.student_user_id = students.user_id
+      AND la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
+  )
+);
+
+-- =============================================================================
+-- SECTION 4.6: ADDITIONAL RLS POLICIES FOR TEACHERS TABLE
+-- =============================================================================
+-- Students can view teacher records for teachers they have a lesson_agreement with.
+-- (Enables SECURITY INVOKER pagination/joins; protected fields like email can be limited later.)
+
+CREATE POLICY students_select_own_teachers
+ON public.teachers FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.lesson_agreements la
+    WHERE la.teacher_id = teachers.id
+      AND la.student_user_id = (SELECT auth.uid())
+  )
+);
+
+-- =============================================================================
+-- SECTION 4.7: ADDITIONAL RLS POLICIES FOR PROFILES TABLE
+-- =============================================================================
+-- Students: can view profiles of teachers they have a lesson_agreement with.
+-- Teachers: can view profiles of students they have a lesson_agreement with.
+-- (Required for get_lesson_agreements_paginated INVOKER: JOIN to teacher/student profile.)
+
+CREATE POLICY students_select_teacher_profiles
+ON public.profiles FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.teachers t
+    INNER JOIN public.lesson_agreements la ON la.teacher_id = t.id
+    WHERE t.user_id = profiles.user_id
+      AND la.student_user_id = (SELECT auth.uid())
+  )
+);
+
+CREATE POLICY teachers_select_student_profiles
+ON public.profiles FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.lesson_agreements la
+    WHERE la.student_user_id = profiles.user_id
+      AND la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
+  )
+);
 
 -- =============================================================================
 -- SECTION 5: HELPER FUNCTIONS FOR AUTOMATIC STUDENT MANAGEMENT
@@ -359,14 +412,13 @@ GRANT EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) TO authe
 ALTER FUNCTION public.cleanup_student_if_no_agreements(UUID) OWNER TO postgres;
 
 -- Helper function to get student status (active/inactive) based on lesson agreements
--- Uses SECURITY DEFINER to bypass RLS on lesson_agreements table
+-- SECURITY INVOKER: RLS on lesson_agreements restricts visible rows (student=own, teacher=own, staff=all).
 CREATE OR REPLACE FUNCTION public.get_student_status(_user_id UUID)
 RETURNS TEXT
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
   SELECT CASE
     WHEN EXISTS (
