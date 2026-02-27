@@ -417,6 +417,10 @@ BEGIN
     RAISE EXCEPTION 'Agreement not found for deviation: %', p_deviation_id;
   END IF;
 
+  IF public.get_teacher_id(auth.uid()) IS DISTINCT FROM v_agreement.teacher_id AND NOT public.is_privileged(auth.uid()) THEN
+    RAISE EXCEPTION 'Permission denied';
+  END IF;
+
   -- Calculate next week's dates
   v_next_week_original := v_dev.original_date + INTERVAL '7 days';
   v_next_week_actual := v_dev.actual_date + INTERVAL '7 days';
@@ -484,6 +488,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_dev RECORD;
+  v_agreement_teacher_id UUID;
   v_recurring_end_date DATE;
 BEGIN
   SELECT * INTO v_dev
@@ -492,6 +497,14 @@ BEGIN
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Deviation not found: %', p_deviation_id;
+  END IF;
+
+  SELECT teacher_id INTO v_agreement_teacher_id
+  FROM public.lesson_agreements
+  WHERE id = v_dev.lesson_agreement_id;
+
+  IF public.get_teacher_id(auth.uid()) IS DISTINCT FROM v_agreement_teacher_id AND NOT public.is_privileged(auth.uid()) THEN
+    RAISE EXCEPTION 'Permission denied';
   END IF;
 
   IF NOT v_dev.recurring THEN
@@ -542,6 +555,7 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE
   v_agreement_start_time TIME;
+  v_agreement_teacher_id UUID;
   v_row RECORD;
   v_recurring RECORD;
   v_has_recurring_for_week BOOLEAN;
@@ -551,12 +565,16 @@ BEGIN
     RAISE EXCEPTION 'p_scope must be only_this or this_and_future, got: %', p_scope;
   END IF;
 
-  SELECT start_time INTO v_agreement_start_time
+  SELECT start_time, teacher_id INTO v_agreement_start_time, v_agreement_teacher_id
   FROM public.lesson_agreements
   WHERE id = p_lesson_agreement_id;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Lesson agreement not found: %', p_lesson_agreement_id;
+  END IF;
+
+  IF public.get_teacher_id(auth.uid()) IS DISTINCT FROM v_agreement_teacher_id AND NOT public.is_privileged(auth.uid()) THEN
+    RAISE EXCEPTION 'Permission denied';
   END IF;
 
   -- Is there an exact deviation row for this week (agreement + original_date = p_week_date)?
