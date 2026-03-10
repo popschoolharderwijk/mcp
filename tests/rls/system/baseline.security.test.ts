@@ -160,7 +160,7 @@ const EXPECTED_FUNCTIONS = [
 	'is_staff',
 	'is_privileged',
 	'is_teacher',
-	'get_teacher_id',
+	'get_teacher_user_id',
 	// User lifecycle
 	'handle_new_user',
 	'handle_auth_user_email_update',

@@ -102,6 +102,10 @@ CREATE TABLE IF NOT EXISTS public.agenda_event_deviations (
   recurring BOOLEAN NOT NULL DEFAULT false,
   recurring_end_date DATE,
   reason TEXT,
+  title TEXT,
+  description TEXT,
+  color TEXT,
+  participant_ids UUID[],
   created_by UUID NOT NULL REFERENCES auth.users(id),
   updated_by UUID NOT NULL REFERENCES auth.users(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -138,12 +142,11 @@ DECLARE
   v_end_time TIME;
   v_agenda_event_id UUID;
 BEGIN
-  SELECT t.user_id INTO v_teacher_user_id
-  FROM public.teachers t
-  WHERE t.id = NEW.teacher_id;
+  -- teacher_user_id references teachers(user_id), so it is the teacher's user_id
+  v_teacher_user_id := NEW.teacher_user_id;
 
   IF v_teacher_user_id IS NULL THEN
-    RAISE EXCEPTION 'Teacher not found for teacher_id %', NEW.teacher_id;
+    RAISE EXCEPTION 'Teacher not found for teacher_user_id %', NEW.teacher_user_id;
   END IF;
 
   SELECT COALESCE(lt.name, 'Lesson') INTO v_title
@@ -394,7 +397,11 @@ AS $$
 BEGIN
   IF NEW.actual_date = NEW.original_date
      AND NEW.actual_start_time = NEW.original_start_time
-     AND NEW.is_cancelled = false THEN
+     AND NEW.is_cancelled = false
+     AND NEW.title IS NULL
+     AND NEW.description IS NULL
+     AND NEW.color IS NULL
+     AND (NEW.participant_ids IS NULL OR array_length(NEW.participant_ids, 1) IS NULL) THEN
     DELETE FROM public.agenda_event_deviations WHERE id = NEW.id;
     RETURN NULL;
   END IF;
@@ -423,6 +430,12 @@ BEGIN
     RETURN NEW;
   END IF;
   IF NEW.is_cancelled = true THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.title IS NOT NULL OR NEW.description IS NOT NULL OR NEW.color IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+  IF NEW.participant_ids IS NOT NULL AND array_length(NEW.participant_ids, 1) > 0 THEN
     RETURN NEW;
   END IF;
   SELECT EXISTS (

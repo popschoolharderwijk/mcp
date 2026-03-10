@@ -1,11 +1,14 @@
 /**
- * User/profile types derived from Supabase profiles table.
+ * User types derived from Supabase profiles table.
  * Use for display and selection (e.g. user select, created user callback).
  */
 
-import type { Database } from '@/integrations/supabase/types';
+import type { Tables } from '@/integrations/supabase/types';
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type ProfileRow = Tables<'profiles'>;
 
-/** Profile fields used for user display and selection (e.g. UsersSelect, onSuccess after creating a user). */
-export type UserProfileDisplay = Pick<ProfileRow, 'user_id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>;
+/** User – flat type for all display (phone_number can be null). */
+export type User = Pick<ProfileRow, 'user_id' | 'first_name' | 'last_name' | 'email' | 'avatar_url' | 'phone_number'>;
+
+/** Optional User for LEFT JOINs (formatUserName, buildParticipantInfo). */
+export type UserOptional = { [K in keyof User]?: User[K] | null };

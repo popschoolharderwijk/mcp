@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
 
   -- References
   student_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  teacher_id UUID NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
+  teacher_user_id UUID NOT NULL REFERENCES public.teachers(user_id) ON DELETE CASCADE,
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id),
 
   -- Snapshot of chosen option at creation time (duration/frequency/price; "a deal is a deal")
@@ -94,10 +94,8 @@ AS $$
 DECLARE
   teacher_user_id UUID;
 BEGIN
-  -- Get the user_id of the teacher
-  SELECT user_id INTO teacher_user_id
-  FROM public.teachers
-  WHERE id = NEW.teacher_id;
+  -- teacher_user_id references teachers(user_id), so it is the teacher's user_id
+  teacher_user_id := NEW.teacher_user_id;
 
   -- Check if teacher is trying to be their own student
   IF teacher_user_id = NEW.student_user_id THEN
@@ -123,7 +121,7 @@ EXECUTE FUNCTION public.check_teacher_not_own_student();
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_student_user_id ON public.lesson_agreements(student_user_id);
-CREATE INDEX IF NOT EXISTS idx_lesson_agreements_teacher_id ON public.lesson_agreements(teacher_id);
+CREATE INDEX IF NOT EXISTS idx_lesson_agreements_teacher_user_id ON public.lesson_agreements(teacher_user_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_lesson_type_id ON public.lesson_agreements(lesson_type_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_is_active ON public.lesson_agreements(is_active);
 
@@ -132,7 +130,7 @@ COMMENT ON TABLE public.lesson_agreements IS 'Lesson agreements define scheduled
 
 COMMENT ON COLUMN public.lesson_agreements.id IS 'Primary key, UUID generated automatically';
 COMMENT ON COLUMN public.lesson_agreements.student_user_id IS 'Reference to auth.users(id). Note: No FK to students table - students are created automatically via triggers when the first lesson_agreement is inserted. This is a deliberate design choice where students are a consequence of agreements, not a prerequisite.';
-COMMENT ON COLUMN public.lesson_agreements.teacher_id IS 'Reference to teachers table. CASCADE delete: if teacher is deleted, all their lesson agreements are deleted.';
+COMMENT ON COLUMN public.lesson_agreements.teacher_user_id IS 'Reference to teachers table. CASCADE delete: if teacher is deleted, all their lesson agreements are deleted.';
 COMMENT ON COLUMN public.lesson_agreements.lesson_type_id IS 'Reference to lesson_types table (e.g., Guitar, Piano, etc.)';
 COMMENT ON COLUMN public.lesson_agreements.duration_minutes IS 'Snapshot: lesson duration in minutes at agreement creation (from chosen lesson_type_option).';
 COMMENT ON COLUMN public.lesson_agreements.frequency IS 'Snapshot: lesson frequency at agreement creation (from chosen lesson_type_option).';
@@ -183,7 +181,7 @@ CREATE POLICY lesson_agreements_select
 ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
   student_user_id = (select auth.uid())
-  OR teacher_id = public.get_teacher_id((select auth.uid()))
+  OR teacher_user_id = public.get_teacher_user_id((select auth.uid()))
   OR public.is_privileged((select auth.uid()))
 );
 
@@ -232,7 +230,7 @@ BEGIN
   IF EXISTS (
     SELECT 1
     FROM public.lesson_agreements
-    WHERE teacher_id = OLD.teacher_id
+    WHERE teacher_user_id = OLD.teacher_user_id
       AND lesson_type_id = OLD.lesson_type_id
   ) THEN
     RAISE EXCEPTION 'Cannot remove lesson type from teacher: there are existing lesson agreements using this teacher and lesson type combination'
@@ -266,7 +264,7 @@ USING (
   EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = students.user_id
-      AND la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
+      AND la.teacher_user_id = public.get_teacher_user_id((SELECT auth.uid()))
   )
 );
 
@@ -281,7 +279,7 @@ ON public.teachers FOR SELECT TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM public.lesson_agreements la
-    WHERE la.teacher_id = teachers.id
+    WHERE la.teacher_user_id = teachers.user_id
       AND la.student_user_id = (SELECT auth.uid())
   )
 );
@@ -298,7 +296,7 @@ ON public.profiles FOR SELECT TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM public.teachers t
-    INNER JOIN public.lesson_agreements la ON la.teacher_id = t.id
+    INNER JOIN public.lesson_agreements la ON la.teacher_user_id = t.user_id
     WHERE t.user_id = profiles.user_id
       AND la.student_user_id = (SELECT auth.uid())
   )
@@ -310,7 +308,7 @@ USING (
   EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = profiles.user_id
-      AND la.teacher_id = public.get_teacher_id((SELECT auth.uid()))
+      AND la.teacher_user_id = public.get_teacher_user_id((SELECT auth.uid()))
   )
 );
 
