@@ -47,9 +47,7 @@ describe('RLS: anonymous user – profiles', () => {
 
 	it('anon cannot delete profiles', async () => {
 		const db = createClientAnon();
-		const error = unwrapError(
-			await db.from('profiles').delete().eq('email', TestUsers.STUDENT_001).select(),
-		);
+		const error = unwrapError(await db.from('profiles').delete().eq('email', TestUsers.STUDENT_001).select());
 		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 });
