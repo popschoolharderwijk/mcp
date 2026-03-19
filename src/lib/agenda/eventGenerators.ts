@@ -50,9 +50,7 @@ function getRecurringDeviationForDate(
 	const list = recurringByEventId.get(eventId);
 	if (!list?.length) return undefined;
 	return list.find(
-		(d) =>
-			d.original_date <= occurrenceDateStr &&
-			(!d.recurring_end_date || d.recurring_end_date >= occurrenceDateStr),
+		(d) => d.original_date <= occurrenceDateStr && (!d.spans_end_date || d.spans_end_date >= occurrenceDateStr),
 	);
 }
 
@@ -152,7 +150,7 @@ export function generateRecurringEvents(
 								originalDate: deviation.original_date,
 								originalStartTime: deviation.original_start_time,
 								reason: deviation.reason,
-								isRecurring: !!deviation.recurring,
+								isRecurring: !!deviation.spans_future_occurrences,
 							},
 						});
 						addInterval(currentLessonDate, frequency);
@@ -280,6 +278,7 @@ export function generateAgendaEvents(
 	const events: CalendarEvent[] = [];
 
 	for (const ev of agendaEvents) {
+		const sourceType = ev.source_type;
 		const eventDeviations = deviationsByEventId.get(ev.id);
 		const recurringList = recurringByEventId?.get(ev.id) ?? [];
 
@@ -307,7 +306,7 @@ export function generateAgendaEvents(
 						isDeviation: false,
 						isCancelled: false,
 						isGroupLesson: false,
-						sourceType: ev.source_type as 'manual' | 'lesson_agreement',
+						sourceType,
 						color: ev.color ?? null,
 						isLesson: isLessonEvent,
 					},
@@ -350,7 +349,7 @@ export function generateAgendaEvents(
 			const dateStr = formatDateToDb(current);
 			const deviation = eventDeviations?.get(dateStr);
 			const recurringDeviation = recurringList.find(
-				(d) => d.original_date <= dateStr && (!d.recurring_end_date || d.recurring_end_date >= dateStr),
+				(d) => d.original_date <= dateStr && (!d.spans_end_date || d.spans_end_date >= dateStr),
 			);
 
 			const effective = deviation ?? recurringDeviation;
@@ -370,7 +369,7 @@ export function generateAgendaEvents(
 			} else if (effective) {
 				const [h, m] = effective.actual_start_time.split(':').map(Number);
 				let actualDate: Date;
-				if (effective.recurring) {
+				if (effective.spans_future_occurrences) {
 					const originalDate = new Date(effective.original_date + 'T12:00:00');
 					const occurrenceIndex = getOccurrenceIndex(originalDate, current, frequency);
 					actualDate = addNIntervals(
@@ -394,8 +393,10 @@ export function generateAgendaEvents(
 							: addMinutes(start, 60);
 			}
 
-			const resourceOriginalDate = effective?.recurring ? dateStr : effective?.original_date;
-			const resourceOriginalStartTime = effective?.recurring ? baseStartTime : effective?.original_start_time;
+			const resourceOriginalDate = effective?.spans_future_occurrences ? dateStr : effective?.original_date;
+			const resourceOriginalStartTime = effective?.spans_future_occurrences
+				? baseStartTime
+				: effective?.original_start_time;
 			const displayTitle = effective?.title ?? ev.title;
 			const displayColor = effective?.color ?? ev.color ?? null;
 			const hasTimeOrDateChange =
@@ -424,8 +425,8 @@ export function generateAgendaEvents(
 					originalDate: resourceOriginalDate ?? effective?.original_date,
 					originalStartTime: resourceOriginalStartTime ?? effective?.original_start_time,
 					reason: effective?.reason ?? null,
-					isRecurring: ev.recurring || (effective?.recurring ?? false),
-					sourceType: ev.source_type as 'manual' | 'lesson_agreement',
+					isRecurring: ev.recurring || (effective?.spans_future_occurrences ?? false),
+					sourceType,
 					color: displayColor,
 					isLesson: isLessonEvent,
 				},

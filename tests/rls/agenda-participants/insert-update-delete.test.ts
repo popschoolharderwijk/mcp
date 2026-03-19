@@ -9,6 +9,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { formatDateToDb, now } from '../../../src/lib/date/date-format';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import type { AgendaEventInsert } from '../../types';
 import { expectNonNull, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
@@ -33,28 +34,30 @@ const student002UserId = fixtures.requireUserId(TestUsers.STUDENT_002);
 const teacherAliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 const teacherBobUserId = fixtures.requireUserId(TestUsers.TEACHER_BOB);
 
+function createManualEvent(ownerUserId: string, title: string): AgendaEventInsert {
+	const today = formatDateToDb(now());
+	return {
+		source_type: 'manual',
+		owner_user_id: ownerUserId,
+		title,
+		start_date: today,
+		start_time: '10:00:00',
+		end_date: today,
+		end_time: '11:00:00',
+		is_all_day: false,
+		recurring: false,
+	};
+}
+
 describe('agenda_participants owner protection', () => {
 	it('trigger prevents removing owner from participants', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
-		const today = formatDateToDb(now());
 
 		// Create a manual agenda event with staff as owner
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Test event for owner removal',
-					start_date: today,
-					start_time: '10:00:00',
-					end_date: today,
-					end_time: '11:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Test event for owner removal'))
 				.select('id'),
 		);
 
@@ -97,25 +100,12 @@ describe('agenda_participants owner protection', () => {
 	it('non-owner cannot delete participants from event they do not own', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
 		const studentDb = await createClientAs(TestUsers.STUDENT_001);
-		const today = formatDateToDb(now());
 
 		// Create a manual agenda event with staff as owner
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Test event for participant deletion',
-					start_date: today,
-					start_time: '10:00:00',
-					end_date: today,
-					end_time: '11:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Test event for participant deletion'))
 				.select('id'),
 		);
 
@@ -165,25 +155,12 @@ describe('agenda_participants owner protection', () => {
 
 	it('owner can add and remove non-owner participants', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
-		const today = formatDateToDb(now());
 
 		// Create a manual agenda event
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Test event for participant management',
-					start_date: today,
-					start_time: '10:00:00',
-					end_date: today,
-					end_time: '11:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Test event for participant management'))
 				.select('id'),
 		);
 
@@ -232,25 +209,11 @@ describe('agenda_participants owner protection', () => {
 describe('agenda_participants teacher restriction', () => {
 	it('student cannot add teacher as participant to their event', async () => {
 		const studentDb = await createClientAs(TestUsers.STUDENT_001);
-		const today = formatDateToDb(now());
-
 		// Student creates their own event
 		const [event] = unwrap(
 			await studentDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: student001UserId,
-					title: 'Student event - cannot add teacher',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: student001UserId,
-					updated_by: student001UserId,
-				})
+				.insert(createManualEvent(student001UserId, 'Student event - cannot add teacher'))
 				.select('id'),
 		);
 
@@ -270,25 +233,11 @@ describe('agenda_participants teacher restriction', () => {
 
 	it('student can add another student as participant to their event', async () => {
 		const studentDb = await createClientAs(TestUsers.STUDENT_001);
-		const today = formatDateToDb(now());
-
 		// Student creates their own event
 		const [event] = unwrap(
 			await studentDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: student001UserId,
-					title: 'Student event - can add student',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: student001UserId,
-					updated_by: student001UserId,
-				})
+				.insert(createManualEvent(student001UserId, 'Student event - can add student'))
 				.select('id'),
 		);
 
@@ -322,25 +271,11 @@ describe('agenda_participants teacher restriction', () => {
 
 	it('teacher can add student as participant to their event', async () => {
 		const teacherDb = await createClientAs(TestUsers.TEACHER_ALICE);
-		const today = formatDateToDb(now());
-
 		// Teacher creates their own event
 		const [event] = unwrap(
 			await teacherDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: teacherAliceUserId,
-					title: 'Teacher event - can add student',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: teacherAliceUserId,
-					updated_by: teacherAliceUserId,
-				})
+				.insert(createManualEvent(teacherAliceUserId, 'Teacher event - can add student'))
 				.select('id'),
 		);
 
@@ -374,25 +309,11 @@ describe('agenda_participants teacher restriction', () => {
 
 	it('teacher cannot add another teacher as participant to their event', async () => {
 		const teacherDb = await createClientAs(TestUsers.TEACHER_ALICE);
-		const today = formatDateToDb(now());
-
 		// Teacher creates their own event
 		const [event] = unwrap(
 			await teacherDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: teacherAliceUserId,
-					title: 'Teacher event - cannot add other teacher',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: teacherAliceUserId,
-					updated_by: teacherAliceUserId,
-				})
+				.insert(createManualEvent(teacherAliceUserId, 'Teacher event - cannot add other teacher'))
 				.select('id'),
 		);
 
@@ -412,25 +333,11 @@ describe('agenda_participants teacher restriction', () => {
 
 	it('privileged user (staff) can add teacher as participant', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
-		const today = formatDateToDb(now());
-
 		// Staff creates an event
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Staff event - can add teacher',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Staff event - can add teacher'))
 				.select('id'),
 		);
 
@@ -459,25 +366,11 @@ describe('agenda_participants teacher restriction', () => {
 	it('privileged user (admin) can add teacher as participant', async () => {
 		const adminDb = await createClientAs(TestUsers.ADMIN_ONE);
 		const adminUserId = fixtures.requireUserId(TestUsers.ADMIN_ONE);
-		const today = formatDateToDb(now());
-
 		// Admin creates an event
 		const [event] = unwrap(
 			await adminDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: adminUserId,
-					title: 'Admin event - can add teacher',
-					start_date: today,
-					start_time: '14:00:00',
-					end_date: today,
-					end_time: '15:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: adminUserId,
-					updated_by: adminUserId,
-				})
+				.insert(createManualEvent(adminUserId, 'Admin event - can add teacher'))
 				.select('id'),
 		);
 

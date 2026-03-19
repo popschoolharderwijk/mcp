@@ -3,21 +3,30 @@
  * Based on Supabase generated types.
  */
 
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
+import type { Insert, Update } from '@/integrations/supabase/insert-helpers';
+import type { Enums, Tables } from '@/integrations/supabase/types';
 
 export type AgendaEventRow = Tables<'agenda_events'>;
-export type AgendaEventInsert = TablesInsert<'agenda_events'>;
-export type AgendaEventUpdate = TablesUpdate<'agenda_events'>;
+export type AgendaEventInsert = Insert<'agenda_events'>;
+export type AgendaEventUpdate = Update<'agenda_events'>;
 
 export type AgendaParticipantRow = Tables<'agenda_participants'>;
-export type AgendaParticipantInsert = TablesInsert<'agenda_participants'>;
+export type AgendaParticipantInsert = Insert<'agenda_participants'>;
 
 export type AgendaEventDeviationRow = Tables<'agenda_event_deviations'>;
-export type AgendaEventDeviationInsert = TablesInsert<'agenda_event_deviations'>;
-export type AgendaEventDeviationUpdate = TablesUpdate<'agenda_event_deviations'>;
+export type AgendaEventDeviationInsert = Insert<'agenda_event_deviations'>;
+export type AgendaEventDeviationUpdate = Update<'agenda_event_deviations'>;
 
-/** Source type for agenda_events */
-export type AgendaEventSourceType = 'manual' | 'lesson_agreement';
+/** Source type for agenda_events (from DB enum). */
+export type AgendaEventSourceType = Enums<'agenda_event_source_type'>;
+
+/** Runtime values for agenda_event_source_type (must match DB enum). */
+const AGENDA_EVENT_SOURCE_TYPE_VALUES: readonly string[] = ['manual', 'lesson_agreement', 'project'];
+
+/** Narrow string (e.g. from Select) to {@link AgendaEventSourceType}. */
+export function isAgendaEventSourceType(v: string): v is AgendaEventSourceType {
+	return AGENDA_EVENT_SOURCE_TYPE_VALUES.includes(v);
+}
 
 /** Agenda event with participants joined (for display) */
 export interface AgendaEventWithParticipants extends AgendaEventRow {

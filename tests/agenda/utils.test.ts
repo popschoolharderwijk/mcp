@@ -77,8 +77,8 @@ function mockDeviation(
 		actual_date: string;
 		actual_start_time: string;
 		is_cancelled: boolean;
-		recurring: boolean;
-		recurring_end_date: string | null;
+		spans_future_occurrences?: boolean;
+		spans_end_date: string | null;
 	}> = {},
 ): LessonAppointmentDeviationWithAgreement {
 	const agreementId = 'agreement-1';
@@ -92,12 +92,11 @@ function mockDeviation(
 		actual_date: '2025-02-20',
 		actual_start_time: '15:00',
 		is_cancelled: false,
-		recurring: false,
-		recurring_end_date: null,
+		spans_future_occurrences: false,
+		spans_end_date: null,
 		reason: null,
 		created_at: '2025-01-01T00:00:00Z',
 		created_by: 'user-1',
-		updated_by: 'user-1',
 		updated_at: '2025-01-01T00:00:00Z',
 		...overrides,
 		agenda_event: {
@@ -207,7 +206,7 @@ describe('agenda utils: generateRecurringEvents', () => {
 			original_date: '2025-02-17',
 			actual_date: '2025-02-20',
 			actual_start_time: '15:00',
-			recurring: true,
+			spans_future_occurrences: true,
 		});
 		const recurringByEventId = new Map<string, LessonAppointmentDeviationWithAgreement[]>();
 		recurringByEventId.set(evId, [recurringDeviation]);
@@ -227,7 +226,7 @@ describe('agenda utils: generateRecurringEvents', () => {
 		expect(recurringEvents.every((e: CalendarEvent) => e.resource.deviationId === 'dev-recurring')).toBe(true);
 	});
 
-	it('recurring deviation with recurring_end_date does not apply after that date', () => {
+	it('recurring deviation with spans_end_date does not apply after that date', () => {
 		const agreement = mockAgreement({
 			id: 'ag-1',
 			start_date: '2025-02-01',
@@ -242,8 +241,8 @@ describe('agenda utils: generateRecurringEvents', () => {
 			original_date: '2025-02-17',
 			actual_date: '2025-02-20',
 			actual_start_time: '15:00',
-			recurring: true,
-			recurring_end_date: '2025-03-02',
+			spans_future_occurrences: true,
+			spans_end_date: '2025-03-02',
 		});
 		const recurringByEventId = new Map<string, LessonAppointmentDeviationWithAgreement[]>();
 		recurringByEventId.set(evId, [recurringDeviation]);
@@ -264,7 +263,7 @@ describe('agenda utils: generateRecurringEvents', () => {
 		expect(weekAfterEnd.resource.isDeviation).toBe(false);
 	});
 
-	it('recurring deviation with recurring_end_date still applies up to and including that date', () => {
+	it('recurring deviation with spans_end_date still applies up to and including that date', () => {
 		const agreement = mockAgreement({
 			id: 'ag-1',
 			start_date: '2025-02-01',
@@ -279,8 +278,8 @@ describe('agenda utils: generateRecurringEvents', () => {
 			original_date: '2025-02-17',
 			actual_date: '2025-02-20',
 			actual_start_time: '15:00',
-			recurring: true,
-			recurring_end_date: '2025-03-02',
+			spans_future_occurrences: true,
+			spans_end_date: '2025-03-02',
 		});
 		const recurringByEventId = new Map<string, LessonAppointmentDeviationWithAgreement[]>();
 		recurringByEventId.set(evId, [recurringDeviation]);

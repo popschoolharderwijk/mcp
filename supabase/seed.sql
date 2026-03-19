@@ -4,7 +4,7 @@
 -- NOTE:
 -- - These users are seeded in auth.users for local/preview testing
 -- - Password for all users: "password"
--- - RLS policies rely on auth.uid() matching these values
+-- - RLS policies rely on public.current_user_id() matching these values
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------
@@ -866,7 +866,7 @@ BEGIN
     'manual', NULL, v_eve_teacher_user_id, 'Bandcoaching', 'Groepsles met meerdere deelnemers',
     v_first_start_date, '14:00'::TIME,
     v_last_end_date, '15:00'::TIME,
-    false, true, 'biweekly', v_last_end_date,
+    false, true, 'biweekly'::public.lesson_frequency, v_last_end_date,
     '#6366F1', v_eve_teacher_user_id, v_eve_teacher_user_id
   )
   RETURNING id INTO v_consolidated_event_id;
@@ -1007,7 +1007,7 @@ WITH
       (CASE n WHEN 0 THEN '11:00' WHEN 1 THEN '16:00' END)::time,
       false,
       n = 1,
-      CASE WHEN n = 1 THEN 'weekly' END,
+      CASE WHEN n = 1 THEN 'weekly'::public.lesson_frequency END,
       CASE WHEN n = 1 THEN (CURRENT_DATE + interval '3 months')::date END,
       CASE n WHEN 0 THEN '#4ade80' WHEN 1 THEN '#86efac' END,
       d.user_id,
@@ -1041,7 +1041,7 @@ WITH
       (CASE n WHEN 0 THEN '11:00' WHEN 1 THEN '16:00' END)::time,
       false,
       n = 1,
-      CASE WHEN n = 1 THEN 'weekly' END,
+      CASE WHEN n = 1 THEN 'weekly'::public.lesson_frequency END,
       CASE WHEN n = 1 THEN (CURRENT_DATE + interval '3 months')::date END,
       CASE n WHEN 0 THEN '#4ade80' WHEN 1 THEN '#86efac' END,
       a.user_id,
@@ -1075,7 +1075,7 @@ WITH
       (CASE n WHEN 0 THEN '11:00' WHEN 1 THEN '16:00' END)::time,
       false,
       n = 1,
-      CASE WHEN n = 1 THEN 'weekly' END,
+      CASE WHEN n = 1 THEN 'weekly'::public.lesson_frequency END,
       CASE WHEN n = 1 THEN (CURRENT_DATE + interval '3 months')::date END,
       CASE n WHEN 0 THEN '#4ade80' WHEN 1 THEN '#86efac' END,
       e.user_id,
@@ -1109,7 +1109,7 @@ WITH
       (CASE n WHEN 0 THEN '11:00' WHEN 1 THEN '16:00' END)::time,
       false,
       n = 1,
-      CASE WHEN n = 1 THEN 'weekly' END,
+      CASE WHEN n = 1 THEN 'weekly'::public.lesson_frequency END,
       CASE WHEN n = 1 THEN (CURRENT_DATE + interval '3 months')::date END,
       CASE n WHEN 0 THEN '#4ade80' WHEN 1 THEN '#86efac' END,
       j.user_id,
@@ -1150,7 +1150,7 @@ WITH new_event AS (
     'manual', NULL, p.user_id, 'Wekelijks overleg', 'Terugkerende afspraak',
     date_trunc('week', CURRENT_DATE)::date + 3, '09:00'::time,  -- Thursday (+3)
     date_trunc('week', CURRENT_DATE)::date + 3, '10:00'::time,
-    false, true, 'weekly', (CURRENT_DATE + interval '3 months')::date, '#facc15', p.user_id, p.user_id
+    false, true, 'weekly'::public.lesson_frequency, (CURRENT_DATE + interval '3 months')::date, '#facc15', p.user_id, p.user_id
   FROM public.profiles p WHERE p.email = 'teacher-alice@test.nl'
   RETURNING id
 )
@@ -1168,7 +1168,7 @@ WITH new_event AS (
     'manual', NULL, p.user_id, 'Team sync', 'Wekelijkse teamsync',
     date_trunc('week', CURRENT_DATE)::date + 2, '10:00'::time,
     date_trunc('week', CURRENT_DATE)::date + 2, '11:00'::time,
-    false, true, 'weekly', (CURRENT_DATE + interval '3 months')::date, '#60a5fa', p.user_id, p.user_id
+    false, true, 'weekly'::public.lesson_frequency, (CURRENT_DATE + interval '3 months')::date, '#60a5fa', p.user_id, p.user_id
   FROM public.profiles p WHERE p.email = 'site-admin@test.nl'
   RETURNING id
 )
@@ -1294,7 +1294,7 @@ WITH new_event AS (
     'manual', NULL, p.user_id, 'Standup', 'Recurring event gestart 4 weken geleden',
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date, '09:30'::time,
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date, '10:00'::time,
-    false, true, 'weekly', (CURRENT_DATE + interval '2 months')::date, '#06b6d4', p.user_id, p.user_id
+    false, true, 'weekly'::public.lesson_frequency, (CURRENT_DATE + interval '2 months')::date, '#06b6d4', p.user_id, p.user_id
   FROM public.profiles p WHERE p.email = 'site-admin@test.nl'
   RETURNING id
 )
@@ -1312,7 +1312,7 @@ WITH new_event AS (
     'manual', NULL, p.user_id, 'Sprint review', 'Recurring event gestart 4 weken geleden',
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date + 4, '10:00'::time,
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date + 4, '11:30'::time,
-    false, true, 'biweekly', (CURRENT_DATE + interval '2 months')::date, '#84cc16', p.user_id, p.user_id
+    false, true, 'biweekly'::public.lesson_frequency, (CURRENT_DATE + interval '2 months')::date, '#84cc16', p.user_id, p.user_id
   FROM public.profiles p WHERE p.email = 'site-admin@test.nl'
   RETURNING id
 )
@@ -1330,7 +1330,7 @@ WITH new_event AS (
     'manual', NULL, p.user_id, '1-on-1', 'Recurring event gestart 4 weken geleden',
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date + 2, '14:00'::time,
     (date_trunc('week', CURRENT_DATE) - interval '4 weeks')::date + 2, '15:00'::time,
-    false, true, 'biweekly', (CURRENT_DATE + interval '2 months')::date, '#d946ef', p.user_id, p.user_id
+    false, true, 'biweekly'::public.lesson_frequency, (CURRENT_DATE + interval '2 months')::date, '#d946ef', p.user_id, p.user_id
   FROM public.profiles p WHERE p.email = 'site-admin@test.nl'
   RETURNING id
 )
@@ -1346,24 +1346,24 @@ CROSS JOIN public.profiles p WHERE p.email IN ('site-admin@test.nl', 'admin-one@
 --   71000000 = project_label
 --   72000000 = project
 
-INSERT INTO public.project_domains (id, name) VALUES
-  ('70000000-0001-0000-0000-000000000000', 'Muziek'),
-  ('70000000-0002-0000-0000-000000000000', 'Dans'),
-  ('70000000-0003-0000-0000-000000000000', 'Theater');
+INSERT INTO public.project_domains (id, name, created_by) VALUES
+  ('70000000-0001-0000-0000-000000000000', 'Muziek', '10000000-0001-0000-0000-000000000000'),
+  ('70000000-0002-0000-0000-000000000000', 'Dans', '10000000-0001-0000-0000-000000000000'),
+  ('70000000-0003-0000-0000-000000000000', 'Theater', '10000000-0001-0000-0000-000000000000');
 
-INSERT INTO public.project_labels (id, domain_id, name) VALUES
-  ('71000000-0001-0000-0000-000000000000', '70000000-0001-0000-0000-000000000000', 'Gitaarles'),
-  ('71000000-0002-0000-0000-000000000000', '70000000-0001-0000-0000-000000000000', 'Pianoles'),
-  ('71000000-0003-0000-0000-000000000000', '70000000-0002-0000-0000-000000000000', 'Ballet'),
-  ('71000000-0004-0000-0000-000000000000', '70000000-0002-0000-0000-000000000000', 'Streetdance'),
-  ('71000000-0005-0000-0000-000000000000', '70000000-0003-0000-0000-000000000000', 'Impro'),
-  ('71000000-0006-0000-0000-000000000000', '70000000-0003-0000-0000-000000000000', 'Musical');
+INSERT INTO public.project_labels (id, domain_id, name, created_by) VALUES
+  ('71000000-0001-0000-0000-000000000000', '70000000-0001-0000-0000-000000000000', 'Gitaarles', '10000000-0001-0000-0000-000000000000'),
+  ('71000000-0002-0000-0000-000000000000', '70000000-0001-0000-0000-000000000000', 'Pianoles', '10000000-0001-0000-0000-000000000000'),
+  ('71000000-0003-0000-0000-000000000000', '70000000-0002-0000-0000-000000000000', 'Ballet', '10000000-0001-0000-0000-000000000000'),
+  ('71000000-0004-0000-0000-000000000000', '70000000-0002-0000-0000-000000000000', 'Streetdance', '10000000-0001-0000-0000-000000000000'),
+  ('71000000-0005-0000-0000-000000000000', '70000000-0003-0000-0000-000000000000', 'Impro', '10000000-0001-0000-0000-000000000000'),
+  ('71000000-0006-0000-0000-000000000000', '70000000-0003-0000-0000-000000000000', 'Musical', '10000000-0001-0000-0000-000000000000');
 
-INSERT INTO public.projects (id, label_id, name, owner_user_id, cost_center) VALUES
-  ('72000000-0001-0000-0000-000000000000', '71000000-0001-0000-0000-000000000000', 'Gitaarproject Voorjaar', '20000000-0001-0000-0000-000000000000', 'KC-101'),
-  ('72000000-0002-0000-0000-000000000000', '71000000-0003-0000-0000-000000000000', 'Ballet Beginners', '40000000-0001-0000-0000-000000000000', 'KC-202'),
-  ('72000000-0003-0000-0000-000000000000', '71000000-0005-0000-0000-000000000000', 'Impro Workshop', '30000000-0001-0000-0000-000000000000', NULL),
-  ('72000000-0004-0000-0000-000000000000', '71000000-0002-0000-0000-000000000000', 'Piano Masterclass', '40000000-0002-0000-0000-000000000000', 'KC-303');
+INSERT INTO public.projects (id, label_id, name, owner_user_id, cost_center, created_by) VALUES
+  ('72000000-0001-0000-0000-000000000000', '71000000-0001-0000-0000-000000000000', 'Gitaarproject Voorjaar', '20000000-0001-0000-0000-000000000000', 'KC-101', '10000000-0001-0000-0000-000000000000'),
+  ('72000000-0002-0000-0000-000000000000', '71000000-0003-0000-0000-000000000000', 'Ballet Beginners', '40000000-0001-0000-0000-000000000000', 'KC-202', '10000000-0001-0000-0000-000000000000'),
+  ('72000000-0003-0000-0000-000000000000', '71000000-0005-0000-0000-000000000000', 'Impro Workshop', '30000000-0001-0000-0000-000000000000', NULL, '10000000-0001-0000-0000-000000000000'),
+  ('72000000-0004-0000-0000-000000000000', '71000000-0002-0000-0000-000000000000', 'Piano Masterclass', '40000000-0002-0000-0000-000000000000', 'KC-303', '10000000-0001-0000-0000-000000000000');
 
 -- =============================================================================
 -- END SEED

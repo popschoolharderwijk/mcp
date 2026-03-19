@@ -17,7 +17,7 @@ export interface CancelLessonParams {
 export type CancelLessonResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function cancelLesson(params: CancelLessonParams): Promise<CancelLessonResult> {
-	const { selectedEvent, user, agendaEvents, agreementsMap, scope } = params;
+	const { selectedEvent, agendaEvents, agreementsMap, scope } = params;
 	const eventId = selectedEvent.resource.eventId;
 	if (!eventId) return { ok: false, message: 'Geen afspraak' };
 
@@ -56,8 +56,7 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 				is_cancelled: true,
 				actual_date: originalDateStr,
 				actual_start_time: originalStartTime,
-				recurring,
-				updated_by: user.id,
+				spans_future_occurrences: recurring,
 			})
 			.eq('id', selectedEvent.resource.deviationId);
 		if (error) return { ok: false, message: 'Fout bij annuleren les' };
@@ -71,9 +70,7 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 		actual_date: originalDateStr,
 		actual_start_time: originalStartTime,
 		is_cancelled: true,
-		recurring,
-		created_by: user.id,
-		updated_by: user.id,
+		spans_future_occurrences: recurring,
 	});
 	if (error) return { ok: false, message: 'Fout bij annuleren les' };
 	return { ok: true, message: 'Les geannuleerd' };

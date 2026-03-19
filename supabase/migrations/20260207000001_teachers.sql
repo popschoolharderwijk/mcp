@@ -26,12 +26,11 @@ CREATE TABLE IF NOT EXISTS public.teachers (
 
   -- Teacher profile information
   bio TEXT,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  is_active BOOLEAN NOT NULL DEFAULT true
 );
+
+-- Add audit columns to teachers
+SELECT public.apply_audit_trail('public.teachers');
 
 -- Add foreign key to profiles (ensures teacher always has a profile)
 DO $$
@@ -64,13 +63,12 @@ CREATE TABLE IF NOT EXISTS public.teacher_availability (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
 
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
   -- Data integrity constraints
   CONSTRAINT teacher_availability_time_check CHECK (end_time > start_time)
 );
+
+-- Add audit columns to teacher_availability
+SELECT public.apply_audit_trail('public.teacher_availability');
 
 -- Indexes for teacher_availability
 CREATE INDEX IF NOT EXISTS idx_teacher_availability_teacher_user_id ON public.teacher_availability(teacher_user_id);
@@ -162,31 +160,31 @@ ALTER FUNCTION public.get_teacher_user_id(UUID) OWNER TO postgres;
 CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_privileged((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Admins and site_admins can insert teachers
 CREATE POLICY teachers_insert_admin
 ON public.teachers FOR INSERT TO authenticated
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- Combined UPDATE policy: teachers can update own record, admins can update any
 CREATE POLICY teachers_update
 ON public.teachers FOR UPDATE TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 )
 WITH CHECK (
-  user_id = (select auth.uid())
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- Admins and site_admins can delete teachers
 CREATE POLICY teachers_delete_admin
 ON public.teachers FOR DELETE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- =============================================================================
 -- SECTION 5B: RLS POLICIES FOR teacher_availability
@@ -196,36 +194,36 @@ USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth
 CREATE POLICY teacher_availability_select
 ON public.teacher_availability FOR SELECT TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_privileged((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Combined INSERT policy: teachers can insert own availability, admins can insert for any
 CREATE POLICY teacher_availability_insert
 ON public.teacher_availability FOR INSERT TO authenticated
 WITH CHECK (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- Combined UPDATE policy: teachers can update own availability, admins can update any
 CREATE POLICY teacher_availability_update
 ON public.teacher_availability FOR UPDATE TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 )
 WITH CHECK (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- Combined DELETE policy: teachers can delete own availability, admins can delete any
 CREATE POLICY teacher_availability_delete
 ON public.teacher_availability FOR DELETE TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- =============================================================================
@@ -236,42 +234,26 @@ USING (
 CREATE POLICY teacher_lesson_types_select
 ON public.teacher_lesson_types FOR SELECT TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_privileged((select auth.uid()))
+  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Admins and site_admins can insert lesson type links
 CREATE POLICY teacher_lesson_types_insert_admin
 ON public.teacher_lesson_types FOR INSERT TO authenticated
 WITH CHECK (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- Admins and site_admins can delete lesson type links
 CREATE POLICY teacher_lesson_types_delete_admin
 ON public.teacher_lesson_types FOR DELETE TO authenticated
 USING (
-  public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- =============================================================================
--- SECTION 6: TRIGGERS
--- =============================================================================
-
--- Reuse existing update_updated_at_column function from baseline
-CREATE TRIGGER update_teachers_updated_at
-BEFORE UPDATE ON public.teachers
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
--- Trigger for teacher_availability updated_at
-CREATE TRIGGER update_teacher_availability_updated_at
-BEFORE UPDATE ON public.teacher_availability
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
--- =============================================================================
--- SECTION 7: PERMISSIONS
+-- SECTION 6: PERMISSIONS
 -- =============================================================================
 
 -- GRANT gives table-level permissions, but RLS policies (above) are what

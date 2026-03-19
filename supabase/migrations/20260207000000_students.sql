@@ -33,12 +33,11 @@ CREATE TABLE IF NOT EXISTS public.students (
   debtor_name TEXT,
   debtor_address TEXT,
   debtor_postal_code TEXT,
-  debtor_city TEXT,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  debtor_city TEXT
 );
+
+-- Add audit columns to students
+SELECT public.apply_audit_trail('public.students');
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_students_user_id ON public.students(user_id);
@@ -88,8 +87,8 @@ ALTER FUNCTION public.is_student(UUID) OWNER TO postgres;
 CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_privileged((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Note: INSERT policy is intentionally omitted.
@@ -103,24 +102,14 @@ USING (
 -- Admins and site_admins can update students (for future fields)
 CREATE POLICY students_update_admin
 ON public.students FOR UPDATE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- Note: Teachers cannot view students directly. They can view lesson_agreements
 -- which contain the student information they need.
 
 -- =============================================================================
--- SECTION 6: TRIGGERS
--- =============================================================================
-
--- Reuse existing update_updated_at_column function from baseline
-CREATE TRIGGER update_students_updated_at
-BEFORE UPDATE ON public.students
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
--- =============================================================================
--- SECTION 7: PERMISSIONS
+-- SECTION 6: PERMISSIONS
 -- =============================================================================
 
 -- GRANT gives table-level permissions, but RLS policies (above) are what
@@ -131,7 +120,7 @@ EXECUTE FUNCTION public.update_updated_at_column();
 GRANT SELECT, UPDATE ON public.students TO authenticated;
 
 -- =============================================================================
--- SECTION 8: ALTER TABLE FOR EXISTING DATABASES
+-- SECTION 7: ALTER TABLE FOR EXISTING DATABASES
 -- =============================================================================
 -- These ALTER TABLE statements are safe to run on existing databases
 -- They add new columns with default values or nullable constraints

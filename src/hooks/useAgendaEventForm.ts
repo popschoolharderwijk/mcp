@@ -4,7 +4,7 @@ import type { RecurrenceScope } from '@/components/agenda/RecurrenceChoiceDialog
 import { supabase } from '@/integrations/supabase/client';
 import { addDaysToDateStr, formatDateToDb, now } from '@/lib/date/date-format';
 import { formatTime, formatTimeFromDate, normalizeTime } from '@/lib/time/time-format';
-import type { AgendaEventInsert, AgendaEventRow } from '@/types/agenda-events';
+import type { AgendaEventInsert, AgendaEventRow, AgendaEventSourceType } from '@/types/agenda-events';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
 /** Overrides from a deviation for a single occurrence (title/description/color). Null means use base event. */
@@ -26,6 +26,9 @@ export interface UseAgendaEventFormOptions {
 	/** When editing one occurrence that has a deviation, pass its title/description/color so the form shows them */
 	occurrenceOverrides?: OccurrenceOverrides | null;
 	readonlyParticipantIds?: string[];
+	/** When creating a project event, pass source info */
+	sourceType?: AgendaEventSourceType;
+	sourceId?: string | null;
 	onSuccess?: () => void;
 	onOpenChange: (open: boolean) => void;
 }
@@ -81,6 +84,8 @@ export function useAgendaEventForm({
 	occurrenceParticipantIds,
 	occurrenceOverrides,
 	readonlyParticipantIds = [],
+	sourceType: externalSourceType,
+	sourceId: externalSourceId,
 	onSuccess,
 	onOpenChange,
 }: UseAgendaEventFormOptions) {
@@ -274,9 +279,12 @@ export function useAgendaEventForm({
 		async (scope: RecurrenceScope = 'all') => {
 			if (!userId || !startDate || !startTime) return;
 
+			const resolvedSourceType = externalSourceType ?? event?.source_type ?? 'manual';
+			const resolvedSourceId = externalSourceId ?? event?.source_id ?? null;
+
 			const payload: AgendaEventInsert = {
-				source_type: 'manual',
-				source_id: null,
+				source_type: resolvedSourceType,
+				source_id: resolvedSourceId,
 				owner_user_id: userId,
 				title: title.trim(),
 				description: description.trim() || null,
@@ -289,8 +297,6 @@ export function useAgendaEventForm({
 				recurring_frequency: recurring ? recurringFrequency : null,
 				recurring_end_date: recurring ? recurringEndDate : null,
 				color: color || null,
-				created_by: userId,
-				updated_by: userId,
 			};
 			setSaving(true);
 			try {
@@ -327,14 +333,12 @@ export function useAgendaEventForm({
 							original_start_time: originalStartTime,
 							actual_date: actualDate,
 							actual_start_time: actualStartTime,
-							recurring: false,
+							spans_future_occurrences: false,
 							is_cancelled: false,
 							title: hasTitleChange ? title.trim() : null,
 							description: hasDescriptionChange ? description?.trim() || null : null,
 							color: hasColorChange ? (color ?? null) : null,
 							participant_ids: hasParticipantChange ? participantIds : null,
-							created_by: userId,
-							updated_by: userId,
 						};
 						const { error: deviationError } = await supabase
 							.from('agenda_event_deviations')
@@ -346,7 +350,7 @@ export function useAgendaEventForm({
 						const newEndDate = addDaysToDateStr(occurrenceDate, -1);
 						const { error: endErr } = await supabase
 							.from('agenda_events')
-							.update({ recurring_end_date: newEndDate, updated_by: userId })
+							.update({ recurring_end_date: newEndDate })
 							.eq('id', event.id);
 						if (endErr) throw endErr;
 						const { data: inserted, error: insertError } = await supabase
@@ -388,7 +392,6 @@ export function useAgendaEventForm({
 								recurring_frequency: payload.recurring_frequency,
 								recurring_end_date: payload.recurring_end_date,
 								color: payload.color,
-								updated_by: userId,
 							})
 							.eq('id', event.id);
 						if (updateError) throw updateError;
@@ -401,7 +404,6 @@ export function useAgendaEventForm({
 									description: payload.description,
 									color: payload.color,
 									participant_ids: participantIds.length > 0 ? participantIds : null,
-									updated_by: userId,
 								})
 								.eq('event_id', event.id);
 							if (devErr) throw devErr;
@@ -481,6 +483,8 @@ export function useAgendaEventForm({
 			occurrenceStartTime,
 			onSuccess,
 			onOpenChange,
+			externalSourceType,
+			externalSourceId,
 		],
 	);
 

@@ -13,7 +13,7 @@ export const AGENDA_UTILS_TEST = {
 	/** Recurring deviation events: Feb 20, 27, Mar 6, 13, 20, 27, Apr 3 (weekly from actual_date in range) */
 	RECURRING_DEVIATION_EVENTS_FEB_MAR_APR: 7,
 
-	/** Deviation events with recurring_end_date 2025-03-02: Feb 20, Feb 27 */
+	/** Deviation events with spans_end_date 2025-03-02: Feb 20, Feb 27 */
 	DEVIATION_EVENTS_UNTIL_2025_03_02: 2,
 
 	/** Monthly events Jan 6–Apr 30 (first Monday of each month) */

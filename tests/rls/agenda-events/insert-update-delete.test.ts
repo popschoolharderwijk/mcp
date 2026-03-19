@@ -48,8 +48,6 @@ function createManualEventInsert(ownerUserId: string, title: string): AgendaEven
 		end_time: '11:00:00',
 		is_all_day: false,
 		recurring: false,
-		created_by: ownerUserId,
-		updated_by: ownerUserId,
 	};
 }
 
@@ -89,8 +87,6 @@ describe('agenda_events INSERT RLS', () => {
 				.from('agenda_events')
 				.insert({
 					...createManualEventInsert(staffTwoUserId, 'Test event staff creates for other staff'),
-					created_by: staffOneUserId,
-					updated_by: staffOneUserId,
 				})
 				.select('id'),
 		);
@@ -182,7 +178,7 @@ describe('agenda_events UPDATE RLS', () => {
 		unwrap(
 			await staffTwoDb
 				.from('agenda_events')
-				.update({ title: 'Staff updated title', updated_by: staffTwoUserId })
+				.update({ title: 'Staff updated title' })
 				.eq('id', event.id)
 				.select('title'),
 		);

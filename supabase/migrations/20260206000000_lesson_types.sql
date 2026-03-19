@@ -37,12 +37,11 @@ CREATE TABLE IF NOT EXISTS public.lesson_types (
   -- Configuration (no duration/frequency/price here; use lesson_type_options)
   cost_center TEXT,
   is_group_lesson BOOLEAN NOT NULL DEFAULT false,
-  is_active BOOLEAN NOT NULL DEFAULT true,
-
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  is_active BOOLEAN NOT NULL DEFAULT true
 );
+
+-- Add audit columns to lesson_types
+SELECT public.apply_audit_trail('public.lesson_types');
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_lesson_types_is_active ON public.lesson_types(is_active);
@@ -58,10 +57,11 @@ CREATE TABLE IF NOT EXISTS public.lesson_type_options (
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id) ON DELETE CASCADE,
   duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
   frequency public.lesson_frequency NOT NULL,
-  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0)
 );
+
+-- Add audit columns to lesson_type_options
+SELECT public.apply_audit_trail('public.lesson_type_options');
 
 CREATE INDEX IF NOT EXISTS idx_lesson_type_options_lesson_type_id ON public.lesson_type_options(lesson_type_id);
 
@@ -91,18 +91,18 @@ USING (true);
 -- Admins and site_admins can insert lesson types
 CREATE POLICY lesson_types_insert_admin
 ON public.lesson_types FOR INSERT TO authenticated
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- Admins and site_admins can update lesson types
 CREATE POLICY lesson_types_update_admin
 ON public.lesson_types FOR UPDATE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- Admins and site_admins can delete lesson types
 CREATE POLICY lesson_types_delete_admin
 ON public.lesson_types FOR DELETE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- =============================================================================
 -- SECTION 3B: RLS FOR lesson_type_options
@@ -119,26 +119,20 @@ USING (true);
 -- Admins and site_admins can insert/update/delete lesson type options
 CREATE POLICY lesson_type_options_insert_admin
 ON public.lesson_type_options FOR INSERT TO authenticated
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY lesson_type_options_update_admin
 ON public.lesson_type_options FOR UPDATE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())))
-WITH CHECK (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY lesson_type_options_delete_admin
 ON public.lesson_type_options FOR DELETE TO authenticated
-USING (public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid())));
+USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- =============================================================================
 -- SECTION 5: TRIGGERS
 -- =============================================================================
-
--- Reuse existing update_updated_at_column function from baseline
-CREATE TRIGGER update_lesson_types_updated_at
-BEFORE UPDATE ON public.lesson_types
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
 
 -- =============================================================================
 -- RESTRICT DELETE: lesson_types can only be deleted if no agreements exist
@@ -177,12 +171,6 @@ CREATE TRIGGER check_lesson_type_has_no_agreements_trigger
 BEFORE DELETE ON public.lesson_types
 FOR EACH ROW
 EXECUTE FUNCTION public.check_lesson_type_has_no_agreements();
-
--- Trigger to maintain updated_at on lesson_type_options
-CREATE TRIGGER update_lesson_type_options_updated_at
-BEFORE UPDATE ON public.lesson_type_options
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
 
 -- =============================================================================
 -- SECTION 6: PERMISSIONS

@@ -1,15 +1,16 @@
-
 -- =============================================================================
 -- PROJECTS MODULE: project_domains → project_labels → projects
+-- Runs before agenda_events so the enum exists when agenda_events is created.
 -- =============================================================================
+
+-- Enum for agenda_events.source_type (used by agenda_events table in next migration)
+CREATE TYPE public.agenda_event_source_type AS ENUM ('manual', 'lesson_agreement', 'project');
 
 -- 1. project_domains
 CREATE TABLE public.project_domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL UNIQUE CHECK (trim(name) <> ''),
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  is_active boolean NOT NULL DEFAULT true
 );
 
 -- Case-insensitive unique name
@@ -20,9 +21,7 @@ CREATE TABLE public.project_labels (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   domain_id uuid NOT NULL REFERENCES public.project_domains(id) ON DELETE CASCADE,
   name text NOT NULL CHECK (trim(name) <> ''),
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  is_active boolean NOT NULL DEFAULT true
 );
 
 -- Case-insensitive unique label per domain
@@ -37,32 +36,18 @@ CREATE TABLE public.projects (
   description text,
   owner_user_id uuid NOT NULL REFERENCES auth.users(id),
   cost_center text,
-  is_active boolean NOT NULL DEFAULT true,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
+  is_active boolean NOT NULL DEFAULT true
 );
 
 CREATE INDEX idx_projects_label_id ON public.projects(label_id);
 CREATE INDEX idx_projects_owner_user_id ON public.projects(owner_user_id);
 
 -- =============================================================================
--- TRIGGERS: updated_at
+-- AUDIT TRAIL: add audit columns and triggers via helper
 -- =============================================================================
-
-CREATE TRIGGER update_project_domains_updated_at
-  BEFORE UPDATE ON public.project_domains
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_project_labels_updated_at
-  BEFORE UPDATE ON public.project_labels
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_projects_updated_at
-  BEFORE UPDATE ON public.projects
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_updated_at_column();
+SELECT public.apply_audit_trail('public.project_domains');
+SELECT public.apply_audit_trail('public.project_labels');
+SELECT public.apply_audit_trail('public.projects');
 
 -- =============================================================================
 -- RLS
@@ -78,16 +63,16 @@ CREATE POLICY project_domains_select_all ON public.project_domains
 
 CREATE POLICY project_domains_insert_admin ON public.project_domains
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY project_domains_update_admin ON public.project_domains
   FOR UPDATE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()))
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY project_domains_delete_admin ON public.project_domains
   FOR DELETE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- project_labels policies
 CREATE POLICY project_labels_select_all ON public.project_labels
@@ -95,16 +80,16 @@ CREATE POLICY project_labels_select_all ON public.project_labels
 
 CREATE POLICY project_labels_insert_admin ON public.project_labels
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY project_labels_update_admin ON public.project_labels
   FOR UPDATE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()))
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY project_labels_delete_admin ON public.project_labels
   FOR DELETE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- projects policies (SELECT for all authenticated; INSERT/UPDATE/DELETE for admin/site_admin only)
 CREATE POLICY projects_select_all ON public.projects
@@ -112,16 +97,16 @@ CREATE POLICY projects_select_all ON public.projects
 
 CREATE POLICY projects_insert_admin ON public.projects
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY projects_update_admin ON public.projects
   FOR UPDATE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()))
-  WITH CHECK (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
+  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 CREATE POLICY projects_delete_admin ON public.projects
   FOR DELETE TO authenticated
-  USING (public.is_admin(auth.uid()) OR public.is_site_admin(auth.uid()));
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
 -- -----------------------------------------------------------------------------
 -- GRANT (table-level; RLS remains the security boundary)

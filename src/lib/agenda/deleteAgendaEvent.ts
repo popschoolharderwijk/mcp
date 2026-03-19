@@ -12,7 +12,7 @@ export interface DeleteAgendaEventParams {
 export type DeleteAgendaEventResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function deleteAgendaEvent(params: DeleteAgendaEventParams): Promise<DeleteAgendaEventResult> {
-	const { eventId, scope, occurrenceDate, userId } = params;
+	const { eventId, scope, occurrenceDate } = params;
 
 	if (scope === 'all') {
 		const { error } = await supabase.from('agenda_events').delete().eq('id', eventId);
@@ -35,8 +35,6 @@ export async function deleteAgendaEvent(params: DeleteAgendaEventParams): Promis
 				actual_date: occurrenceDate,
 				actual_start_time: eventData.start_time,
 				is_cancelled: true,
-				created_by: userId,
-				updated_by: userId,
 			},
 			{ onConflict: 'event_id,original_date' },
 		);
@@ -48,7 +46,7 @@ export async function deleteAgendaEvent(params: DeleteAgendaEventParams): Promis
 		const newEndDate = addDaysToDateStr(occurrenceDate, -1);
 		const { error } = await supabase
 			.from('agenda_events')
-			.update({ recurring_end_date: newEndDate, updated_by: userId })
+			.update({ recurring_end_date: newEndDate })
 			.eq('id', eventId);
 		if (error) return { ok: false, message: 'Afspraken verwijderen mislukt' };
 		return { ok: true, message: 'Deze en toekomstige afspraken verwijderd' };
