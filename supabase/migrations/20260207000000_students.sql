@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   -- Parent/guardian information (for minors)
   parent_name TEXT,
   parent_email TEXT,
-  parent_phone_number TEXT CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$')),
+  parent_phone_number TEXT CHECK (public.is_valid_phone_number(parent_phone_number)),
   date_of_birth DATE,
 
   -- Debtor information (for billing)
@@ -88,7 +88,7 @@ CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Note: INSERT policy is intentionally omitted.
@@ -102,8 +102,8 @@ USING (
 -- Admins and site_admins can update students (for future fields)
 CREATE POLICY students_update_admin
 ON public.students FOR UPDATE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin())
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 -- Note: Teachers cannot view students directly. They can view lesson_agreements
 -- which contain the student information they need.
@@ -138,7 +138,7 @@ BEGIN
     ALTER TABLE public.students ADD COLUMN parent_phone_number TEXT;
     -- Add check constraint if column was just created
     ALTER TABLE public.students ADD CONSTRAINT students_parent_phone_number_check
-      CHECK (parent_phone_number IS NULL OR (parent_phone_number ~ '^[0-9]{10}$'));
+      CHECK (public.is_valid_phone_number(parent_phone_number));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'date_of_birth') THEN
     ALTER TABLE public.students ADD COLUMN date_of_birth DATE;

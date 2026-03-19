@@ -143,15 +143,18 @@ De applicatie gebruikt een role-based access control (RBAC) systeem met de volge
 
 | Functie | Beschrijving | Security |
 |---------|-------------|----------|
-| `is_site_admin(uuid)` | Check of gebruiker site_admin is | `SECURITY DEFINER` |
-| `is_admin(uuid)` | Check of gebruiker admin is | `SECURITY DEFINER` |
-| `is_staff(uuid)` | Check of gebruiker staff is | `SECURITY DEFINER` |
+| `is_site_admin()` | Check of de **ingelogde** gebruiker site_admin is | `SECURITY INVOKER` |
+| `is_admin()` | Check of de ingelogde gebruiker admin is | `SECURITY INVOKER` |
+| `is_staff()` | Check of de ingelogde gebruiker staff is | `SECURITY INVOKER` |
+| `is_privileged()` | Staff, admin of site_admin voor de ingelogde gebruiker (één query) | `SECURITY INVOKER` |
+| `_has_role(uuid, app_role)` | Intern; alleen vanuit andere `SECURITY DEFINER` functies; **geen** `GRANT` aan `authenticated` | `SECURITY DEFINER` |
 | `is_student(uuid)` | Check of gebruiker een student-record heeft | `SECURITY DEFINER` |
 | `is_teacher(uuid)` | Check of gebruiker een teacher-record heeft | `SECURITY DEFINER` |
 | `get_teacher_user_id(uuid)` | Haal teacher user_id op basis van user_id | `SECURITY DEFINER` |
-| `can_delete_user(uuid, uuid)` | Check of gebruiker een ander account mag verwijderen | `SECURITY DEFINER` |
+| `can_delete_user(uuid)` | Mag **huidige sessie** het gegeven `user_id` verwijderen? (geen spoofbare requester) | `SECURITY DEFINER` |
+| `is_valid_phone_number(text)` | `IMMUTABLE`: `NULL` ok, anders NL-mobiel `06` + 8 cijfers; gebruikt door CHECK op o.a. `profiles.phone_number` | — |
 
-> Alle helper functions gebruiken `SECURITY DEFINER` met vaste `search_path` om search_path injection te voorkomen. Toegang is beperkt tot `authenticated` gebruikers.
+> Publieke role-checks (`is_admin()`, `is_privileged()`, …) zijn **`SECURITY INVOKER`** met één `EXISTS` op `user_roles` (één round-trip; `is_privileged` gebruikt `role IN (...)`). `can_manage_agenda_event(ev_id)` is **`SECURITY DEFINER`** (leest `agenda_events` onder RLS-bypass) en gebruikt **`current_user_id()`** + **`is_privileged()`** — geen door te geven `uid`. Alleen `can_delete_user` gebruikt nog `_has_role(...)` intern. `_has_role` zelf is niet voor clients. `profiles.email` is `UNIQUE` en volgt `auth.users.email`. Telefoonregels staan centraal in **`is_valid_phone_number`** (past je daar de regex aan, dan geldt dat voor alle gekoppelde kolommen).
 
 ---
 

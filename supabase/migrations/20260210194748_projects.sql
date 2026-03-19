@@ -63,16 +63,16 @@ CREATE POLICY project_domains_select_all ON public.project_domains
 
 CREATE POLICY project_domains_insert_admin ON public.project_domains
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY project_domains_update_admin ON public.project_domains
   FOR UPDATE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin())
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY project_domains_delete_admin ON public.project_domains
   FOR DELETE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin());
 
 -- project_labels policies
 CREATE POLICY project_labels_select_all ON public.project_labels
@@ -80,33 +80,37 @@ CREATE POLICY project_labels_select_all ON public.project_labels
 
 CREATE POLICY project_labels_insert_admin ON public.project_labels
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY project_labels_update_admin ON public.project_labels
   FOR UPDATE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin())
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY project_labels_delete_admin ON public.project_labels
   FOR DELETE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin());
 
--- projects policies (SELECT for all authenticated; INSERT/UPDATE/DELETE for admin/site_admin only)
-CREATE POLICY projects_select_all ON public.projects
-  FOR SELECT TO authenticated USING (true);
+-- projects policies (single SELECT policy: admin/site_admin see all, others only own rows — avoids multiple permissive SELECT policies)
+CREATE POLICY projects_select ON public.projects
+  FOR SELECT TO authenticated
+  USING (
+    public.is_admin() OR public.is_site_admin()
+    OR owner_user_id = public.current_user_id()
+  );
 
 CREATE POLICY projects_insert_admin ON public.projects
   FOR INSERT TO authenticated
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY projects_update_admin ON public.projects
   FOR UPDATE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-  WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin())
+  WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY projects_delete_admin ON public.projects
   FOR DELETE TO authenticated
-  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+  USING (public.is_admin() OR public.is_site_admin());
 
 -- -----------------------------------------------------------------------------
 -- GRANT (table-level; RLS remains the security boundary)

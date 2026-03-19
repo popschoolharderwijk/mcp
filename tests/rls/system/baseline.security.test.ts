@@ -160,7 +160,7 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'project_labels_update_admin',
 		'project_labels_delete_admin',
 	],
-	projects: ['projects_select_all', 'projects_insert_admin', 'projects_update_admin', 'projects_delete_admin'],
+	projects: ['projects_select', 'projects_insert_admin', 'projects_update_admin', 'projects_delete_admin'],
 };
 
 const EXPECTED_FUNCTIONS = [
@@ -171,6 +171,7 @@ const EXPECTED_FUNCTIONS = [
 	'is_staff',
 	'is_privileged',
 	'is_teacher',
+	'is_valid_phone_number',
 	'get_teacher_user_id',
 	// User lifecycle
 	'handle_new_user',

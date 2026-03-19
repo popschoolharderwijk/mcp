@@ -102,10 +102,11 @@ export const TEACHERS = {
  * Agenda events counts (from seed.sql)
  */
 export const AGENDA_EVENTS = {
-	// lesson_agreement trigger + manual events from seed
-	TOTAL: 134,
+	// manual + lesson_agreement + project appointments (4 projects × 3 slots in seed)
+	TOTAL: 146,
 	MANUAL_TOTAL: 42,
-	LESSON_AGREEMENT_TOTAL: 92, // 100 - 8 Bandcoaching? May vary; use TOTAL - MANUAL_TOTAL
+	LESSON_AGREEMENT_TOTAL: 92,
+	PROJECT_TOTAL: 12,
 
 	// Participations per student (agenda_participants rows)
 	STUDENT_001_PARTICIPATIONS: 4,
@@ -114,8 +115,8 @@ export const AGENDA_EVENTS = {
 	// Students 002/003 participate in 1 manual event (shared?) + lesson_agreement
 	NON_PARTICIPATING_MANUAL_FOR_STUDENT_002: 41,
 
-	// Teacher Alice owned: lesson_agreement + manual
-	TEACHER_ALICE_OWNED: 15,
+	// Teacher Alice owned: lesson_agreement + manual + 3× project (Ballet Beginners owner)
+	TEACHER_ALICE_OWNED: 18,
 } as const;
 
 /**
