@@ -1,9 +1,22 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap } from '../../utils';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
 const { requireProfile } = fixtures;
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 /**
  * Users without role, teacher, or student permissions:
@@ -25,47 +38,42 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 			const db = await createClientAs(TestUsers.USER_001);
 			const ownProfile = requireProfile(TestUsers.USER_001);
 
-			const { data, error } = await db.from('profiles').select('*');
+			const data = unwrap(await db.from('profiles').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(1);
-			expect(data?.[0]?.user_id).toBe(ownProfile.user_id);
-			expect(data?.[0]?.email).toBe(TestUsers.USER_001);
+			expect(data[0]?.user_id).toBe(ownProfile.user_id);
+			expect(data[0]?.email).toBe(TestUsers.USER_001);
 		});
 
 		it('USER_A cannot see other profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('profiles').select('*').eq('email', TestUsers.USER_002);
+			const data = unwrap(await db.from('profiles').select('*').eq('email', TestUsers.USER_002));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 
 		it('USER_A cannot see student profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('profiles').select('*').eq('email', TestUsers.STUDENT_001);
+			const data = unwrap(await db.from('profiles').select('*').eq('email', TestUsers.STUDENT_001));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 
 		it('USER_A cannot see teacher profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('profiles').select('*').eq('email', TestUsers.TEACHER_ALICE);
+			const data = unwrap(await db.from('profiles').select('*').eq('email', TestUsers.TEACHER_ALICE));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 
 		it('USER_A cannot see staff/admin profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('profiles').select('*').eq('email', TestUsers.STAFF_ONE);
+			const data = unwrap(await db.from('profiles').select('*').eq('email', TestUsers.STAFF_ONE));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 	});
@@ -75,9 +83,8 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 			// Use USER_010 (no role) - never used by other tests
 			const db = await createClientAs(TestUsers.USER_010);
 
-			const { data, error } = await db.from('students').select('*');
+			const data = unwrap(await db.from('students').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 	});
@@ -86,9 +93,8 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 		it('USER_A cannot see any teachers', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('teachers').select('*');
+			const data = unwrap(await db.from('teachers').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 	});
@@ -97,9 +103,8 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 		it('USER_A cannot see any lesson agreements', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('lesson_agreements').select('*');
+			const data = unwrap(await db.from('lesson_agreements').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 	});
@@ -108,9 +113,8 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 		it('USER_A can see all lesson types (public reference data)', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('lesson_types').select('*');
+			const data = unwrap(await db.from('lesson_types').select('*'));
 
-			expect(error).toBeNull();
 			// Lesson types are public reference data - all authenticated users can see them
 			expect(data).not.toHaveLength(0);
 		});
@@ -120,9 +124,8 @@ describe('RLS: users without role/teacher/student - SELECT', () => {
 		it('USER_A cannot see any user roles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('user_roles').select('*');
+			const data = unwrap(await db.from('user_roles').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(0);
 		});
 	});

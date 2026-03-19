@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs } from '../../db';
 import type { LessonTypeInsert } from '../../types';
-import { unwrap, unwrapError } from '../../utils';
+import { expectInsufficientPrivilege, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import type { TestUser } from '../test-users';
@@ -37,9 +36,7 @@ const TEST_LESSON_TYPE_ID = fixtures.requireLessonTypeId('Gitaarles');
 // Helper for INSERT that should fail (blocked by RLS)
 async function expectInsertBlocked(user: TestUser, lessonType: LessonTypeInsert) {
 	const db = await createClientAs(user);
-	const error = unwrapError(await db.from('lesson_types').insert(lessonType).select());
-
-	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+	expectInsufficientPrivilege(unwrapError(await db.from('lesson_types').insert(lessonType).select()));
 }
 
 // Helper for UPDATE that should fail (blocked by RLS)

@@ -1,8 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { LessonTypeOptionInsert } from '../../types';
-import { unwrap, unwrapError } from '../../utils';
+import { expectInsufficientPrivilege, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import type { TestUser } from '../test-users';
@@ -43,8 +42,7 @@ async function getOneOptionId(): Promise<string> {
 
 async function expectInsertBlocked(user: TestUser, payload: LessonTypeOptionInsert) {
 	const db = await createClientAs(user);
-	const error = unwrapError(await db.from('lesson_type_options').insert(payload).select());
-	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+	expectInsufficientPrivilege(unwrapError(await db.from('lesson_type_options').insert(payload).select()));
 }
 
 async function expectUpdateBlocked(user: TestUser, optionId: string) {
