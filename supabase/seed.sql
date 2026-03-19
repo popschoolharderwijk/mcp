@@ -1365,6 +1365,42 @@ INSERT INTO public.projects (id, label_id, name, owner_user_id, cost_center, cre
   ('72000000-0003-0000-0000-000000000000', '71000000-0005-0000-0000-000000000000', 'Impro Workshop', '30000000-0001-0000-0000-000000000000', NULL, '10000000-0001-0000-0000-000000000000'),
   ('72000000-0004-0000-0000-000000000000', '71000000-0002-0000-0000-000000000000', 'Piano Masterclass', '40000000-0002-0000-0000-000000000000', 'KC-303', '10000000-0001-0000-0000-000000000000');
 
+-- -----------------------------------------------------------------------------
+-- PROJECT APPOINTMENTS (agenda_events with source_type = 'project')
+-- Each project has at least one or more scheduled appointments.
+-- -----------------------------------------------------------------------------
+WITH week_start AS (SELECT date_trunc('week', CURRENT_DATE)::date AS ws),
+project_events AS (
+  INSERT INTO public.agenda_events (
+    source_type, source_id, owner_user_id, title, description,
+    start_date, start_time, end_date, end_time,
+    is_all_day, recurring, recurring_frequency, recurring_end_date,
+    color, created_by, updated_by
+  )
+  SELECT
+    'project'::public.agenda_event_source_type,
+    p.id,
+    p.owner_user_id,
+    (CASE n.n WHEN 1 THEN 'Voorbereiding' WHEN 2 THEN 'Les' WHEN 3 THEN 'Nabespreking' END),
+    NULL,
+    (SELECT ws FROM week_start) + 5 + ((n.n - 1) * 7),  -- Saturday (no lesson_agreements in seed), then +7 per occurrence
+    (CASE (n.n % 3) WHEN 0 THEN '10:00' WHEN 1 THEN '14:00' ELSE '16:00' END)::time,
+    (SELECT ws FROM week_start) + 5 + ((n.n - 1) * 7),
+    (CASE (n.n % 3) WHEN 0 THEN '12:00' WHEN 1 THEN '16:00' ELSE '18:00' END)::time,
+    false,
+    false,
+    NULL,
+    NULL,
+    '#6366F1',
+    p.owner_user_id,
+    p.owner_user_id
+  FROM public.projects p
+  CROSS JOIN (VALUES (1), (2), (3)) AS n(n)
+  RETURNING id, owner_user_id
+)
+INSERT INTO public.agenda_participants (event_id, user_id)
+SELECT id, owner_user_id FROM project_events;
+
 -- =============================================================================
 -- END SEED
 -- =============================================================================

@@ -8,13 +8,12 @@ import { formatDbDateToUi } from '@/lib/date/date-format';
 import { formatTime } from '@/lib/time/time-format';
 import type { AgendaEventRow } from '@/types/agenda-events';
 
-interface ProjectTimeSlotsProps {
+interface ProjectAgendaEventsProps {
 	projectId: string;
-	projectName: string;
 	canSchedule: boolean;
 }
 
-export function ProjectTimeSlots({ projectId, projectName: _projectName, canSchedule }: ProjectTimeSlotsProps) {
+export function ProjectAgendaEvents({ projectId, canSchedule }: ProjectAgendaEventsProps) {
 	const [events, setEvents] = useState<AgendaEventRow[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [editEvent, setEditEvent] = useState<AgendaEventRow | null>(null);
@@ -31,7 +30,7 @@ export function ProjectTimeSlots({ projectId, projectName: _projectName, canSche
 			.order('start_time', { ascending: true });
 
 		if (error) {
-			console.error('Error loading project time slots:', error);
+			console.error('Error loading project appointments:', error);
 		}
 		setEvents(data ?? []);
 		setLoading(false);
@@ -51,7 +50,7 @@ export function ProjectTimeSlots({ projectId, projectName: _projectName, canSche
 		return (
 			<div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
 				<LuLoaderCircle className="h-4 w-4 animate-spin" />
-				Tijdsloten laden…
+				Afspraken laden…
 			</div>
 		);
 	}
@@ -59,17 +58,17 @@ export function ProjectTimeSlots({ projectId, projectName: _projectName, canSche
 	return (
 		<div className="space-y-2">
 			<div className="flex items-center justify-between">
-				<h4 className="text-sm font-medium text-muted-foreground">Tijdsloten ({events.length})</h4>
+				<h4 className="text-sm font-medium text-muted-foreground">Afspraken ({events.length})</h4>
 				{canSchedule && (
 					<Button variant="outline" size="sm" onClick={() => setScheduleOpen(true)}>
 						<LuCalendarPlus className="mr-1.5 h-3.5 w-3.5" />
-						Tijdslot plannen
+						Afspraak plannen
 					</Button>
 				)}
 			</div>
 
 			{events.length === 0 ? (
-				<p className="text-sm text-muted-foreground py-1">Geen tijdsloten ingepland.</p>
+				<p className="text-sm text-muted-foreground py-1">Geen afspraken ingepland.</p>
 			) : (
 				<div className="divide-y rounded-md border">
 					{events.map((event) => (

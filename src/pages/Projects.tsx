@@ -2,10 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LuPlus, LuSettings } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ProjectAgendaEvents } from '@/components/projects/ProjectAgendaEvents';
 import { ProjectDomainsManager } from '@/components/projects/ProjectDomainsManager';
 import { ProjectFormDialog } from '@/components/projects/ProjectFormDialog';
 import { ProjectLabelsManager } from '@/components/projects/ProjectLabelsManager';
-import { ProjectTimeSlots } from '@/components/projects/ProjectTimeSlots';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
@@ -230,11 +230,7 @@ export default function Projects() {
 
 	const renderExpandedRow = useCallback(
 		(project: ProjectRow) => (
-			<ProjectTimeSlots
-				projectId={project.id}
-				projectName={project.name}
-				canSchedule={canSchedule && project.is_active}
-			/>
+			<ProjectAgendaEvents projectId={project.id} canSchedule={canSchedule && project.is_active} />
 		),
 		[canSchedule],
 	);

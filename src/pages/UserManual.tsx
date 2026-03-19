@@ -85,13 +85,13 @@ const sections: ManualSection[] = [
 	{
 		icon: NAV_ICONS.projects,
 		title: NAV_LABELS.projects,
-		description: 'Beheer projecten en plan tijdsloten voor docenten en leerlingen.',
+		description: 'Beheer projecten en plan afspraken voor docenten en leerlingen.',
 		details: [
 			'Projecten overzicht: bekijk alle projecten met domein, label, eigenaar en status (actief/inactief).',
 			'Project aanmaken: geef een naam op, kies een label (gekoppeld aan een domein), wijs een eigenaar toe en stel optioneel een kostenplaats in.',
 			'Domeinen en labels: organiseer projecten via een hiërarchie van domeinen en labels, beheerd via Instellingen.',
-			'Tijdslot plannen: plan vanuit de projectpagina of de agenda een tijdslot voor een project, gekoppeld aan één of meer docenten en leerlingen.',
-			'Deactiveren: zet een project op inactief zodat er geen nieuwe tijdsloten meer voor gepland kunnen worden.',
+			'Afspraak plannen: plan vanuit de projectpagina of de agenda een afspraak voor een project, gekoppeld aan één of meer docenten en leerlingen.',
+			'Deactiveren: zet een project op inactief zodat er geen nieuwe afspraken meer voor gepland kunnen worden.',
 		],
 	},
 	{
@@ -101,7 +101,7 @@ const sections: ManualSection[] = [
 		details: [
 			'Agenda weergave: bekijk de planning per week of maand voor een docent.',
 			'Handmatige events: maak losse afspraken aan met titel, beschrijving, kleur en deelnemers.',
-			'Projectplanning: plan tijdsloten voor projecten met meerdere docenten en leerlingen als deelnemers.',
+			'Projectplanning: plan afspraken voor projecten met meerdere docenten en leerlingen als deelnemers.',
 			'Les verplaatsen: maak een afwijking aan om een les eenmalig of structureel te verplaatsen naar een andere dag/tijd.',
 			'Les annuleren: annuleer een enkele les of alle toekomstige lessen in een reeks.',
 			'Herhaling: afwijkingen kunnen eenmalig of herhalend zijn, met een optionele einddatum.',
