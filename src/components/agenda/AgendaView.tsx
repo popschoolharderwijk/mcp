@@ -298,9 +298,9 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 	if (loading) return <PageSkeleton variant="agenda" />;
 
 	return (
-		<div className="space-y-4">
-			<div className="popschool-calendar rounded-lg border border-border bg-card overflow-hidden">
-				<ScrollArea className="h-[600px]">
+		<div className="flex flex-col gap-4 h-[calc(100vh-112px)] min-h-[640px]">
+			<div className="popschool-calendar rounded-lg border border-border bg-card overflow-hidden flex-1 flex flex-col">
+				<ScrollArea className="flex-1">
 					<CalendarViewProvider value={currentView}>
 						<DragAndDropCalendar {...calendarProps} />
 					</CalendarViewProvider>
@@ -391,7 +391,6 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 								const result = await revertDeviation({
 									eventId: selectedEvent.resource.eventId,
 									originalDate: selectedEvent.resource.originalDate,
-									userId: user.id,
 								});
 								if (!result.ok) {
 									toast.error(result.message);

@@ -10,6 +10,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { formatDateToDb, now } from '../../../src/lib/date/date-format';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import type { AgendaEventInsert } from '../../types';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
@@ -27,6 +28,21 @@ afterAll(async () => {
 });
 
 const dbNoRLS = createClientBypassRLS();
+
+function createManualEvent(ownerUserId: string, title: string): AgendaEventInsert {
+	const today = formatDateToDb(now());
+	return {
+		source_type: 'manual',
+		owner_user_id: ownerUserId,
+		title,
+		start_date: today,
+		start_time: '10:00:00',
+		end_date: today,
+		end_time: '11:00:00',
+		is_all_day: false,
+		recurring: false,
+	};
+}
 
 describe('agenda_participants SELECT RLS', () => {
 	it('user can see their own participant rows', async () => {
@@ -51,24 +67,11 @@ describe('agenda_participants SELECT RLS', () => {
 	it('event owner can see all participants of their events', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
 		const staffUserId = fixtures.requireUserId(TestUsers.STAFF_ONE);
-		const today = formatDateToDb(now());
 
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Test event for participant visibility',
-					start_date: today,
-					start_time: '10:00:00',
-					end_date: today,
-					end_time: '11:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Test event for participant visibility'))
 				.select('id'),
 		);
 
@@ -101,24 +104,11 @@ describe('agenda_participants SELECT RLS', () => {
 		const staffUserId = fixtures.requireUserId(TestUsers.STAFF_ONE);
 		const student001UserId = fixtures.requireUserId(TestUsers.STUDENT_001);
 		const student002UserId = fixtures.requireUserId(TestUsers.STUDENT_002);
-		const today = formatDateToDb(now());
 
 		const [event] = unwrap(
 			await staffDb
 				.from('agenda_events')
-				.insert({
-					source_type: 'manual',
-					owner_user_id: staffUserId,
-					title: 'Test event limited visibility',
-					start_date: today,
-					start_time: '10:00:00',
-					end_date: today,
-					end_time: '11:00:00',
-					is_all_day: false,
-					recurring: false,
-					created_by: staffUserId,
-					updated_by: staffUserId,
-				})
+				.insert(createManualEvent(staffUserId, 'Test event limited visibility'))
 				.select('id'),
 		);
 

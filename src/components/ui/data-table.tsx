@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { IconType } from 'react-icons';
 import {
 	LuArrowDown,
 	LuArrowUp,
 	LuArrowUpDown,
+	LuChevronDown,
 	LuChevronLeft,
 	LuChevronRight,
 	LuFilter,
@@ -91,6 +92,12 @@ interface DataTableProps<T> {
 	compactRows?: boolean;
 	/** If false, show all rows and hide the pagination footer. Default true. */
 	paginated?: boolean;
+	/** Key of the currently expanded row (via getRowKey). */
+	expandedRowKey?: string | null;
+	/** Called when a row expand toggle is clicked. Pass null to collapse. */
+	onExpandToggle?: (key: string | null) => void;
+	/** Render content below the expanded row. Only used when onExpandToggle is provided. */
+	renderExpandedRow?: (item: T) => React.ReactNode;
 }
 
 export function DataTable<T>({
@@ -117,7 +124,11 @@ export function DataTable<T>({
 	onSortChange,
 	compactRows = false,
 	paginated = true,
+	expandedRowKey,
+	onExpandToggle,
+	renderExpandedRow,
 }: DataTableProps<T>) {
+	const hasExpandableRows = !!onExpandToggle && !!renderExpandedRow;
 	const [sortColumn, setSortColumn] = useState<string | null>(initialSortColumn ?? null);
 	const [sortDirection, setSortDirection] = useState<SortDirection>(
 		initialSortColumn ? (initialSortDirection ?? 'asc') : null,
@@ -471,6 +482,9 @@ export function DataTable<T>({
 					<table className="w-full table-fixed">
 						<thead className="bg-muted/30">
 							<tr className="border-b text-left text-sm text-muted-foreground">
+								{hasExpandableRows && (
+									<th className={cn('w-10 py-2 pl-2', compactRows ? 'py-2' : 'py-3')} />
+								)}
 								{columns.map((column) => {
 									const isSortable = column.sortable !== false;
 									const isSorted = sortColumn === column.key;
@@ -524,6 +538,11 @@ export function DataTable<T>({
 										key={`skeleton-${Math.random().toString(36).substring(2, 9)}`}
 										className="border-b last:border-0"
 									>
+										{hasExpandableRows && (
+											<td className={cn('pl-2', compactRows ? 'py-2' : 'py-4')}>
+												<Skeleton className="h-4 w-4" />
+											</td>
+										)}
 										{columns.map((column) => (
 											<td
 												key={column.key}
@@ -543,7 +562,7 @@ export function DataTable<T>({
 								// Show empty message
 								<tr>
 									<td
-										colSpan={columns.length + (rowActions ? 1 : 0)}
+										colSpan={columns.length + (rowActions ? 1 : 0) + (hasExpandableRows ? 1 : 0)}
 										className={cn(
 											'text-center text-muted-foreground',
 											compactRows ? 'py-6' : 'py-12',
@@ -554,71 +573,116 @@ export function DataTable<T>({
 								</tr>
 							) : (
 								// Show actual data
-								paginatedData.map((item) => (
-									<tr
-										key={getRowKey(item)}
-										className={cn(
-											'border-b last:border-0 transition-colors',
-											rowActions?.onEdit && 'cursor-pointer hover:bg-muted/50',
-											getRowClassName?.(item),
-											loading && 'opacity-50',
-										)}
-										onClick={() => rowActions?.onEdit?.(item)}
-										onKeyDown={(e) => {
-											if (e.key === 'Enter' || e.key === ' ') {
-												e.preventDefault();
-												rowActions?.onEdit?.(item);
-											}
-										}}
-										tabIndex={rowActions?.onEdit ? 0 : undefined}
-										role={rowActions?.onEdit ? 'button' : undefined}
-									>
-										{columns.map((column) => (
-											<td
-												key={column.key}
+								paginatedData.map((item) => {
+									const rowKey = getRowKey(item);
+									const isExpanded = hasExpandableRows && expandedRowKey === rowKey;
+									return (
+										<Fragment key={rowKey}>
+											<tr
+												key={rowKey}
 												className={cn(
-													'pr-4 first:pl-2 last:pr-2',
-													compactRows ? 'py-1.5' : 'py-4',
-													column.className,
+													'border-b transition-colors',
+													!isExpanded && 'last:border-0',
+													rowActions?.onEdit && 'cursor-pointer hover:bg-muted/50',
+													getRowClassName?.(item),
+													loading && 'opacity-50',
 												)}
-											>
-												{column.render
-													? column.render(item)
-													: String(item[column.key as keyof T] ?? '')}
-											</td>
-										))}
-										{rowActions && (
-											<td
-												className={compactRows ? 'py-1.5' : 'py-4'}
-												onClick={(e) => {
-													e.stopPropagation();
-												}}
+												onClick={() => rowActions?.onEdit?.(item)}
 												onKeyDown={(e) => {
 													if (e.key === 'Enter' || e.key === ' ') {
-														e.stopPropagation();
+														e.preventDefault();
+														rowActions?.onEdit?.(item);
 													}
 												}}
+												tabIndex={rowActions?.onEdit ? 0 : undefined}
+												role={rowActions?.onEdit ? 'button' : undefined}
 											>
-												{rowActions.render ? (
-													rowActions.render(item)
-												) : (
-													<div className="flex items-center gap-2">
-														{rowActions.onDelete && (
-															<Button
-																variant="ghost"
-																size="icon"
-																className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-																onClick={() => rowActions.onDelete?.(item)}
-															>
-																<LuTrash2 className="h-4 w-4" />
-															</Button>
-														)}
-													</div>
+												{hasExpandableRows && (
+													<td
+														className={cn('pl-2 w-10', compactRows ? 'py-1.5' : 'py-4')}
+														onClick={(e) => {
+															e.stopPropagation();
+														}}
+														onKeyDown={(e) => {
+															if (e.key === 'Enter' || e.key === ' ') {
+																e.stopPropagation();
+															}
+														}}
+													>
+														<Button
+															variant="ghost"
+															size="icon"
+															className="h-7 w-7"
+															onClick={() => onExpandToggle?.(isExpanded ? null : rowKey)}
+															aria-label={isExpanded ? 'Inklappen' : 'Uitklappen'}
+														>
+															<LuChevronDown
+																className={cn(
+																	'h-4 w-4 transition-transform',
+																	isExpanded && 'rotate-180',
+																)}
+															/>
+														</Button>
+													</td>
 												)}
-											</td>
-										)}
-									</tr>
-								))
+												{columns.map((column) => (
+													<td
+														key={column.key}
+														className={cn(
+															'pr-4 first:pl-2 last:pr-2',
+															compactRows ? 'py-1.5' : 'py-4',
+															column.className,
+														)}
+													>
+														{column.render
+															? column.render(item)
+															: String(item[column.key as keyof T] ?? '')}
+													</td>
+												))}
+												{rowActions && (
+													<td
+														className={compactRows ? 'py-1.5' : 'py-4'}
+														onClick={(e) => {
+															e.stopPropagation();
+														}}
+														onKeyDown={(e) => {
+															if (e.key === 'Enter' || e.key === ' ') {
+																e.stopPropagation();
+															}
+														}}
+													>
+														{rowActions.render ? (
+															rowActions.render(item)
+														) : (
+															<div className="flex items-center gap-2">
+																{rowActions.onDelete && (
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+																		onClick={() => rowActions.onDelete?.(item)}
+																	>
+																		<LuTrash2 className="h-4 w-4" />
+																	</Button>
+																)}
+															</div>
+														)}
+													</td>
+												)}
+											</tr>
+											{isExpanded && (
+												<tr key={`${rowKey}-expanded`} className="border-b last:border-0">
+													<td
+														colSpan={columns.length + (rowActions ? 1 : 0) + 1}
+														className="bg-muted/20 px-4 py-3"
+													>
+														{renderExpandedRow?.(item)}
+													</td>
+												</tr>
+											)}
+										</Fragment>
+									);
+								})
 							)}
 						</tbody>
 					</table>

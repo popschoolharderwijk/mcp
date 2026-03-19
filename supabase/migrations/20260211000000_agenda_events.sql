@@ -15,13 +15,14 @@
 -- =============================================================================
 -- SECTION 1: AGENDA_EVENTS TABLE
 -- =============================================================================
+-- agenda_event_source_type enum is created in 20260210194748_projects.sql
 
 CREATE TABLE IF NOT EXISTS public.agenda_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- Source: manual or from lesson_agreement
-  source_type TEXT NOT NULL CHECK (source_type IN ('manual', 'lesson_agreement')),
-  source_id UUID REFERENCES public.lesson_agreements(id) ON DELETE CASCADE, -- only when source_type = 'lesson_agreement'
+  -- Source: manual, lesson_agreement, or project (polymorphic; validated by trigger)
+  source_type public.agenda_event_source_type NOT NULL,
+  source_id UUID, -- lesson_agreements(id) or projects(id) depending on source_type; cascade via trigger
 
   -- Owner: for RLS (creator for manual, teacher for lesson_agreement)
   owner_user_id UUID NOT NULL REFERENCES auth.users(id),
@@ -37,23 +38,23 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
 
   -- Recurring (generic; future: RRULE/BYDAY)
   recurring BOOLEAN NOT NULL DEFAULT false,
-  recurring_frequency TEXT, -- e.g. 'daily','weekly','biweekly','monthly'
+  recurring_frequency public.lesson_frequency, -- daily, weekly, biweekly, monthly (from lesson_types migration)
   recurring_end_date DATE,
 
   -- Visual
   color TEXT,
 
-  -- Audit (for manual: created_by = owner; for lesson_agreement: optional)
-  created_by UUID REFERENCES auth.users(id),
-  updated_by UUID REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
   CONSTRAINT agenda_events_source_check CHECK (
-    (source_type = 'manual' AND source_id IS NULL)
-    OR (source_type = 'lesson_agreement' AND source_id IS NOT NULL)
+    (source_type = 'manual'::public.agenda_event_source_type AND source_id IS NULL)
+    OR (source_type = 'lesson_agreement'::public.agenda_event_source_type AND source_id IS NOT NULL)
+    OR (source_type = 'project'::public.agenda_event_source_type AND source_id IS NOT NULL)
   ),
   CONSTRAINT agenda_events_end_check CHECK (end_date IS NULL OR end_date >= start_date),
+  CONSTRAINT agenda_events_time_check CHECK (
+    end_date IS NULL
+    OR end_time IS NULL
+    OR (end_date > start_date OR (end_date = start_date AND end_time >= start_time))
+  ),
   CONSTRAINT agenda_events_recurring_check CHECK (
     (recurring = false AND recurring_frequency IS NULL AND recurring_end_date IS NULL)
     OR (recurring = true AND recurring_frequency IS NOT NULL)
@@ -61,13 +62,77 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
 );
 
 CREATE INDEX IF NOT EXISTS idx_agenda_events_owner_user_id ON public.agenda_events(owner_user_id);
-CREATE INDEX IF NOT EXISTS idx_agenda_events_source ON public.agenda_events(source_type, source_id) WHERE source_id IS NOT NULL;
+-- Covering index for "my events in date range" queries
+CREATE INDEX IF NOT EXISTS idx_agenda_events_owner_start ON public.agenda_events(owner_user_id, start_date);
 CREATE INDEX IF NOT EXISTS idx_agenda_events_start_date ON public.agenda_events(start_date);
+-- One agenda_event per lesson_agreement; projects may have multiple events
+CREATE UNIQUE INDEX IF NOT EXISTS unique_agenda_event_per_lesson_agreement
+  ON public.agenda_events(source_type, source_id)
+  WHERE source_type = 'lesson_agreement'::public.agenda_event_source_type AND source_id IS NOT NULL;
 
-COMMENT ON TABLE public.agenda_events IS 'Unified table for all agenda items: manual events and lesson-appointment events (one row per lesson_agreement).';
-COMMENT ON COLUMN public.agenda_events.source_type IS 'manual = user-created; lesson_agreement = created by trigger from lesson_agreements.';
-COMMENT ON COLUMN public.agenda_events.source_id IS 'When source_type = lesson_agreement, FK to lesson_agreements(id). CASCADE delete.';
+COMMENT ON TABLE public.agenda_events IS 'Unified table for all agenda items: manual events, lesson-appointment events, and project events.';
+COMMENT ON COLUMN public.agenda_events.source_type IS 'manual = user-created; lesson_agreement = from lesson_agreements; project = from projects.';
+COMMENT ON COLUMN public.agenda_events.source_id IS 'When source_type = lesson_agreement: lesson_agreements(id). When source_type = project: projects(id). Cascade delete via trigger.';
 COMMENT ON COLUMN public.agenda_events.owner_user_id IS 'User who can edit/delete this event (creator for manual, teacher for lesson_agreement).';
+
+-- Validate source_id references and cascade deletes (projects exist from 20260210194748_projects.sql)
+CREATE OR REPLACE FUNCTION public.validate_agenda_event_source()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  IF NEW.source_type = 'lesson_agreement'::public.agenda_event_source_type THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.lesson_agreements WHERE id = NEW.source_id
+    ) THEN
+      RAISE EXCEPTION 'source_id % does not exist in lesson_agreements', NEW.source_id;
+    END IF;
+
+  ELSIF NEW.source_type = 'project'::public.agenda_event_source_type THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM public.projects WHERE id = NEW.source_id
+    ) THEN
+      RAISE EXCEPTION 'source_id % does not exist in projects', NEW.source_id;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_validate_agenda_event_source
+  BEFORE INSERT OR UPDATE ON public.agenda_events
+  FOR EACH ROW
+  WHEN (NEW.source_id IS NOT NULL)
+  EXECUTE FUNCTION public.validate_agenda_event_source();
+
+CREATE OR REPLACE FUNCTION public.cascade_delete_agenda_events_for_source()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  DELETE FROM public.agenda_events
+  WHERE source_id = OLD.id
+    AND source_type = TG_ARGV[0]::public.agenda_event_source_type;
+  RETURN OLD;
+END;
+$$;
+
+CREATE TRIGGER trg_cascade_delete_agenda_events_project
+  BEFORE DELETE ON public.projects
+  FOR EACH ROW
+  EXECUTE FUNCTION public.cascade_delete_agenda_events_for_source('project');
+
+CREATE TRIGGER trg_cascade_delete_agenda_events_lesson_agreement
+  BEFORE DELETE ON public.lesson_agreements
+  FOR EACH ROW
+  EXECUTE FUNCTION public.cascade_delete_agenda_events_for_source('lesson_agreement');
 
 -- =============================================================================
 -- SECTION 2: AGENDA_PARTICIPANTS TABLE
@@ -99,17 +164,13 @@ CREATE TABLE IF NOT EXISTS public.agenda_event_deviations (
   actual_date DATE NOT NULL,
   actual_start_time TIME NOT NULL,
   is_cancelled BOOLEAN NOT NULL DEFAULT false,
-  recurring BOOLEAN NOT NULL DEFAULT false,
-  recurring_end_date DATE,
+  spans_future_occurrences BOOLEAN NOT NULL DEFAULT false,
+  spans_end_date DATE,
   reason TEXT,
   title TEXT,
   description TEXT,
   color TEXT,
   participant_ids UUID[],
-  created_by UUID NOT NULL REFERENCES auth.users(id),
-  updated_by UUID NOT NULL REFERENCES auth.users(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT agenda_event_deviations_unique UNIQUE (event_id, original_date)
   -- No CHECK (actual_date >= CURRENT_DATE): validate in app or trigger to avoid timezone/backup issues
@@ -118,17 +179,18 @@ CREATE TABLE IF NOT EXISTS public.agenda_event_deviations (
 CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_event_id ON public.agenda_event_deviations(event_id);
 CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_original_date ON public.agenda_event_deviations(original_date);
 CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_actual_date ON public.agenda_event_deviations(actual_date);
-CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_created_by ON public.agenda_event_deviations(created_by);
-CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_updated_by ON public.agenda_event_deviations(updated_by);
 CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_is_cancelled ON public.agenda_event_deviations(is_cancelled) WHERE is_cancelled = true;
-CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_recurring_end_date ON public.agenda_event_deviations(recurring_end_date) WHERE recurring_end_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_spans_end_date ON public.agenda_event_deviations(spans_end_date) WHERE spans_end_date IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_agenda_event_deviations_spans_future ON public.agenda_event_deviations(event_id) WHERE spans_future_occurrences = true;
 
+COMMENT ON COLUMN public.agenda_event_deviations.spans_future_occurrences IS 'True when this deviation applies to original_date and all future occurrences until spans_end_date (cf. agenda_events.recurring = event repeats).';
 COMMENT ON TABLE public.agenda_event_deviations IS 'Deviations for any recurring agenda event (move/cancel occurrences). Replaces lesson_appointment_deviations.';
 
 -- =============================================================================
 -- SECTION 4: TRIGGER ON LESSON_AGREEMENTS INSERT
 -- =============================================================================
 
+-- Rely on UNIQUE (source_type, source_id) to prevent duplicates; no race-prone IF EXISTS.
 CREATE OR REPLACE FUNCTION public.trigger_lesson_agreement_create_agenda_event()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -142,7 +204,6 @@ DECLARE
   v_end_time TIME;
   v_agenda_event_id UUID;
 BEGIN
-  -- teacher_user_id references teachers(user_id), so it is the teacher's user_id
   v_teacher_user_id := NEW.teacher_user_id;
 
   IF v_teacher_user_id IS NULL THEN
@@ -155,40 +216,48 @@ BEGIN
 
   v_end_time := NEW.start_time + (NEW.duration_minutes || ' minutes')::interval;
 
-  INSERT INTO public.agenda_events (
-    source_type,
-    source_id,
-    owner_user_id,
-    title,
-    start_date,
-    start_time,
-    end_date,
-    end_time,
-    is_all_day,
-    recurring,
-    recurring_frequency,
-    recurring_end_date
-  ) VALUES (
-    'lesson_agreement',
-    NEW.id,
-    v_teacher_user_id,
-    v_title,
-    NEW.start_date,
-    NEW.start_time,
-    NEW.end_date,
-    v_end_time,
-    false,
-    true,
-    NEW.frequency::text,
-    NEW.end_date
-  )
-  RETURNING id INTO v_agenda_event_id;
+  BEGIN
+    INSERT INTO public.agenda_events (
+      source_type,
+      source_id,
+      owner_user_id,
+      title,
+      start_date,
+      start_time,
+      end_date,
+      end_time,
+      is_all_day,
+      recurring,
+      recurring_frequency,
+      recurring_end_date,
+      created_by
+    ) VALUES (
+      'lesson_agreement'::public.agenda_event_source_type,
+      NEW.id,
+      v_teacher_user_id,
+      v_title,
+      NEW.start_date,
+      NEW.start_time,
+      NEW.end_date,
+      v_end_time,
+      false,
+      true,
+      NEW.frequency,
+      NEW.end_date,
+      v_teacher_user_id
+    )
+    RETURNING id INTO v_agenda_event_id;
 
-  INSERT INTO public.agenda_participants (event_id, user_id)
-  VALUES (v_agenda_event_id, v_teacher_user_id);
+    INSERT INTO public.agenda_participants (event_id, user_id)
+    VALUES (v_agenda_event_id, v_teacher_user_id);
 
-  INSERT INTO public.agenda_participants (event_id, user_id)
-  VALUES (v_agenda_event_id, NEW.student_user_id);
+    INSERT INTO public.agenda_participants (event_id, user_id)
+    VALUES (v_agenda_event_id, NEW.student_user_id);
+  EXCEPTION
+    WHEN unique_violation THEN
+      -- Concurrent insert or duplicate trigger: UNIQUE (source_type, source_id) already enforced
+      RETURN NEW;
+  END;
 
   RETURN NEW;
 END;
@@ -202,7 +271,16 @@ FOR EACH ROW
 EXECUTE FUNCTION public.trigger_lesson_agreement_create_agenda_event();
 
 -- =============================================================================
--- SECTION 5: ENABLE RLS
+-- SECTION 5: AUDIT TRAIL (must be before RLS policies that reference created_by)
+-- =============================================================================
+-- Add audit columns and triggers via helper function from baseline
+
+SELECT public.apply_audit_trail('public.agenda_events');
+
+SELECT public.apply_audit_trail('public.agenda_event_deviations');
+
+-- =============================================================================
+-- SECTION 5b: ENABLE RLS
 -- =============================================================================
 
 ALTER TABLE public.agenda_events ENABLE ROW LEVEL SECURITY;
@@ -278,34 +356,34 @@ GRANT EXECUTE ON FUNCTION public.is_agenda_participant(uuid, uuid) TO authentica
 CREATE POLICY agenda_events_select
 ON public.agenda_events FOR SELECT TO authenticated
 USING (
-  owner_user_id = (select auth.uid())
-  OR public.is_agenda_participant(agenda_events.id, (select auth.uid()))
-  OR public.is_privileged((select auth.uid()))
+  owner_user_id = public.current_user_id()
+  OR public.is_agenda_participant(agenda_events.id, public.current_user_id())
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- agenda_events: INSERT for authenticated (owner_user_id/created_by set by caller)
 -- Restrict: user can only insert events where they are owner, or privileged
 CREATE POLICY agenda_events_insert
 ON public.agenda_events FOR INSERT TO authenticated
-WITH CHECK (owner_user_id = (select auth.uid()) OR public.is_privileged((select auth.uid())));
+WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
 
 -- agenda_events: UPDATE/DELETE only owner or privileged
 CREATE POLICY agenda_events_update
 ON public.agenda_events FOR UPDATE TO authenticated
-USING (owner_user_id = (select auth.uid()) OR public.is_privileged((select auth.uid())))
-WITH CHECK (owner_user_id = (select auth.uid()) OR public.is_privileged((select auth.uid())));
+USING (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()))
+WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
 
 CREATE POLICY agenda_events_delete
 ON public.agenda_events FOR DELETE TO authenticated
-USING (owner_user_id = (select auth.uid()) OR public.is_privileged((select auth.uid())));
+USING (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
 
 -- agenda_participants: SELECT own rows, or event owner, or privileged (use helper to avoid RLS recursion)
 CREATE POLICY agenda_participants_select
 ON public.agenda_participants FOR SELECT TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_privileged((select auth.uid()))
-  OR public.get_agenda_event_owner(event_id) = (select auth.uid())
+  user_id = public.current_user_id()
+  OR public.is_privileged(public.current_user_id())
+  OR public.get_agenda_event_owner(event_id) = public.current_user_id()
 );
 
 -- agenda_participants: INSERT only event owner or privileged
@@ -315,13 +393,13 @@ CREATE POLICY agenda_participants_insert
 ON public.agenda_participants FOR INSERT TO authenticated
 WITH CHECK (
   -- Privileged users can add anyone
-  public.is_privileged((select auth.uid()))
+  public.is_privileged(public.current_user_id())
   OR (
     -- Event owner can add participants...
-    public.get_agenda_event_owner(event_id) = (select auth.uid())
+    public.get_agenda_event_owner(event_id) = public.current_user_id()
     AND (
       -- ...owner can always add themselves
-      user_id = (select auth.uid())
+      user_id = public.current_user_id()
       -- ...or add non-teachers
       OR NOT public.is_teacher(user_id)
     )
@@ -330,20 +408,20 @@ WITH CHECK (
 
 CREATE POLICY agenda_participants_update
 ON public.agenda_participants FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id, (select auth.uid())))
-WITH CHECK (public.can_manage_agenda_event(event_id, (select auth.uid())));
+USING (public.can_manage_agenda_event(event_id, public.current_user_id()))
+WITH CHECK (public.can_manage_agenda_event(event_id, public.current_user_id()));
 
 CREATE POLICY agenda_participants_delete
 ON public.agenda_participants FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id, (select auth.uid())));
+USING (public.can_manage_agenda_event(event_id, public.current_user_id()));
 
 -- agenda_event_deviations: SELECT if participant of event or privileged
 -- Uses helper function to avoid recursion
 CREATE POLICY agenda_event_deviations_select
 ON public.agenda_event_deviations FOR SELECT TO authenticated
 USING (
-  public.is_agenda_participant(agenda_event_deviations.event_id, (select auth.uid()))
-  OR public.is_privileged((select auth.uid()))
+  public.is_agenda_participant(agenda_event_deviations.event_id, public.current_user_id())
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- agenda_event_deviations: INSERT/UPDATE/DELETE only event owner or privileged
@@ -351,36 +429,20 @@ USING (
 CREATE POLICY agenda_event_deviations_insert
 ON public.agenda_event_deviations FOR INSERT TO authenticated
 WITH CHECK (
-  public.can_manage_agenda_event(event_id, (select auth.uid()))
-  AND created_by = (select auth.uid())
-  AND updated_by = (select auth.uid())
+  public.can_manage_agenda_event(event_id, public.current_user_id())
 );
 
 CREATE POLICY agenda_event_deviations_update
 ON public.agenda_event_deviations FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id, (select auth.uid())))
-WITH CHECK (updated_by = (select auth.uid()));
+USING (public.can_manage_agenda_event(event_id, public.current_user_id()))
+WITH CHECK (public.can_manage_agenda_event(event_id, public.current_user_id()));
 
 CREATE POLICY agenda_event_deviations_delete
 ON public.agenda_event_deviations FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id, (select auth.uid())));
+USING (public.can_manage_agenda_event(event_id, public.current_user_id()));
 
 -- =============================================================================
--- SECTION 7: UPDATED_AT TRIGGERS
--- =============================================================================
-
-CREATE TRIGGER update_agenda_events_updated_at
-BEFORE UPDATE ON public.agenda_events
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER update_agenda_event_deviations_updated_at
-BEFORE UPDATE ON public.agenda_event_deviations
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
-
--- =============================================================================
--- SECTION 8: DEVIATION TRIGGERS (immutable fields, no-op delete, validity)
+-- SECTION 7: DEVIATION TRIGGERS (immutable fields, no-op delete, validity)
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.enforce_agenda_deviation_immutable_fields()
@@ -399,9 +461,7 @@ BEGIN
   IF NEW.original_start_time IS DISTINCT FROM OLD.original_start_time THEN
     RAISE EXCEPTION 'Cannot change original_start_time after creation';
   END IF;
-  IF NEW.created_by IS DISTINCT FROM OLD.created_by THEN
-    RAISE EXCEPTION 'Cannot change created_by after creation';
-  END IF;
+  -- created_by immutability is handled by set_audit_fields() trigger
   RETURN NEW;
 END;
 $$;
@@ -468,9 +528,9 @@ BEGIN
     FROM public.agenda_event_deviations d
     WHERE d.event_id = NEW.event_id
       AND d.id IS DISTINCT FROM NEW.id
-      AND d.recurring = true
+      AND d.spans_future_occurrences = true
       AND d.original_date < NEW.original_date
-      AND (d.recurring_end_date IS NULL OR d.recurring_end_date >= NEW.original_date)
+      AND (d.spans_end_date IS NULL OR d.spans_end_date >= NEW.original_date)
   ) INTO v_has_recurring_override;
 
   IF v_has_recurring_override THEN
@@ -522,10 +582,7 @@ EXECUTE FUNCTION public.prevent_owner_participant_removal();
 -- SECTION 9: RPCs (generic: event_id = agenda_events.id)
 -- =============================================================================
 
-CREATE OR REPLACE FUNCTION public.shift_recurring_deviation_to_next_week(
-  p_deviation_id UUID,
-  p_user_id UUID
-)
+CREATE OR REPLACE FUNCTION public.shift_recurring_deviation_to_next_week(p_deviation_id UUID)
 RETURNS UUID
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -538,6 +595,10 @@ DECLARE
   v_next_week_actual DATE;
   v_new_id UUID;
 BEGIN
+  IF public.current_user_id() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
   SELECT * INTO v_dev
   FROM public.agenda_event_deviations
   WHERE id = p_deviation_id;
@@ -546,8 +607,8 @@ BEGIN
     RAISE EXCEPTION 'Deviation not found: %', p_deviation_id;
   END IF;
 
-  IF NOT v_dev.recurring THEN
-    RAISE EXCEPTION 'Deviation is not recurring: %', p_deviation_id;
+  IF NOT v_dev.spans_future_occurrences THEN
+    RAISE EXCEPTION 'Deviation does not span future occurrences: %', p_deviation_id;
   END IF;
 
   SELECT * INTO v_ev FROM public.agenda_events WHERE id = v_dev.event_id;
@@ -555,7 +616,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_privileged(auth.uid()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -571,7 +632,7 @@ BEGIN
     actual_date,
     actual_start_time,
     is_cancelled,
-    recurring,
+    spans_future_occurrences,
     reason,
     created_by,
     updated_by
@@ -584,8 +645,8 @@ BEGIN
     v_dev.is_cancelled,
     true,
     v_dev.reason,
-    p_user_id,
-    p_user_id
+    public.current_user_id(),
+    public.current_user_id()
   )
   RETURNING id INTO v_new_id;
 
@@ -593,13 +654,12 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION public.shift_recurring_deviation_to_next_week(UUID, UUID) OWNER TO postgres;
-GRANT EXECUTE ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID, UUID) TO authenticated;
+ALTER FUNCTION public.shift_recurring_deviation_to_next_week(UUID) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.end_recurring_deviation_from_week(
   p_deviation_id UUID,
-  p_week_date DATE,
-  p_user_id UUID
+  p_week_date DATE
 )
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -611,6 +671,10 @@ DECLARE
   v_ev RECORD;
   v_recurring_end_date DATE;
 BEGIN
+  IF public.current_user_id() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
   SELECT * INTO v_dev
   FROM public.agenda_event_deviations
   WHERE id = p_deviation_id;
@@ -623,12 +687,12 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
-  IF v_ev.owner_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_privileged(auth.uid()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
-  IF NOT v_dev.recurring THEN
-    RAISE EXCEPTION 'Deviation is not recurring: %', p_deviation_id;
+  IF NOT v_dev.spans_future_occurrences THEN
+    RAISE EXCEPTION 'Deviation does not span future occurrences: %', p_deviation_id;
   END IF;
 
   IF p_week_date = v_dev.original_date THEN
@@ -638,21 +702,20 @@ BEGIN
 
   v_recurring_end_date := p_week_date - INTERVAL '7 days';
   UPDATE public.agenda_event_deviations
-  SET recurring_end_date = v_recurring_end_date,
-      updated_by = p_user_id
+  SET spans_end_date = v_recurring_end_date,
+      updated_by = public.current_user_id()
   WHERE id = p_deviation_id;
 
   RETURN 'updated';
 END;
 $$;
 
-ALTER FUNCTION public.end_recurring_deviation_from_week(UUID, DATE, UUID) OWNER TO postgres;
-GRANT EXECUTE ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE, UUID) TO authenticated;
+ALTER FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.ensure_week_shows_original_slot(
   p_event_id UUID,
   p_week_date DATE,
-  p_user_id UUID,
   p_scope TEXT
 )
 RETURNS TEXT
@@ -667,6 +730,10 @@ DECLARE
   v_has_recurring_for_week BOOLEAN;
   v_recurring_end_date DATE;
 BEGIN
+  IF public.current_user_id() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
   IF p_scope IS DISTINCT FROM 'only_this' AND p_scope IS DISTINCT FROM 'this_and_future' THEN
     RAISE EXCEPTION 'p_scope must be only_this or this_and_future, got: %', p_scope;
   END IF;
@@ -676,7 +743,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found: %', p_event_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_privileged(auth.uid()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -687,12 +754,12 @@ BEGIN
   LIMIT 1;
 
   IF FOUND THEN
-    IF v_row.recurring THEN
+    IF v_row.spans_future_occurrences THEN
       IF p_scope = 'this_and_future' THEN
         DELETE FROM public.agenda_event_deviations WHERE id = v_row.id;
         RETURN 'recurring_deleted';
       ELSE
-        PERFORM public.shift_recurring_deviation_to_next_week(v_row.id, p_user_id);
+        PERFORM public.shift_recurring_deviation_to_next_week(v_row.id);
         RETURN 'recurring_shifted';
       END IF;
     ELSE
@@ -702,9 +769,9 @@ BEGIN
         SELECT 1
         FROM public.agenda_event_deviations d
         WHERE d.event_id = p_event_id
-          AND d.recurring = true
+          AND d.spans_future_occurrences = true
           AND d.original_date <= p_week_date
-          AND (d.recurring_end_date IS NULL OR d.recurring_end_date >= p_week_date)
+          AND (d.spans_end_date IS NULL OR d.spans_end_date >= p_week_date)
       ) INTO v_has_recurring_for_week;
 
       IF v_has_recurring_for_week THEN
@@ -714,7 +781,7 @@ BEGIN
           original_start_time,
           actual_date,
           actual_start_time,
-          recurring,
+          spans_future_occurrences,
           created_by,
           updated_by
         ) VALUES (
@@ -724,8 +791,8 @@ BEGIN
           p_week_date,
           v_ev.start_time,
           false,
-          p_user_id,
-          p_user_id
+          auth.uid(),
+          auth.uid()
         );
         RETURN 'single_replaced_with_override';
       END IF;
@@ -736,9 +803,9 @@ BEGIN
   SELECT * INTO v_recurring
   FROM public.agenda_event_deviations
   WHERE event_id = p_event_id
-    AND recurring = true
+    AND spans_future_occurrences = true
     AND original_date <= p_week_date
-    AND (recurring_end_date IS NULL OR recurring_end_date >= p_week_date)
+    AND (spans_end_date IS NULL OR spans_end_date >= p_week_date)
   ORDER BY original_date DESC
   LIMIT 1;
 
@@ -749,8 +816,8 @@ BEGIN
   IF p_scope = 'this_and_future' THEN
     v_recurring_end_date := p_week_date - INTERVAL '7 days';
     UPDATE public.agenda_event_deviations
-    SET recurring_end_date = v_recurring_end_date,
-        updated_by = p_user_id
+    SET spans_end_date = v_recurring_end_date,
+        updated_by = public.current_user_id()
     WHERE id = v_recurring.id;
     RETURN 'recurring_ended';
   END IF;
@@ -761,7 +828,7 @@ BEGIN
     original_start_time,
     actual_date,
     actual_start_time,
-    recurring,
+    spans_future_occurrences,
     created_by,
     updated_by
   ) VALUES (
@@ -771,15 +838,15 @@ BEGIN
     p_week_date,
     v_ev.start_time,
     false,
-    p_user_id,
-    p_user_id
+    auth.uid(),
+    auth.uid()
   );
   RETURN 'override_inserted';
 END;
 $$;
 
-ALTER FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, UUID, TEXT) OWNER TO postgres;
-GRANT EXECUTE ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, UUID, TEXT) TO authenticated;
+ALTER FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) OWNER TO postgres;
+GRANT EXECUTE ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) TO authenticated;
 
 -- =============================================================================
 -- SECTION 10: PERMISSIONS

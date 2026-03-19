@@ -12,12 +12,6 @@ import { cn } from '@/lib/utils';
 // Single value for all vertical spacing between nav items (padding + gap)
 const NAV_GAP = '1rem';
 
-// Main nav items (for all authenticated users)
-const mainNavItems = [
-	{ href: '/', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard },
-	{ href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda },
-];
-
 // Admin-only navigation items
 const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },
@@ -37,7 +31,6 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 	const showTeachersNav = isAdmin || isSiteAdmin;
 	const showStudentsNav = isPrivileged;
 	const showReportsNav = isPrivileged || isTeacher;
-	// Projects: visible to teachers, staff, admin, site_admin (not users/students); only admin/site_admin can edit (on page)
 	const showProjectsNav = isTeacher || isPrivileged;
 
 	return (
@@ -99,98 +92,64 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 							style={{ paddingTop: NAV_GAP, paddingBottom: NAV_GAP } as React.CSSProperties}
 						>
 							<nav className="flex flex-col w-full" style={{ gap: NAV_GAP } as React.CSSProperties}>
-								{/* Main navigation items */}
-								{mainNavItems.map((item) => (
-									<NavItem key={item.href} {...item} collapsed={collapsed} />
-								))}
+								{/* Main navigation - flat list */}
+								<NavItem
+									href="/"
+									label={NAV_LABELS.dashboard}
+									icon={NAV_ICONS.dashboard}
+									collapsed={collapsed}
+								/>
+								<NavItem
+									href="/agenda"
+									label={NAV_LABELS.agenda}
+									icon={NAV_ICONS.agenda}
+									collapsed={collapsed}
+								/>
 
-								{/* Teachers section */}
 								{showTeachersNav && (
-									<>
-										{!collapsed && (
-											<div className="mt-4 mb-2 px-3">
-												<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-													<NAV_ICONS.teachers className="h-3.5 w-3.5" />
-													<span>{NAV_LABELS.teachers}</span>
-												</div>
-											</div>
-										)}
-										{collapsed && <Separator />}
-										<NavItem
-											href="/teachers"
-											label={NAV_LABELS.teachers}
-											icon={NAV_ICONS.teachers}
-											collapsed={collapsed}
-										/>
-									</>
+									<NavItem
+										href="/teachers"
+										label={NAV_LABELS.teachers}
+										icon={NAV_ICONS.teachers}
+										collapsed={collapsed}
+									/>
 								)}
 
-								{/* Teacher-specific navigation */}
+								{/* Teacher-only: My Students (when not admin) */}
 								{isTeacher && !showTeachersNav && (
-									<>
-										{!collapsed && (
-											<div className="mt-4 mb-2 px-3">
-												<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-													<NAV_ICONS.myStudents className="h-3.5 w-3.5" />
-													<span>Mijn Overzicht</span>
-												</div>
-											</div>
-										)}
-										{collapsed && <Separator />}
-										<NavItem
-											href="/students/my-students"
-											label={NAV_LABELS.myStudents}
-											icon={NAV_ICONS.myStudents}
-											collapsed={collapsed}
-										/>
-									</>
+									<NavItem
+										href="/students/my-students"
+										label={NAV_LABELS.myStudents}
+										icon={NAV_ICONS.myStudents}
+										collapsed={collapsed}
+									/>
 								)}
 
-								{/* Students section */}
 								{showStudentsNav && (
-									<>
-										{!collapsed && (
-											<div className="mt-4 mb-2 px-3">
-												<div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-													<NAV_ICONS.students className="h-3.5 w-3.5" />
-													<span>{NAV_LABELS.students}</span>
-												</div>
-											</div>
-										)}
-										{collapsed && <Separator />}
-										<NavItem
-											href="/students"
-											label={NAV_LABELS.students}
-											icon={NAV_ICONS.students}
-											collapsed={collapsed}
-										/>
-									</>
+									<NavItem
+										href="/students"
+										label={NAV_LABELS.students}
+										icon={NAV_ICONS.students}
+										collapsed={collapsed}
+									/>
 								)}
 
-								{/* Reports section */}
 								{showReportsNav && (
-									<>
-										{collapsed && <Separator />}
-										<NavItem
-											href="/reports"
-											label={NAV_LABELS.reports}
-											icon={NAV_ICONS.reports}
-											collapsed={collapsed}
-										/>
-									</>
+									<NavItem
+										href="/reports"
+										label={NAV_LABELS.reports}
+										icon={NAV_ICONS.reports}
+										collapsed={collapsed}
+									/>
 								)}
 
-								{/* Projecten: teachers, staff, admin, site_admin (edit alleen admin/site_admin) */}
 								{showProjectsNav && (
-									<>
-										{collapsed && <Separator />}
-										<NavItem
-											href="/projects"
-											label={NAV_LABELS.projects}
-											icon={NAV_ICONS.projects}
-											collapsed={collapsed}
-										/>
-									</>
+									<NavItem
+										href="/projects"
+										label={NAV_LABELS.projects}
+										icon={NAV_ICONS.projects}
+										collapsed={collapsed}
+									/>
 								)}
 
 								{/* Admin section (admin/site_admin only) */}

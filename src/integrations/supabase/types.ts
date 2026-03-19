@@ -39,7 +39,7 @@ export type Database = {
 					actual_start_time: string;
 					color: string | null;
 					created_at: string;
-					created_by: string;
+					created_by: string | null;
 					description: string | null;
 					event_id: string;
 					id: string;
@@ -48,18 +48,18 @@ export type Database = {
 					original_start_time: string;
 					participant_ids: string[] | null;
 					reason: string | null;
-					recurring: boolean;
-					recurring_end_date: string | null;
+					spans_end_date: string | null;
+					spans_future_occurrences: boolean;
 					title: string | null;
 					updated_at: string;
-					updated_by: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					actual_date: string;
 					actual_start_time: string;
 					color?: string | null;
 					created_at?: string;
-					created_by: string;
+					created_by?: string | null;
 					description?: string | null;
 					event_id: string;
 					id?: string;
@@ -68,18 +68,18 @@ export type Database = {
 					original_start_time: string;
 					participant_ids?: string[] | null;
 					reason?: string | null;
-					recurring?: boolean;
-					recurring_end_date?: string | null;
+					spans_end_date?: string | null;
+					spans_future_occurrences?: boolean;
 					title?: string | null;
 					updated_at?: string;
-					updated_by: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					actual_date?: string;
 					actual_start_time?: string;
 					color?: string | null;
 					created_at?: string;
-					created_by?: string;
+					created_by?: string | null;
 					description?: string | null;
 					event_id?: string;
 					id?: string;
@@ -88,11 +88,11 @@ export type Database = {
 					original_start_time?: string;
 					participant_ids?: string[] | null;
 					reason?: string | null;
-					recurring?: boolean;
-					recurring_end_date?: string | null;
+					spans_end_date?: string | null;
+					spans_future_occurrences?: boolean;
 					title?: string | null;
 					updated_at?: string;
-					updated_by?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -117,9 +117,9 @@ export type Database = {
 					owner_user_id: string;
 					recurring: boolean;
 					recurring_end_date: string | null;
-					recurring_frequency: string | null;
+					recurring_frequency: Database['public']['Enums']['lesson_frequency'] | null;
 					source_id: string | null;
-					source_type: string;
+					source_type: Database['public']['Enums']['agenda_event_source_type'];
 					start_date: string;
 					start_time: string;
 					title: string;
@@ -138,9 +138,9 @@ export type Database = {
 					owner_user_id: string;
 					recurring?: boolean;
 					recurring_end_date?: string | null;
-					recurring_frequency?: string | null;
+					recurring_frequency?: Database['public']['Enums']['lesson_frequency'] | null;
 					source_id?: string | null;
-					source_type: string;
+					source_type: Database['public']['Enums']['agenda_event_source_type'];
 					start_date: string;
 					start_time: string;
 					title: string;
@@ -159,24 +159,16 @@ export type Database = {
 					owner_user_id?: string;
 					recurring?: boolean;
 					recurring_end_date?: string | null;
-					recurring_frequency?: string | null;
+					recurring_frequency?: Database['public']['Enums']['lesson_frequency'] | null;
 					source_id?: string | null;
-					source_type?: string;
+					source_type?: Database['public']['Enums']['agenda_event_source_type'];
 					start_date?: string;
 					start_time?: string;
 					title?: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
-				Relationships: [
-					{
-						foreignKeyName: 'agenda_events_source_id_fkey';
-						columns: ['source_id'];
-						isOneToOne: false;
-						referencedRelation: 'lesson_agreements';
-						referencedColumns: ['id'];
-					},
-				];
+				Relationships: [];
 			};
 			agenda_participants: {
 				Row: {
@@ -210,6 +202,7 @@ export type Database = {
 			lesson_agreements: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					day_of_week: number;
 					duration_minutes: number;
 					end_date: string | null;
@@ -224,9 +217,11 @@ export type Database = {
 					student_user_id: string;
 					teacher_user_id: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					day_of_week: number;
 					duration_minutes: number;
 					end_date?: string | null;
@@ -241,9 +236,11 @@ export type Database = {
 					student_user_id: string;
 					teacher_user_id: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					day_of_week?: number;
 					duration_minutes?: number;
 					end_date?: string | null;
@@ -258,6 +255,7 @@ export type Database = {
 					student_user_id?: string;
 					teacher_user_id?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -279,30 +277,36 @@ export type Database = {
 			lesson_type_options: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					duration_minutes: number;
 					frequency: Database['public']['Enums']['lesson_frequency'];
 					id: string;
 					lesson_type_id: string;
 					price_per_lesson: number;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					duration_minutes: number;
 					frequency: Database['public']['Enums']['lesson_frequency'];
 					id?: string;
 					lesson_type_id: string;
 					price_per_lesson: number;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					duration_minutes?: number;
 					frequency?: Database['public']['Enums']['lesson_frequency'];
 					id?: string;
 					lesson_type_id?: string;
 					price_per_lesson?: number;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -319,6 +323,7 @@ export type Database = {
 					color: string;
 					cost_center: string | null;
 					created_at: string;
+					created_by: string | null;
 					description: string | null;
 					icon: string;
 					id: string;
@@ -326,11 +331,13 @@ export type Database = {
 					is_group_lesson: boolean;
 					name: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					color: string;
 					cost_center?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					description?: string | null;
 					icon: string;
 					id?: string;
@@ -338,11 +345,13 @@ export type Database = {
 					is_group_lesson?: boolean;
 					name: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					color?: string;
 					cost_center?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					description?: string | null;
 					icon?: string;
 					id?: string;
@@ -350,6 +359,7 @@ export type Database = {
 					is_group_lesson?: boolean;
 					name?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [];
 			};
@@ -357,31 +367,37 @@ export type Database = {
 				Row: {
 					avatar_url: string | null;
 					created_at: string;
+					created_by: string | null;
 					email: string;
 					first_name: string | null;
 					last_name: string | null;
 					phone_number: string | null;
 					updated_at: string;
+					updated_by: string | null;
 					user_id: string;
 				};
 				Insert: {
 					avatar_url?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					email: string;
 					first_name?: string | null;
 					last_name?: string | null;
 					phone_number?: string | null;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id: string;
 				};
 				Update: {
 					avatar_url?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					email?: string;
 					first_name?: string | null;
 					last_name?: string | null;
 					phone_number?: string | null;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id?: string;
 				};
 				Relationships: [];
@@ -389,51 +405,63 @@ export type Database = {
 			project_domains: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					id: string;
 					is_active: boolean;
 					name: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					id?: string;
 					is_active?: boolean;
 					name: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					id?: string;
 					is_active?: boolean;
 					name?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [];
 			};
 			project_labels: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					domain_id: string;
 					id: string;
 					is_active: boolean;
 					name: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					domain_id: string;
 					id?: string;
 					is_active?: boolean;
 					name: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					domain_id?: string;
 					id?: string;
 					is_active?: boolean;
 					name?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -449,6 +477,7 @@ export type Database = {
 				Row: {
 					cost_center: string | null;
 					created_at: string;
+					created_by: string | null;
 					description: string | null;
 					id: string;
 					is_active: boolean;
@@ -456,10 +485,12 @@ export type Database = {
 					name: string;
 					owner_user_id: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					cost_center?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					description?: string | null;
 					id?: string;
 					is_active?: boolean;
@@ -467,10 +498,12 @@ export type Database = {
 					name: string;
 					owner_user_id: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					cost_center?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					description?: string | null;
 					id?: string;
 					is_active?: boolean;
@@ -478,6 +511,7 @@ export type Database = {
 					name?: string;
 					owner_user_id?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -492,6 +526,7 @@ export type Database = {
 			students: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					date_of_birth: string | null;
 					debtor_address: string | null;
 					debtor_city: string | null;
@@ -502,10 +537,12 @@ export type Database = {
 					parent_name: string | null;
 					parent_phone_number: string | null;
 					updated_at: string;
+					updated_by: string | null;
 					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					date_of_birth?: string | null;
 					debtor_address?: string | null;
 					debtor_city?: string | null;
@@ -516,10 +553,12 @@ export type Database = {
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id: string;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					date_of_birth?: string | null;
 					debtor_address?: string | null;
 					debtor_city?: string | null;
@@ -530,6 +569,7 @@ export type Database = {
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id?: string;
 				};
 				Relationships: [];
@@ -537,30 +577,36 @@ export type Database = {
 			teacher_availability: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					day_of_week: number;
 					end_time: string;
 					id: string;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at: string;
+					updated_by: string | null;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					day_of_week: number;
 					end_time: string;
 					id?: string;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					day_of_week?: number;
 					end_time?: string;
 					id?: string;
 					start_time?: string;
 					teacher_user_id?: string;
 					updated_at?: string;
+					updated_by?: string | null;
 				};
 				Relationships: [
 					{
@@ -609,22 +655,28 @@ export type Database = {
 				Row: {
 					bio: string | null;
 					created_at: string;
+					created_by: string | null;
 					is_active: boolean;
 					updated_at: string;
+					updated_by: string | null;
 					user_id: string;
 				};
 				Insert: {
 					bio?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					is_active?: boolean;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id: string;
 				};
 				Update: {
 					bio?: string | null;
 					created_at?: string;
+					created_by?: string | null;
 					is_active?: boolean;
 					updated_at?: string;
+					updated_by?: string | null;
 					user_id?: string;
 				};
 				Relationships: [];
@@ -691,6 +743,7 @@ export type Database = {
 				};
 				Returns: boolean;
 			};
+			apply_audit_trail: { Args: { p_table: unknown }; Returns: undefined };
 			can_delete_user: {
 				Args: { _requester_id: string; _target_id: string };
 				Returns: boolean;
@@ -704,18 +757,14 @@ export type Database = {
 				Args: { _user_id: string };
 				Returns: undefined;
 			};
+			current_user_id: { Args: never; Returns: string };
 			end_recurring_deviation_from_week: {
-				Args: { p_deviation_id: string; p_user_id: string; p_week_date: string };
+				Args: { p_deviation_id: string; p_week_date: string };
 				Returns: string;
 			};
 			ensure_student_exists: { Args: { _user_id: string }; Returns: undefined };
 			ensure_week_shows_original_slot: {
-				Args: {
-					p_event_id: string;
-					p_scope: string;
-					p_user_id: string;
-					p_week_date: string;
-				};
+				Args: { p_event_id: string; p_scope: string; p_week_date: string };
 				Returns: string;
 			};
 			function_exists: { Args: { p_fn_name: string }; Returns: boolean };
@@ -809,11 +858,12 @@ export type Database = {
 				Returns: boolean;
 			};
 			shift_recurring_deviation_to_next_week: {
-				Args: { p_deviation_id: string; p_user_id: string };
+				Args: { p_deviation_id: string };
 				Returns: string;
 			};
 		};
 		Enums: {
+			agenda_event_source_type: 'manual' | 'lesson_agreement' | 'project';
 			app_role: 'site_admin' | 'admin' | 'staff';
 			lesson_frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
 		};
@@ -938,6 +988,7 @@ export const Constants = {
 	},
 	public: {
 		Enums: {
+			agenda_event_source_type: ['manual', 'lesson_agreement', 'project'],
 			app_role: ['site_admin', 'admin', 'staff'],
 			lesson_frequency: ['daily', 'weekly', 'biweekly', 'monthly'],
 		},

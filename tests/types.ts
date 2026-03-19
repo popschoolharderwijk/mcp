@@ -1,4 +1,5 @@
-import type { Database, Tables, TablesInsert } from '../src/integrations/supabase/types';
+import type { Insert } from '../src/integrations/supabase/insert-helpers';
+import type { Database, Tables } from '../src/integrations/supabase/types';
 
 /**
  * Centralized Supabase type definitions for tests.
@@ -10,19 +11,19 @@ export type AgendaEventRow = Tables<'agenda_events'>;
 export type AgendaEventDeviationRow = Tables<'agenda_event_deviations'>;
 export type AgendaParticipantRow = Tables<'agenda_participants'>;
 
-// Insert types
-export type AgendaEventInsert = TablesInsert<'agenda_events'>;
-export type AgendaEventDeviationInsert = TablesInsert<'agenda_event_deviations'>;
-export type AgendaParticipantInsert = TablesInsert<'agenda_participants'>;
-export type LessonAgreementInsert = TablesInsert<'lesson_agreements'>;
-export type LessonTypeInsert = TablesInsert<'lesson_types'>;
-export type LessonTypeOptionInsert = TablesInsert<'lesson_type_options'>;
-export type ProfileInsert = TablesInsert<'profiles'>;
-export type StudentInsert = TablesInsert<'students'>;
-export type TeacherInsert = TablesInsert<'teachers'>;
-export type TeacherAvailabilityInsert = TablesInsert<'teacher_availability'>;
-export type TeacherLessonTypeInsert = TablesInsert<'teacher_lesson_types'>;
-export type UserRoleInsert = TablesInsert<'user_roles'>;
+// Insert types (audit fields omitted; triggers set them)
+export type AgendaEventInsert = Insert<'agenda_events'>;
+export type AgendaEventDeviationInsert = Insert<'agenda_event_deviations'>;
+export type AgendaParticipantInsert = Insert<'agenda_participants'>;
+export type LessonAgreementInsert = Insert<'lesson_agreements'>;
+export type LessonTypeInsert = Insert<'lesson_types'>;
+export type LessonTypeOptionInsert = Insert<'lesson_type_options'>;
+export type ProfileInsert = Insert<'profiles'>;
+export type StudentInsert = Insert<'students'>;
+export type TeacherInsert = Insert<'teachers'>;
+export type TeacherAvailabilityInsert = Insert<'teacher_availability'>;
+export type TeacherLessonTypeInsert = Insert<'teacher_lesson_types'>;
+export type UserRoleInsert = Insert<'user_roles'>;
 
 // RPC function types (no helper available)
 export type DatabaseRpcFunction = keyof Database['public']['Functions'];

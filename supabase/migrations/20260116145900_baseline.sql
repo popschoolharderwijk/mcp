@@ -20,8 +20,86 @@ CREATE TYPE public.app_role AS ENUM (
 );
 
 -- =============================================================================
--- SECTION 2: TABLES
+-- SECTION 1b: AUDIT TRAIL FUNCTIONS
 -- =============================================================================
+-- Reusable audit fields trigger and helper for tables with:
+-- created_at, updated_at, created_by, updated_by
+-- Defined early so apply_audit_trail() can be used in table definitions.
+
+CREATE OR REPLACE FUNCTION public.set_audit_fields()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid;
+BEGIN
+  v_uid := auth.uid();
+
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.created_at IS NULL THEN
+      NEW.created_at := now();
+    END IF;
+    IF NEW.created_by IS NULL AND v_uid IS NOT NULL THEN
+      NEW.created_by := v_uid;
+    END IF;
+    NEW.updated_at := COALESCE(NEW.updated_at, NEW.created_at);
+    NEW.updated_by := COALESCE(NEW.updated_by, NEW.created_by);
+
+  ELSIF TG_OP = 'UPDATE' THEN
+    NEW.updated_at := now();
+    IF v_uid IS NOT NULL THEN
+      NEW.updated_by := v_uid;
+    END IF;
+
+    -- Immutability guards'
+    IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+      RAISE EXCEPTION 'created_at is immutable';
+    END IF;
+    IF NEW.created_by IS DISTINCT FROM OLD.created_by THEN
+      RAISE EXCEPTION 'created_by is immutable';
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Helper function to add audit columns and trigger to a table'
+CREATE OR REPLACE FUNCTION public.apply_audit_trail(p_table regclass)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_table_name text;
+BEGIN
+  v_table_name := regexp_replace(p_table::text, '^public\.', '');
+
+  EXECUTE format('
+    ALTER TABLE %s
+    ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now(),
+    ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id),
+    ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES auth.users(id)
+  ', p_table);
+
+  EXECUTE format('DROP TRIGGER IF EXISTS trg_audit_%I ON %s', v_table_name, p_table);
+
+  EXECUTE format('
+    CREATE TRIGGER trg_audit_%I
+    BEFORE INSERT OR UPDATE ON %s
+    FOR EACH ROW
+    EXECUTE FUNCTION public.set_audit_fields()
+  ', v_table_name, p_table);
+END;
+$$;
+
+-- =============================================================================
+-- SECTION 2: TABLES
+-- ============================================================================='
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -29,10 +107,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   first_name TEXT,
   last_name TEXT,
   phone_number TEXT CHECK (phone_number IS NULL OR (phone_number ~ '^[0-9]{10}$')),
-  avatar_url TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  avatar_url TEXT
 );
+
+-- Add audit columns to profiles
+SELECT public.apply_audit_trail('public.profiles');
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -49,6 +128,21 @@ ALTER TABLE public.profiles FORCE ROW LEVEL SECURITY;
 
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles FORCE ROW LEVEL SECURITY;
+
+-- =============================================================================
+-- SECTION 3b: AUTH HELPER (single evaluation per statement, cleaner policies)
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.current_user_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT auth.uid();
+$$;
+
+REVOKE ALL ON FUNCTION public.current_user_id() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated;
 
 -- =============================================================================
 -- SECTION 4: ROLE HELPER FUNCTIONS (HARDENED)
@@ -202,20 +296,20 @@ ALTER FUNCTION public.can_delete_user(UUID, UUID) OWNER TO postgres;
 CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
 USING (
-  (select auth.uid()) = user_id
-  OR public.is_privileged((select auth.uid()))
+  public.current_user_id() = user_id
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Combined UPDATE policy: users can update own profile, admins can update any profile
 CREATE POLICY profiles_update
 ON public.profiles FOR UPDATE TO authenticated
 USING (
-  (select auth.uid()) = user_id
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  public.current_user_id() = user_id
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 )
 WITH CHECK (
-  (select auth.uid()) = user_id
-  OR public.is_admin((select auth.uid())) OR public.is_site_admin((select auth.uid()))
+  public.current_user_id() = user_id
+  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
 );
 
 -- INSERT and DELETE policies explicitly removed:
@@ -243,8 +337,8 @@ WITH CHECK (
 CREATE POLICY roles_select
 ON public.user_roles FOR SELECT TO authenticated
 USING (
-  (select auth.uid()) = user_id
-  OR public.is_privileged((select auth.uid()))
+  public.current_user_id() = user_id
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Allow admins to insert roles (but NOT site_admin)
@@ -253,10 +347,10 @@ CREATE POLICY roles_insert_admin
 ON public.user_roles FOR INSERT TO authenticated
 WITH CHECK (
   (
-    public.is_admin((select auth.uid()))
+    public.is_admin(public.current_user_id())
     AND role != 'site_admin'  -- Admins cannot assign site_admin
   )
-  OR public.is_site_admin((select auth.uid()))  -- Site_admins can assign any role
+  OR public.is_site_admin(public.current_user_id())  -- Site_admins can assign any role
 );
 
 -- Allow admins to update roles (but NOT site_admin roles and not their own)
@@ -267,22 +361,22 @@ ON public.user_roles FOR UPDATE TO authenticated
 USING (
   (
     (
-      public.is_admin((select auth.uid()))
+      public.is_admin(public.current_user_id())
       AND role != 'site_admin'  -- Admins cannot modify users with site_admin role (OLD.role)
     )
-    OR public.is_site_admin((select auth.uid()))  -- Site_admins can modify any role
+    OR public.is_site_admin(public.current_user_id())  -- Site_admins can modify any role
   )
-  AND user_id != (select auth.uid())  -- Cannot modify own role
+  AND user_id != public.current_user_id()  -- Cannot modify own role
 )
 WITH CHECK (
   (
     (
-      public.is_admin((select auth.uid()))
+      public.is_admin(public.current_user_id())
       AND role != 'site_admin'  -- Admins cannot set role to site_admin (NEW.role)
     )
-    OR public.is_site_admin((select auth.uid()))  -- Site_admins can set any role
+    OR public.is_site_admin(public.current_user_id())  -- Site_admins can set any role
   )
-  AND user_id != (select auth.uid())  -- Cannot modify own role
+  AND user_id != public.current_user_id()  -- Cannot modify own role
 );
 
 -- Allow admins to delete roles (but NOT site_admin roles)
@@ -291,10 +385,10 @@ CREATE POLICY roles_delete_admin
 ON public.user_roles FOR DELETE TO authenticated
 USING (
   (
-    public.is_admin((select auth.uid()))
+    public.is_admin(public.current_user_id())
     AND role != 'site_admin'  -- Admins cannot delete site_admin roles
   )
-  OR public.is_site_admin((select auth.uid()))  -- Site_admins can delete any role
+  OR public.is_site_admin(public.current_user_id())  -- Site_admins can delete any role
 );
 
 -- Grant appropriate permissions on tables
@@ -304,25 +398,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO authenticated;
 -- =============================================================================
 -- SECTION 9: TRIGGERS
 -- =============================================================================
-
--- Automatically update updated_at timestamp on profile changes
-CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-SET row_security = off
-AS $$
-BEGIN
-  NEW.updated_at = now();
-  RETURN NEW;
-END;
-$$;
-
-CREATE TRIGGER update_profiles_updated_at
-BEFORE UPDATE ON public.profiles
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
 
 -- user_id immutable
 CREATE OR REPLACE FUNCTION public.prevent_user_id_change()

@@ -35,10 +35,6 @@ afterAll(async () => {
 const dbNoRLS = createClientBypassRLS();
 
 const agreementId = fixtures.requireAgreementId(TestUsers.STUDENT_009, TestUsers.TEACHER_ALICE);
-const teacherAliceUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
-const staffUserId = fixtures.requireUserId(TestUsers.STAFF_ONE);
-const student009UserId = fixtures.requireUserId(TestUsers.STUDENT_009);
-const student001UserId = fixtures.requireUserId(TestUsers.STUDENT_001);
 
 /** Get agenda_event id for a lesson_agreement (created by trigger). */
 async function getAgendaEventIdForAgreement(agreementId: string): Promise<string> {
@@ -97,9 +93,7 @@ describe('Teacher CAN create deviations for their own lesson agreements', () => 
 			actual_date: actualDate,
 			actual_start_time: '15:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -125,9 +119,7 @@ describe('Teacher CAN create deviations for their own lesson agreements', () => 
 			actual_start_time: startTime,
 			is_cancelled: true,
 			reason: 'Ziek',
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -152,9 +144,7 @@ describe('Teacher CAN create deviations for their own lesson agreements', () => 
 			actual_date: weekDate,
 			actual_start_time: '16:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -189,9 +179,7 @@ describe('Teacher CAN create deviations for their own lesson agreements', () => 
 			actual_date: weekDate,
 			actual_start_time: '18:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -220,9 +208,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 			actual_date: addDays(weekDate, 1),
 			actual_start_time: '15:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: student009UserId,
-			updated_by: student009UserId,
+			spans_future_occurrences: false,
 		};
 
 		const error = unwrapError(await studentDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -246,9 +232,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 			actual_start_time: startTime,
 			is_cancelled: true,
 			reason: 'Ziek',
-			recurring: false,
-			created_by: student009UserId,
-			updated_by: student009UserId,
+			spans_future_occurrences: false,
 		};
 
 		const error = unwrapError(await studentDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -272,9 +256,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 			actual_date: weekDate,
 			actual_start_time: '16:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -308,9 +290,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 			actual_date: weekDate,
 			actual_start_time: '16:30',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -343,9 +323,7 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 			actual_date: addDays(weekDate, 2),
 			actual_start_time: '14:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: staffUserId,
-			updated_by: staffUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await staffDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -357,7 +335,6 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 	it('admin can update deviation created by teacher', async () => {
 		const teacherDb = await createClientAs(TestUsers.TEACHER_ALICE);
 		const adminDb = await createClientAs(TestUsers.ADMIN_ONE);
-		const adminUserId = fixtures.requireUserId(TestUsers.ADMIN_ONE);
 
 		const eventId = await getAgendaEventIdForAgreement(agreementId);
 		const evRow = requireAgendaEventTime(
@@ -372,9 +349,7 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 			actual_date: weekDate,
 			actual_start_time: '16:00',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -382,7 +357,7 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 		const [updated] = unwrap(
 			await adminDb
 				.from('agenda_event_deviations')
-				.update({ reason: 'Admin wijziging', updated_by: adminUserId })
+				.update({ reason: 'Admin wijziging' })
 				.eq('id', inserted.id)
 				.select('reason'),
 		);
@@ -409,9 +384,7 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 			actual_date: weekDate,
 			actual_start_time: '17:30',
 			is_cancelled: false,
-			recurring: false,
-			created_by: teacherAliceUserId,
-			updated_by: teacherAliceUserId,
+			spans_future_occurrences: false,
 		};
 
 		const [inserted] = unwrap(await teacherDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -442,16 +415,13 @@ describe('agenda_event_deviations RPCs require authorization', () => {
 			actual_date: actualDate,
 			actual_start_time: startTime,
 			is_cancelled: false,
-			recurring: true,
-			created_by: staffUserId,
-			updated_by: staffUserId,
+			spans_future_occurrences: true,
 		};
 
 		const [inserted] = unwrap(await staffDb.from('agenda_event_deviations').insert(insertRow).select('id'));
 
 		const shiftResult = await studentDb.rpc('shift_recurring_deviation_to_next_week', {
 			p_deviation_id: inserted.id,
-			p_user_id: student001UserId,
 		});
 
 		const deviationIdsToDelete = [inserted.id, shiftResult.data].filter((id): id is string => id != null);
@@ -481,9 +451,7 @@ describe('agenda_event_deviations RPCs require authorization', () => {
 			actual_date: actualDate,
 			actual_start_time: startTime,
 			is_cancelled: false,
-			recurring: true,
-			created_by: staffUserId,
-			updated_by: staffUserId,
+			spans_future_occurrences: true,
 		};
 
 		const [inserted] = unwrap(await staffDb.from('agenda_event_deviations').insert(insertRow).select('id'));
@@ -491,7 +459,6 @@ describe('agenda_event_deviations RPCs require authorization', () => {
 		const endResult = await studentDb.rpc('end_recurring_deviation_from_week', {
 			p_deviation_id: inserted.id,
 			p_week_date: weekDate,
-			p_user_id: student001UserId,
 		});
 
 		await staffDb.from('agenda_event_deviations').delete().eq('id', inserted.id);
@@ -509,7 +476,6 @@ describe('agenda_event_deviations RPCs require authorization', () => {
 			await studentDb.rpc('ensure_week_shows_original_slot', {
 				p_event_id: eventId,
 				p_week_date: weekDate,
-				p_user_id: student001UserId,
 				p_scope: 'only_this',
 			}),
 		);
@@ -524,7 +490,6 @@ describe('agenda_event_deviations RPCs require authorization', () => {
 		const result = await teacherDb.rpc('ensure_week_shows_original_slot', {
 			p_event_id: eventId,
 			p_week_date: weekDate,
-			p_user_id: teacherAliceUserId,
 			p_scope: 'only_this',
 		});
 

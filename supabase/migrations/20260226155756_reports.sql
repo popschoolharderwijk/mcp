@@ -1,5 +1,8 @@
--- Create the hours report function
--- SECURITY INVOKER: runs as caller so RLS on lesson_agreements, students, teachers applies.
+-- =============================================================================
+-- get_hours_report: lesson hours + project hours (agenda_events with source_type in lesson_agreement, project)
+-- SECURITY INVOKER: runs as caller so RLS on lesson_agreements, students, teachers, projects applies.
+-- =============================================================================
+
 CREATE OR REPLACE FUNCTION public.get_hours_report(
   p_start_date date,
   p_end_date date,
@@ -13,12 +16,11 @@ AS $function$
 DECLARE
   v_result JSON;
 BEGIN
-  IF (SELECT auth.uid()) IS NULL THEN
+  IF public.current_user_id() IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
   WITH
-  -- Generate all occurrences of lesson agreements within the date range (RLS filters by role)
   agreement_occurrences AS (
     SELECT
       la.id AS agreement_id,
@@ -31,39 +33,26 @@ BEGIN
       la.start_date,
       la.end_date,
       la.start_time,
-      -- Generate the series of dates for this agreement
       d.occurrence_date
     FROM lesson_agreements la
     CROSS JOIN LATERAL (
       SELECT gs::date AS occurrence_date
       FROM generate_series(
-        -- Start from the later of agreement start_date or p_start_date, aligned to the correct day_of_week
         GREATEST(la.start_date, p_start_date),
-        -- End at the earlier of agreement end_date or p_end_date
         LEAST(COALESCE(la.end_date, p_end_date), p_end_date),
         INTERVAL '1 day'
       ) AS gs
     ) d
     WHERE
-      -- Filter to correct day_of_week (0=Sunday in app, extract dow: 0=Sunday)
       EXTRACT(DOW FROM d.occurrence_date) = la.day_of_week
-      -- Optional filter by teacher (staff can pass a teacher_user_id; teachers only see own data via RLS)
       AND (p_teacher_user_id IS NULL OR la.teacher_user_id = p_teacher_user_id)
-      -- Apply frequency filter
       AND (
         la.frequency = 'daily'
         OR la.frequency = 'weekly'
-        OR (la.frequency = 'biweekly' AND (
-          -- Every 2 weeks from start_date
-          MOD(((d.occurrence_date - la.start_date)::INT), 14) = 0
-        ))
-        OR (la.frequency = 'monthly' AND (
-          -- Same day_of_week, check if it's roughly every 4 weeks
-          MOD(((d.occurrence_date - la.start_date)::INT), 28) = 0
-        ))
+        OR (la.frequency = 'biweekly' AND MOD(((d.occurrence_date - la.start_date)::INT), 14) = 0)
+        OR (la.frequency = 'monthly' AND MOD(((d.occurrence_date - la.start_date)::INT), 28) = 0)
       )
   ),
-  -- Filter out cancelled deviations (agenda_event_deviations linked via agenda_events.source_id = agreement_id)
   non_cancelled_occurrences AS (
     SELECT ao.*
     FROM agreement_occurrences ao
@@ -71,22 +60,22 @@ BEGIN
       SELECT 1
       FROM agenda_events ae
       JOIN agenda_event_deviations lad ON lad.event_id = ae.id
-      WHERE ae.source_type = 'lesson_agreement'
+      WHERE ae.source_type = 'lesson_agreement'::public.agenda_event_source_type
         AND ae.source_id = ao.agreement_id
         AND lad.is_cancelled = true
         AND (
-          (lad.recurring = false AND lad.original_date = ao.occurrence_date)
+          (lad.spans_future_occurrences = false AND lad.original_date = ao.occurrence_date)
           OR
-          (lad.recurring = true
+          (lad.spans_future_occurrences = true
            AND lad.original_date <= ao.occurrence_date
-           AND (lad.recurring_end_date IS NULL OR lad.recurring_end_date >= ao.occurrence_date)
+           AND (lad.spans_end_date IS NULL OR lad.spans_end_date >= ao.occurrence_date)
            AND NOT EXISTS (
              SELECT 1
              FROM agenda_events ae2
              JOIN agenda_event_deviations override ON override.event_id = ae2.id
-             WHERE ae2.source_type = 'lesson_agreement'
+             WHERE ae2.source_type = 'lesson_agreement'::public.agenda_event_source_type
                AND ae2.source_id = ao.agreement_id
-               AND override.recurring = false
+               AND override.spans_future_occurrences = false
                AND override.original_date = ao.occurrence_date
                AND override.is_cancelled = false
            )
@@ -94,8 +83,7 @@ BEGIN
         )
     )
   ),
-  -- Join with student data for age calculation and teacher/lesson type info
-  enriched AS (
+  enriched_lessons AS (
     SELECT
       nco.teacher_user_id,
       nco.lesson_type_id,
@@ -113,38 +101,165 @@ BEGIN
     FROM non_cancelled_occurrences nco
     LEFT JOIN students s ON s.user_id = nco.student_user_id
   ),
-  -- Aggregate per teacher, lesson type, age category
-  aggregated AS (
+  aggregated_lessons AS (
     SELECT
       e.teacher_user_id,
       e.lesson_type_id,
       e.age_category,
       SUM(e.duration_minutes) AS total_minutes,
       COUNT(*) AS lesson_count
-    FROM enriched e
+    FROM enriched_lessons e
     GROUP BY e.teacher_user_id, e.lesson_type_id, e.age_category
+  ),
+  lesson_rows AS (
+    SELECT
+      json_build_object(
+        'source_type', 'lesson',
+        'teacher_user_id', a.teacher_user_id,
+        'teacher_name', COALESCE(p.first_name || ' ' || p.last_name, p.first_name, p.last_name, p.email),
+        'lesson_type_id', a.lesson_type_id,
+        'lesson_type_name', lt.name,
+        'lesson_type_color', lt.color,
+        'lesson_type_icon', lt.icon,
+        'age_category', a.age_category,
+        'total_minutes', a.total_minutes,
+        'lesson_count', a.lesson_count,
+        'project_id', NULL,
+        'project_name', NULL
+      ) AS row_json,
+      COALESCE(p.first_name || ' ' || p.last_name, p.email) AS sort_name,
+      lt.name AS sort_category_name,
+      a.age_category AS sort_age
+    FROM aggregated_lessons a
+    INNER JOIN teachers t ON a.teacher_user_id = t.user_id
+    INNER JOIN profiles p ON t.user_id = p.user_id
+    INNER JOIN lesson_types lt ON a.lesson_type_id = lt.id
+  ),
+
+  project_single_events AS (
+    SELECT
+      ae.id AS event_id,
+      ae.source_id AS project_id,
+      ae.start_date AS occurrence_date,
+      ae.start_time,
+      ae.end_time
+    FROM agenda_events ae
+    WHERE ae.source_type = 'project'::public.agenda_event_source_type
+      AND ae.recurring = false
+      AND ae.start_date BETWEEN p_start_date AND p_end_date
+      AND ae.end_time IS NOT NULL
+  ),
+  project_recurring_events AS (
+    SELECT
+      ae.id AS event_id,
+      ae.source_id AS project_id,
+      d.occurrence_date,
+      ae.start_time,
+      ae.end_time
+    FROM agenda_events ae
+    CROSS JOIN LATERAL (
+      SELECT gs::date AS occurrence_date
+      FROM generate_series(
+        GREATEST(ae.start_date, p_start_date),
+        LEAST(COALESCE(ae.recurring_end_date, COALESCE(ae.end_date, p_end_date)), p_end_date),
+        CASE ae.recurring_frequency
+          WHEN 'daily' THEN INTERVAL '1 day'
+          WHEN 'weekly' THEN INTERVAL '7 days'
+          WHEN 'biweekly' THEN INTERVAL '14 days'
+          WHEN 'monthly' THEN INTERVAL '28 days'
+          ELSE INTERVAL '7 days'
+        END
+      ) AS gs
+    ) d
+    WHERE ae.source_type = 'project'::public.agenda_event_source_type
+      AND ae.recurring = true
+      AND ae.end_time IS NOT NULL
+  ),
+  all_project_occurrences AS (
+    SELECT * FROM project_single_events
+    UNION ALL
+    SELECT * FROM project_recurring_events
+  ),
+  non_cancelled_project_occurrences AS (
+    SELECT apo.*
+    FROM all_project_occurrences apo
+    WHERE NOT EXISTS (
+      SELECT 1
+      FROM agenda_event_deviations d
+      WHERE d.event_id = apo.event_id
+        AND d.is_cancelled = true
+        AND (
+          (d.spans_future_occurrences = false AND d.original_date = apo.occurrence_date)
+          OR
+          (d.spans_future_occurrences = true
+           AND d.original_date <= apo.occurrence_date
+           AND (d.spans_end_date IS NULL OR d.spans_end_date >= apo.occurrence_date)
+           AND NOT EXISTS (
+             SELECT 1
+             FROM agenda_event_deviations override_dev
+             WHERE override_dev.event_id = apo.event_id
+               AND override_dev.spans_future_occurrences = false
+               AND override_dev.original_date = apo.occurrence_date
+               AND override_dev.is_cancelled = false
+           )
+          )
+        )
+    )
+  ),
+  enriched_projects AS (
+    SELECT
+      ap.user_id AS teacher_user_id,
+      ncpo.project_id,
+      proj.name AS project_name,
+      EXTRACT(EPOCH FROM (ncpo.end_time - ncpo.start_time)) / 60 AS duration_minutes
+    FROM non_cancelled_project_occurrences ncpo
+    INNER JOIN agenda_participants ap ON ap.event_id = ncpo.event_id
+    INNER JOIN teachers t ON t.user_id = ap.user_id
+    INNER JOIN projects proj ON proj.id = ncpo.project_id
+    WHERE (p_teacher_user_id IS NULL OR ap.user_id = p_teacher_user_id)
+  ),
+  aggregated_projects AS (
+    SELECT
+      ep.teacher_user_id,
+      ep.project_id,
+      ep.project_name,
+      SUM(ep.duration_minutes)::BIGINT AS total_minutes,
+      COUNT(*) AS event_count
+    FROM enriched_projects ep
+    GROUP BY ep.teacher_user_id, ep.project_id, ep.project_name
+  ),
+  project_rows AS (
+    SELECT
+      json_build_object(
+        'source_type', 'project',
+        'teacher_user_id', ap.teacher_user_id,
+        'teacher_name', COALESCE(p.first_name || ' ' || p.last_name, p.first_name, p.last_name, p.email),
+        'lesson_type_id', NULL,
+        'lesson_type_name', NULL,
+        'lesson_type_color', NULL,
+        'lesson_type_icon', NULL,
+        'age_category', 'unknown',
+        'total_minutes', ap.total_minutes,
+        'lesson_count', ap.event_count,
+        'project_id', ap.project_id,
+        'project_name', ap.project_name
+      ) AS row_json,
+      COALESCE(p.first_name || ' ' || p.last_name, p.email) AS sort_name,
+      ap.project_name AS sort_category_name,
+      'unknown' AS sort_age
+    FROM aggregated_projects ap
+    INNER JOIN profiles p ON ap.teacher_user_id = p.user_id
+  ),
+
+  all_rows AS (
+    SELECT row_json, sort_name, sort_category_name, sort_age FROM lesson_rows
+    UNION ALL
+    SELECT row_json, sort_name, sort_category_name, sort_age FROM project_rows
   )
   SELECT json_build_object(
     'data', COALESCE(
-      (SELECT json_agg(
-        json_build_object(
-          'teacher_user_id', a.teacher_user_id,
-          'teacher_name', COALESCE(p.first_name || ' ' || p.last_name, p.first_name, p.last_name, p.email),
-          'lesson_type_id', a.lesson_type_id,
-          'lesson_type_name', lt.name,
-          'lesson_type_color', lt.color,
-          'lesson_type_icon', lt.icon,
-          'age_category', a.age_category,
-          'total_minutes', a.total_minutes,
-          'lesson_count', a.lesson_count
-        )
-        ORDER BY COALESCE(p.first_name || ' ' || p.last_name, p.email), lt.name, a.age_category
-      )
-      FROM aggregated a
-      INNER JOIN teachers t ON a.teacher_user_id = t.user_id
-      INNER JOIN profiles p ON t.user_id = p.user_id
-      INNER JOIN lesson_types lt ON a.lesson_type_id = lt.id
-      ),
+      (SELECT json_agg(r.row_json ORDER BY r.sort_name, r.sort_category_name, r.sort_age)
+       FROM all_rows r),
       '[]'::json
     )
   ) INTO v_result;

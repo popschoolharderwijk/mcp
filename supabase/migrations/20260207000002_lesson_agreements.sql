@@ -70,13 +70,12 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
   is_active BOOLEAN NOT NULL DEFAULT true,
   notes TEXT,
 
-  -- Timestamps
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
   -- Data integrity constraints
   CONSTRAINT lesson_agreements_end_date_check CHECK (end_date IS NULL OR end_date >= start_date)
 );
+
+-- Add audit columns to lesson_agreements
+SELECT public.apply_audit_trail('public.lesson_agreements');
 
 -- =============================================================================
 -- SECTION 2.1: CONSTRAINT FUNCTIONS
@@ -180,16 +179,16 @@ ALTER TABLE public.lesson_agreements FORCE ROW LEVEL SECURITY;
 CREATE POLICY lesson_agreements_select
 ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
-  student_user_id = (select auth.uid())
-  OR teacher_user_id = public.get_teacher_user_id((select auth.uid()))
-  OR public.is_privileged((select auth.uid()))
+  student_user_id = public.current_user_id()
+  OR teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_privileged(public.current_user_id())
 );
 
 -- Staff, admins and site_admins can insert lesson agreements
 CREATE POLICY lesson_agreements_insert_staff
 ON public.lesson_agreements FOR INSERT TO authenticated
 WITH CHECK (
-  public.is_privileged((select auth.uid()))
+  public.is_privileged(public.current_user_id())
 );
 
 -- Staff, admins and site_admins can update lesson agreements
@@ -197,10 +196,10 @@ WITH CHECK (
 CREATE POLICY lesson_agreements_update_staff
 ON public.lesson_agreements FOR UPDATE TO authenticated
 USING (
-  public.is_privileged((select auth.uid()))
+  public.is_privileged(public.current_user_id())
 )
 WITH CHECK (
-  public.is_privileged((select auth.uid()))
+  public.is_privileged(public.current_user_id())
 );
 
 -- Staff, admins and site_admins can delete lesson agreements
@@ -208,7 +207,7 @@ WITH CHECK (
 CREATE POLICY lesson_agreements_delete_staff
 ON public.lesson_agreements FOR DELETE TO authenticated
 USING (
-  public.is_privileged((select auth.uid()))
+  public.is_privileged(public.current_user_id())
 );
 
 -- =============================================================================
@@ -263,13 +262,13 @@ DROP POLICY IF EXISTS students_select ON public.students;
 CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_privileged((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_privileged(public.current_user_id())
   -- Teachers can view their own students
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = students.user_id
-      AND la.teacher_user_id = public.get_teacher_user_id((select auth.uid()))
+      AND la.teacher_user_id = public.get_teacher_user_id(public.current_user_id())
   )
 );
 
@@ -284,13 +283,13 @@ DROP POLICY IF EXISTS teachers_select ON public.teachers;
 CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  user_id = (select auth.uid())
-  OR public.is_privileged((select auth.uid()))
+  user_id = public.current_user_id()
+  OR public.is_privileged(public.current_user_id())
   -- Students can view their own teachers
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.teacher_user_id = teachers.user_id
-      AND la.student_user_id = (select auth.uid())
+      AND la.student_user_id = public.current_user_id()
   )
 );
 
@@ -306,20 +305,20 @@ DROP POLICY IF EXISTS profiles_select ON public.profiles;
 CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
 USING (
-  (select auth.uid()) = user_id
-  OR public.is_privileged((select auth.uid()))
+  public.current_user_id() = user_id
+  OR public.is_privileged(public.current_user_id())
   -- Students can view their teachers' profiles
   OR EXISTS (
     SELECT 1 FROM public.teachers t
     INNER JOIN public.lesson_agreements la ON la.teacher_user_id = t.user_id
     WHERE t.user_id = profiles.user_id
-      AND la.student_user_id = (select auth.uid())
+      AND la.student_user_id = public.current_user_id()
   )
   -- Teachers can view their students' profiles
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = profiles.user_id
-      AND la.teacher_user_id = public.get_teacher_user_id((select auth.uid()))
+      AND la.teacher_user_id = public.get_teacher_user_id(public.current_user_id())
   )
 );
 
@@ -338,9 +337,9 @@ SET row_security = off
 AS $$
 BEGIN
   -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
-  IF auth.uid() IS NOT NULL
-     AND auth.uid() IS DISTINCT FROM _user_id
-     AND NOT public.is_privileged(auth.uid()) THEN
+  IF public.current_user_id() IS NOT NULL
+     AND public.current_user_id() IS DISTINCT FROM _user_id
+     AND NOT public.is_privileged(public.current_user_id()) THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -395,9 +394,9 @@ SET row_security = off
 AS $$
 BEGIN
   -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
-  IF auth.uid() IS NOT NULL
-     AND auth.uid() IS DISTINCT FROM _user_id
-     AND NOT public.is_privileged(auth.uid()) THEN
+  IF public.current_user_id() IS NOT NULL
+     AND public.current_user_id() IS DISTINCT FROM _user_id
+     AND NOT public.is_privileged(public.current_user_id()) THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -482,12 +481,6 @@ ALTER FUNCTION public.trigger_cleanup_student_on_agreement_delete() OWNER TO pos
 -- =============================================================================
 -- SECTION 6: TRIGGERS
 -- =============================================================================
-
--- Reuse existing update_updated_at_column function from baseline
-CREATE TRIGGER update_lesson_agreements_updated_at
-BEFORE UPDATE ON public.lesson_agreements
-FOR EACH ROW
-EXECUTE FUNCTION public.update_updated_at_column();
 
 -- Trigger to automatically create student when lesson agreement is inserted
 CREATE TRIGGER ensure_student_on_agreement_insert

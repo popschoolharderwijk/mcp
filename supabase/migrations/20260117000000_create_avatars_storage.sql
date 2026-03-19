@@ -20,7 +20,7 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'avatars'
-  AND name LIKE auth.uid()::text || '.%'
+  AND name LIKE public.current_user_id()::text || '.%'
 );
 
 -- Allow authenticated users to update (overwrite) their own avatar
@@ -29,11 +29,11 @@ ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'avatars'
-  AND name LIKE auth.uid()::text || '.%'
+  AND name LIKE public.current_user_id()::text || '.%'
 )
 WITH CHECK (
   bucket_id = 'avatars'
-  AND name LIKE auth.uid()::text || '.%'
+  AND name LIKE public.current_user_id()::text || '.%'
 );
 
 -- Allow authenticated users to delete their own avatar
@@ -42,7 +42,7 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'avatars'
-  AND name LIKE auth.uid()::text || '.%'
+  AND name LIKE public.current_user_id()::text || '.%'
 );
 
 -- Public bucket: authenticated users can view all avatars

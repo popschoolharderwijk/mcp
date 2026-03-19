@@ -175,8 +175,9 @@ const EXPECTED_FUNCTIONS = [
 	// User lifecycle
 	'handle_new_user',
 	'handle_auth_user_email_update',
+	// Audit trail
+	'set_audit_fields',
 	// Data integrity triggers
-	'update_updated_at_column',
 	'prevent_user_id_change',
 	'prevent_profile_email_change',
 	'prevent_last_site_admin_removal',

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { ProjectDomainsManager } from '@/components/projects/ProjectDomainsManager';
 import { ProjectFormDialog } from '@/components/projects/ProjectFormDialog';
 import { ProjectLabelsManager } from '@/components/projects/ProjectLabelsManager';
+import { ProjectTimeSlots } from '@/components/projects/ProjectTimeSlots';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
@@ -27,10 +28,12 @@ export default function Projects() {
 	});
 	const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; project: ProjectRow | null } | null>(null);
 	const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+	const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
 	const refetchLabelsRef = useRef<() => void>();
 
 	const canView = isTeacher || isPrivileged;
 	const canEdit = isAdmin || isSiteAdmin;
+	const canSchedule = isPrivileged;
 
 	const loadProjects = useCallback(async () => {
 		if (!canView) return;
@@ -53,6 +56,19 @@ export default function Projects() {
 			setProjects([]);
 			setLoading(false);
 			return;
+		}
+
+		// Count scheduled time slots (agenda_events) per project
+		const projectIds = rawProjects.map((p) => p.id);
+		const { data: projectEvents } = await supabase
+			.from('agenda_events')
+			.select('source_id')
+			.eq('source_type', 'project')
+			.in('source_id', projectIds);
+		const slotCountByProject = new Map<string, number>();
+		for (const id of projectIds) slotCountByProject.set(id, 0);
+		for (const row of projectEvents ?? []) {
+			if (row.source_id) slotCountByProject.set(row.source_id, (slotCountByProject.get(row.source_id) ?? 0) + 1);
 		}
 
 		// Fetch labels + domains
@@ -87,12 +103,15 @@ export default function Projects() {
 				label_id: p.label_id,
 				created_at: p.created_at,
 				updated_at: p.updated_at,
+				created_by: p.created_by,
+				updated_by: p.updated_by,
 				label_name: label?.name ?? '—',
 				domain_name: domain?.name ?? '—',
 				owner_first_name: owner?.first_name ?? null,
 				owner_last_name: owner?.last_name ?? null,
 				owner_email: owner?.email ?? null,
 				owner_avatar_url: owner?.avatar_url ?? null,
+				slot_count: slotCountByProject.get(p.id) ?? 0,
 			};
 		});
 
@@ -133,6 +152,13 @@ export default function Projects() {
 				sortable: true,
 				sortValue: (p) => p.label_name.toLowerCase(),
 				render: (p) => <span className="text-muted-foreground">{p.label_name}</span>,
+			},
+			{
+				key: 'slot_count',
+				label: 'Aantal',
+				sortable: true,
+				sortValue: (p) => p.slot_count,
+				render: (p) => <span className="text-muted-foreground">{p.slot_count}</span>,
 			},
 			{
 				key: 'owner',
@@ -202,6 +228,17 @@ export default function Projects() {
 		setDeleteDialog(null);
 	}, [deleteDialog]);
 
+	const renderExpandedRow = useCallback(
+		(project: ProjectRow) => (
+			<ProjectTimeSlots
+				projectId={project.id}
+				projectName={project.name}
+				canSchedule={canSchedule && project.is_active}
+			/>
+		),
+		[canSchedule],
+	);
+
 	if (!canView) {
 		return <Navigate to="/" replace />;
 	}
@@ -227,6 +264,9 @@ export default function Projects() {
 				emptyMessage="Geen projecten gevonden"
 				initialSortColumn="name"
 				initialSortDirection="asc"
+				expandedRowKey={expandedProjectId}
+				onExpandToggle={setExpandedProjectId}
+				renderExpandedRow={renderExpandedRow}
 				headerActions={
 					<div className="flex items-center gap-2">
 						{canEdit && (
@@ -247,14 +287,10 @@ export default function Projects() {
 						)}
 					</div>
 				}
-				rowActions={
-					canEdit
-						? {
-								onEdit: handleEdit,
-								onDelete: handleDelete,
-							}
-						: undefined
-				}
+				rowActions={{
+					onEdit: canEdit ? handleEdit : undefined,
+					onDelete: canEdit ? handleDelete : undefined,
+				}}
 			/>
 
 			<ProjectFormDialog

@@ -7,6 +7,7 @@ import { buildParticipantInfo } from '@/lib/agenda/eventUtils';
 import { getDisplayName } from '@/lib/display-name';
 import type { AgendaEventDeviationRow, AgendaEventRow } from '@/types/agenda-events';
 import type { LessonAgreementQuery, LessonAgreementWithStudent } from '@/types/lesson-agreements';
+import type { ProjectInfo } from '@/types/projects';
 import type { User } from '@/types/users';
 
 export interface LessonAgreementWithTeacher extends LessonAgreementWithStudent {
@@ -26,6 +27,7 @@ export interface UseAgendaDataResult {
 	agreementsMap: Map<string, LessonAgreementWithTeacher>;
 	participantCountByEventId: Map<string, number>;
 	participantNamesByEventId: Map<string, string[]>;
+	projectsMap: Map<string, ProjectInfo>;
 	loading: boolean;
 	loadData: (showLoading?: boolean) => Promise<void>;
 	getEnrichedEvents: (currentDate: Date, effectiveUserId: string | undefined) => CalendarEvent[];
@@ -52,6 +54,7 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 		new Map(),
 	);
 	const [agreements, setAgreements] = useState<LessonAgreementWithTeacher[]>([]);
+	const [projectsMap, setProjectsMap] = useState<Map<string, ProjectInfo>>(new Map());
 	const [loading, setLoading] = useState(true);
 
 	const loadData = useCallback(
@@ -72,6 +75,7 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 				setParticipantCountByDeviationId(new Map());
 				setParticipantNamesByDeviationId(new Map());
 				setAgreements([]);
+				setProjectsMap(new Map());
 				setLoading(false);
 				return;
 			}
@@ -124,7 +128,19 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 				)
 				.map((e) => e.source_id);
 
-			const [agreementsResult] = await Promise.all([
+			// Fetch project info for project events
+			const projectSourceIds = [
+				...new Set(
+					eventsList
+						.filter(
+							(e): e is AgendaEventRow & { source_id: string } =>
+								e.source_type === 'project' && e.source_id != null,
+						)
+						.map((e) => e.source_id),
+				),
+			];
+
+			const [agreementsResult, projectsResult] = await Promise.all([
 				lessonSourceIds.length > 0
 					? supabase
 							.from('lesson_agreements')
@@ -134,10 +150,17 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 							.in('id', lessonSourceIds)
 							.eq('is_active', true)
 					: Promise.resolve({ data: [] as LessonAgreementQuery[], error: null }),
+				projectSourceIds.length > 0
+					? supabase.from('projects').select('id, name').in('id', projectSourceIds)
+					: Promise.resolve<{ data: ProjectInfo[]; error: null }>({ data: [], error: null }),
 			]);
 
-			const agreementsData = (agreementsResult.data ?? []) as LessonAgreementQuery[];
+			const agreementsData: LessonAgreementQuery[] = agreementsResult.data ?? [];
 			const agreementsError = agreementsResult.error;
+
+			// Build projects map
+			const newProjectsMap = new Map<string, ProjectInfo>((projectsResult.data ?? []).map((p) => [p.id, p]));
+			setProjectsMap(newProjectsMap);
 
 			const studentUserIds =
 				agreementsError || agreementsData.length === 0
@@ -240,7 +263,7 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 	const recurringByEventId = useMemo(() => {
 		const map = new Map<string, AgendaEventDeviationRow[]>();
 		for (const d of deviations) {
-			if (!d.recurring) continue;
+			if (!d.spans_future_occurrences) continue;
 			const list = map.get(d.event_id) ?? [];
 			list.push(d);
 			map.set(d.event_id, list);
@@ -297,6 +320,26 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 						participantNames,
 					},
 				};
+
+				if (ev.resource.sourceType === 'project' && ev.resource.agreementId) {
+					const project = projectsMap.get(ev.resource.agreementId);
+					if (project) {
+						const appointmentTitle = (typeof ev.title === 'string' ? ev.title : '').trim();
+						const displayTitle = appointmentTitle ? `${project.name} - ${appointmentTitle}` : project.name;
+						return {
+							...enriched,
+							title: displayTitle,
+							resource: {
+								...enriched.resource,
+								projectId: project.id,
+								projectName: project.name,
+								lessonTypeName: project.name,
+								studentName: project.name,
+							},
+						};
+					}
+				}
+
 				if (ev.resource.sourceType !== 'lesson_agreement' || !ev.resource.agreementId) return enriched;
 				const agreement = agreementsMap.get(ev.resource.agreementId);
 				if (!agreement) return enriched;
@@ -331,6 +374,7 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 			deviationsByEventId,
 			recurringByEventId,
 			agreementsMap,
+			projectsMap,
 			participantCountByEventId,
 			participantNamesByEventId,
 			participantCountByDeviationId,
@@ -346,6 +390,7 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 		agreementsMap,
 		participantCountByEventId,
 		participantNamesByEventId,
+		projectsMap,
 		loading,
 		loadData,
 		getEnrichedEvents,

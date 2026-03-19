@@ -64,8 +64,8 @@ BEGIN
       LEFT JOIN user_roles ur ON p.user_id = ur.user_id
       WHERE (
         -- RLS: only admin/site_admin can see all users
-        public.is_admin((SELECT auth.uid()))
-        OR public.is_site_admin((SELECT auth.uid()))
+        public.is_admin(public.current_user_id())
+        OR public.is_site_admin(public.current_user_id())
       )
       AND (
         -- Search filter

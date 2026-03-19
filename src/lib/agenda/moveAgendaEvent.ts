@@ -26,7 +26,7 @@ export interface MoveAgendaEventParams {
 export type MoveAgendaEventResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<MoveAgendaEventResult> {
-	const { event, start, end, scope, user, agendaEvents, deviations, agreementsMap } = params;
+	const { event, start, end, scope, agendaEvents, deviations, agreementsMap } = params;
 	const eventId = event.resource.eventId;
 	if (!eventId) return { ok: false, message: 'Geen afspraak' };
 
@@ -47,7 +47,6 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 				start_time: actualStartTime,
 				end_date: actualEndDate,
 				end_time: actualEndTime,
-				updated_by: user.id,
 			})
 			.eq('id', eventId);
 
@@ -110,7 +109,6 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 				start_time: actualStartTime,
 				end_date: newEndDate,
 				end_time: actualEndTime,
-				updated_by: user.id,
 			})
 			.eq('id', eventId);
 		if (updateError) return { ok: false, message: 'Fout bij verplaatsen reeks' };
@@ -125,7 +123,6 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 			const { data: result, error } = await supabase.rpc('ensure_week_shows_original_slot', {
 				p_event_id: eventId,
 				p_week_date: originalDateStr,
-				p_user_id: user.id,
 				p_scope: scopeParam,
 			});
 			if (error) return { ok: false, message: 'Fout bij terugzetten' };
@@ -154,8 +151,7 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 			.update({
 				actual_date: actualDateStr,
 				actual_start_time: actualStartTime,
-				recurring,
-				updated_by: user.id,
+				spans_future_occurrences: recurring,
 			})
 			.eq('id', existingDeviation.id);
 		if (error) {
@@ -176,7 +172,7 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 		const endDate = addDaysToDateStr(originalDateStr, -1);
 		const { error: updateErr } = await supabase
 			.from('agenda_event_deviations')
-			.update({ recurring_end_date: endDate, updated_by: user.id })
+			.update({ spans_end_date: endDate })
 			.eq('id', deviationById.id);
 		if (updateErr) return { ok: false, message: `Fout bij bijwerken afwijking: ${updateErr.message}` };
 	}
@@ -187,9 +183,7 @@ export async function moveAgendaEvent(params: MoveAgendaEventParams): Promise<Mo
 		original_start_time: normalizeTime(originalStartTime || agendaEvent.start_time),
 		actual_date: actualDateStr,
 		actual_start_time: actualStartTime,
-		recurring,
-		created_by: user.id,
-		updated_by: user.id,
+		spans_future_occurrences: recurring,
 	};
 	const { error } = await supabase
 		.from('agenda_event_deviations')
