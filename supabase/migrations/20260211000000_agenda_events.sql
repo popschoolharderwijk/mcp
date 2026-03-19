@@ -103,6 +103,9 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.validate_agenda_event_source() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.validate_agenda_event_source() FROM anon;
+
 CREATE TRIGGER trg_validate_agenda_event_source
   BEFORE INSERT OR UPDATE ON public.agenda_events
   FOR EACH ROW
@@ -123,6 +126,9 @@ BEGIN
   RETURN OLD;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.cascade_delete_agenda_events_for_source() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.cascade_delete_agenda_events_for_source() FROM anon;
 
 CREATE TRIGGER trg_cascade_delete_agenda_events_project
   BEFORE DELETE ON public.projects
@@ -264,6 +270,8 @@ END;
 $$;
 
 ALTER FUNCTION public.trigger_lesson_agreement_create_agenda_event() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.trigger_lesson_agreement_create_agenda_event() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.trigger_lesson_agreement_create_agenda_event() FROM anon;
 
 CREATE TRIGGER lesson_agreement_insert_agenda_event_trigger
 AFTER INSERT ON public.lesson_agreements
@@ -309,6 +317,7 @@ AS $$
 $$;
 ALTER FUNCTION public.get_agenda_event_owner(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.get_agenda_event_owner(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_agenda_event_owner(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_agenda_event_owner(uuid) TO authenticated;
 
 -- Helper: current session user may manage event (owner or privileged). No uid argument — not spoofable.
@@ -332,6 +341,7 @@ AS $$
 $$;
 ALTER FUNCTION public.can_manage_agenda_event(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.can_manage_agenda_event(uuid) TO authenticated;
 
 -- Helper to check if user is participant of event - bypasses RLS
@@ -350,6 +360,7 @@ AS $$
 $$;
 ALTER FUNCTION public.is_agenda_participant(uuid, uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.is_agenda_participant(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_agenda_participant(uuid, uuid) FROM anon;
 GRANT EXECUTE ON FUNCTION public.is_agenda_participant(uuid, uuid) TO authenticated;
 
 -- =============================================================================
@@ -472,6 +483,8 @@ END;
 $$;
 
 ALTER FUNCTION public.enforce_agenda_deviation_immutable_fields() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.enforce_agenda_deviation_immutable_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.enforce_agenda_deviation_immutable_fields() FROM anon;
 
 CREATE TRIGGER enforce_agenda_deviation_immutable_fields_trigger
 BEFORE UPDATE ON public.agenda_event_deviations
@@ -500,6 +513,8 @@ END;
 $$;
 
 ALTER FUNCTION public.auto_delete_noop_agenda_deviation() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.auto_delete_noop_agenda_deviation() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.auto_delete_noop_agenda_deviation() FROM anon;
 
 CREATE TRIGGER auto_delete_noop_agenda_deviation_trigger
 BEFORE UPDATE ON public.agenda_event_deviations
@@ -548,6 +563,8 @@ END;
 $$;
 
 ALTER FUNCTION public.enforce_agenda_deviation_validity() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.enforce_agenda_deviation_validity() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.enforce_agenda_deviation_validity() FROM anon;
 
 CREATE TRIGGER enforce_agenda_deviation_validity_trigger
 BEFORE INSERT ON public.agenda_event_deviations
@@ -577,6 +594,8 @@ END;
 $$;
 
 ALTER FUNCTION public.prevent_owner_participant_removal() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.prevent_owner_participant_removal() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.prevent_owner_participant_removal() FROM anon;
 
 CREATE TRIGGER prevent_owner_participant_removal_trigger
 BEFORE DELETE ON public.agenda_participants
@@ -660,6 +679,8 @@ END;
 $$;
 
 ALTER FUNCTION public.shift_recurring_deviation_to_next_week(UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.shift_recurring_deviation_to_next_week(UUID) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.end_recurring_deviation_from_week(
@@ -716,6 +737,8 @@ END;
 $$;
 
 ALTER FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) FROM anon;
 GRANT EXECUTE ON FUNCTION public.end_recurring_deviation_from_week(UUID, DATE) TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.ensure_week_shows_original_slot(
@@ -851,6 +874,8 @@ END;
 $$;
 
 ALTER FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) FROM anon;
 GRANT EXECUTE ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEXT) TO authenticated;
 
 -- =============================================================================
@@ -860,6 +885,10 @@ GRANT EXECUTE ON FUNCTION public.ensure_week_shows_original_slot(UUID, DATE, TEX
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.agenda_events TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.agenda_participants TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.agenda_event_deviations TO authenticated;
+
+REVOKE ALL ON TABLE public.agenda_events FROM anon;
+REVOKE ALL ON TABLE public.agenda_participants FROM anon;
+REVOKE ALL ON TABLE public.agenda_event_deviations FROM anon;
 
 -- =============================================================================
 -- END OF AGENDA EVENTS MIGRATION

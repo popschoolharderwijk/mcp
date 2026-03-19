@@ -118,3 +118,7 @@ CREATE POLICY projects_delete_admin ON public.projects
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_domains TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.project_labels TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.projects TO authenticated;
+
+REVOKE ALL ON TABLE public.project_domains FROM anon;
+REVOKE ALL ON TABLE public.project_labels FROM anon;
+REVOKE ALL ON TABLE public.projects FROM anon;

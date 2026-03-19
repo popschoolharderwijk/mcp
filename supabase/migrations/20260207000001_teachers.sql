@@ -263,6 +263,10 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON public.teachers TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.teacher_availability TO authenticated;
 GRANT SELECT, INSERT, DELETE ON public.teacher_lesson_types TO authenticated;
 
+REVOKE ALL ON TABLE public.teachers FROM anon;
+REVOKE ALL ON TABLE public.teacher_availability FROM anon;
+REVOKE ALL ON TABLE public.teacher_lesson_types FROM anon;
+
 -- =============================================================================
 -- END OF TEACHERS MIGRATION
 -- =============================================================================

@@ -130,8 +130,9 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION get_users_paginated TO authenticated;
+REVOKE ALL ON FUNCTION public.get_users_paginated(integer, integer, text, text, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_users_paginated(integer, integer, text, text, text, text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_users_paginated(integer, integer, text, text, text, text) TO authenticated;
 
 -- Add comment
 COMMENT ON FUNCTION get_users_paginated IS 'Get paginated users with all related data (profile, role) in a single efficient query. Supports search, role filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting. Only admin/site_admin can access this function.';

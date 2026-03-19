@@ -182,6 +182,9 @@ EXECUTE FUNCTION public.check_lesson_type_has_no_agreements();
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_types TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_type_options TO authenticated;
 
+REVOKE ALL ON TABLE public.lesson_types FROM anon;
+REVOKE ALL ON TABLE public.lesson_type_options FROM anon;
+
 -- =============================================================================
 -- END OF LESSON TYPES MIGRATION
 -- =============================================================================

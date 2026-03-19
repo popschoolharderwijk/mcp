@@ -46,7 +46,7 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		// Intentionally NO DELETE policy - profiles are only removed via CASCADE from auth.users
 	],
 	user_roles: [
-		// SELECT policy - combined: users can view own role, privileged users can view all
+		// SELECT — own row OR privileged (single policy; split policies caused is_privileged RLS recursion)
 		'roles_select',
 		// INSERT policy - admin/site_admin can assign roles (admin cannot assign site_admin)
 		'roles_insert_admin',

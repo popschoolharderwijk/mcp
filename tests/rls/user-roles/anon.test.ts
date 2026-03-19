@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAnon } from '../../db';
 import type { UserRoleInsert } from '../../types';
-import { unwrap, unwrapError } from '../../utils';
+import { unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 
 let initialState: DatabaseState;
@@ -15,15 +16,11 @@ afterAll(async () => {
 	await verifyState(initialState);
 });
 
-/**
- * RLS policies for user_roles are for 'authenticated' only.
- * Anonymous users have no access.
- */
 describe('RLS: anonymous user – user_roles', () => {
 	it('anon cannot read user_roles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(await db.from('user_roles').select('*'));
-		expect(data).toHaveLength(0);
+		const error = unwrapError(await db.from('user_roles').select('*'));
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 
 	it('anon cannot insert user_roles', async () => {
@@ -37,15 +34,16 @@ describe('RLS: anonymous user – user_roles', () => {
 
 	it('anon cannot update user_roles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(
+		const error = unwrapError(
 			await db.from('user_roles').update({ role: 'site_admin' }).neq('role', 'site_admin').select(),
 		);
-		expect(data).toHaveLength(0);
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expect(error.message).toMatch(/permission denied/i);
 	});
 
 	it('anon cannot delete user_roles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(await db.from('user_roles').delete().eq('role', 'staff').select());
-		expect(data).toHaveLength(0);
+		const error = unwrapError(await db.from('user_roles').delete().eq('role', 'staff').select());
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 });

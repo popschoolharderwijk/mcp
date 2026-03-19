@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAnon } from '../../db';
 import type { ProfileInsert } from '../../types';
-import { unwrap, unwrapError } from '../../utils';
+import { unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { TestUsers } from '../test-users';
 
@@ -16,15 +17,11 @@ afterAll(async () => {
 	await verifyState(initialState);
 });
 
-/**
- * RLS policies for profiles are for 'authenticated' only.
- * Anonymous users have no access.
- */
 describe('RLS: anonymous user – profiles', () => {
 	it('anon cannot read profiles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(await db.from('profiles').select('*'));
-		expect(data).toHaveLength(0);
+		const error = unwrapError(await db.from('profiles').select('*'));
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 
 	it('anon cannot insert profiles', async () => {
@@ -38,19 +35,21 @@ describe('RLS: anonymous user – profiles', () => {
 
 	it('anon cannot update profiles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(
+		const error = unwrapError(
 			await db
 				.from('profiles')
 				.update({ first_name: 'Hacked', last_name: null })
 				.eq('email', TestUsers.STUDENT_001)
 				.select(),
 		);
-		expect(data).toHaveLength(0);
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 
 	it('anon cannot delete profiles', async () => {
 		const db = createClientAnon();
-		const data = unwrap(await db.from('profiles').delete().eq('email', TestUsers.STUDENT_001).select());
-		expect(data).toHaveLength(0);
+		const error = unwrapError(
+			await db.from('profiles').delete().eq('email', TestUsers.STUDENT_001).select(),
+		);
+		expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 	});
 });
