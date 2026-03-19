@@ -91,9 +91,14 @@ CREATE POLICY project_labels_delete_admin ON public.project_labels
   FOR DELETE TO authenticated
   USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
 
--- projects policies (SELECT for all authenticated; INSERT/UPDATE/DELETE for admin/site_admin only)
-CREATE POLICY projects_select_all ON public.projects
-  FOR SELECT TO authenticated USING (true);
+-- projects policies (admin/site_admin see all; others only own rows; INSERT/UPDATE/DELETE admin/site_admin only)
+CREATE POLICY projects_select_admin_all ON public.projects
+  FOR SELECT TO authenticated
+  USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+
+CREATE POLICY projects_select_owner ON public.projects
+  FOR SELECT TO authenticated
+  USING (owner_user_id = public.current_user_id());
 
 CREATE POLICY projects_insert_admin ON public.projects
   FOR INSERT TO authenticated

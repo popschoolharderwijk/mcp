@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
+import { useHasOwnedProjects } from '@/hooks/useHasOwnedProjects';
 import { cn } from '@/lib/utils';
 
 // Single value for all vertical spacing between nav items (padding + gap)
@@ -27,11 +28,15 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 	const { isAdmin, isSiteAdmin, isPrivileged, isTeacher } = useAuth();
+	const { hasOwnedProjects, isLoading: ownedProjectsLoading } = useHasOwnedProjects();
 	const showAdminNav = isAdmin || isSiteAdmin;
 	const showTeachersNav = isAdmin || isSiteAdmin;
 	const showStudentsNav = isPrivileged;
 	const showReportsNav = isPrivileged || isTeacher;
-	const showProjectsNav = isTeacher || isPrivileged;
+	// Admin/site_admin: always show. Others: only if they own at least one project (hide button when none).
+	const showProjectsNav =
+		(isAdmin || isSiteAdmin) ||
+		((isTeacher || isPrivileged) && !ownedProjectsLoading && hasOwnedProjects);
 
 	return (
 		<TooltipProvider delayDuration={0}>

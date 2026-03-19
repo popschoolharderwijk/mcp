@@ -160,7 +160,13 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		'project_labels_update_admin',
 		'project_labels_delete_admin',
 	],
-	projects: ['projects_select_all', 'projects_insert_admin', 'projects_update_admin', 'projects_delete_admin'],
+	projects: [
+		'projects_select_admin_all',
+		'projects_select_owner',
+		'projects_insert_admin',
+		'projects_update_admin',
+		'projects_delete_admin',
+	],
 };
 
 const EXPECTED_FUNCTIONS = [

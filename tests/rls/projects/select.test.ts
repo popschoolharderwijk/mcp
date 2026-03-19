@@ -17,9 +17,8 @@ afterAll(async () => {
 });
 
 /**
- * project_domains / project_labels / projects SELECT permissions:
- *
- * All authenticated users can view all records (public reference data).
+ * project_domains / project_labels: all authenticated users can view all records.
+ * projects: admin/site_admin see all; others see only projects they own (owner_user_id = current user).
  */
 
 async function selectProjectDomains(user: TestUser) {
@@ -36,10 +35,15 @@ async function selectProjectLabels(user: TestUser) {
 	return data;
 }
 
-async function selectProjects(user: TestUser) {
+function ownedProjectIds(user: TestUser): string[] {
+	const uid = fixtures.requireUserId(user);
+	return fixtures.allProjects.filter((p) => p.owner_user_id === uid).map((p) => p.id);
+}
+
+async function selectProjects(user: TestUser, expectedCount: number) {
 	const db = await createClientAs(user);
 	const data = unwrap(await db.from('projects').select('*'));
-	expect(data.length).toBe(fixtures.allProjects.length);
+	expect(data.length).toBe(expectedCount);
 	return data;
 }
 
@@ -97,26 +101,32 @@ describe('RLS: project_labels SELECT', () => {
 
 describe('RLS: projects SELECT', () => {
 	it('site_admin sees all projects', async () => {
-		await selectProjects(TestUsers.SITE_ADMIN);
+		await selectProjects(TestUsers.SITE_ADMIN, fixtures.allProjects.length);
 	});
 
 	it('admin sees all projects', async () => {
-		await selectProjects(TestUsers.ADMIN_ONE);
+		await selectProjects(TestUsers.ADMIN_ONE, fixtures.allProjects.length);
 	});
 
-	it('staff sees all projects', async () => {
-		await selectProjects(TestUsers.STAFF_ONE);
+	it('staff sees only projects they own', async () => {
+		const expectedIds = ownedProjectIds(TestUsers.STAFF_ONE);
+		const data = await selectProjects(TestUsers.STAFF_ONE, expectedIds.length);
+		expect(data.every((p) => p.owner_user_id === fixtures.requireUserId(TestUsers.STAFF_ONE))).toBe(true);
+		expect(data.map((p) => p.id).sort()).toEqual([...expectedIds].sort());
 	});
 
-	it('teacher sees all projects', async () => {
-		await selectProjects(TestUsers.TEACHER_ALICE);
+	it('teacher sees only projects they own', async () => {
+		const expectedIds = ownedProjectIds(TestUsers.TEACHER_ALICE);
+		const data = await selectProjects(TestUsers.TEACHER_ALICE, expectedIds.length);
+		expect(data.every((p) => p.owner_user_id === fixtures.requireUserId(TestUsers.TEACHER_ALICE))).toBe(true);
+		expect(data.map((p) => p.id).sort()).toEqual([...expectedIds].sort());
 	});
 
-	it('student sees all projects', async () => {
-		await selectProjects(TestUsers.STUDENT_001);
+	it('student sees no projects (owns none)', async () => {
+		await selectProjects(TestUsers.STUDENT_001, 0);
 	});
 
-	it('user without role sees all projects', async () => {
-		await selectProjects(TestUsers.USER_001);
+	it('user without role sees no projects (owns none)', async () => {
+		await selectProjects(TestUsers.USER_001, 0);
 	});
 });
