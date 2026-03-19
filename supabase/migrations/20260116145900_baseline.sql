@@ -53,7 +53,7 @@ BEGIN
       NEW.updated_by := v_uid;
     END IF;
 
-    -- Immutability guards'
+    -- Immutability guards
     IF NEW.created_at IS DISTINCT FROM OLD.created_at THEN
       RAISE EXCEPTION 'created_at is immutable';
     END IF;
@@ -66,7 +66,7 @@ BEGIN
 END;
 $$;
 
--- Helper function to add audit columns and trigger to a table'
+-- Helper function to add audit columns, FK indexes on created_by/updated_by, and trigger
 CREATE OR REPLACE FUNCTION public.apply_audit_trail(p_table regclass)
 RETURNS void
 LANGUAGE plpgsql
@@ -95,6 +95,20 @@ BEGIN
     ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES auth.users(id)
   ', v_schema, v_rel);
 
+  -- FK indexes (auth.users): avoids unindexed_foreign_keys database linter noise
+  EXECUTE format(
+    'CREATE INDEX IF NOT EXISTS %I ON %I.%I (created_by)',
+    'idx_' || v_rel || '_created_by',
+    v_schema,
+    v_rel
+  );
+  EXECUTE format(
+    'CREATE INDEX IF NOT EXISTS %I ON %I.%I (updated_by)',
+    'idx_' || v_rel || '_updated_by',
+    v_schema,
+    v_rel
+  );
+
   EXECUTE format('DROP TRIGGER IF EXISTS trg_audit_%I ON %I.%I', v_rel, v_schema, v_rel);
 
   EXECUTE format('
@@ -105,6 +119,11 @@ BEGIN
   ', v_rel, v_schema, v_rel);
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.set_audit_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.set_audit_fields() FROM anon;
+REVOKE ALL ON FUNCTION public.apply_audit_trail(regclass) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.apply_audit_trail(regclass) FROM anon;
 
 -- =============================================================================
 -- SECTION 1c: PHONE NUMBER VALIDATION (single source of truth for CHECK constraints)
@@ -127,7 +146,7 @@ ALTER FUNCTION public.is_valid_phone_number(text) OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 2: TABLES
--- ============================================================================='
+-- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -143,11 +162,13 @@ SELECT public.apply_audit_trail('public.profiles');
 
 CREATE TABLE IF NOT EXISTS public.user_roles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role app_role NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  role app_role NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles (role);
+
+-- Add audit columns to user_roles
+SELECT public.apply_audit_trail('public.user_roles');
 
 -- =============================================================================
 -- SECTION 3: ENABLE RLS
@@ -178,7 +199,9 @@ GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated;
 -- SECTION 4: ROLE HELPER FUNCTIONS (HARDENED)
 -- =============================================================================
 -- _has_role: SECURITY DEFINER + row_security off — only for DEFINER helpers (e.g. can_*), never granted to authenticated.
--- is_*(): SECURITY INVOKER — single EXISTS on user_roles scoped to current_user_id(); respects RLS (no recursion: own row matches roles_select first OR branch).
+-- is_*(): SECURITY INVOKER — EXISTS on user_roles under RLS. Use a single SELECT policy with
+-- (own row OR is_privileged()); splitting into a second policy USING (is_privileged()) alone causes
+-- stack depth errors (re-entrant RLS while evaluating is_privileged()).
 
 -- Internal helper — do not call from clients; use is_site_admin(), is_admin(), etc. instead
 CREATE OR REPLACE FUNCTION public._has_role(
@@ -327,28 +350,44 @@ ALTER FUNCTION public.can_delete_user(UUID) OWNER TO postgres;
 -- =============================================================================
 
 -- Combined SELECT policy: users can view own profile, privileged users can view all
-CREATE POLICY profiles_select
-ON public.profiles FOR SELECT TO authenticated
-USING (
-  public.current_user_id() = user_id
-  OR public.is_privileged()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'profiles_select'
+  ) THEN
+    CREATE POLICY profiles_select
+    ON public.profiles FOR SELECT TO authenticated
+    USING (
+      public.current_user_id() = user_id
+      OR public.is_privileged()
+    );
+  END IF;
+END $$;
 
 -- Combined UPDATE policy: users can update own profile, admins can update any profile
-CREATE POLICY profiles_update
-ON public.profiles FOR UPDATE TO authenticated
-USING (
-  public.current_user_id() = user_id
-  OR public.is_admin() OR public.is_site_admin()
-)
-WITH CHECK (
-  public.current_user_id() = user_id
-  OR public.is_admin() OR public.is_site_admin()
-);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'profiles' AND policyname = 'profiles_update'
+  ) THEN
+    CREATE POLICY profiles_update
+    ON public.profiles FOR UPDATE TO authenticated
+    USING (
+      public.current_user_id() = user_id
+      OR public.is_admin() OR public.is_site_admin()
+    )
+    WITH CHECK (
+      public.current_user_id() = user_id
+      OR public.is_admin() OR public.is_site_admin()
+    );
+  END IF;
+END $$;
 
--- INSERT and DELETE policies explicitly removed:
--- Profiles can only be created via handle_new_user() trigger
--- Profiles can only be deleted via CASCADE when auth.users is deleted
+-- No INSERT policy on purpose: clients cannot INSERT into profiles; rows are created only by
+-- public.handle_new_user() (trigger on auth.users). This is intentional, not an oversight.
+-- No DELETE policy on purpose: profiles are removed via ON DELETE CASCADE from auth.users.
 
 -- =============================================================================
 -- SECTION 6: RLS POLICIES - USER_ROLES
@@ -356,81 +395,125 @@ WITH CHECK (
 -- Role management permissions:
 --
 -- ADMINS:
--- - Can assign roles to new users (INSERT), but NOT site_admin roles
+-- - Can assign roles to new users (INSERT), but NOT site_admin roles, and NOT for own user_id
 -- - Can modify roles of existing users (UPDATE), but NOT site_admin roles
 -- - Can delete roles (DELETE), but NOT site_admin roles
--- - Cannot modify their own role
+-- - Cannot modify or delete their own role row
 --
 -- SITE_ADMINS:
--- - Can do everything (assign, modify, delete any role)
--- - Cannot modify their own role
+-- - Can do everything (assign, modify, delete any role) for other users
+-- - Cannot modify, delete, or INSERT their own role row
 --
 -- Note: PRIMARY KEY on user_id ensures only one role per user.
 
--- Combined SELECT policy: users can view own role, privileged users can view all
-CREATE POLICY roles_select
-ON public.user_roles FOR SELECT TO authenticated
-USING (
-  public.current_user_id() = user_id
-  OR public.is_privileged()
-);
+-- SELECT: one policy with OR — avoids RLS recursion (do not add a separate policy only USING (is_privileged())).
+DO $$
+BEGIN
+  DROP POLICY IF EXISTS roles_select_own ON public.user_roles;
+  DROP POLICY IF EXISTS roles_select_privileged ON public.user_roles;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'user_roles' AND policyname = 'roles_select'
+  ) THEN
+    CREATE POLICY roles_select
+    ON public.user_roles FOR SELECT TO authenticated
+    USING (
+      public.current_user_id() = user_id
+      OR public.is_privileged()
+    );
+  END IF;
+END $$;
 
 -- Allow admins to insert roles (but NOT site_admin)
--- Allow site_admins to insert any role
-CREATE POLICY roles_insert_admin
-ON public.user_roles FOR INSERT TO authenticated
-WITH CHECK (
-  (
-    public.is_admin()
-    AND role != 'site_admin'  -- Admins cannot assign site_admin
-  )
-  OR public.is_site_admin()  -- Site_admins can assign any role
-);
+-- Allow site_admins to insert any role (never for own user_id — consistent with UPDATE/DELETE)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'user_roles' AND policyname = 'roles_insert_admin'
+  ) THEN
+    CREATE POLICY roles_insert_admin
+    ON public.user_roles FOR INSERT TO authenticated
+    WITH CHECK (
+      (
+        (
+          public.is_admin()
+          AND role != 'site_admin'  -- Admins cannot assign site_admin
+        )
+        OR public.is_site_admin()  -- Site_admins can assign any role
+      )
+      AND user_id != public.current_user_id()
+    );
+  END IF;
+END $$;
 
 -- Allow admins to update roles (but NOT site_admin roles and not their own)
 -- Allow site_admins to update any role (but not their own)
 -- Note: In USING, 'role' refers to OLD.role. In WITH CHECK, 'role' refers to NEW.role.
-CREATE POLICY roles_update_admin
-ON public.user_roles FOR UPDATE TO authenticated
-USING (
-  (
-    (
-      public.is_admin()
-      AND role != 'site_admin'  -- Admins cannot modify users with site_admin role (OLD.role)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'user_roles' AND policyname = 'roles_update_admin'
+  ) THEN
+    CREATE POLICY roles_update_admin
+    ON public.user_roles FOR UPDATE TO authenticated
+    USING (
+      (
+        (
+          public.is_admin()
+          AND role != 'site_admin'  -- Admins cannot modify users with site_admin role (OLD.role)
+        )
+        OR public.is_site_admin()  -- Site_admins can modify any role
+      )
+      AND user_id != public.current_user_id()  -- Cannot modify own role
     )
-    OR public.is_site_admin()  -- Site_admins can modify any role
-  )
-  AND user_id != public.current_user_id()  -- Cannot modify own role
-)
-WITH CHECK (
-  (
-    (
-      public.is_admin()
-      AND role != 'site_admin'  -- Admins cannot set role to site_admin (NEW.role)
-    )
-    OR public.is_site_admin()  -- Site_admins can set any role
-  )
-  AND user_id != public.current_user_id()  -- Cannot modify own role
-);
+    WITH CHECK (
+      (
+        (
+          public.is_admin()
+          AND role != 'site_admin'  -- Admins cannot set role to site_admin (NEW.role)
+        )
+        OR public.is_site_admin()  -- Site_admins can set any role
+      )
+      AND user_id != public.current_user_id()  -- Cannot modify own role
+    );
+  END IF;
+END $$;
 
 -- Allow admins to delete roles (but NOT site_admin roles)
--- Allow site_admins to delete any role
-CREATE POLICY roles_delete_admin
-ON public.user_roles FOR DELETE TO authenticated
-USING (
-  (
-    public.is_admin()
-    AND role != 'site_admin'  -- Admins cannot delete site_admin roles
-  )
-  OR public.is_site_admin()  -- Site_admins can delete any role
-);
+-- Allow site_admins to delete any role (not own row — consistent with UPDATE)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'user_roles' AND policyname = 'roles_delete_admin'
+  ) THEN
+    CREATE POLICY roles_delete_admin
+    ON public.user_roles FOR DELETE TO authenticated
+    USING (
+      (
+        (
+          public.is_admin()
+          AND role != 'site_admin'  -- Admins cannot delete site_admin roles
+        )
+        OR public.is_site_admin()  -- Site_admins can delete any role
+      )
+      AND user_id != public.current_user_id()
+    );
+  END IF;
+END $$;
 
 -- Grant appropriate permissions on tables
 GRANT SELECT, UPDATE ON public.profiles TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.user_roles TO authenticated;
 
+-- Defense in depth: ensure anon has no table privileges (RLS alone is not table GRANTs)
+REVOKE ALL ON TABLE public.profiles FROM anon;
+REVOKE ALL ON TABLE public.user_roles FROM anon;
+
 -- =============================================================================
--- SECTION 9: TRIGGERS
+-- SECTION 7: TRIGGERS
 -- =============================================================================
 
 -- user_id immutable
@@ -448,6 +531,9 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.prevent_user_id_change() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.prevent_user_id_change() FROM anon;
 
 CREATE TRIGGER prevent_profiles_user_id_change
 BEFORE UPDATE ON public.profiles
@@ -473,13 +559,16 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON FUNCTION public.prevent_profile_email_change() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.prevent_profile_email_change() FROM anon;
+
 CREATE TRIGGER prevent_profiles_email_change
 BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_profile_email_change();
 
 -- =============================================================================
--- SECTION 10: NEW USER BOOTSTRAP
+-- SECTION 8: NEW USER BOOTSTRAP
 -- =============================================================================
 -- Automatically creates a profile when a new user signs up via Supabase Auth.
 -- Note: No role is assigned. Explicit roles (admin, staff) are
@@ -505,6 +594,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM anon;
 
 CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
@@ -530,6 +620,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.handle_auth_user_email_update() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.handle_auth_user_email_update() FROM anon;
 
 CREATE TRIGGER on_auth_user_email_updated
 AFTER UPDATE OF email ON auth.users
@@ -537,7 +628,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.handle_auth_user_email_update();
 
 -- =============================================================================
--- SECTION 11: SITE_ADMIN LOCKOUT PROTECTION
+-- SECTION 9: SITE_ADMIN LOCKOUT PROTECTION
 -- =============================================================================
 -- Defense-in-depth protection to ensure at least one site_admin always exists.
 --
@@ -603,6 +694,9 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.prevent_last_site_admin_removal() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.prevent_last_site_admin_removal() FROM anon;
 
 -- Apply trigger to both UPDATE and DELETE operations
 CREATE TRIGGER protect_last_site_admin

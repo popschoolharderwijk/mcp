@@ -4,6 +4,7 @@
 
 import { expect } from 'bun:test';
 import type { PostgrestError, User } from '@supabase/supabase-js';
+import { PostgresErrorCodes } from '../src/integrations/supabase/errorcodes';
 
 export function expectNonNull<T>(data: T | null | undefined): asserts data is T {
 	expect(data).toBeDefined();
@@ -25,14 +26,32 @@ type PostgressResult<T> = {
 	error: PostgrestError | null;
 };
 
+function isNonNullish<T>(value: T | null | undefined): value is NonNullable<T> {
+	return value !== null && value !== undefined;
+}
+
 export function unwrap<T>({ data, error }: PostgressResult<T | null>): T {
 	expectNoError(data, error);
+	return data;
+}
+
+/** Like {@link unwrap}, but narrows away `null` / `undefined` (e.g. after `.single()`). */
+export function unwrapSingleRow<T>(result: PostgressResult<T | null>): NonNullable<T> {
+	const { data, error } = result;
+	expect(error).toBeNull();
+	if (!isNonNullish(data)) {
+		throw new Error('unwrapSingleRow: expected a single row');
+	}
 	return data;
 }
 
 export function unwrapError<T>(result: PostgressResult<T>): PostgrestError {
 	expectError(result.data, result.error);
 	return result.error;
+}
+
+export function expectInsufficientPrivilege(error: PostgrestError): void {
+	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 }
 
 /**

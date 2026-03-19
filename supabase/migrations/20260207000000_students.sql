@@ -119,6 +119,8 @@ WITH CHECK (public.is_admin() OR public.is_site_admin());
 -- Students can only be deleted by removing all lesson_agreements (trigger will auto-delete student).
 GRANT SELECT, UPDATE ON public.students TO authenticated;
 
+REVOKE ALL ON TABLE public.students FROM anon;
+
 -- =============================================================================
 -- SECTION 7: ALTER TABLE FOR EXISTING DATABASES
 -- =============================================================================

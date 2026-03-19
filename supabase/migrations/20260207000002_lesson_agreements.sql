@@ -503,6 +503,8 @@ EXECUTE FUNCTION public.trigger_cleanup_student_on_agreement_delete();
 -- security boundary. Without matching RLS policies, GRANT alone does NOT grant access.
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_agreements TO authenticated;
 
+REVOKE ALL ON TABLE public.lesson_agreements FROM anon;
+
 -- =============================================================================
 -- END OF LESSON AGREEMENTS MIGRATION
 -- =============================================================================

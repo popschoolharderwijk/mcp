@@ -38,7 +38,8 @@ SELECT
 FROM profiles;
 
 -- Grant SELECT to authenticated users
-GRANT SELECT ON view_profiles_with_display_name TO authenticated;
+GRANT SELECT ON public.view_profiles_with_display_name TO authenticated;
+REVOKE ALL ON TABLE public.view_profiles_with_display_name FROM anon;
 
 -- Add comment
 COMMENT ON VIEW view_profiles_with_display_name IS 'Profile data with calculated display_name field. Uses security_invoker=on to respect RLS policies. Used by pagination functions for students, teachers, and other entities.';

@@ -1,10 +1,27 @@
-import { describe, expect, it } from 'bun:test';
-import { createClientAs } from '../../db';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import type { Tables } from '../../../src/integrations/supabase/types';
+import { createClientAnon, createClientAs } from '../../db';
+import { expectInsufficientPrivilege, unwrap, unwrapError, unwrapSingleRow } from '../../utils';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { LESSON_AGREEMENTS } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 const { allProfiles } = fixtures;
+
+type ViewProfileRow = Tables<'view_profiles_with_display_name'>;
+type ViewProfileDisplayNameRow = Pick<ViewProfileRow, 'display_name' | 'first_name' | 'last_name'>;
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 /**
  * RLS tests for view_profiles_with_display_name
@@ -23,62 +40,56 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('site_admin sees all profiles via view', async () => {
 			const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(allProfiles.length);
 		});
 
 		it('admin sees all profiles via view', async () => {
 			const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(allProfiles.length);
 		});
 
 		it('staff sees all profiles via view', async () => {
 			const db = await createClientAs(TestUsers.STAFF_ONE);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(allProfiles.length);
 		});
 
 		it('teacher sees own profile and profiles of their students via view', async () => {
 			const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			// Teacher sees own profile + profiles of students (Alice has 12 students in seed = 13 total)
 			expect(data).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE + 1);
-			expect(data?.some((p) => p.email === TestUsers.TEACHER_ALICE)).toBe(true);
+			expect(data.some((p) => p.email === TestUsers.TEACHER_ALICE)).toBe(true);
 		});
 
 		it('student sees own profile and profiles of their teachers via view', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_001);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			// Student sees own profile + profiles of teachers they have a lesson_agreement with (STUDENT_001 has 1 teacher: Eve)
 			expect(data).toHaveLength(2);
-			expect(data?.some((p) => p.email === TestUsers.STUDENT_001)).toBe(true);
-			expect(data?.some((p) => p.email === TestUsers.TEACHER_EVE)).toBe(true);
+			expect(data.some((p) => p.email === TestUsers.STUDENT_001)).toBe(true);
+			expect(data.some((p) => p.email === TestUsers.TEACHER_EVE)).toBe(true);
 		});
 
 		it('user without role sees only own profile via view', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(1);
 
-			const [profile] = data ?? [];
+			const [profile] = data;
 			expect(profile?.email).toBe(TestUsers.USER_001);
 		});
 	});
@@ -87,11 +98,11 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('teacher: view and table return identical user_ids', async () => {
 			const db = await createClientAs(TestUsers.TEACHER_BOB);
 
-			const { data: viewData } = await db.from('view_profiles_with_display_name').select('user_id');
-			const { data: tableData } = await db.from('profiles').select('user_id');
+			const viewData = unwrap(await db.from('view_profiles_with_display_name').select('user_id'));
+			const tableData = unwrap(await db.from('profiles').select('user_id'));
 
-			const viewUserIds = new Set(viewData?.map((r) => r.user_id));
-			const tableUserIds = new Set(tableData?.map((r) => r.user_id));
+			const viewUserIds = new Set(viewData.map((r) => r.user_id));
+			const tableUserIds = new Set(tableData.map((r) => r.user_id));
 
 			expect(viewUserIds).toEqual(tableUserIds);
 		});
@@ -99,11 +110,11 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('student: view and table return identical user_ids', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_009);
 
-			const { data: viewData } = await db.from('view_profiles_with_display_name').select('user_id');
-			const { data: tableData } = await db.from('profiles').select('user_id');
+			const viewData = unwrap(await db.from('view_profiles_with_display_name').select('user_id'));
+			const tableData = unwrap(await db.from('profiles').select('user_id'));
 
-			const viewUserIds = new Set(viewData?.map((r) => r.user_id));
-			const tableUserIds = new Set(tableData?.map((r) => r.user_id));
+			const viewUserIds = new Set(viewData.map((r) => r.user_id));
+			const tableUserIds = new Set(tableData.map((r) => r.user_id));
 
 			expect(viewUserIds).toEqual(tableUserIds);
 		});
@@ -111,11 +122,11 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('staff: view and table return identical user_ids', async () => {
 			const db = await createClientAs(TestUsers.STAFF_ONE);
 
-			const { data: viewData } = await db.from('view_profiles_with_display_name').select('user_id');
-			const { data: tableData } = await db.from('profiles').select('user_id');
+			const viewData = unwrap(await db.from('view_profiles_with_display_name').select('user_id'));
+			const tableData = unwrap(await db.from('profiles').select('user_id'));
 
-			const viewUserIds = new Set(viewData?.map((r) => r.user_id));
-			const tableUserIds = new Set(tableData?.map((r) => r.user_id));
+			const viewUserIds = new Set(viewData.map((r) => r.user_id));
+			const tableUserIds = new Set(tableData.map((r) => r.user_id));
 
 			expect(viewUserIds).toEqual(tableUserIds);
 		});
@@ -125,11 +136,9 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('student cannot see other user profiles via view', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_001);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
-
-			const emails = data?.map((p) => p.email) ?? [];
+			const emails = data.map((p) => p.email);
 			// Should only see own email
 			expect(emails).toContain(TestUsers.STUDENT_001);
 			// Should NOT see other users
@@ -141,11 +150,9 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('teacher cannot see other user profiles via view', async () => {
 			const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
-
-			const emails = data?.map((p) => p.email) ?? [];
+			const emails = data.map((p) => p.email);
 			// Should only see own email
 			expect(emails).toContain(TestUsers.TEACHER_ALICE);
 			// Should NOT see other users
@@ -157,11 +164,9 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 		it('user without role cannot see other user profiles via view', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db.from('view_profiles_with_display_name').select('*');
+			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			expect(error).toBeNull();
-
-			const emails = data?.map((p) => p.email) ?? [];
+			const emails = data.map((p) => p.email);
 			// Should only see own email
 			expect(emails).toContain(TestUsers.USER_001);
 			// Should NOT see other users
@@ -175,31 +180,29 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 			const db = await createClientAs(TestUsers.TEACHER_ALICE);
 			const aliceProfile = fixtures.requireProfile(TestUsers.TEACHER_ALICE);
 
-			const { data, error } = await db
-				.from('view_profiles_with_display_name')
-				.select('display_name, first_name, last_name')
-				.eq('email', TestUsers.TEACHER_ALICE)
-				.single();
-
-			expect(error).toBeNull();
-			expect(data).toBeDefined();
+			const data = unwrapSingleRow<ViewProfileDisplayNameRow>(
+				await db
+					.from('view_profiles_with_display_name')
+					.select('display_name, first_name, last_name')
+					.eq('email', TestUsers.TEACHER_ALICE)
+					.single(),
+			);
 
 			// display_name should be "first_name last_name"
 			const expectedDisplayName = `${aliceProfile.first_name} ${aliceProfile.last_name}`;
-			expect(data?.display_name).toBe(expectedDisplayName);
+			expect(data.display_name).toBe(expectedDisplayName);
 		});
 
 		it('view includes expected fields', async () => {
 			const db = await createClientAs(TestUsers.STUDENT_001);
 
-			const { data, error } = await db
-				.from('view_profiles_with_display_name')
-				.select('*')
-				.eq('email', TestUsers.STUDENT_001)
-				.single();
-
-			expect(error).toBeNull();
-			expect(data).toBeDefined();
+			const data = unwrapSingleRow<ViewProfileRow>(
+				await db
+					.from('view_profiles_with_display_name')
+					.select('*')
+					.eq('email', TestUsers.STUDENT_001)
+					.single(),
+			);
 
 			// Verify all expected fields are present
 			expect(data).toHaveProperty('user_id');
@@ -210,6 +213,13 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 			expect(data).toHaveProperty('avatar_url');
 			expect(data).toHaveProperty('created_at');
 			expect(data).toHaveProperty('display_name');
+		});
+	});
+
+	describe('anonymous user', () => {
+		it('cannot select from view_profiles_with_display_name', async () => {
+			const db = createClientAnon();
+			expectInsufficientPrivilege(unwrapError(await db.from('view_profiles_with_display_name').select('*')));
 		});
 	});
 });

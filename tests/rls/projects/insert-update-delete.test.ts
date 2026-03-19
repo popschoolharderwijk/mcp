@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs } from '../../db';
-import { unwrap, unwrapError } from '../../utils';
+import { expectInsufficientPrivilege, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { TEST_PROJECT_OWNER_ADMIN_ID, TestProjectDomains, TestProjectLabels, TestProjects } from '../test-projects';
 import { type TestUser, TestUsers } from '../test-users';
@@ -25,8 +24,7 @@ const TEST_DOMAIN_ID = TestProjectDomains.MUSIC;
 
 async function expectDomainInsertBlocked(user: TestUser) {
 	const db = await createClientAs(user);
-	const error = unwrapError(await db.from('project_domains').insert({ name: 'Test Domain' }).select());
-	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+	expectInsufficientPrivilege(unwrapError(await db.from('project_domains').insert({ name: 'Test Domain' }).select()));
 }
 
 async function expectDomainUpdateBlocked(user: TestUser) {
@@ -58,8 +56,9 @@ async function insertDomain(user: TestUser, name: string) {
 describe('RLS WITH CHECK: project_domains INSERT/UPDATE rejected for non-admin', () => {
 	it('INSERT rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
-		const { error } = await db.from('project_domains').insert({ name: 'Staff Domain' }).select();
-		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expectInsufficientPrivilege(
+			unwrapError(await db.from('project_domains').insert({ name: 'Staff Domain' }).select()),
+		);
 	});
 	it('UPDATE rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
@@ -144,10 +143,9 @@ const TEST_LABEL_ID = TestProjectLabels.GUITAR_LESSONS;
 
 async function expectLabelInsertBlocked(user: TestUser) {
 	const db = await createClientAs(user);
-	const error = unwrapError(
-		await db.from('project_labels').insert({ name: 'Test Label', domain_id: TEST_DOMAIN_ID }).select(),
+	expectInsufficientPrivilege(
+		unwrapError(await db.from('project_labels').insert({ name: 'Test Label', domain_id: TEST_DOMAIN_ID }).select()),
 	);
-	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 }
 
 async function expectLabelUpdateBlocked(user: TestUser) {
@@ -167,11 +165,11 @@ async function expectLabelDeleteBlocked(user: TestUser) {
 describe('RLS WITH CHECK: project_labels INSERT/UPDATE rejected for non-admin', () => {
 	it('INSERT rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
-		const { error } = await db
-			.from('project_labels')
-			.insert({ name: 'Staff Label', domain_id: TEST_DOMAIN_ID })
-			.select();
-		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db.from('project_labels').insert({ name: 'Staff Label', domain_id: TEST_DOMAIN_ID }).select(),
+			),
+		);
 	});
 	it('UPDATE rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
@@ -270,13 +268,14 @@ const OWNER_ADMIN_ID = TEST_PROJECT_OWNER_ADMIN_ID;
 
 async function expectProjectInsertBlocked(user: TestUser) {
 	const db = await createClientAs(user);
-	const error = unwrapError(
-		await db
-			.from('projects')
-			.insert({ name: 'Test Project', label_id: TEST_LABEL_ID, owner_user_id: OWNER_ADMIN_ID })
-			.select(),
+	expectInsufficientPrivilege(
+		unwrapError(
+			await db
+				.from('projects')
+				.insert({ name: 'Test Project', label_id: TEST_LABEL_ID, owner_user_id: OWNER_ADMIN_ID })
+				.select(),
+		),
 	);
-	expect(error.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
 }
 
 async function expectProjectUpdateBlocked(user: TestUser) {
@@ -296,27 +295,33 @@ async function expectProjectDeleteBlocked(user: TestUser) {
 describe('RLS WITH CHECK: projects INSERT/UPDATE rejected for non-admin', () => {
 	it('INSERT rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
-		const { error } = await db
-			.from('projects')
-			.insert({
-				name: 'Staff Project',
-				label_id: TEST_LABEL_ID,
-				owner_user_id: OWNER_ADMIN_ID,
-			})
-			.select();
-		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db
+					.from('projects')
+					.insert({
+						name: 'Staff Project',
+						label_id: TEST_LABEL_ID,
+						owner_user_id: OWNER_ADMIN_ID,
+					})
+					.select(),
+			),
+		);
 	});
 	it('INSERT rejected by WITH CHECK for teacher (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const { error } = await db
-			.from('projects')
-			.insert({
-				name: 'Teacher Project',
-				label_id: TEST_LABEL_ID,
-				owner_user_id: OWNER_ADMIN_ID,
-			})
-			.select();
-		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db
+					.from('projects')
+					.insert({
+						name: 'Teacher Project',
+						label_id: TEST_LABEL_ID,
+						owner_user_id: OWNER_ADMIN_ID,
+					})
+					.select(),
+			),
+		);
 	});
 	it('UPDATE rejected by WITH CHECK for staff (policy requires admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);

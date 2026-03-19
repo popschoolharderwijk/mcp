@@ -244,8 +244,9 @@ BEGIN
 END;
 $$;
 
--- Grant execute permission to authenticated users
-GRANT EXECUTE ON FUNCTION get_students_paginated TO authenticated;
+REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) TO authenticated;
 
 -- Add comment
 COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with all related data (profile, agreements, teachers, lesson types) in a single efficient query. Supports search, status filter, lesson type filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting. Access is enforced by RLS on students and lesson_agreements (student=own, teacher=own students, staff=all).';

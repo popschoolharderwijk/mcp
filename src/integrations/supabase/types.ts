@@ -684,17 +684,26 @@ export type Database = {
 			user_roles: {
 				Row: {
 					created_at: string;
+					created_by: string | null;
 					role: Database['public']['Enums']['app_role'];
+					updated_at: string;
+					updated_by: string | null;
 					user_id: string;
 				};
 				Insert: {
 					created_at?: string;
+					created_by?: string | null;
 					role: Database['public']['Enums']['app_role'];
+					updated_at?: string;
+					updated_by?: string | null;
 					user_id: string;
 				};
 				Update: {
 					created_at?: string;
+					created_by?: string | null;
 					role?: Database['public']['Enums']['app_role'];
+					updated_at?: string;
+					updated_by?: string | null;
 					user_id?: string;
 				};
 				Relationships: [];

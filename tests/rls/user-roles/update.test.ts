@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { PostgresErrorCodes } from '../../../src/integrations/supabase/errorcodes';
 import { createClientAs } from '../../db';
+import { expectInsufficientPrivilege, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -100,16 +100,11 @@ describe('RLS: user_roles UPDATE - other users', () => {
 	it('admin cannot promote user to site_admin', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		const { error } = await db
-			.from('user_roles')
-			.update({ role: 'site_admin' })
-			.eq('user_id', targetUserId)
-			.select();
+		const result = await db.from('user_roles').update({ role: 'site_admin' }).eq('user_id', targetUserId).select();
 
 		// RLS WITH CHECK blocks this - returns an error (not just 0 rows)
 		// because the USING clause passes but WITH CHECK fails
-		expect(error).not.toBeNull();
-		expect(error?.code).toBe(PostgresErrorCodes.INSUFFICIENT_PRIVILEGE);
+		expectInsufficientPrivilege(unwrapError(result));
 	});
 
 	it('site_admin can update other user roles', async () => {
