@@ -7,7 +7,7 @@ alwaysApply: true
 * ❌ `npx ...` — use `bun run` or `bunx` instead
 
 # Always do this instead
-* Run commands from project root (current directory). Use **`bun run <script>`** for scripts (e.g. `bun run ci`) or **`bunx <pkg>`** for one-off tools
+* Run commands from project root (current directory). Use **`bun run <script>`** for scripts (e.g. `bun check:ci`) or **`bunx <pkg>`** for one-off tools
 
 # Windows / PowerShell
 * Respect the platform; don't use `head` or `grep` as these commands are unavailable on Windows/PS. Use PS equivalents.

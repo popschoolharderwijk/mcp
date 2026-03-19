@@ -26,8 +26,8 @@ jobs:
           version: latest
 
       - name: Run CI
-        run: bun run ci
+        run: bun check:ci
 
       - name: Lint SQL migrations (Squawk)
-        run: bun run lint:sql
+        run: bun lint:sql
 
