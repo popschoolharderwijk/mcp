@@ -181,14 +181,14 @@ ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
   student_user_id = public.current_user_id()
   OR teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Staff, admins and site_admins can insert lesson agreements
 CREATE POLICY lesson_agreements_insert_staff
 ON public.lesson_agreements FOR INSERT TO authenticated
 WITH CHECK (
-  public.is_privileged(public.current_user_id())
+  public.is_privileged()
 );
 
 -- Staff, admins and site_admins can update lesson agreements
@@ -196,10 +196,10 @@ WITH CHECK (
 CREATE POLICY lesson_agreements_update_staff
 ON public.lesson_agreements FOR UPDATE TO authenticated
 USING (
-  public.is_privileged(public.current_user_id())
+  public.is_privileged()
 )
 WITH CHECK (
-  public.is_privileged(public.current_user_id())
+  public.is_privileged()
 );
 
 -- Staff, admins and site_admins can delete lesson agreements
@@ -207,7 +207,7 @@ WITH CHECK (
 CREATE POLICY lesson_agreements_delete_staff
 ON public.lesson_agreements FOR DELETE TO authenticated
 USING (
-  public.is_privileged(public.current_user_id())
+  public.is_privileged()
 );
 
 -- =============================================================================
@@ -263,7 +263,7 @@ CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
   -- Teachers can view their own students
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
@@ -284,7 +284,7 @@ CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
   -- Students can view their own teachers
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
@@ -306,7 +306,7 @@ CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
 USING (
   public.current_user_id() = user_id
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
   -- Students can view their teachers' profiles
   OR EXISTS (
     SELECT 1 FROM public.teachers t
@@ -339,7 +339,7 @@ BEGIN
   -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
   IF public.current_user_id() IS NOT NULL
      AND public.current_user_id() IS DISTINCT FROM _user_id
-     AND NOT public.is_privileged(public.current_user_id()) THEN
+     AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -396,7 +396,7 @@ BEGIN
   -- Allow when no session (e.g. trigger during seed) or caller is self or privileged
   IF public.current_user_id() IS NOT NULL
      AND public.current_user_id() IS DISTINCT FROM _user_id
-     AND NOT public.is_privileged(public.current_user_id()) THEN
+     AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 

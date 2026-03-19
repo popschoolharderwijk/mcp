@@ -35,8 +35,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 	const showReportsNav = isPrivileged || isTeacher;
 	// Admin/site_admin: always show. Others: only if they own at least one project (hide button when none).
 	const showProjectsNav =
-		(isAdmin || isSiteAdmin) ||
-		((isTeacher || isPrivileged) && !ownedProjectsLoading && hasOwnedProjects);
+		isAdmin || isSiteAdmin || ((isTeacher || isPrivileged) && !ownedProjectsLoading && hasOwnedProjects);
 
 	return (
 		<TooltipProvider delayDuration={0}>

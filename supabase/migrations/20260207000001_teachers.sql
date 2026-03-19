@@ -161,30 +161,30 @@ CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Admins and site_admins can insert teachers
 CREATE POLICY teachers_insert_admin
 ON public.teachers FOR INSERT TO authenticated
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 -- Combined UPDATE policy: teachers can update own record, admins can update any
 CREATE POLICY teachers_update
 ON public.teachers FOR UPDATE TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
   user_id = public.current_user_id()
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 );
 
 -- Admins and site_admins can delete teachers
 CREATE POLICY teachers_delete_admin
 ON public.teachers FOR DELETE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin());
 
 -- =============================================================================
 -- SECTION 5B: RLS POLICIES FOR teacher_availability
@@ -195,7 +195,7 @@ CREATE POLICY teacher_availability_select
 ON public.teacher_availability FOR SELECT TO authenticated
 USING (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Combined INSERT policy: teachers can insert own availability, admins can insert for any
@@ -203,7 +203,7 @@ CREATE POLICY teacher_availability_insert
 ON public.teacher_availability FOR INSERT TO authenticated
 WITH CHECK (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 );
 
 -- Combined UPDATE policy: teachers can update own availability, admins can update any
@@ -211,11 +211,11 @@ CREATE POLICY teacher_availability_update
 ON public.teacher_availability FOR UPDATE TO authenticated
 USING (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 );
 
 -- Combined DELETE policy: teachers can delete own availability, admins can delete any
@@ -223,7 +223,7 @@ CREATE POLICY teacher_availability_delete
 ON public.teacher_availability FOR DELETE TO authenticated
 USING (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 );
 
 -- =============================================================================
@@ -235,21 +235,21 @@ CREATE POLICY teacher_lesson_types_select
 ON public.teacher_lesson_types FOR SELECT TO authenticated
 USING (
   teacher_user_id = public.get_teacher_user_id(public.current_user_id())
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Admins and site_admins can insert lesson type links
 CREATE POLICY teacher_lesson_types_insert_admin
 ON public.teacher_lesson_types FOR INSERT TO authenticated
 WITH CHECK (
-  public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  public.is_admin() OR public.is_site_admin()
 );
 
 -- Admins and site_admins can delete lesson type links
 CREATE POLICY teacher_lesson_types_delete_admin
 ON public.teacher_lesson_types FOR DELETE TO authenticated
 USING (
-  public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  public.is_admin() OR public.is_site_admin()
 );
 
 -- =============================================================================

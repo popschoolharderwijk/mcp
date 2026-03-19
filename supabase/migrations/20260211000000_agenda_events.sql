@@ -311,8 +311,8 @@ ALTER FUNCTION public.get_agenda_event_owner(uuid) OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.get_agenda_event_owner(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_agenda_event_owner(uuid) TO authenticated;
 
--- Helper to check if user can manage event (is owner or privileged) - bypasses RLS
-CREATE OR REPLACE FUNCTION public.can_manage_agenda_event(ev_id uuid, uid uuid)
+-- Helper: current session user may manage event (owner or privileged). No uid argument — not spoofable.
+CREATE OR REPLACE FUNCTION public.can_manage_agenda_event(ev_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
@@ -321,13 +321,18 @@ SET row_security = off
 STABLE
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.agenda_events
-    WHERE id = ev_id AND (owner_user_id = uid OR public.is_privileged(uid))
+    SELECT 1
+    FROM public.agenda_events
+    WHERE id = ev_id
+      AND (
+        owner_user_id = public.current_user_id()
+        OR public.is_privileged()
+      )
   );
 $$;
-ALTER FUNCTION public.can_manage_agenda_event(uuid, uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.can_manage_agenda_event(uuid, uuid) TO authenticated;
+ALTER FUNCTION public.can_manage_agenda_event(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.can_manage_agenda_event(uuid) TO authenticated;
 
 -- Helper to check if user is participant of event - bypasses RLS
 CREATE OR REPLACE FUNCTION public.is_agenda_participant(ev_id uuid, uid uuid)
@@ -358,31 +363,31 @@ ON public.agenda_events FOR SELECT TO authenticated
 USING (
   owner_user_id = public.current_user_id()
   OR public.is_agenda_participant(agenda_events.id, public.current_user_id())
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- agenda_events: INSERT for authenticated (owner_user_id/created_by set by caller)
 -- Restrict: user can only insert events where they are owner, or privileged
 CREATE POLICY agenda_events_insert
 ON public.agenda_events FOR INSERT TO authenticated
-WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
+WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged());
 
 -- agenda_events: UPDATE/DELETE only owner or privileged
 CREATE POLICY agenda_events_update
 ON public.agenda_events FOR UPDATE TO authenticated
-USING (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()))
-WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
+USING (owner_user_id = public.current_user_id() OR public.is_privileged())
+WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged());
 
 CREATE POLICY agenda_events_delete
 ON public.agenda_events FOR DELETE TO authenticated
-USING (owner_user_id = public.current_user_id() OR public.is_privileged(public.current_user_id()));
+USING (owner_user_id = public.current_user_id() OR public.is_privileged());
 
 -- agenda_participants: SELECT own rows, or event owner, or privileged (use helper to avoid RLS recursion)
 CREATE POLICY agenda_participants_select
 ON public.agenda_participants FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
   OR public.get_agenda_event_owner(event_id) = public.current_user_id()
 );
 
@@ -393,7 +398,7 @@ CREATE POLICY agenda_participants_insert
 ON public.agenda_participants FOR INSERT TO authenticated
 WITH CHECK (
   -- Privileged users can add anyone
-  public.is_privileged(public.current_user_id())
+  public.is_privileged()
   OR (
     -- Event owner can add participants...
     public.get_agenda_event_owner(event_id) = public.current_user_id()
@@ -408,12 +413,12 @@ WITH CHECK (
 
 CREATE POLICY agenda_participants_update
 ON public.agenda_participants FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id, public.current_user_id()))
-WITH CHECK (public.can_manage_agenda_event(event_id, public.current_user_id()));
+USING (public.can_manage_agenda_event(event_id))
+WITH CHECK (public.can_manage_agenda_event(event_id));
 
 CREATE POLICY agenda_participants_delete
 ON public.agenda_participants FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id, public.current_user_id()));
+USING (public.can_manage_agenda_event(event_id));
 
 -- agenda_event_deviations: SELECT if participant of event or privileged
 -- Uses helper function to avoid recursion
@@ -421,7 +426,7 @@ CREATE POLICY agenda_event_deviations_select
 ON public.agenda_event_deviations FOR SELECT TO authenticated
 USING (
   public.is_agenda_participant(agenda_event_deviations.event_id, public.current_user_id())
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- agenda_event_deviations: INSERT/UPDATE/DELETE only event owner or privileged
@@ -429,17 +434,17 @@ USING (
 CREATE POLICY agenda_event_deviations_insert
 ON public.agenda_event_deviations FOR INSERT TO authenticated
 WITH CHECK (
-  public.can_manage_agenda_event(event_id, public.current_user_id())
+  public.can_manage_agenda_event(event_id)
 );
 
 CREATE POLICY agenda_event_deviations_update
 ON public.agenda_event_deviations FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id, public.current_user_id()))
-WITH CHECK (public.can_manage_agenda_event(event_id, public.current_user_id()));
+USING (public.can_manage_agenda_event(event_id))
+WITH CHECK (public.can_manage_agenda_event(event_id));
 
 CREATE POLICY agenda_event_deviations_delete
 ON public.agenda_event_deviations FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id, public.current_user_id()));
+USING (public.can_manage_agenda_event(event_id));
 
 -- =============================================================================
 -- SECTION 7: DEVIATION TRIGGERS (immutable fields, no-op delete, validity)
@@ -616,7 +621,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -687,7 +692,7 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -743,7 +748,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found: %', p_event_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged(public.current_user_id()) THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 

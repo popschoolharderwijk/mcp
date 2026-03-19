@@ -21,11 +21,7 @@ afterAll(async () => {
 describe('RLS: anonymous user – security functions', () => {
 	it('anon cannot call role helper functions', async () => {
 		const db = createClientAnon();
-		unwrapError(
-			await db.rpc('is_site_admin', {
-				_user_id: '10000000-0001-0000-0000-000000000000',
-			}),
-		);
+		unwrapError(await db.rpc('is_site_admin'));
 	});
 
 	it('anon cannot call introspection functions', async () => {

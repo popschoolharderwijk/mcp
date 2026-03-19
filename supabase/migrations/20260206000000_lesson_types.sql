@@ -91,18 +91,18 @@ USING (true);
 -- Admins and site_admins can insert lesson types
 CREATE POLICY lesson_types_insert_admin
 ON public.lesson_types FOR INSERT TO authenticated
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 -- Admins and site_admins can update lesson types
 CREATE POLICY lesson_types_update_admin
 ON public.lesson_types FOR UPDATE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin())
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 -- Admins and site_admins can delete lesson types
 CREATE POLICY lesson_types_delete_admin
 ON public.lesson_types FOR DELETE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin());
 
 -- =============================================================================
 -- SECTION 3B: RLS FOR lesson_type_options
@@ -119,16 +119,16 @@ USING (true);
 -- Admins and site_admins can insert/update/delete lesson type options
 CREATE POLICY lesson_type_options_insert_admin
 ON public.lesson_type_options FOR INSERT TO authenticated
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY lesson_type_options_update_admin
 ON public.lesson_type_options FOR UPDATE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()))
-WITH CHECK (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin())
+WITH CHECK (public.is_admin() OR public.is_site_admin());
 
 CREATE POLICY lesson_type_options_delete_admin
 ON public.lesson_type_options FOR DELETE TO authenticated
-USING (public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id()));
+USING (public.is_admin() OR public.is_site_admin());
 
 -- =============================================================================
 -- SECTION 5: TRIGGERS

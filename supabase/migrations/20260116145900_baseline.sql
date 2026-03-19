@@ -71,31 +71,59 @@ CREATE OR REPLACE FUNCTION public.apply_audit_trail(p_table regclass)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_catalog
 AS $$
 DECLARE
-  v_table_name text;
+  v_schema text;
+  v_rel text;
 BEGIN
-  v_table_name := regexp_replace(p_table::text, '^public\.', '');
+  SELECT n.nspname, c.relname
+  INTO v_schema, v_rel
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  WHERE c.oid = p_table::oid;
+
+  IF v_schema IS NULL OR v_rel IS NULL THEN
+    RAISE EXCEPTION 'apply_audit_trail: relation % not found', p_table;
+  END IF;
 
   EXECUTE format('
-    ALTER TABLE %s
+    ALTER TABLE %I.%I
     ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now(),
     ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now(),
     ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id),
     ADD COLUMN IF NOT EXISTS updated_by uuid REFERENCES auth.users(id)
-  ', p_table);
+  ', v_schema, v_rel);
 
-  EXECUTE format('DROP TRIGGER IF EXISTS trg_audit_%I ON %s', v_table_name, p_table);
+  EXECUTE format('DROP TRIGGER IF EXISTS trg_audit_%I ON %I.%I', v_rel, v_schema, v_rel);
 
   EXECUTE format('
     CREATE TRIGGER trg_audit_%I
-    BEFORE INSERT OR UPDATE ON %s
+    BEFORE INSERT OR UPDATE ON %I.%I
     FOR EACH ROW
     EXECUTE FUNCTION public.set_audit_fields()
-  ', v_table_name, p_table);
+  ', v_rel, v_schema, v_rel);
 END;
 $$;
+
+-- =============================================================================
+-- SECTION 1c: PHONE NUMBER VALIDATION (single source of truth for CHECK constraints)
+-- =============================================================================
+-- Change only the regex here to adjust rules for all columns that use this helper.
+CREATE OR REPLACE FUNCTION public.is_valid_phone_number(p_phone text)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+SET search_path = public
+AS $$
+  SELECT p_phone IS NULL OR p_phone ~ '^06[0-9]{8}$';
+$$;
+
+REVOKE ALL ON FUNCTION public.is_valid_phone_number(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_valid_phone_number(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_valid_phone_number(text) TO authenticated;
+ALTER FUNCTION public.is_valid_phone_number(text) OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 2: TABLES
@@ -103,10 +131,10 @@ $$;
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
   first_name TEXT,
   last_name TEXT,
-  phone_number TEXT CHECK (phone_number IS NULL OR (phone_number ~ '^[0-9]{10}$')),
+  phone_number TEXT CHECK (public.is_valid_phone_number(phone_number)),
   avatar_url TEXT
 );
 
@@ -118,6 +146,8 @@ CREATE TABLE IF NOT EXISTS public.user_roles (
   role app_role NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles (role);
 
 -- =============================================================================
 -- SECTION 3: ENABLE RLS
@@ -147,11 +177,10 @@ GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated;
 -- =============================================================================
 -- SECTION 4: ROLE HELPER FUNCTIONS (HARDENED)
 -- =============================================================================
--- All functions use SECURITY DEFINER, STABLE, and fixed search_path
--- to prevent search_path injection attacks.
+-- _has_role: SECURITY DEFINER + row_security off — only for DEFINER helpers (e.g. can_*), never granted to authenticated.
+-- is_*(): SECURITY INVOKER — single EXISTS on user_roles scoped to current_user_id(); respects RLS (no recursion: own row matches roles_select first OR branch).
 
--- Internal helper function - do not call directly
--- Use is_site_admin(), is_admin(), etc. instead
+-- Internal helper — do not call from clients; use is_site_admin(), is_admin(), etc. instead
 CREATE OR REPLACE FUNCTION public._has_role(
   _user_id UUID,
   _role app_role
@@ -171,85 +200,97 @@ AS $$
   );
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_site_admin(_user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_site_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
-  SELECT public._has_role(_user_id, 'site_admin');
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = public.current_user_id()
+      AND role = 'site_admin'
+  );
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_admin(_user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
-  SELECT public._has_role(_user_id, 'admin');
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = public.current_user_id()
+      AND role = 'admin'
+  );
 $$;
 
-CREATE OR REPLACE FUNCTION public.is_staff(_user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_staff()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
-  SELECT public._has_role(_user_id, 'staff');
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = public.current_user_id()
+      AND role = 'staff'
+  );
 $$;
 
--- Helper function to check if user has any privileged role (staff, admin, or site_admin)
--- Useful for RLS policies that need to check multiple roles
-CREATE OR REPLACE FUNCTION public.is_privileged(_user_id UUID)
+CREATE OR REPLACE FUNCTION public.is_privileged()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
-  SELECT public.is_staff(_user_id) OR public.is_admin(_user_id) OR public.is_site_admin(_user_id);
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = public.current_user_id()
+      AND role IN ('staff', 'admin', 'site_admin')
+  );
 $$;
 
--- Revoke public access, grant only to authenticated users
+-- Revoke public access
 REVOKE ALL ON FUNCTION
   public._has_role(UUID, app_role),
-  public.is_site_admin(UUID),
-  public.is_admin(UUID),
-  public.is_staff(UUID),
-  public.is_privileged(UUID)
+  public.is_site_admin(),
+  public.is_admin(),
+  public.is_staff(),
+  public.is_privileged()
 FROM PUBLIC;
 
 -- Explicitly revoke from anon (Supabase's anon role doesn't inherit from PUBLIC revokes)
 REVOKE ALL ON FUNCTION
   public._has_role(UUID, app_role),
-  public.is_site_admin(UUID),
-  public.is_admin(UUID),
-  public.is_staff(UUID),
-  public.is_privileged(UUID)
+  public.is_site_admin(),
+  public.is_admin(),
+  public.is_staff(),
+  public.is_privileged()
 FROM anon;
 
--- _has_role is an internal helper - grant to authenticated so it can be called from other functions
--- Note: Even though _has_role is called from other functions, we grant it explicitly
--- to ensure it works correctly in all contexts (including RLS policies)
-GRANT EXECUTE ON FUNCTION public._has_role(UUID, app_role) TO authenticated;
--- Public role helper functions are granted to authenticated users
-GRANT EXECUTE ON FUNCTION public.is_site_admin(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_staff(UUID) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.is_privileged(UUID) TO authenticated;
+-- _has_role: internal only — never grant to authenticated (would leak role info for arbitrary user ids)
+REVOKE ALL ON FUNCTION public._has_role(UUID, app_role) FROM authenticated;
+
+GRANT EXECUTE ON FUNCTION public.is_site_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_privileged() TO authenticated;
 
 ALTER FUNCTION public._has_role(UUID, app_role) OWNER TO postgres;
-ALTER FUNCTION public.is_site_admin(UUID) OWNER TO postgres;
-ALTER FUNCTION public.is_admin(UUID) OWNER TO postgres;
-ALTER FUNCTION public.is_staff(UUID) OWNER TO postgres;
-ALTER FUNCTION public.is_privileged(UUID) OWNER TO postgres;
+ALTER FUNCTION public.is_site_admin() OWNER TO postgres;
+ALTER FUNCTION public.is_admin() OWNER TO postgres;
+ALTER FUNCTION public.is_staff() OWNER TO postgres;
+ALTER FUNCTION public.is_privileged() OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 4b: AUTHORIZATION HELPER FUNCTIONS
@@ -257,14 +298,11 @@ ALTER FUNCTION public.is_privileged(UUID) OWNER TO postgres;
 -- These functions centralize permission checks that are used by Edge Functions.
 -- This keeps authorization logic in the database (single source of truth).
 
--- Check if a user can delete another user's account
+-- Check if the current session user may delete the given account (requester is always current_user_id(); no spoofing)
 -- Rules:
--- - Users can always delete their own account (self-deletion)
--- - Admin and site_admin can delete any user's account
-CREATE OR REPLACE FUNCTION public.can_delete_user(
-  _requester_id UUID,
-  _target_id UUID
-)
+-- - Self-deletion always allowed
+-- - Admin and site_admin may delete any account
+CREATE OR REPLACE FUNCTION public.can_delete_user(_target_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
@@ -273,20 +311,16 @@ SET search_path = public
 SET row_security = off
 AS $$
   SELECT
-    -- Self-deletion is always allowed
-    _requester_id = _target_id
-    OR
-    -- Admin and site_admin can delete anyone
-    public.is_admin(_requester_id)
-    OR
-    public.is_site_admin(_requester_id);
+    public.current_user_id() = _target_id
+    OR public._has_role(public.current_user_id(), 'admin')
+    OR public._has_role(public.current_user_id(), 'site_admin');
 $$;
 
 -- Security: only authenticated users can call this
-REVOKE ALL ON FUNCTION public.can_delete_user(UUID, UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.can_delete_user(UUID, UUID) FROM anon;
-GRANT EXECUTE ON FUNCTION public.can_delete_user(UUID, UUID) TO authenticated;
-ALTER FUNCTION public.can_delete_user(UUID, UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.can_delete_user(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.can_delete_user(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION public.can_delete_user(UUID) TO authenticated;
+ALTER FUNCTION public.can_delete_user(UUID) OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 5: RLS POLICIES - PROFILES
@@ -297,7 +331,7 @@ CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
 USING (
   public.current_user_id() = user_id
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Combined UPDATE policy: users can update own profile, admins can update any profile
@@ -305,11 +339,11 @@ CREATE POLICY profiles_update
 ON public.profiles FOR UPDATE TO authenticated
 USING (
   public.current_user_id() = user_id
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
   public.current_user_id() = user_id
-  OR public.is_admin(public.current_user_id()) OR public.is_site_admin(public.current_user_id())
+  OR public.is_admin() OR public.is_site_admin()
 );
 
 -- INSERT and DELETE policies explicitly removed:
@@ -338,7 +372,7 @@ CREATE POLICY roles_select
 ON public.user_roles FOR SELECT TO authenticated
 USING (
   public.current_user_id() = user_id
-  OR public.is_privileged(public.current_user_id())
+  OR public.is_privileged()
 );
 
 -- Allow admins to insert roles (but NOT site_admin)
@@ -347,10 +381,10 @@ CREATE POLICY roles_insert_admin
 ON public.user_roles FOR INSERT TO authenticated
 WITH CHECK (
   (
-    public.is_admin(public.current_user_id())
+    public.is_admin()
     AND role != 'site_admin'  -- Admins cannot assign site_admin
   )
-  OR public.is_site_admin(public.current_user_id())  -- Site_admins can assign any role
+  OR public.is_site_admin()  -- Site_admins can assign any role
 );
 
 -- Allow admins to update roles (but NOT site_admin roles and not their own)
@@ -361,20 +395,20 @@ ON public.user_roles FOR UPDATE TO authenticated
 USING (
   (
     (
-      public.is_admin(public.current_user_id())
+      public.is_admin()
       AND role != 'site_admin'  -- Admins cannot modify users with site_admin role (OLD.role)
     )
-    OR public.is_site_admin(public.current_user_id())  -- Site_admins can modify any role
+    OR public.is_site_admin()  -- Site_admins can modify any role
   )
   AND user_id != public.current_user_id()  -- Cannot modify own role
 )
 WITH CHECK (
   (
     (
-      public.is_admin(public.current_user_id())
+      public.is_admin()
       AND role != 'site_admin'  -- Admins cannot set role to site_admin (NEW.role)
     )
-    OR public.is_site_admin(public.current_user_id())  -- Site_admins can set any role
+    OR public.is_site_admin()  -- Site_admins can set any role
   )
   AND user_id != public.current_user_id()  -- Cannot modify own role
 );
@@ -385,10 +419,10 @@ CREATE POLICY roles_delete_admin
 ON public.user_roles FOR DELETE TO authenticated
 USING (
   (
-    public.is_admin(public.current_user_id())
+    public.is_admin()
     AND role != 'site_admin'  -- Admins cannot delete site_admin roles
   )
-  OR public.is_site_admin(public.current_user_id())  -- Site_admins can delete any role
+  OR public.is_site_admin()  -- Site_admins can delete any role
 );
 
 -- Grant appropriate permissions on tables
@@ -430,11 +464,9 @@ SET row_security = off
 AS $$
 BEGIN
   IF NEW.email IS DISTINCT FROM OLD.email THEN
-    -- Block if this is a user request (via PostgREST/API)
-    -- Allow if this is an internal trigger (session_user = 'postgres')
-    -- In Supabase: API requests come through 'authenticator' role
-    IF session_user = 'authenticator' THEN
-      RAISE EXCEPTION 'profiles.email is read-only';
+    -- Single source of truth: profile email must always match auth.users (sync via handle_auth_user_email_update).
+    IF NEW.email IS DISTINCT FROM (SELECT u.email FROM auth.users u WHERE u.id = NEW.user_id) THEN
+      RAISE EXCEPTION 'profiles.email is read-only; it follows your auth email';
     END IF;
   END IF;
   RETURN NEW;
