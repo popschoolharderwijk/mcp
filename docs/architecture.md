@@ -223,6 +223,6 @@ Dit project gebruikt drie aparte Supabase omgevingen:
 ### Hoe dit werkt
 
 1. **Lovable** is verbonden met **mcp-dev** — development database.
-2. **Lokaal testen** (`bun dev:test` of `bun test rls`): gebruik **mcp-test** of mcp-dev via `.env.test` (SUPABASE_URL etc.).
+2. **Lokaal testen** (`bun dev:test` of `bun test --bail rls`): gebruik **mcp-test** of mcp-dev via `.env.test` (SUPABASE_URL etc.).
 3. **CI bij een PR**: de workflow **pull-request-test-code-and-supabase** linkt naar **mcp-test** (via GitHub secret `SUPABASE_PROJECT_REF`), doet `supabase db reset --linked --yes`, en draait daar alle tests. Zie [secrets.md](./secrets.md) en [cicd-workflows.md](./cicd-workflows.md).
 4. Bij **merge naar main** worden migraties handmatig toegepast op production via `supabase db push`.

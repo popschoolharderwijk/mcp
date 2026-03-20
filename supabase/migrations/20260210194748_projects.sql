@@ -54,8 +54,11 @@ SELECT public.apply_audit_trail('public.projects');
 -- =============================================================================
 
 ALTER TABLE public.project_domains ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_domains FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.project_labels ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_labels FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects FORCE ROW LEVEL SECURITY;
 
 -- project_domains policies
 CREATE POLICY project_domains_select_all ON public.project_domains

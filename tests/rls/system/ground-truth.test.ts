@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { STUDENTS, TEACHERS, USER_ROLES, USERS } from '../seed-data-constants';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -17,30 +18,26 @@ const { allProfiles, allUserRoles } = fixtures;
 
 describe('RLS: verify ground truth', () => {
 	it('should have exactly 88 profiles', () => {
-		// 1 site_admin, 2 admins, 5 staff, 10 teachers, 60 students, 10 users (no role)
-		expect(allProfiles).toHaveLength(88);
+		expect(allProfiles).toHaveLength(USERS.TOTAL);
 	});
 
 	it('should have exactly 8 user roles (only explicit roles)', () => {
-		// Only site_admin, admin (2), staff (5) have explicit roles
-		// Teachers are identified by the teachers table, not by a role
-		// Students and users without role have no role entry
-		expect(allUserRoles).toHaveLength(8);
+		expect(allUserRoles).toHaveLength(USER_ROLES.EXPLICIT_ROW_COUNT);
 	});
 
 	it('should have 1 site_admin', () => {
 		const siteAdmins = allUserRoles.filter((ur) => ur.role === 'site_admin');
-		expect(siteAdmins).toHaveLength(1);
+		expect(siteAdmins).toHaveLength(USERS.SITE_ADMIN);
 	});
 
 	it('should have 2 admins', () => {
 		const admins = allUserRoles.filter((ur) => ur.role === 'admin');
-		expect(admins).toHaveLength(2);
+		expect(admins).toHaveLength(USERS.ADMIN);
 	});
 
 	it('should have 5 staff', () => {
 		const staff = allUserRoles.filter((ur) => ur.role === 'staff');
-		expect(staff).toHaveLength(5);
+		expect(staff).toHaveLength(USERS.STAFF);
 	});
 
 	it('should have profiles for all user roles', () => {
@@ -53,30 +50,27 @@ describe('RLS: verify ground truth', () => {
 	});
 
 	it('should have 80 users without explicit roles', () => {
-		// Teachers (10), students (60), and regular users (10) exist in profiles but have no entry in user_roles
-		// Teachers are identified by the teachers table, not by a role
 		const userIdsWithRoles = new Set(allUserRoles.map((ur) => ur.user_id));
 		const profilesWithoutRoles = allProfiles.filter((p) => !userIdsWithRoles.has(p.user_id));
-		expect(profilesWithoutRoles).toHaveLength(80);
+		expect(profilesWithoutRoles).toHaveLength(USERS.WITHOUT_ROLE);
 
-		// Verify we have the expected distribution
 		const teacherEmails = profilesWithoutRoles
 			.filter((p) => p.email.startsWith('teacher-'))
 			.map((p) => p.email)
 			.sort();
-		expect(teacherEmails).toHaveLength(10);
+		expect(teacherEmails).toHaveLength(TEACHERS.TOTAL);
 
 		const studentEmails = profilesWithoutRoles
 			.filter((p) => p.email.startsWith('student-'))
 			.map((p) => p.email)
 			.sort();
-		expect(studentEmails).toHaveLength(60);
+		expect(studentEmails).toHaveLength(STUDENTS.TOTAL);
 
 		const userEmails = profilesWithoutRoles
 			.filter((p) => p.email.startsWith('user-'))
 			.map((p) => p.email)
 			.sort();
-		expect(userEmails).toHaveLength(10);
+		expect(userEmails).toHaveLength(USERS.PLAIN_USERS);
 	});
 
 	it('should have correct email for site_admin', () => {

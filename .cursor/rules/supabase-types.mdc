@@ -6,16 +6,19 @@ alwaysApply: false
 
 # Supabase Types Guidelines
 
-## NEVER Manually Edit Generated Types
+## NEVER manually edit generated types
 
-**NEVER manually edit `src/integrations/supabase/types.ts`**. This file is auto-generated from the database schema.
+**Do not edit `src/integrations/supabase/types.ts` by hand** (no patching Functions/Tables for new RPCs or columns). It must match codegen from the linked database.
 
-Instead, run:
+After **any** migration or schema change, regenerate types by running:
+
 ```bash
-bun run reset:dev
+bun run reset-db:dev
 ```
 
-This command resets the local database and regenerates all types from the migrations.
+That script resets the linked dev DB, applies migrations + seed, runs `supabase gen types typescript --linked`, and formats the output. Use that instead of editing `types.ts` in the editor or in agent diffs.
+
+If types are missing or wrong locally, run `bun run reset-db:dev` — do not “fix” TypeScript by changing `types.ts`.
 
 ## Always Use Generated Types First
 

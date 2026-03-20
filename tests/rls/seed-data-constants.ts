@@ -5,6 +5,16 @@
  */
 
 /**
+ * Lesson type options row counts (supabase/seed.sql).
+ * Full grid (e.g. guitar lesson type): 5 durations × 3 frequencies = 15 rows.
+ * Saxophone lesson type (DB name `Saxofoonles`): 30 and 45 min only = 6 rows.
+ */
+export const LESSON_TYPE_OPTIONS = {
+	FULL_GRID_ROW_COUNT: 15,
+	SAXOPHONE_LESSON_ROW_COUNT: 6,
+} as const;
+
+/**
  * Lesson agreements counts
  */
 export const LESSON_AGREEMENTS = {
@@ -127,6 +137,14 @@ export const PAGINATION = {
 } as const;
 
 /**
+ * user_roles table (explicit app_role rows only; teachers/students have no row here)
+ */
+export const USER_ROLES = {
+	/** site_admin (1) + admin (2) + staff (5) */
+	EXPLICIT_ROW_COUNT: 8,
+} as const;
+
+/**
  * Users counts
  */
 export const USERS = {
@@ -139,6 +157,8 @@ export const USERS = {
 	// Users without app_role (teachers, students, and regular users)
 	// 10 teachers + 60 students + 10 users without role = 80
 	WITHOUT_ROLE: 80,
+	/** Profiles matching user-*.test.nl (no teacher/student row, no user_roles) */
+	PLAIN_USERS: 10,
 } as const;
 
 /**

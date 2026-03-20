@@ -106,11 +106,10 @@ BEGIN
 END;
 $$;
 
--- Set function ownership and permissions
+-- Set function ownership and permissions (no EXECUTE for authenticated: trigger-only, SECURITY DEFINER)
 ALTER FUNCTION public.check_teacher_not_own_student() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.check_teacher_not_own_student() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.check_teacher_not_own_student() FROM anon;
-GRANT EXECUTE ON FUNCTION public.check_teacher_not_own_student() TO authenticated;
 
 -- Trigger to enforce the constraint on INSERT and UPDATE
 CREATE TRIGGER check_teacher_not_own_student_trigger
@@ -240,10 +239,10 @@ BEGIN
 END;
 $$;
 
+-- No EXECUTE for authenticated: trigger-only, SECURITY DEFINER
 ALTER FUNCTION public.check_teacher_lesson_type_has_no_agreements() OWNER TO postgres;
 REVOKE ALL ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() FROM anon;
-GRANT EXECUTE ON FUNCTION public.check_teacher_lesson_type_has_no_agreements() TO authenticated;
 
 -- Trigger to enforce the constraint on DELETE
 CREATE TRIGGER check_teacher_lesson_type_has_no_agreements_trigger
@@ -369,10 +368,11 @@ BEGIN
 END;
 $$;
 
--- Revoke public access
+-- Revoke public access (no EXECUTE for authenticated: triggers run as SECURITY DEFINER owner).
+-- Explicit authenticated REVOKE: hosted Postgres may still grant EXECUTE to authenticated beyond PUBLIC/anon.
 REVOKE ALL ON FUNCTION public.trigger_ensure_student_on_agreement_insert() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.trigger_ensure_student_on_agreement_insert() FROM anon;
-GRANT EXECUTE ON FUNCTION public.trigger_ensure_student_on_agreement_insert() TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.trigger_ensure_student_on_agreement_insert() FROM authenticated;
 ALTER FUNCTION public.trigger_ensure_student_on_agreement_insert() OWNER TO postgres;
 
 -- Function to cleanup student if no agreements remain
@@ -472,10 +472,11 @@ BEGIN
 END;
 $$;
 
--- Revoke public access
+-- Revoke public access (no EXECUTE for authenticated: triggers run as SECURITY DEFINER owner).
+-- Explicit authenticated REVOKE: hosted Postgres may still grant EXECUTE to authenticated beyond PUBLIC/anon.
 REVOKE ALL ON FUNCTION public.trigger_cleanup_student_on_agreement_delete() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.trigger_cleanup_student_on_agreement_delete() FROM anon;
-GRANT EXECUTE ON FUNCTION public.trigger_cleanup_student_on_agreement_delete() TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.trigger_cleanup_student_on_agreement_delete() FROM authenticated;
 ALTER FUNCTION public.trigger_cleanup_student_on_agreement_delete() OWNER TO postgres;
 
 -- =============================================================================
