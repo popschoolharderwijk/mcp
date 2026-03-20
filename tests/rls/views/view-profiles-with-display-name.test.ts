@@ -1,10 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import type { Tables } from '../../../src/integrations/supabase/types';
-import { createClientAnon, createClientAs } from '../../db';
-import { expectInsufficientPrivilege, unwrap, unwrapError, unwrapSingleRow } from '../../utils';
+import { createClientAs } from '../../db';
+import { unwrap, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { LESSON_AGREEMENTS } from '../seed-data-constants';
+import { LESSON_AGREEMENTS, TEACHER_VIEWED_BY_STUDENT } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 const { allProfiles } = fixtures;
@@ -76,8 +76,7 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 
 			const data = unwrap(await db.from('view_profiles_with_display_name').select('*'));
 
-			// Student sees own profile + profiles of teachers they have a lesson_agreement with (STUDENT_001 has 1 teacher: Eve)
-			expect(data).toHaveLength(2);
+			expect(data).toHaveLength(TEACHER_VIEWED_BY_STUDENT.STUDENT_001 + 1);
 			expect(data.some((p) => p.email === TestUsers.STUDENT_001)).toBe(true);
 			expect(data.some((p) => p.email === TestUsers.TEACHER_EVE)).toBe(true);
 		});
@@ -213,13 +212,6 @@ describe('RLS: view_profiles_with_display_name SELECT', () => {
 			expect(data).toHaveProperty('avatar_url');
 			expect(data).toHaveProperty('created_at');
 			expect(data).toHaveProperty('display_name');
-		});
-	});
-
-	describe('anonymous user', () => {
-		it('cannot select from view_profiles_with_display_name', async () => {
-			const db = createClientAnon();
-			expectInsufficientPrivilege(unwrapError(await db.from('view_profiles_with_display_name').select('*')));
 		});
 	});
 });

@@ -4,18 +4,18 @@
  * No database required; tests pure logic.
  */
 import { describe, expect, it } from 'bun:test';
-import { agendaMessages, getEventStyle } from '../../src/components/agenda/agenda-calendar-config';
-import type { CalendarEvent, CalendarEventResource } from '../../src/components/agenda/types';
-import { generateRecurringEvents } from '../../src/lib/agenda/eventGenerators';
-import { buildParticipantInfo } from '../../src/lib/agenda/eventUtils';
-import { buildTooltipText } from '../../src/lib/agenda/tooltip';
-import { formatDateToDb, getActualDateInOriginalWeek, getDateForDayOfWeek } from '../../src/lib/date/date-format';
-import { getDisplayName } from '../../src/lib/display-name';
+import { agendaMessages, getEventStyle } from '../../../src/components/agenda/agenda-calendar-config';
+import type { CalendarEvent, CalendarEventResource } from '../../../src/components/agenda/types';
+import { generateRecurringEvents } from '../../../src/lib/agenda/eventGenerators';
+import { buildParticipantInfo } from '../../../src/lib/agenda/eventUtils';
+import { buildTooltipText } from '../../../src/lib/agenda/tooltip';
+import { formatDateToDb, getActualDateInOriginalWeek, getDateForDayOfWeek } from '../../../src/lib/date/date-format';
+import { getDisplayName } from '../../../src/lib/display-name';
 import type {
 	LessonAgreementWithStudent,
 	LessonAppointmentDeviationWithAgreement,
-} from '../../src/types/lesson-agreements';
-import { expectNonNull } from '../utils';
+} from '../../../src/types/lesson-agreements';
+import { expectNonNull } from '../../utils';
 import { AGENDA_UTILS_TEST } from './agenda-test-constants';
 
 describe('agenda utils: getDateForDayOfWeek', () => {

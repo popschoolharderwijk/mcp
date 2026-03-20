@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -23,15 +24,12 @@ describe('Triggers: profiles immutability', () => {
 		const profile = requireProfile(TestUsers.STUDENT_001);
 		const fakeUserId = '00000000-0000-0000-0000-999999999999';
 
-		const { error } = await db
-			.from('profiles')
-			.update({ user_id: fakeUserId })
-			.eq('user_id', profile.user_id)
-			.select();
+		const error = unwrapError(
+			await db.from('profiles').update({ user_id: fakeUserId }).eq('user_id', profile.user_id).select(),
+		);
 
 		// Trigger should raise exception: 'user_id is immutable'
-		expect(error).not.toBeNull();
-		expect(error?.message).toContain('user_id is immutable');
+		expect(error.message).toContain('user_id is immutable');
 	});
 
 	it('email cannot be changed directly on profiles', async () => {
@@ -58,19 +56,20 @@ describe('Triggers: profiles immutability', () => {
 		await new Promise((resolve) => setTimeout(resolve, 100));
 
 		// Update a valid field
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Trigger', last_name: 'Test' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Trigger', last_name: 'Test' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Trigger');
-		expect(data?.[0]?.last_name).toBe('Test');
+		expect(data[0]?.first_name).toBe('Trigger');
+		expect(data[0]?.last_name).toBe('Test');
 
 		// Verify updated_at changed (trigger sets it to now())
-		const newUpdatedAt = data?.[0]?.updated_at;
+		const newUpdatedAt = data[0]?.updated_at;
 		expect(newUpdatedAt).not.toBe(originalUpdatedAt);
 
 		// Restore original name
@@ -91,15 +90,12 @@ describe('Triggers: last site_admin protection', () => {
 		}
 
 		// Attempt to demote via service role (bypasses RLS but not trigger)
-		const { error } = await dbNoRLS
-			.from('user_roles')
-			.update({ role: 'admin' })
-			.eq('user_id', siteAdminRole.user_id)
-			.select();
+		const error = unwrapError(
+			await dbNoRLS.from('user_roles').update({ role: 'admin' }).eq('user_id', siteAdminRole.user_id).select(),
+		);
 
 		// Trigger should block: 'Cannot remove the last site_admin'
-		expect(error).not.toBeNull();
-		expect(error?.message).toContain('Cannot remove the last site_admin');
+		expect(error.message).toContain('Cannot remove the last site_admin');
 	});
 
 	it('last site_admin role cannot be deleted', async () => {
@@ -135,19 +131,40 @@ describe('Triggers: last site_admin protection', () => {
 		expect(promoteError).toBeNull();
 
 		// Now we can demote the original site_admin (there are 2 now)
-		const { data, error } = await dbNoRLS
-			.from('user_roles')
-			.update({ role: 'admin' })
-			.eq('user_id', siteAdminRole.user_id)
-			.select();
+		const data = unwrap(
+			await dbNoRLS.from('user_roles').update({ role: 'admin' }).eq('user_id', siteAdminRole.user_id).select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.role).toBe('admin');
+		expect(data[0]?.role).toBe('admin');
 
 		// Restore: re-promote original site_admin and demote the temp one
 		await dbNoRLS.from('user_roles').update({ role: 'site_admin' }).eq('user_id', siteAdminRole.user_id);
 
 		await dbNoRLS.from('user_roles').update({ role: 'admin' }).eq('user_id', adminRole.user_id);
+	});
+});
+
+// Defense-in-depth: trigger bodies do not need EXECUTE on the session role to run, but
+// denying EXECUTE avoids exposing them as PostgREST RPCs and catches accidental GRANTs.
+describe('Trigger-only functions: no EXECUTE for authenticated', () => {
+	it('authenticated role has no EXECUTE on trigger_ensure_student_on_agreement_insert', async () => {
+		const db = createClientBypassRLS();
+		const data = unwrap(
+			await db.rpc('authenticated_has_execute_on', {
+				p_regprocedure: 'public.trigger_ensure_student_on_agreement_insert()',
+			}),
+		);
+		expect(data).toBe(false);
+	});
+
+	it('authenticated role has no EXECUTE on trigger_cleanup_student_on_agreement_delete', async () => {
+		const db = createClientBypassRLS();
+		const data = unwrap(
+			await db.rpc('authenticated_has_execute_on', {
+				p_regprocedure: 'public.trigger_cleanup_student_on_agreement_delete()',
+			}),
+		);
+		expect(data).toBe(false);
 	});
 });

@@ -2,6 +2,7 @@
 alwaysApply: true
 ---
 
+* **Never hand-edit `src/integrations/supabase/types.ts`.** After schema/migration changes run `bun run reset-db:dev` (or `supabase gen types typescript --linked` as in that script) so types stay codegen-only.
 * **ALWAYS use `--linked` flag for Supabase commands, NEVER the local database**
 * ALWAYS use:
   - `supabase db reset --linked` (not `supabase db reset`)

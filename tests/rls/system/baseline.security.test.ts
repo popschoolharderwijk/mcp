@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
+import type { Database } from '../../../src/integrations/supabase/types';
 import { createClientBypassRLS } from '../../db';
+import { unwrap } from '../../utils';
 
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 
@@ -163,51 +165,46 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 	projects: ['projects_select', 'projects_insert_admin', 'projects_update_admin', 'projects_delete_admin'],
 };
 
+// Canonical public function names (must match get_public_function_pronames(): normal SQL
+// functions in public — excludes RETURNS trigger, aggregates, window funcs, procedures).
+// Trigger-only pronames (handle_new_user, set_audit_fields, …) are not listed here.
+// Keep sorted for diff clarity; add new migrations here so CI catches renames/drops.
 const EXPECTED_FUNCTIONS = [
-	// Role helper functions
 	'_has_role',
-	'is_site_admin',
+	'apply_audit_trail',
+	'authenticated_has_execute_on',
+	'can_delete_user',
+	'can_manage_agenda_event',
+	'check_rls_enabled',
+	'check_rls_forced',
+	'cleanup_student_if_no_agreements',
+	'current_user_id',
+	'end_recurring_deviation_from_week',
+	'ensure_student_exists',
+	'ensure_week_shows_original_slot',
+	'function_exists',
+	'get_agenda_event_owner',
+	'get_hours_report',
+	'get_lesson_agreements_paginated',
+	'get_public_function_pronames',
+	'get_public_table_names',
+	'get_public_views_security_mode',
+	'get_student_status',
+	'get_students_paginated',
+	'get_table_policies',
+	'get_teacher_user_id',
+	'get_teachers_paginated',
+	'get_users_paginated',
 	'is_admin',
-	'is_staff',
+	'is_agenda_participant',
 	'is_privileged',
+	'is_site_admin',
+	'is_staff',
+	'is_student',
 	'is_teacher',
 	'is_valid_phone_number',
-	'get_teacher_user_id',
-	// User lifecycle
-	'handle_new_user',
-	'handle_auth_user_email_update',
-	// Audit trail
-	'set_audit_fields',
-	// Data integrity triggers
-	'prevent_user_id_change',
-	'prevent_profile_email_change',
-	'prevent_last_site_admin_removal',
-	// Lesson agreements triggers
-	'trigger_ensure_student_on_agreement_insert',
-	'trigger_cleanup_student_on_agreement_delete',
-	// Agenda system functions and triggers
-	'trigger_lesson_agreement_create_agenda_event',
-	'get_agenda_event_owner',
-	'can_manage_agenda_event',
-	'is_agenda_participant',
-	'enforce_agenda_deviation_immutable_fields',
-	'auto_delete_noop_agenda_deviation',
-	'enforce_agenda_deviation_validity',
-	'prevent_owner_participant_removal',
-	'shift_recurring_deviation_to_next_week',
-	'end_recurring_deviation_from_week',
-	'ensure_week_shows_original_slot',
-	// Authorization helpers
-	'can_delete_user',
-	// Introspection functions for CI testing
-	'check_rls_enabled',
 	'policy_exists',
-	'get_table_policies',
-	'function_exists',
-	'get_public_table_names',
-	'get_security_definer_views',
-	// Pagination functions
-	'get_lesson_agreements_paginated',
+	'shift_recurring_deviation_to_next_week',
 ];
 
 // Views that are INTENTIONALLY using SECURITY DEFINER semantics (security_invoker = false)
@@ -224,12 +221,27 @@ describe('RLS Baseline Security Checks', () => {
 	describe('RLS is enabled on all tables', () => {
 		for (const table of EXPECTED_RLS_TABLES) {
 			it(`${table} has RLS enabled`, async () => {
-				const { data, error } = await supabase.rpc('check_rls_enabled', {
-					p_table_name: table,
-				});
+				expect(
+					unwrap(
+						await supabase.rpc('check_rls_enabled', {
+							p_table_name: table,
+						}),
+					),
+				).toBe(true);
+			});
+		}
+	});
 
-				expect(error).toBeNull();
-				expect(data).toBe(true);
+	describe('RLS is forced on all tables (no owner bypass)', () => {
+		for (const table of EXPECTED_RLS_TABLES) {
+			it(`${table} has FORCE ROW LEVEL SECURITY`, async () => {
+				expect(
+					unwrap(
+						await supabase.rpc('check_rls_forced', {
+							p_table_name: table,
+						}),
+					),
+				).toBe(true);
 			});
 		}
 	});
@@ -239,13 +251,14 @@ describe('RLS Baseline Security Checks', () => {
 			describe(table, () => {
 				for (const policy of policies) {
 					it(`has policy: ${policy}`, async () => {
-						const { data, error } = await supabase.rpc('policy_exists', {
-							p_table_name: table,
-							p_policy_name: policy,
-						});
-
-						expect(error).toBeNull();
-						expect(data).toBe(true);
+						expect(
+							unwrap(
+								await supabase.rpc('policy_exists', {
+									p_table_name: table,
+									p_policy_name: policy,
+								}),
+							),
+						).toBe(true);
 					});
 				}
 			});
@@ -255,40 +268,36 @@ describe('RLS Baseline Security Checks', () => {
 	describe('No unexpected policies exist', () => {
 		for (const [table, expectedPolicies] of Object.entries(EXPECTED_POLICIES)) {
 			it(`${table} has exactly the expected policies`, async () => {
-				const { data: actualPolicies, error } = await supabase.rpc('get_table_policies', {
-					p_table_name: table,
-				});
+				const actualPolicies = unwrap(
+					await supabase.rpc('get_table_policies', {
+						p_table_name: table,
+					}),
+				);
 
-				expect(error).toBeNull();
-				expect(actualPolicies?.sort()).toEqual(expectedPolicies.sort());
+				expect(actualPolicies.sort()).toEqual(expectedPolicies.sort());
 			});
 		}
 	});
 
-	describe('Security helper functions exist', () => {
-		for (const fn of EXPECTED_FUNCTIONS) {
-			it(`function ${fn} exists`, async () => {
-				const { data, error } = await supabase.rpc('function_exists', {
-					p_fn_name: fn,
-				});
-
-				expect(error).toBeNull();
-				expect(data).toBe(true);
-			});
-		}
+	describe('Public schema function names match canonical list exactly', () => {
+		it('no missing or extra functions in public (distinct proname)', async () => {
+			const fn = 'get_public_function_pronames' satisfies keyof Database['public']['Functions'];
+			const data = unwrap(await supabase.rpc(fn));
+			if (!Array.isArray(data)) {
+				throw new Error('get_public_function_pronames must return string[]');
+			}
+			const actual = data as string[];
+			expect([...actual].sort()).toEqual([...EXPECTED_FUNCTIONS].sort());
+		});
 	});
 
 	describe('View security configuration', () => {
 		it('no unexpected SECURITY DEFINER views exist', async () => {
-			// Get all views and their security_invoker setting
-			const { data: views, error } = await supabase.rpc('get_security_definer_views');
-
-			expect(error).toBeNull();
-			expect(views).toBeDefined();
+			const views = unwrap(await supabase.rpc('get_public_views_security_mode'));
 
 			// Filter views that are NOT using security_invoker (i.e., using security_definer semantics)
 			// These bypass RLS and should be explicitly allowed
-			const securityDefinerViews = (views ?? [])
+			const securityDefinerViews = views
 				.filter((v: { view_name: string; security_invoker: boolean }) => !v.security_invoker)
 				.map((v: { view_name: string }) => v.view_name);
 
@@ -304,13 +313,9 @@ describe('RLS Baseline Security Checks', () => {
 		});
 
 		it('all allowed SECURITY DEFINER views exist', async () => {
-			// Verify that all views in our allowlist actually exist
-			const { data: views, error } = await supabase.rpc('get_security_definer_views');
+			const views = unwrap(await supabase.rpc('get_public_views_security_mode'));
 
-			expect(error).toBeNull();
-			expect(views).toBeDefined();
-
-			const viewNames = (views ?? []).map((v: { view_name: string }) => v.view_name);
+			const viewNames = views.map((v: { view_name: string }) => v.view_name);
 
 			for (const allowedView of ALLOWED_SECURITY_DEFINER_VIEWS) {
 				expect(viewNames).toContain(allowedView);
@@ -318,12 +323,9 @@ describe('RLS Baseline Security Checks', () => {
 		});
 
 		it('views with security_invoker respect RLS', async () => {
-			// Get all views with security_invoker = true
-			const { data: views, error } = await supabase.rpc('get_security_definer_views');
+			const views = unwrap(await supabase.rpc('get_public_views_security_mode'));
 
-			expect(error).toBeNull();
-
-			const securityInvokerViews = (views ?? [])
+			const securityInvokerViews = views
 				.filter((v: { security_invoker: boolean }) => v.security_invoker)
 				.map((v: { view_name: string }) => v.view_name);
 

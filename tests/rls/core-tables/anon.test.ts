@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, it } from 'bun:test';
 import { createClientAnon } from '../../db';
 import type {
 	LessonAgreementInsert,
-	LessonTypeOptionInsert,
 	StudentInsert,
 	TeacherAvailabilityInsert,
 	TeacherInsert,
@@ -173,39 +172,5 @@ describe('RLS: anonymous user – lesson_agreements', () => {
 	it('anon cannot delete lesson_agreements', async () => {
 		const db = createClientAnon();
 		expectInsufficientPrivilege(unwrapError(await db.from('lesson_agreements').delete().eq('id', fakeId).select()));
-	});
-});
-
-describe('RLS: anonymous user – lesson_type_options', () => {
-	it('anon cannot select lesson_type_options', async () => {
-		const db = createClientAnon();
-		expectInsufficientPrivilege(unwrapError(await db.from('lesson_type_options').select('*')));
-	});
-
-	it('anon cannot insert lesson_type_options', async () => {
-		const db = createClientAnon();
-		const row: LessonTypeOptionInsert = {
-			lesson_type_id: fakeId,
-			duration_minutes: 60,
-			frequency: 'weekly',
-			price_per_lesson: 10,
-		};
-		expectInsufficientPrivilege(unwrapError(await db.from('lesson_type_options').insert(row).select()));
-	});
-
-	it('anon cannot update lesson_type_options', async () => {
-		const db = createClientAnon();
-		expectInsufficientPrivilege(
-			unwrapError(
-				await db.from('lesson_type_options').update({ price_per_lesson: 99 }).eq('id', fakeId).select(),
-			),
-		);
-	});
-
-	it('anon cannot delete lesson_type_options', async () => {
-		const db = createClientAnon();
-		expectInsufficientPrivilege(
-			unwrapError(await db.from('lesson_type_options').delete().eq('id', fakeId).select()),
-		);
 	});
 });

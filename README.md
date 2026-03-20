@@ -20,7 +20,7 @@ npm install
 bun dev
 
 # Run tests
-bun test
+bun test --bail
 ```
 
 ## Documentatie
