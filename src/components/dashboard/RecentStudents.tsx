@@ -94,7 +94,7 @@ export function RecentStudents({ students, isLoading = false }: RecentStudentsPr
 								<div className="flex items-center gap-2">
 									{getStatusBadge(student.status)}
 									<span className="text-xs text-muted-foreground hidden sm:inline">
-										{student.created_at ? formatDateTimeShort(student.created_at) : ''}
+										{student.created_at ? formatDateTimeShort(new Date(student.created_at)) : ''}
 									</span>
 								</div>
 							</div>
