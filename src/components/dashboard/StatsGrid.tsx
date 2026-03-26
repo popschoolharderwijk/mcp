@@ -1,73 +1,80 @@
-import { LuCalendar, LuCheck, LuClock, LuGraduationCap, LuUserCheck, LuUsers } from 'react-icons/lu';
+import { useNavigate } from 'react-router-dom';
+import {
+	LuCalendar,
+	LuClock,
+	LuFileText,
+	LuGraduationCap,
+	LuMusic,
+	LuUsers,
+} from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { DashboardStats } from '@/hooks/useDashboardData';
 
 interface StatItem {
 	title: string;
 	value: number | string;
 	icon: React.ComponentType<{ className?: string }>;
 	description?: string;
-	trend?: {
-		value: number;
-		isPositive: boolean;
-	};
+	href: string;
 }
 
 interface StatsGridProps {
-	stats?: StatItem[];
+	stats: DashboardStats | null;
 	isLoading?: boolean;
 }
 
-const defaultStats: StatItem[] = [
-	{
-		title: 'Totaal Leerlingen',
-		value: 28,
-		icon: LuUsers,
-		description: '+2 deze maand',
-	},
-	{
-		title: 'Actieve Leerlingen',
-		value: 20,
-		icon: LuUserCheck,
-		description: '71% van totaal',
-	},
-	{
-		title: 'Proeflessen',
-		value: 8,
-		icon: LuClock,
-		description: 'Afgelopen maand',
-	},
-	{
-		title: 'Wachtlijst',
-		value: 0,
-		icon: LuUsers,
-		description: 'Geen wachtenden',
-	},
-	{
-		title: 'Docenten',
-		value: 12,
-		icon: LuGraduationCap,
-		description: '3 vakken gemiddeld',
-	},
-	{
-		title: 'Lessen Deze Week',
-		value: 3,
-		icon: LuCalendar,
-		description: 'Nog 12 beschikbaar',
-	},
-	{
-		title: 'Beschikbare Slots',
-		value: 39,
-		icon: LuCheck,
-		description: 'Voor nieuwe lessen',
-	},
-];
+function buildStatItems(s: DashboardStats): StatItem[] {
+	return [
+		{
+			title: 'Leerlingen',
+			value: s.totalStudents,
+			icon: LuUsers,
+			href: '/students',
+		},
+		{
+			title: 'Actieve Afspraken',
+			value: s.activeAgreements,
+			icon: LuFileText,
+			description: s.inactiveAgreements > 0 ? `${s.inactiveAgreements} inactief` : undefined,
+			href: '/agreements',
+		},
+		{
+			title: 'Docenten',
+			value: s.activeTeachers,
+			icon: LuGraduationCap,
+			href: '/teachers',
+		},
+		{
+			title: 'Beschikbare Slots',
+			value: s.availableSlots,
+			icon: LuClock,
+			description: 'Docentbeschikbaarheid',
+			href: '/teachers/availability',
+		},
+		{
+			title: 'Lesvakken',
+			value: s.activeLessonTypes,
+			icon: LuMusic,
+			href: '/lesson-types',
+		},
+		{
+			title: 'Agenda',
+			value: '→',
+			icon: LuCalendar,
+			description: 'Bekijk het rooster',
+			href: '/agenda',
+		},
+	];
+}
 
-export function StatsGrid({ stats = defaultStats, isLoading = false }: StatsGridProps) {
-	if (isLoading) {
+export function StatsGrid({ stats, isLoading = false }: StatsGridProps) {
+	const navigate = useNavigate();
+
+	if (isLoading || !stats) {
 		return (
-			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-				{[1, 2, 3, 4, 5, 6, 7].map((n) => (
+			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+				{[1, 2, 3, 4, 5, 6].map((n) => (
 					<Card key={`stat-skeleton-${n}`}>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<Skeleton className="h-4 w-24" />
@@ -83,12 +90,15 @@ export function StatsGrid({ stats = defaultStats, isLoading = false }: StatsGrid
 		);
 	}
 
+	const items = buildStatItems(stats);
+
 	return (
-		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 stagger-children">
-			{stats.map((stat) => (
+		<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 stagger-children">
+			{items.map((stat) => (
 				<Card
 					key={stat.title}
-					className="overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5"
+					className="overflow-hidden transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer"
+					onClick={() => navigate(stat.href)}
 				>
 					<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 						<CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>

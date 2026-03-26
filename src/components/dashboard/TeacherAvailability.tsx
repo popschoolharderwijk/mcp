@@ -1,36 +1,28 @@
-import { LuCheck, LuChevronRight } from 'react-icons/lu';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { LuGraduationCap } from 'react-icons/lu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface Teacher {
-	id: string;
-	name: string;
-	instruments: string[];
-	availableHours: number;
-}
+import type { DashboardTeacher } from '@/hooks/useDashboardData';
 
 interface TeacherAvailabilityProps {
-	teachers?: Teacher[];
+	teachers: DashboardTeacher[];
 	isLoading?: boolean;
 }
 
-const defaultTeachers: Teacher[] = [
-	{ id: '1', name: 'Jeff', instruments: ['Gitaar', 'Bandcoaching'], availableHours: 37 },
-	{ id: '2', name: 'Karel Keys', instruments: ['Keyboard', 'Bandcoaching'], availableHours: 24.5 },
-	{ id: '3', name: 'Mark de Vries', instruments: [], availableHours: 28 },
-];
+export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvailabilityProps) {
+	const navigate = useNavigate();
 
-export function TeacherAvailability({ teachers = defaultTeachers, isLoading = false }: TeacherAvailabilityProps) {
 	if (isLoading) {
 		return (
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between pb-2">
-					<CardTitle className="text-base font-semibold">Docent Beschikbaarheid</CardTitle>
-					<Skeleton className="h-4 w-20" />
+					<div className="flex items-center gap-2">
+						<LuGraduationCap className="h-5 w-5 text-primary" />
+						<Skeleton className="h-5 w-40" />
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-4">
@@ -38,10 +30,9 @@ export function TeacherAvailability({ teachers = defaultTeachers, isLoading = fa
 							<div key={`teacher-skeleton-${n}`} className="flex items-center gap-4">
 								<Skeleton className="h-10 w-10 rounded-full" />
 								<div className="flex-1 space-y-1">
-									<Skeleton className="h-4 w-24" />
-									<Skeleton className="h-3 w-32" />
+									<Skeleton className="h-4 w-32" />
+									<Skeleton className="h-3 w-48" />
 								</div>
-								<Skeleton className="h-4 w-16" />
 							</div>
 						))}
 					</div>
@@ -53,47 +44,57 @@ export function TeacherAvailability({ teachers = defaultTeachers, isLoading = fa
 	return (
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between pb-2">
-				<CardTitle className="text-base font-semibold">Docent Beschikbaarheid</CardTitle>
+				<div className="flex items-center gap-2">
+					<LuGraduationCap className="h-5 w-5 text-primary" />
+					<CardTitle className="text-base font-semibold">Docenten</CardTitle>
+				</div>
 				<Button variant="ghost" size="sm" asChild>
-					<Link
-						to="/teachers"
-						className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-					>
-						Bekijk alle
-						<LuChevronRight className="h-4 w-4" />
-					</Link>
+					<Link to="/teachers">Alle docenten</Link>
 				</Button>
 			</CardHeader>
 			<CardContent>
-				<div className="space-y-4">
-					{teachers.map((teacher) => (
-						<div key={teacher.id} className="flex items-center gap-4">
-							<Avatar className="h-10 w-10">
-								<AvatarFallback className="bg-primary/10 text-primary">
-									{teacher.name.slice(0, 2).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
-							<div className="flex-1 min-w-0">
-								<p className="font-medium truncate">{teacher.name}</p>
-								<div className="flex flex-wrap gap-1 mt-0.5">
-									{teacher.instruments.length > 0 ? (
-										teacher.instruments.map((instrument) => (
-											<Badge key={instrument} variant="secondary" className="text-xs">
-												{instrument}
-											</Badge>
-										))
-									) : (
-										<span className="text-xs text-muted-foreground">Geen lessen toegewezen</span>
-									)}
+				{teachers.length === 0 ? (
+					<p className="text-sm text-muted-foreground">Geen docenten gevonden.</p>
+				) : (
+					<div className="space-y-3">
+						{teachers.map((teacher) => (
+							<div
+								key={teacher.user_id}
+								className="flex items-center justify-between rounded-lg p-2 hover:bg-muted/50 cursor-pointer transition-colors"
+								onClick={() => navigate(`/teachers/${teacher.user_id}`)}
+								onKeyDown={(e) => e.key === 'Enter' && navigate(`/teachers/${teacher.user_id}`)}
+								role="button"
+								tabIndex={0}
+							>
+								<div className="flex items-center gap-3">
+									<Avatar className="h-9 w-9">
+										<AvatarFallback className="bg-muted text-muted-foreground text-xs">
+											{teacher.display_name.slice(0, 2).toUpperCase()}
+										</AvatarFallback>
+									</Avatar>
+									<div>
+										<p className="text-sm font-medium leading-tight">{teacher.display_name}</p>
+										<div className="flex flex-wrap gap-1 mt-0.5">
+											{teacher.lessonTypeNames.length > 0 ? (
+												teacher.lessonTypeNames.map((name) => (
+													<Badge key={name} variant="secondary" className="text-[10px] px-1.5 py-0">
+														{name}
+													</Badge>
+												))
+											) : (
+												<span className="text-xs text-muted-foreground">Geen lesvakken</span>
+											)}
+										</div>
+									</div>
+								</div>
+								<div className="text-right">
+									<span className="text-sm font-medium">{teacher.availableSlotCount}</span>
+									<p className="text-[10px] text-muted-foreground">slots</p>
 								</div>
 							</div>
-							<div className="flex items-center gap-1 text-success shrink-0">
-								<LuCheck className="h-4 w-4" />
-								<span className="text-sm font-medium">{teacher.availableHours} uur vrij</span>
-							</div>
-						</div>
-					))}
-				</div>
+						))}
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);
