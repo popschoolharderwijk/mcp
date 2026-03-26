@@ -1,50 +1,42 @@
-import { LuChevronRight } from 'react-icons/lu';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { LuUsers } from 'react-icons/lu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface Student {
-	id: string;
-	name: string;
-	email: string;
-	status: 'active' | 'trial' | 'inactive';
-	joinDate?: string;
-}
+import type { DashboardStudent } from '@/hooks/useDashboardData';
+import { formatDateTimeShort } from '@/lib/date/date-format';
 
 interface RecentStudentsProps {
-	students?: Student[];
+	students: DashboardStudent[];
 	isLoading?: boolean;
 }
 
-const defaultStudents: Student[] = [
-	{ id: '1', name: 'test', email: 'test@test.nl', status: 'trial' },
-	{ id: '2', name: 'test', email: 'test@test.nl', status: 'trial', joinDate: '22-12-2025' },
-	{ id: '3', name: 'test3 test4', email: 'test12@test.nl', status: 'trial', joinDate: '22-12-2025' },
-];
-
-function getStatusBadge(status: Student['status']) {
+function getStatusBadge(status: string) {
 	switch (status) {
 		case 'active':
-			return <Badge className="bg-success text-success-foreground">Actief</Badge>;
+			return <Badge variant="default">Actief</Badge>;
 		case 'trial':
-			return <Badge variant="outline">Proefles</Badge>;
+			return <Badge variant="secondary">Proefles</Badge>;
 		case 'inactive':
-			return <Badge variant="secondary">Inactief</Badge>;
+			return <Badge variant="outline">Inactief</Badge>;
 		default:
 			return null;
 	}
 }
 
-export function RecentStudents({ students = defaultStudents, isLoading = false }: RecentStudentsProps) {
+export function RecentStudents({ students, isLoading = false }: RecentStudentsProps) {
+	const navigate = useNavigate();
+
 	if (isLoading) {
 		return (
 			<Card>
 				<CardHeader className="flex flex-row items-center justify-between pb-2">
-					<CardTitle className="text-base font-semibold">Recente Leerlingen</CardTitle>
-					<Skeleton className="h-4 w-20" />
+					<div className="flex items-center gap-2">
+						<LuUsers className="h-5 w-5 text-primary" />
+						<Skeleton className="h-5 w-32" />
+					</div>
 				</CardHeader>
 				<CardContent>
 					<div className="space-y-4">
@@ -52,10 +44,9 @@ export function RecentStudents({ students = defaultStudents, isLoading = false }
 							<div key={`student-skeleton-${n}`} className="flex items-center gap-4">
 								<Skeleton className="h-10 w-10 rounded-full" />
 								<div className="flex-1 space-y-1">
-									<Skeleton className="h-4 w-24" />
-									<Skeleton className="h-3 w-32" />
+									<Skeleton className="h-4 w-32" />
+									<Skeleton className="h-3 w-24" />
 								</div>
-								<Skeleton className="h-6 w-16 rounded-full" />
 							</div>
 						))}
 					</div>
@@ -67,41 +58,49 @@ export function RecentStudents({ students = defaultStudents, isLoading = false }
 	return (
 		<Card>
 			<CardHeader className="flex flex-row items-center justify-between pb-2">
-				<CardTitle className="text-base font-semibold">Recente Leerlingen</CardTitle>
+				<div className="flex items-center gap-2">
+					<LuUsers className="h-5 w-5 text-primary" />
+					<CardTitle className="text-base font-semibold">Recente Leerlingen</CardTitle>
+				</div>
 				<Button variant="ghost" size="sm" asChild>
-					<Link
-						to="/students"
-						className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-					>
-						Bekijk alle
-						<LuChevronRight className="h-4 w-4" />
-					</Link>
+					<Link to="/students">Alle leerlingen</Link>
 				</Button>
 			</CardHeader>
 			<CardContent>
-				<div className="space-y-4">
-					{students.map((student) => (
-						<div key={student.id} className="flex items-center gap-4">
-							<Avatar className="h-10 w-10">
-								<AvatarFallback className="bg-primary/10 text-primary">
-									{student.name.slice(0, 2).toUpperCase()}
-								</AvatarFallback>
-							</Avatar>
-							<div className="flex-1 min-w-0">
-								<p className="font-medium truncate">{student.name}</p>
-								<p className="text-sm text-muted-foreground truncate">{student.email}</p>
-							</div>
-							<div className="flex items-center gap-2">
-								{student.joinDate && (
-									<span className="text-xs text-muted-foreground hidden sm:block">
-										{student.joinDate}
+				{students.length === 0 ? (
+					<p className="text-sm text-muted-foreground">Geen leerlingen gevonden.</p>
+				) : (
+					<div className="space-y-3">
+						{students.map((student) => (
+							<div
+								key={student.user_id}
+								className="flex items-center justify-between rounded-lg p-2 hover:bg-muted/50 cursor-pointer transition-colors"
+								onClick={() => navigate('/students')}
+								onKeyDown={(e) => e.key === 'Enter' && navigate('/students')}
+								role="button"
+								tabIndex={0}
+							>
+								<div className="flex items-center gap-3">
+									<Avatar className="h-9 w-9">
+										<AvatarFallback className="bg-muted text-muted-foreground text-xs">
+											{student.display_name.slice(0, 2).toUpperCase()}
+										</AvatarFallback>
+									</Avatar>
+									<div>
+										<p className="text-sm font-medium leading-tight">{student.display_name}</p>
+										<p className="text-xs text-muted-foreground">{student.email}</p>
+									</div>
+								</div>
+								<div className="flex items-center gap-2">
+									{getStatusBadge(student.status)}
+									<span className="text-xs text-muted-foreground hidden sm:inline">
+										{student.created_at ? formatDateTimeShort(student.created_at) : ''}
 									</span>
-								)}
-								{getStatusBadge(student.status)}
+								</div>
 							</div>
-						</div>
-					))}
-				</div>
+						))}
+					</div>
+				)}
 			</CardContent>
 		</Card>
 	);
