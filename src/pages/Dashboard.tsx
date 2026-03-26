@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ActionRequired } from '@/components/dashboard/ActionRequired';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { StatsGrid } from '@/components/dashboard/StatsGrid';
 import { TeacherAvailability } from '@/components/dashboard/TeacherAvailability';
 import { useAuth } from '@/hooks/useAuth';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Dashboard() {
-	const { user } = useAuth();
+	const { user, isPrivileged } = useAuth();
 	const [firstName, setFirstName] = useState<string | null>(null);
+	const { stats, recentStudents, teachers, isLoading } = useDashboardData();
 
 	useEffect(() => {
 		async function loadFirstName() {
@@ -23,7 +24,6 @@ export default function Dashboard() {
 
 		loadFirstName();
 
-		// Listen for profile updates
 		const handleProfileUpdate = () => {
 			loadFirstName();
 		};
@@ -51,17 +51,19 @@ export default function Dashboard() {
 				</p>
 			</div>
 
-			{/* Action Required section */}
-			<ActionRequired />
+			{/* Privileged users (admin, site_admin, staff) see full dashboard */}
+			{isPrivileged && (
+				<>
+					{/* Stats Grid */}
+					<StatsGrid stats={stats} isLoading={isLoading} />
 
-			{/* Stats Grid */}
-			<StatsGrid />
-
-			{/* Two-column section */}
-			<div className="grid gap-6 md:grid-cols-2">
-				<RecentStudents />
-				<TeacherAvailability />
-			</div>
+					{/* Two-column section */}
+					<div className="grid gap-6 md:grid-cols-2">
+						<RecentStudents students={recentStudents} isLoading={isLoading} />
+						<TeacherAvailability teachers={teachers} isLoading={isLoading} />
+					</div>
+				</>
+			)}
 		</div>
 	);
 }
