@@ -139,7 +139,8 @@ export function useDashboardData() {
 				// Group lesson type names per teacher
 				const ltMap = new Map<string, string[]>();
 				for (const tlt of tltRes.data ?? []) {
-					const name = (tlt.lesson_types as { name: string } | null)?.name;
+				const lt = tlt.lesson_types as unknown as { name: string } | null;
+				const name = lt?.name;
 					if (name) {
 						const arr = ltMap.get(tlt.teacher_user_id) ?? [];
 						arr.push(name);
