@@ -20,6 +20,9 @@ export type AgendaEventDeviationUpdate = Update<'agenda_event_deviations'>;
 /** Source type for agenda_events (from DB enum). */
 export type AgendaEventSourceType = Enums<'agenda_event_source_type'>;
 
+/** Cancellation type for deviations (from DB enum). */
+export type CancellationType = 'student' | 'teacher';
+
 /** Runtime values for agenda_event_source_type (must match DB enum). */
 const AGENDA_EVENT_SOURCE_TYPE_VALUES: readonly string[] = ['manual', 'lesson_agreement', 'project'];
 

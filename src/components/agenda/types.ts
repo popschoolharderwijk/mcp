@@ -44,6 +44,10 @@ export interface CalendarEventResource {
 	projectId?: string;
 	/** Project name when source_type is 'project' */
 	projectName?: string;
+	/** Who cancelled: student or teacher */
+	cancellationType?: CancellationType;
+	/** True when teacher cancelled and lesson needs rescheduling */
+	needsReschedule?: boolean;
 }
 
 export interface CalendarEvent extends Event {

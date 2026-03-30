@@ -59,6 +59,8 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 				actual_date: originalDateStr,
 				actual_start_time: originalStartTime,
 				spans_future_occurrences: recurring,
+				cancellation_type: cancellationType ?? null,
+				needs_reschedule: needsReschedule,
 			})
 			.eq('id', selectedEvent.resource.deviationId);
 		if (error) return { ok: false, message: 'Fout bij annuleren les' };
@@ -73,6 +75,8 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 		actual_start_time: originalStartTime,
 		is_cancelled: true,
 		spans_future_occurrences: recurring,
+		cancellation_type: cancellationType ?? null,
+		needs_reschedule: needsReschedule,
 	});
 	if (error) return { ok: false, message: 'Fout bij annuleren les' };
 	return { ok: true, message: 'Les geannuleerd' };
