@@ -87,6 +87,9 @@ export function AgendaEventFormDialog({
 	onCancelLesson,
 	onOpenCancelConfirm,
 	isCancelling = false,
+	cancellationType: cancelType,
+	needsReschedule,
+	onMarkRescheduled,
 }: AgendaEventFormDialogProps) {
 	const { user, isPrivileged } = useAuth();
 
