@@ -1,5 +1,5 @@
 import type { Event } from 'react-big-calendar';
-import type { AgendaEventSourceType } from '@/types/agenda-events';
+import type { AgendaEventSourceType, CancellationType } from '@/types/agenda-events';
 import type { User } from '@/types/users';
 
 export interface CalendarEventResource {
@@ -44,6 +44,10 @@ export interface CalendarEventResource {
 	projectId?: string;
 	/** Project name when source_type is 'project' */
 	projectName?: string;
+	/** Who cancelled: student or teacher */
+	cancellationType?: CancellationType;
+	/** True when teacher cancelled and lesson needs rescheduling */
+	needsReschedule?: boolean;
 }
 
 export interface CalendarEvent extends Event {

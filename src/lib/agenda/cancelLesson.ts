@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { AgendaAgreementLike } from '@/lib/agenda/moveAgendaEvent';
 import { formatDateToDb, now } from '@/lib/date/date-format';
 import { normalizeTime } from '@/lib/time/time-format';
-import type { AgendaEventRow } from '@/types/agenda-events';
+import type { AgendaEventRow, CancellationType } from '@/types/agenda-events';
 
 export interface CancelLessonParams {
 	selectedEvent: CalendarEvent;
@@ -12,12 +12,14 @@ export interface CancelLessonParams {
 	agendaEvents: AgendaEventRow[];
 	agreementsMap: Map<string, AgendaAgreementLike>;
 	scope: RecurrenceScope;
+	cancellationType?: CancellationType;
 }
 
 export type CancelLessonResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function cancelLesson(params: CancelLessonParams): Promise<CancelLessonResult> {
-	const { selectedEvent, agendaEvents, agreementsMap, scope } = params;
+	const { selectedEvent, agendaEvents, agreementsMap, scope, cancellationType } = params;
+	const needsReschedule = cancellationType === 'teacher';
 	const eventId = selectedEvent.resource.eventId;
 	if (!eventId) return { ok: false, message: 'Geen afspraak' };
 
@@ -57,6 +59,8 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 				actual_date: originalDateStr,
 				actual_start_time: originalStartTime,
 				spans_future_occurrences: recurring,
+				cancellation_type: cancellationType ?? null,
+				needs_reschedule: needsReschedule,
 			})
 			.eq('id', selectedEvent.resource.deviationId);
 		if (error) return { ok: false, message: 'Fout bij annuleren les' };
@@ -71,6 +75,8 @@ export async function cancelLesson(params: CancelLessonParams): Promise<CancelLe
 		actual_start_time: originalStartTime,
 		is_cancelled: true,
 		spans_future_occurrences: recurring,
+		cancellation_type: cancellationType ?? null,
+		needs_reschedule: needsReschedule,
 	});
 	if (error) return { ok: false, message: 'Fout bij annuleren les' };
 	return { ok: true, message: 'Les geannuleerd' };

@@ -18,6 +18,9 @@ export type Database = {
         Row: {
           actual_date: string
           actual_start_time: string
+          cancellation_type:
+            | Database["public"]["Enums"]["cancellation_type"]
+            | null
           color: string | null
           created_at: string
           created_by: string | null
@@ -25,6 +28,7 @@ export type Database = {
           event_id: string
           id: string
           is_cancelled: boolean
+          needs_reschedule: boolean
           original_date: string
           original_start_time: string
           participant_ids: string[] | null
@@ -38,6 +42,9 @@ export type Database = {
         Insert: {
           actual_date: string
           actual_start_time: string
+          cancellation_type?:
+            | Database["public"]["Enums"]["cancellation_type"]
+            | null
           color?: string | null
           created_at?: string
           created_by?: string | null
@@ -45,6 +52,7 @@ export type Database = {
           event_id: string
           id?: string
           is_cancelled?: boolean
+          needs_reschedule?: boolean
           original_date: string
           original_start_time: string
           participant_ids?: string[] | null
@@ -58,6 +66,9 @@ export type Database = {
         Update: {
           actual_date?: string
           actual_start_time?: string
+          cancellation_type?:
+            | Database["public"]["Enums"]["cancellation_type"]
+            | null
           color?: string | null
           created_at?: string
           created_by?: string | null
@@ -65,6 +76,7 @@ export type Database = {
           event_id?: string
           id?: string
           is_cancelled?: boolean
+          needs_reschedule?: boolean
           original_date?: string
           original_start_time?: string
           participant_ids?: string[] | null
@@ -862,6 +874,7 @@ export type Database = {
     Enums: {
       agenda_event_source_type: "manual" | "lesson_agreement" | "project"
       app_role: "site_admin" | "admin" | "staff"
+      cancellation_type: "student" | "teacher"
       lesson_frequency: "daily" | "weekly" | "biweekly" | "monthly"
     }
     CompositeTypes: {
@@ -992,6 +1005,7 @@ export const Constants = {
     Enums: {
       agenda_event_source_type: ["manual", "lesson_agreement", "project"],
       app_role: ["site_admin", "admin", "staff"],
+      cancellation_type: ["student", "teacher"],
       lesson_frequency: ["daily", "weekly", "biweekly", "monthly"],
     },
   },

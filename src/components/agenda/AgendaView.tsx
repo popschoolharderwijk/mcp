@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateToDb } from '@/lib/date/date-format';
 import { formatTimeFromDate } from '@/lib/time/time-format';
-import type { AgendaEventRow } from '@/types/agenda-events';
+import type { AgendaEventRow, CancellationType } from '@/types/agenda-events';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
@@ -217,7 +217,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 	);
 
 	const handleCancelLesson = useCallback(
-		async (scope: RecurrenceScope = 'single') => {
+		async (scope: RecurrenceScope = 'single', cancellationType?: CancellationType) => {
 			if (!selectedEvent || !user) return;
 			setIsCancelling(true);
 			const result = await cancelLesson({
@@ -226,6 +226,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 				agendaEvents,
 				agreementsMap,
 				scope,
+				cancellationType,
 			});
 			if (!result.ok) {
 				toast.error(result.message);
@@ -233,6 +234,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 				return;
 			}
 			toast.success(result.message);
+			setFormDialogOpen(false);
 			setSelectedEvent(null);
 			setCancelLessonConfirmOpen(false);
 			setIsCancelling(false);
@@ -247,6 +249,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 			setSelectedEvent,
 			setCancelLessonConfirmOpen,
 			setIsCancelling,
+			setFormDialogOpen,
 		],
 	);
 
@@ -333,7 +336,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 			<ConfirmCancelDialog
 				open={cancelLessonConfirmOpen}
 				onOpenChange={setCancelLessonConfirmOpen}
-				onConfirm={() => handleCancelLesson(pendingCancelScope)}
+				onConfirm={(cancellationType) => handleCancelLesson(pendingCancelScope, cancellationType)}
 				disabled={isCancelling}
 			/>
 
@@ -422,6 +425,24 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 						: undefined
 				}
 				isCancelling={isCancelling}
+				cancellationType={selectedEvent?.resource.cancellationType}
+				needsReschedule={selectedEvent?.resource.needsReschedule}
+				onMarkRescheduled={
+					selectedEvent?.resource.needsReschedule && selectedEvent?.resource.deviationId && canEdit && user
+						? async () => {
+								const { error } = await supabase
+									.from('agenda_event_deviations')
+									.update({ needs_reschedule: false })
+									.eq('id', selectedEvent.resource.deviationId as string);
+								if (error) {
+									toast.error('Fout bij markeren als ingehaald');
+									return;
+								}
+								toast.success('Les gemarkeerd als ingehaald');
+								await loadData(false);
+							}
+						: undefined
+				}
 			/>
 		</div>
 	);
