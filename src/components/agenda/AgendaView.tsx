@@ -404,6 +404,24 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 				readonlyParticipantIds={readonlyParticipantIds}
 				canAddParticipants={canAddParticipants}
 				lessonType={lessonType}
+				onCancelLesson={
+					selectedEvent?.resource.isCancelled && canEdit && user
+						? () => handleCancelLesson('single')
+						: undefined
+				}
+				onOpenCancelConfirm={
+					selectedEvent && !selectedEvent.resource.isCancelled && canEdit && user
+						? () => {
+								if (needsRecurrenceChoice(selectedEvent)) {
+									setRecurrenceChoiceAction('cancel');
+									setRecurrenceChoiceOpen(true);
+								} else {
+									setCancelLessonConfirmOpen(true);
+								}
+							}
+						: undefined
+				}
+				isCancelling={isCancelling}
 			/>
 		</div>
 	);
