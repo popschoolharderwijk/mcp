@@ -181,10 +181,10 @@ function ReportsDataTable({
 						<span className="text-muted-foreground">—</span>
 					) : (
 						<Badge
-							variant={
-								row.age_category === 'under_18'
+					variant={
+								row.age_category === 'under_21'
 									? 'secondary'
-									: row.age_category === '18_plus'
+									: row.age_category === '21_plus'
 										? 'outline'
 										: 'default'
 							}
