@@ -414,11 +414,11 @@ export default function Reports() {
 		const totalLessons = dataVisibleInTable
 			.filter((r) => r.source_type === 'lesson')
 			.reduce((sum, r) => sum + r.lesson_count, 0);
-		const under18Minutes = dataVisibleInTable
-			.filter((r) => r.age_category === 'under_18')
+		const under21Minutes = dataVisibleInTable
+			.filter((r) => r.age_category === 'under_21')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
-		const over18Minutes = dataVisibleInTable
-			.filter((r) => r.age_category === '18_plus')
+		const over21Minutes = dataVisibleInTable
+			.filter((r) => r.age_category === '21_plus')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
 		const projectMinutes = dataVisibleInTable
 			.filter((r) => r.source_type === 'project')
