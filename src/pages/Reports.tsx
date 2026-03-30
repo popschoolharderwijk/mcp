@@ -77,8 +77,8 @@ function getPresetDates(preset: PeriodPreset): { start: string; end: string } {
 }
 
 const AGE_LABELS: Record<string, string> = {
-	under_18: 'Onder 18',
-	'18_plus': '18+',
+	under_21: 'Onder 21',
+	'21_plus': '21+',
 	unknown: 'Onbekend',
 };
 
