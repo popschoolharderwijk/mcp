@@ -529,7 +529,7 @@ export default function Reports() {
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
 							<LuUsers className="h-4 w-4" />
-							Uren onder 18
+							Uren onder 21
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
