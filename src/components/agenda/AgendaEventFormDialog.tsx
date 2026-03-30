@@ -446,6 +446,33 @@ export function AgendaEventFormDialog({
 						/>
 					)}
 
+					{isCancelledEvent && cancelType && (
+						<div
+							className={`flex items-center justify-between rounded-md px-3 py-2 text-sm ${cancelType === 'teacher' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' : 'bg-destructive/10 text-destructive'}`}
+						>
+							<span>
+								{cancelType === 'teacher'
+									? needsReschedule
+										? 'Docent heeft afgezegd — inhalen vereist'
+										: 'Docent heeft afgezegd — ingehaald'
+									: 'Leerling heeft afgezegd'}
+							</span>
+							{cancelType === 'teacher' && needsReschedule && onMarkRescheduled && (
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									onClick={onMarkRescheduled}
+									disabled={saving || isCancelling}
+									className="ml-2"
+								>
+									<LuCalendarCheck className="h-3 w-3 mr-1" />
+									Ingehaald
+								</Button>
+							)}
+						</div>
+					)}
+
 					<DialogFooter
 						className={`flex-wrap gap-2 ${canDelete || canCancelLesson ? 'sm:justify-between' : 'sm:justify-end'}`}
 					>
