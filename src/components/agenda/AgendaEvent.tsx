@@ -20,10 +20,13 @@ export function AgendaEvent({ event, title }: AgendaEventProps) {
 		lessonTypeColor,
 		isLesson,
 		sourceType,
+		cancellationType,
+		needsReschedule,
 	} = event.resource;
 	const hasMultipleParticipants = (participantCount ?? 0) > 1;
 	const isLessonEvent = isLesson || sourceType === 'lesson_agreement';
 	const isProjectEvent = sourceType === 'project';
+	const isTeacherCancelled = isCancelled && cancellationType === 'teacher';
 
 	const displayTitle = view === 'month' && event.start ? `${formatTimeFromDate(event.start)} ${title}` : title;
 
