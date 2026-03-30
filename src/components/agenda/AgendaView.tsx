@@ -425,6 +425,24 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 						: undefined
 				}
 				isCancelling={isCancelling}
+				cancellationType={selectedEvent?.resource.cancellationType}
+				needsReschedule={selectedEvent?.resource.needsReschedule}
+				onMarkRescheduled={
+					selectedEvent?.resource.needsReschedule && selectedEvent?.resource.deviationId && canEdit && user
+						? async () => {
+								const { error } = await supabase
+									.from('agenda_event_deviations')
+									.update({ needs_reschedule: false })
+									.eq('id', selectedEvent.resource.deviationId as string);
+								if (error) {
+									toast.error('Fout bij markeren als ingehaald');
+									return;
+								}
+								toast.success('Les gemarkeerd als ingehaald');
+								await loadData(false);
+							}
+						: undefined
+				}
 			/>
 		</div>
 	);
