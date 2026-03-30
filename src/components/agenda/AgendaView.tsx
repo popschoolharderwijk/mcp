@@ -12,7 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateToDb } from '@/lib/date/date-format';
 import { formatTimeFromDate } from '@/lib/time/time-format';
-import type { AgendaEventRow } from '@/types/agenda-events';
+import type { AgendaEventRow, CancellationType } from '@/types/agenda-events';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
