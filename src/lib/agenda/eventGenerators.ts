@@ -433,6 +433,8 @@ export function generateAgendaEvents(
 					sourceType,
 					color: displayColor,
 					isLesson: isLessonEvent,
+					cancellationType: effective ? ((effective as AgendaEventDeviationRow & { cancellation_type?: CancellationType }).cancellation_type ?? undefined) : undefined,
+					needsReschedule: effective ? ((effective as AgendaEventDeviationRow & { needs_reschedule?: boolean }).needs_reschedule ?? false) : false,
 				},
 			});
 
