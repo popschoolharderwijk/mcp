@@ -336,7 +336,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 			<ConfirmCancelDialog
 				open={cancelLessonConfirmOpen}
 				onOpenChange={setCancelLessonConfirmOpen}
-				onConfirm={() => handleCancelLesson(pendingCancelScope)}
+				onConfirm={(cancellationType) => handleCancelLesson(pendingCancelScope, cancellationType)}
 				disabled={isCancelling}
 			/>
 
