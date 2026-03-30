@@ -55,7 +55,7 @@ function firstDayOfWeekInInclusiveRange(start: string, end: string, targetDow: n
 }
 
 /** Age bucket used by get_hours_report (PostgreSQL AGE(occurrence_date, date_of_birth)). */
-function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: string): 'under_18' | '18_plus' | 'unknown' {
+function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: string): 'under_21' | '21_plus' | 'unknown' {
 	const st = fixtures.allStudents.find((s) => s.user_id === studentUserId);
 	if (!st?.date_of_birth) return 'unknown';
 	const occ = new Date(`${occurrenceIso}T12:00:00.000Z`);
@@ -63,7 +63,7 @@ function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: strin
 	let age = occ.getUTCFullYear() - dob.getUTCFullYear();
 	const m = occ.getUTCMonth() - dob.getUTCMonth();
 	if (m < 0 || (m === 0 && occ.getUTCDate() < dob.getUTCDate())) age--;
-	return age >= 18 ? '18_plus' : 'under_18';
+	return age >= 21 ? '21_plus' : 'under_21';
 }
 
 type HoursReportRow = {

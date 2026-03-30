@@ -114,7 +114,7 @@ const sections: ManualSection[] = [
 		details: [
 			'Periode selecteren: kies een vooraf ingestelde periode (deze maand, vorig kwartaal, etc.) of stel handmatig een start- en einddatum in.',
 			'Docentenfilter: filter de rapportage op een specifieke docent (alleen zichtbaar voor beheerders).',
-			'Samenvatting: bekijk het totaal aantal uren, opgesplitst naar leerlingen onder 18 (BTW-vrij) en 18+ (BTW-plichtig).',
+			'Samenvatting: bekijk het totaal aantal uren, opgesplitst naar leerlingen onder 21 (BTW-vrij) en 21+ (BTW-plichtig).',
 			'Detail per lessoort: zie per lessoort het aantal leerlingen, totaal uren en de verdeling per leeftijdscategorie.',
 			'Projecturen: bekijk per docent per project het aantal geplande uren binnen de geselecteerde periode.',
 		],

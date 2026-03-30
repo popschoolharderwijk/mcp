@@ -43,7 +43,7 @@ interface ReportRow {
 	lesson_type_name: string | null;
 	lesson_type_color: string | null;
 	lesson_type_icon: string | null;
-	age_category: 'under_18' | '18_plus' | 'unknown';
+	age_category: 'under_21' | '21_plus' | 'unknown';
 	total_minutes: number;
 	lesson_count: number;
 	project_id: string | null;
@@ -77,8 +77,8 @@ function getPresetDates(preset: PeriodPreset): { start: string; end: string } {
 }
 
 const AGE_LABELS: Record<string, string> = {
-	under_18: 'Onder 18',
-	'18_plus': '18+',
+	under_21: 'Onder 21',
+	'21_plus': '21+',
 	unknown: 'Onbekend',
 };
 
@@ -181,10 +181,10 @@ function ReportsDataTable({
 						<span className="text-muted-foreground">—</span>
 					) : (
 						<Badge
-							variant={
-								row.age_category === 'under_18'
+					variant={
+								row.age_category === 'under_21'
 									? 'secondary'
-									: row.age_category === '18_plus'
+									: row.age_category === '21_plus'
 										? 'outline'
 										: 'default'
 							}
@@ -245,8 +245,8 @@ function ReportsDataTable({
 				label: 'Leeftijd',
 				value: tableAgeCategory,
 				options: [
-					{ id: 'under_18', label: 'Onder 18' },
-					{ id: '18_plus', label: '18+' },
+				{ id: 'under_21', label: 'Onder 21' },
+					{ id: '21_plus', label: '21+' },
 				],
 				onChange: onTableAgeCategoryChange,
 				showAllOption: true,
@@ -414,16 +414,16 @@ export default function Reports() {
 		const totalLessons = dataVisibleInTable
 			.filter((r) => r.source_type === 'lesson')
 			.reduce((sum, r) => sum + r.lesson_count, 0);
-		const under18Minutes = dataVisibleInTable
-			.filter((r) => r.age_category === 'under_18')
+		const under21Minutes = dataVisibleInTable
+			.filter((r) => r.age_category === 'under_21')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
-		const over18Minutes = dataVisibleInTable
-			.filter((r) => r.age_category === '18_plus')
+		const over21Minutes = dataVisibleInTable
+			.filter((r) => r.age_category === '21_plus')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
 		const projectMinutes = dataVisibleInTable
 			.filter((r) => r.source_type === 'project')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
-		return { totalMinutes, totalLessons, under18Minutes, over18Minutes, projectMinutes };
+		return { totalMinutes, totalLessons, under21Minutes, over21Minutes, projectMinutes };
 	}, [dataVisibleInTable]);
 
 	// Redirect if no access
@@ -529,11 +529,11 @@ export default function Reports() {
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
 							<LuUsers className="h-4 w-4" />
-							Uren onder 18
+							Uren onder 21
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{formatDurationMinutes(summary.under18Minutes)}</div>
+						<div className="text-2xl font-bold">{formatDurationMinutes(summary.under21Minutes)}</div>
 						<p className="text-xs text-muted-foreground">Vrijgesteld van BTW</p>
 					</CardContent>
 				</Card>
@@ -541,11 +541,11 @@ export default function Reports() {
 					<CardHeader className="pb-2">
 						<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
 							<LuUsers className="h-4 w-4" />
-							Uren 18+
+							Uren 21+
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{formatDurationMinutes(summary.over18Minutes)}</div>
+						<div className="text-2xl font-bold">{formatDurationMinutes(summary.over21Minutes)}</div>
 						<p className="text-xs text-muted-foreground">BTW-plichtig</p>
 					</CardContent>
 				</Card>
