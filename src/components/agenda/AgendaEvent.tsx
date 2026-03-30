@@ -55,7 +55,8 @@ export function AgendaEvent({ event, title }: AgendaEventProps) {
 			)}
 			{isCancelled && (
 				<LuBan
-					className={`absolute h-3 w-3 ${iconColorClass} drop-shadow-md z-10 shrink-0 top-0.5 right-0.5`}
+					className={`absolute h-3 w-3 ${isTeacherCancelled ? 'text-orange-500' : iconColorClass} drop-shadow-md z-10 shrink-0 top-0.5 right-0.5`}
+					title={isTeacherCancelled ? 'Docent heeft afgezegd (inhalen vereist)' : 'Leerling heeft afgezegd'}
 				/>
 			)}
 			{hasTimeOrDateChange && !isCancelled && (
