@@ -545,7 +545,7 @@ export default function Reports() {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{formatDurationMinutes(summary.over18Minutes)}</div>
+						<div className="text-2xl font-bold">{formatDurationMinutes(summary.over21Minutes)}</div>
 						<p className="text-xs text-muted-foreground">BTW-plichtig</p>
 					</CardContent>
 				</Card>

@@ -63,7 +63,7 @@ function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: strin
 	let age = occ.getUTCFullYear() - dob.getUTCFullYear();
 	const m = occ.getUTCMonth() - dob.getUTCMonth();
 	if (m < 0 || (m === 0 && occ.getUTCDate() < dob.getUTCDate())) age--;
-	return age >= 18 ? '18_plus' : 'under_18';
+	return age >= 21 ? '21_plus' : 'under_21';
 }
 
 type HoursReportRow = {
