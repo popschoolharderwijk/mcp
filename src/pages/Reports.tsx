@@ -423,7 +423,7 @@ export default function Reports() {
 		const projectMinutes = dataVisibleInTable
 			.filter((r) => r.source_type === 'project')
 			.reduce((sum, r) => sum + r.total_minutes, 0);
-		return { totalMinutes, totalLessons, under18Minutes, over18Minutes, projectMinutes };
+		return { totalMinutes, totalLessons, under21Minutes, over21Minutes, projectMinutes };
 	}, [dataVisibleInTable]);
 
 	// Redirect if no access
