@@ -47,6 +47,12 @@ interface AgendaEventFormDialogProps {
 	lessonType?: { name: string; icon?: string | null; color?: string | null } | null;
 	/** Pre-select project source for new events */
 	initialProjectId?: string | null;
+	/** Called to restore a cancelled lesson (directly, no confirmation needed) */
+	onCancelLesson?: () => void;
+	/** Called to initiate cancellation flow (opens recurrence choice or confirm dialog) */
+	onOpenCancelConfirm?: () => void;
+	/** Whether a cancel/restore action is in progress */
+	isCancelling?: boolean;
 }
 
 interface ProjectOption {
