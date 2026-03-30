@@ -78,6 +78,9 @@ export function AgendaEventFormDialog({
 	canAddParticipants = true,
 	lessonType,
 	initialProjectId,
+	onCancelLesson,
+	onOpenCancelConfirm,
+	isCancelling = false,
 }: AgendaEventFormDialogProps) {
 	const { user, isPrivileged } = useAuth();
 
