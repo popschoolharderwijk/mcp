@@ -245,8 +245,8 @@ function ReportsDataTable({
 				label: 'Leeftijd',
 				value: tableAgeCategory,
 				options: [
-					{ id: 'under_18', label: 'Onder 18' },
-					{ id: '18_plus', label: '18+' },
+				{ id: 'under_21', label: 'Onder 21' },
+					{ id: '21_plus', label: '21+' },
 				],
 				onChange: onTableAgeCategoryChange,
 				showAllOption: true,
