@@ -217,7 +217,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 	);
 
 	const handleCancelLesson = useCallback(
-		async (scope: RecurrenceScope = 'single') => {
+		async (scope: RecurrenceScope = 'single', cancellationType?: CancellationType) => {
 			if (!selectedEvent || !user) return;
 			setIsCancelling(true);
 			const result = await cancelLesson({
@@ -226,6 +226,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 				agendaEvents,
 				agreementsMap,
 				scope,
+				cancellationType,
 			});
 			if (!result.ok) {
 				toast.error(result.message);
@@ -233,6 +234,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 				return;
 			}
 			toast.success(result.message);
+			setFormDialogOpen(false);
 			setSelectedEvent(null);
 			setCancelLessonConfirmOpen(false);
 			setIsCancelling(false);
@@ -247,6 +249,7 @@ export function AgendaView({ userId: viewUserId, canEdit: canEditProp }: AgendaV
 			setSelectedEvent,
 			setCancelLessonConfirmOpen,
 			setIsCancelling,
+			setFormDialogOpen,
 		],
 	);
 
