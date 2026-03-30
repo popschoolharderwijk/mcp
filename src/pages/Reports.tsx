@@ -533,7 +533,7 @@ export default function Reports() {
 						</CardTitle>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold">{formatDurationMinutes(summary.under18Minutes)}</div>
+						<div className="text-2xl font-bold">{formatDurationMinutes(summary.under21Minutes)}</div>
 						<p className="text-xs text-muted-foreground">Vrijgesteld van BTW</p>
 					</CardContent>
 				</Card>
