@@ -146,6 +146,7 @@ export function AgendaEventFormDialog({
 	const isCancelledEvent = !!deviationInfo?.isCancelled;
 	const canDelete = (isManualEvent || isProjectEvent) && event?.id && onDelete && !isCancelledEvent;
 	const canRevert = !!deviationInfo && !!onRevert;
+	const canCancelLesson = isLessonEvent && event?.id && (onCancelLesson || onOpenCancelConfirm);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
