@@ -18,7 +18,8 @@ export interface CancelLessonParams {
 export type CancelLessonResult = { ok: true; message: string } | { ok: false; message: string };
 
 export async function cancelLesson(params: CancelLessonParams): Promise<CancelLessonResult> {
-	const { selectedEvent, agendaEvents, agreementsMap, scope } = params;
+	const { selectedEvent, agendaEvents, agreementsMap, scope, cancellationType } = params;
+	const needsReschedule = cancellationType === 'teacher';
 	const eventId = selectedEvent.resource.eventId;
 	if (!eventId) return { ok: false, message: 'Geen afspraak' };
 
