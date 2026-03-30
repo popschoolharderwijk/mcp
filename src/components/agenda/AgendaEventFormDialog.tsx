@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { LuBan, LuTrash2, LuX } from 'react-icons/lu';
+import { LuBan, LuCalendarCheck, LuTrash2, LuX } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { DeviationInfoBanner } from '@/components/agenda/DeviationInfoBanner';
 import { RecurrenceChoiceDialog, type RecurrenceScope } from '@/components/agenda/RecurrenceChoiceDialog';
