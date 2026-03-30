@@ -22,7 +22,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getDisplayName } from '@/lib/display-name';
 import { frequencyOptions } from '@/lib/frequencies';
-import type { AgendaEventRow, AgendaEventSourceType, DeleteScope, DeviationInfo } from '@/types/agenda-events';
+import type { AgendaEventRow, AgendaEventSourceType, CancellationType, DeleteScope, DeviationInfo } from '@/types/agenda-events';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
 export type { DeleteScope, DeviationInfo } from '@/types/agenda-events';
