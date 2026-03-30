@@ -53,6 +53,12 @@ interface AgendaEventFormDialogProps {
 	onOpenCancelConfirm?: () => void;
 	/** Whether a cancel/restore action is in progress */
 	isCancelling?: boolean;
+	/** Cancellation type of the current event (if cancelled) */
+	cancellationType?: CancellationType;
+	/** Whether this cancelled lesson needs rescheduling */
+	needsReschedule?: boolean;
+	/** Called to mark a teacher-cancelled lesson as rescheduled */
+	onMarkRescheduled?: () => void;
 }
 
 interface ProjectOption {
