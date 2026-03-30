@@ -437,25 +437,54 @@ export function AgendaEventFormDialog({
 						/>
 					)}
 
-					<DialogFooter className={`flex-wrap gap-2 ${canDelete ? 'sm:justify-between' : 'sm:justify-end'}`}>
-						{canDelete && (
-							<Button
-								type="button"
-								variant="outline"
-								className="text-destructive hover:bg-destructive/10 hover:text-destructive order-last sm:order-none"
-								onClick={handleDeleteClick}
-								disabled={saving || reverting}
-							>
-								<LuTrash2 className="h-4 w-4 mr-2" />
-								Verwijderen
-							</Button>
-						)}
+					<DialogFooter
+						className={`flex-wrap gap-2 ${canDelete || canCancelLesson ? 'sm:justify-between' : 'sm:justify-end'}`}
+					>
+						<div className="flex gap-2 order-last sm:order-none">
+							{canDelete && (
+								<Button
+									type="button"
+									variant="outline"
+									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+									onClick={handleDeleteClick}
+									disabled={saving || reverting || isCancelling}
+								>
+									<LuTrash2 className="h-4 w-4 mr-2" />
+									Verwijderen
+								</Button>
+							)}
+							{canCancelLesson && !isCancelledEvent && onOpenCancelConfirm && (
+								<Button
+									type="button"
+									variant="outline"
+									className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+									onClick={onOpenCancelConfirm}
+									disabled={saving || reverting || isCancelling}
+								>
+									<LuBan className="h-4 w-4 mr-2" />
+									{isCancelling ? 'Bezig...' : 'Les annuleren'}
+								</Button>
+							)}
+							{canCancelLesson && isCancelledEvent && onCancelLesson && (
+								<Button
+									type="button"
+									variant="outline"
+									onClick={onCancelLesson}
+									disabled={saving || reverting || isCancelling}
+								>
+									{isCancelling ? 'Bezig...' : 'Les herstellen'}
+								</Button>
+							)}
+						</div>
 						<div className="flex gap-2">
 							<Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
 								{isCancelledEvent ? 'Sluiten' : 'Annuleren'}
 							</Button>
 							{!isCancelledEvent && (
-								<Button type="submit" disabled={saving || reverting || (!!event && !hasChanges)}>
+								<Button
+									type="submit"
+									disabled={saving || reverting || isCancelling || (!!event && !hasChanges)}
+								>
 									{saving ? 'Opslaan...' : event ? 'Bijwerken' : 'Aanmaken'}
 								</Button>
 							)}
