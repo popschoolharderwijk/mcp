@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { AgendaAgreementLike } from '@/lib/agenda/moveAgendaEvent';
 import { formatDateToDb, now } from '@/lib/date/date-format';
 import { normalizeTime } from '@/lib/time/time-format';
-import type { AgendaEventRow } from '@/types/agenda-events';
+import type { AgendaEventRow, CancellationType } from '@/types/agenda-events';
 
 export interface CancelLessonParams {
 	selectedEvent: CalendarEvent;
@@ -12,6 +12,7 @@ export interface CancelLessonParams {
 	agendaEvents: AgendaEventRow[];
 	agreementsMap: Map<string, AgendaAgreementLike>;
 	scope: RecurrenceScope;
+	cancellationType?: CancellationType;
 }
 
 export type CancelLessonResult = { ok: true; message: string } | { ok: false; message: string };
