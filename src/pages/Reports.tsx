@@ -43,7 +43,7 @@ interface ReportRow {
 	lesson_type_name: string | null;
 	lesson_type_color: string | null;
 	lesson_type_icon: string | null;
-	age_category: 'under_18' | '18_plus' | 'unknown';
+	age_category: 'under_21' | '21_plus' | 'unknown';
 	total_minutes: number;
 	lesson_count: number;
 	project_id: string | null;
