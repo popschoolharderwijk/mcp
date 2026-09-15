@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 — 2026-09-15
+
+- Eerste live test voor gebruikers
+
 ## 0.8.0 — 2026-07-25
 
 - Versienummer zichtbaar in het gebruikersmenu; klik opent dit changelog

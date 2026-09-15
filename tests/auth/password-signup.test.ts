@@ -5,14 +5,12 @@
  * The frontend offers no way to set or use passwords.
  *
  * However, Supabase's Auth API technically supports password-based signup.
- * To prevent abuse via direct API calls, we configure strict password requirements
- * in Supabase Dashboard (Authentication → Policies):
- *
- * - Minimum password length: 32 characters
- * - Password requirements: letters, digits, AND symbols
+ * On mcp-test/mcp-dev we keep enable_signup enabled and enforce strict password
+ * requirements in config.toml (minimum 32 characters; letters, digits, and symbols).
+ * Production disables public signup entirely via [remotes.prod.auth] enable_signup = false.
  *
  * These tests verify that Supabase correctly rejects passwords that don't meet
- * these requirements, making password-based signup practically unusable.
+ * the requirements on test/dev (defense-in-depth where signup is still enabled).
  */
 
 import { afterAll, describe, expect, it } from 'bun:test';
