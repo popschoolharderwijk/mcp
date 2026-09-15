@@ -18,7 +18,7 @@ sql_paths = ["./seeds/bootstrap.sql", "./seeds/test.sql"]
 project_id = "bnagepkxryauifzyoxgo"
 
 [remotes.prod.db.seed]
-enabled = false
+enabled = true
 sql_paths = ["./seeds/bootstrap.sql"]
 
 [storage]
