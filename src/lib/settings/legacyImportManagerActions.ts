@@ -15,12 +15,15 @@ export type LegacyImportActionResult<T> =
 	| { ok: false; message: string; title: string };
 
 export async function runLegacyImportTemplateDownload(
-	getAccessToken: () => Promise<string | null>,
+	supabase: SupabaseClient,
 ): Promise<LegacyImportActionResult<null>> {
 	try {
-		const accessToken = await getAccessToken();
-		if (!accessToken) throw new Error('Niet ingelogd');
-		const blob = await fetchLegacyImportTemplate(accessToken);
+		const {
+			data: { session },
+		} = await supabase.auth.getSession();
+		if (!session?.access_token) throw new Error('Niet ingelogd');
+
+		const blob = await fetchLegacyImportTemplate(supabase);
 		downloadBlobFile(blob, 'legacy-import-template.xlsx');
 		return { ok: true, data: null };
 	} catch (error) {

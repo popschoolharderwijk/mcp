@@ -21,7 +21,10 @@ function createFileList(file: File): FileList {
 		length: 1,
 		item: (index: number) => (index === 0 ? file : null),
 		0: file,
-	} as FileList;
+		*[Symbol.iterator]() {
+			yield file;
+		},
+	} as unknown as FileList;
 }
 
 describe('accountActionsHelpers', () => {

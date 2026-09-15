@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	errorsToCsv,
+	fetchLegacyImportTemplate,
 	resolveLegacyImportToast,
 	resolveLegacyValidationToast,
 	toErrorMessage,
@@ -11,6 +12,38 @@ describe('errorsToCsv', () => {
 		expect(errorsToCsv([{ tab: 'students', row: 2, field: 'email', message: 'Invalid email' }])).toBe(
 			'tab,row,field,message\n"students","2","email","Invalid email"',
 		);
+	});
+});
+
+describe('fetchLegacyImportTemplate', () => {
+	it('returns the blob when invoke succeeds with a Blob', async () => {
+		const blob = new Blob(['xlsx']);
+		const result = await fetchLegacyImportTemplate({
+			functions: {
+				invoke: async () => ({ data: blob, error: null }),
+			},
+		} as never);
+		expect(result).toBe(blob);
+	});
+
+	it('throws when invoke returns an error', async () => {
+		await expect(
+			fetchLegacyImportTemplate({
+				functions: {
+					invoke: async () => ({ data: null, error: new Error('boom') }),
+				},
+			} as never),
+		).rejects.toThrow('boom');
+	});
+
+	it('throws when invoke returns a non-Blob payload', async () => {
+		await expect(
+			fetchLegacyImportTemplate({
+				functions: {
+					invoke: async () => ({ data: 'not-a-blob', error: null }),
+				},
+			} as never),
+		).rejects.toThrow('Onverwacht template-antwoord van import-legacy-data');
 	});
 });
 

@@ -106,7 +106,8 @@ function buildLegacyImportTemplateResponse(bytes: Uint8Array): Response {
 	return new Response(bytes, {
 		headers: {
 			...corsHeaders,
-			'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+			// octet-stream so supabase.functions.invoke parses the body as a Blob
+			'Content-Type': 'application/octet-stream',
 			'Content-Disposition': 'attachment; filename="legacy-import-template.xlsx"',
 		},
 	});

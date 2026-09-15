@@ -1,3 +1,5 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+
 type Tab = 'lesson_types' | 'lesson_type_options' | 'teachers' | 'students' | 'lesson_agreements';
 
 export interface RowError {
@@ -61,23 +63,19 @@ export function downloadBlobFile(blob: Blob, fileName: string): void {
 	URL.revokeObjectURL(url);
 }
 
-export async function fetchLegacyImportTemplate(accessToken: string): Promise<Blob> {
-	const SUPABASE_URL = 'https://zdvscmogkfyddnnxzkdu.supabase.co';
-	const response = await fetch(`${SUPABASE_URL}/functions/v1/import-legacy-data`, {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${accessToken}`,
-			apikey: accessToken,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({ action: 'template' }),
-	});
-	if (!response.ok) {
-		const text = await response.text();
-		throw new Error(text || `HTTP ${response.status}`);
-	}
-	return response.blob();
+function resolveLegacyImportTemplateBlob(data: unknown): Blob {
+	if (data instanceof Blob) return data;
+	throw new Error('Onverwacht template-antwoord van import-legacy-data');
 }
+
+export async function fetchLegacyImportTemplate(supabase: SupabaseClient): Promise<Blob> {
+	const { data, error } = await supabase.functions.invoke('import-legacy-data', {
+		body: { action: 'template' },
+	});
+	if (error) throw error;
+	return resolveLegacyImportTemplateBlob(data);
+}
+
 export function resolveLegacyValidationToast(data: ValidationResponse | null): {
 	kind: 'success' | 'warning';
 	message: string;

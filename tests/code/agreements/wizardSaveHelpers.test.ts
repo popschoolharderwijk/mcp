@@ -47,8 +47,17 @@ function buildUpdateChain(table: string, payload: unknown) {
 	};
 }
 
+const emptyReadChain = {
+	select: () => ({
+		eq: () => ({
+			maybeSingle: () => Promise.resolve({ data: null, error: null }),
+		}),
+	}),
+};
+
 const supabaseMock = {
 	from: (table: string) => ({
+		...emptyReadChain,
 		update: (payload: unknown) => buildUpdateChain(table, payload),
 		insert: (payload: unknown) => ({
 			select: () => ({
@@ -61,6 +70,7 @@ const supabaseMock = {
 	}),
 	functions: {
 		invoke: (fn: string, body?: { body?: unknown }) => {
+			if (fn === 'send-template-email') return Promise.resolve({ data: null, error: null });
 			recordedCalls.push({ table: fn, op: 'insert', payload: body?.body ?? null, filters: {} });
 			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-incasso-invite';
 			return Promise.resolve(tableResults[key] ?? { data: null, error: null });
@@ -74,10 +84,6 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 
 mock.module('@/integrations/supabase/client', () => ({
 	supabase: supabaseMock,
-}));
-
-mock.module('../../../src/lib/email/sendAgreementCreatedMails', () => ({
-	sendAgreementCreatedMails: async () => {},
 }));
 
 function freeSlot(overrides: Partial<SlotWithStatus> = {}): SlotWithStatus {

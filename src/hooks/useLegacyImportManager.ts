@@ -34,12 +34,7 @@ export function useLegacyImportManager() {
 
 	async function downloadTemplate() {
 		setBusy(true);
-		const result = await runLegacyImportTemplateDownload(async () => {
-			const {
-				data: { session },
-			} = await supabase.auth.getSession();
-			return session?.access_token ?? null;
-		});
+		const result = await runLegacyImportTemplateDownload(supabase);
 		if (result.ok === false) toast.error(result.title, { description: result.message });
 		setBusy(false);
 	}
