@@ -32,26 +32,19 @@ export const teacherChildNavItems = [
 	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },
 ];
 
-export function isPathInGroup(pathname: string, hrefs: string[]): boolean {
+export function isPathInGroup(pathname: string, hrefs: readonly string[]): boolean {
 	return hrefs.some((href) => pathname === href || pathname.startsWith(`${href}/`));
 }
 
-function isSidebarNavActive(pathname: string, href: string, childHrefs: readonly string[] = []): boolean {
-	if (childHrefs.some((childHref) => pathname === childHref || pathname.startsWith(`${childHref}/`))) {
-		return false;
-	}
-	if (href === '/') return pathname === '/';
-	return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-/** Linked parents stay inactive on child routes; toggle-only parents highlight on any child route. */
+/** A parent is selected only on its own page, never when an explicit child route is active. */
 export function isSidebarParentActive(
 	pathname: string,
 	href: string | undefined,
 	childHrefs: readonly string[] = [],
 ): boolean {
-	if (!href) return isPathInGroup(pathname, [...childHrefs]);
-	return isSidebarNavActive(pathname, href, childHrefs);
+	if (!href || isPathInGroup(pathname, childHrefs)) return false;
+	if (href === '/') return pathname === '/';
+	return isPathInGroup(pathname, [href]);
 }
 
 export function sidebarNavItemStateClass(isActive: boolean): string {

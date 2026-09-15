@@ -78,13 +78,10 @@ describe('isSidebarParentActive', () => {
 		expect(isSidebarParentActive('/teachers/abc', '/teachers', teacherChildHrefs)).toBe(true);
 	});
 
-	it('highlights a toggle-only parent on a child page', () => {
+	it('does not highlight a parent when a child is active', () => {
 		const financeChildHrefs = financeNavItems.map((item) => item.href);
-		expect(isSidebarParentActive('/mandaten', undefined, financeChildHrefs)).toBe(true);
-		expect(isSidebarParentActive('/incasso', undefined, financeChildHrefs)).toBe(true);
-	});
-
-	it('does not highlight a linked parent when a child is active', () => {
+		expect(isSidebarParentActive('/mandaten', undefined, financeChildHrefs)).toBe(false);
+		expect(isSidebarParentActive('/incasso', undefined, financeChildHrefs)).toBe(false);
 		expect(isSidebarParentActive('/teachers/availability', '/teachers', teacherChildHrefs)).toBe(false);
 	});
 
