@@ -13,6 +13,6 @@ console.log('Generating TypeScript types from linked project...');
 await $`supabase gen types typescript --linked > src/integrations/supabase/types.ts`;
 
 console.log('Running Biome check...');
-await $`bunx @biomejs/biome check --write ./src/integrations/supabase/types.ts`;
+await $`biome check --write ./src/integrations/supabase/types.ts`;
 
 console.log('Done.');
