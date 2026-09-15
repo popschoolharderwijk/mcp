@@ -7,22 +7,36 @@ import {
 import * as legacyImportManagerHelpers from '../../../src/lib/settings/legacyImportManagerHelpers';
 
 describe('runLegacyImportTemplateDownload', () => {
-	beforeEach(() => {
-		spyOn(legacyImportManagerHelpers, 'fileToBase64').mockResolvedValue('dGVzdA==');
-		spyOn(legacyImportManagerHelpers, 'downloadBlobFile').mockImplementation(() => {});
-		spyOn(legacyImportManagerHelpers, 'fetchLegacyImportTemplate').mockResolvedValue(new Blob());
-	});
-
 	afterEach(() => {
 		mock.restore();
 	});
 
 	it('returns error when not logged in', async () => {
-		const result = await runLegacyImportTemplateDownload(async () => null);
+		const result = await runLegacyImportTemplateDownload({
+			auth: {
+				getSession: async () => ({ data: { session: null } }),
+			},
+		} as never);
 		expect(result).toEqual({
 			ok: false,
 			title: 'Kon template niet downloaden',
 			message: 'Niet ingelogd',
+		});
+	});
+
+	it('returns error when template invoke fails', async () => {
+		const result = await runLegacyImportTemplateDownload({
+			auth: {
+				getSession: async () => ({ data: { session: { access_token: 'token' } } }),
+			},
+			functions: {
+				invoke: async () => ({ data: null, error: new Error('network') }),
+			},
+		} as never);
+		expect(result).toEqual({
+			ok: false,
+			title: 'Kon template niet downloaden',
+			message: 'network',
 		});
 	});
 });
