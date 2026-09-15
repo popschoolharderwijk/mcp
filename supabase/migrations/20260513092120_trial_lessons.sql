@@ -72,17 +72,8 @@ CREATE POLICY trial_lessons_delete_staff ON public.trial_lessons
   USING (public.is_privileged());
 
 -- ============================================================================
--- Update agenda_events check-constraint and validator to include 'trial_lesson'
+-- Extend agenda source validator for trial_lesson (CHECK is in agenda_events migration)
 -- ============================================================================
-ALTER TABLE public.agenda_events DROP CONSTRAINT IF EXISTS agenda_events_source_check;
-ALTER TABLE public.agenda_events ADD CONSTRAINT agenda_events_source_check CHECK (
-  (source_type = 'manual'::public.agenda_event_source_type AND source_id IS NULL)
-  OR (source_type = 'lesson_agreement'::public.agenda_event_source_type AND source_id IS NOT NULL)
-  OR (source_type = 'project'::public.agenda_event_source_type AND source_id IS NOT NULL)
-  OR (source_type = 'lesson_group'::public.agenda_event_source_type AND source_id IS NOT NULL)
-  OR (source_type = 'trial_lesson'::public.agenda_event_source_type AND source_id IS NOT NULL)
-);
-
 CREATE OR REPLACE FUNCTION public.validate_agenda_event_source()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER

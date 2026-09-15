@@ -553,3 +553,7 @@ BEGIN
   RETURN v_result;
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.get_hours_report(date, date, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_hours_report(date, date, uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_hours_report(date, date, uuid) TO authenticated;

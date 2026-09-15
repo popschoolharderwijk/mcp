@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
     (source_type = 'manual'::public.agenda_event_source_type AND source_id IS NULL)
     OR (source_type = 'lesson_agreement'::public.agenda_event_source_type AND source_id IS NOT NULL)
     OR (source_type = 'project'::public.agenda_event_source_type AND source_id IS NOT NULL)
+    OR (source_type = 'lesson_group'::public.agenda_event_source_type AND source_id IS NOT NULL)
+    OR (source_type = 'trial_lesson'::public.agenda_event_source_type AND source_id IS NOT NULL)
   ),
   CONSTRAINT agenda_events_end_check CHECK (end_date IS NULL OR end_date >= start_date),
   CONSTRAINT agenda_events_time_check CHECK (
