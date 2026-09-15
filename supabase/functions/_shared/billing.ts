@@ -16,6 +16,7 @@ import {
 	resolveStripeSubscriptionId,
 	type YearlyResult,
 } from './billingPure.ts';
+
 import {
 	alignFuturePhasePayloads,
 	collectKeptSchedulePhases,
@@ -23,17 +24,7 @@ import {
 } from './rebuildSchedulePure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 
-export {
-	BILLING_MONTHS_PER_YEAR,
-	buildBillingComputationFromLoadedData,
-	buildPhases,
-	calculateYearly,
-	clampToSchoolYear,
-	getOccurrenceDates,
-	getSchoolYearForDateString,
-	pickAgeTariff,
-} from './billingPure.ts';
-export type { AgeTariff, BillingComputation, LessonFrequency, YearlyResult };
+export type { AgeTariff, YearlyResult };
 
 export interface ScheduleContext {
 	lessonAgreementId: string;
@@ -166,7 +157,7 @@ async function loadBillingLookups(admin: SupabaseClient, agreement: AgreementRow
 }
 
 /** Pure DB lookup + math: returns the current billing computation for an agreement. */
-export async function computeBillingForAgreement(
+async function computeBillingForAgreement(
 	admin: SupabaseClient,
 	lessonAgreementId: string,
 ): Promise<BillingComputation> {

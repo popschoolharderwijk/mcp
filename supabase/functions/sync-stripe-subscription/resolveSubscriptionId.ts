@@ -1,1 +1,1 @@
-export { type ResolvedSubscription, resolveStripeSubscriptionId } from './resolveSubscriptionIdPure.ts';
+export { resolveStripeSubscriptionId } from './resolveSubscriptionIdPure.ts';

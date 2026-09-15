@@ -29,7 +29,7 @@ export function requireAuthHeader(req: Request): string | Response {
 	return authHeader;
 }
 
-export async function parseJsonBody<T>(req: Request): Promise<T | Response> {
+async function parseJsonBody<T>(req: Request): Promise<T | Response> {
 	try {
 		return (await req.json()) as T;
 	} catch {

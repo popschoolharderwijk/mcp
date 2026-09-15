@@ -30,24 +30,57 @@ export interface AgendaEventFormSaveInput {
 	scope: 'single' | 'thisAndFuture' | 'all';
 }
 
-function buildAgendaEventPayload(input: AgendaEventFormSaveInput): AgendaEventInsert {
-	const resolvedSourceType = input.externalSourceType ?? input.event?.source_type ?? 'manual';
-	const resolvedSourceId = input.externalSourceId ?? input.event?.source_id ?? null;
+function padAgendaClockTime(time: string): string {
+	return time.length === 5 ? time : `${time}:00`;
+}
+
+function resolveAgendaEventEndTime(isAllDay: boolean, endTime: string): string | null {
+	return isAllDay ? null : padAgendaClockTime(endTime);
+}
+
+function resolveAgendaRecurringFields(
+	input: AgendaEventFormSaveInput,
+): Pick<AgendaEventInsert, 'recurring' | 'recurring_frequency' | 'recurring_end_date'> {
+	if (!input.recurring) {
+		return { recurring: false, recurring_frequency: null, recurring_end_date: null };
+	}
 	return {
-		source_type: resolvedSourceType,
-		source_id: resolvedSourceId,
-		owner_user_id: input.userId,
+		recurring: true,
+		recurring_frequency: input.recurringFrequency,
+		recurring_end_date: input.recurringEndDate,
+	};
+}
+
+function resolveAgendaEventSource(
+	input: AgendaEventFormSaveInput,
+): Pick<AgendaEventInsert, 'source_type' | 'source_id'> {
+	return {
+		source_type: input.externalSourceType ?? input.event?.source_type ?? 'manual',
+		source_id: input.externalSourceId ?? input.event?.source_id ?? null,
+	};
+}
+
+function resolveAgendaEventCopy(
+	input: AgendaEventFormSaveInput,
+): Pick<AgendaEventInsert, 'title' | 'description' | 'color'> {
+	return {
 		title: input.title.trim(),
 		description: input.description.trim() || null,
-		start_date: input.startDate,
-		start_time: input.startTime + (input.startTime.length === 5 ? '' : ':00'),
-		end_date: input.endDate ?? input.startDate,
-		end_time: input.isAllDay ? null : input.endTime + (input.endTime.length === 5 ? '' : ':00'),
-		is_all_day: input.isAllDay,
-		recurring: input.recurring,
-		recurring_frequency: input.recurring ? input.recurringFrequency : null,
-		recurring_end_date: input.recurring ? input.recurringEndDate : null,
 		color: input.color || null,
+	};
+}
+
+function buildAgendaEventPayload(input: AgendaEventFormSaveInput): AgendaEventInsert {
+	return {
+		...resolveAgendaEventSource(input),
+		owner_user_id: input.userId,
+		...resolveAgendaEventCopy(input),
+		start_date: input.startDate,
+		start_time: padAgendaClockTime(input.startTime),
+		end_date: input.endDate ?? input.startDate,
+		end_time: resolveAgendaEventEndTime(input.isAllDay, input.endTime),
+		is_all_day: input.isAllDay,
+		...resolveAgendaRecurringFields(input),
 	};
 }
 
@@ -70,6 +103,50 @@ async function insertNewAgendaEvent(input: AgendaEventFormSaveInput, payload: Ag
 	await insertParticipants(eventId, input.participantIds);
 }
 
+function participantIdListsDiffer(current: string[], initial: string[]): boolean {
+	const sortedCurrent = [...current].sort();
+	const sortedInitial = [...initial].sort();
+	return sortedCurrent.length !== sortedInitial.length || sortedCurrent.some((id, i) => id !== sortedInitial[i]);
+}
+
+function hasSingleOccurrenceEdits(input: {
+	hasDateOrTimeChange: boolean;
+	hasTitleChange: boolean;
+	hasDescriptionChange: boolean;
+	hasColorChange: boolean;
+	hasParticipantChange: boolean;
+}): boolean {
+	return (
+		input.hasDateOrTimeChange ||
+		input.hasTitleChange ||
+		input.hasDescriptionChange ||
+		input.hasColorChange ||
+		input.hasParticipantChange
+	);
+}
+
+function measureSingleOccurrenceEdits(
+	input: AgendaEventFormSaveInput,
+	event: AgendaEventRow,
+	actualDate: string,
+	actualStartTime: string,
+	originalStartTime: string,
+): {
+	hasDateOrTimeChange: boolean;
+	hasTitleChange: boolean;
+	hasDescriptionChange: boolean;
+	hasColorChange: boolean;
+	hasParticipantChange: boolean;
+} {
+	return {
+		hasDateOrTimeChange: actualDate !== input.occurrenceDate || actualStartTime !== originalStartTime,
+		hasTitleChange: input.title.trim() !== event.title,
+		hasDescriptionChange: (input.description ?? '') !== (event.description ?? ''),
+		hasColorChange: (input.color ?? null) !== (event.color ?? null),
+		hasParticipantChange: participantIdListsDiffer(input.participantIds, input.initialParticipantIds),
+	};
+}
+
 function assertSingleOccurrenceHasChanges(
 	input: AgendaEventFormSaveInput,
 	event: AgendaEventRow,
@@ -86,25 +163,16 @@ function assertSingleOccurrenceHasChanges(
 	const actualStartTime = normalizeTime(input.startTime);
 	const actualDate = input.startDate ?? input.occurrenceDate;
 	if (!actualDate) throw new Error('NO_CHANGES');
-	const sortedCurrent = [...input.participantIds].sort();
-	const sortedInitial = [...input.initialParticipantIds].sort();
-	const hasDateOrTimeChange = actualDate !== input.occurrenceDate || actualStartTime !== originalStartTime;
-	const hasTitleChange = input.title.trim() !== event.title;
-	const hasDescriptionChange = (input.description ?? '') !== (event.description ?? '');
-	const hasColorChange = (input.color ?? null) !== (event.color ?? null);
-	const hasParticipantChange =
-		sortedCurrent.length !== sortedInitial.length || sortedCurrent.some((id, i) => id !== sortedInitial[i]);
-	if (!hasDateOrTimeChange && !hasTitleChange && !hasDescriptionChange && !hasColorChange && !hasParticipantChange) {
-		throw new Error('NO_CHANGES');
-	}
+	const edits = measureSingleOccurrenceEdits(input, event, actualDate, actualStartTime, originalStartTime);
+	if (!hasSingleOccurrenceEdits(edits)) throw new Error('NO_CHANGES');
 	return {
 		originalStartTime,
 		actualStartTime,
 		actualDate,
-		hasTitleChange,
-		hasDescriptionChange,
-		hasColorChange,
-		hasParticipantChange,
+		hasTitleChange: edits.hasTitleChange,
+		hasDescriptionChange: edits.hasDescriptionChange,
+		hasColorChange: edits.hasColorChange,
+		hasParticipantChange: edits.hasParticipantChange,
 	};
 }
 

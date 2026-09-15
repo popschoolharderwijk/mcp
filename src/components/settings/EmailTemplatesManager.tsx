@@ -77,7 +77,7 @@ export function EmailTemplatesManager() {
 							className="w-full text-left"
 							aria-expanded={isOpen}
 						>
-							<CardHeader className="hover:bg-muted/40 transition-colors rounded-t-lg">
+							<CardHeader className="hover:bg-accent transition-colors rounded-t-lg">
 								<div className="flex items-start justify-between gap-4">
 									<div className="flex items-start gap-3 min-w-0">
 										{isOpen ? (

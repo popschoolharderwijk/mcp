@@ -12,8 +12,6 @@ import {
 } from '@/lib/students/lessonAgreementDialogHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 
-export type { LessonAgreementWithTeacher as LessonAgreement };
-
 interface LessonAgreementDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;

@@ -16,10 +16,16 @@ jobs:
         with:
           persist-credentials: true
 
-      - name: Setup Biome
-        uses: biomejs/setup-biome@v2
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          version: latest
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Add local binaries to PATH
+        run: echo "$PWD/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Run Biome and capture output
         id: biome

@@ -17,7 +17,7 @@ type SignupValidationResult =
 	| { ok: false; response: Response }
 	| { ok: true; body: SignupRequest; sepa: SepaFields; optionId: string | null };
 
-export async function validateSubmitSignupRequest(
+async function validateSubmitSignupRequest(
 	supabase: ReturnType<typeof createClient>,
 	body: SignupRequest,
 ): Promise<SignupValidationResult> {
@@ -33,7 +33,7 @@ export async function validateSubmitSignupRequest(
 	return { ok: true, body, sepa: sepaResult.sepa, optionId: lessonResult.optionId };
 }
 
-export async function persistSignupRequest(
+async function persistSignupRequest(
 	supabase: ReturnType<typeof createClient>,
 	validated: Extract<SignupValidationResult, { ok: true }>,
 ): Promise<Response> {

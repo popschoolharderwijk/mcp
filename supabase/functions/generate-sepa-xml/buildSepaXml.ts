@@ -2,13 +2,6 @@ import { buildPaymentInfoBlocks, groupItemsBySequenceType } from './buildSepaXml
 import type { BatchRow, ItemRow, SepaXmlContext } from './types.ts';
 import { fmtAmount, xmlEscape } from './xmlPure.ts';
 
-export {
-	buildPaymentInfoBlock,
-	buildPaymentInfoBlocks,
-	buildTransactionBlock,
-	groupItemsBySequenceType,
-} from './buildSepaXmlPure.ts';
-
 export function buildSepaXml(
 	settings: SepaXmlContext['settings'],
 	batch: BatchRow,

@@ -1,8 +1,6 @@
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
-export const NAV_GAP = '1rem';
-export const BEHEER_OPEN_KEY = 'sidebar:beheer-open';
-export const FINANCE_OPEN_KEY = 'sidebar:finance-open';
+export const NAV_GAP = '0.375rem';
 
 export const adminOperationalNavItems = [
 	{ href: '/agreements', label: NAV_LABELS.agreements, icon: NAV_ICONS.agreements },
@@ -29,8 +27,34 @@ export const adminNavItems = [
 ];
 
 export const adminHrefs = [...adminNavItems, ...financeNavItems].map((item) => item.href);
-export const financeHrefs = financeNavItems.map((item) => item.href);
 
-export function isPathInGroup(pathname: string, hrefs: string[]): boolean {
+export const teacherChildNavItems = [
+	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },
+];
+
+export function isPathInGroup(pathname: string, hrefs: readonly string[]): boolean {
 	return hrefs.some((href) => pathname === href || pathname.startsWith(`${href}/`));
+}
+
+/** A parent is selected only on its own page, never when an explicit child route is active. */
+export function isSidebarParentActive(
+	pathname: string,
+	href: string | undefined,
+	childHrefs: readonly string[] = [],
+): boolean {
+	if (!href || isPathInGroup(pathname, childHrefs)) return false;
+	if (href === '/') return pathname === '/';
+	return isPathInGroup(pathname, [href]);
+}
+
+export function sidebarNavItemStateClass(isActive: boolean): string {
+	return isActive
+		? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+		: 'text-sidebar-foreground hover:bg-accent hover:text-accent-foreground';
+}
+
+/** Toggle-only parents always flip; linked parents toggle only when already on that page. */
+export function nextSidebarGroupOpen(pathname: string, href: string | undefined, currentlyOpen: boolean): boolean {
+	if (!href || pathname === href) return !currentlyOpen;
+	return true;
 }

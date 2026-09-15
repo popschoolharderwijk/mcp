@@ -1,16 +1,18 @@
-import { LuUsers } from 'react-icons/lu';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import type { DashboardStudent } from '@/hooks/useDashboardData';
 import { formatDateTimeShort } from '@/lib/date/date-format';
+
+const StudentsIcon = NAV_ICONS.students;
 
 interface RecentStudentsProps {
 	students: DashboardStudent[];
 	isLoading?: boolean;
+	title?: string;
 }
 
 function getStatusBadge(status: string) {
@@ -26,13 +28,17 @@ function getStatusBadge(status: string) {
 	}
 }
 
-export function RecentStudents({ students, isLoading = false }: RecentStudentsProps) {
+export function RecentStudents({
+	students,
+	isLoading = false,
+	title = `Recente ${NAV_LABELS.students.toLowerCase()}`,
+}: RecentStudentsProps) {
 	const navigate = useNavigate();
 
 	if (isLoading) {
 		return (
 			<DashboardListCardSkeleton
-				icon={<LuUsers className="h-5 w-5 text-primary" />}
+				icon={<StudentsIcon className="h-5 w-5 text-primary" />}
 				titleWidthClass="w-32"
 				itemKeyPrefix="student-skeleton"
 			/>
@@ -41,26 +47,23 @@ export function RecentStudents({ students, isLoading = false }: RecentStudentsPr
 
 	return (
 		<Card>
-			<CardHeader className="flex flex-row items-center justify-between pb-2">
+			<CardHeader className="pb-2">
 				<div className="flex items-center gap-2">
-					<LuUsers className="h-5 w-5 text-primary" />
-					<CardTitle className="text-base font-semibold">Recente Leerlingen</CardTitle>
+					<StudentsIcon className="h-5 w-5 text-primary" />
+					<CardTitle className="text-base font-semibold">{title}</CardTitle>
 				</div>
-				<Button variant="ghost" size="sm" asChild>
-					<Link to="/students">Alle leerlingen</Link>
-				</Button>
 			</CardHeader>
 			<CardContent>
 				{students.length === 0 ? (
-					<p className="text-sm text-muted-foreground">Geen leerlingen gevonden.</p>
+					<p className="text-sm text-muted-foreground">Geen {NAV_LABELS.students.toLowerCase()} gevonden.</p>
 				) : (
-					<div className="space-y-3">
+					<div className="space-y-1">
 						{students.map((student) => (
 							<button
 								key={student.user_id}
 								type="button"
-								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-muted/50 cursor-pointer transition-colors text-left"
-								onClick={() => navigate('/students')}
+								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-accent cursor-pointer transition-colors text-left"
+								onClick={() => navigate(`/students/${student.user_id}`)}
 							>
 								<div className="flex items-center gap-3">
 									<Avatar className="h-9 w-9">

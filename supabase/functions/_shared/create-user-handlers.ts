@@ -15,15 +15,15 @@ import {
 } from './createUserHandlersPure.ts';
 import { jsonResponse } from './http.ts';
 
-export type CreateUserRequest = CreateUserRequestBody;
+type CreateUserRequest = CreateUserRequestBody;
 
-export function validateCreateUserRequest(body: CreateUserRequest): Response | null {
+function validateCreateUserRequest(body: CreateUserRequest): Response | null {
 	if (!body.email) return jsonResponse(400, { error: 'Email is verplicht' });
 	if (!isValidCreateUserEmail(body.email)) return jsonResponse(400, { error: 'Ongeldig e-mailadres' });
 	return null;
 }
 
-export function authorizeCreateUserRole(
+function authorizeCreateUserRole(
 	requesterRole: string | null | undefined,
 	targetRole: CreateUserRequest['role'],
 ): Response | null {
@@ -36,14 +36,14 @@ export function authorizeCreateUserRole(
 	return null;
 }
 
-export function mapCreateUserError(message: string): Response {
+function mapCreateUserError(message: string): Response {
 	if (isDuplicateCreateUserError(message)) {
 		return jsonResponse(409, { error: 'Een gebruiker met dit e-mailadres bestaat al.' });
 	}
 	return jsonResponse(400, { error: message });
 }
 
-export async function fetchRequesterRole(
+async function fetchRequesterRole(
 	supabaseUser: SupabaseClient,
 	userId: string,
 ): Promise<{ role: string | null; error: Response | null }> {
@@ -59,7 +59,7 @@ export async function fetchRequesterRole(
 	return { role: rolesCheck.role, error: null };
 }
 
-export async function updateCreatedUserPhone(
+async function updateCreatedUserPhone(
 	supabaseAdmin: SupabaseClient,
 	userId: string,
 	phoneNumber: string,
@@ -74,7 +74,7 @@ export async function updateCreatedUserPhone(
 	}
 }
 
-export async function assignUserRole(
+async function assignUserRole(
 	supabaseUser: SupabaseClient,
 	userId: string,
 	role: NonNullable<CreateUserRequest['role']>,
@@ -90,7 +90,7 @@ export async function assignUserRole(
 	return jsonResponse(200, buildCreateUserRoleWarningResponse(userId, roleInsertError.message));
 }
 
-export function createCreateUserClients(authHeader: string): {
+function createCreateUserClients(authHeader: string): {
 	supabaseUser: SupabaseClient;
 	supabaseAdmin: SupabaseClient;
 } {
@@ -106,7 +106,7 @@ export function createCreateUserClients(authHeader: string): {
 	return { supabaseUser, supabaseAdmin };
 }
 
-export async function createAuthUserRecord(
+async function createAuthUserRecord(
 	supabaseAdmin: SupabaseClient,
 	body: CreateUserRequest,
 ): Promise<{ user: { id: string; email?: string } | null; error: Response | null }> {

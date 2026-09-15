@@ -1,12 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { canOpenPortalForOtherUser, resolvePortalForOtherUserForbiddenResponse } from './validationPure.ts';
 
-export type { CustomerPortalBody } from './validationPure.ts';
-export {
-	parseCustomerPortalBody,
-	validateCustomerPortalUserId,
-} from './validationPure.ts';
-
 export async function resolveCustomerPortalTargetUserId(
 	userClient: SupabaseClient,
 	requestingUserId: string,

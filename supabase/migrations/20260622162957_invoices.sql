@@ -164,3 +164,54 @@ CREATE POLICY "invoices_storage_student_select"
     bucket_id = 'invoices'
     AND (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- Extend cleanup_student_if_no_agreements: block auto-delete when billing/trial data remains
+CREATE OR REPLACE FUNCTION public.cleanup_student_if_no_agreements(_user_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  IF public.current_user_id() IS NOT NULL
+     AND public.current_user_id() IS DISTINCT FROM _user_id
+     AND NOT public.is_privileged() THEN
+    RAISE EXCEPTION 'Permission denied';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.lesson_agreements WHERE student_user_id = _user_id
+  ) THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.invoices WHERE student_user_id = _user_id) THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.sepa_mandates WHERE student_user_id = _user_id) THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.incasso_batch_items WHERE student_user_id = _user_id) THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.stripe_customers WHERE user_id = _user_id) THEN
+    RETURN;
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM public.trial_lessons WHERE student_user_id = _user_id) THEN
+    RETURN;
+  END IF;
+
+  DELETE FROM public.students WHERE user_id = _user_id;
+END;
+$$;
+
+ALTER FUNCTION public.cleanup_student_if_no_agreements(UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) TO service_role;

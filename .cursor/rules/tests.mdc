@@ -2,6 +2,32 @@
 alwaysApply: true
 ---
 
+* **Do not run the full test suite** (`bun test`, `bun test code`, `bun check:ci`) after ordinary edits. The user runs that after a large refactor, or when they ask explicitly (including `/finalize` / quality gates).
+* **New or changed tests you wrote this turn:** run only those files, e.g. `bun test tests/code/layout/sidebar-config.test.ts`.
+* **Never** use `bun check:ci` as a default after-change habit — it includes `bun test code`.
+
+## What to test (quality bar)
+
+Tests exist to lock **behavior**. Coverage, CRAP, or Fallow scores are not a reason to add a test.
+
+A reader must learn something the type signature does not already say: inputs → expected outputs/side-effects for real branches (edges, errors, invariants). Prefer fewer strong tests over many trivial files that restate the implementation.
+
+### NEVER (coverage theater)
+
+* ❌ Tests written only to satisfy Fallow (coverage, CRAP, complexity) without asserting non-trivial behavior
+* ❌ Tests that only prove a function exists, returns the input unchanged, or returns a hardcoded constant with no branch under test
+* ❌ Tests of identity / passthrough helpers (`return params`, `return loading`, `return isEditing`, `return hasAccess`)
+* ❌ Tests of single-property getters / constant returners (`return row.published_at`, `return 'avatar-upload'`)
+* ❌ Tests of boolean renames like `shouldShowX(flag)` that only check `true→true` / `false→false`
+* ❌ One shallow happy-path test on a complex helper just to paint coverage while real branches stay unasserted
+* ❌ Extracting a tiny helper plus a trivial test instead of splitting a complex function when **complexity** (not coverage) is the problem
+
+### ALWAYS
+
+* ✅ Test logic that already has branches, mapping, validation, or domain rules — or test at the caller if the helper is trivial
+* ✅ If Fallow/CRAP needs coverage, assert outcomes of existing (or meaningfully extracted) logic — not `f(x) === x`
+* ✅ Smell check: if you inlined the helper back into the caller, would the test still be worth keeping? If no → do not extract; refactor or test at the right layer
+
 * **Use English for test names**: All `describe()` and `it()` strings must be in English. Do not use Dutch or other languages for suite and test names.
 * When writing tests, never start a test by deleting data to get rid of potential dirty database states. A dirty database state means some other test didn't properly clean up. THAT needs to be fixed instead.
 * **When tests fail due to dirty database state**: If a test fails because of leftover data from a previous test run (e.g., duplicate key violations, unexpected data), ALWAYS suggest running `supabase db reset --linked` to restore the database to a clean state. NEVER try to work around dirty state by adding cleanup code at the start of tests or checking for existing data before creating test data.

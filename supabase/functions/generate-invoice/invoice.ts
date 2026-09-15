@@ -4,24 +4,11 @@ import { hasAdminRole, isServiceRoleToken, stripBearerToken } from './invoicePur
 
 export {
 	buildInvoiceEmailDeliveryContent,
-	buildInvoiceEmailHtml,
-	buildInvoiceEmailSubject,
-	buildInvoiceLines,
-	buildInvoicePaymentNote,
 	buildResendInvoiceEmailPayload,
-	buildStudentInfo,
 	canSendInvoiceEmail,
 	computeDueDate,
-	computeTotals,
-	filterStudentItems,
-	getCollectionDate,
-	hasAdminRole,
-	isServiceRoleToken,
 	readInvoiceMailEnv,
-	resolveAgeCategory,
-	resolveInvoiceEmailRecipient,
 	shouldRecordInvoiceEmailSent,
-	stripBearerToken,
 } from './invoicePure.ts';
 
 export async function verifyAdminAccess(

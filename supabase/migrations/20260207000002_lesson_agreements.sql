@@ -413,16 +413,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- TODO: Add checks for other relationships before deleting:
-  -- - payments (if exists)
-  -- - attendance records (if exists)
-  -- - progress/grade records (if exists)
-  -- - any other tables that reference students
-  --
-  -- Example:
-  -- IF EXISTS (SELECT 1 FROM public.payments WHERE student_user_id = _user_id) THEN
-  --   RETURN;
-  -- END IF;
+  -- Billing and trial guards are added in 20260622162957_invoices.sql once those tables exist.
 
   -- No agreements and no other dependencies found, safe to delete
   DELETE FROM public.students

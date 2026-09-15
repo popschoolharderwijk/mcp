@@ -16,7 +16,7 @@ Beide gebruiken dezelfde SMTP-provider (Resend).
 1. Open [Supabase Dashboard](https://supabase.com/dashboard) → project (dev/test/prod).
 2. **Authentication → Email → Magic Link**.
 3. Plak de inhoud van `docs/email-templates/magic-link.html` in het Body-veld.
-4. Subject: `Je inloglink`.
+4. Subject: `[DEV] Je inloglink voor de Mplify Community Portal` (mcp-dev / mcp-test) of `Je inloglink` (productie). Bron: `supabase/config.toml`.
 
 > ⚠️ Doe dit voor **elke** Supabase omgeving (mcp-dev, mcp-test, production). De templates worden niet automatisch gesynchroniseerd.
 

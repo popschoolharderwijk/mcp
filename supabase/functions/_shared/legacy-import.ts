@@ -1,12 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-export {
-	resolveLegacyPersonUserId,
-	upsertLegacyProfile,
-	upsertLegacyRole,
-} from './legacyImportPure.ts';
+export { resolveLegacyPersonUserId } from './legacyImportPure.ts';
 
-export interface ImportSummary {
+interface ImportSummary {
 	tab: string;
 	created: number;
 	updated: number;

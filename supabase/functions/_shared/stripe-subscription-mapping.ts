@@ -1,4 +1,4 @@
-export const ALLOWED_SUBSCRIPTION_STATUSES = new Set([
+const ALLOWED_SUBSCRIPTION_STATUSES = new Set([
 	'trialing',
 	'active',
 	'past_due',

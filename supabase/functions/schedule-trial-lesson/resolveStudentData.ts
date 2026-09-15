@@ -7,12 +7,6 @@ import {
 } from './resolveStudentDataPure.ts';
 import type { Body, ResolvedStudentData, SignupRequestRow } from './types.ts';
 
-export {
-	fromRequestBody,
-	fromSignupRequest,
-	isSignupRequestEligibleForTrialScheduling,
-} from './resolveStudentDataPure.ts';
-
 export async function resolveStudentData(
 	admin: SupabaseClient,
 	body: Body,

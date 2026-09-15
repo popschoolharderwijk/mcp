@@ -28,6 +28,40 @@ function resolveAgendaEventTypeFlags(
 	};
 }
 
+function canDeleteAgendaEvent(input: {
+	isManualEvent: boolean;
+	isProjectEvent: boolean;
+	eventId: string | undefined;
+	onDelete?: GetAgendaEventFormPermissionsParams['onDelete'];
+	isCancelledEvent: boolean;
+}): boolean {
+	return (
+		(input.isManualEvent || input.isProjectEvent) && !!input.eventId && !!input.onDelete && !input.isCancelledEvent
+	);
+}
+
+function canCancelAgendaLesson(input: {
+	isLessonEvent: boolean;
+	isLessonGroupEvent: boolean;
+	eventId: string | undefined;
+	onCancelLesson?: GetAgendaEventFormPermissionsParams['onCancelLesson'];
+	onOpenCancelConfirm?: GetAgendaEventFormPermissionsParams['onOpenCancelConfirm'];
+}): boolean {
+	return (
+		(input.isLessonEvent || input.isLessonGroupEvent) &&
+		!!input.eventId &&
+		!!(input.onCancelLesson || input.onOpenCancelConfirm)
+	);
+}
+
+function canMarkTrialLessonCompleted(
+	isTrialEvent: boolean,
+	isCancelledEvent: boolean,
+	onMarkTrialCompleted?: GetAgendaEventFormPermissionsParams['onMarkTrialCompleted'],
+): boolean {
+	return isTrialEvent && !isCancelledEvent && !!onMarkTrialCompleted;
+}
+
 function resolveAgendaEventActionFlags(input: {
 	event: AgendaEventRow | null | undefined;
 	deviationInfo?: DeviationInfo | null;
@@ -42,13 +76,22 @@ function resolveAgendaEventActionFlags(input: {
 	const { isManualEvent, isProjectEvent, isLessonEvent, isLessonGroupEvent, isTrialEvent } = input.typeFlags;
 	return {
 		isCancelledEvent,
-		canDelete: (isManualEvent || isProjectEvent) && !!input.event?.id && !!input.onDelete && !isCancelledEvent,
+		canDelete: canDeleteAgendaEvent({
+			isManualEvent,
+			isProjectEvent,
+			eventId: input.event?.id,
+			onDelete: input.onDelete,
+			isCancelledEvent,
+		}),
 		canRevert: !!input.deviationInfo && !!input.onRevert,
-		canCancelLesson:
-			(isLessonEvent || isLessonGroupEvent) &&
-			!!input.event?.id &&
-			!!(input.onCancelLesson || input.onOpenCancelConfirm),
-		canMarkTrialCompleted: isTrialEvent && !isCancelledEvent && !!input.onMarkTrialCompleted,
+		canCancelLesson: canCancelAgendaLesson({
+			isLessonEvent,
+			isLessonGroupEvent,
+			eventId: input.event?.id,
+			onCancelLesson: input.onCancelLesson,
+			onOpenCancelConfirm: input.onOpenCancelConfirm,
+		}),
+		canMarkTrialCompleted: canMarkTrialLessonCompleted(isTrialEvent, isCancelledEvent, input.onMarkTrialCompleted),
 	};
 }
 

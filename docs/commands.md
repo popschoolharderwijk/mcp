@@ -71,7 +71,7 @@ supabase <command> --linked
 supabase db push --linked
 
 # Push config naar remote dev
-supabase config push --linked
+supabase config push 
 
 # Generate types voor gelinkte project
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
@@ -164,14 +164,18 @@ bun test
 
 ```bash
 # TypeScript/JS (Biome)
-biome ci .                    # Check
-biome check --write .         # Fix
+bun run check                 # Check (geen writes)
+bun run fix                   # Fix (format + lint autofix)
+
+# Quality gates (CI)
+bun run check:ci              # Biome CI + tsc + code tests
+bun run check:fallow          # Fallow (dead code, duplication, complexity)
 
 # SQL migraties (Squawk)
 bun run lint:sql
 
-# PL/pgSQL functies (tegen database)
-supabase db lint --linked
+# PL/pgSQL functies (tegen database; warnings én errors falen)
+bun run lint:db
 ```
 
 > 📖 Zie [cicd-workflows.md](./cicd-workflows.md#linting) voor uitgebreide documentatie over alle linters.

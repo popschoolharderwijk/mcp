@@ -282,4 +282,63 @@ describe('RLS: students automatic management via lesson agreements', () => {
 		const { data: studentsAfter } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
 		expect(studentsAfter).toHaveLength(0);
 	});
+
+	it('student is not auto-deleted when an invoice remains after agreements are removed', async () => {
+		const db = await createClientAs(TestUsers.STAFF_ONE);
+		const invoiceNumber = `TEST-GUARD-${crypto.randomUUID()}`;
+
+		const agreement: LessonAgreementInsert = {
+			student_user_id: studentCUserId,
+			teacher_user_id: teacherAliceUserId,
+			lesson_type_id: lessonTypeId,
+			day_of_week: 2,
+			start_time: '09:00',
+			start_date: '2024-01-01',
+			is_active: true,
+			duration_minutes: 30,
+			frequency: 'weekly',
+			price_per_lesson: 30,
+		};
+
+		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(agreement).select();
+		expect(insertError).toBeNull();
+		expect(inserted).toHaveLength(1);
+
+		const { error: invoiceError } = await dbNoRLS.from('invoices').insert({
+			invoice_number: invoiceNumber,
+			student_user_id: studentCUserId,
+			due_date: '2026-12-31',
+			amount_excl_btw_cents: 1000,
+			btw_amount_cents: 0,
+			amount_total_cents: 1000,
+			status: 'issued',
+		});
+		expect(invoiceError).toBeNull();
+
+		const { error: deleteError } = await db
+			.from('lesson_agreements')
+			.delete()
+			.eq('student_user_id', studentCUserId);
+		expect(deleteError).toBeNull();
+
+		const { data: studentsAfterAgreementDelete } = await dbNoRLS
+			.from('students')
+			.select('*')
+			.eq('user_id', studentCUserId);
+		expect(studentsAfterAgreementDelete).toHaveLength(1);
+
+		const { error: deleteInvoiceError } = await dbNoRLS
+			.from('invoices')
+			.delete()
+			.eq('invoice_number', invoiceNumber);
+		expect(deleteInvoiceError).toBeNull();
+
+		const { error: cleanupError } = await dbNoRLS.rpc('cleanup_student_if_no_agreements', {
+			_user_id: studentCUserId,
+		});
+		expect(cleanupError).toBeNull();
+
+		const { data: studentsAfterCleanup } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
+		expect(studentsAfterCleanup).toHaveLength(0);
+	});
 });

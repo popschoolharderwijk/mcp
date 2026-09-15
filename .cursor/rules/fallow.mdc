@@ -26,9 +26,14 @@ When fallow reports dead code, duplication, or complexity: **fix the underlying 
 
 ## NEVER do this (thresholds / config)
 
-* ❌ Editing `.fallowrc.json` (or any other fallow config) to relax thresholds, raise limits, turn rules off, or add overrides — just to make checks pass
-* ❌ Proposing or applying config changes (complexity caps, duplication thresholds, `ignorePatterns`, `health.ignore`, per-file rule overrides, etc.) without the user explicitly asking for that
-* Threshold and policy changes are **project decisions for the user**, not a workaround when fallow reports issues. Fix the code instead; if a threshold truly needs changing, explain why and let the user decide.
+Config is not a fix. Do **not** edit Fallow (or Biome) settings to make a gate green — not during `/finalize`, not to shrink a finding list, not as a “temporary” ignore.
+
+* ❌ Editing `.fallowrc.json` (or any other fallow config) without the user **explicitly asking for that exact change**
+* ❌ Adding or widening `ignorePatterns`, `health.ignore`, `overrides`, rule `off`/`warn`, complexity/`maxCrap` caps, duplication thresholds, or baselines — just to hide findings
+* ❌ Treating “tests also get CRAP scores” (or similar noise) as license to ignore a path. Ask first. Fix code, or wait.
+* Threshold and policy changes are **project decisions for the user**. Explain the trade-off; do not apply. If the user asked for one specific config edit (e.g. drop `tests/**` from `ignorePatterns`), do **only** that edit.
+
+Applies even when remaining findings sit in `tests/**`. Escalate; do not widen ignore.
 
 ## Always do this instead (findings)
 
@@ -39,7 +44,7 @@ When fallow reports dead code, duplication, or complexity: **fix the underlying 
 
 ## Always do this instead (CLI)
 
-* Run from project root with **`bunx fallow <command>`** (or `bun run fallow <command>` if scripted)
+* Run from project root with **`bunx fallow <command>`** (or `bun run check:fallow` for the full gate)
 * Use JSON output when parsing results: `bunx fallow dead-code --format json --quiet`
 * Before `fix`, always dry-run first: `bunx fallow fix --dry-run --format json --quiet`
 * Apply fixes only after review: `bunx fallow fix --yes --format json --quiet`

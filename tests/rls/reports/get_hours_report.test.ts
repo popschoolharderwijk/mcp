@@ -95,22 +95,31 @@ type LessonAgg = {
 	total_minutes: number;
 };
 
+function matchesFrequencyOnDate(frequency: string, startDate: string, occurrenceIso: string): boolean {
+	if (frequency === 'biweekly') return calendarDaysBetween(startDate, occurrenceIso) % 14 === 0;
+	if (frequency === 'monthly') return calendarDaysBetween(startDate, occurrenceIso) % 28 === 0;
+	return true;
+}
+
+function agreementOccursForTeacherOnDate(
+	la: (typeof fixtures.allLessonAgreements)[number],
+	teacherUserId: string,
+	occurrenceIso: string,
+	dow: number,
+): boolean {
+	if (la.teacher_user_id !== teacherUserId) return false;
+	if (la.day_of_week !== dow) return false;
+	if (occurrenceIso < la.start_date) return false;
+	if (la.end_date != null && occurrenceIso > la.end_date) return false;
+	return matchesFrequencyOnDate(la.frequency, la.start_date, occurrenceIso);
+}
+
 /** Mirrors get_hours_report agreement_occurrences + aggregation for one calendar day (same frequency rules as SQL). */
 function expectedLessonAggregatesForTeacherOnDate(teacherUserId: string, occurrenceIso: string): LessonAgg[] {
 	const dow = new Date(`${occurrenceIso}T12:00:00.000Z`).getUTCDay();
 	const map = new Map<string, LessonAgg>();
 	for (const la of fixtures.allLessonAgreements) {
-		if (la.teacher_user_id !== teacherUserId) continue;
-		if (la.day_of_week !== dow) continue;
-		if (occurrenceIso < la.start_date) continue;
-		if (la.end_date != null && occurrenceIso > la.end_date) continue;
-		if (la.frequency === 'biweekly') {
-			const days = calendarDaysBetween(la.start_date, occurrenceIso);
-			if (days % 14 !== 0) continue;
-		} else if (la.frequency === 'monthly') {
-			const days = calendarDaysBetween(la.start_date, occurrenceIso);
-			if (days % 28 !== 0) continue;
-		}
+		if (!agreementOccursForTeacherOnDate(la, teacherUserId, occurrenceIso, dow)) continue;
 		const age = ageCategoryOnOccurrenceDate(la.student_user_id, occurrenceIso);
 		const key = `${la.lesson_type_id}:${age}`;
 		const cur = map.get(key) ?? {

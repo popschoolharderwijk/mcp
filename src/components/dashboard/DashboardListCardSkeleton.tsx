@@ -24,7 +24,7 @@ export function DashboardListCardSkeleton({
 				</div>
 			</CardHeader>
 			<CardContent>
-				<div className="space-y-4">
+				<div className="space-y-2">
 					{[1, 2, 3].map((n) => (
 						<div key={`${itemKeyPrefix}-${n}`} className="flex items-center gap-4">
 							<Skeleton className="h-10 w-10 rounded-full" />

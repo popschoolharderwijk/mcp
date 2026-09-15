@@ -21,7 +21,7 @@ function ProjectDomainsList({ domains, onEdit, onDelete }: ProjectDomainsListPro
 			{domains.map((domain) => (
 				<li
 					key={domain.id}
-					className="flex items-center justify-between gap-2 px-4 py-1.5 text-sm hover:bg-muted/50"
+					className="flex items-center justify-between gap-2 px-4 py-1.5 text-sm hover:bg-accent"
 				>
 					<span className="truncate">{domain.name}</span>
 					<div className="flex shrink-0 gap-0.5">

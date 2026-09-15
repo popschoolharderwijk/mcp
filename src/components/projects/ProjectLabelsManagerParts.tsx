@@ -24,7 +24,7 @@ function ProjectLabelsList({ labels, onEdit, onDelete }: ProjectLabelsListProps)
 			{labels.map((label) => (
 				<li
 					key={label.id}
-					className="flex items-center justify-between gap-2 px-4 py-1.5 text-sm hover:bg-muted/50"
+					className="flex items-center justify-between gap-2 px-4 py-1.5 text-sm hover:bg-accent"
 				>
 					<div className="flex min-w-0 items-center gap-1.5">
 						<span className="truncate">{label.name}</span>

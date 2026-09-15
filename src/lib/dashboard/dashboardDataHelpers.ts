@@ -9,6 +9,7 @@ export interface DashboardStats {
 	totalStudents: number;
 	activeAgreements: number;
 	inactiveAgreements: number;
+	openSignupRequests: number;
 	activeTeachers: number;
 	availableSlots: number;
 	activeLessonTypes: number;
@@ -35,6 +36,7 @@ export interface DashboardCountResults {
 	studentsCount: number | null;
 	activeAgreementsCount: number | null;
 	totalAgreementsCount: number | null;
+	openSignupRequestsCount: number | null;
 	teachersCount: number | null;
 	slotsCount: number | null;
 	lessonTypesCount: number | null;
@@ -51,6 +53,7 @@ export function buildDashboardStats(counts: DashboardCountResults): DashboardSta
 		totalStudents: counts.studentsCount ?? 0,
 		activeAgreements: counts.activeAgreementsCount ?? 0,
 		inactiveAgreements: (counts.totalAgreementsCount ?? 0) - (counts.activeAgreementsCount ?? 0),
+		openSignupRequests: counts.openSignupRequestsCount ?? 0,
 		activeTeachers: counts.teachersCount ?? 0,
 		availableSlots: counts.slotsCount ?? 0,
 		activeLessonTypes: counts.lessonTypesCount ?? 0,

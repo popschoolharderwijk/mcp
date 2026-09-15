@@ -17,7 +17,7 @@ export interface KeptSchedulePhaseResult {
 	firstFutureIndex: number;
 }
 
-export function mapSchedulePhaseItem(it: SchedulePhaseItemLike): {
+function mapSchedulePhaseItem(it: SchedulePhaseItemLike): {
 	price: string;
 	quantity: number;
 } {
@@ -34,7 +34,7 @@ export function resolveSchedulePhasePaymentMethod(
 	return dpm?.id;
 }
 
-export function buildKeptSchedulePhasePayload(phase: SchedulePhaseLike): Record<string, unknown> {
+function buildKeptSchedulePhasePayload(phase: SchedulePhaseLike): Record<string, unknown> {
 	const paymentMethodId = resolveSchedulePhasePaymentMethod(phase.default_payment_method);
 	return {
 		start_date: phase.start_date,

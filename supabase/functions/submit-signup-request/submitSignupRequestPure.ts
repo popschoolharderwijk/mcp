@@ -18,11 +18,11 @@ export function buildSignupSuccessResponse(id: string): Response {
 	});
 }
 
-export function resolveSignupOptionsResponse(): Response {
+function resolveSignupOptionsResponse(): Response {
 	return new Response(null, { status: 204, headers: corsHeaders });
 }
 
-export function resolveSignupMethodNotAllowedResponse(): Response {
+function resolveSignupMethodNotAllowedResponse(): Response {
 	return new Response(JSON.stringify({ error: 'Method not allowed' }), {
 		status: 405,
 		headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -100,7 +100,7 @@ async function resolveFromSchedule(
 	};
 }
 
-export async function resolveFromLessonAgreement(
+async function resolveFromLessonAgreement(
 	admin: SupabaseClient,
 	stripe: StripeScheduleClient,
 	lessonAgreementId: string,

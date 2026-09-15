@@ -1,5 +1,4 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import type Stripe from 'npm:stripe@17.5.0';
 import {
 	cancelScheduleIfActive,
 	createForcedSubscription,
@@ -53,5 +52,3 @@ export async function executeForceStartSubscription(
 
 	return { ok: true, payload: buildForceStartSuccessPayload(subscription) };
 }
-
-export type ForceStartStripeSchedule = Stripe.SubscriptionSchedule;

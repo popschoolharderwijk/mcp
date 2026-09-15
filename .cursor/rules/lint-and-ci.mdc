@@ -2,6 +2,7 @@
 alwaysApply: true
 ---
 
-* Prefer **ReadLints** for quick feedback when editing files; for a full check/format use the commands below.
-* After bigger changes: run **`bun check`** (applies auto-fixes), then **`bun check:ci`** (lint + typecheck, no fixes). If ci fails, fix the reported errors and repeat until `bun check:ci` passes.
-* When making an implementation plan, always include as final step: run `bun check:ci`, then `bun check:ci`, and fix until `bun check:ci` passes.
+* Prefer **ReadLints** for quick feedback when editing files.
+* For format/lint on your edits, `bun run fix` is enough (`biome check --write`). `bun run check` is read-only and does not write. Do **not** follow either with `bun check:ci` unless the user asks — that script runs the full `bun test code` suite.
+* Full `bun check:ci` (or any full test run) only when the user explicitly requests it, or via `/finalize` / quality gates they invoked.
+* **Never** edit `biome.json` or Biome ignore/rule severity to silence a finding — same policy as Fallow config in `fallow.mdc`.

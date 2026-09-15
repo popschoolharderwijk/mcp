@@ -72,7 +72,7 @@ export function buildLessonGroupColumns(navigate: NavigateFunction): DataTableCo
 										event.stopPropagation();
 										navigate(`/students?search=${encodeURIComponent(label)}`);
 									}}
-									className="rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-muted/70 hover:underline"
+									className="rounded-md bg-muted px-2 py-0.5 text-xs hover:bg-accent hover:underline"
 									title="Bekijk leerling"
 								>
 									{label}

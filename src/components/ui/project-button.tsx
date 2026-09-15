@@ -68,7 +68,7 @@ export function ProjectButton({
 					{value ? (
 						<button
 							type="button"
-							className="ml-1 rounded p-0.5 hover:bg-muted focus:outline-none focus:ring-1 focus:ring-ring"
+							className="ml-1 rounded p-0.5 hover:bg-accent focus:outline-none focus:ring-1 focus:ring-ring"
 							onPointerDown={(e) => e.stopPropagation()}
 							onClick={(e) => {
 								e.preventDefault();

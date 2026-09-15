@@ -14,7 +14,7 @@ import {
 } from './importPeoplePure.ts';
 import type { ImportSummary, RowError, StudentImportRow, TeacherImportRow } from './types.ts';
 
-export async function findAuthUserByEmail(admin: SupabaseClient, email: string): Promise<string | null> {
+async function findAuthUserByEmail(admin: SupabaseClient, email: string): Promise<string | null> {
 	const perPage = 1000;
 	for (let page = 1; page <= 20; page++) {
 		const found = await findAuthUserIdOnPage(admin, email, page, perPage);
@@ -38,7 +38,7 @@ async function findAuthUserIdOnPage(
 	return { status: 'continue' };
 }
 
-export async function ensureAuthUser(
+async function ensureAuthUser(
 	admin: SupabaseClient,
 	email: string,
 	firstName: string | null | undefined,

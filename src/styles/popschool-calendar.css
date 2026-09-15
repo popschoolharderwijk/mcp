@@ -35,7 +35,7 @@
 	& .rbc-nav-prev,
 	& .rbc-nav-next {
 		@apply rounded-full border-0 bg-transparent p-1.5 text-muted-foreground transition-colors;
-		@apply hover:bg-muted hover:text-foreground;
+		@apply hover:bg-accent hover:text-accent-foreground;
 	}
 
 	& .rbc-nav-group .rbc-toolbar-label {

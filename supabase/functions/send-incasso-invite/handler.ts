@@ -23,7 +23,7 @@ type IncassoInviteContext =
 			redirectTo: string;
 	  };
 
-export async function prepareIncassoInvite(ctx: LessonAgreementPostContext): Promise<IncassoInviteContext> {
+async function prepareIncassoInvite(ctx: LessonAgreementPostContext): Promise<IncassoInviteContext> {
 	const auth = await requireAuthenticatedClients(ctx.authHeader);
 	if (!auth.ok) return { ok: false, response: auth.response };
 
@@ -66,9 +66,7 @@ async function resolveIncassoInviteRecipientEmail(
 	return { ok: true, recipient };
 }
 
-export async function sendIncassoInviteMagicLink(
-	prepared: Extract<IncassoInviteContext, { ok: true }>,
-): Promise<Response> {
+async function sendIncassoInviteMagicLink(prepared: Extract<IncassoInviteContext, { ok: true }>): Promise<Response> {
 	const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 	const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 	const otpClient = createClient(supabaseUrl, anonKey, {

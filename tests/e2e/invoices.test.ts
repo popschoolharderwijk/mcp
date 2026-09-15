@@ -45,10 +45,96 @@ async function invokeFn(fn: string, opts: { token?: string; body: unknown }): Pr
 	return { status: resp.status, json };
 }
 
+async function resolveE2eStudentUserId(admin: ReturnType<typeof createClientBypassRLS>): Promise<string> {
+	const studentEmail = TestUsers.STUDENT_001;
+	const otherEmail = TestUsers.STUDENT_002;
+	const { data: profs } = await admin
+		.from('profiles')
+		.select('user_id, email')
+		.in('email', [studentEmail, otherEmail]);
+	expectNonNull(profs);
+	const byEmail = new Map(profs.map((p) => [p.email, p.user_id]));
+	const studentUserId = byEmail.get(studentEmail) as string;
+	expect(studentUserId).toBeTruthy();
+	expect(byEmail.get(otherEmail)).toBeTruthy();
+	return studentUserId;
+}
+
+async function ensureE2eAccountingSettings(admin: ReturnType<typeof createClientBypassRLS>): Promise<boolean> {
+	const { data: existingSettings } = await admin
+		.from('accounting_settings')
+		.select('id')
+		.eq('id', true)
+		.maybeSingle();
+	if (existingSettings) return false;
+	const { error: insSetErr } = await admin
+		.from('accounting_settings')
+		.insert({ id: true, company_name: 'E2E Test School' });
+	if (insSetErr) throw new Error(`accounting_settings insert: ${insSetErr.message}`);
+	return true;
+}
+
+async function insertE2eMandate(
+	admin: ReturnType<typeof createClientBypassRLS>,
+	studentUserId: string,
+): Promise<string> {
+	const { data: mand, error: mErr } = await admin
+		.from('sepa_mandates')
+		.insert({
+			student_user_id: studentUserId,
+			mandate_reference: `E2E-MND-${Date.now()}`,
+			iban: TEST_IBAN,
+			account_holder: 'E2E Test',
+			status: 'active',
+			signed_at: new Date().toISOString().slice(0, 10),
+		})
+		.select('id')
+		.single();
+	if (mErr || !mand) throw new Error(`mandate insert: ${mErr?.message}`);
+	return mand.id;
+}
+
+async function insertE2eBatch(admin: ReturnType<typeof createClientBypassRLS>): Promise<string> {
+	const { data: batch, error: bErr } = await admin
+		.from('incasso_batches')
+		.insert({
+			batch_number: `E2E-BATCH-${Date.now()}`,
+			status: 'draft',
+			collection_date: new Date().toISOString().slice(0, 10),
+		})
+		.select('id')
+		.single();
+	if (bErr || !batch) throw new Error(`batch insert: ${bErr?.message}`);
+	return batch.id;
+}
+
+async function insertE2eBatchItem(
+	admin: ReturnType<typeof createClientBypassRLS>,
+	batchId: string,
+	mandateId: string,
+	studentUserId: string,
+): Promise<string> {
+	const { data: item, error: iErr } = await admin
+		.from('incasso_batch_items')
+		.insert({
+			batch_id: batchId,
+			mandate_id: mandateId,
+			student_user_id: studentUserId,
+			end_to_end_id: `E2E-ITEM-${Date.now()}`,
+			amount_cents: 5000,
+			remittance_info: 'E2E test lesgeld',
+			kind: 'manual',
+			sequence_type: 'OOFF',
+		})
+		.select('id')
+		.single();
+	if (iErr || !item) throw new Error(`item insert: ${iErr?.message}`);
+	return item.id;
+}
+
 describe('E2E: generate-invoice + get-invoice-pdf with RLS', () => {
 	const admin = createClientBypassRLS();
 	let studentUserId: string;
-	let otherStudentUserId: string;
 	let mandateId: string;
 	let batchId: string;
 	let batchItemId: string;
@@ -58,84 +144,11 @@ describe('E2E: generate-invoice + get-invoice-pdf with RLS', () => {
 
 	beforeAll(async () => {
 		if (!SUPABASE_URL || !ANON_KEY) throw new Error('SUPABASE_URL and publishable key required');
-
-		// Resolve seeded student user_ids
-		const studentEmail = TestUsers.STUDENT_001;
-		const otherEmail = TestUsers.STUDENT_002;
-		const { data: profs } = await admin
-			.from('profiles')
-			.select('user_id, email')
-			.in('email', [studentEmail, otherEmail]);
-		expectNonNull(profs);
-		const byEmail = new Map(profs.map((p) => [p.email, p.user_id]));
-		studentUserId = byEmail.get(studentEmail) as string;
-		otherStudentUserId = byEmail.get(otherEmail) as string;
-		expect(studentUserId).toBeTruthy();
-		expect(otherStudentUserId).toBeTruthy();
-
-		// Ensure a minimal accounting_settings row exists
-		const { data: existingSettings } = await admin
-			.from('accounting_settings')
-			.select('id')
-			.eq('id', true)
-			.maybeSingle();
-		if (!existingSettings) {
-			const { error: insSetErr } = await admin
-				.from('accounting_settings')
-				.insert({ id: true, company_name: 'E2E Test School' });
-			if (insSetErr) throw new Error(`accounting_settings insert: ${insSetErr.message}`);
-			createdSettings = true;
-		}
-
-		// Mandate (active)
-		const ref = `E2E-MND-${Date.now()}`;
-		const { data: mand, error: mErr } = await admin
-			.from('sepa_mandates')
-			.insert({
-				student_user_id: studentUserId,
-				mandate_reference: ref,
-				iban: TEST_IBAN,
-				account_holder: 'E2E Test',
-				status: 'active',
-				signed_at: new Date().toISOString().slice(0, 10),
-			})
-			.select('id')
-			.single();
-		if (mErr || !mand) throw new Error(`mandate insert: ${mErr?.message}`);
-		mandateId = mand.id;
-
-		// Batch
-		const batchNo = `E2E-BATCH-${Date.now()}`;
-		const { data: batch, error: bErr } = await admin
-			.from('incasso_batches')
-			.insert({
-				batch_number: batchNo,
-				status: 'draft',
-				collection_date: new Date().toISOString().slice(0, 10),
-			})
-			.select('id')
-			.single();
-		if (bErr || !batch) throw new Error(`batch insert: ${bErr?.message}`);
-		batchId = batch.id;
-
-		// Batch item
-		const e2eId = `E2E-ITEM-${Date.now()}`;
-		const { data: item, error: iErr } = await admin
-			.from('incasso_batch_items')
-			.insert({
-				batch_id: batchId,
-				mandate_id: mandateId,
-				student_user_id: studentUserId,
-				end_to_end_id: e2eId,
-				amount_cents: 5000,
-				remittance_info: 'E2E test lesgeld',
-				kind: 'manual',
-				sequence_type: 'OOFF',
-			})
-			.select('id')
-			.single();
-		if (iErr || !item) throw new Error(`item insert: ${iErr?.message}`);
-		batchItemId = item.id;
+		studentUserId = await resolveE2eStudentUserId(admin);
+		createdSettings = await ensureE2eAccountingSettings(admin);
+		mandateId = await insertE2eMandate(admin, studentUserId);
+		batchId = await insertE2eBatch(admin);
+		batchItemId = await insertE2eBatchItem(admin, batchId, mandateId, studentUserId);
 	});
 
 	afterAll(async () => {

@@ -32,7 +32,7 @@ When making an implementation plan, apply these constraints **in this order**:
    - Use the helpers in `./src/lib/date` and `./src/lib/time` only; do not format dates/times inline.
 
 7. **Completion**
-   - Plan must include a final step: run `bun check`, then `bun check:ci`; fix errors until `bun check:ci` passes.
+   - Do not plan or run the full test suite (`bun check:ci`, `bun test code`) unless the user asks. Newly written tests may be run in isolation. The user runs `bun check:ci` after a large refactor or when they want a full gate.
 
 ## Checklist for plans
 
@@ -45,4 +45,4 @@ Before implementing, the plan should satisfy:
 - [ ] Icons: from `react-icons` only (e.g. `react-icons/lu`); not from `lucide-react`.
 - [ ] Data overviews: DataTable (`data-table.tsx`) used.
 - [ ] Date/time: helpers from `./src/lib/date` and `./src/lib/time` used.
-- [ ] Final step: `bun check` then `bun check:ci` until passing.
+- [ ] Tests: no full-suite run by the agent; only isolated files for tests written this turn, unless the user asks for `bun check:ci`.

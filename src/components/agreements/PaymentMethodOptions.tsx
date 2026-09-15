@@ -21,7 +21,7 @@ export function PaymentMethodOptions({
 		>
 			<label
 				htmlFor="pm-sepa"
-				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent/40"
+				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
 			>
 				<RadioGroupItem value="sepa" id="pm-sepa" className="mt-1" />
 				<div className="flex-1">
@@ -36,7 +36,7 @@ export function PaymentMethodOptions({
 
 			<label
 				htmlFor="pm-manual"
-				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent/40"
+				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
 			>
 				<RadioGroupItem value="manual" id="pm-manual" className="mt-1" />
 				<div className="flex-1">

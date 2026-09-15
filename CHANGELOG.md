@@ -1,15 +1,17 @@
 # Changelog
 
+## 1.0.1 — 2026-09-15
+
+- Dashboard voor **docenten** en **leerlingen**
+- Verschillende kleine UI aanpassingen
+
 ## 1.0.0 — 2026-09-15
 
-- Eerste live test voor gebruikers
+- Eerste live versie voor gebruikers
 
 ## 0.8.0 — 2026-07-25
 
 - Versienummer zichtbaar in het gebruikersmenu; klik opent dit changelog
-- Database-seeds opgesplitst (bootstrap + test) en migraties geconsolideerd
-- Extra beveiliging: strengere RLS, minder uitvoerrechten op functies, hardening-tests
-- Codekwaliteit en tooling: Fallow, Bun-upgrade, opschoning van types en componenten
 
 ## 0.7.0 — 2026-07-02
 
@@ -37,11 +39,11 @@
 
 ## 0.4.0 — 2026-05-12
 
-- Stripe-integratie (eigen keys): checkout, webhooks en klantportal
-- SEPA Direct Debit als betaalmethode
-- Abonnementen koppelen, syncen en starten vanuit overeenkomsten
-- Magic-link login en verbeterde auth-redirects
-- Incasso-flow van preview tot afronding
+- Online betalen en abonnementen via Stripe
+- SEPA-incasso (automatische afschrijving) als betaalmethode
+- Abonnementen koppelen en beheren vanuit overeenkomsten
+- Inloggen via magic link (link per e-mail, geen wachtwoord)
+- Incasso-flow van uitnodiging tot afronding
 
 ## 0.3.0 — 2026-05-06
 
@@ -60,7 +62,7 @@
 
 ## 0.1.0 — 2026-03-20
 
-- Inloggen, registreren en gebruikersbeheer (rollen, role switcher, dev-login)
+- Inloggen en gebruikersbeheer (rollen)
 - Overzichten voor gebruikers, docenten en leerlingen (paginering en sortering)
 - Lessoorten met opties (duur, frequentie, prijs)
 - Lesovereenkomsten

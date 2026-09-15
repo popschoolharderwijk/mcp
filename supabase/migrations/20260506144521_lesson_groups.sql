@@ -146,16 +146,8 @@ FOR DELETE TO authenticated
 USING (public.is_privileged());
 
 -- ============================================================================
--- 6. Source check + validation
+-- 6. Source validation (lesson_group) + cascade delete
 -- ============================================================================
-ALTER TABLE public.agenda_events DROP CONSTRAINT IF EXISTS agenda_events_source_check;
-ALTER TABLE public.agenda_events ADD CONSTRAINT agenda_events_source_check CHECK (
-  (source_type = 'manual'::public.agenda_event_source_type AND source_id IS NULL)
-  OR (source_type = 'lesson_agreement'::public.agenda_event_source_type AND source_id IS NOT NULL)
-  OR (source_type = 'project'::public.agenda_event_source_type AND source_id IS NOT NULL)
-  OR (source_type = 'lesson_group'::public.agenda_event_source_type AND source_id IS NOT NULL)
-);
-
 CREATE OR REPLACE FUNCTION public.validate_agenda_event_source()
 RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER

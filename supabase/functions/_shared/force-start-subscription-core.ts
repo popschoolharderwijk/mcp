@@ -3,7 +3,7 @@ import type Stripe from 'npm:stripe@17.5.0';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 
-export { canForceStartSchedule, readScheduleBillingDetails } from './force-start-subscription-pure.ts';
+export { readScheduleBillingDetails } from './force-start-subscription-pure.ts';
 
 export async function cancelScheduleIfActive(
 	stripe: Stripe,

@@ -9,16 +9,6 @@ import {
 	validateCustomerPortalUserId,
 } from './validationPure.ts';
 
-export type PreparedCustomerPortalRequest =
-	| { ok: false; response: Response }
-	| {
-			ok: true;
-			admin: SupabaseClient;
-			targetUserId: string;
-			body: CustomerPortalBody;
-			origin: string;
-	  };
-
 export async function beginCustomerPortalPost(
 	req: Request,
 ): Promise<

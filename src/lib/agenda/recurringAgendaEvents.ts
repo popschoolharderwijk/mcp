@@ -263,6 +263,32 @@ function buildOccurrenceEventTimes(
 	};
 }
 
+function resolveOccurrenceOriginalDate(
+	effective: AgendaEventDeviationRow | undefined,
+	dateStr: string,
+	isShifted: boolean,
+): string | undefined {
+	if (effective?.spans_future_occurrences) return dateStr;
+	return effective?.original_date ?? (isShifted ? dateStr : undefined);
+}
+
+function resolveOccurrenceOriginalStartTime(
+	effective: AgendaEventDeviationRow | undefined,
+	baseStartTime: string,
+	isShifted: boolean,
+): string | undefined {
+	if (effective?.spans_future_occurrences) return baseStartTime;
+	return effective?.original_start_time ?? (isShifted ? baseStartTime : undefined);
+}
+
+function hasEffectiveTimeOrDateChange(effective: AgendaEventDeviationRow | undefined): boolean {
+	if (!effective || effective.is_cancelled) return false;
+	return (
+		effective.actual_date !== effective.original_date ||
+		hasTimeChange(effective.actual_start_time, effective.original_start_time)
+	);
+}
+
 function buildOccurrenceDisplayMeta(
 	effective: AgendaEventDeviationRow | undefined,
 	ev: AgendaEventRow,
@@ -270,25 +296,42 @@ function buildOccurrenceDisplayMeta(
 	isShifted: boolean,
 	baseStartTime: string,
 ): OccurrenceDisplayMeta {
-	const resourceOriginalDate = effective?.spans_future_occurrences
-		? dateStr
-		: (effective?.original_date ?? (isShifted ? dateStr : undefined));
-	const resourceOriginalStartTime = effective?.spans_future_occurrences
-		? baseStartTime
-		: (effective?.original_start_time ?? (isShifted ? baseStartTime : undefined));
-	const displayTitle = effective?.title ?? ev.title;
-	const displayColor = effective?.color ?? ev.color ?? null;
-	const hasTimeOrDateChange =
-		!!effective &&
-		!effective.is_cancelled &&
-		(effective.actual_date !== effective.original_date ||
-			hasTimeChange(effective.actual_start_time, effective.original_start_time));
 	return {
-		resourceOriginalDate,
-		resourceOriginalStartTime,
-		displayTitle,
-		displayColor,
-		hasTimeOrDateChange,
+		resourceOriginalDate: resolveOccurrenceOriginalDate(effective, dateStr, isShifted),
+		resourceOriginalStartTime: resolveOccurrenceOriginalStartTime(effective, baseStartTime, isShifted),
+		displayTitle: effective?.title ?? ev.title,
+		displayColor: effective?.color ?? ev.color ?? null,
+		hasTimeOrDateChange: hasEffectiveTimeOrDateChange(effective),
+	};
+}
+
+function isActiveDeviation(effective: AgendaEventDeviationRow | undefined): boolean {
+	return !!effective && !effective.is_cancelled;
+}
+
+function resolveDeviationCancellationType(
+	effective: AgendaEventDeviationRow | undefined,
+): CancellationType | undefined {
+	if (!effective) return undefined;
+	return (effective as AgendaEventDeviationRow & { cancellation_type?: CancellationType }).cancellation_type;
+}
+
+function resolveDeviationNeedsReschedule(effective: AgendaEventDeviationRow | undefined): boolean {
+	if (!effective) return false;
+	return (effective as AgendaEventDeviationRow & { needs_reschedule?: boolean }).needs_reschedule ?? false;
+}
+
+function resolveOccurrenceReason(effective: AgendaEventDeviationRow | undefined, isShifted: boolean): string | null {
+	return effective?.reason ?? (isShifted ? 'Verschoven door lesvrije periode' : null);
+}
+
+function resolveCalendarResourceOriginalSlot(
+	params: { resourceOriginalDate: string | undefined; resourceOriginalStartTime: string | undefined },
+	effective: AgendaEventDeviationRow | undefined,
+): { originalDate: string | undefined; originalStartTime: string | undefined } {
+	return {
+		originalDate: params.resourceOriginalDate ?? effective?.original_date,
+		originalStartTime: params.resourceOriginalStartTime ?? effective?.original_start_time,
 	};
 }
 
@@ -309,6 +352,7 @@ function buildCalendarEventResource(
 ): CalendarEvent['resource'] {
 	const { ev, isLessonEvent } = ctx;
 	const { effective } = params;
+	const originalSlot = resolveCalendarResourceOriginalSlot(params, effective);
 	return {
 		type: 'agenda',
 		agreementId: ev.source_id ?? ev.id,
@@ -318,24 +362,19 @@ function buildCalendarEventResource(
 		lessonTypeName: params.displayTitle,
 		lessonTypeColor: params.displayColor,
 		lessonTypeIcon: null,
-		isDeviation: !!effective && !effective.is_cancelled,
+		isDeviation: isActiveDeviation(effective),
 		hasTimeOrDateChange: params.hasTimeOrDateChange || params.isShifted,
 		isCancelled: params.isCancelled,
 		isGroupLesson: false,
-		originalDate: params.resourceOriginalDate ?? effective?.original_date,
-		originalStartTime: params.resourceOriginalStartTime ?? effective?.original_start_time,
-		reason: effective?.reason ?? (params.isShifted ? 'Verschoven door lesvrije periode' : null),
+		originalDate: originalSlot.originalDate,
+		originalStartTime: originalSlot.originalStartTime,
+		reason: resolveOccurrenceReason(effective, params.isShifted),
 		isRecurring: ev.recurring || (effective?.spans_future_occurrences ?? false),
 		sourceType: ev.source_type,
 		color: params.displayColor,
 		isLesson: isLessonEvent,
-		cancellationType: effective
-			? ((effective as AgendaEventDeviationRow & { cancellation_type?: CancellationType }).cancellation_type ??
-				undefined)
-			: undefined,
-		needsReschedule: effective
-			? ((effective as AgendaEventDeviationRow & { needs_reschedule?: boolean }).needs_reschedule ?? false)
-			: false,
+		cancellationType: resolveDeviationCancellationType(effective),
+		needsReschedule: resolveDeviationNeedsReschedule(effective),
 	};
 }
 

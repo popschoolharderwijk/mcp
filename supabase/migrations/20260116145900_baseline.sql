@@ -76,6 +76,7 @@ AS $$
 DECLARE
   v_schema text;
   v_rel text;
+  v_trg text;
 BEGIN
   SELECT n.nspname, c.relname
   INTO v_schema, v_rel
@@ -86,6 +87,9 @@ BEGIN
   IF v_schema IS NULL OR v_rel IS NULL THEN
     RAISE EXCEPTION 'apply_audit_trail: relation % not found', p_table;
   END IF;
+
+  -- Whole identifier via %I: plpgsql_check parses format() as SQL and rejects trg_audit_%I.
+  v_trg := 'trg_audit_' || v_rel;
 
   EXECUTE format('
     ALTER TABLE %I.%I
@@ -109,14 +113,14 @@ BEGIN
     v_rel
   );
 
-  EXECUTE format('DROP TRIGGER IF EXISTS trg_audit_%I ON %I.%I', v_rel, v_schema, v_rel);
+  EXECUTE format('DROP TRIGGER IF EXISTS %I ON %I.%I', v_trg, v_schema, v_rel);
 
-  EXECUTE format('
-    CREATE TRIGGER trg_audit_%I
-    BEFORE INSERT OR UPDATE ON %I.%I
-    FOR EACH ROW
-    EXECUTE FUNCTION public.set_audit_fields()
-  ', v_rel, v_schema, v_rel);
+  EXECUTE format(
+    'CREATE TRIGGER %I BEFORE INSERT OR UPDATE ON %I.%I FOR EACH ROW EXECUTE FUNCTION public.set_audit_fields()',
+    v_trg,
+    v_schema,
+    v_rel
+  );
 END;
 $$;
 

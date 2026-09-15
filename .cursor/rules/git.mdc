@@ -1,0 +1,16 @@
+---
+alwaysApply: true
+---
+
+# Git index is user-owned
+
+The user always stages and commits. Never touch the index. Never create commits.
+
+## NEVER
+
+* `git add`, `git commit`, `git commit --amend`
+* `git rm` / `git mv` when that writes the index
+* Staging or committing via any other tool
+* "Helpful" staging to keep a changeset coherent
+
+Leave working-tree edits unstaged. The user runs `git add` / `git commit` themselves.

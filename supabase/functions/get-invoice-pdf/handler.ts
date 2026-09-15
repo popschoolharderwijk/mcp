@@ -13,7 +13,7 @@ interface Body {
 	invoice_id: string;
 }
 
-export async function loadAuthorizedInvoice(
+async function loadAuthorizedInvoice(
 	userClient: ReturnType<typeof createClient>,
 	invoiceId: string,
 ): Promise<
@@ -30,7 +30,7 @@ export async function loadAuthorizedInvoice(
 	return { ok: true, invoice: inv };
 }
 
-export async function createInvoiceSignedUrlResponse(
+async function createInvoiceSignedUrlResponse(
 	admin: ReturnType<typeof createClient>,
 	pdfStoragePath: string,
 	invoiceNumber: string,
