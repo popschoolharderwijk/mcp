@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { LuMegaphone } from 'react-icons/lu';
 import { AnnouncementAccordionItem } from '@/components/dashboard/AnnouncementsSectionParts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import {
 	getDefaultExpandedAnnouncementIds,
 	toggleExpandedAnnouncementId,
 } from '@/lib/dashboard/announcementsSectionHelpers';
+
+const AnnouncementsIcon = NAV_ICONS.announcements;
 
 export function AnnouncementsSection() {
 	const { announcements, isLoading } = useAnnouncements({ publishedOnly: true });
@@ -22,7 +24,7 @@ export function AnnouncementsSection() {
 			<Card>
 				<CardHeader className="pb-3">
 					<div className="flex items-center gap-2">
-						<LuMegaphone className="h-5 w-5 text-primary" />
+						<AnnouncementsIcon className="h-5 w-5 text-primary" />
 						<Skeleton className="h-5 w-32" />
 					</div>
 				</CardHeader>
@@ -39,8 +41,8 @@ export function AnnouncementsSection() {
 		<Card>
 			<CardHeader className="pb-3">
 				<CardTitle className="flex items-center gap-2 text-lg">
-					<LuMegaphone className="h-5 w-5 text-primary" />
-					Nieuws
+					<AnnouncementsIcon className="h-5 w-5 text-primary" />
+					{NAV_LABELS.announcements}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="space-y-2">

@@ -1,4 +1,4 @@
-import { NavItem } from '@/components/layout/NavItem';
+import { SidebarNavBranch } from '@/components/layout/SidebarNavBranch';
 import { buildSidebarMainNavItems } from '@/components/layout/sidebarMainNavHelpers';
 
 interface SidebarMainNavProps {
@@ -36,7 +36,7 @@ export function SidebarMainNav({
 	return (
 		<>
 			{items.map((item) => (
-				<NavItem key={item.key} href={item.href} label={item.label} icon={item.icon} collapsed={collapsed} />
+				<SidebarNavBranch key={item.key} item={item} collapsed={collapsed} />
 			))}
 		</>
 	);

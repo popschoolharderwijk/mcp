@@ -1,11 +1,21 @@
-import { adminOperationalNavItems } from '@/components/layout/sidebar-config';
+import { adminOperationalNavItems, financeNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
-export interface SidebarNavItemConfig {
+export const ADMIN_SECTION_KEY = 'admin-section';
+
+export interface SidebarNavLinkConfig {
 	key: string;
 	href: string;
 	label: string;
 	icon: typeof NAV_ICONS.dashboard;
+}
+
+export interface SidebarNavItemConfig {
+	key: string;
+	href?: string;
+	label: string;
+	icon: typeof NAV_ICONS.dashboard;
+	children?: SidebarNavLinkConfig[];
 }
 
 export interface SidebarMainNavVisibility {
@@ -19,8 +29,30 @@ export interface SidebarMainNavVisibility {
 	showAdminNav: boolean;
 }
 
+function toSidebarNavLinks(
+	items: readonly { href: string; label: string; icon: typeof NAV_ICONS.dashboard }[],
+): SidebarNavLinkConfig[] {
+	return items.map((item) => ({
+		key: item.href,
+		href: item.href,
+		label: item.label,
+		icon: item.icon,
+	}));
+}
+
+export function buildFinanceNavGroup(): SidebarNavItemConfig {
+	return {
+		key: 'finance',
+		label: NAV_LABELS.finance,
+		icon: NAV_ICONS.finance,
+		children: toSidebarNavLinks(financeNavItems),
+	};
+}
+
 export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): SidebarNavItemConfig[] {
 	const items: SidebarNavItemConfig[] = [];
+
+	items.push({ key: 'dashboard', href: '/', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard });
 
 	if (visibility.isStudent) {
 		items.push(
@@ -30,14 +62,16 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 		);
 	}
 
-	if (!visibility.isStudent) {
-		items.push({ key: 'dashboard', href: '/', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard });
-	}
-
 	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
 
 	if (visibility.showTeachersNav) {
-		items.push({ key: 'teachers', href: '/teachers', label: NAV_LABELS.teachers, icon: NAV_ICONS.teachers });
+		items.push({
+			key: 'teachers',
+			href: '/teachers',
+			label: NAV_LABELS.teachers,
+			icon: NAV_ICONS.teachers,
+			children: toSidebarNavLinks(teacherChildNavItems),
+		});
 	}
 
 	if (visibility.isTeacher && !visibility.showTeachersNav) {
@@ -62,9 +96,7 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 	}
 
 	if (visibility.showAdminNav) {
-		for (const item of adminOperationalNavItems) {
-			items.push({ key: item.href, href: item.href, label: item.label, icon: item.icon });
-		}
+		items.push(...toSidebarNavLinks(adminOperationalNavItems));
 	}
 
 	return items;

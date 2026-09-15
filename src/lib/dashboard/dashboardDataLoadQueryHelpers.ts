@@ -8,6 +8,8 @@ import {
 	groupLessonTypeNamesByTeacher,
 	parseRecentDashboardStudents,
 } from '@/lib/dashboard/dashboardDataHelpers';
+import { assertDashboardQueriesOk } from '@/lib/dashboard/dashboardLoadErrorPure';
+import { OPEN_SIGNUP_REQUEST_STATUSES } from '@/lib/signup-requests/signupRequestStatuses';
 import type { PaginatedStudentsResponseRaw } from '@/types/students';
 
 export interface DashboardCoreQueryResults {
@@ -21,6 +23,7 @@ export async function fetchDashboardCoreQueryResults(supabase: SupabaseClient): 
 		studentsRes,
 		activeAgreementsRes,
 		totalAgreementsRes,
+		openSignupRequestsRes,
 		teachersRes,
 		slotsRes,
 		lessonTypesRes,
@@ -30,6 +33,10 @@ export async function fetchDashboardCoreQueryResults(supabase: SupabaseClient): 
 		supabase.from('students').select('*', { count: 'exact', head: true }),
 		supabase.from('lesson_agreements').select('*', { count: 'exact', head: true }).eq('is_active', true),
 		supabase.from('lesson_agreements').select('*', { count: 'exact', head: true }),
+		supabase
+			.from('lesson_signup_requests')
+			.select('*', { count: 'exact', head: true })
+			.in('status', [...OPEN_SIGNUP_REQUEST_STATUSES]),
 		supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('is_active', true),
 		supabase.from('teacher_availability').select('*', { count: 'exact', head: true }),
 		supabase.from('lesson_types').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -42,11 +49,24 @@ export async function fetchDashboardCoreQueryResults(supabase: SupabaseClient): 
 		supabase.from('teachers').select('user_id').eq('is_active', true),
 	]);
 
+	assertDashboardQueriesOk([
+		{ label: 'students count', error: studentsRes.error },
+		{ label: 'active agreements count', error: activeAgreementsRes.error },
+		{ label: 'total agreements count', error: totalAgreementsRes.error },
+		{ label: 'open signup requests count', error: openSignupRequestsRes.error },
+		{ label: 'teachers count', error: teachersRes.error },
+		{ label: 'availability slots count', error: slotsRes.error },
+		{ label: 'lesson types count', error: lessonTypesRes.error },
+		{ label: 'recent students', error: recentStudentsRes.error },
+		{ label: 'teacher list', error: teacherListRes.error },
+	]);
+
 	return {
 		counts: {
 			studentsCount: studentsRes.count,
 			activeAgreementsCount: activeAgreementsRes.count,
 			totalAgreementsCount: totalAgreementsRes.count,
+			openSignupRequestsCount: openSignupRequestsRes.count,
 			teachersCount: teachersRes.count,
 			slotsCount: slotsRes.count,
 			lessonTypesCount: lessonTypesRes.count,
@@ -74,6 +94,12 @@ export async function fetchDashboardTeacherRows(
 			.select('teacher_user_id, lesson_types(name)')
 			.in('teacher_user_id', teacherUserIds),
 		supabase.from('teacher_availability').select('teacher_user_id').in('teacher_user_id', teacherUserIds),
+	]);
+
+	assertDashboardQueriesOk([
+		{ label: 'teacher profiles', error: profilesRes.error },
+		{ label: 'teacher lesson types', error: tltRes.error },
+		{ label: 'teacher availability rows', error: availRes.error },
 	]);
 
 	const lessonTypeRows = (tltRes.data ?? []).map((row) => ({

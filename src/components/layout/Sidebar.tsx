@@ -1,12 +1,10 @@
-import { useLocation } from 'react-router-dom';
 import { DevTools } from '@/components/DevTools';
-import { SidebarBeheerSection } from '@/components/layout/SidebarBeheerSection';
+import { SidebarAdminSection } from '@/components/layout/SidebarAdminSection';
 import { SidebarLogo } from '@/components/layout/SidebarLogo';
 import { SidebarMainNav } from '@/components/layout/SidebarMainNav';
-import { adminHrefs, financeHrefs, isPathInGroup, NAV_GAP } from '@/components/layout/sidebar-config';
+import { NAV_GAP } from '@/components/layout/sidebar-config';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { useSidebarGroupState } from '@/hooks/useSidebarGroupState';
 import { useSidebarNavVisibility } from '@/hooks/useSidebarNavVisibility';
 import { resolveSidebarDevToolsContainerClass, resolveSidebarWidthClass } from '@/lib/layout/sidebarShellHelpers';
 import { cn } from '@/lib/utils';
@@ -18,10 +16,6 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 	const visibility = useSidebarNavVisibility();
-	const { pathname } = useLocation();
-	const isInBeheer = isPathInGroup(pathname, adminHrefs);
-	const isInFinance = isPathInGroup(pathname, financeHrefs);
-	const { beheerOpen, setBeheerOpen, financeOpen, setFinanceOpen } = useSidebarGroupState(isInBeheer, isInFinance);
 
 	return (
 		<TooltipProvider delayDuration={0}>
@@ -35,22 +29,10 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 
 				<div className="flex-1 min-h-0 w-full overflow-hidden">
 					<ScrollArea className="h-full">
-						<div
-							className="w-full px-2"
-							style={{ paddingTop: NAV_GAP, paddingBottom: NAV_GAP } as React.CSSProperties}
-						>
+						<div className="w-full px-2 py-2">
 							<nav className="flex flex-col w-full" style={{ gap: NAV_GAP } as React.CSSProperties}>
 								<SidebarMainNav collapsed={collapsed} {...visibility} />
-								{visibility.showAdminNav && (
-									<SidebarBeheerSection
-										collapsed={collapsed}
-										beheerOpen={beheerOpen}
-										onBeheerOpenChange={setBeheerOpen}
-										financeOpen={financeOpen}
-										onFinanceOpenChange={setFinanceOpen}
-										isInFinance={isInFinance}
-									/>
-								)}
+								{visibility.showAdminNav && <SidebarAdminSection collapsed={collapsed} />}
 							</nav>
 						</div>
 					</ScrollArea>

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { OPEN_SIGNUP_REQUEST_STATUSES } from '@/lib/signup-requests/signupRequestStatuses';
 import { processSignupRequest, rejectSignupRequest } from '@/lib/signup-requests/signupRequestsPageControllerHelpers';
 import {
 	enrichSignupRequestRows,
@@ -31,7 +32,7 @@ export function useSignupRequestsPageController(params: UseSignupRequestsPageCon
 			.select('*, lesson_types(id, name, is_group_lesson), lesson_groups(id, name)')
 			.order('created_at', { ascending: false });
 		if (params.statusFilter === 'pending') {
-			query = query.in('status', ['pending', 'trial_scheduled']);
+			query = query.in('status', OPEN_SIGNUP_REQUEST_STATUSES);
 		}
 
 		void query.then(async ({ data, error }) => {

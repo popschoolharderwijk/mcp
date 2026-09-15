@@ -1,8 +1,6 @@
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
-export const NAV_GAP = '1rem';
-export const BEHEER_OPEN_KEY = 'sidebar:beheer-open';
-export const FINANCE_OPEN_KEY = 'sidebar:finance-open';
+export const NAV_GAP = '0.375rem';
 
 export const adminOperationalNavItems = [
 	{ href: '/agreements', label: NAV_LABELS.agreements, icon: NAV_ICONS.agreements },
@@ -29,8 +27,42 @@ export const adminNavItems = [
 ];
 
 export const adminHrefs = [...adminNavItems, ...financeNavItems].map((item) => item.href);
-export const financeHrefs = financeNavItems.map((item) => item.href);
+const financeHrefs = financeNavItems.map((item) => item.href);
+
+export const teacherChildNavItems = [
+	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },
+];
 
 export function isPathInGroup(pathname: string, hrefs: string[]): boolean {
 	return hrefs.some((href) => pathname === href || pathname.startsWith(`${href}/`));
+}
+
+function isSidebarNavActive(pathname: string, href: string, childHrefs: readonly string[] = []): boolean {
+	if (childHrefs.some((childHref) => pathname === childHref || pathname.startsWith(`${childHref}/`))) {
+		return false;
+	}
+	if (href === '/') return pathname === '/';
+	return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** Linked parents stay inactive on child routes; toggle-only parents highlight on any child route. */
+export function isSidebarParentActive(
+	pathname: string,
+	href: string | undefined,
+	childHrefs: readonly string[] = [],
+): boolean {
+	if (!href) return isPathInGroup(pathname, [...childHrefs]);
+	return isSidebarNavActive(pathname, href, childHrefs);
+}
+
+export function sidebarNavItemStateClass(isActive: boolean): string {
+	return isActive
+		? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
+		: 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground';
+}
+
+/** Toggle-only parents always flip; linked parents toggle only when already on that page. */
+export function nextSidebarGroupOpen(pathname: string, href: string | undefined, currentlyOpen: boolean): boolean {
+	if (!href || pathname === href) return !currentlyOpen;
+	return true;
 }

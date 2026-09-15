@@ -1,11 +1,12 @@
-import { LuGraduationCap } from 'react-icons/lu';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import type { DashboardTeacher } from '@/hooks/useDashboardData';
+
+const TeachersIcon = NAV_ICONS.teachers;
 
 interface TeacherAvailabilityProps {
 	teachers: DashboardTeacher[];
@@ -18,7 +19,7 @@ export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvai
 	if (isLoading) {
 		return (
 			<DashboardListCardSkeleton
-				icon={<LuGraduationCap className="h-5 w-5 text-primary" />}
+				icon={<TeachersIcon className="h-5 w-5 text-primary" />}
 				titleWidthClass="w-40"
 				itemKeyPrefix="teacher-skeleton"
 				subtitleWidthClass="w-48"
@@ -28,20 +29,17 @@ export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvai
 
 	return (
 		<Card>
-			<CardHeader className="flex flex-row items-center justify-between pb-2">
+			<CardHeader className="pb-2">
 				<div className="flex items-center gap-2">
-					<LuGraduationCap className="h-5 w-5 text-primary" />
-					<CardTitle className="text-base font-semibold">Docenten</CardTitle>
+					<TeachersIcon className="h-5 w-5 text-primary" />
+					<CardTitle className="text-base font-semibold">{NAV_LABELS.teachers}</CardTitle>
 				</div>
-				<Button variant="ghost" size="sm" asChild>
-					<Link to="/teachers">Alle docenten</Link>
-				</Button>
 			</CardHeader>
 			<CardContent>
 				{teachers.length === 0 ? (
-					<p className="text-sm text-muted-foreground">Geen docenten gevonden.</p>
+					<p className="text-sm text-muted-foreground">Geen {NAV_LABELS.teachers.toLowerCase()} gevonden.</p>
 				) : (
-					<div className="space-y-3">
+					<div className="space-y-1">
 						{teachers.map((teacher) => (
 							<button
 								key={teacher.user_id}
@@ -69,7 +67,9 @@ export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvai
 													</Badge>
 												))
 											) : (
-												<span className="text-xs text-muted-foreground">Geen lesvakken</span>
+												<span className="text-xs text-muted-foreground">
+													Geen {NAV_LABELS.lessonTypes.toLowerCase()}
+												</span>
 											)}
 										</div>
 									</div>
