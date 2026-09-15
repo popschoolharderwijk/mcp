@@ -31,7 +31,7 @@ Stop and ask the user when any of these hold:
 
 1. **No progress (primary)** — track Biome errors + `tsc` errors + failing code tests + Fallow findings each iteration. If that count does not drop for **two consecutive** iterations, stop. Count fallow-only retries separately from full outer passes.
 2. **Hard caps** — 5 full outer passes without all-green, or 10 consecutive fallow-only retries without green (backstop; no-progress should usually fire first).
-3. **Out of scope** — needs a design decision, destructive change, or work clearly outside the task.
+3. **Out of scope** — design decision, destructive change, work outside the task, or tool config (Fallow/Biome) — ask first; see `.cursor/rules/fallow.mdc`.
 4. **Ambiguous** — root cause still unclear after reading the full output.
 5. **Types vs schema** — `supabase:types` / `tsc` fail because migrations are not on the linked DB → ask user for `bun run db:reset`.
 
