@@ -9,7 +9,7 @@ import {
 	resolvePortalReturnUrl,
 } from './validationPure.ts';
 
-export async function createCustomerPortalSession(
+async function createCustomerPortalSession(
 	admin: SupabaseClient,
 	targetUserId: string,
 	body: CustomerPortalBody,

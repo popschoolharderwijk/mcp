@@ -6,7 +6,7 @@ import { resolveStripeSubscriptionId } from './resolveSubscriptionId.ts';
 import { syncSubscriptionFromStripe } from './syncSubscriptionFromStripe.ts';
 import type { Body } from './types.ts';
 
-export async function runSyncStripeSubscription(admin: SupabaseClient, stripe: Stripe, body: Body): Promise<Response> {
+async function runSyncStripeSubscription(admin: SupabaseClient, stripe: Stripe, body: Body): Promise<Response> {
 	const resolved = await resolveStripeSubscriptionId(admin, stripe, {
 		stripeSubscriptionId: body.stripe_subscription_id,
 		lessonAgreementId: body.lesson_agreement_id,

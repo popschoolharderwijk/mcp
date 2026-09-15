@@ -18,35 +18,38 @@ export type SubmitUserFormResult =
 	| { ok: true; mode: 'create'; createdUser: User }
 	| { ok: false };
 
+async function runUserRoleMutation(
+	errorTitle: string,
+	run: () => PromiseLike<{ error: { message: string } | null }>,
+): Promise<boolean> {
+	const { error } = await run();
+	if (error) {
+		toast.error(errorTitle, { description: error.message });
+		return false;
+	}
+	return true;
+}
+
 async function updateUserRole(userId: string, newRole: AppRole | null, currentRole: AppRole | null): Promise<boolean> {
 	const action = resolveUserRoleUpdateAction(newRole, currentRole);
 	if (action === 'skip') return true;
 
 	if (action === 'delete') {
-		const { error } = await supabase.from('user_roles').delete().eq('user_id', userId);
-		if (error) {
-			toast.error('Fout bij bijwerken rol', { description: error.message });
-			return false;
-		}
-		return true;
+		return runUserRoleMutation('Fout bij bijwerken rol', () =>
+			supabase.from('user_roles').delete().eq('user_id', userId),
+		);
 	}
 
 	if (action === 'insert' && newRole) {
-		const { error } = await supabase.from('user_roles').insert({ user_id: userId, role: newRole });
-		if (error) {
-			toast.error('Fout bij toewijzen rol', { description: error.message });
-			return false;
-		}
-		return true;
+		return runUserRoleMutation('Fout bij toewijzen rol', () =>
+			supabase.from('user_roles').insert({ user_id: userId, role: newRole }),
+		);
 	}
 
 	if (action === 'update' && newRole) {
-		const { error } = await supabase.from('user_roles').update({ role: newRole }).eq('user_id', userId);
-		if (error) {
-			toast.error('Fout bij bijwerken rol', { description: error.message });
-			return false;
-		}
-		return true;
+		return runUserRoleMutation('Fout bij bijwerken rol', () =>
+			supabase.from('user_roles').update({ role: newRole }).eq('user_id', userId),
+		);
 	}
 
 	return true;

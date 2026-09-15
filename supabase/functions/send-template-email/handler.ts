@@ -27,7 +27,7 @@ type PreparedTemplateEmailRequest =
 			template: { subject: string; body_html: string; is_enabled: boolean };
 	  };
 
-export async function prepareSendTemplateEmailRequest(req: Request): Promise<PreparedTemplateEmailRequest> {
+async function prepareSendTemplateEmailRequest(req: Request): Promise<PreparedTemplateEmailRequest> {
 	const begunResult = await beginTemplateEmailRequest(req);
 	if (!begunResult.ok) return begunResult;
 
@@ -49,7 +49,7 @@ export async function prepareSendTemplateEmailRequest(req: Request): Promise<Pre
 	};
 }
 
-export async function deliverPreparedTemplateEmail(
+async function deliverPreparedTemplateEmail(
 	prepared: Extract<PreparedTemplateEmailRequest, { ok: true }>,
 ): Promise<Response> {
 	const vars = normalizeVars(prepared.body.vars);

@@ -7,7 +7,6 @@ import {
 	resolveDeleteUserTargetFromRole,
 } from './handlersPure.ts';
 
-export type { DeleteUserBody } from './handlersPure.ts';
 export { parseDeleteUserBody } from './handlersPure.ts';
 
 export async function resolveDeleteUserTargetId(

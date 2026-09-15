@@ -28,44 +28,50 @@ function parseInlineToken(match: RegExpExecArray): InlineTokenMatch {
 	return { code: match[7] };
 }
 
+function renderMarkdownImage(token: InlineTokenMatch, key: string): ReactNode {
+	const href = safeMarkdownHref(token.imageUrl ?? '');
+	if (!href) return null;
+	return (
+		<img
+			key={key}
+			src={href}
+			alt={token.imageAlt ?? ''}
+			className="my-2 max-w-full rounded-md border border-border"
+			loading="lazy"
+		/>
+	);
+}
+
+function renderMarkdownLink(token: InlineTokenMatch, key: string): ReactNode {
+	const href = safeMarkdownHref(token.linkUrl ?? '');
+	if (!href) return token.linkText ?? '';
+	return (
+		<a
+			key={key}
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="text-primary underline underline-offset-2 hover:no-underline"
+		>
+			{token.linkText}
+		</a>
+	);
+}
+
+function renderMarkdownCode(token: InlineTokenMatch, key: string): ReactNode {
+	return (
+		<code key={key} className="rounded bg-muted px-1 py-0.5 text-xs">
+			{token.code}
+		</code>
+	);
+}
+
 function renderInlineToken(token: InlineTokenMatch, key: string): ReactNode {
-	if (token.imageUrl !== undefined) {
-		const href = safeMarkdownHref(token.imageUrl);
-		if (!href) return null;
-		return (
-			<img
-				key={key}
-				src={href}
-				alt={token.imageAlt ?? ''}
-				className="my-2 max-w-full rounded-md border border-border"
-				loading="lazy"
-			/>
-		);
-	}
-	if (token.linkUrl !== undefined) {
-		const href = safeMarkdownHref(token.linkUrl);
-		if (!href) return token.linkText ?? '';
-		return (
-			<a
-				key={key}
-				href={href}
-				target="_blank"
-				rel="noopener noreferrer"
-				className="text-primary underline underline-offset-2 hover:no-underline"
-			>
-				{token.linkText}
-			</a>
-		);
-	}
+	if (token.imageUrl !== undefined) return renderMarkdownImage(token, key);
+	if (token.linkUrl !== undefined) return renderMarkdownLink(token, key);
 	if (token.bold !== undefined) return <strong key={key}>{token.bold}</strong>;
 	if (token.italic !== undefined) return <em key={key}>{token.italic}</em>;
-	if (token.code !== undefined) {
-		return (
-			<code key={key} className="rounded bg-muted px-1 py-0.5 text-xs">
-				{token.code}
-			</code>
-		);
-	}
+	if (token.code !== undefined) return renderMarkdownCode(token, key);
 	return null;
 }
 

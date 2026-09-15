@@ -3,8 +3,6 @@ import { jsonResponse } from '../_shared/http.ts';
 import { validateSignupRequestStatus } from './loadSignupRequestPure.ts';
 import type { SignupRequestRow } from './types.ts';
 
-export { validateSignupRequestStatus } from './loadSignupRequestPure.ts';
-
 export async function loadSignupRequest(
 	admin: SupabaseClient,
 	requestId: string,

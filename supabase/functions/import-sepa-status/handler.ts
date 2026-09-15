@@ -5,7 +5,7 @@ import { parseReportOrError } from './validation.ts';
 
 type AuthorizedImport = Extract<Awaited<ReturnType<typeof authorizeImportSepaStatusRequest>>, { ok: true }>;
 
-export async function runImportSepaStatusPipeline(
+async function runImportSepaStatusPipeline(
 	authorized: AuthorizedImport,
 ): Promise<{ ok: true; response: Response } | { ok: false; response: Response }> {
 	const parsed = parseReportOrError(authorized.body.xml as string);

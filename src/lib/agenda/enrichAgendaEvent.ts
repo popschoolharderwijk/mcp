@@ -2,6 +2,7 @@ import type { CalendarEvent } from '@/components/agenda/types';
 import {
 	buildLessonAgreementStudentInfo,
 	buildLessonAgreementTeacherName,
+	type LessonAgreementStudentInfo,
 } from '@/lib/agenda/enrichLessonAgreementHelpers';
 import { getDisplayName } from '@/lib/display-name';
 import type { User } from '@/types/users';
@@ -51,22 +52,44 @@ function enrichProjectAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventConte
 	};
 }
 
+function resolveLessonGroupOccurrenceTitle(name: string, count: number): string {
+	return count > 0 ? `${name} (${count})` : name;
+}
+
+function findLessonGroupOccurrenceDeviation(
+	ev: CalendarEvent,
+	ctx: EnrichAgendaEventContext,
+): { cancelled_participant_ids?: string[] | null } | undefined {
+	if (!ev.resource.eventId || !ev.resource.originalDate) return undefined;
+	return ctx.deviationsByEventId.get(ev.resource.eventId)?.get(ev.resource.originalDate);
+}
+
+function resolveLessonGroupMemberUsers(
+	memberUserIds: string[],
+	profileMap: EnrichAgendaEventContext['profileMap'],
+): User[] {
+	return memberUserIds.map((uid) => profileMap.get(uid)).filter((p): p is User => !!p);
+}
+
+function resolveLessonGroupCount(users: User[], participantCount: number | undefined): number {
+	return users.length || (participantCount ?? 0);
+}
+
+function resolveLessonGroupStudentName(users: User[], fallback: string): string {
+	return users.map((u) => getDisplayName(u)).join(', ') || fallback;
+}
+
 function enrichLessonGroupAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventContext): CalendarEvent | null {
 	if (ev.resource.sourceType !== 'lesson_group' || !ev.resource.agreementId) return null;
 	const group = ctx.lessonGroupsMap.get(ev.resource.agreementId);
 	if (!group) return null;
-	const users = group.memberUserIds.map((uid) => ctx.profileMap.get(uid)).filter((p): p is User => !!p);
-	const participantCount = ev.resource.participantCount;
-	const count = users.length || (participantCount ?? 0);
-	const title = count > 0 ? `${group.name} (${count})` : group.name;
-	const deviation =
-		ev.resource.eventId && ev.resource.originalDate
-			? ctx.deviationsByEventId.get(ev.resource.eventId)?.get(ev.resource.originalDate)
-			: undefined;
+	const users = resolveLessonGroupMemberUsers(group.memberUserIds, ctx.profileMap);
+	const count = resolveLessonGroupCount(users, ev.resource.participantCount);
+	const deviation = findLessonGroupOccurrenceDeviation(ev, ctx);
 
 	return {
 		...ev,
-		title,
+		title: resolveLessonGroupOccurrenceTitle(group.name, count),
 		resource: {
 			...ev.resource,
 			lessonGroupId: group.id,
@@ -74,7 +97,7 @@ function enrichLessonGroupAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventC
 			lessonTypeName: group.lessonTypeName ?? group.name,
 			lessonTypeColor: ev.resource.color ?? group.lessonTypeColor,
 			lessonTypeIcon: group.lessonTypeIcon,
-			studentName: users.map((u) => getDisplayName(u)).join(', ') || group.name,
+			studentName: resolveLessonGroupStudentName(users, group.name),
 			isGroupLesson: true,
 			studentCount: count,
 			users,
@@ -84,14 +107,28 @@ function enrichLessonGroupAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventC
 	};
 }
 
+function resolveLessonAgreementStudentCount(
+	studentInfo: LessonAgreementStudentInfo,
+	isGroupLesson: boolean | null | undefined,
+): number | undefined {
+	if (studentInfo.isDuo) return studentInfo.studentUsers.length;
+	if (isGroupLesson) return 1;
+	return undefined;
+}
+
+function resolveLessonAgreementUsers(studentInfo: LessonAgreementStudentInfo) {
+	if (studentInfo.isDuo) return studentInfo.studentUsers;
+	return studentInfo.user ? [studentInfo.user] : undefined;
+}
+
 function enrichLessonAgreementAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventContext): CalendarEvent | null {
 	if (ev.resource.sourceType !== 'lesson_agreement' || !ev.resource.agreementId) return null;
 	const agreement = ctx.agreementsMap.get(ev.resource.agreementId);
 	if (!agreement) return null;
 
-	const teacherUid = agreement.teacherUserId;
-	const studentInfo = buildLessonAgreementStudentInfo(agreement, ev.resource.eventId, teacherUid, ctx);
+	const studentInfo = buildLessonAgreementStudentInfo(agreement, ev.resource.eventId, agreement.teacherUserId, ctx);
 	const teacherName = buildLessonAgreementTeacherName(agreement.teacherProfile);
+	const isGroupLesson = agreement.lesson_types.is_group_lesson ?? false;
 
 	return {
 		...ev,
@@ -104,15 +141,11 @@ function enrichLessonAgreementAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEv
 			lessonTypeName: agreement.lesson_types.name,
 			lessonTypeColor: agreement.lesson_types.color,
 			lessonTypeIcon: agreement.lesson_types.icon,
-			isGroupLesson: agreement.lesson_types.is_group_lesson ?? false,
+			isGroupLesson,
 			isDuoLesson: studentInfo.isDuo,
-			studentCount: studentInfo.isDuo
-				? studentInfo.studentUsers.length
-				: agreement.lesson_types.is_group_lesson
-					? 1
-					: undefined,
+			studentCount: resolveLessonAgreementStudentCount(studentInfo, isGroupLesson),
 			user: studentInfo.user ?? undefined,
-			users: studentInfo.isDuo ? studentInfo.studentUsers : studentInfo.user ? [studentInfo.user] : undefined,
+			users: resolveLessonAgreementUsers(studentInfo),
 			isLesson: true,
 		},
 	};

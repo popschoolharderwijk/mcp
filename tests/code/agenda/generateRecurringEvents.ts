@@ -49,6 +49,251 @@ function getRecurringDeviationForDate(
 	);
 }
 
+function groupAgreementsBySchedule(
+	agreements: LessonAgreementWithStudent[],
+): Map<string, LessonAgreementWithStudent[]> {
+	const groupedAgreements = new Map<string, LessonAgreementWithStudent[]>();
+	for (const agreement of agreements) {
+		pushToMapArray(groupedAgreements, getGroupingKey(agreement, getFrequency(agreement)), agreement);
+	}
+	return groupedAgreements;
+}
+
+function resolveGroupedAgreementDateWindow(group: LessonAgreementWithStudent[]): {
+	earliestStartDate: Date;
+	latestEndDate: Date | null;
+} {
+	const earliestStartDate = new Date(Math.min(...group.map((a) => new Date(a.start_date).getTime())));
+	if (group.some((a) => !a.end_date)) return { earliestStartDate, latestEndDate: null };
+	return {
+		earliestStartDate,
+		latestEndDate: new Date(Math.max(...group.map((a) => new Date(a.end_date as string).getTime()))),
+	};
+}
+
+function isDateInsideAgreementWindow(
+	currentLessonDate: Date,
+	earliestStartDate: Date,
+	latestEndDate: Date | null,
+): boolean {
+	return currentLessonDate >= earliestStartDate && (!latestEndDate || currentLessonDate <= latestEndDate);
+}
+
+function resolveDeviationLessonType(
+	lesson: LessonAgreementWithStudent,
+	fallbackTitle: string | null | undefined,
+	firstAgreement: LessonAgreementWithStudent,
+): { name: string; color: string | null; icon: string | null } {
+	if ('lesson_types' in lesson) {
+		return {
+			name: lesson.lesson_types.name,
+			color: lesson.lesson_types.color,
+			icon: lesson.lesson_types.icon,
+		};
+	}
+	return {
+		name: fallbackTitle ?? firstAgreement.lesson_types.name,
+		color: null,
+		icon: null,
+	};
+}
+
+function resolveDeviationStudent(
+	lesson: LessonAgreementWithStudent,
+	firstAgreement: LessonAgreementWithStudent,
+): { studentName: string; userInfo: ReturnType<typeof buildParticipantInfo> } {
+	const profile = lesson.profiles as UserOptional | null;
+	return {
+		studentName: getDisplayName(profile),
+		userInfo: buildParticipantInfo(
+			profile,
+			'student_user_id' in lesson ? lesson.student_user_id : firstAgreement.student_user_id,
+		),
+	};
+}
+
+function hasActiveTimeOrDateChange(deviation: LessonAppointmentDeviationWithAgreement): boolean {
+	return (
+		!deviation.is_cancelled &&
+		(deviation.actual_date !== deviation.original_date ||
+			hasTimeChange(deviation.actual_start_time, deviation.original_start_time))
+	);
+}
+
+function deviationCancellationMeta(deviation: LessonAppointmentDeviationWithAgreement): {
+	cancellationType: CancellationType | undefined;
+	needsReschedule: boolean;
+} {
+	const typed = deviation as AgendaEventDeviationRow & {
+		cancellation_type?: CancellationType;
+		needs_reschedule?: boolean;
+	};
+	return {
+		cancellationType: typed.cancellation_type ?? undefined,
+		needsReschedule: typed.needs_reschedule ?? false,
+	};
+}
+
+function pushSingleDateDeviationEvent(
+	events: CalendarEvent[],
+	deviation: LessonAppointmentDeviationWithAgreement,
+	firstAgreement: LessonAgreementWithStudent,
+	eventId: string,
+	durationMinutes: number,
+): void {
+	const isCancelled = deviation.is_cancelled;
+	const timeStr = isCancelled ? deviation.original_start_time : deviation.actual_start_time;
+	const baseDate = isCancelled ? deviation.original_date : deviation.actual_date;
+	const eventDate = applyTimeToDate(new Date(baseDate), timeStr);
+	const isEffectivelyOriginal =
+		!isCancelled &&
+		new Date(deviation.actual_date).getDay() === firstAgreement.day_of_week &&
+		deviation.actual_start_time.substring(0, 5) === firstAgreement.start_time.substring(0, 5);
+	const lesson = deviation.lesson_agreement ?? firstAgreement;
+	const student = resolveDeviationStudent(lesson, firstAgreement);
+	const lessonType = resolveDeviationLessonType(lesson, deviation.agenda_event?.title, firstAgreement);
+	const meta = deviationCancellationMeta(deviation);
+	events.push({
+		title: `${lessonType.name} - ${student.studentName}`,
+		start: eventDate,
+		end: addMinutes(eventDate, durationMinutes),
+		resource: {
+			type: isEffectivelyOriginal ? 'agreement' : 'deviation',
+			agreementId: firstAgreement.id,
+			eventId,
+			deviationId: deviation.id,
+			studentName: student.studentName,
+			user: student.userInfo,
+			lessonTypeName: lessonType.name,
+			lessonTypeColor: lessonType.color,
+			lessonTypeIcon: lessonType.icon,
+			isDeviation: !isCancelled && !isEffectivelyOriginal,
+			hasTimeOrDateChange: hasActiveTimeOrDateChange(deviation),
+			isCancelled,
+			isGroupLesson: false,
+			originalDate: deviation.original_date,
+			originalStartTime: deviation.original_start_time,
+			reason: deviation.reason,
+			isRecurring: !!deviation.spans_future_occurrences,
+			cancellationType: meta.cancellationType,
+			needsReschedule: meta.needsReschedule,
+		},
+	});
+}
+
+function pushSpanningDeviationEvent(
+	events: CalendarEvent[],
+	deviation: LessonAppointmentDeviationWithAgreement,
+	firstAgreement: LessonAgreementWithStudent,
+	eventId: string,
+	durationMinutes: number,
+	currentLessonDate: Date,
+): void {
+	const eventDate = applyTimeToDate(
+		getDateForDayOfWeek(new Date(deviation.actual_date).getDay(), currentLessonDate),
+		deviation.actual_start_time,
+	);
+	const lesson = deviation.lesson_agreement ?? firstAgreement;
+	const student = resolveDeviationStudent(lesson, firstAgreement);
+	const lessonType = resolveDeviationLessonType(lesson, deviation.agenda_event?.title, firstAgreement);
+	const meta = deviationCancellationMeta(deviation);
+	events.push({
+		title: `${lessonType.name} - ${student.studentName}`,
+		start: eventDate,
+		end: addMinutes(eventDate, durationMinutes),
+		resource: {
+			type: 'deviation',
+			agreementId: firstAgreement.id,
+			eventId,
+			deviationId: deviation.id,
+			studentName: student.studentName,
+			user: student.userInfo,
+			lessonTypeName: lessonType.name,
+			lessonTypeColor: lessonType.color,
+			lessonTypeIcon: lessonType.icon,
+			isDeviation: !deviation.is_cancelled,
+			hasTimeOrDateChange: hasActiveTimeOrDateChange(deviation),
+			isCancelled: deviation.is_cancelled,
+			isGroupLesson: false,
+			originalDate: deviation.original_date,
+			originalStartTime: deviation.original_start_time,
+			reason: deviation.reason,
+			isRecurring: true,
+			cancellationType: meta.cancellationType,
+			needsReschedule: meta.needsReschedule,
+		},
+	});
+}
+
+function pushDefaultGroupedOccurrence(
+	events: CalendarEvent[],
+	group: LessonAgreementWithStudent[],
+	firstAgreement: LessonAgreementWithStudent,
+	currentLessonDate: Date,
+	eventId: string | undefined,
+	studentNames: string[],
+): void {
+	const isGroupLesson = firstAgreement.lesson_types.is_group_lesson;
+	const eventDate = applyTimeToDate(new Date(currentLessonDate), firstAgreement.start_time);
+	const users = group
+		.map((a) => buildParticipantInfo(a.profiles as UserOptional | null, a.student_user_id))
+		.filter((info): info is User => info !== undefined);
+	events.push({
+		title: isGroupLesson
+			? `${firstAgreement.lesson_types.name} (${group.length} deelnemers)`
+			: `${firstAgreement.lesson_types.name} - ${studentNames[0]}`,
+		start: eventDate,
+		end: addMinutes(eventDate, firstAgreement.duration_minutes),
+		resource: {
+			type: 'agreement',
+			agreementId: firstAgreement.id,
+			eventId: eventId ?? undefined,
+			studentName: isGroupLesson ? studentNames.join(', ') : studentNames[0],
+			user: !isGroupLesson && users.length > 0 ? users[0] : undefined,
+			users: isGroupLesson ? users : undefined,
+			lessonTypeName: firstAgreement.lesson_types.name,
+			lessonTypeColor: firstAgreement.lesson_types.color,
+			lessonTypeIcon: firstAgreement.lesson_types.icon,
+			isDeviation: false,
+			isCancelled: false,
+			isGroupLesson,
+			studentCount: isGroupLesson ? group.length : undefined,
+		},
+	});
+}
+
+function tryPushIndividualDeviationOccurrence(
+	events: CalendarEvent[],
+	params: {
+		group: LessonAgreementWithStudent[];
+		firstAgreement: LessonAgreementWithStudent;
+		eventId: string | undefined;
+		lessonDateStr: string;
+		currentLessonDate: Date;
+		deviations: Map<string, LessonAppointmentDeviationWithAgreement>;
+		recurringByEventId?: Map<string, LessonAppointmentDeviationWithAgreement[]>;
+	},
+): boolean {
+	const { group, firstAgreement, eventId, lessonDateStr, currentLessonDate, deviations, recurringByEventId } = params;
+	if (firstAgreement.lesson_types.is_group_lesson || group.length !== 1 || !eventId) return false;
+	const deviation = deviations.get(`${eventId}-${lessonDateStr}`);
+	if (deviation) {
+		pushSingleDateDeviationEvent(events, deviation, firstAgreement, eventId, firstAgreement.duration_minutes);
+		return true;
+	}
+	const recurringDeviation = getRecurringDeviationForDate(recurringByEventId ?? new Map(), eventId, lessonDateStr);
+	if (!recurringDeviation) return false;
+	pushSpanningDeviationEvent(
+		events,
+		recurringDeviation,
+		firstAgreement,
+		eventId,
+		firstAgreement.duration_minutes,
+		currentLessonDate,
+	);
+	return true;
+}
+
 export function generateRecurringEvents(
 	agreements: LessonAgreementWithStudent[],
 	rangeStart: Date,
@@ -58,210 +303,37 @@ export function generateRecurringEvents(
 	eventIdByAgreementId?: Map<string, string>,
 ): CalendarEvent[] {
 	const events: CalendarEvent[] = [];
-	const getEventId = (agreementId: string) => eventIdByAgreementId?.get(agreementId);
 
-	const groupedAgreements = new Map<string, LessonAgreementWithStudent[]>();
-	for (const agreement of agreements) {
-		const frequency = getFrequency(agreement);
-		const key = getGroupingKey(agreement, frequency);
-		pushToMapArray(groupedAgreements, key, agreement);
-	}
-
-	for (const [, group] of groupedAgreements) {
+	for (const [, group] of groupAgreementsBySchedule(agreements)) {
 		const firstAgreement = group[0];
 		const frequency = getFrequency(firstAgreement);
-		const isGroupLesson = firstAgreement.lesson_types.is_group_lesson;
-		const durationMinutes = firstAgreement.duration_minutes;
-		const eventId = getEventId(firstAgreement.id);
-
+		const eventId = eventIdByAgreementId?.get(firstAgreement.id);
 		const studentNames = group.map((a) => getDisplayName(a.profiles));
-
-		const earliestStartDate = new Date(Math.min(...group.map((a) => new Date(a.start_date).getTime())));
-		const latestEndDate = group.some((a) => !a.end_date)
-			? null
-			: new Date(
-					Math.max(...group.filter((a) => a.end_date).map((a) => new Date(a.end_date as string).getTime())),
-				);
-
+		const { earliestStartDate, latestEndDate } = resolveGroupedAgreementDateWindow(group);
 		const currentLessonDate = getFirstOccurrenceInRange(firstAgreement, rangeStart, frequency);
 
 		while (currentLessonDate <= rangeEnd) {
-			if (currentLessonDate >= earliestStartDate && (!latestEndDate || currentLessonDate <= latestEndDate)) {
-				const lessonDateStr = formatDateToDb(currentLessonDate);
-
-				if (!isGroupLesson && group.length === 1 && eventId) {
-					const deviation = deviations.get(`${eventId}-${lessonDateStr}`);
-
-					if (deviation) {
-						const isCancelled = deviation.is_cancelled;
-						const timeStr = isCancelled ? deviation.original_start_time : deviation.actual_start_time;
-						const baseDate = isCancelled ? deviation.original_date : deviation.actual_date;
-						const eventDate = applyTimeToDate(new Date(baseDate), timeStr);
-
-						const actualDayOfWeek = new Date(deviation.actual_date).getDay();
-						const actualTimeNormalized = deviation.actual_start_time.substring(0, 5);
-						const agreementTimeNormalized = firstAgreement.start_time.substring(0, 5);
-						const isEffectivelyOriginal =
-							!isCancelled &&
-							actualDayOfWeek === firstAgreement.day_of_week &&
-							actualTimeNormalized === agreementTimeNormalized;
-
-						const lesson = deviation.lesson_agreement ?? firstAgreement;
-						const deviationUserOptional = lesson.profiles as UserOptional | null;
-						const deviationStudentName = getDisplayName(deviationUserOptional);
-						const deviationUserInfo = buildParticipantInfo(
-							deviationUserOptional,
-							'student_user_id' in lesson ? lesson.student_user_id : firstAgreement.student_user_id,
-						);
-						const lessonTypeName =
-							'lesson_types' in lesson
-								? lesson.lesson_types.name
-								: (deviation.agenda_event?.title ?? firstAgreement.lesson_types.name);
-						const lessonTypeColor = 'lesson_types' in lesson ? lesson.lesson_types.color : null;
-						const lessonTypeIcon = 'lesson_types' in lesson ? lesson.lesson_types.icon : null;
-						const hasTimeOrDateChange =
-							!isCancelled &&
-							(deviation.actual_date !== deviation.original_date ||
-								hasTimeChange(deviation.actual_start_time, deviation.original_start_time));
-
-						events.push({
-							title: `${lessonTypeName} - ${deviationStudentName}`,
-							start: eventDate,
-							end: addMinutes(eventDate, durationMinutes),
-							resource: {
-								type: isEffectivelyOriginal ? 'agreement' : 'deviation',
-								agreementId: firstAgreement.id,
-								eventId,
-								deviationId: deviation.id,
-								studentName: deviationStudentName,
-								user: deviationUserInfo,
-								lessonTypeName,
-								lessonTypeColor,
-								lessonTypeIcon,
-								isDeviation: !isCancelled && !isEffectivelyOriginal,
-								hasTimeOrDateChange,
-								isCancelled,
-								isGroupLesson: false,
-								originalDate: deviation.original_date,
-								originalStartTime: deviation.original_start_time,
-								reason: deviation.reason,
-								isRecurring: !!deviation.spans_future_occurrences,
-								cancellationType:
-									(deviation as AgendaEventDeviationRow & { cancellation_type?: CancellationType })
-										.cancellation_type ?? undefined,
-								needsReschedule:
-									(deviation as AgendaEventDeviationRow & { needs_reschedule?: boolean })
-										.needs_reschedule ?? false,
-							},
-						});
-						addInterval(currentLessonDate, frequency);
-						continue;
-					}
-
-					const recurringDeviation = getRecurringDeviationForDate(
-						recurringByEventId ?? new Map(),
-						eventId,
-						lessonDateStr,
-					);
-					if (recurringDeviation) {
-						const isCancelled = recurringDeviation.is_cancelled;
-						const actualDayOfWeek = new Date(recurringDeviation.actual_date).getDay();
-						const eventDate = applyTimeToDate(
-							getDateForDayOfWeek(actualDayOfWeek, currentLessonDate),
-							recurringDeviation.actual_start_time,
-						);
-
-						const recLesson = recurringDeviation.lesson_agreement ?? firstAgreement;
-						const recurringUserOptional = recLesson.profiles as UserOptional | null;
-						const recurringStudentName = getDisplayName(recurringUserOptional);
-						const recurringUserInfo = buildParticipantInfo(
-							recurringUserOptional,
-							'student_user_id' in recLesson ? recLesson.student_user_id : firstAgreement.student_user_id,
-						);
-						const recTypeName =
-							'lesson_types' in recLesson
-								? recLesson.lesson_types.name
-								: (recurringDeviation.agenda_event?.title ?? firstAgreement.lesson_types.name);
-						const recTypeColor = 'lesson_types' in recLesson ? recLesson.lesson_types.color : null;
-						const recTypeIcon = 'lesson_types' in recLesson ? recLesson.lesson_types.icon : null;
-						const recHasTimeOrDateChange =
-							!isCancelled &&
-							(recurringDeviation.actual_date !== recurringDeviation.original_date ||
-								hasTimeChange(
-									recurringDeviation.actual_start_time,
-									recurringDeviation.original_start_time,
-								));
-
-						events.push({
-							title: `${recTypeName} - ${recurringStudentName}`,
-							start: eventDate,
-							end: addMinutes(eventDate, durationMinutes),
-							resource: {
-								type: 'deviation',
-								agreementId: firstAgreement.id,
-								eventId,
-								deviationId: recurringDeviation.id,
-								studentName: recurringStudentName,
-								user: recurringUserInfo,
-								lessonTypeName: recTypeName,
-								lessonTypeColor: recTypeColor,
-								lessonTypeIcon: recTypeIcon,
-								isDeviation: !isCancelled,
-								hasTimeOrDateChange: recHasTimeOrDateChange,
-								isCancelled,
-								isGroupLesson: false,
-								originalDate: recurringDeviation.original_date,
-								originalStartTime: recurringDeviation.original_start_time,
-								reason: recurringDeviation.reason,
-								isRecurring: true,
-								cancellationType:
-									(
-										recurringDeviation as AgendaEventDeviationRow & {
-											cancellation_type?: CancellationType;
-										}
-									).cancellation_type ?? undefined,
-								needsReschedule:
-									(recurringDeviation as AgendaEventDeviationRow & { needs_reschedule?: boolean })
-										.needs_reschedule ?? false,
-							},
-						});
-						addInterval(currentLessonDate, frequency);
-						continue;
-					}
-				}
-
-				const eventDate = applyTimeToDate(new Date(currentLessonDate), firstAgreement.start_time);
-
-				const title = isGroupLesson
-					? `${firstAgreement.lesson_types.name} (${group.length} deelnemers)`
-					: `${firstAgreement.lesson_types.name} - ${studentNames[0]}`;
-
-				const users = group
-					.map((a) => buildParticipantInfo(a.profiles as UserOptional | null, a.student_user_id))
-					.filter((info): info is User => info !== undefined);
-
-				events.push({
-					title,
-					start: eventDate,
-					end: addMinutes(eventDate, durationMinutes),
-					resource: {
-						type: 'agreement',
-						agreementId: firstAgreement.id,
-						eventId: eventId ?? undefined,
-						studentName: isGroupLesson ? studentNames.join(', ') : studentNames[0],
-						user: !isGroupLesson && users.length > 0 ? users[0] : undefined,
-						users: isGroupLesson ? users : undefined,
-						lessonTypeName: firstAgreement.lesson_types.name,
-						lessonTypeColor: firstAgreement.lesson_types.color,
-						lessonTypeIcon: firstAgreement.lesson_types.icon,
-						isDeviation: false,
-						isCancelled: false,
-						isGroupLesson,
-						studentCount: isGroupLesson ? group.length : undefined,
-					},
+			if (isDateInsideAgreementWindow(currentLessonDate, earliestStartDate, latestEndDate)) {
+				const pushedDeviation = tryPushIndividualDeviationOccurrence(events, {
+					group,
+					firstAgreement,
+					eventId,
+					lessonDateStr: formatDateToDb(currentLessonDate),
+					currentLessonDate,
+					deviations,
+					recurringByEventId,
 				});
+				if (!pushedDeviation) {
+					pushDefaultGroupedOccurrence(
+						events,
+						group,
+						firstAgreement,
+						currentLessonDate,
+						eventId,
+						studentNames,
+					);
+				}
 			}
-
 			addInterval(currentLessonDate, frequency);
 		}
 	}

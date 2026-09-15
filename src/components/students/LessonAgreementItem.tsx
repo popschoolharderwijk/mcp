@@ -6,11 +6,9 @@ import { getDisplayName } from '@/lib/display-name';
 import { formatTime } from '@/lib/time/time-format';
 import { cn } from '@/lib/utils';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
-import type { LessonAgreement } from './LessonAgreementDialog';
 import { LessonAgreementDialog } from './LessonAgreementDialog';
 
-// Re-export the type for convenience
-export type { LessonAgreement };
+export type LessonAgreement = LessonAgreementWithTeacher;
 
 interface LessonAgreementItemProps {
 	agreement: LessonAgreement;

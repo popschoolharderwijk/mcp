@@ -26,7 +26,7 @@ export function buildLegacyProfilePayload(
 	};
 }
 
-export async function upsertLegacyProfile(
+async function upsertLegacyProfile(
 	admin: SupabaseClient,
 	userId: string,
 	email: string,
@@ -42,11 +42,7 @@ export async function upsertLegacyProfile(
 	if (error) throw error;
 }
 
-export async function upsertLegacyRole(
-	admin: SupabaseClient,
-	userId: string,
-	role: 'student' | 'teacher',
-): Promise<void> {
+async function upsertLegacyRole(admin: SupabaseClient, userId: string, role: 'student' | 'teacher'): Promise<void> {
 	const { error } = await admin.from('user_roles').upsert({ user_id: userId, role }, { onConflict: 'user_id,role' });
 	if (error) throw error;
 }

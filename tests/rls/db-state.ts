@@ -5,6 +5,7 @@
  */
 
 import { expect } from 'bun:test';
+import { deepEqual } from '../../src/lib/deepEqual';
 import { createClientBypassRLS } from '../db';
 
 /**
@@ -141,66 +142,6 @@ function compareDatabaseStates(before: DatabaseState, after: DatabaseState): { e
 		equal: differences.length === 0,
 		differences,
 	};
-}
-
-/**
- * Deep equality check for two values.
- * Handles objects, arrays, and primitives.
- */
-function deepEqual(a: unknown, b: unknown): boolean {
-	if (a === b) {
-		return true;
-	}
-
-	if (a === null || b === null || a === undefined || b === undefined) {
-		return a === b;
-	}
-
-	if (typeof a !== typeof b) {
-		return false;
-	}
-
-	if (typeof a !== 'object') {
-		return false;
-	}
-
-	if (Array.isArray(a) !== Array.isArray(b)) {
-		return false;
-	}
-
-	if (Array.isArray(a) && Array.isArray(b)) {
-		if (a.length !== b.length) {
-			return false;
-		}
-		for (let i = 0; i < a.length; i++) {
-			if (!deepEqual(a[i], b[i])) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	// Both are objects
-	const aObj = a as Record<string, unknown>;
-	const bObj = b as Record<string, unknown>;
-
-	const aKeys = Object.keys(aObj).sort();
-	const bKeys = Object.keys(bObj).sort();
-
-	if (aKeys.length !== bKeys.length) {
-		return false;
-	}
-
-	for (const key of aKeys) {
-		if (!bKeys.includes(key)) {
-			return false;
-		}
-		if (!deepEqual(aObj[key], bObj[key])) {
-			return false;
-		}
-	}
-
-	return true;
 }
 
 /**

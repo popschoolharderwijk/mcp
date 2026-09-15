@@ -2,8 +2,6 @@ import { jsonResponse } from '../_shared/http.ts';
 import { parsePain002 } from './parsePain002.ts';
 import type { ParsedReport } from './types.ts';
 
-export { validateImportBody } from './importSepaStatusValidationPure.ts';
-
 export function parseReportOrError(
 	xml: string,
 ): { ok: true; report: ParsedReport } | { ok: false; response: Response } {

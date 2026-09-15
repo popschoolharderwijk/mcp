@@ -61,7 +61,7 @@ async function createScheduleFromSetupPaymentMethod(
 	});
 }
 
-export async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
+async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
 	const state = subscriptionToState(sub);
 	if (!state) {
 		console.warn('subscription without lesson_agreement_id metadata', sub.id);
@@ -70,7 +70,7 @@ export async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subs
 	await writeSubscriptionState(admin, state);
 }
 
-export async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
+async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
 	const subId = extractStripeSubscriptionId(inv.subscription);
 	if (!subId) return;
 
@@ -200,9 +200,3 @@ async function dispatchStripeWebhookCheckoutAction(
 	}
 	await handleSetupIntentSucceeded(admin, stripe, event.data.object as Stripe.SetupIntent);
 }
-
-export {
-	normalizeSubscriptionStatus,
-	stripeTimestampToIso,
-	subscriptionToState,
-} from './stripe-subscription-mapping.ts';

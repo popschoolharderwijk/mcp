@@ -8,7 +8,7 @@ export interface EmailEventDefinition {
 	variables: readonly string[];
 }
 
-export const EMAIL_EVENTS: Record<string, EmailEventDefinition> = {
+const EMAIL_EVENTS: Record<string, EmailEventDefinition> = {
 	signup_received: {
 		key: 'signup_received',
 		label: 'Bevestiging aanmelding',

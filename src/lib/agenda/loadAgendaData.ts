@@ -190,22 +190,28 @@ async function fetchLessonGroups(ids: string[]): Promise<LessonGroupQueryRow[]> 
 	return (data ?? []) as LessonGroupQueryRow[];
 }
 
+function lessonTypeFromGroupRow(group: LessonGroupQueryRow) {
+	return Array.isArray(group.lesson_types) ? group.lesson_types[0] : group.lesson_types;
+}
+
+function activeLessonGroupMemberUserIds(group: LessonGroupQueryRow): string[] {
+	return (group.lesson_group_members ?? [])
+		.filter((member) => member.left_date === null)
+		.map((member) => member.student_user_id);
+}
+
 function buildLessonGroupsMap(rows: LessonGroupQueryRow[]): Map<string, LessonGroupInfo> {
 	const lessonGroupsMap = new Map<string, LessonGroupInfo>();
 
 	for (const group of rows) {
-		const lessonType = Array.isArray(group.lesson_types) ? group.lesson_types[0] : group.lesson_types;
-		const memberUserIds = (group.lesson_group_members ?? [])
-			.filter((member) => member.left_date === null)
-			.map((member) => member.student_user_id);
-
+		const lessonType = lessonTypeFromGroupRow(group);
 		lessonGroupsMap.set(group.id, {
 			id: group.id,
 			name: group.name,
 			lessonTypeName: lessonType?.name ?? null,
 			lessonTypeIcon: lessonType?.icon ?? null,
 			lessonTypeColor: lessonType?.color ?? null,
-			memberUserIds,
+			memberUserIds: activeLessonGroupMemberUserIds(group),
 		});
 	}
 

@@ -228,6 +228,16 @@ async function truncateRecurringDeviation(
 	return null;
 }
 
+function isUniqueDeviationError(error: PostgrestError): boolean {
+	return error.code === PostgresErrorCodes.UNIQUE_VIOLATION || (error.message ?? '').toLowerCase().includes('unique');
+}
+
+function mapCreateDeviationError(createError: PostgrestError): string {
+	if (isDeviationDateCheckError(createError)) return 'Afspraak kan niet in het verleden worden geplaatst.';
+	if (isUniqueDeviationError(createError)) return 'Deze afwijking bestaat al.';
+	return `Fout bij aanmaken afwijking: ${createError.message}`;
+}
+
 async function createDeviation(
 	eventId: string,
 	agendaEvent: AgendaEventRow,
@@ -252,19 +262,7 @@ async function createDeviation(
 	const { error: createError } = await supabase
 		.from('agenda_event_deviations')
 		.upsert(payload, { onConflict: 'event_id,original_date' });
-	if (createError) {
-		const isUnique =
-			createError.code === PostgresErrorCodes.UNIQUE_VIOLATION ||
-			(createError.message ?? '').toLowerCase().includes('unique');
-		return {
-			ok: false,
-			message: isDeviationDateCheckError(createError)
-				? 'Afspraak kan niet in het verleden worden geplaatst.'
-				: isUnique
-					? 'Deze afwijking bestaat al.'
-					: `Fout bij aanmaken afwijking: ${createError.message}`,
-		};
-	}
+	if (createError) return { ok: false, message: mapCreateDeviationError(createError) };
 	return { ok: true, message: 'Afspraak verplaatst' };
 }
 
