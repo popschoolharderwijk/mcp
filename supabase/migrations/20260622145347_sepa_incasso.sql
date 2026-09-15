@@ -20,7 +20,7 @@ RETURNS boolean LANGUAGE plpgsql IMMUTABLE SET search_path = public
 AS $$
 DECLARE
   v text; rearranged text; numeric_str text := ''; ch text;
-  code int; remainder bigint := 0; i int;
+  code int; remainder bigint := 0;
 BEGIN
   IF p_iban IS NULL THEN RETURN false; END IF;
   v := upper(regexp_replace(p_iban, '\s', '', 'g'));

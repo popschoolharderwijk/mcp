@@ -174,8 +174,8 @@ bun run check:fallow          # Fallow (dead code, duplication, complexity)
 # SQL migraties (Squawk)
 bun run lint:sql
 
-# PL/pgSQL functies (tegen database)
-supabase db lint --linked
+# PL/pgSQL functies (tegen database; warnings én errors falen)
+bun run lint:db
 ```
 
 > 📖 Zie [cicd-workflows.md](./cicd-workflows.md#linting) voor uitgebreide documentatie over alle linters.

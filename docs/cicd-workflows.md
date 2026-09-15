@@ -20,7 +20,7 @@ Er zijn drie linters actief in dit project:
 |--------|----------------|------|----------|
 | **Biome** | TypeScript/JS code style & errors | `pull-request-ci.yml` | `bun run check:ci` (Biome CI) |
 | **Squawk** | SQL migratie-veiligheid (drops, locks, backward compat) | `pull-request-ci.yml` | `bun run lint:sql` |
-| **supabase db lint** | PL/pgSQL code quality, SQL injection | `pull-request-test-code-and-supabase.yml` | `supabase db lint --linked` |
+| **supabase db lint** | PL/pgSQL code quality, SQL injection | `pull-request-test-code-and-supabase.yml` | `bun run lint:db` |
 
 ### Squawk (SQL migraties)
 
@@ -45,15 +45,17 @@ Powered by [plpgsql_check](https://github.com/okbob/plpgsql_check). Checkt tegen
 - SQL injection in `EXECUTE` statements
 
 ```bash
-# Tegen gelinkte dev database
-supabase db lint --linked
+# Tegen gelinkte database; warnings én errors falen (zelfde als CI)
+bun run lint:db
 
-# Alleen errors (geen warnings)
+# Alleen errors emitten (faalt niet: --fail-on default is none)
 supabase db lint --linked --level error
 
 # Specifieke schema
 supabase db lint --linked --schema public
 ```
+
+`--level` bepaalt wat er **getoond** wordt. `--fail-on` bepaalt de exit code. Default `--fail-on none` maakt de job groen, ook bij errors. CI gebruikt `--fail-on warning`.
 
 ### PR Supabase Workflow Details
 

@@ -145,7 +145,10 @@ BEGIN
     RAISE EXCEPTION 'Trial cannot be decided in current status' USING ERRCODE = '22023';
   END IF;
 
-  v_new_status := CASE WHEN p_decision = 'confirm' THEN 'student_confirmed' ELSE 'student_declined' END;
+  v_new_status := CASE
+    WHEN p_decision = 'confirm' THEN 'student_confirmed'::public.trial_lesson_status
+    ELSE 'student_declined'::public.trial_lesson_status
+  END;
 
   UPDATE public.trial_lessons
   SET status = v_new_status,

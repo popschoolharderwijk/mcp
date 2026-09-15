@@ -75,7 +75,7 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
 
       - name: Lint database (plpgsql_check)
-        run: supabase db lint --linked --level warning
+        run: bun run lint:db
 
       - name: Run all tests
         run: bun test --bail --timeout 30000
