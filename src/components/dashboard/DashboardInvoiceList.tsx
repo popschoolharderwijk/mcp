@@ -44,7 +44,7 @@ export function DashboardInvoiceList({ invoices, isLoading = false }: DashboardI
 							<button
 								key={invoice.id}
 								type="button"
-								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-muted/50 cursor-pointer transition-colors text-left"
+								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-accent cursor-pointer transition-colors text-left"
 								onClick={() => navigate('/mijn-facturen')}
 							>
 								<div>

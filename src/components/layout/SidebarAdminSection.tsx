@@ -41,7 +41,7 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 					type="button"
 					className={cn(
 						'mt-2 mb-0.5 flex w-full items-center gap-2 rounded-md px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors',
-						'text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+						'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
 					)}
 				>
 					<AdminSectionIcon className="h-3.5 w-3.5" />

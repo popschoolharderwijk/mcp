@@ -50,7 +50,7 @@ export function TeacherAvailabilityDayColumn({
 						<button
 							type="button"
 							key={`${dayName}-${time}`}
-							className="absolute left-0 right-0 hover:bg-primary/20 transition-colors border border-transparent hover:border-primary/40"
+							className="absolute left-0 right-0 hover:bg-accent transition-colors border border-transparent hover:border-accent"
 							style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
 							onClick={() => onEmptySlotClick(dayIndex, time)}
 							title={`${dayName} ${time} - Klik om beschikbaarheid toe te voegen`}

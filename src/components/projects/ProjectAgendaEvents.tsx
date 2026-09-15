@@ -75,7 +75,7 @@ export function ProjectAgendaEvents({ projectId, canSchedule }: ProjectAgendaEve
 						<button
 							key={event.id}
 							type="button"
-							className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted/50 transition-colors"
+							className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
 							onClick={() => setEditEvent(event)}
 						>
 							<span className="font-medium min-w-[90px]">{formatDbDateToUi(event.start_date)}</span>

@@ -41,7 +41,7 @@ export function ParticipantBadgeRemoveButton({
 	return (
 		<button
 			type="button"
-			className="ml-1 rounded hover:bg-muted"
+			className="ml-1 rounded hover:bg-accent"
 			onClick={() => onRemoveParticipant(id)}
 			aria-label="Verwijderen"
 		>

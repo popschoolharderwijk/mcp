@@ -43,7 +43,7 @@ export function StatsGrid({ items, isLoading = false, skeletonCount }: StatsGrid
 					to={stat.href}
 					className="block rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
-					<Card className="h-full overflow-hidden cursor-pointer hover:shadow-md">
+					<Card className="h-full overflow-hidden cursor-pointer transition-colors hover:bg-accent">
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
 							<CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
 							<div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">

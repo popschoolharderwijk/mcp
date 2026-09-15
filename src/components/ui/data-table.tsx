@@ -582,7 +582,7 @@ export function DataTable<T>({
 												className={cn(
 													'border-b transition-colors',
 													!isExpanded && 'last:border-0',
-													rowActions?.onEdit && 'cursor-pointer hover:bg-muted/50',
+													rowActions?.onEdit && 'cursor-pointer hover:bg-accent',
 													getRowClassName?.(item),
 													loading && 'opacity-50',
 												)}

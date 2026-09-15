@@ -22,7 +22,7 @@ describe('shouldShowUsersCreateButton', () => {
 
 describe('resolveUsersTableRowClassName', () => {
 	it('highlights the current user row', () => {
-		expect(resolveUsersTableRowClassName('user-1', 'user-1')).toBe('bg-primary/15 hover:bg-primary/20');
+		expect(resolveUsersTableRowClassName('user-1', 'user-1')).toBe('bg-accent');
 	});
 
 	it('returns undefined for other users', () => {

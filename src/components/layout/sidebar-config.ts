@@ -27,7 +27,6 @@ export const adminNavItems = [
 ];
 
 export const adminHrefs = [...adminNavItems, ...financeNavItems].map((item) => item.href);
-const financeHrefs = financeNavItems.map((item) => item.href);
 
 export const teacherChildNavItems = [
 	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },
@@ -58,7 +57,7 @@ export function isSidebarParentActive(
 export function sidebarNavItemStateClass(isActive: boolean): string {
 	return isActive
 		? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-		: 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground';
+		: 'text-sidebar-foreground hover:bg-accent hover:text-accent-foreground';
 }
 
 /** Toggle-only parents always flip; linked parents toggle only when already on that page. */

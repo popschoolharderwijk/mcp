@@ -44,7 +44,7 @@ export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvai
 							<button
 								key={teacher.user_id}
 								type="button"
-								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-muted/50 cursor-pointer transition-colors text-left"
+								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-accent cursor-pointer transition-colors text-left"
 								onClick={() => navigate(`/teachers/${teacher.user_id}`)}
 							>
 								<div className="flex items-center gap-3">
