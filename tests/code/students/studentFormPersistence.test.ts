@@ -1,75 +1,68 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
 
-let createUserResult: { data: { user: { id: string } | null }; error: { message: string } | null } = {
-	data: { user: { id: 'user-1' } },
-	error: null,
-};
-let insertResult: { data: { user_id: string } | null; error: { message: string } | null } = {
+let invokeResult: { data: unknown; error: unknown } = {
 	data: { user_id: 'user-1' },
 	error: null,
 };
 
 mock.module('../../../src/integrations/supabase/client', () => ({
 	supabase: {
-		auth: {
-			admin: {
-				createUser: async () => createUserResult,
-			},
+		functions: {
+			invoke: async () => invokeResult,
 		},
-		from: () => ({
-			insert: () => ({
-				select: () => ({
-					single: async () => insertResult,
-				}),
-			}),
-		}),
 	},
+}));
+
+mock.module('../../../src/lib/auth/invokeError', () => ({
+	getInvokeErrorMessage: async () => 'invoke failed',
 }));
 
 const { createStudentRecord } = await import('../../../src/components/students/studentFormPersistence');
 
 describe('createStudentRecord', () => {
 	beforeEach(() => {
-		createUserResult = {
-			data: { user: { id: 'user-1' } },
-			error: null,
-		};
-		insertResult = {
+		invokeResult = {
 			data: { user_id: 'user-1' },
 			error: null,
 		};
 	});
 
-	it('creates student for new-user mode', async () => {
-		expect(await createStudentRecord(emptyStudentForm, 'new-user', null)).toEqual({ ok: true });
-	});
-
-	it('uses selected user id for existing-user mode', async () => {
-		expect(await createStudentRecord(emptyStudentForm, 'existing-user', 'existing-user-1')).toEqual({ ok: true });
-	});
-
-	it('returns auth error when user creation fails', async () => {
-		createUserResult = {
-			data: { user: null },
-			error: { message: 'auth failed' },
-		};
+	it('creates student via create-student edge function for new-user mode', async () => {
 		expect(await createStudentRecord(emptyStudentForm, 'new-user', null)).toEqual({
-			ok: false,
-			title: 'Fout bij aanmaken gebruiker',
-			description: 'auth failed',
+			ok: true,
+			userId: 'user-1',
 		});
 	});
 
-	it('returns insert error when student creation fails', async () => {
-		insertResult = {
+	it('creates student via create-student edge function for existing-user mode', async () => {
+		expect(await createStudentRecord(emptyStudentForm, 'existing-user', 'existing-user-1')).toEqual({
+			ok: true,
+			userId: 'user-1',
+		});
+	});
+
+	it('returns invoke error when edge function call fails', async () => {
+		invokeResult = {
 			data: null,
-			error: { message: 'insert failed' },
+			error: { message: 'network failed' },
 		};
 		expect(await createStudentRecord(emptyStudentForm, 'new-user', null)).toEqual({
 			ok: false,
 			title: 'Fout bij aanmaken leerling',
-			description: 'insert failed',
+			description: 'invoke failed',
+		});
+	});
+
+	it('returns edge function error payload', async () => {
+		invokeResult = {
+			data: { error: 'duplicate' },
+			error: null,
+		};
+		expect(await createStudentRecord(emptyStudentForm, 'new-user', null)).toEqual({
+			ok: false,
+			title: 'Fout bij aanmaken leerling',
+			description: 'duplicate',
 		});
 	});
 });

@@ -66,22 +66,48 @@ describe('resolveDirectModePaymentMethodId', () => {
 });
 
 describe('buildCheckoutSessionUrls', () => {
+	const origin = 'https://mcp.mplifi.nl';
+
 	it('builds default success and cancel urls from the origin', () => {
-		expect(buildCheckoutSessionUrls('https://app.example.com', AGREEMENT_ID, {})).toEqual({
-			successUrl: `https://app.example.com/incasso/start?agreement=${AGREEMENT_ID}&session_id={CHECKOUT_SESSION_ID}`,
-			cancelUrl: `https://app.example.com/agreements/${AGREEMENT_ID}?subscription=canceled`,
+		expect(buildCheckoutSessionUrls(origin, AGREEMENT_ID, {})).toEqual({
+			ok: true,
+			successUrl: `${origin}/incasso/start?agreement=${AGREEMENT_ID}&session_id={CHECKOUT_SESSION_ID}`,
+			cancelUrl: `${origin}/agreements/${AGREEMENT_ID}?subscription=canceled`,
 		});
 	});
 
-	it('uses custom success and cancel urls when provided', () => {
+	it('uses custom success and cancel urls when provided on allowed hosts', () => {
 		expect(
-			buildCheckoutSessionUrls('https://app.example.com', AGREEMENT_ID, {
-				success_url: 'https://app.example.com/success',
-				cancel_url: 'https://app.example.com/cancel',
+			buildCheckoutSessionUrls(origin, AGREEMENT_ID, {
+				success_url: 'https://mcp.mplifi.nl/success',
+				cancel_url: 'https://mcp.mplifi.nl/cancel',
 			}),
 		).toEqual({
-			successUrl: 'https://app.example.com/success',
-			cancelUrl: 'https://app.example.com/cancel',
+			ok: true,
+			successUrl: 'https://mcp.mplifi.nl/success',
+			cancelUrl: 'https://mcp.mplifi.nl/cancel',
+		});
+	});
+
+	it('rejects custom success urls on disallowed hosts', () => {
+		expect(
+			buildCheckoutSessionUrls(origin, AGREEMENT_ID, {
+				success_url: 'https://evil.example.com/success',
+			}),
+		).toEqual({
+			ok: false,
+			error: 'Ongeldige success_url',
+		});
+	});
+
+	it('rejects custom cancel urls on disallowed hosts', () => {
+		expect(
+			buildCheckoutSessionUrls(origin, AGREEMENT_ID, {
+				cancel_url: 'https://evil.example.com/cancel',
+			}),
+		).toEqual({
+			ok: false,
+			error: 'Ongeldige cancel_url',
 		});
 	});
 });

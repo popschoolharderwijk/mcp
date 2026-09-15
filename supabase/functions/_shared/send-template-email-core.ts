@@ -9,6 +9,7 @@ import {
 	type SendTemplateEmailBody,
 	validateSendTemplateEmailBodyInput,
 } from './send-template-email-pure.ts';
+import { requirePrivilegedUser } from './supabase.ts';
 
 export type { SendTemplateEmailBody } from './send-template-email-pure.ts';
 
@@ -39,11 +40,8 @@ export async function authenticateSendTemplateEmailRequest(
 		global: { headers: { Authorization: authHeader } },
 		auth: { autoRefreshToken: false, persistSession: false },
 	});
-	const {
-		data: { user },
-		error: userErr,
-	} = await userClient.auth.getUser();
-	if (userErr || !user) return jsonResponse(401, { error: 'Invalid token' });
+	const authn = await requirePrivilegedUser(userClient);
+	if (!authn.ok) return authn.response;
 	return null;
 }
 

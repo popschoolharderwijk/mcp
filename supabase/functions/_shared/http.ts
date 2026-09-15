@@ -84,18 +84,31 @@ const ALLOWED_SITE_HOSTS = new Set([
 	'098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com',
 ]);
 
-/** Return `candidate` as an origin string if it is an https URL on the allow-list, else null. */
-export function resolveAllowedSiteUrl(candidate: string | null | undefined): string | null {
+function isAllowedSiteHost(hostname: string): boolean {
+	return ALLOWED_SITE_HOSTS.has(hostname);
+}
+
+function resolveAllowedHttpsUrl(candidate: string | null | undefined, format: (url: URL) => string): string | null {
 	if (!candidate) return null;
 	try {
 		const url = new URL(candidate);
-		if (url.protocol === 'https:' && ALLOWED_SITE_HOSTS.has(url.hostname)) {
-			return url.origin;
+		if (url.protocol === 'https:' && isAllowedSiteHost(url.hostname)) {
+			return format(url);
 		}
 	} catch {
 		// invalid URL
 	}
 	return null;
+}
+
+/** Return `candidate` as an origin string if it is an https URL on the allow-list, else null. */
+export function resolveAllowedSiteUrl(candidate: string | null | undefined): string | null {
+	return resolveAllowedHttpsUrl(candidate, (url) => url.origin);
+}
+
+/** Return the full redirect URL when it is https and on the allow-list, else null. */
+export function resolveAllowedRedirectUrl(candidate: string | null | undefined): string | null {
+	return resolveAllowedHttpsUrl(candidate, (url) => url.toString());
 }
 
 /** Resolve HTTPS site origin from request Origin header or provided env/fallback values. */

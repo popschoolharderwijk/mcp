@@ -1,4 +1,4 @@
-import { jsonResponse } from '../_shared/http.ts';
+import { jsonResponse, resolveAllowedRedirectUrl } from '../_shared/http.ts';
 
 export function validateCompleteCheckoutSessionId(checkoutSessionId: string | undefined): Response | null {
 	if (!checkoutSessionId?.startsWith('cs_')) {
@@ -27,15 +27,28 @@ export function resolveDirectModePaymentMethodId(defaultPm: string | { id: strin
 	return defaultPm?.id ?? null;
 }
 
+export type CheckoutSessionUrlsResult =
+	| { ok: true; successUrl: string; cancelUrl: string }
+	| { ok: false; error: string };
+
 export function buildCheckoutSessionUrls(
 	origin: string,
 	agreementId: string,
 	body: { success_url?: string; cancel_url?: string },
-): { successUrl: string; cancelUrl: string } {
+): CheckoutSessionUrlsResult {
+	const defaultSuccessUrl = `${origin}/incasso/start?agreement=${agreementId}&session_id={CHECKOUT_SESSION_ID}`;
+	const defaultCancelUrl = `${origin}/agreements/${agreementId}?subscription=canceled`;
+
+	const allowedSuccessUrl = body.success_url ? resolveAllowedRedirectUrl(body.success_url) : null;
+	if (body.success_url && !allowedSuccessUrl) return { ok: false, error: 'Ongeldige success_url' };
+
+	const allowedCancelUrl = body.cancel_url ? resolveAllowedRedirectUrl(body.cancel_url) : null;
+	if (body.cancel_url && !allowedCancelUrl) return { ok: false, error: 'Ongeldige cancel_url' };
+
 	return {
-		successUrl:
-			body.success_url ?? `${origin}/incasso/start?agreement=${agreementId}&session_id={CHECKOUT_SESSION_ID}`,
-		cancelUrl: body.cancel_url ?? `${origin}/agreements/${agreementId}?subscription=canceled`,
+		ok: true,
+		successUrl: allowedSuccessUrl ?? defaultSuccessUrl,
+		cancelUrl: allowedCancelUrl ?? defaultCancelUrl,
 	};
 }
 

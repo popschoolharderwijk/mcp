@@ -1,7 +1,7 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { createScheduleForAgreement } from '../_shared/billing.ts';
-import { jsonResponse } from '../_shared/http.ts';
+import { jsonResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
 	attachDefaultPaymentMethod,
 	getReusablePaymentMethodIdFromSetupIntent,
@@ -142,8 +142,10 @@ export async function handleCheckoutMode(
 	customerId: string,
 	body: { success_url?: string; cancel_url?: string },
 ): Promise<Response> {
-	const origin = req.headers.get('origin') ?? '';
-	const { successUrl, cancelUrl } = buildCheckoutSessionUrls(origin, agreement.id, body);
+	const origin = resolveSiteBaseUrl(req, Deno.env.get('SITE_URL'));
+	const urls = buildCheckoutSessionUrls(origin, agreement.id, body);
+	if (!urls.ok) return jsonResponse(400, { error: urls.error });
+	const { successUrl, cancelUrl } = urls;
 
 	const session = await stripe.checkout.sessions.create({
 		mode: 'setup',
