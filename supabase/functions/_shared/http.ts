@@ -88,13 +88,12 @@ function isAllowedSiteHost(hostname: string): boolean {
 	return ALLOWED_SITE_HOSTS.has(hostname);
 }
 
-/** Return `candidate` as an origin string if it is an https URL on the allow-list, else null. */
-export function resolveAllowedSiteUrl(candidate: string | null | undefined): string | null {
+function resolveAllowedHttpsUrl(candidate: string | null | undefined, format: (url: URL) => string): string | null {
 	if (!candidate) return null;
 	try {
 		const url = new URL(candidate);
 		if (url.protocol === 'https:' && isAllowedSiteHost(url.hostname)) {
-			return url.origin;
+			return format(url);
 		}
 	} catch {
 		// invalid URL
@@ -102,18 +101,14 @@ export function resolveAllowedSiteUrl(candidate: string | null | undefined): str
 	return null;
 }
 
+/** Return `candidate` as an origin string if it is an https URL on the allow-list, else null. */
+export function resolveAllowedSiteUrl(candidate: string | null | undefined): string | null {
+	return resolveAllowedHttpsUrl(candidate, (url) => url.origin);
+}
+
 /** Return the full redirect URL when it is https and on the allow-list, else null. */
 export function resolveAllowedRedirectUrl(candidate: string | null | undefined): string | null {
-	if (!candidate) return null;
-	try {
-		const url = new URL(candidate);
-		if (url.protocol === 'https:' && isAllowedSiteHost(url.hostname)) {
-			return url.toString();
-		}
-	} catch {
-		// invalid URL
-	}
-	return null;
+	return resolveAllowedHttpsUrl(candidate, (url) => url.toString());
 }
 
 /** Resolve HTTPS site origin from request Origin header or provided env/fallback values. */

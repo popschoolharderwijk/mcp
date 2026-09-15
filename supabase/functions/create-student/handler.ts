@@ -2,8 +2,11 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
 import { createSupabaseClients, requirePrivilegedUser } from '../_shared/supabase.ts';
 import {
+	type CreateStudentRequestSteps,
+	readCreateStudentStepFailure,
 	resolveCreateStudentAuthError,
 	resolveCreateStudentPersistFailure,
+	resolveCreateStudentRequestOutcome,
 	resolveCreateStudentValidationFailure,
 } from './createStudentHandlerPure.ts';
 import {
@@ -79,23 +82,94 @@ async function persistCreateStudentProfileAndRow(
 	return persistFailureResponse(studentError, 'Kon leerlingrecord niet bijwerken');
 }
 
-async function executeCreateStudentRequest(authHeader: string, body: CreateStudentRequestBody): Promise<Response> {
-	const validationFailure = resolveCreateStudentValidationFailure(validateCreateStudentBody(body));
-	if (validationFailure) {
-		return jsonResponse(validationFailure.status, { error: validationFailure.error });
-	}
+async function readStepFailure(response: Response) {
+	const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+	return readCreateStudentStepFailure(response.status, payload);
+}
 
+function buildValidationSteps(body: CreateStudentRequestBody): CreateStudentRequestSteps | null {
+	const validationFailure = resolveCreateStudentValidationFailure(validateCreateStudentBody(body));
+	if (!validationFailure) return null;
+	return { validationFailure, authFailure: null, userFailure: null, persistFailure: null };
+}
+
+async function resolveCreateStudentAuthAndUser(
+	authHeader: string,
+	body: CreateStudentRequestBody,
+): Promise<
+	{ kind: 'failure'; steps: CreateStudentRequestSteps } | { kind: 'success'; admin: SupabaseClient; userId: string }
+> {
 	const { userClient, admin } = createSupabaseClients(authHeader);
 	const authn = await requirePrivilegedUser(userClient);
-	if (!authn.ok) return authn.response;
+	if (!authn.ok) {
+		return {
+			kind: 'failure',
+			steps: {
+				validationFailure: null,
+				authFailure: await readStepFailure(authn.response),
+				userFailure: null,
+				persistFailure: null,
+			},
+		};
+	}
 
 	const userResult = await resolveStudentUserId(admin, body);
-	if (!userResult.ok) return userResult.response;
+	if (!userResult.ok) {
+		return {
+			kind: 'failure',
+			steps: {
+				validationFailure: null,
+				authFailure: null,
+				userFailure: await readStepFailure(userResult.response),
+				persistFailure: null,
+			},
+		};
+	}
 
-	const persistFailure = await persistCreateStudentProfileAndRow(admin, userResult.userId, body);
-	if (persistFailure) return persistFailure;
+	return { kind: 'success', admin, userId: userResult.userId };
+}
 
-	return jsonResponse(200, { user_id: userResult.userId });
+async function resolveCreateStudentPersistSteps(
+	admin: SupabaseClient,
+	userId: string,
+	body: CreateStudentRequestBody,
+): Promise<CreateStudentRequestSteps> {
+	const persistResponse = await persistCreateStudentProfileAndRow(admin, userId, body);
+	if (persistResponse) {
+		return {
+			validationFailure: null,
+			authFailure: null,
+			userFailure: null,
+			persistFailure: await readStepFailure(persistResponse),
+		};
+	}
+
+	return {
+		validationFailure: null,
+		authFailure: null,
+		userFailure: null,
+		persistFailure: null,
+		userId,
+	};
+}
+
+async function collectCreateStudentRequestSteps(
+	authHeader: string,
+	body: CreateStudentRequestBody,
+): Promise<CreateStudentRequestSteps> {
+	const validationSteps = buildValidationSteps(body);
+	if (validationSteps) return validationSteps;
+
+	const authAndUser = await resolveCreateStudentAuthAndUser(authHeader, body);
+	if (authAndUser.kind === 'failure') return authAndUser.steps;
+
+	return resolveCreateStudentPersistSteps(authAndUser.admin, authAndUser.userId, body);
+}
+
+async function executeCreateStudentRequest(authHeader: string, body: CreateStudentRequestBody): Promise<Response> {
+	const steps = await collectCreateStudentRequestSteps(authHeader, body);
+	const outcome = resolveCreateStudentRequestOutcome(steps);
+	return jsonResponse(outcome.status, outcome.body);
 }
 
 export async function handleCreateStudentRequest(req: Request): Promise<Response> {
