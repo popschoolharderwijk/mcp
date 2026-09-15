@@ -12,6 +12,21 @@ Na het mergen van een PR naar `main` worden migraties via de Supabase GitHub Int
 | Auth/config wijzigingen (`supabase/config.toml`) | Handmatig: `supabase config push`. |
 | Edge Functions | Handmatig: `supabase functions deploy <name>`. |
 | Frontend code | Automatisch (Lovable deploy). |
+| CSP (Content-Security-Policy) | Meta-tag in `index.html` (meereist met Lovable publish). Geen HTTP-header: prod draait op Lovable hosting, niet op eigen Cloudflare/Vercel. |
+
+---
+
+## Content-Security-Policy (Lovable hosting)
+
+Productie staat op **Lovable Cloud** (`mcp.mplifi.nl`). Lovable levert HSTS/nosniff/referrer-policy, maar geen configureerbare HTTP CSP-header zonder externe host of CDN-login.
+
+Daarom staat CSP als **meta-tag** in `index.html`:
+
+- Werkt na elke Lovable publish (zit in de gebouwde HTML).
+- `connect-src` / `img-src` gebruiken `https://*.supabase.co` zodat dev, test en prod werken.
+- `frame-ancestors` is niet mogelijk via meta; clickjacking blijft deels platform-afhankelijk.
+
+Voor een volledige HTTP CSP (Report-Only, `frame-ancestors`): frontend extern hosten — zie [Deploying outside Lovable](https://docs.lovable.dev/tips-tricks/external-deployment-hosting) (Vercel/Netlify + `vercel.json` of `_headers`).
 
 ---
 
