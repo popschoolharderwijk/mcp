@@ -26,12 +26,20 @@ enabled = true
 file_size_limit = "50MiB"
 
 # -------------
-# Auth defaults
+# Auth defaults (mcp-dev / mcp-test). Production overrides: [remotes.prod.auth]
 
 [auth]
 enabled = true
-site_url = "https://mcp.mplifi.nl"
-additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-kit.lovable.app/**", "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**", "http://localhost:5173/**"]
+site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+additional_redirect_urls = [
+  "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**",
+  "https://instant-setup-kit.lovable.app/**",
+  "https://preview--instant-setup-kit.lovable.app/**",
+  "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
+  "http://localhost:5173/**",
+]
 minimum_password_length = 32
 password_requirements= "lower_upper_letters_digits_symbols"
 
@@ -48,7 +56,7 @@ otp_length = 8
 otp_expiry = 1800
 
 [auth.email.template.magic_link]
-subject = "Je inloglink"
+subject = "[DEV] Je inloglink voor de Mplify Community Portal"
 content_path = "./docs/email-templates/magic-link.html"
 
 [auth.email.smtp]
@@ -77,15 +85,31 @@ web3 = 30
 
 # -------------
 # Remote Auth Overrides
-# These settings override [auth] defaults when pushing to remote projects
+# mcp-dev and mcp-test keep the [auth] URLs and magic-link subject (keep those two blocks in sync).
 
 [remotes.test.auth]
-site_url = "https://mcp.mplifi.nl"
-additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-kit.lovable.app/**", "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**", "http://localhost:5173/**"]
+site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+additional_redirect_urls = [
+  "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**",
+  "https://instant-setup-kit.lovable.app/**",
+  "https://preview--instant-setup-kit.lovable.app/**",
+  "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
+  "http://localhost:5173/**",
+]
 
 [remotes.dev.auth]
-site_url = "https://mcp.mplifi.nl"
-additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-kit.lovable.app/**", "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**", "http://localhost:5173/**"]
+site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+additional_redirect_urls = [
+  "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**",
+  "https://instant-setup-kit.lovable.app/**",
+  "https://preview--instant-setup-kit.lovable.app/**",
+  "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
+  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
+  "http://localhost:5173/**",
+]
 
 [remotes.prod.auth]
 site_url = "https://mcp.mplifi.nl"
@@ -95,6 +119,9 @@ enable_signup = false
 # Tighter than test/dev: stop inbox spam and cheap login DoS. Magic links stay valid 30m.
 [remotes.prod.auth.email]
 max_frequency = "60s"
+
+[remotes.prod.auth.email.template.magic_link]
+subject = "Je inloglink"
 
 [remotes.prod.auth.rate_limit]
 email_sent = 100

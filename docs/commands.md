@@ -71,7 +71,7 @@ supabase <command> --linked
 supabase db push --linked
 
 # Push config naar remote dev
-supabase config push --linked
+supabase config push 
 
 # Generate types voor gelinkte project
 supabase gen types typescript --linked > src/integrations/supabase/types.ts

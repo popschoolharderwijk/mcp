@@ -46,7 +46,7 @@ Alle authentication settings worden beheerd via `supabase/config.toml` en gepush
 
 #### Remote Project Settings
 
-De `[remotes.test.auth]`, `[remotes.dev.auth]` en `[remotes.prod.auth]` secties overschrijven de defaults voor remote projects:
+De `[remotes.test.auth]`, `[remotes.dev.auth]` en `[remotes.prod.auth]` secties overschrijven de defaults voor remote projects. mcp-dev en mcp-test delen Lovable-URLs, `localhost:5173` en het `[DEV]`-mailonderwerp. Productie (`[remotes.prod.auth]`) heeft `mcp.mplifi.nl`, geen publieke signup, strakkere rate limits en subject `Je inloglink`.
 
 #### Settings Pushen naar Remote
 
