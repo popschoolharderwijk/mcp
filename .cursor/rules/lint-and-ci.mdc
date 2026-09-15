@@ -3,5 +3,5 @@ alwaysApply: true
 ---
 
 * Prefer **ReadLints** for quick feedback when editing files.
-* For format/lint on your edits, `bun check` is enough. Do **not** follow it with `bun check:ci` unless the user asks — that script runs the full `bun test code` suite.
+* For format/lint on your edits, `bun run fix` is enough (`biome check --write`). `bun run check` is read-only and does not write. Do **not** follow either with `bun check:ci` unless the user asks — that script runs the full `bun test code` suite.
 * Full `bun check:ci` (or any full test run) only when the user explicitly requests it, or via `/finalize` / quality gates they invoked.

@@ -33,18 +33,18 @@ Do not start this workflow merely because the user asks to commit or create a PR
 | Step | Command | Role |
 |------|---------|------|
 | types | `bun run supabase:types` | Once at start (linked types regen — **not** `db:reset`) |
-| check | `bun run check` | Biome + autofix |
-| ci | `bun run check:ci` | Biome CI + `tsc` + `bun test code` |
+| check | `bun run check` | Biome verify (no write) |
+| ci | `bun run check:ci` | Biome CI + `tsc` + code tests |
 | fallow | `bun run check:fallow` | Dead code, duplication, complexity/CRAP |
 
-Use these `package.json` scripts. Never run `bun run db:reset`. Do not run `tests/auth`, `tests/rls`, or `tests/e2e` (need Supabase; out of scope).
+Use these `package.json` scripts. `bun run fix` is the Biome write command; it is not a gate — only run it when `check` fails on auto-fixable issues. Never run `bun run db:reset`. Do not run `tests/auth`, `tests/rls`, or `tests/e2e` (need Supabase; out of scope).
 
 ## State machine
 
 1. Run **types**. If it fails, fix and retry types. After it passes, never run it
    again during this finalize run.
 2. Run **check**, then **ci**, then **fallow**.
-3. If check fails, fix and restart at check.
+3. If check fails, run `bun run fix` for auto-fixable Biome issues (or edit by hand), then restart at check.
 4. If ci fails, fix and restart at check.
 5. If fallow fails, fix and retry fallow only until it passes.
 6. After a repaired fallow pass first becomes green, run exactly one verification
@@ -57,7 +57,7 @@ Use these `package.json` scripts. Never run `bun run db:reset`. Do not run `test
 | Failure | Next |
 |---------|------|
 | types | Fix; re-run types until green; then enter loop |
-| check | Fix; restart at **check** |
+| check | `bun run fix` or edit; restart at **check** |
 | ci | Fix; restart at **check** |
 | fallow | Fix; **retry fallow only** until green; then one verification pass from **check** |
 
@@ -81,4 +81,4 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 2. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
 3. No Fallow suppressions / threshold hacks; no CRAP theater — [`fallow.md`](fallow.md).
 4. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
-5. Do not commit unless the user explicitly asks.
+5. Never `git add` or `git commit`. The user always stages and commits.

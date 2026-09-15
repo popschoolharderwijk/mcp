@@ -164,8 +164,12 @@ bun test
 
 ```bash
 # TypeScript/JS (Biome)
-biome ci .                    # Check
-biome check --write .         # Fix
+bun run check                 # Check (geen writes)
+bun run fix                   # Fix (format + lint autofix)
+
+# Quality gates (CI)
+bun run check:ci              # Biome CI + tsc + code tests
+bun run check:fallow          # Fallow (dead code, duplication, complexity)
 
 # SQL migraties (Squawk)
 bun run lint:sql

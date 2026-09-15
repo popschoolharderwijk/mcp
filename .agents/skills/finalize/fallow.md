@@ -38,7 +38,7 @@ CRAP = complexity × low coverage. Lowering CRAP is allowed **only** via a genui
 
 * ✅ When cyclomatic/cognitive complexity is high: split real responsibilities; extract helpers that encode non-trivial rules (validation, branched mapping, domain logic) — not wrappers around one expression
 * ✅ Tests assert behavior: inputs → expected outputs/side-effects for real branches (edges, errors, invariants). A reader must learn something the type signature does not already say
-* ✅ If coverage is needed for CRAP, test logic that already exists (or after a meaningful extract) — assert outcomes, not `f(x) === x`
+* ✅ If CRAP is high because tests do not reach the code, test existing logic (or after a meaningful extract) — assert outcomes, not `f(x) === x`
 * ✅ Prefer fewer strong tests over many trivial `*Helpers.test.ts` files that restate the implementation
 
 ### Smell check

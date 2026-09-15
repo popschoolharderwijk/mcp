@@ -39,7 +39,7 @@ When fallow reports dead code, duplication, or complexity: **fix the underlying 
 
 ## Always do this instead (CLI)
 
-* Run from project root with **`bunx fallow <command>`** (or `bun run fallow <command>` if scripted)
+* Run from project root with **`bunx fallow <command>`** (or `bun run check:fallow` for the full gate)
 * Use JSON output when parsing results: `bunx fallow dead-code --format json --quiet`
 * Before `fix`, always dry-run first: `bunx fallow fix --dry-run --format json --quiet`
 * Apply fixes only after review: `bunx fallow fix --yes --format json --quiet`

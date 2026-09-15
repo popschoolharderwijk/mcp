@@ -35,4 +35,4 @@ Stop and ask the user when any of these hold:
 4. **Ambiguous** — root cause still unclear after reading the full output.
 5. **Types vs schema** — `supabase:types` / `tsc` fail because migrations are not on the linked DB → ask user for `bun run db:reset`.
 
-On escalation: failing step, exact error, what was tried, structured options. Do not commit or retry blindly.
+On escalation: failing step, exact error, what was tried, structured options. Do not stage, commit, or retry blindly.

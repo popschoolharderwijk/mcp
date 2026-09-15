@@ -1,6 +1,6 @@
 {
 	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
-	"ignorePatterns": ["tests/**", "src/integrations/supabase/types.ts"],
+	"ignorePatterns": ["src/integrations/supabase/types.ts"],
 	"health": {
 		"ignore": ["src/components/ui/**"]
 	},
