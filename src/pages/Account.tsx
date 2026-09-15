@@ -53,7 +53,7 @@ export default function Account({ defaultTab = 'profile' }: AccountProps) {
 			</div>
 
 			<Tabs
-				defaultValue={defaultTab}
+				value={defaultTab}
 				onValueChange={(value) => {
 					if (value === 'profile' || value === 'appearance' || value === 'danger') {
 						navigateToAccountTab(navigate, value);
