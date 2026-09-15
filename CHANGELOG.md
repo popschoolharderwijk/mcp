@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 — 2026-09-15
+
+- Dashboard voor **docenten** en **leerlingen**
+- Verschillende kleine UI aanpassingen
+
 ## 1.0.0 — 2026-09-15
 
 - Eerste live versie voor gebruikers
