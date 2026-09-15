@@ -89,10 +89,16 @@ additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-k
 
 [remotes.prod.auth]
 site_url = "https://mcp.mplifi.nl"
-additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-kit.lovable.app/**", "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**", "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**", "http://localhost:5173/**"]
+additional_redirect_urls = ["https://mcp.mplifi.nl/**"]
+
+# Tighter than test/dev: stop inbox spam and cheap login DoS. Magic links stay valid 30m.
+[remotes.prod.auth.email]
+max_frequency = "60s"
 
 [remotes.prod.auth.rate_limit]
-email_sent = 200
+email_sent = 100
+sign_in_sign_ups = 10
+token_verifications = 10
 
 # ---------
 # Edge function settings
