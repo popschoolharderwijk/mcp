@@ -143,6 +143,9 @@ verify_jwt = false
 [functions.create-user]
 verify_jwt = false
 
+[functions.create-student]
+verify_jwt = false
+
 [functions.generate-invoice]
 verify_jwt = false
 

@@ -1,11 +1,8 @@
 import { toast } from 'sonner';
 import {
+	buildCreateStudentPayload,
 	buildStudentProfileUpdateFields,
-	needsProfileUpdateAfterCreate,
-	resolveAuthUserCreateResult,
-	resolveCreateStudentUserIdAfterAuth,
-	resolveCreateStudentUserIdFromSelection,
-	resolveStudentInsertResult,
+	resolveCreateStudentInvokeResult,
 	type StudentSubmitError,
 	type StudentSubmitResult,
 } from '@/components/students/studentFormPersistenceHelpers';
@@ -15,6 +12,7 @@ import {
 	studentRecordFields,
 } from '@/components/students/studentFormTypes';
 import { supabase } from '@/integrations/supabase/client';
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import type { Student } from '@/types/students';
 
 export type { StudentSubmitError, StudentSubmitResult } from '@/components/students/studentFormPersistenceHelpers';
@@ -51,60 +49,21 @@ export async function updateExistingStudent(student: Student, form: StudentFormS
 	return { ok: true };
 }
 
-async function createAuthUser(form: StudentFormState): Promise<StudentSubmitResult & { userId?: string }> {
-	const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-		email: form.email,
-		email_confirm: true,
-		user_metadata: {
-			first_name: form.first_name || undefined,
-			last_name: form.last_name || undefined,
-		},
-	});
-
-	return resolveAuthUserCreateResult(authError, authData.user);
-}
-
-async function resolveUserIdForNewStudentCreate(form: StudentFormState): Promise<StudentSubmitResult> {
-	const authResult = await createAuthUser(form);
-	if (!authResult.ok || !authResult.userId) return authResult;
-
-	if (!needsProfileUpdateAfterCreate(form)) {
-		return { ok: true, userId: authResult.userId };
-	}
-
-	const profileResult = await updateProfileForUser(authResult.userId, form, 'Fout bij bijwerken profiel');
-	if (!profileResult.ok) {
-		console.error('Error updating profile after user creation');
-	}
-	return resolveCreateStudentUserIdAfterAuth(form, authResult, profileResult);
-}
-
-async function resolveUserIdForCreate(
-	form: StudentFormState,
-	mode: StudentFormMode,
-	selectedUserId: string | null,
-): Promise<StudentSubmitResult> {
-	const selectionResult = resolveCreateStudentUserIdFromSelection(mode, selectedUserId);
-	if (selectionResult.userId) return selectionResult;
-
-	return resolveUserIdForNewStudentCreate(form);
-}
-
 export async function createStudentRecord(
 	form: StudentFormState,
 	mode: StudentFormMode,
 	selectedUserId: string | null,
 ): Promise<StudentSubmitResult> {
-	const userResult = await resolveUserIdForCreate(form, mode, selectedUserId);
-	if (!userResult.ok || !userResult.userId) return userResult;
+	const { data, error: invokeError } = await supabase.functions.invoke('create-student', {
+		body: buildCreateStudentPayload(form, mode, selectedUserId),
+	});
 
-	const { data: studentData, error: studentError } = await supabase
-		.from('students')
-		.insert({ user_id: userResult.userId, ...studentRecordFields(form) })
-		.select('user_id')
-		.single();
+	if (invokeError) {
+		const description = await getInvokeErrorMessage(invokeError);
+		return { ok: false, title: 'Fout bij aanmaken leerling', description };
+	}
 
-	return resolveStudentInsertResult(studentData, studentError);
+	return resolveCreateStudentInvokeResult(data);
 }
 
 export function showStudentSubmitError(result: StudentSubmitError): void {

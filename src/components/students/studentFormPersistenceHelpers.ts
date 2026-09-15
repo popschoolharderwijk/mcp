@@ -1,13 +1,9 @@
 import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
+import { studentRecordFields } from '@/components/students/studentFormTypes';
 
 export type StudentSubmitError = { ok: false; title: string; description?: string };
 export type StudentSubmitSuccess = { ok: true; userId?: string };
 export type StudentSubmitResult = StudentSubmitError | StudentSubmitSuccess;
-
-function resolveExistingUserIdForCreate(mode: StudentFormMode, selectedUserId: string | null): string | null {
-	if (mode === 'existing-user' && selectedUserId) return selectedUserId;
-	return null;
-}
 
 export function buildStudentProfileUpdateFields(form: StudentFormState): {
 	first_name: string | null;
@@ -21,56 +17,37 @@ export function buildStudentProfileUpdateFields(form: StudentFormState): {
 	};
 }
 
-export function needsProfileUpdateAfterCreate(form: StudentFormState): boolean {
-	return !!(form.first_name || form.last_name || form.phone_number);
-}
-
-export function resolveCreateStudentUserIdFromSelection(
+export function buildCreateStudentPayload(
+	form: StudentFormState,
 	mode: StudentFormMode,
 	selectedUserId: string | null,
-): StudentSubmitSuccess {
-	const existingUserId = resolveExistingUserIdForCreate(mode, selectedUserId);
-	if (existingUserId) return { ok: true, userId: existingUserId };
-	return { ok: true };
+) {
+	return {
+		mode,
+		existing_user_id: mode === 'existing-user' ? (selectedUserId ?? undefined) : undefined,
+		email: form.email,
+		first_name: form.first_name || undefined,
+		last_name: form.last_name || undefined,
+		phone_number: form.phone_number || undefined,
+		...studentRecordFields(form),
+	};
 }
 
-export function resolveCreateStudentUserIdAfterAuth(
-	form: StudentFormState,
-	authResult: StudentSubmitResult & { userId?: string },
-	profileUpdateResult: StudentSubmitResult,
-): StudentSubmitResult {
-	if (!authResult.ok || !authResult.userId) return authResult;
-	if (!needsProfileUpdateAfterCreate(form)) return { ok: true, userId: authResult.userId };
-	if (!profileUpdateResult.ok) return profileUpdateResult;
-	return { ok: true, userId: authResult.userId };
-}
-
-export function resolveAuthUserCreateResult(
-	authError: { message: string } | null,
-	user: { id: string } | null | undefined,
-): StudentSubmitResult & { userId?: string } {
-	if (authError || !user) {
-		return {
-			ok: false,
-			title: 'Fout bij aanmaken gebruiker',
-			description: authError?.message || 'Onbekende fout',
-		};
-	}
-
-	return { ok: true, userId: user.id };
-}
-
-export function resolveStudentInsertResult(
-	studentData: { user_id: string } | null,
-	studentError: { message: string } | null,
-): StudentSubmitResult {
-	if (studentError || !studentData) {
+export function resolveCreateStudentInvokeResult(data: unknown): StudentSubmitResult {
+	const payload = data as { error?: string; user_id?: string } | null;
+	if (payload?.error) {
 		return {
 			ok: false,
 			title: 'Fout bij aanmaken leerling',
-			description: studentError?.message || 'Onbekende fout',
+			description: payload.error,
 		};
 	}
-
-	return { ok: true };
+	if (!payload?.user_id) {
+		return {
+			ok: false,
+			title: 'Fout bij aanmaken leerling',
+			description: 'Onbekende fout',
+		};
+	}
+	return { ok: true, userId: payload.user_id };
 }
