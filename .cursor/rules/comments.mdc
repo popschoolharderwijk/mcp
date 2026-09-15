@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+
+# Comments
+
+Write as if a first-time reader opened this file (code, docs, skills, rules). Add a comment only when it provides context that cannot be reasonably inferred from the surrounding text.
+
+## NEVER
+
+* Comments that exist because you just changed something ("no longer X", "we used to Y", "do not do Z — we removed Z")
+* Restating what the next line does
+* Documenting the absence of a deleted feature or an alternative you did not take
+
+## ALWAYS
+
+* Comment only standing invariants a first-time reader would otherwise miss: non-obvious constraints or why the obvious approach is wrong.
