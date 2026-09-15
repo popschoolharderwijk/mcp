@@ -42,10 +42,16 @@ Alleen `bootstrap.sql` draait op prod (geen `test.sql`). Idempotent — overschr
 ## Stap 3: Config pushen (indien gewijzigd)
 
 ```bash
+supabase link --project-ref bnagepkxryauifzyoxgo
 supabase config push   # review diff, type Y
 ```
 
 > ⚠️ `config push` overschrijft remote settings. Review altijd de diff!
+
+Productie-auth (`[remotes.prod.auth]` in `config.toml`):
+
+- `enable_signup = false` — geen publieke registratie via de Auth API; nieuwe users alleen via admin/edge functions (`create-user`, `approve-signup-request`, …). Login (magic link/OTP), `/aanmelden` en staff-flows blijven werken.
+- Strakkere rate limits en e-mailfrequentie (zie `[remotes.prod.auth.email]` / `[remotes.prod.auth.rate_limit]`).
 
 ## Stap 4: Edge Functions deployen
 

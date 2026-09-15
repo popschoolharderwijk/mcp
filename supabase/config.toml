@@ -90,6 +90,7 @@ additional_redirect_urls = ["https://mcp.mplifi.nl/**", "https://instant-setup-k
 [remotes.prod.auth]
 site_url = "https://mcp.mplifi.nl"
 additional_redirect_urls = ["https://mcp.mplifi.nl/**"]
+enable_signup = false
 
 # Tighter than test/dev: stop inbox spam and cheap login DoS. Magic links stay valid 30m.
 [remotes.prod.auth.email]
