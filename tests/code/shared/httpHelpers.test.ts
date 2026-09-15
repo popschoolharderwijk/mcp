@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { requireValidUuidField, resolveAllowedSiteUrl } from '../../../supabase/functions/_shared/http';
+import {
+	requireValidUuidField,
+	resolveAllowedRedirectUrl,
+	resolveAllowedSiteUrl,
+} from '../../../supabase/functions/_shared/http';
 
 describe('resolveAllowedSiteUrl', () => {
 	it('returns the origin for allowed https hosts', () => {
@@ -14,6 +18,21 @@ describe('resolveAllowedSiteUrl', () => {
 		expect(resolveAllowedSiteUrl('https://evil.example.com')).toBeNull();
 		expect(resolveAllowedSiteUrl('not-a-url')).toBeNull();
 		expect(resolveAllowedSiteUrl(null)).toBeNull();
+	});
+});
+
+describe('resolveAllowedRedirectUrl', () => {
+	it('returns the full url for allowed https hosts', () => {
+		expect(resolveAllowedRedirectUrl('https://mcp.mplifi.nl/incasso/start?agreement=1')).toBe(
+			'https://mcp.mplifi.nl/incasso/start?agreement=1',
+		);
+	});
+
+	it('returns null for disallowed or invalid urls', () => {
+		expect(resolveAllowedRedirectUrl('http://mcp.mplifi.nl/success')).toBeNull();
+		expect(resolveAllowedRedirectUrl('https://evil.example.com/success')).toBeNull();
+		expect(resolveAllowedRedirectUrl('not-a-url')).toBeNull();
+		expect(resolveAllowedRedirectUrl(null)).toBeNull();
 	});
 });
 
