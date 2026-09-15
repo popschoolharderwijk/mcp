@@ -7,7 +7,6 @@
 ## 0.8.0 — 2026-07-25
 
 - Versienummer zichtbaar in het gebruikersmenu; klik opent dit changelog
-- Verbeterde beveiliging van persoons- en leerlinggegevens
 
 ## 0.7.0 — 2026-07-02
 
