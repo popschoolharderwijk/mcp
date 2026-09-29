@@ -79,7 +79,7 @@ jobs:
         run: bun run lint:db
 
       - name: Run RLS, auth, and e2e tests
-        run: bun test rls auth e2e --bail --timeout 30000
+        run: bun test tests/rls tests/auth tests/e2e --bail --timeout 30000
 
   # This job always runs and reports success, preventing "waiting for status" issues
   skip-notice:

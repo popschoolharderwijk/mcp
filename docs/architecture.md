@@ -232,6 +232,6 @@ This project uses three separate Supabase environments:
 ### How this works
 
 1. **Lovable** is connected to **mcp-dev** — development database.
-2. **Local testing** (`bun dev:test` or `bun test --bail rls`): use **mcp-test** or mcp-dev via `.env.test` (`SUPABASE_URL`, etc.).
+2. **Local testing** (`bun dev:test` or `bun test --bail tests/rls`): use **mcp-test** or mcp-dev via `.env.test` (`SUPABASE_URL`, etc.).
 3. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
 4. On **merge to main**, migrations are applied to production via `supabase db push`.

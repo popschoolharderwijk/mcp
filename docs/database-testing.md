@@ -4,7 +4,7 @@
 
 Tests run against a **remote Supabase project** (no local instance). Two projects are in use:
 
-- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun dev:test` / `bun test rls` (credentials in `.env.test` or env).
+- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun dev:test` / `bun test tests/rls` (credentials in `.env.test` or env).
 - **mcp-dev** (`zdvscmogkfyddnnxzkdu`): development; you can also test locally against mcp-dev if your env points there.
 
 **In CI** (`pull-request-supabase.yml`):
@@ -12,7 +12,7 @@ Tests run against a **remote Supabase project** (no local instance). Two project
 - The workflow links to **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
 - `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/test.sql` are applied)
 - Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-- `bun test rls auth e2e` runs against mcp-test
+- `bun test tests/rls tests/auth tests/e2e` runs against mcp-test
 
 ---
 
@@ -151,14 +151,14 @@ Locally you can test against **mcp-test** or **mcp-dev**. Put the project creden
 - `VITE_DEV_LOGIN_PASSWORD` — password of seed users (e.g. `password`)
 
 ```bash
-# All database tests
-bun test rls auth
+# All database tests (use path prefixes — bare `auth` also matches tests/code/auth/)
+bun test tests/rls tests/auth
 
 # RLS tests only
-bun test rls
+bun test tests/rls
 
 # Auth tests only
-bun test auth
+bun test tests/auth
 
 # Specific test category
 bun test tests/rls/lesson-agreements

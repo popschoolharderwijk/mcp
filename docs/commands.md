@@ -77,7 +77,7 @@ supabase config push
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
 ```
 
-> 💡 **Workflow**: There are no local Supabase databases. **Development** (Lovable, `bun dev`, `db:reset`) uses **mcp-dev** (`zdvscmogkfyddnnxzkdu`). **CI on a PR** always uses **mcp-test** (link via secret `SUPABASE_PROJECT_REF`, credentials from secrets). Local testing (`bun test rls`): put mcp-test or mcp-dev credentials in `.env.test`. See [secrets.md](./secrets.md) and [architecture.md](./architecture.md).
+> 💡 **Workflow**: There are no local Supabase databases. **Development** (Lovable, `bun dev`, `db:reset`) uses **mcp-dev** (`zdvscmogkfyddnnxzkdu`). **CI on a PR** always uses **mcp-test** (link via secret `SUPABASE_PROJECT_REF`, credentials from secrets). Local testing (`bun test tests/rls`): put mcp-test or mcp-dev credentials in `.env.test`. See [secrets.md](./secrets.md) and [architecture.md](./architecture.md).
 
 ---
 
@@ -143,16 +143,16 @@ If `VITE_DEV_LOGIN_PASSWORD` is not set, the Dev Login button is disabled. Test-
 
 ```bash
 # Unit tests (no Supabase needed)
-bun test code
+bun test tests/code
 
 # Agenda logic (recurrence, frequency, deviations; no Supabase needed)
 bun test agenda
 
-# RLS tests (against mcp-test or mcp-dev; requires SUPABASE_* and VITE_DEV_LOGIN_PASSWORD in env)
-bun test rls
-
-# Auth tests (against mcp-test or mcp-dev; requires SUPABASE_* and VITE_DEV_LOGIN_PASSWORD in env)
-bun test auth
+# RLS / auth / e2e (against mcp-test or mcp-dev; requires SUPABASE_* and VITE_DEV_LOGIN_PASSWORD in env)
+# Use path prefixes — bare `auth` also matches tests/code/auth/
+bun test tests/rls
+bun test tests/auth
+bun test tests/e2e
 
 # All tests
 bun test
