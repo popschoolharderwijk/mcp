@@ -14,6 +14,7 @@ interface PaginatedUsersResponse {
 		phone_number: string | null;
 		avatar_url: string | null;
 		created_at: string;
+		last_sign_in_at: string | null;
 		role: 'site_admin' | 'admin' | 'staff' | null;
 	}>;
 	total_count: number;
@@ -24,17 +25,14 @@ interface PaginatedUsersResponse {
 /**
  * RLS tests for get_users_paginated function
  *
- * This function uses SECURITY DEFINER but must respect the same RLS rules as
- * the profiles table. It should return only the users that the calling user
- * is allowed to see according to RLS policies.
+ * This function is SECURITY DEFINER, so RLS on profiles does not apply inside
+ * it. Access is gated entirely by the is_admin() OR is_site_admin() filter in
+ * the query body, which these tests exist to verify.
  *
  * Expected behavior:
  * - ADMIN/SITE_ADMIN: Can see all users
  * - STAFF: Cannot access this function (only admin/site_admin can see all users)
  * - TEACHERS/STUDENTS/USERS: Cannot access this function (only admin/site_admin can see all users)
- *
- * Note: The function explicitly checks for admin/site_admin in the WHERE clause,
- * so only these roles can see users via this function.
  */
 describe('RLS: get_users_paginated', () => {
 	let initialState: DatabaseState;
@@ -308,5 +306,6 @@ describe('RLS: get_users_paginated', () => {
 		expect(siteAdmin).toHaveProperty('phone_number');
 		expect(siteAdmin).toHaveProperty('avatar_url');
 		expect(siteAdmin).toHaveProperty('created_at');
+		expect(siteAdmin).toHaveProperty('last_sign_in_at');
 	});
 });

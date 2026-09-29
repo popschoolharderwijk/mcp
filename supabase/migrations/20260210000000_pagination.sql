@@ -530,6 +530,19 @@ COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agr
 -- =============================================================================
 -- get_users_paginated
 -- =============================================================================
+-- SECURITY DEFINER: `authenticated` cannot SELECT auth.users, so the join that
+-- exposes last_sign_in_at is only possible with the owner's privileges. The
+-- only auth.users column exposed is last_sign_in_at; the rest comes from
+-- view_profiles_with_display_name and user_roles.
+--
+-- Consequence: view_profiles_with_display_name is security_invoker = on, so
+-- inside this function it runs as the owner and RLS on profiles does NOT apply.
+-- The `is_admin() OR is_site_admin()` filter in user_base is therefore the only
+-- access gate — both resolve the caller via current_user_id() (auth.uid()),
+-- which is unaffected by the role switch. Keep that filter in place.
+--
+-- Tests: tests/rls/pagination/get_users_paginated.test.ts asserts that staff,
+-- teachers, students and users without a role see zero rows.
 
 CREATE OR REPLACE FUNCTION get_users_paginated(
   p_limit INT DEFAULT 20,
@@ -541,7 +554,7 @@ CREATE OR REPLACE FUNCTION get_users_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
@@ -557,6 +570,7 @@ BEGIN
     WHEN 'phone_number' THEN 'phone_number'
     WHEN 'role' THEN 'role'
     WHEN 'created_at' THEN 'created_at'
+    WHEN 'last_sign_in_at' THEN 'last_sign_in_at'
     ELSE 'display_name'
   END;
 
@@ -581,10 +595,12 @@ BEGIN
         p.phone_number,
         p.avatar_url,
         p.created_at,
+        au.last_sign_in_at,
         p.display_name,
         ur.role
       FROM view_profiles_with_display_name p
       LEFT JOIN user_roles ur ON p.user_id = ur.user_id
+      LEFT JOIN auth.users au ON au.id = p.user_id
       WHERE (
         public.is_admin()
         OR public.is_site_admin()
@@ -628,6 +644,7 @@ BEGIN
             'phone_number', pu.phone_number,
             'avatar_url', pu.avatar_url,
             'created_at', pu.created_at,
+            'last_sign_in_at', pu.last_sign_in_at,
             'role', pu.role
           )
         ) FROM paginated_users pu),
@@ -651,4 +668,4 @@ REVOKE ALL ON FUNCTION public.get_users_paginated(integer, integer, text, text, 
 REVOKE ALL ON FUNCTION public.get_users_paginated(integer, integer, text, text, text, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_users_paginated(integer, integer, text, text, text, text) TO authenticated;
 
-COMMENT ON FUNCTION get_users_paginated IS 'Get paginated users with all related data (profile, role) in a single efficient query. Supports search, role filter, and sorting. Uses COUNT(*) OVER() for efficient total count and dynamic SQL for optimized sorting. Only admin/site_admin can access this function.';
+COMMENT ON FUNCTION get_users_paginated IS 'Get paginated users with profile, role, and last_sign_in_at in a single query. Supports search, role filter, and sorting. SECURITY DEFINER because auth.users is not readable by authenticated; last_sign_in_at is the only auth.users column exposed. RLS does not apply inside this function: access is gated by is_admin() OR is_site_admin() on current_user_id() in the query body, verified by tests/rls/pagination/get_users_paginated.test.ts.';

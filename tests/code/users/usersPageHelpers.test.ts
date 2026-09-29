@@ -5,6 +5,7 @@ describe('mapUsersSortColumn', () => {
 	it('maps known column keys', () => {
 		expect(mapUsersSortColumn('user')).toBe('name');
 		expect(mapUsersSortColumn('created_at')).toBe('created_at');
+		expect(mapUsersSortColumn('last_sign_in_at')).toBe('last_sign_in_at');
 	});
 
 	it('falls back to name', () => {

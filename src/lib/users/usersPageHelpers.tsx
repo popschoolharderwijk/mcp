@@ -13,6 +13,7 @@ export interface UserWithRole {
 	phone_number: string | null;
 	avatar_url: string | null;
 	created_at: string;
+	last_sign_in_at: string | null;
 	role: AppRole | null;
 }
 
@@ -29,6 +30,7 @@ const USERS_SORT_COLUMNS: Record<string, string> = {
 	phone_number: 'phone_number',
 	role: 'role',
 	created_at: 'created_at',
+	last_sign_in_at: 'last_sign_in_at',
 };
 
 export function mapUsersSortColumn(sortColumn: string | null): string {
@@ -107,6 +109,17 @@ export function buildUsersColumns(currentUserId: string | undefined): DataTableC
 			label: 'Aangemaakt',
 			sortable: true,
 			render: (u) => <span className="text-muted-foreground">{formatDateTimeShort(new Date(u.created_at))}</span>,
+			className: 'text-muted-foreground',
+		},
+		{
+			key: 'last_sign_in_at',
+			label: 'Laatst ingelogd',
+			sortable: true,
+			render: (u) => (
+				<span className="text-muted-foreground">
+					{u.last_sign_in_at ? formatDateTimeShort(new Date(u.last_sign_in_at)) : '-'}
+				</span>
+			),
 			className: 'text-muted-foreground',
 		},
 	];
