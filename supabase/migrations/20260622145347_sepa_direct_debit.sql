@@ -1,4 +1,4 @@
--- SEPA-incasso naast Stripe
+-- SEPA direct debit alongside Stripe
 ALTER TABLE public.accounting_settings
   ADD COLUMN IF NOT EXISTS payment_provider text NOT NULL DEFAULT 'stripe'
     CHECK (payment_provider IN ('stripe','sepa')),
@@ -85,8 +85,8 @@ CREATE TRIGGER trg_audit_sepa_mandates
   BEFORE INSERT OR UPDATE ON public.sepa_mandates
   FOR EACH ROW EXECUTE FUNCTION public.set_audit_fields();
 
--- incasso_batches
-CREATE TABLE public.incasso_batches (
+-- direct_debit_batches
+CREATE TABLE public.direct_debit_batches (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   batch_number text NOT NULL UNIQUE,
   status text NOT NULL DEFAULT 'draft'
@@ -107,31 +107,31 @@ CREATE TABLE public.incasso_batches (
   created_by uuid REFERENCES auth.users(id),
   updated_by uuid REFERENCES auth.users(id)
 );
-CREATE INDEX idx_incasso_batches_status ON public.incasso_batches(status);
-CREATE INDEX idx_incasso_batches_collection_date ON public.incasso_batches(collection_date);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.incasso_batches TO authenticated;
-GRANT ALL ON public.incasso_batches TO service_role;
-REVOKE ALL ON TABLE public.incasso_batches FROM anon;
-ALTER TABLE public.incasso_batches ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.incasso_batches FORCE ROW LEVEL SECURITY;
-CREATE POLICY incasso_batches_select ON public.incasso_batches
+CREATE INDEX idx_direct_debit_batches_status ON public.direct_debit_batches(status);
+CREATE INDEX idx_direct_debit_batches_collection_date ON public.direct_debit_batches(collection_date);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.direct_debit_batches TO authenticated;
+GRANT ALL ON public.direct_debit_batches TO service_role;
+REVOKE ALL ON TABLE public.direct_debit_batches FROM anon;
+ALTER TABLE public.direct_debit_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.direct_debit_batches FORCE ROW LEVEL SECURITY;
+CREATE POLICY direct_debit_batches_select ON public.direct_debit_batches
   FOR SELECT TO authenticated USING (is_privileged());
-CREATE POLICY incasso_batches_insert ON public.incasso_batches
+CREATE POLICY direct_debit_batches_insert ON public.direct_debit_batches
   FOR INSERT TO authenticated WITH CHECK (is_admin() OR is_site_admin());
-CREATE POLICY incasso_batches_update ON public.incasso_batches
+CREATE POLICY direct_debit_batches_update ON public.direct_debit_batches
   FOR UPDATE TO authenticated
   USING (is_admin() OR is_site_admin())
   WITH CHECK (is_admin() OR is_site_admin());
-CREATE POLICY incasso_batches_delete ON public.incasso_batches
+CREATE POLICY direct_debit_batches_delete ON public.direct_debit_batches
   FOR DELETE TO authenticated USING (is_admin() OR is_site_admin());
-CREATE TRIGGER trg_audit_incasso_batches
-  BEFORE INSERT OR UPDATE ON public.incasso_batches
+CREATE TRIGGER trg_audit_direct_debit_batches
+  BEFORE INSERT OR UPDATE ON public.direct_debit_batches
   FOR EACH ROW EXECUTE FUNCTION public.set_audit_fields();
 
--- incasso_batch_items
-CREATE TABLE public.incasso_batch_items (
+-- direct_debit_batch_items
+CREATE TABLE public.direct_debit_batch_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  batch_id uuid NOT NULL REFERENCES public.incasso_batches(id) ON DELETE CASCADE,
+  batch_id uuid NOT NULL REFERENCES public.direct_debit_batches(id) ON DELETE CASCADE,
   lesson_agreement_id uuid REFERENCES public.lesson_agreements(id) ON DELETE SET NULL,
   mandate_id uuid NOT NULL REFERENCES public.sepa_mandates(id) ON DELETE RESTRICT,
   student_user_id uuid NOT NULL REFERENCES public.profiles(user_id) ON DELETE RESTRICT,
@@ -152,28 +152,28 @@ CREATE TABLE public.incasso_batch_items (
   created_by uuid REFERENCES auth.users(id),
   updated_by uuid REFERENCES auth.users(id)
 );
-CREATE INDEX idx_incasso_items_batch ON public.incasso_batch_items(batch_id);
-CREATE INDEX idx_incasso_items_student ON public.incasso_batch_items(student_user_id);
-CREATE INDEX idx_incasso_items_mandate ON public.incasso_batch_items(mandate_id);
-CREATE INDEX idx_incasso_items_status ON public.incasso_batch_items(status);
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.incasso_batch_items TO authenticated;
-GRANT ALL ON public.incasso_batch_items TO service_role;
-REVOKE ALL ON TABLE public.incasso_batch_items FROM anon;
-ALTER TABLE public.incasso_batch_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.incasso_batch_items FORCE ROW LEVEL SECURITY;
-CREATE POLICY incasso_items_select ON public.incasso_batch_items
+CREATE INDEX idx_direct_debit_items_batch ON public.direct_debit_batch_items(batch_id);
+CREATE INDEX idx_direct_debit_items_student ON public.direct_debit_batch_items(student_user_id);
+CREATE INDEX idx_direct_debit_items_mandate ON public.direct_debit_batch_items(mandate_id);
+CREATE INDEX idx_direct_debit_items_status ON public.direct_debit_batch_items(status);
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.direct_debit_batch_items TO authenticated;
+GRANT ALL ON public.direct_debit_batch_items TO service_role;
+REVOKE ALL ON TABLE public.direct_debit_batch_items FROM anon;
+ALTER TABLE public.direct_debit_batch_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.direct_debit_batch_items FORCE ROW LEVEL SECURITY;
+CREATE POLICY direct_debit_items_select ON public.direct_debit_batch_items
   FOR SELECT TO authenticated
   USING (is_privileged() OR student_user_id = auth.uid());
-CREATE POLICY incasso_items_insert ON public.incasso_batch_items
+CREATE POLICY direct_debit_items_insert ON public.direct_debit_batch_items
   FOR INSERT TO authenticated WITH CHECK (is_admin() OR is_site_admin());
-CREATE POLICY incasso_items_update ON public.incasso_batch_items
+CREATE POLICY direct_debit_items_update ON public.direct_debit_batch_items
   FOR UPDATE TO authenticated
   USING (is_admin() OR is_site_admin())
   WITH CHECK (is_admin() OR is_site_admin());
-CREATE POLICY incasso_items_delete ON public.incasso_batch_items
+CREATE POLICY direct_debit_items_delete ON public.direct_debit_batch_items
   FOR DELETE TO authenticated USING (is_admin() OR is_site_admin());
-CREATE TRIGGER trg_audit_incasso_items
-  BEFORE INSERT OR UPDATE ON public.incasso_batch_items
+CREATE TRIGGER trg_audit_direct_debit_items
+  BEFORE INSERT OR UPDATE ON public.direct_debit_batch_items
   FOR EACH ROW EXECUTE FUNCTION public.set_audit_fields();
 
 -- lesson_agreements uitbreiden
@@ -212,38 +212,38 @@ REVOKE EXECUTE ON FUNCTION public.next_mandate_reference() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.next_mandate_reference() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.next_mandate_reference() TO service_role;
 
--- recalc_incasso_batch (called from build_incasso_batch_items / service_role; not a client RPC)
-CREATE OR REPLACE FUNCTION public.recalc_incasso_batch(p_batch_id uuid)
+-- recalc_direct_debit_batch (called from build_direct_debit_batch_items / service_role; not a client RPC)
+CREATE OR REPLACE FUNCTION public.recalc_direct_debit_batch(p_batch_id uuid)
 RETURNS void LANGUAGE sql SECURITY DEFINER SET search_path = public
 AS $$
-  UPDATE public.incasso_batches b
-     SET total_amount_cents = COALESCE((SELECT SUM(amount_cents) FROM public.incasso_batch_items WHERE batch_id = p_batch_id), 0),
-         item_count = COALESCE((SELECT COUNT(*) FROM public.incasso_batch_items WHERE batch_id = p_batch_id), 0),
+  UPDATE public.direct_debit_batches b
+     SET total_amount_cents = COALESCE((SELECT SUM(amount_cents) FROM public.direct_debit_batch_items WHERE batch_id = p_batch_id), 0),
+         item_count = COALESCE((SELECT COUNT(*) FROM public.direct_debit_batch_items WHERE batch_id = p_batch_id), 0),
          updated_at = now()
    WHERE b.id = p_batch_id;
 $$;
-REVOKE EXECUTE ON FUNCTION public.recalc_incasso_batch(uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.recalc_incasso_batch(uuid) TO service_role;
+REVOKE EXECUTE ON FUNCTION public.recalc_direct_debit_batch(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.recalc_direct_debit_batch(uuid) TO service_role;
 
--- build_incasso_batch_items
-CREATE OR REPLACE FUNCTION public.build_incasso_batch_items(p_batch_id uuid)
+-- build_direct_debit_batch_items
+CREATE OR REPLACE FUNCTION public.build_direct_debit_batch_items(p_batch_id uuid)
 RETURNS integer LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_inserted integer := 0;
-  v_batch public.incasso_batches%ROWTYPE;
+  v_batch public.direct_debit_batches%ROWTYPE;
   v_template text;
 BEGIN
   IF NOT (public.is_admin() OR public.is_site_admin()) THEN
     RAISE EXCEPTION 'insufficient_privileges';
   END IF;
-  SELECT * INTO v_batch FROM public.incasso_batches WHERE id = p_batch_id;
+  SELECT * INTO v_batch FROM public.direct_debit_batches WHERE id = p_batch_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'batch_not_found'; END IF;
   IF v_batch.status <> 'draft' THEN RAISE EXCEPTION 'batch_not_draft'; END IF;
   SELECT sepa_remittance_template INTO v_template FROM public.accounting_settings WHERE id = true;
   v_template := COALESCE(v_template, 'Lesgeld {periode} - {leerling}');
-  DELETE FROM public.incasso_batch_items WHERE batch_id = p_batch_id;
-  INSERT INTO public.incasso_batch_items (
+  DELETE FROM public.direct_debit_batch_items WHERE batch_id = p_batch_id;
+  INSERT INTO public.direct_debit_batch_items (
     batch_id, lesson_agreement_id, mandate_id, student_user_id,
     end_to_end_id, amount_cents, remittance_info, kind, sequence_type
   )
@@ -264,12 +264,12 @@ BEGIN
     AND la.payment_method = 'sepa'
     AND COALESCE(la.monthly_amount_cents, (la.price_per_lesson * 100)::bigint) > 0;
   GET DIAGNOSTICS v_inserted = ROW_COUNT;
-  PERFORM public.recalc_incasso_batch(p_batch_id);
+  PERFORM public.recalc_direct_debit_batch(p_batch_id);
   RETURN v_inserted;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION public.build_incasso_batch_items(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.build_incasso_batch_items(uuid) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.build_direct_debit_batch_items(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.build_direct_debit_batch_items(uuid) TO authenticated;
 -- Private sepa-batches bucket (policies below assume this exists)
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (

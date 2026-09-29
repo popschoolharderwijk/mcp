@@ -20,7 +20,7 @@ export async function approveDirectDebitBatch(
 	batchId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
 	const { error } = await supabase
-		.from('incasso_batches')
+		.from('direct_debit_batches')
 		.update({ status: 'approved', approved_at: new Date().toISOString() })
 		.eq('id', batchId);
 	if (error) return { ok: false, error: error.message };
@@ -51,9 +51,9 @@ export async function createSignedSepaXmlDownloadUrl(
 
 export async function finalizeDirectDebitBatchAfterXml(supabase: SupabaseClient, batchId: string): Promise<void> {
 	const now = new Date().toISOString();
-	await supabase.from('incasso_batches').update({ status: 'submitted', submitted_at: now }).eq('id', batchId);
+	await supabase.from('direct_debit_batches').update({ status: 'submitted', submitted_at: now }).eq('id', batchId);
 	await supabase
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.update({ status: 'submitted', status_updated_at: now })
 		.eq('batch_id', batchId)
 		.eq('status', 'pending');

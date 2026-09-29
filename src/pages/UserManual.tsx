@@ -150,7 +150,7 @@ const sections: ManualSection[] = [
 			'Beheer SEPA-incassomandaten waarmee de school lesgeld automatisch mag afschrijven van de rekening van de leerling of ouder/verzorger.',
 		details: [
 			'Aanmaken: voer IBAN, tenaamstelling en (optioneel) BIC in. Het systeem genereert automatisch een unieke mandaatreferentie (UMR) en zet het mandaat op status "pending".',
-			'Uitnodigen: verstuur een mandaatuitnodiging per e-mail (template "incasso_invite") zodat de debiteur digitaal akkoord kan geven.',
+			'Uitnodigen: verstuur een mandaatuitnodiging per e-mail (template "direct_debit_invite") zodat de debiteur digitaal akkoord kan geven.',
 			'Activeren: na akkoord wordt het mandaat "active" met een signature date; alleen actieve mandaten worden meegenomen in een incasso-batch.',
 			'Intrekken: een mandaat kan handmatig op "revoked" gezet worden; toekomstige batches slaan de leerling dan over.',
 			'Zichtbaarheid: staff/admin zien alle mandaten; leerlingen/ouders zien alleen hun eigen mandaat (afgedwongen via RLS).',

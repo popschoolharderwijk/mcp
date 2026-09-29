@@ -51,7 +51,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `stripe_customers` | 1:1 mapping `auth.users.id` ↔ `stripe_customer_id`. |
 | `subscriptions` | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`). |
 | `subscription_invoices` | Mirror of Stripe Invoices (amount, status, hosted URL, period). |
-| `incasso_invitations` | Audit of sent SEPA-onboarding magic links. |
+| `direct_debit_invitations` | Audit of sent SEPA-onboarding magic links. |
 | `accounting_settings` | Per-organisation VAT/ledger settings (`account_btw_21`, `btw_code_21`, `btw_code_exempt`, …). |
 | `announcements` | Dashboard news (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publicly readable once active and published; only staff/admin/site_admin can manage. Optional images in the `announcement-images` storage bucket (public, max 5 MB; only privileged users can upload). |
 

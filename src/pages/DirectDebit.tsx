@@ -87,7 +87,7 @@ function DirectDebitContent() {
 	const load = useCallback(async () => {
 		setLoading(true);
 		const { data, error } = await supabase
-			.from('incasso_batches')
+			.from('direct_debit_batches')
 			.select('*')
 			.order('collection_date', { ascending: false });
 		if (error) toast.error(error.message);
@@ -141,7 +141,7 @@ function NewBatchDialog({
 
 	const handleSubmit = async () => {
 		setSaving(true);
-		const { error } = await supabase.from('incasso_batches').insert({
+		const { error } = await supabase.from('direct_debit_batches').insert({
 			batch_number: buildDirectDebitBatchNumber(collectionDate),
 			collection_date: collectionDate,
 			status: 'draft',

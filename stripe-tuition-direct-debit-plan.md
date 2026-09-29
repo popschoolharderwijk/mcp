@@ -10,7 +10,7 @@
 > - **`subscription_schedule_phases` table**: never created; schedule phases are built directly from `_shared/billing.ts` and not mirrored separately.
 > - **Webhook trigger**: the schedule is created on `setup_intent.succeeded` (not `checkout.session.completed`).
 > - **Extra edge functions added**: `create-customer-portal`, `sync-stripe-subscription`, `rebuild-subscription-schedule`, `force-start-subscription`, `send-template-email`, `send-direct-debit-invite`.
-> - **Extra tables added**: `incasso_invitations`, `accounting_settings`, `email_templates`.
+> - **Extra tables added**: `direct_debit_invitations`, `accounting_settings`, `email_templates`.
 
 ---
 

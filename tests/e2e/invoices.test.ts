@@ -96,7 +96,7 @@ async function insertE2eMandate(
 
 async function insertE2eBatch(admin: ReturnType<typeof createClientBypassRLS>): Promise<string> {
 	const { data: batch, error: bErr } = await admin
-		.from('incasso_batches')
+		.from('direct_debit_batches')
 		.insert({
 			batch_number: `E2E-BATCH-${Date.now()}`,
 			status: 'draft',
@@ -115,7 +115,7 @@ async function insertE2eBatchItem(
 	studentUserId: string,
 ): Promise<string> {
 	const { data: item, error: iErr } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.insert({
 			batch_id: batchId,
 			mandate_id: mandateId,
@@ -156,13 +156,13 @@ describe('E2E: generate-invoice + get-invoice-pdf with RLS', () => {
 		if (pdfStoragePath) {
 			await admin.storage.from('invoices').remove([pdfStoragePath]);
 		}
-		// DB cleanup (CASCADE removes incasso_batch_items via batch)
+		// DB cleanup (CASCADE removes direct_debit_batch_items via batch)
 		if (invoiceId) {
 			await admin.from('invoice_lines').delete().eq('invoice_id', invoiceId);
 			await admin.from('invoices').delete().eq('id', invoiceId);
 		}
-		if (batchItemId) await admin.from('incasso_batch_items').delete().eq('id', batchItemId);
-		if (batchId) await admin.from('incasso_batches').delete().eq('id', batchId);
+		if (batchItemId) await admin.from('direct_debit_batch_items').delete().eq('id', batchItemId);
+		if (batchId) await admin.from('direct_debit_batches').delete().eq('id', batchId);
 		if (mandateId) await admin.from('sepa_mandates').delete().eq('id', mandateId);
 		if (createdSettings) await admin.from('accounting_settings').delete().eq('id', true);
 	});

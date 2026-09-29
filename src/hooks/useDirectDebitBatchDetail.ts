@@ -27,10 +27,10 @@ export function useDirectDebitBatchDetail() {
 		if (!id) return;
 		setLoading(true);
 		const [{ data: batchData }, { data: itemsData }] = await Promise.all([
-			supabase.from('incasso_batches').select('*').eq('id', id).maybeSingle(),
+			supabase.from('direct_debit_batches').select('*').eq('id', id).maybeSingle(),
 			supabase
-				.from('incasso_batch_items')
-				.select('*, profiles!incasso_batch_items_student_user_id_fkey(first_name,last_name,email)')
+				.from('direct_debit_batch_items')
+				.select('*, profiles!direct_debit_batch_items_student_user_id_fkey(first_name,last_name,email)')
 				.eq('batch_id', id)
 				.order('created_at'),
 		]);
@@ -47,7 +47,7 @@ export function useDirectDebitBatchDetail() {
 	const handleBuild = async () => {
 		if (!id) return;
 		setBusy(true);
-		const { data, error } = await supabase.rpc('build_incasso_batch_items', { p_batch_id: id });
+		const { data, error } = await supabase.rpc('build_direct_debit_batch_items', { p_batch_id: id });
 		setBusy(false);
 		if (error) {
 			toast.error(error.message);
@@ -108,7 +108,7 @@ export function useDirectDebitBatchDetail() {
 
 	const handleUpdateItemStatus = async (itemId: string, status: BatchItemStatus) => {
 		const { error } = await supabase
-			.from('incasso_batch_items')
+			.from('direct_debit_batch_items')
 			.update({ status, status_updated_at: new Date().toISOString() })
 			.eq('id', itemId);
 		if (error) {
@@ -121,7 +121,7 @@ export function useDirectDebitBatchDetail() {
 	const handleClose = async () => {
 		if (!id) return;
 		const { error } = await supabase
-			.from('incasso_batches')
+			.from('direct_debit_batches')
 			.update({ status: 'closed', closed_at: new Date().toISOString() })
 			.eq('id', id);
 		if (error) {

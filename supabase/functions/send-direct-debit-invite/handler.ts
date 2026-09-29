@@ -86,7 +86,7 @@ async function sendDirectDebitInviteMagicLink(
 		return jsonResponse(502, { error: getSafeErrorMessage(otpErr) });
 	}
 
-	await prepared.admin.from('incasso_invitations').insert({
+	await prepared.admin.from('direct_debit_invitations').insert({
 		lesson_agreement_id: prepared.agreement.id,
 		recipient_email: prepared.recipient,
 		sent_by: prepared.userId,

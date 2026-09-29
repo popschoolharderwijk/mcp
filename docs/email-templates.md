@@ -44,7 +44,7 @@ Table `email_templates` (migration `20260513085233`):
 
 | Column | Purpose |
 |--------|---------|
-| `event_key` | Unique event key (e.g. `incasso_invite`, `signup_approved`). |
+| `event_key` | Unique event key (e.g. `direct_debit_invite`, `signup_approved`). |
 | `subject` | Subject line; supports `{{variable}}` interpolation. |
 | `body_html` | HTML body with the same variables. |
 | `is_enabled` | Whether the template is active. Disabled = no mail sent. |

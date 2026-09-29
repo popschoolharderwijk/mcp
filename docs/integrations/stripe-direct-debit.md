@@ -51,7 +51,7 @@ For each `lesson_agreements` row we attach **one Stripe `Subscription`** for mon
 | `stripe_customers` | 1:1 link between `auth.users.id` and `stripe_customer_id`. |
 | `subscriptions` | Mirror of Stripe Subscription. Contains `lesson_agreement_id`, status, period, default payment method (brand/last4), `stripe_schedule_id`. |
 | `subscription_invoices` | Mirror of Stripe Invoices: amount, status, `hosted_invoice_url`, period. |
-| `incasso_invitations` | Logs each sent invitation (timestamp, magic-link ID, agreement). |
+| `direct_debit_invitations` | Logs each sent invitation (timestamp, magic-link ID, agreement). |
 | `accounting_settings` | Per-organisation VAT and ledger settings (account/VAT code for 21% and exempt). Used by reporting and by `pickAgeTariff` for VAT assignment. |
 
 > ℹ️ Schedule phases are **not** mirrored in a separate DB table — they are built on every push from `_shared/billing.ts` based on the current `calculateYearlyAmount` output (including shift logic for `no_lesson_periods` and the August pause).
@@ -64,7 +64,7 @@ All tables have **PERMISSIVE, consolidated** RLS. Writes are allowed only for th
 
 | Function | Auth | Purpose |
 |---|---|---|
-| `send-direct-debit-invite` | JWT (admin/staff) | Generates a server-side magic link, emails it to the student, logs in `incasso_invitations`. |
+| `send-direct-debit-invite` | JWT (admin/staff) | Generates a server-side magic link, emails it to the student, logs in `direct_debit_invitations`. |
 | `create-subscription-checkout` | JWT | Creates Stripe Checkout (`mode=checkout`) or activates immediately on an existing mandate (`mode=direct`) or completes a return flow (`mode=complete`). |
 | `create-customer-portal` | JWT | Opens Stripe Customer Portal for the signed-in user (or for a given `user_id` if the caller is privileged). |
 | `sync-stripe-subscription` | JWT (admin/staff) | Pulls subscription status from Stripe again and writes it to the DB. |

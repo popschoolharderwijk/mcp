@@ -13,7 +13,7 @@ In scope:
 
 Out of scope (intentionally):
 
-- Stripe mandates or subscriptions — non-Stripe direct debit is re-invited per student after import via the existing SEPA flow (`incasso_invitations`).
+- Stripe mandates or subscriptions — non-Stripe direct debit is re-invited per student after import via the existing SEPA flow (`direct_debit_invitations`).
 - Historical agenda events, deviations, and cancellations.
 - Historical invoices.
 - Welcome emails — accounts are created without a password; users sign in later via the existing magic-link flow.

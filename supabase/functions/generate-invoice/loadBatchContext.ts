@@ -27,7 +27,7 @@ async function loadDirectDebitBatch(
 	admin: SupabaseClient,
 	batchId: string,
 ): Promise<{ ok: true; batch: DirectDebitBatch } | { ok: false; response: Response }> {
-	const { data, error } = await admin.from('incasso_batches').select('*').eq('id', batchId).maybeSingle();
+	const { data, error } = await admin.from('direct_debit_batches').select('*').eq('id', batchId).maybeSingle();
 	if (error || !data) {
 		return { ok: false, response: jsonResponse(404, { error: 'Batch niet gevonden' }) };
 	}
@@ -39,7 +39,7 @@ async function loadBatchItems(
 	batchId: string,
 ): Promise<{ ok: true; items: BatchItem[] } | { ok: false; response: Response }> {
 	const { data, error } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.select('id, student_user_id, amount_cents, remittance_info, lesson_agreement_id, mandate_id')
 		.eq('batch_id', batchId);
 	if (error || !hasBatchItems(data)) {

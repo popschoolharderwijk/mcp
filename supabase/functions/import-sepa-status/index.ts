@@ -1,5 +1,5 @@
 // Processes a SEPA pain.002.001 status report from the bank and updates
-// statuses on incasso_batch_items (and optionally the batch / mandates).
+// statuses on direct_debit_batch_items (and optionally the batch / mandates).
 //
 // Body (application/json):
 //   {
@@ -9,7 +9,7 @@
 //
 // Auth: admin or site_admin.
 //
-// Mapping pain.002 TxSts -> incasso_batch_items.status:
+// Mapping pain.002 TxSts -> direct_debit_batch_items.status:
 //   ACSC / ACCC / ACSP / ACCP / ACWC  -> 'accepted'
 //   RJCT                              -> 'rejected'
 //   PDNG / other                      -> 'submitted' (leave as-is)
