@@ -4,7 +4,6 @@ import { Calendar } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
 import { Legend } from '@/components/agenda/Legend';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import type { getCalendarProps } from '@/lib/agenda/calendarProps';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
@@ -18,12 +17,11 @@ export function AgendaCalendarPanel({ calendarProps, currentView }: AgendaCalend
 	const dndProps = calendarProps as unknown as ComponentProps<typeof DragAndDropCalendar>;
 	return (
 		<>
-			<div className="popschool-calendar rounded-lg border border-border bg-card overflow-hidden flex-1 flex flex-col">
-				<ScrollArea className="flex-1">
-					<CalendarViewProvider value={currentView}>
-						<DragAndDropCalendar {...dndProps} />
-					</CalendarViewProvider>
-				</ScrollArea>
+			{/* No ScrollArea: Radix viewport uses display:table and collapses RBC agenda-view height. */}
+			<div className="popschool-calendar rounded-lg border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
+				<CalendarViewProvider value={currentView}>
+					<DragAndDropCalendar {...dndProps} />
+				</CalendarViewProvider>
 			</div>
 			<Legend show={currentView !== 'agenda'} />
 		</>

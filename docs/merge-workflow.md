@@ -52,7 +52,7 @@ git push --force-with-lease origin lovable
 |-------|-------------|
 | **Biome Linting** | Code formatting and linting |
 | **Unit Tests** | Tests in `tests/code/` |
-| **Supabase Tests** | RLS + Auth tests against **mcp-test** in CI (on changes in supabase/** or tests/**) |
+| **Supabase Tests** | RLS + Auth + e2e against **mcp-test** in CI (on changes in `supabase/**` or `tests/**` except `tests/code/**`) |
 
 ---
 

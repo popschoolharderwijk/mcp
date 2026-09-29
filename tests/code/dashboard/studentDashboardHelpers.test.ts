@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { LessonAgreement } from '../../../src/components/students/LessonAgreementItem';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-labels';
 import {
 	buildStudentDashboardStatItems,
 	mapStudentDashboardQueryResults,
@@ -158,7 +158,6 @@ describe('buildStudentDashboardStatItems', () => {
 				key: 'agreements',
 				title: NAV_LABELS.agreements,
 				value: 1,
-				icon: NAV_ICONS.agreements,
 				href: '/students/my-profile',
 				description: '1 inactief',
 			},
@@ -166,14 +165,12 @@ describe('buildStudentDashboardStatItems', () => {
 				key: 'myInvoices',
 				title: NAV_LABELS.myInvoices,
 				value: 2,
-				icon: NAV_ICONS.myInvoices,
 				href: '/my-invoices',
 			},
 			{
 				key: 'myTrial',
 				title: NAV_LABELS.myTrial,
 				value: 1,
-				icon: NAV_ICONS.myTrial,
 				href: '/my-trial',
 				description: 'Ingepland',
 			},

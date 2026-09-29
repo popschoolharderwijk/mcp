@@ -38,7 +38,11 @@ export function getAgendaEventIconColorClass(
 	color: string | null | undefined,
 	lessonTypeColor: string | null,
 	resource: CalendarEventResource,
+	view?: string,
 ): string {
+	// List agenda has no colored event chrome; use theme foreground so icons stay readable in light and dark.
+	if (view === 'agenda') return 'text-muted-foreground';
+
 	const customColor = color || lessonTypeColor;
 	if (customColor) {
 		return isLightColor(customColor) ? 'text-gray-900' : 'text-white';

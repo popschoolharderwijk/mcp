@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { NavIconLabel } from '@/components/layout/NavIconLabel';
 import { isSidebarParentActive, sidebarNavItemStateClass } from '@/components/layout/sidebar-config';
 import { navItemLinkClassName, resolveNavItemLinkLayout } from '@/components/layout/sidebarNavViewHelpers';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -17,25 +18,6 @@ interface NavItemProps {
 
 const NAV_ITEM_ROW_CLASS =
 	'flex w-full items-center rounded-lg text-sm font-medium transition-colors duration-150 ease-in-out';
-
-function NavItemContent({
-	collapsed,
-	label,
-	icon: Icon,
-}: {
-	collapsed: boolean;
-	label: string;
-	icon: ComponentType<{ className?: string }>;
-}) {
-	return (
-		<>
-			<span className="grid size-8 shrink-0 place-items-center">
-				<Icon className="h-4 w-4" />
-			</span>
-			{!collapsed && <span className="truncate">{label}</span>}
-		</>
-	);
-}
 
 function NavItemButton({
 	onClick,
@@ -148,7 +130,7 @@ export function NavItem({ href, label, icon: Icon, collapsed, childHrefs = [], t
 	const { pathname } = useLocation();
 	const isActive = isSidebarParentActive(pathname, href, childHrefs);
 	const stateClass = sidebarNavItemStateClass(isActive);
-	const content = <NavItemContent collapsed={collapsed} label={label} icon={Icon} />;
+	const content = <NavIconLabel collapsed={collapsed} label={label} icon={Icon} />;
 
 	if (!href) {
 		return (

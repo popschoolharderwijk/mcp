@@ -31,7 +31,7 @@ export function buildStudentColumns(
 			key: 'student',
 			label: 'Leerling',
 			sortable: true,
-			className: 'w-64 max-w-64',
+			className: 'w-64 max-w-64 min-w-0',
 			render: (s) => (
 				<button
 					type="button"
@@ -39,7 +39,7 @@ export function buildStudentColumns(
 						e.stopPropagation();
 						navigate(`/students/${s.user_id}`);
 					}}
-					className="text-left hover:underline"
+					className="block w-full min-w-0 text-left hover:underline"
 				>
 					<UserDisplay profile={s} showEmail />
 				</button>

@@ -6,7 +6,7 @@
 |----------|------|---------|---------|
 | **PR CI** | `pull-request-ci.yml` | PRs to main | Biome CI, TypeScript, code tests, Fallow, Squawk |
 | **PR Tests** | `pull-request-test-code.yml` | All PRs | Unit tests (`tests/code/`) |
-| **PR Supabase** | `pull-request-test-code-and-supabase.yml` | `supabase/**`, `tests/**` + manual | DB lint + full test suite |
+| **PR Supabase** | `pull-request-supabase.yml` | `supabase/**`, `tests/**` except `tests/code/**` + manual | DB lint + RLS/auth/e2e |
 | **Formatting** | `formatting.yml` | Manual/callable | Auto-fix with Biome (`bun run fix`) |
 | **Linting** | `linting.yml` | Manual/callable | Lint + write errors to `.github/biome-errors.txt` |
 
@@ -20,7 +20,7 @@ Three linters run in this project:
 |--------|----------------|------|---------|
 | **Biome** | TypeScript/JS code style & errors | `pull-request-ci.yml` | `bun run check:ci` (Biome CI) |
 | **Squawk** | SQL migration safety (drops, locks, backward compat) | `pull-request-ci.yml` | `bun run lint:sql` |
-| **supabase db lint** | PL/pgSQL code quality, SQL injection | `pull-request-test-code-and-supabase.yml` | `bun run lint:db` |
+| **supabase db lint** | PL/pgSQL code quality, SQL injection | `pull-request-supabase.yml` | `bun run lint:db` |
 
 ### Squawk (SQL migrations)
 
@@ -59,13 +59,14 @@ supabase db lint --linked --schema public
 
 ### PR Supabase Workflow Details
 
-Runs all tests against **mcp-test** in GitHub Actions:
+Runs RLS, auth, and e2e tests against **mcp-test** in GitHub Actions:
 
-- **Path filter**: Runs only on changes in `supabase/**` or `tests/**` (always reports status)
+- **Path filter**: Runs on changes in `supabase/**` or `tests/**`, excluding `tests/code/**` (`predicate-quantifier: some-with-excludes` — without that, `!` exclusions are ignored). Unit tests stay in the PR Tests / PR CI workflows.
 - **Manual trigger**: Can also be started via `workflow_dispatch`
 - **Project**: Link to **mcp-test** via secret `SUPABASE_PROJECT_REF` (see [secrets.md](./secrets.md)); then `supabase db reset --linked --yes` for a clean database with `seeds/bootstrap.sql` + `seeds/test.sql`
 - **Credentials**: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY` from GitHub secrets (must belong to the same mcp-test project)
 - **Required secret**: `RESEND_API_KEY` for email tests (SMTP)
+- **Command**: `bun test tests/rls tests/auth tests/e2e --bail --timeout 30000` (path prefixes — bare `auth` would also match `tests/code/auth/`)
 
 ---
 

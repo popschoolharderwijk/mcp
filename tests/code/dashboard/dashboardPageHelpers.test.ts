@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-labels';
 import {
 	fetchProfileFirstName,
 	resolveStudentAgreementsCardView,
@@ -68,7 +68,6 @@ describe('studentDashboardPanelModel', () => {
 					key: 'agreements',
 					title: NAV_LABELS.agreements,
 					value: 1,
-					icon: NAV_ICONS.agreements,
 					href: '/students/my-profile',
 					description: '1 inactief',
 				},
@@ -76,14 +75,12 @@ describe('studentDashboardPanelModel', () => {
 					key: 'myInvoices',
 					title: NAV_LABELS.myInvoices,
 					value: 2,
-					icon: NAV_ICONS.myInvoices,
 					href: '/my-invoices',
 				},
 				{
 					key: 'myTrial',
 					title: NAV_LABELS.myTrial,
 					value: 1,
-					icon: NAV_ICONS.myTrial,
 					href: '/my-trial',
 					description: 'Ingepland',
 				},

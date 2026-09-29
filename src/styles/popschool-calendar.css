@@ -6,7 +6,7 @@
 .popschool-calendar {
 	/* Reset library defaults */
 	& .rbc-calendar {
-		@apply font-sans;
+		@apply font-sans h-full min-h-0;
 	}
 
 	/* Toolbar / Header */
@@ -195,16 +195,31 @@
 
 	/* Agenda View - list style */
 	& .rbc-agenda-view {
-		@apply border-0;
+		/* Library uses overflow:auto; header marginRight for the v-scrollbar then causes a useless h-scrollbar. */
+		@apply border-0 min-h-0 overflow-x-hidden overflow-y-hidden;
+	}
+
+	/* Library omits this; without it the body does not fill leftover height after the header. */
+	& .rbc-agenda-content {
+		@apply flex-1 min-h-0 overflow-y-auto overflow-x-hidden;
 	}
 
 	& .rbc-agenda-view table.rbc-agenda-table {
-		@apply w-full border-collapse;
+		@apply w-full max-w-full border-collapse border-0;
+		table-layout: fixed;
+	}
+
+	& .rbc-agenda-view table.rbc-agenda-table tbody > tr + tr {
+		@apply border-t-0;
 	}
 
 	/* Match week view header styling exactly */
 	& .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
 		@apply border-b border-border bg-secondary/50 py-3 px-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+	}
+
+	& .rbc-agenda-view table.rbc-agenda-table thead > tr > th + th {
+		@apply border-l border-border;
 	}
 
 	& .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
@@ -215,16 +230,28 @@
 		@apply bg-muted/20;
 	}
 
+	& .rbc-agenda-view table.rbc-agenda-table thead > tr > th:first-child,
+	& .rbc-agenda-date-cell {
+		width: 12rem;
+	}
+
+	& .rbc-agenda-view table.rbc-agenda-table thead > tr > th:nth-child(2),
+	& .rbc-agenda-time-cell {
+		width: 7.5rem;
+	}
+
 	& .rbc-agenda-date-cell {
 		@apply text-foreground font-medium whitespace-nowrap;
 	}
 
+	/* Class-based left borders: rowspan rows omit the date cell, so td+td misses time cells. */
 	& .rbc-agenda-time-cell {
-		@apply text-muted-foreground whitespace-nowrap;
+		@apply text-muted-foreground whitespace-nowrap border-l border-border;
 	}
 
 	& .rbc-agenda-event-cell {
-		@apply w-full;
+		/* No width:100% — with nowrap date/time that forces table wider than the container. */
+		@apply text-sm text-foreground border-l border-border;
 	}
 
 	/* Override ALL inline styles for events in agenda view */
@@ -245,20 +272,6 @@
 	& .rbc-agenda-view .rbc-event,
 	& .rbc-agenda-view .rbc-event-content {
 		@apply text-sm text-foreground;
-	}
-
-	/* Hide warning icon in agenda view */
-	& .rbc-agenda-view .rbc-event svg {
-		display: none !important;
-	}
-
-	& .rbc-agenda-view .rbc-event > div {
-		display: inline !important;
-		position: static !important;
-	}
-
-	& .rbc-agenda-view .rbc-event > div > span {
-		display: inline !important;
 	}
 
 	/* Empty state */
