@@ -39,11 +39,11 @@ Beheer via **Supabase Dashboard → Project Settings → Edge Functions → Secr
 
 | Secret | Verplicht voor | Beschrijving |
 |--------|----------------|--------------|
-| `RESEND_API_KEY` | `send-template-email`, `send-incasso-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | API key Resend.com voor transactionele e-mail. |
+| `RESEND_API_KEY` | `send-template-email`, `send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | API key Resend.com voor transactionele e-mail. |
 | `STRIPE_SECRET_KEY` | Alle Stripe edge functions | Server-side Stripe key (`sk_live_...` of `sk_test_...`). |
 | `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` | Signing secret van het webhook endpoint (Dashboard → Developers → Webhooks). |
 
-Zie [integrations/stripe-incasso.md §9](./integrations/stripe-incasso.md) voor de Stripe Dashboard checklist en [deployment.md](./deployment.md) voor de volledige edge-function tabel.
+Zie [integrations/stripe-direct-debit.md §9](./integrations/stripe-direct-debit.md) voor de Stripe Dashboard checklist en [deployment.md](./deployment.md) voor de volledige edge-function tabel.
 
 ---
 

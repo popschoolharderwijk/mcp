@@ -1,4 +1,4 @@
-import type { AccountingSettings, BatchItem, IncassoBatch, ProfileRow, StudentRow } from './types.ts';
+import type { AccountingSettings, BatchItem, DirectDebitBatch, ProfileRow, StudentRow } from './types.ts';
 
 export function collectUniqueStudentIds(items: Array<Pick<BatchItem, 'student_user_id'>>): string[] {
 	return [...new Set(items.map((item) => item.student_user_id))];
@@ -22,7 +22,7 @@ export function buildMandateMap(mandates: Array<{ id: string; mandate_reference:
 
 export interface BatchContextMapsInput {
 	settings: AccountingSettings;
-	batch: IncassoBatch;
+	batch: DirectDebitBatch;
 	items: BatchItem[];
 	profiles: ProfileRow[];
 	students: StudentRow[];

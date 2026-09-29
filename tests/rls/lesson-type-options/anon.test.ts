@@ -19,7 +19,7 @@ afterAll(async () => {
 const fakeId = '00000000-0000-0000-0000-000000000001';
 
 /**
- * Public signup (/aanmelden): anon may SELECT options for active lesson types.
+ * Public signup (/signup): anon may SELECT options for active lesson types.
  * INSERT is denied. UPDATE/DELETE match no rows under RLS (empty result, no error).
  */
 describe('RLS: anonymous user – lesson_type_options', () => {

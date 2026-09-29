@@ -78,6 +78,6 @@ export interface AccountingSettings extends Record<string, unknown> {
 	company_name?: string;
 }
 
-export interface IncassoBatch {
+export interface DirectDebitBatch {
 	collection_date: string;
 }

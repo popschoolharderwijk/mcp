@@ -100,7 +100,7 @@ export function buildStudentDashboardStatItems(stats: StudentDashboardStats): Da
 			title: NAV_LABELS.myInvoices,
 			value: stats.openInvoices,
 			icon: NAV_ICONS.myInvoices,
-			href: '/mijn-facturen',
+			href: '/my-invoices',
 		},
 		{
 			key: 'myTrial',

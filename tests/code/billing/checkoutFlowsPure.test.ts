@@ -71,7 +71,7 @@ describe('buildCheckoutSessionUrls', () => {
 	it('builds default success and cancel urls from the origin', () => {
 		expect(buildCheckoutSessionUrls(origin, AGREEMENT_ID, {})).toEqual({
 			ok: true,
-			successUrl: `${origin}/incasso/start?agreement=${AGREEMENT_ID}&session_id={CHECKOUT_SESSION_ID}`,
+			successUrl: `${origin}/direct-debit/start?agreement=${AGREEMENT_ID}&session_id={CHECKOUT_SESSION_ID}`,
 			cancelUrl: `${origin}/agreements/${AGREEMENT_ID}?subscription=canceled`,
 		});
 	});

@@ -65,7 +65,7 @@ supabase config push   # review diff, type Y
 
 Productie-auth (`[remotes.prod.auth]` in `config.toml`):
 
-- `enable_signup = false` — geen publieke registratie via de Auth API; nieuwe users alleen via admin/edge functions (`create-user`, `approve-signup-request`, …). Login (magic link/OTP), `/aanmelden` en staff-flows blijven werken.
+- `enable_signup = false` — geen publieke registratie via de Auth API; nieuwe users alleen via admin/edge functions (`create-user`, `approve-signup-request`, …). Login (magic link/OTP), `/signup` en staff-flows blijven werken.
 - Strakkere rate limits en e-mailfrequentie (zie `[remotes.prod.auth.email]` / `[remotes.prod.auth.rate_limit]`).
 
 ## Stap 4: Edge Functions deployen
@@ -88,7 +88,7 @@ supabase functions deploy
 | `approve-signup-request` | Admin keurt aanmelding goed → user + welkomstmail. | Standaard, `RESEND_API_KEY` |
 | `schedule-trial-lesson` | Plant een proefles in de agenda na intake. | Standaard, `RESEND_API_KEY` |
 | `send-template-email` | Verzendt e-mail op basis van `email_templates` + variabelen. | Standaard, `RESEND_API_KEY` |
-| `send-incasso-invite` | Genereert magic link voor SEPA-onboarding en mailt deze. | Standaard, `RESEND_API_KEY` |
+| `send-direct-debit-invite` | Genereert magic link voor SEPA-onboarding en mailt deze. | Standaard, `RESEND_API_KEY` |
 | `create-subscription-checkout` | Maakt Stripe Checkout (iDEAL setup) of activeert direct op bestaand mandaat. | Standaard, `STRIPE_SECRET_KEY` |
 | `create-customer-portal` | Opent Stripe Customer Portal voor klant of (privileged) namens klant. | Standaard, `STRIPE_SECRET_KEY` |
 | `sync-stripe-subscription` | Re-sync van één subscription uit Stripe naar DB. | Standaard, `STRIPE_SECRET_KEY` |

@@ -72,7 +72,7 @@ const supabaseMock = {
 		invoke: (fn: string, body?: { body?: unknown }) => {
 			if (fn === 'send-template-email') return Promise.resolve({ data: null, error: null });
 			recordedCalls.push({ table: fn, op: 'insert', payload: body?.body ?? null, filters: {} });
-			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-incasso-invite';
+			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-direct-debit-invite';
 			return Promise.resolve(tableResults[key] ?? { data: null, error: null });
 		},
 	},
@@ -281,7 +281,7 @@ describe('saveWizardAgreement', () => {
 			navigate: recordNavigate,
 		});
 		expect(result).toBe(true);
-		expect(navigateCalls).toEqual(['/aanmeldingen']);
+		expect(navigateCalls).toEqual(['/signup-requests']);
 	});
 
 	it('navigates to trial lessons after saving from a trial lesson', async () => {
@@ -346,7 +346,7 @@ describe('saveWizardAgreement', () => {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-incasso-invite'] = { data: null, error: null };
+		tableResults['send-direct-debit-invite'] = { data: null, error: null };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,
@@ -381,7 +381,7 @@ describe('saveWizardAgreement', () => {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-incasso-invite'] = { data: null, error: { message: 'invite failed' } };
+		tableResults['send-direct-debit-invite'] = { data: null, error: { message: 'invite failed' } };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,

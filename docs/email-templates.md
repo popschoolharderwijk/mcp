@@ -30,7 +30,7 @@ Beide gebruiken dezelfde SMTP-provider (Resend).
 | `{{ .SiteURL }}` | Geconfigureerde Site URL |
 | `{{ .Email }}` | E-mailadres van de gebruiker |
 
-De Stripe-incasso flow gebruikt een eigen variant met `token_hash` formaat — zie [stripe-incasso.md §5](integrations/stripe-incasso.md).
+De Stripe-incasso flow gebruikt een eigen variant met `token_hash` formaat — zie [stripe-direct-debit.md §5](integrations/stripe-direct-debit.md).
 
 ---
 
@@ -70,7 +70,7 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 3. Vult variabelen in (`{{name}}` → waarde).
 4. Verstuurt via Resend met `RESEND_API_KEY`.
 
-Andere edge functions (`send-incasso-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) gebruiken intern dezelfde helper.
+Andere edge functions (`send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) gebruiken intern dezelfde helper.
 
 ### Testen vanuit de UI
 

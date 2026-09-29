@@ -43,7 +43,7 @@ export function AccountingReportContent({ state }: AccountingReportContentProps)
 						onEndDateChange={state.setEndDate}
 						trailing={
 							<Button asChild variant="outline" size="icon" className="h-9 w-9 shrink-0">
-								<Link to="/boekhouding/instellingen" aria-label="Instellingen">
+								<Link to="/accounting/settings" aria-label="Instellingen">
 									<LuSettings className="h-4 w-4" />
 								</Link>
 							</Button>

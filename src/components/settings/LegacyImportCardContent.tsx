@@ -1,10 +1,8 @@
-import { useRef } from 'react';
 import { LuDownload, LuUpload } from 'react-icons/lu';
+import { LegacyImportFilePicker } from '@/components/settings/LegacyImportFilePicker';
 import { LegacyImportResultPanel } from '@/components/settings/LegacyImportResultPanel';
 import { LegacyImportValidationPanel } from '@/components/settings/LegacyImportValidationPanel';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import type { ImportResponse, RowError, ValidationResponse } from '@/lib/settings/legacyImportManagerHelpers';
 import { isLegacyImportRunDisabled, isLegacyImportValidateDisabled } from '@/lib/settings/legacyImportManagerUiHelpers';
 
@@ -31,33 +29,9 @@ export function LegacyImportCardContent({
 	onOpenConfirm,
 	onDownloadErrors,
 }: LegacyImportCardContentProps) {
-	const fileInputRef = useRef<HTMLInputElement>(null);
-
 	return (
 		<div className="space-y-6">
-			<div className="space-y-2">
-				<Label htmlFor="legacy-file">Excel-bestand (.xlsx)</Label>
-				<div className="flex flex-wrap items-center gap-3">
-					<Input
-						ref={fileInputRef}
-						id="legacy-file"
-						type="file"
-						accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-						onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
-						disabled={busy}
-						className="hidden"
-					/>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => fileInputRef.current?.click()}
-						disabled={busy}
-					>
-						Bestand kiezen
-					</Button>
-					<span className="text-sm text-muted-foreground">{file?.name ?? 'Geen bestand gekozen'}</span>
-				</div>
-			</div>
+			<LegacyImportFilePicker file={file} busy={busy} onFileChange={onFileChange} />
 
 			<div className="flex flex-wrap gap-2">
 				<Button type="button" variant="outline" onClick={onDownloadTemplate} disabled={busy}>

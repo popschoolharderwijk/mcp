@@ -25,8 +25,8 @@ describe('isSidebarGroupRouteActive', () => {
 	});
 
 	it('matches finance child routes for toggle-only parents', () => {
-		expect(isSidebarGroupRouteActive('/incasso', buildFinanceNavGroup())).toBe(true);
-		expect(isSidebarGroupRouteActive('/mandaten/extra', buildFinanceNavGroup())).toBe(true);
+		expect(isSidebarGroupRouteActive('/direct-debit', buildFinanceNavGroup())).toBe(true);
+		expect(isSidebarGroupRouteActive('/mandates/extra', buildFinanceNavGroup())).toBe(true);
 	});
 
 	it('returns false for unrelated routes', () => {

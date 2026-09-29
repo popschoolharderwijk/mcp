@@ -36,7 +36,7 @@ export function buildCheckoutSessionUrls(
 	agreementId: string,
 	body: { success_url?: string; cancel_url?: string },
 ): CheckoutSessionUrlsResult {
-	const defaultSuccessUrl = `${origin}/incasso/start?agreement=${agreementId}&session_id={CHECKOUT_SESSION_ID}`;
+	const defaultSuccessUrl = `${origin}/direct-debit/start?agreement=${agreementId}&session_id={CHECKOUT_SESSION_ID}`;
 	const defaultCancelUrl = `${origin}/agreements/${agreementId}?subscription=canceled`;
 
 	const allowedSuccessUrl = body.success_url ? resolveAllowedRedirectUrl(body.success_url) : null;

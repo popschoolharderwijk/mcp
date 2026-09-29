@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Helpers for processing magic-link landings (PKCE and token_hash).
- * Used from IncassoStart and any other magic-link landing pages.
+ * Used from DirectDebitStart and any other magic-link landing pages.
  */
 
 export type MagicLinkResult = { ok: true } | { ok: false; error: string };

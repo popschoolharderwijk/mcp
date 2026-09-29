@@ -17,7 +17,7 @@ afterAll(async () => {
 });
 
 /**
- * Public signup (/aanmelden): anon may SELECT active lesson types.
+ * Public signup (/signup): anon may SELECT active lesson types.
  * INSERT is denied (no policy). UPDATE/DELETE match no rows under RLS (empty result, no error).
  */
 describe('RLS: anonymous user – lesson_types', () => {

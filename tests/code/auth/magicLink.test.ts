@@ -39,22 +39,22 @@ describe('readMagicLinkUrlError', () => {
 	});
 
 	it('returns null when the hash has no error', () => {
-		setWindowLocation('http://localhost/incasso');
+		setWindowLocation('http://localhost/direct-debit');
 		expect(readMagicLinkUrlError()).toBeNull();
 	});
 
 	it('returns a Dutch message for expired OTP links', () => {
-		setWindowLocation('http://localhost/incasso#error=access_denied&error_code=otp_expired');
+		setWindowLocation('http://localhost/direct-debit#error=access_denied&error_code=otp_expired');
 		expect(readMagicLinkUrlError()).toBe('Deze inloglink is verlopen of al gebruikt. Vraag een nieuwe link aan.');
 	});
 
 	it('returns the error description from the hash', () => {
-		setWindowLocation('http://localhost/incasso#error=access_denied&error_description=Invalid+token');
+		setWindowLocation('http://localhost/direct-debit#error=access_denied&error_description=Invalid+token');
 		expect(readMagicLinkUrlError()).toBe('Invalid token');
 	});
 
 	it('returns a generic message when only error is present', () => {
-		setWindowLocation('http://localhost/incasso#error=access_denied');
+		setWindowLocation('http://localhost/direct-debit#error=access_denied');
 		expect(readMagicLinkUrlError()).toBe('Inloggen via deze link is mislukt.');
 	});
 });
@@ -75,14 +75,14 @@ describe('consumeMagicLinkFromUrl', () => {
 	});
 
 	it('exchanges a PKCE code from the query string', async () => {
-		setWindowLocation('http://localhost/incasso?code=abc123');
+		setWindowLocation('http://localhost/direct-debit?code=abc123');
 		const result = await consumeMagicLinkFromUrl();
 		expect(result).toEqual({ ok: true });
 		expect(exchangeCodeForSession).toHaveBeenCalledTimes(1);
 	});
 
 	it('returns an error when PKCE exchange fails', async () => {
-		setWindowLocation('http://localhost/incasso?code=abc123');
+		setWindowLocation('http://localhost/direct-debit?code=abc123');
 		exchangeCodeForSession.mockImplementation(() => Promise.resolve({ error: { message: 'invalid code' } }));
 		const result = await consumeMagicLinkFromUrl();
 		expect(result).toEqual({
@@ -92,7 +92,7 @@ describe('consumeMagicLinkFromUrl', () => {
 	});
 
 	it('verifies a token_hash from the URL hash', async () => {
-		setWindowLocation('http://localhost/incasso#token_hash=hash123&type=email');
+		setWindowLocation('http://localhost/direct-debit#token_hash=hash123&type=email');
 		const result = await consumeMagicLinkFromUrl();
 		expect(result).toEqual({ ok: true });
 		expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'hash123', type: 'email' });
@@ -100,7 +100,7 @@ describe('consumeMagicLinkFromUrl', () => {
 	});
 
 	it('rejects invalid token_hash links', async () => {
-		setWindowLocation('http://localhost/incasso#token_hash=hash123&type=signup');
+		setWindowLocation('http://localhost/direct-debit#token_hash=hash123&type=signup');
 		const result = await consumeMagicLinkFromUrl();
 		expect(result).toEqual({
 			ok: false,
@@ -109,7 +109,7 @@ describe('consumeMagicLinkFromUrl', () => {
 	});
 
 	it('returns ok when no magic-link parameters are present', async () => {
-		setWindowLocation('http://localhost/incasso');
+		setWindowLocation('http://localhost/direct-debit');
 		const result = await consumeMagicLinkFromUrl();
 		expect(result).toEqual({ ok: true });
 	});

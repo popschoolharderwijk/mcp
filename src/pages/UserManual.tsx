@@ -144,8 +144,8 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.mandaten,
-		title: NAV_LABELS.mandaten,
+		icon: NAV_ICONS.mandates,
+		title: NAV_LABELS.mandates,
 		description:
 			'Beheer SEPA-incassomandaten waarmee de school lesgeld automatisch mag afschrijven van de rekening van de leerling of ouder/verzorger.',
 		details: [
@@ -157,8 +157,8 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.incasso,
-		title: NAV_LABELS.incasso,
+		icon: NAV_ICONS.directDebit,
+		title: NAV_LABELS.directDebit,
 		description:
 			'Bundel automatische incasso-opdrachten in batches, genereer een SEPA XML (pain.008) voor de bank en verwerk statusmeldingen (pain.002).',
 		details: [

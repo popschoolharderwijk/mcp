@@ -52,9 +52,9 @@ bun test --bail
 | Commands cheat sheet | [docs/commands.md](docs/commands.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | E-mailtemplates & SMTP | [docs/email-templates.md](docs/email-templates.md) |
-| Stripe SEPA-incasso | [docs/integrations/stripe-incasso.md](docs/integrations/stripe-incasso.md) |
+| Stripe SEPA-incasso | [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md) |
 
-> Het bestand [`stripe-lesgeld-incasso-plan.md`](stripe-lesgeld-incasso-plan.md) is een **historisch planningsdocument** (mei 2026) en niet langer leidend. De actuele beschrijving van de Stripe-flow staat in [docs/integrations/stripe-incasso.md](docs/integrations/stripe-incasso.md).
+> Het bestand [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is een **historisch planningsdocument** (mei 2026) en niet langer leidend. De actuele beschrijving van de Stripe-flow staat in [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md).
 
 ## License
 

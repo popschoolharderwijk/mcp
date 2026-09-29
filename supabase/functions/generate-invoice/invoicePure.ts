@@ -3,7 +3,7 @@
 import { ageAtDate } from './format.ts';
 import type {
 	BatchItem,
-	IncassoBatch,
+	DirectDebitBatch,
 	InvoiceLine,
 	InvoiceTotals,
 	ProfileRow,
@@ -89,7 +89,7 @@ export function computeDueDate(paymentTermDays: number | undefined): string {
 	return new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
 }
 
-export function getCollectionDate(batch: IncassoBatch): string {
+export function getCollectionDate(batch: DirectDebitBatch): string {
 	return batch.collection_date;
 }
 
