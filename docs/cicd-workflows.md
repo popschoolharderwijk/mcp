@@ -61,7 +61,7 @@ supabase db lint --linked --schema public
 
 Runs RLS, auth, and e2e tests against **mcp-test** in GitHub Actions:
 
-- **Path filter**: Runs on changes in `supabase/**` or `tests/**`, excluding `tests/code/**` (always reports status). Unit tests stay in the PR Tests / PR CI workflows.
+- **Path filter**: Runs on changes in `supabase/**` or `tests/**`, excluding `tests/code/**` (`predicate-quantifier: some-with-excludes` — without that, `!` exclusions are ignored). Unit tests stay in the PR Tests / PR CI workflows.
 - **Manual trigger**: Can also be started via `workflow_dispatch`
 - **Project**: Link to **mcp-test** via secret `SUPABASE_PROJECT_REF` (see [secrets.md](./secrets.md)); then `supabase db reset --linked --yes` for a clean database with `seeds/bootstrap.sql` + `seeds/test.sql`
 - **Credentials**: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY` from GitHub secrets (must belong to the same mcp-test project)

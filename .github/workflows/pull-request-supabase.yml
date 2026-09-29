@@ -14,6 +14,8 @@ jobs:
       - uses: dorny/paths-filter@v4
         id: filter
         with:
+          # Default 'some' ignores !exclusions; this applies them.
+          predicate-quantifier: some-with-excludes
           filters: |
             should_run:
               - 'supabase/**'
