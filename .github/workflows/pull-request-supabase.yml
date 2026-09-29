@@ -1,4 +1,4 @@
-name: PR - Test Code and Supabase
+name: PR - Supabase
 
 on:
   pull_request:
@@ -18,8 +18,9 @@ jobs:
             should_run:
               - 'supabase/**'
               - 'tests/**'
+              - '!tests/code/**'
 
-  pull-request-test-code-and-supabase:
+  pull-request-supabase:
     needs: check-changes
     if: needs.check-changes.outputs.should_run == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -77,8 +78,8 @@ jobs:
       - name: Lint database (plpgsql_check)
         run: bun run lint:db
 
-      - name: Run all tests
-        run: bun test --bail --timeout 30000
+      - name: Run RLS, auth, and e2e tests
+        run: bun test rls auth e2e --bail --timeout 30000
 
   # This job always runs and reports success, preventing "waiting for status" issues
   skip-notice:
@@ -87,4 +88,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Skip notice
-        run: echo "Skipped - no changes in supabase/** or tests/**"
+        run: echo "Skipped - no changes in supabase/** or tests/** (excluding tests/code/**)"

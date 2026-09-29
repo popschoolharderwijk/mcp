@@ -14,7 +14,7 @@ Required for CI workflows. Manage via **[GitHub Actions Secrets → popschoolhar
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key of mcp-test | Test runtime |
 | `RESEND_API_KEY` | API key from Resend.com | SMTP for Supabase Auth + `send-template-email` |
 
-See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**pull-request-test-code-and-supabase**) that uses these secrets.
+See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabase** / `pull-request-supabase.yml`) that uses these secrets.
 
 ⚠️ **Never commit production or test keys!**
 

@@ -4,14 +4,15 @@
 
 Tests run against a **remote Supabase project** (no local instance). Two projects are in use:
 
-- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI on every PR** and optionally locally via `bun dev:test` / `bun test rls` (credentials in `.env.test` or env).
+- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun dev:test` / `bun test rls` (credentials in `.env.test` or env).
 - **mcp-dev** (`zdvscmogkfyddnnxzkdu`): development; you can also test locally against mcp-dev if your env points there.
 
-**In CI** (`pull-request-test-code-and-supabase.yml`):
+**In CI** (`pull-request-supabase.yml`):
+- Runs only when `supabase/**` or `tests/**` changes, excluding `tests/code/**`
 - The workflow links to **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
 - `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/test.sql` are applied)
 - Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-- `bun test` runs RLS and Auth tests against mcp-test
+- `bun test rls auth e2e` runs against mcp-test
 
 ---
 
