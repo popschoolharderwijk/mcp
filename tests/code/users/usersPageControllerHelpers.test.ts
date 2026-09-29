@@ -58,6 +58,7 @@ describe('fetchUsersPage', () => {
 								phone_number: null,
 								avatar_url: null,
 								created_at: '2026-01-01T00:00:00Z',
+								last_sign_in_at: '2026-01-15T12:00:00Z',
 								role: 'staff',
 							},
 						],
@@ -87,6 +88,7 @@ describe('fetchUsersPage', () => {
 				phone_number: null,
 				avatar_url: null,
 				created_at: '2026-01-01T00:00:00Z',
+				last_sign_in_at: '2026-01-15T12:00:00Z',
 				role: 'staff',
 			},
 		]);
@@ -124,6 +126,7 @@ describe('runUserDelete', () => {
 		phone_number: null,
 		avatar_url: null,
 		created_at: '2026-01-01T00:00:00Z',
+		last_sign_in_at: null,
 		role: 'staff' as const,
 	};
 
