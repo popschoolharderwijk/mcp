@@ -1,8 +1,6 @@
-import { LuArrowLeft } from 'react-icons/lu';
 import { SignupRequestItem } from '@/components/students/SignupRequestItem';
 import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/students/StudentProfileCards';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { useStudentDetailPage } from '@/hooks/useStudentDetailPage';
 import { getDisplayName } from '@/lib/display-name';
@@ -17,19 +15,14 @@ type StudentDetailPageData = Pick<ReturnType<typeof useStudentDetailPage>, 'user
 
 interface StudentDetailBodyProps extends StudentDetailPageData {
 	profile: StudentProfileData;
-	onBack: () => void;
 }
 
-export function StudentDetailBody({ profile, userId, agreements, signupRequests, onBack }: StudentDetailBodyProps) {
+export function StudentDetailBody({ profile, userId, agreements, signupRequests }: StudentDetailBodyProps) {
 	const displayName = getDisplayName(profile);
 	const initials = buildStudentInitials(profile);
 
 	return (
 		<div className="space-y-6">
-			<Button variant="ghost" size="sm" onClick={onBack}>
-				<LuArrowLeft className="h-4 w-4 mr-1" /> Terug naar leerlingen
-			</Button>
-
 			<Card>
 				<CardHeader>
 					<div className="flex items-center gap-4">

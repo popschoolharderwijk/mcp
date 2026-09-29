@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuDownload, LuFileText } from 'react-icons/lu';
+import { LuDownload } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { supabase } from '@/integrations/supabase/client';
 import { formatCentsEUR, INVOICE_STATUS_LABELS, type Invoice } from '@/lib/invoices/types';
 
@@ -38,64 +38,48 @@ export default function MyInvoices() {
 	};
 
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title="Mijn facturen"
-				subtitle="Overzicht van al je facturen"
-				icon={<LuFileText className="h-16 w-16 text-primary" />}
-			/>
-
+		<PageShell title={NAV_LABELS.myInvoices} description="Overzicht van al je facturen" contentClassName="p-0">
 			{loading ? (
-				<Card>
-					<CardContent className="py-8 text-center text-muted-foreground">Laden...</CardContent>
-				</Card>
+				<div className="py-8 text-center text-muted-foreground">Laden...</div>
 			) : invoices.length === 0 ? (
-				<Card>
-					<CardContent className="py-12 text-center text-muted-foreground">
-						Je hebt nog geen facturen.
-					</CardContent>
-				</Card>
+				<div className="py-12 text-center text-muted-foreground">Je hebt nog geen facturen.</div>
 			) : (
-				<Card>
-					<CardContent className="p-0">
-						<table className="w-full text-sm">
-							<thead className="bg-muted/50 text-left">
-								<tr>
-									<th className="p-3">Factuurnr.</th>
-									<th className="p-3">Datum</th>
-									<th className="p-3">Vervaldatum</th>
-									<th className="p-3">Status</th>
-									<th className="p-3 text-right">Bedrag</th>
-									<th className="p-3" />
-								</tr>
-							</thead>
-							<tbody>
-								{invoices.map((inv) => (
-									<tr key={inv.id} className="border-t">
-										<td className="p-3 font-medium">{inv.invoice_number}</td>
-										<td className="p-3">{inv.issue_date}</td>
-										<td className="p-3">{inv.due_date}</td>
-										<td className="p-3">
-											<Badge variant="secondary">{INVOICE_STATUS_LABELS[inv.status]}</Badge>
-										</td>
-										<td className="p-3 text-right">{formatCentsEUR(inv.amount_total_cents)}</td>
-										<td className="p-3 text-right">
-											<Button
-												size="sm"
-												variant="outline"
-												disabled={!inv.pdf_storage_path || downloading === inv.id}
-												onClick={() => handleDownload(inv.id)}
-											>
-												<LuDownload className="h-4 w-4 mr-1" /> PDF
-											</Button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</CardContent>
-				</Card>
+				<table className="w-full text-sm">
+					<thead className="bg-muted/50 text-left">
+						<tr>
+							<th className="p-3">Factuurnr.</th>
+							<th className="p-3">Datum</th>
+							<th className="p-3">Vervaldatum</th>
+							<th className="p-3">Status</th>
+							<th className="p-3 text-right">Bedrag</th>
+							<th className="p-3" />
+						</tr>
+					</thead>
+					<tbody>
+						{invoices.map((inv) => (
+							<tr key={inv.id} className="border-t">
+								<td className="p-3 font-medium">{inv.invoice_number}</td>
+								<td className="p-3">{inv.issue_date}</td>
+								<td className="p-3">{inv.due_date}</td>
+								<td className="p-3">
+									<Badge variant="secondary">{INVOICE_STATUS_LABELS[inv.status]}</Badge>
+								</td>
+								<td className="p-3 text-right">{formatCentsEUR(inv.amount_total_cents)}</td>
+								<td className="p-3 text-right">
+									<Button
+										size="sm"
+										variant="outline"
+										disabled={!inv.pdf_storage_path || downloading === inv.id}
+										onClick={() => handleDownload(inv.id)}
+									>
+										<LuDownload className="h-4 w-4 mr-1" /> PDF
+									</Button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			)}
-		</div>
+		</PageShell>
 	);
 }

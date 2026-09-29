@@ -2,6 +2,7 @@ import type { ComponentProps } from 'react';
 import { LuPencil, LuTrash2 } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { CrudFormDialogActions } from '@/components/ui/crud-form-dialog-actions';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -96,20 +97,18 @@ export function NoLessonPeriodEditorDialog({
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<Label htmlFor="period-start">Startdatum</Label>
-							<Input
+							<DatePicker
 								id="period-start"
-								type="date"
-								value={form.start_date}
-								onChange={(event) => onFormChange({ ...form, start_date: event.target.value })}
+								value={form.start_date || null}
+								onChange={(value) => onFormChange({ ...form, start_date: value ?? '' })}
 							/>
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="period-end">Einddatum</Label>
-							<Input
+							<DatePicker
 								id="period-end"
-								type="date"
-								value={form.end_date}
-								onChange={(event) => onFormChange({ ...form, end_date: event.target.value })}
+								value={form.end_date || null}
+								onChange={(value) => onFormChange({ ...form, end_date: value ?? '' })}
 							/>
 						</div>
 					</div>

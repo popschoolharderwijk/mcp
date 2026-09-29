@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
 	Dialog,
 	DialogContent,
@@ -16,7 +15,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelectSingle } from '@/components/ui/user-select';
 import { NAV_LABELS } from '@/config/nav-labels';
@@ -79,73 +78,68 @@ function MandatenContent() {
 	};
 
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title={NAV_LABELS.mandaten}
-				subtitle="SEPA-incassomandaten van leerlingen"
-				actions={
-					<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-						<DialogTrigger asChild>
-							<Button>
-								<LuPlus className="h-4 w-4 mr-2" /> Nieuw mandaat
-							</Button>
-						</DialogTrigger>
-						<NewMandateDialog
-							onClose={() => setDialogOpen(false)}
-							onCreated={() => {
-								setDialogOpen(false);
-								load();
-							}}
-						/>
-					</Dialog>
-				}
-			/>
-
-			<Card>
-				<CardContent className="p-0">
-					{loading ? (
-						<div className="p-8 text-center text-muted-foreground">Laden...</div>
-					) : rows.length === 0 ? (
-						<div className="p-8 text-center text-muted-foreground">Nog geen mandaten</div>
-					) : (
-						<table className="w-full text-sm">
-							<thead className="bg-muted/50 text-left">
-								<tr>
-									<th className="p-3">Kenmerk</th>
-									<th className="p-3">Leerling</th>
-									<th className="p-3">IBAN</th>
-									<th className="p-3">Rekeninghouder</th>
-									<th className="p-3">Status</th>
-									<th className="p-3">Volgorde</th>
-									<th className="p-3 text-right">Acties</th>
-								</tr>
-							</thead>
-							<tbody>
-								{rows.map((m) => (
-									<tr key={m.id} className="border-t">
-										<td className="p-3 font-mono text-xs">{m.mandate_reference}</td>
-										<td className="p-3">{formatProfileFullName(m.profiles)}</td>
-										<td className="p-3 font-mono text-xs">{m.iban}</td>
-										<td className="p-3">{m.account_holder}</td>
-										<td className="p-3">
-											<Badge variant={mandateStatusVariant(m.status)}>
-												{MANDATE_STATUS_LABELS[m.status]}
-											</Badge>
-										</td>
-										<td className="p-3">{m.sequence_type}</td>
-										<td className="p-3 text-right space-x-2">
-											<Button size="sm" variant="ghost" onClick={() => handleDelete(m.id)}>
-												<LuTrash2 className="h-4 w-4" />
-											</Button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					)}
-				</CardContent>
-			</Card>
-		</div>
+		<PageShell
+			title={NAV_LABELS.mandaten}
+			description="Beheer SEPA-mandaten van leerlingen"
+			actions={
+				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+					<DialogTrigger asChild>
+						<Button>
+							<LuPlus className="h-4 w-4 mr-2" /> Nieuw mandaat
+						</Button>
+					</DialogTrigger>
+					<NewMandateDialog
+						onClose={() => setDialogOpen(false)}
+						onCreated={() => {
+							setDialogOpen(false);
+							load();
+						}}
+					/>
+				</Dialog>
+			}
+			contentClassName="p-0"
+		>
+			{loading ? (
+				<div className="p-8 text-center text-muted-foreground">Laden...</div>
+			) : rows.length === 0 ? (
+				<div className="p-8 text-center text-muted-foreground">Nog geen mandaten</div>
+			) : (
+				<table className="w-full text-sm">
+					<thead className="bg-muted/50 text-left">
+						<tr>
+							<th className="p-3">Kenmerk</th>
+							<th className="p-3">Leerling</th>
+							<th className="p-3">IBAN</th>
+							<th className="p-3">Rekeninghouder</th>
+							<th className="p-3">Status</th>
+							<th className="p-3">Volgorde</th>
+							<th className="p-3 text-right">Acties</th>
+						</tr>
+					</thead>
+					<tbody>
+						{rows.map((m) => (
+							<tr key={m.id} className="border-t">
+								<td className="p-3 font-mono text-xs">{m.mandate_reference}</td>
+								<td className="p-3">{formatProfileFullName(m.profiles)}</td>
+								<td className="p-3 font-mono text-xs">{m.iban}</td>
+								<td className="p-3">{m.account_holder}</td>
+								<td className="p-3">
+									<Badge variant={mandateStatusVariant(m.status)}>
+										{MANDATE_STATUS_LABELS[m.status]}
+									</Badge>
+								</td>
+								<td className="p-3">{m.sequence_type}</td>
+								<td className="p-3 text-right space-x-2">
+									<Button size="sm" variant="ghost" onClick={() => handleDelete(m.id)}>
+										<LuTrash2 className="h-4 w-4" />
+									</Button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			)}
+		</PageShell>
 	);
 }
 

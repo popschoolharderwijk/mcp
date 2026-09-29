@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { ReportsTeacherFilter } from '@/components/reports/ReportsTeacherFilter';
 import { AvailabilityDayGrid } from '@/components/teachers/AvailabilityDayGrid';
-import { Button } from '@/components/ui/button';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import type { Tables } from '@/integrations/supabase/types';
 import { DAY_NAMES } from '@/lib/date/day-index';
@@ -65,57 +66,37 @@ export default function TeacherAvailability() {
 	}
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-3xl font-bold">Docent Beschikbaarheid</h1>
-				<p className="text-muted-foreground">Overzicht van beschikbare tijden voor alle docenten</p>
-			</div>
+		<PageShell
+			title={NAV_LABELS.availability}
+			description="Bekijk de beschikbaarheid van alle docenten"
+			loading={loading || authLoading}
+		>
+			<div className="space-y-6">
+				<ReportsTeacherFilter
+					selectedTeacherUserId={selectedTeacherUserId}
+					onTeacherChange={setSelectedTeacherUserId}
+				/>
 
-			{loading ? (
-				<PageSkeleton variant="header-and-cards" />
-			) : (
-				<>
-					<div className="flex items-center gap-2">
-						<Button
-							variant={selectedTeacherUserId === 'all' ? 'default' : 'outline'}
-							size="sm"
-							onClick={() => setSelectedTeacherUserId('all')}
-						>
-							Alle docenten
-						</Button>
-						{teachers.map((teacher) => (
-							<Button
-								key={teacher.user_id}
-								variant={selectedTeacherUserId === teacher.user_id ? 'default' : 'outline'}
-								size="sm"
-								onClick={() => setSelectedTeacherUserId(teacher.user_id)}
-							>
-								{getTeacherAvailabilityOverviewName(teacher)}
-							</Button>
-						))}
-					</div>
-
-					<AvailabilityDayGrid
-						dayNames={dayNames}
-						availabilityByDay={availabilityByDay}
-						renderSlot={(avail) => {
-							const teacher = findTeacherForAvailabilitySlot(teachers, avail.teacher_user_id);
-							return (
-								<div key={avail.id} className="rounded-md border bg-muted/50 p-2 text-sm">
-									<div className="font-medium">
-										{formatTime(avail.start_time)} - {formatTime(avail.end_time)}
-									</div>
-									{showTeacherName && teacher && (
-										<div className="text-xs text-muted-foreground">
-											{getTeacherAvailabilityOverviewName(teacher)}
-										</div>
-									)}
+				<AvailabilityDayGrid
+					dayNames={dayNames}
+					availabilityByDay={availabilityByDay}
+					renderSlot={(avail) => {
+						const teacher = findTeacherForAvailabilitySlot(teachers, avail.teacher_user_id);
+						return (
+							<div key={avail.id} className="rounded-md border bg-muted/50 p-2 text-sm">
+								<div className="font-medium">
+									{formatTime(avail.start_time)} - {formatTime(avail.end_time)}
 								</div>
-							);
-						}}
-					/>
-				</>
-			)}
-		</div>
+								{showTeacherName && teacher && (
+									<div className="text-xs text-muted-foreground">
+										{getTeacherAvailabilityOverviewName(teacher)}
+									</div>
+								)}
+							</div>
+						);
+					}}
+				/>
+			</div>
+		</PageShell>
 	);
 }

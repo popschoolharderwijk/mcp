@@ -1,6 +1,5 @@
 import { LuDatabase, LuShieldCheck } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '@/components/ui/page-header';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
 interface ManualSection {
@@ -342,11 +341,6 @@ const sections: ManualSection[] = [
 export default function UserManual() {
 	return (
 		<div className="space-y-6">
-			<PageHeader
-				title={NAV_LABELS.manual}
-				subtitle="Functionele beschrijving van alle onderdelen van POPschool"
-			/>
-
 			<div className="grid gap-6">
 				{sections.map((section) => (
 					<Card key={section.title}>

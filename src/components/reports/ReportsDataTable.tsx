@@ -75,7 +75,6 @@ export function ReportsDataTable({
 
 	return (
 		<DataTable<ReportRow>
-			title=""
 			data={data}
 			columns={columns}
 			searchQuery={tableSearchQuery}

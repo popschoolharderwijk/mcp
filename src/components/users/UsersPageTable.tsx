@@ -1,9 +1,9 @@
 import { LuPlus } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
+import { PageShell } from '@/components/ui/page-shell';
 import type { buildUsersRowActions } from '@/components/users/UsersPageParts';
 import { NAV_LABELS } from '@/config/nav-labels';
-import { getIcon } from '@/lib/roles';
 import type { buildUsersColumns, buildUsersQuickFilterGroups, UserWithRole } from '@/lib/users/usersPageHelpers';
 import {
 	resolveUsersTableInitialSortColumn,
@@ -35,42 +35,11 @@ interface UsersPageTableProps {
 }
 
 export function UsersPageTable(props: UsersPageTableProps) {
-	const SiteAdminIcon = getIcon('site_admin');
-
 	return (
-		<DataTable
+		<PageShell
 			title={NAV_LABELS.users}
-			description={
-				<>
-					Beheer alle gebruikers en hun rollen
-					{props.isSiteAdmin && (
-						<span className="ml-2 inline-flex items-center gap-1 text-primary">
-							<SiteAdminIcon className="h-4 w-4" />
-							Je kunt rollen wijzigen
-						</span>
-					)}
-				</>
-			}
-			data={props.users}
-			columns={props.columns}
-			searchQuery={props.searchQuery}
-			onSearchChange={props.onSearchChange}
-			loading={props.loading}
-			getRowKey={(user) => user.user_id}
-			getRowClassName={(user) => resolveUsersTableRowClassName(user.user_id, props.userId)}
-			emptyMessage="Geen gebruikers gevonden"
-			quickFilter={props.quickFilterGroups}
-			serverPagination={{
-				totalCount: props.totalCount,
-				currentPage: props.currentPage,
-				rowsPerPage: props.rowsPerPage,
-				onPageChange: props.onPageChange,
-				onRowsPerPageChange: props.onRowsPerPageChange,
-			}}
-			initialSortColumn={resolveUsersTableInitialSortColumn(props.sortColumn)}
-			initialSortDirection={resolveUsersTableInitialSortDirection(props.sortDirection)}
-			onSortChange={props.onSortChange}
-			headerActions={
+			description="Beheer alle gebruikers en hun rollen"
+			actions={
 				shouldShowUsersCreateButton(props.isAdmin, props.isSiteAdmin) ? (
 					<Button onClick={props.onCreate}>
 						<LuPlus className="mr-2 h-4 w-4" />
@@ -78,7 +47,29 @@ export function UsersPageTable(props: UsersPageTableProps) {
 					</Button>
 				) : undefined
 			}
-			rowActions={props.rowActions}
-		/>
+		>
+			<DataTable
+				data={props.users}
+				columns={props.columns}
+				searchQuery={props.searchQuery}
+				onSearchChange={props.onSearchChange}
+				loading={props.loading}
+				getRowKey={(user) => user.user_id}
+				getRowClassName={(user) => resolveUsersTableRowClassName(user.user_id, props.userId)}
+				emptyMessage="Geen gebruikers gevonden"
+				quickFilter={props.quickFilterGroups}
+				serverPagination={{
+					totalCount: props.totalCount,
+					currentPage: props.currentPage,
+					rowsPerPage: props.rowsPerPage,
+					onPageChange: props.onPageChange,
+					onRowsPerPageChange: props.onRowsPerPageChange,
+				}}
+				initialSortColumn={resolveUsersTableInitialSortColumn(props.sortColumn)}
+				initialSortDirection={resolveUsersTableInitialSortDirection(props.sortDirection)}
+				onSortChange={props.onSortChange}
+				rowActions={props.rowActions}
+			/>
+		</PageShell>
 	);
 }

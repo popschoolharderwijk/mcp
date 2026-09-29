@@ -4,7 +4,7 @@ Enforce before declaring success.
 
 | Surface | Language |
 |---------|----------|
-| Code, tests, comments, CLI tools (I/O + code) | **English** |
+| File names, Code, tests, comments, CLI tools (I/O + code) | **English** |
 | Front-end UI (labels, buttons, errors, placeholders, user-facing copy) | **Dutch** |
 | Docs under `./docs/` | Dutch (only touch if your fix edits them) |
 

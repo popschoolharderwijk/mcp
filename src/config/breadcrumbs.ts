@@ -40,6 +40,21 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/agreements', items: [{ label: NAV_LABELS.agreements, href: '/agreements' }] },
 	{ pattern: '/projects', items: [{ label: NAV_LABELS.projects, href: '/projects' }] },
 	{
+		pattern: '/lesson-groups/new',
+		items: [
+			{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' },
+			{ label: 'Nieuwe lesgroep', href: '/lesson-groups/new' },
+		],
+	},
+	// /lesson-groups/:id – base only; page adds group name via suffix
+	{
+		pattern: /^\/lesson-groups\/[^/]+$/,
+		items: [{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' }],
+	},
+	{ pattern: '/lesson-groups', items: [{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' }] },
+	{ pattern: '/aanmeldingen', items: [{ label: NAV_LABELS.signupRequests, href: '/aanmeldingen' }] },
+	{ pattern: '/trial-lessons', items: [{ label: NAV_LABELS.trialLessons, href: '/trial-lessons' }] },
+	{
 		pattern: /^\/agreements\/[^/]+$/,
 		items: [{ label: NAV_LABELS.agreements, href: '/agreements' }],
 	},
@@ -63,7 +78,26 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: 'Instellingen', href: '/boekhouding/instellingen' },
 		],
 	},
+	{
+		pattern: /^\/incasso\/batches\/[^/]+$/,
+		items: [{ label: NAV_LABELS.incasso, href: '/incasso' }],
+	},
+	{ pattern: '/incasso', items: [{ label: NAV_LABELS.incasso, href: '/incasso' }] },
+	{ pattern: '/mandaten', items: [{ label: NAV_LABELS.mandaten, href: '/mandaten' }] },
+	{ pattern: '/facturen', items: [{ label: NAV_LABELS.invoices, href: '/facturen' }] },
 	{ pattern: '/data-import', items: [{ label: NAV_LABELS.dataImport, href: '/data-import' }] },
+	{
+		pattern: '/email-templates',
+		items: [{ label: NAV_LABELS.emailTemplates, href: '/email-templates' }],
+	},
+	{
+		pattern: '/announcements',
+		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],
+	},
+	{
+		pattern: '/lesvrije-periodes',
+		items: [{ label: NAV_LABELS.noLessonPeriods, href: '/lesvrije-periodes' }],
+	},
 	{ pattern: '/teachers', items: [{ label: NAV_LABELS.teachers, href: '/teachers' }] },
 	{
 		pattern: '/teachers/availability',
@@ -112,6 +146,11 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: NAV_LABELS.students, href: '/students' },
 			{ label: NAV_LABELS.myProfile, href: '/students/my-profile' },
 		],
+	},
+	// /students/:userId – base only; page adds student name via suffix
+	{
+		pattern: /^\/students\/[^/]+$/,
+		items: [{ label: NAV_LABELS.students, href: '/students' }],
 	},
 	{ pattern: '/reports', items: [{ label: NAV_LABELS.reports, href: '/reports' }] },
 	{ pattern: '/manual', items: [{ label: NAV_LABELS.manual, href: '/manual' }] },

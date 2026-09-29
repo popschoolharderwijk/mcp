@@ -5,11 +5,10 @@ import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,35 +100,30 @@ function IncassoContent() {
 	}, [load]);
 
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title={NAV_LABELS.incasso}
-				subtitle="Maandelijkse SEPA-incasso batches"
-				actions={
-					<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-						<DialogTrigger asChild>
-							<Button>
-								<LuPlus className="h-4 w-4 mr-2" /> Nieuwe batch
-							</Button>
-						</DialogTrigger>
-						<NewBatchDialog
-							defaultCollectionDay={settings?.sepa_collection_day ?? 27}
-							onClose={() => setDialogOpen(false)}
-							onCreated={() => {
-								setDialogOpen(false);
-								load();
-							}}
-						/>
-					</Dialog>
-				}
-			/>
-
-			<Card>
-				<CardContent className="p-0">
-					<IncassoBatchTableContent loading={loading} rows={rows} />
-				</CardContent>
-			</Card>
-		</div>
+		<PageShell
+			title={NAV_LABELS.incasso}
+			description="Beheer SEPA-incassobatches"
+			actions={
+				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+					<DialogTrigger asChild>
+						<Button>
+							<LuPlus className="h-4 w-4 mr-2" /> Nieuwe batch
+						</Button>
+					</DialogTrigger>
+					<NewBatchDialog
+						defaultCollectionDay={settings?.sepa_collection_day ?? 27}
+						onClose={() => setDialogOpen(false)}
+						onCreated={() => {
+							setDialogOpen(false);
+							load();
+						}}
+					/>
+				</Dialog>
+			}
+			contentClassName="p-0"
+		>
+			<IncassoBatchTableContent loading={loading} rows={rows} />
+		</PageShell>
 	);
 }
 

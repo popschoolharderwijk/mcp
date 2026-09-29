@@ -15,8 +15,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeacherAvailability } from '@/hooks/useTeacherAvailability';
 import { DEFAULT_END_TIME, DEFAULT_START_TIME } from '@/lib/availability';
@@ -117,36 +118,31 @@ export default function MyAvailability() {
 
 	const availabilityByDay = groupAvailabilityByDay(availability);
 
-	if (pageGate === 'auth-loading' || loading) {
-		return <PageSkeleton variant="header-and-cards" />;
-	}
-
 	if (pageGate === 'denied') {
 		return <Navigate to="/" replace />;
 	}
 
 	return (
-		<div className="space-y-6">
-			<div className="flex items-center justify-between">
-				<div>
-					<h1 className="text-3xl font-bold">Mijn Beschikbaarheid</h1>
-					<p className="text-muted-foreground">
-						Beheer je beschikbare dagen en tijden voor het plannen van lessen
-					</p>
-				</div>
-				<Button onClick={() => setAddDialogOpen(true)}>
-					<LuPlus className="mr-2 h-4 w-4" />
-					Beschikbaarheid toevoegen
-				</Button>
-			</div>
-
-			<AvailabilityDayGrid
-				dayNames={dayNames}
-				availabilityByDay={availabilityByDay}
-				renderSlot={(avail) => (
-					<MyAvailabilitySlotRow avail={avail} deletingId={deletingId} onDelete={handleDelete} />
-				)}
-			/>
+		<>
+			<PageShell
+				title={NAV_LABELS.myAvailability}
+				description="Beheer je beschikbare dagen en tijden voor het plannen van lessen"
+				loading={pageGate === 'auth-loading' || loading}
+				actions={
+					<Button onClick={() => setAddDialogOpen(true)}>
+						<LuPlus className="mr-2 h-4 w-4" />
+						Beschikbaarheid toevoegen
+					</Button>
+				}
+			>
+				<AvailabilityDayGrid
+					dayNames={dayNames}
+					availabilityByDay={availabilityByDay}
+					renderSlot={(avail) => (
+						<MyAvailabilitySlotRow avail={avail} deletingId={deletingId} onDelete={handleDelete} />
+					)}
+				/>
+			</PageShell>
 
 			<Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
 				<DialogContent>
@@ -204,6 +200,6 @@ export default function MyAvailability() {
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-		</div>
+		</>
 	);
 }

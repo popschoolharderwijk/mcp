@@ -1,7 +1,7 @@
-import { LuFileSpreadsheet } from 'react-icons/lu';
 import { LegacyImportCardContent } from '@/components/settings/LegacyImportCardContent';
 import { LegacyImportConfirmDialog } from '@/components/settings/LegacyImportConfirmDialog';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useLegacyImportManager } from '@/hooks/useLegacyImportManager';
 
 export function LegacyImportManager() {
@@ -20,18 +20,8 @@ export function LegacyImportManager() {
 	} = useLegacyImportManager();
 
 	return (
-		<div className="space-y-6">
-			<Card>
-				<CardHeader>
-					<CardTitle className="flex items-center gap-2">
-						<LuFileSpreadsheet className="h-5 w-5" />
-						Data importeren uit oud systeem
-					</CardTitle>
-					<CardDescription>
-						Importeer lestypes, docenten, leerlingen en actieve overeenkomsten via een Excel-bestand. De
-						import is idempotent: je kunt hetzelfde bestand opnieuw uploaden zonder duplicaten.
-					</CardDescription>
-				</CardHeader>
+		<>
+			<PageShell title={NAV_LABELS.dataImport} description="Importeer legacy-gegevens via een Excel-bestand">
 				<LegacyImportCardContent
 					file={file}
 					busy={busy}
@@ -43,7 +33,7 @@ export function LegacyImportManager() {
 					onOpenConfirm={() => setConfirmOpen(true)}
 					onDownloadErrors={downloadErrors}
 				/>
-			</Card>
+			</PageShell>
 
 			<LegacyImportConfirmDialog
 				open={confirmOpen}
@@ -51,6 +41,6 @@ export function LegacyImportManager() {
 				onOpenChange={setConfirmOpen}
 				onConfirm={runImport}
 			/>
-		</div>
+		</>
 	);
 }

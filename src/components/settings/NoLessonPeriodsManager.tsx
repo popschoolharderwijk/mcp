@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuCalendarOff, LuPlus } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { NoLessonPeriodEditorDialog, NoLessonPeriodsList } from '@/components/settings/NoLessonPeriodsManagerParts';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useFormCrudDialogActions, useFormCrudDialogState } from '@/hooks/useFormCrudDialogState';
 import { supabase } from '@/integrations/supabase/client';
 import type { NoLessonPeriodListItem } from '@/lib/settings/noLessonPeriodsManagerControllerHelpers';
@@ -93,23 +94,17 @@ export function NoLessonPeriodsManager() {
 	});
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-start justify-between space-y-0">
-				<div className="space-y-1">
-					<CardTitle className="flex items-center gap-2">
-						<LuCalendarOff className="h-5 w-5" />
-						Lesvrije periodes
-					</CardTitle>
-					<CardDescription>
-						Tijdens deze periodes worden geen lessen ingepland (bijvoorbeeld vakanties).
-					</CardDescription>
-				</div>
-				<Button onClick={openCreate} size="sm">
-					<LuPlus className="mr-2 h-4 w-4" />
-					Nieuwe periode
-				</Button>
-			</CardHeader>
-			<CardContent>
+		<>
+			<PageShell
+				title={NAV_LABELS.noLessonPeriods}
+				description="Beheer periodes waarin geen lessen plaatsvinden"
+				actions={
+					<Button onClick={openCreate} size="sm">
+						<LuPlus className="mr-2 h-4 w-4" />
+						Nieuwe periode
+					</Button>
+				}
+			>
 				{loading && <p className="text-sm text-muted-foreground">Laden...</p>}
 				{shouldShowNoLessonPeriodsEmpty(loading, periods.length) && (
 					<p className="text-sm text-muted-foreground">Er zijn nog geen lesvrije periodes ingesteld.</p>
@@ -117,7 +112,7 @@ export function NoLessonPeriodsManager() {
 				{shouldShowNoLessonPeriodsList(loading, periods.length) && (
 					<NoLessonPeriodsList periods={periods} onEdit={openEdit} onDelete={setDeleteTarget} />
 				)}
-			</CardContent>
+			</PageShell>
 
 			<NoLessonPeriodEditorDialog
 				open={dialogOpen}
@@ -127,6 +122,6 @@ export function NoLessonPeriodsManager() {
 				onFormChange={setForm}
 				dialogActions={dialogActions}
 			/>
-		</Card>
+		</>
 	);
 }
