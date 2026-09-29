@@ -1,12 +1,13 @@
-const LOCAL_FAVICON = '/favicon-local.svg';
+const FAVICON_SRC = '/favicon.svg';
+const FAVICON_LOCAL_SRC = '/favicon-local.svg';
+
+export function resolveFaviconSrc(isDev: boolean): string {
+	return isDev ? FAVICON_LOCAL_SRC : FAVICON_SRC;
+}
 
 export function configureFavicon() {
-	if (!import.meta.env.DEV) {
-		return;
-	}
-
 	const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
 	if (link) {
-		link.href = LOCAL_FAVICON;
+		link.href = resolveFaviconSrc(import.meta.env.DEV);
 	}
 }

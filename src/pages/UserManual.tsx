@@ -1,6 +1,5 @@
 import { LuDatabase, LuShieldCheck } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeader } from '@/components/ui/page-header';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 
 interface ManualSection {
@@ -135,7 +134,7 @@ const sections: ManualSection[] = [
 			'Stap 3 – Batch goedkeuren: open de batch-detailpagina en klik "Goedkeuren". Dit triggert automatisch de edge function generate-invoice met send_email: true.',
 			'Stap 4 – Factuurnummer toekennen: generate-invoice roept next_invoice_number() aan; dit verhoogt atomair invoice_number_next en levert een nummer in het formaat {prefix}{jaar}-{volgnummer} (bv. INV-2026-00001).',
 			'Stap 5 – BTW bepalen per regel: per batch-item kijkt het systeem naar de geboortedatum van de leerling op de collection date. <21 jaar → 0% BTW (vrijgesteld), ≥21 jaar → 21% BTW. Mist de geboortedatum, dan valt de regel in categorie "unknown" (behandeld als vrijgesteld). Een factuur met zowel vrijgestelde als belaste regels krijgt age_category "mixed".',
-			'Stap 6 – PDF renderen: er wordt een A4-PDF in Mplifi-huisstijl (oranje #F97316 header) opgebouwd met bedrijfsblok, debiteurgegevens (of ouder/verzorger), factuurnummer, vervaldatum, regels met BTW-splitsing, totalen en het SEPA-mandaatreferentie.',
+			'Stap 6 – PDF renderen: er wordt een A4-PDF in Mplifi-huisstijl (oranje merkkleur in de header) opgebouwd met bedrijfsblok, debiteurgegevens (of ouder/verzorger), factuurnummer, vervaldatum, regels met BTW-splitsing, totalen en het SEPA-mandaatreferentie.',
 			'Stap 7 – Opslaan: de PDF wordt opgeslagen in de privé storage-bucket "invoices" onder pad {student_user_id}/{invoice_id}.pdf. De invoices-rij krijgt status "issued" plus pdf_storage_path.',
 			'Stap 8 – Versturen: indien een Resend-API-key is geconfigureerd, wordt de PDF als bijlage gemaild naar ouder/verzorger of anders de leerling zelf. Bij succes worden sent_at en email_sent_to bijgewerkt.',
 			'Stap 9 – Idempotent opnieuw draaien: een tweede call op dezelfde batch slaat bestaande facturen over (skipped: true). Veilig bij retries of bij toevoegen van nieuwe leerlingen aan een batch.',
@@ -145,21 +144,21 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.mandaten,
-		title: NAV_LABELS.mandaten,
+		icon: NAV_ICONS.mandates,
+		title: NAV_LABELS.mandates,
 		description:
 			'Beheer SEPA-incassomandaten waarmee de school lesgeld automatisch mag afschrijven van de rekening van de leerling of ouder/verzorger.',
 		details: [
 			'Aanmaken: voer IBAN, tenaamstelling en (optioneel) BIC in. Het systeem genereert automatisch een unieke mandaatreferentie (UMR) en zet het mandaat op status "pending".',
-			'Uitnodigen: verstuur een mandaatuitnodiging per e-mail (template "incasso_invite") zodat de debiteur digitaal akkoord kan geven.',
+			'Uitnodigen: verstuur een mandaatuitnodiging per e-mail (template "direct_debit_invite") zodat de debiteur digitaal akkoord kan geven.',
 			'Activeren: na akkoord wordt het mandaat "active" met een signature date; alleen actieve mandaten worden meegenomen in een incasso-batch.',
 			'Intrekken: een mandaat kan handmatig op "revoked" gezet worden; toekomstige batches slaan de leerling dan over.',
 			'Zichtbaarheid: staff/admin zien alle mandaten; leerlingen/ouders zien alleen hun eigen mandaat (afgedwongen via RLS).',
 		],
 	},
 	{
-		icon: NAV_ICONS.incasso,
-		title: NAV_LABELS.incasso,
+		icon: NAV_ICONS.directDebit,
+		title: NAV_LABELS.directDebit,
 		description:
 			'Bundel automatische incasso-opdrachten in batches, genereer een SEPA XML (pain.008) voor de bank en verwerk statusmeldingen (pain.002).',
 		details: [
@@ -342,11 +341,6 @@ const sections: ManualSection[] = [
 export default function UserManual() {
 	return (
 		<div className="space-y-6">
-			<PageHeader
-				title={NAV_LABELS.manual}
-				subtitle="Functionele beschrijving van alle onderdelen van POPschool"
-			/>
-
 			<div className="grid gap-6">
 				{sections.map((section) => (
 					<Card key={section.title}>

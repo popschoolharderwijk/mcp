@@ -1,13 +1,14 @@
 import type { ChangeEvent, RefObject } from 'react';
-import { LuImage, LuLink, LuMegaphone, LuPencil, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
+import { LuImage, LuLink, LuPencil, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CrudFormDialogActions } from '@/components/ui/crud-form-dialog-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { PageShell } from '@/components/ui/page-shell';
 import { Textarea } from '@/components/ui/textarea';
+import { NAV_LABELS } from '@/config/nav-labels';
 import type { Announcement } from '@/hooks/useAnnouncements';
 import type { useAnnouncementsManager } from '@/hooks/useAnnouncementsManager';
 import { formatDbDateToUi } from '@/lib/date/date-format';
@@ -58,32 +59,24 @@ export function AnnouncementsManagerCard({ state }: { state: AnnouncementsManage
 	const view = resolveAnnouncementsManagerCardView(isSchemaMissing, isLoading, announcements.length);
 
 	return (
-		<Card>
-			<CardHeader className="flex flex-row items-start justify-between space-y-0">
-				<div className="space-y-1">
-					<CardTitle className="flex items-center gap-2">
-						<LuMegaphone className="h-5 w-5" />
-						Nieuwsberichten
-					</CardTitle>
-					<CardDescription>
-						Plaats berichten die getoond worden op het dashboard van docenten en/of leerlingen.
-					</CardDescription>
-				</div>
+		<PageShell
+			title={NAV_LABELS.announcements}
+			description="Plaats berichten die getoond worden op het dashboard van docenten en/of leerlingen"
+			actions={
 				<Button onClick={openCreate} size="sm" disabled={isSchemaMissing}>
 					<LuPlus className="mr-2 h-4 w-4" />
 					Nieuw bericht
 				</Button>
-			</CardHeader>
-			<CardContent>
-				<AnnouncementsManagerCardContent
-					view={view}
-					error={error}
-					announcements={announcements}
-					onEdit={state.openEdit}
-					onDelete={state.setDeleteTarget}
-				/>
-			</CardContent>
-		</Card>
+			}
+		>
+			<AnnouncementsManagerCardContent
+				view={view}
+				error={error}
+				announcements={announcements}
+				onEdit={state.openEdit}
+				onDelete={state.setDeleteTarget}
+			/>
+		</PageShell>
 	);
 }
 

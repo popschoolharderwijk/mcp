@@ -379,40 +379,7 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			email_templates: {
-				Row: {
-					body_html: string;
-					created_at: string;
-					created_by: string | null;
-					event_key: string;
-					is_enabled: boolean;
-					subject: string;
-					updated_at: string;
-					updated_by: string | null;
-				};
-				Insert: {
-					body_html: string;
-					created_at?: string;
-					created_by?: string | null;
-					event_key: string;
-					is_enabled?: boolean;
-					subject: string;
-					updated_at?: string;
-					updated_by?: string | null;
-				};
-				Update: {
-					body_html?: string;
-					created_at?: string;
-					created_by?: string | null;
-					event_key?: string;
-					is_enabled?: boolean;
-					subject?: string;
-					updated_at?: string;
-					updated_by?: string | null;
-				};
-				Relationships: [];
-			};
-			incasso_batch_items: {
+			direct_debit_batch_items: {
 				Row: {
 					amount_cents: number;
 					batch_id: string;
@@ -475,35 +442,35 @@ export type Database = {
 				};
 				Relationships: [
 					{
-						foreignKeyName: 'incasso_batch_items_batch_id_fkey';
+						foreignKeyName: 'direct_debit_batch_items_batch_id_fkey';
 						columns: ['batch_id'];
 						isOneToOne: false;
-						referencedRelation: 'incasso_batches';
+						referencedRelation: 'direct_debit_batches';
 						referencedColumns: ['id'];
 					},
 					{
-						foreignKeyName: 'incasso_batch_items_lesson_agreement_id_fkey';
+						foreignKeyName: 'direct_debit_batch_items_lesson_agreement_id_fkey';
 						columns: ['lesson_agreement_id'];
 						isOneToOne: false;
 						referencedRelation: 'lesson_agreements';
 						referencedColumns: ['id'];
 					},
 					{
-						foreignKeyName: 'incasso_batch_items_mandate_id_fkey';
+						foreignKeyName: 'direct_debit_batch_items_mandate_id_fkey';
 						columns: ['mandate_id'];
 						isOneToOne: false;
 						referencedRelation: 'sepa_mandates';
 						referencedColumns: ['id'];
 					},
 					{
-						foreignKeyName: 'incasso_batch_items_student_user_id_fkey';
+						foreignKeyName: 'direct_debit_batch_items_student_user_id_fkey';
 						columns: ['student_user_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['user_id'];
 					},
 					{
-						foreignKeyName: 'incasso_batch_items_student_user_id_fkey';
+						foreignKeyName: 'direct_debit_batch_items_student_user_id_fkey';
 						columns: ['student_user_id'];
 						isOneToOne: false;
 						referencedRelation: 'view_profiles_with_display_name';
@@ -511,7 +478,7 @@ export type Database = {
 					},
 				];
 			};
-			incasso_batches: {
+			direct_debit_batches: {
 				Row: {
 					approved_at: string | null;
 					approved_by: string | null;
@@ -574,7 +541,7 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			incasso_invitations: {
+			direct_debit_invitations: {
 				Row: {
 					created_at: string;
 					id: string;
@@ -601,13 +568,46 @@ export type Database = {
 				};
 				Relationships: [
 					{
-						foreignKeyName: 'incasso_invitations_lesson_agreement_id_fkey';
+						foreignKeyName: 'direct_debit_invitations_lesson_agreement_id_fkey';
 						columns: ['lesson_agreement_id'];
 						isOneToOne: false;
 						referencedRelation: 'lesson_agreements';
 						referencedColumns: ['id'];
 					},
 				];
+			};
+			email_templates: {
+				Row: {
+					body_html: string;
+					created_at: string;
+					created_by: string | null;
+					event_key: string;
+					is_enabled: boolean;
+					subject: string;
+					updated_at: string;
+					updated_by: string | null;
+				};
+				Insert: {
+					body_html: string;
+					created_at?: string;
+					created_by?: string | null;
+					event_key: string;
+					is_enabled?: boolean;
+					subject: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Update: {
+					body_html?: string;
+					created_at?: string;
+					created_by?: string | null;
+					event_key?: string;
+					is_enabled?: boolean;
+					subject?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Relationships: [];
 			};
 			invoice_lines: {
 				Row: {
@@ -669,7 +669,7 @@ export type Database = {
 						foreignKeyName: 'invoice_lines_batch_item_id_fkey';
 						columns: ['batch_item_id'];
 						isOneToOne: false;
-						referencedRelation: 'incasso_batch_items';
+						referencedRelation: 'direct_debit_batch_items';
 						referencedColumns: ['id'];
 					},
 					{
@@ -759,7 +759,7 @@ export type Database = {
 						foreignKeyName: 'invoices_batch_id_fkey';
 						columns: ['batch_id'];
 						isOneToOne: false;
-						referencedRelation: 'incasso_batches';
+						referencedRelation: 'direct_debit_batches';
 						referencedColumns: ['id'];
 					},
 					{
@@ -2025,7 +2025,7 @@ export type Database = {
 				Args: { p_regprocedure: string };
 				Returns: boolean;
 			};
-			build_incasso_batch_items: {
+			build_direct_debit_batch_items: {
 				Args: { p_batch_id: string };
 				Returns: number;
 			};
@@ -2162,7 +2162,10 @@ export type Database = {
 				Args: { p_policy_name: string; p_table_name: string };
 				Returns: boolean;
 			};
-			recalc_incasso_batch: { Args: { p_batch_id: string }; Returns: undefined };
+			recalc_direct_debit_batch: {
+				Args: { p_batch_id: string };
+				Returns: undefined;
+			};
 			shift_recurring_deviation_to_next_week: {
 				Args: { p_deviation_id: string };
 				Returns: string;

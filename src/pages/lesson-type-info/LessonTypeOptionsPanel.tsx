@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { LuPlus } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { PageShell } from '@/components/ui/page-shell';
 import { LessonTypeOptionDeleteDialog } from '@/pages/lesson-type-info/LessonTypeOptionDeleteDialog';
 import { LessonTypeOptionEditDialog } from '@/pages/lesson-type-info/LessonTypeOptionEditDialog';
 import type { OptionModalFormState, OptionRowWithKey } from '@/pages/lesson-type-info/types';
@@ -43,27 +44,30 @@ export function LessonTypeOptionsPanel({
 }: LessonTypeOptionsPanelProps) {
 	return (
 		<>
-			<DataTable<OptionRowWithKey>
+			<PageShell
 				title="Lesopties"
-				data={sortedOptionsForm}
-				columns={optionColumns}
-				getRowKey={getOptionRowKey}
-				emptyMessage="Nog geen opties. Klik op Optie toevoegen."
-				paginated={false}
-				initialSortColumn="duration_minutes"
-				initialSortDirection="asc"
-				headerActions={
+				actions={
 					<Button onClick={onAddOption}>
 						<LuPlus className="mr-1 h-4 w-4" />
 						Optie toevoegen
 					</Button>
 				}
-				rowActions={{
-					onEdit: onEditOption,
-					onDelete: onDeleteOption,
-				}}
-				compactRows
-			/>
+			>
+				<DataTable<OptionRowWithKey>
+					data={sortedOptionsForm}
+					columns={optionColumns}
+					getRowKey={getOptionRowKey}
+					emptyMessage="Nog geen opties. Klik op Optie toevoegen."
+					paginated={false}
+					initialSortColumn="duration_minutes"
+					initialSortDirection="asc"
+					rowActions={{
+						onEdit: onEditOption,
+						onDelete: onDeleteOption,
+					}}
+					compactRows
+				/>
+			</PageShell>
 
 			{optionToDelete && (
 				<LessonTypeOptionDeleteDialog

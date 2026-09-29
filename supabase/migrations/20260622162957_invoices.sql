@@ -40,7 +40,7 @@ CREATE TABLE public.invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_number text NOT NULL UNIQUE,
   student_user_id uuid NOT NULL REFERENCES public.profiles(user_id) ON DELETE RESTRICT,
-  batch_id uuid REFERENCES public.incasso_batches(id) ON DELETE SET NULL,
+  batch_id uuid REFERENCES public.direct_debit_batches(id) ON DELETE SET NULL,
   issue_date date NOT NULL DEFAULT current_date,
   due_date date NOT NULL,
   period_start date,
@@ -94,7 +94,7 @@ CREATE TRIGGER trg_audit_invoices
 CREATE TABLE public.invoice_lines (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id uuid NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
-  batch_item_id uuid REFERENCES public.incasso_batch_items(id) ON DELETE SET NULL,
+  batch_item_id uuid REFERENCES public.direct_debit_batch_items(id) ON DELETE SET NULL,
   description text NOT NULL,
   lesson_date date,
   quantity numeric(10,2) NOT NULL DEFAULT 1,
@@ -194,7 +194,7 @@ BEGIN
     RETURN;
   END IF;
 
-  IF EXISTS (SELECT 1 FROM public.incasso_batch_items WHERE student_user_id = _user_id) THEN
+  IF EXISTS (SELECT 1 FROM public.direct_debit_batch_items WHERE student_user_id = _user_id) THEN
     RETURN;
   END IF;
 

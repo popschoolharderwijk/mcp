@@ -1,23 +1,23 @@
-# Handige Commands
+# Useful Commands
 
-## Development Omgevingen
+## Development Environments
 
-Er zijn 3 omgevingen geconfigureerd:
+Three environments are configured:
 
-| Command | Omgeving | Env bestand | Gebruik |
-|---------|----------|-------------|---------|
+| Command | Environment | Env file | Use |
+|---------|-------------|----------|-----|
 | `bun dev` | Remote development | `.env.development` | Lovable branch, remote dev server |
-| `bun dev:test` | Test database | `.env.test` | Test database voor development |
-| `bun prod` | Productie | `.env.production` | Productie server |
+| `bun dev:test` | Test database | `.env.test` | Test database for development |
+| `bun prod` | Production | `.env.production` | Production server |
 
-### Env bestanden aanmaken
+### Creating env files
 
 **`.env.development`** (remote dev):
 ```env
 VITE_SUPABASE_URL=https://xyz-dev.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 
-# Dev login bypass (optioneel, zie "Dev Login Bypass" sectie)
+# Dev login bypass (optional, see "Dev Login Bypass")
 VITE_DEV_LOGIN_PASSWORD=your-dev-password
 ```
 
@@ -28,24 +28,24 @@ VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
 VITE_DEV_LOGIN_PASSWORD=your-test-password
 ```
 
-**`.env.production`** (productie):
+**`.env.production`** (production):
 ```env
 VITE_SUPABASE_URL=https://xyz-prod.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
-> 💡 Alleen `.env` staat in `.gitignore`. De `.env.test`, `.env.development` en `.env.production` bestanden worden wel gecommit (zonder secrets).
+> 💡 Only `.env` is in `.gitignore`. The `.env.test`, `.env.development`, and `.env.production` files are committed (without secrets).
 
 ---
 
 ## Git Branch Management
 
 ```bash
-# Reset lovable branch naar main (verliest Lovable history awareness!)
+# Reset lovable branch to main (loses Lovable history awareness!)
 git checkout -B lovable origin/main
 git push -u origin lovable --force
 
-# Complete history reset (orphan branch) - DESTRUCTIEF
+# Complete history reset (orphan branch) - DESTRUCTIVE
 git checkout main
 git pull origin main
 git checkout --orphan temp-main
@@ -61,100 +61,100 @@ git push --force origin main
 ## Supabase CLI
 
 ```bash
-# Link aan remote dev project (mcp-dev)
+# Link to the remote dev project (mcp-dev)
 supabase link --project-ref zdvscmogkfyddnnxzkdu
 
-# Of gebruik --linked flag voor gelinkte project
+# Or use --linked for the currently linked project
 supabase <command> --linked
 
-# Push migraties naar remote dev
+# Push migrations to remote dev
 supabase db push --linked
 
-# Push config naar remote dev
-supabase config push 
+# Push config to remote dev
+supabase config push
 
-# Generate types voor gelinkte project
+# Generate types for the linked project
 supabase gen types typescript --linked > src/integrations/supabase/types.ts
 ```
 
-> 💡 **Workflow**: Er zijn geen lokale Supabase-databases. **Development** (Lovable, `bun dev`, `db:reset`) gebruikt **mcp-dev** (`zdvscmogkfyddnnxzkdu`). **CI bij een PR** gebruikt altijd **mcp-test** (link via secret `SUPABASE_PROJECT_REF`, credentials uit secrets). Lokaal testen (`bun test rls`): zet in `.env.test` de credentials van mcp-test of mcp-dev. Zie [secrets.md](./secrets.md) en [architecture.md](./architecture.md).
+> 💡 **Workflow**: There are no local Supabase databases. **Development** (Lovable, `bun dev`, `db:reset`) uses **mcp-dev** (`zdvscmogkfyddnnxzkdu`). **CI on a PR** always uses **mcp-test** (link via secret `SUPABASE_PROJECT_REF`, credentials from secrets). Local testing (`bun test rls`): put mcp-test or mcp-dev credentials in `.env.test`. See [secrets.md](./secrets.md) and [architecture.md](./architecture.md).
 
 ---
 
 ## User Management
 
 ```bash
-# Maak nieuwe gebruiker aan (of update bestaande)
-# Configureer in .env.development of .env.test:
-#   SUPABASE_URL=https://...supabase.co          (verplicht, API URL)
-#   SUPABASE_SERVICE_ROLE_KEY=eyJ...             (verplicht, service role key)
-#   DEV_LOGIN_EMAIL=user@example.com             (verplicht, voor create-user script)
-#   DEV_LOGIN_PASSWORD=wachtwoord                (optioneel, zonder = passwordless user)
-#   DEV_LOGIN_FIRST_NAME=Voornaam                (optioneel)
-#   DEV_LOGIN_LAST_NAME=Achternaam               (optioneel)
+# Create a new user (or update an existing one)
+# Configure in .env.development or .env.test:
+#   SUPABASE_URL=https://...supabase.co          (required, API URL)
+#   SUPABASE_SERVICE_ROLE_KEY=eyJ...             (required, service role key)
+#   DEV_LOGIN_EMAIL=user@example.com             (required, for create-user script)
+#   DEV_LOGIN_PASSWORD=password                  (optional, omit = passwordless user)
+#   DEV_LOGIN_FIRST_NAME=First                   (optional)
+#   DEV_LOGIN_LAST_NAME=Last                     (optional)
 bun run create-user
 ```
 
-**Twee modes:**
-- **Met wachtwoord**: User kan inloggen via Dev Login knop én Magic Link/OTP
-- **Zonder wachtwoord**: User kan alleen inloggen via Magic Link/OTP
+**Two modes:**
+- **With password**: User can sign in via the Dev Login button and Magic Link/OTP
+- **Without password**: User can only sign in via Magic Link/OTP
 
-> 💡 Bij een bestaande user worden wachtwoord en naam geüpdatet (zowel in `auth.users` als `profiles` tabel).
+> 💡 For an existing user, password and name are updated (in both `auth.users` and the `profiles` table).
 
 ---
 
 ## Dev Login Bypass
 
-In development omgevingen (`test` en `development`) verschijnt een "Dev Login" knop op de login pagina. Hiermee kun je direct inloggen zonder Magic Link/OTP te hoeven afwachten.
+In development environments (`test` and `development`) a "Dev Login" button appears on the login page. Use it to sign in immediately without waiting for Magic Link/OTP.
 
-### Rol Selectie
+### Role selection
 
-De Dev Login knop heeft een dropdown waarmee je kunt kiezen uit verschillende rollen:
-- **Site Admin** (`site-admin@test.nl`) - Standaard geselecteerd
+The Dev Login button has a dropdown to choose a role:
+- **Site Admin** (`site-admin@test.nl`) - Selected by default
 - **Admin** (`admin-one@test.nl`)
 - **Teacher** (`teacher-alice@test.nl`)
 - **Staff** (`staff-one@test.nl`)
 - **Student** (`student-001@test.nl`)
-- **User (geen rol)** (`user-001@test.nl`)
+- **User (no role)** (`user-001@test.nl`)
 
-Deze users komen uit de test seed (`supabase/seeds/test.sql`) en zijn beschikbaar in de remote dev instance (mcp-dev) na `bun run db:reset`.
+These users come from the test seed (`supabase/seeds/test.sql`) and are available on the remote dev instance (mcp-dev) after `bun run db:reset`.
 
-### Configuratie
+### Configuration
 
-**Optioneel** - Voeg toe aan `.env.development` of `.env.test` als je een custom wachtwoord wilt gebruiken:
+**Optional** — add to `.env.development` or `.env.test` if you want a custom password:
 
 ```env
 VITE_DEV_LOGIN_PASSWORD=your-custom-password
 ```
 
-Als `VITE_DEV_LOGIN_PASSWORD` niet is ingesteld, wordt de Dev Login knop uitgeschakeld. De test-seed users in `supabase/seeds/test.sql` gebruiken standaard het wachtwoord `password`.
+If `VITE_DEV_LOGIN_PASSWORD` is not set, the Dev Login button is disabled. Test-seed users in `supabase/seeds/test.sql` use the password `password` by default.
 
-> 💡 **Let op**: De Dev Login knop gebruikt hardcoded e-mails uit `supabase/seeds/test.sql` (bijv. `site-admin@test.nl`). Deze e-mails zijn niet configureerbaar via environment variabelen. Voor custom users gebruik je `bun run create-user` met `DEV_LOGIN_EMAIL`.
+> 💡 **Note**: The Dev Login button uses hardcoded emails from `supabase/seeds/test.sql` (e.g. `site-admin@test.nl`). Those emails are not configurable via environment variables. For custom users use `bun run create-user` with `DEV_LOGIN_EMAIL`.
 
-### Beveiliging
+### Security
 
-- De Dev Login knop wordt **volledig verwijderd** uit production builds (Vite dead-code elimination)
-- Werkt alleen in development modes (`test` en `development`)
-- Extra runtime check als fallback
+- The Dev Login button is **fully removed** from production builds (Vite dead-code elimination)
+- Works only in development modes (`test` and `development`)
+- Extra runtime check as a fallback
 
 ---
 
 ## Testing
 
 ```bash
-# Unit tests (geen Supabase nodig)
+# Unit tests (no Supabase needed)
 bun test code
 
-# Agenda-logica (recurrence, frequency, deviations; geen Supabase nodig)
+# Agenda logic (recurrence, frequency, deviations; no Supabase needed)
 bun test agenda
 
-# RLS tests (tegen mcp-test of mcp-dev; vereist SUPABASE_* en VITE_DEV_LOGIN_PASSWORD in env)
+# RLS tests (against mcp-test or mcp-dev; requires SUPABASE_* and VITE_DEV_LOGIN_PASSWORD in env)
 bun test rls
 
-# Auth tests (tegen mcp-test of mcp-dev; vereist SUPABASE_* en VITE_DEV_LOGIN_PASSWORD in env)
+# Auth tests (against mcp-test or mcp-dev; requires SUPABASE_* and VITE_DEV_LOGIN_PASSWORD in env)
 bun test auth
 
-# Alle tests
+# All tests
 bun test
 ```
 
@@ -164,18 +164,18 @@ bun test
 
 ```bash
 # TypeScript/JS (Biome)
-bun run check                 # Check (geen writes)
+bun run check                 # Check (no writes)
 bun run fix                   # Fix (format + lint autofix)
 
 # Quality gates (CI)
 bun run check:ci              # Biome CI + tsc + code tests
 bun run check:fallow          # Fallow (dead code, duplication, complexity)
 
-# SQL migraties (Squawk)
+# SQL migrations (Squawk)
 bun run lint:sql
 
-# PL/pgSQL functies (tegen database; warnings én errors falen)
+# PL/pgSQL functions (against the database; warnings and errors fail)
 bun run lint:db
 ```
 
-> 📖 Zie [cicd-workflows.md](./cicd-workflows.md#linting) voor uitgebreide documentatie over alle linters.
+> 📖 See [cicd-workflows.md](./cicd-workflows.md#linting) for full documentation of all linters.

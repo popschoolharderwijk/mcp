@@ -167,7 +167,7 @@ describe('buildStudentDashboardStatItems', () => {
 				title: NAV_LABELS.myInvoices,
 				value: 2,
 				icon: NAV_ICONS.myInvoices,
-				href: '/mijn-facturen',
+				href: '/my-invoices',
 			},
 			{
 				key: 'myTrial',

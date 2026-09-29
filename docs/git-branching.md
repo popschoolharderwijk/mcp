@@ -1,6 +1,6 @@
 # Git Branching Strategy
 
-## Branch Structuur
+## Branch Structure
 
 ```
 main (protected)
@@ -10,8 +10,8 @@ main (protected)
         └── feature branches
 ```
 
-## Branch Regels
+## Branch Rules
 
-- **`main`**: Protected, alleen via PRs, geen directe pushes
-- **`lovable`**: Lovable AI werkt hier, syncs met main via PRs
-- Branch protection rules actief op `main`
+- **`main`**: Protected, PRs only, no direct pushes
+- **`lovable`**: Lovable AI works here; syncs with main via PRs
+- Branch protection rules are active on `main`

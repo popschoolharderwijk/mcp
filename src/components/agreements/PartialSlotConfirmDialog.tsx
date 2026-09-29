@@ -1,5 +1,16 @@
+import { useRef } from 'react';
 import { LuTriangleAlert } from 'react-icons/lu';
-import { Button } from '@/components/ui/button';
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogMedia,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import type { SlotWithStatus } from '@/lib/agreementSlots';
 import { formatPartialSlotOccupancySuffix } from '@/lib/agreements/partialSlotConfirmDialogHelpers';
 
@@ -11,28 +22,53 @@ interface PartialSlotConfirmDialogProps {
 }
 
 export function PartialSlotConfirmDialog({ open, slot, onCancel, onConfirm }: PartialSlotConfirmDialogProps) {
-	if (!open) return null;
-
 	const occupancySuffix = formatPartialSlotOccupancySuffix(slot);
+	const skipCancelOnCloseRef = useRef(false);
 
 	return (
-		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-			<div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
-				<div className="flex items-center gap-2 mb-4">
-					<LuTriangleAlert className="h-5 w-5 text-amber-500" />
-					<h3 className="text-lg font-semibold">Deels bezet tijdslot</h3>
-				</div>
-				<p className="text-muted-foreground mb-6">
-					Dit tijdslot is deels bezet in de gekozen periode{occupancySuffix}. Weet je zeker dat je dit
-					tijdslot wilt gebruiken?
-				</p>
-				<div className="flex justify-end gap-2">
-					<Button variant="outline" onClick={onCancel}>
+		<AlertDialog
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (nextOpen) {
+					return;
+				}
+				if (skipCancelOnCloseRef.current) {
+					skipCancelOnCloseRef.current = false;
+					return;
+				}
+				onCancel();
+			}}
+		>
+			<AlertDialogContent>
+				<AlertDialogHeader>
+					<AlertDialogMedia>
+						<LuTriangleAlert className="h-5 w-5 text-amber-500" />
+					</AlertDialogMedia>
+					<AlertDialogTitle>Deels bezet tijdslot</AlertDialogTitle>
+					<AlertDialogDescription>
+						Dit tijdslot is deels bezet in de gekozen periode{occupancySuffix}. Weet je zeker dat je dit
+						tijdslot wilt gebruiken?
+					</AlertDialogDescription>
+				</AlertDialogHeader>
+				<AlertDialogFooter>
+					<AlertDialogCancel
+						onClick={() => {
+							skipCancelOnCloseRef.current = true;
+							onCancel();
+						}}
+					>
 						Annuleren
-					</Button>
-					<Button onClick={onConfirm}>Toch gebruiken</Button>
-				</div>
-			</div>
-		</div>
+					</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={() => {
+							skipCancelOnCloseRef.current = true;
+							onConfirm();
+						}}
+					>
+						Toch gebruiken
+					</AlertDialogAction>
+				</AlertDialogFooter>
+			</AlertDialogContent>
+		</AlertDialog>
 	);
 }

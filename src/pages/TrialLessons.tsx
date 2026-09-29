@@ -1,9 +1,10 @@
-import { LuGraduationCap, LuPlus } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { ScheduleTrialLessonDialog } from '@/components/trial-lessons/ScheduleTrialLessonDialog';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrialLessonsPageController } from '@/hooks/useTrialLessonsPageController';
 
@@ -17,26 +18,24 @@ export default function TrialLessons() {
 
 	return (
 		<>
-			<PageHeader
-				icon={<LuGraduationCap className="h-6 w-6" />}
-				title="Proeflessen"
-				subtitle="Plan en beheer proeflessen voor leerlingen"
-			/>
-			<div className="mt-4 mb-3 flex justify-end">
-				<Button onClick={() => controller.setOpenSchedule(true)}>
-					<LuPlus className="h-4 w-4 mr-1" /> Proefles inplannen
-				</Button>
-			</div>
-			<div className="mt-6">
+			<PageShell
+				title={NAV_LABELS.trialLessons}
+				description="Overzicht van ingeplande proeflessen"
+				actions={
+					<Button onClick={() => controller.setOpenSchedule(true)}>
+						<LuPlus className="mr-2 h-4 w-4" />
+						Proefles inplannen
+					</Button>
+				}
+			>
 				<DataTable
-					title="Proeflessen"
 					columns={controller.columns}
 					data={controller.rows}
 					loading={controller.loading}
 					getRowKey={(row) => row.id}
 					emptyMessage="Nog geen proeflessen ingepland."
 				/>
-			</div>
+			</PageShell>
 			<ScheduleTrialLessonDialog
 				open={controller.openSchedule}
 				onOpenChange={controller.setOpenSchedule}

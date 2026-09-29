@@ -36,7 +36,7 @@ describe('buildSidebarMainNavItems', () => {
 			'/agenda',
 			'/agreements',
 			'/lesson-groups',
-			'/aanmeldingen',
+			'/signup-requests',
 			'/trial-lessons',
 		]);
 	});
@@ -67,10 +67,15 @@ describe('buildFinanceNavGroup', () => {
 			label: NAV_LABELS.finance,
 			icon: NAV_ICONS.finance,
 			children: [
-				{ key: '/incasso', href: '/incasso', label: NAV_LABELS.incasso, icon: NAV_ICONS.incasso },
-				{ key: '/mandaten', href: '/mandaten', label: NAV_LABELS.mandaten, icon: NAV_ICONS.mandaten },
-				{ key: '/facturen', href: '/facturen', label: NAV_LABELS.invoices, icon: NAV_ICONS.invoices },
-				{ key: '/boekhouding', href: '/boekhouding', label: NAV_LABELS.accounting, icon: NAV_ICONS.accounting },
+				{
+					key: '/direct-debit',
+					href: '/direct-debit',
+					label: NAV_LABELS.directDebit,
+					icon: NAV_ICONS.directDebit,
+				},
+				{ key: '/mandates', href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates },
+				{ key: '/invoices', href: '/invoices', label: NAV_LABELS.invoices, icon: NAV_ICONS.invoices },
+				{ key: '/accounting', href: '/accounting', label: NAV_LABELS.accounting, icon: NAV_ICONS.accounting },
 			],
 		});
 	});

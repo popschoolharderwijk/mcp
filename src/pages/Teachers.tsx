@@ -1,6 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { TeachersPageCreateButton, TeachersPageDialogs } from '@/components/teachers/TeachersPageDialogs';
 import { DataTable } from '@/components/ui/data-table';
+import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useActiveLessonTypes } from '@/hooks/useActiveLessonTypes';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,33 +60,36 @@ export default function Teachers() {
 
 	return (
 		<div>
-			<DataTable
+			<PageShell
 				title={NAV_LABELS.teachers}
 				description="Beheer alle docenten en hun profielgegevens"
-				data={controller.teachers}
-				columns={controller.columns}
-				searchQuery={searchQuery}
-				onSearchChange={handleSearchChange}
-				loading={loading}
-				getRowKey={(t) => t.user_id}
-				emptyMessage="Geen docenten gevonden"
-				quickFilter={quickFilterGroups}
-				serverPagination={{
-					totalCount,
-					currentPage,
-					rowsPerPage,
-					onPageChange: handlePageChange,
-					onRowsPerPageChange: handleRowsPerPageChange,
-				}}
-				initialSortColumn={sortColumn || undefined}
-				initialSortDirection={sortDirection || undefined}
-				onSortChange={handleSortChange}
-				headerActions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}
-				rowActions={{
-					onEdit: controller.handleEdit,
-					onDelete: controller.handleDelete,
-				}}
-			/>
+				actions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}
+			>
+				<DataTable
+					data={controller.teachers}
+					columns={controller.columns}
+					searchQuery={searchQuery}
+					onSearchChange={handleSearchChange}
+					loading={loading}
+					getRowKey={(t) => t.user_id}
+					emptyMessage="Geen docenten gevonden"
+					quickFilter={quickFilterGroups}
+					serverPagination={{
+						totalCount,
+						currentPage,
+						rowsPerPage,
+						onPageChange: handlePageChange,
+						onRowsPerPageChange: handleRowsPerPageChange,
+					}}
+					initialSortColumn={sortColumn || undefined}
+					initialSortDirection={sortDirection || undefined}
+					onSortChange={handleSortChange}
+					rowActions={{
+						onEdit: controller.handleEdit,
+						onDelete: controller.handleDelete,
+					}}
+				/>
+			</PageShell>
 
 			<TeachersPageDialogs
 				teacherFormDialog={controller.teacherFormDialog}

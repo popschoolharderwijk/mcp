@@ -1,5 +1,5 @@
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import { isValidIban, normalizeIban } from '@/lib/incasso/iban';
+import { isValidIban, normalizeIban } from '@/lib/direct-debit/iban';
 
 export interface LessonTypeOptionMatch {
 	id: string;

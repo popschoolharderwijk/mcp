@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { ReportsPageBody } from '@/components/reports/ReportsPageBody';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useReportsPage } from '@/hooks/useReportsPage';
 import { BASE_PRESET_LABELS, type BasePeriodPreset } from '@/lib/reports/periodPresets';
 import { shouldRedirectReportsAccess } from '@/lib/reports/reportsPageHelpers';
@@ -15,7 +16,13 @@ export default function Reports() {
 	}
 
 	if (page.authLoading) {
-		return <PageSkeleton variant="header-and-cards" />;
+		return (
+			<PageShell
+				title={NAV_LABELS.reports}
+				description="Urenrapportage per docent, lessoort en leeftijdscategorie"
+				loading
+			/>
+		);
 	}
 
 	return <ReportsPageBody reportPresets={REPORT_PRESETS} page={page} />;

@@ -1,11 +1,11 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
 import { buildBatchContextFromLoadedData, extractMandateIds, hasBatchItems } from './loadBatchContextPure.ts';
-import type { AccountingSettings, BatchItem, IncassoBatch, ProfileRow, StudentRow } from './types.ts';
+import type { AccountingSettings, BatchItem, DirectDebitBatch, ProfileRow, StudentRow } from './types.ts';
 
 export interface BatchContext {
 	settings: AccountingSettings;
-	batch: IncassoBatch;
+	batch: DirectDebitBatch;
 	items: BatchItem[];
 	studentIds: string[];
 	profileMap: Map<string, ProfileRow>;
@@ -23,15 +23,15 @@ async function loadAccountingSettings(
 	return { ok: true, settings: data as AccountingSettings };
 }
 
-async function loadIncassoBatch(
+async function loadDirectDebitBatch(
 	admin: SupabaseClient,
 	batchId: string,
-): Promise<{ ok: true; batch: IncassoBatch } | { ok: false; response: Response }> {
-	const { data, error } = await admin.from('incasso_batches').select('*').eq('id', batchId).maybeSingle();
+): Promise<{ ok: true; batch: DirectDebitBatch } | { ok: false; response: Response }> {
+	const { data, error } = await admin.from('direct_debit_batches').select('*').eq('id', batchId).maybeSingle();
 	if (error || !data) {
 		return { ok: false, response: jsonResponse(404, { error: 'Batch niet gevonden' }) };
 	}
-	return { ok: true, batch: data as IncassoBatch };
+	return { ok: true, batch: data as DirectDebitBatch };
 }
 
 async function loadBatchItems(
@@ -39,7 +39,7 @@ async function loadBatchItems(
 	batchId: string,
 ): Promise<{ ok: true; items: BatchItem[] } | { ok: false; response: Response }> {
 	const { data, error } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.select('id, student_user_id, amount_cents, remittance_info, lesson_agreement_id, mandate_id')
 		.eq('batch_id', batchId);
 	if (error || !hasBatchItems(data)) {
@@ -75,7 +75,7 @@ export async function loadBatchContext(
 	const settingsLoaded = await loadAccountingSettings(admin);
 	if (!settingsLoaded.ok) return settingsLoaded;
 
-	const batchLoaded = await loadIncassoBatch(admin, batchId);
+	const batchLoaded = await loadDirectDebitBatch(admin, batchId);
 	if (!batchLoaded.ok) return batchLoaded;
 
 	const itemsLoaded = await loadBatchItems(admin, batchId);

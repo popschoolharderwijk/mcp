@@ -41,7 +41,7 @@ describe('buildDashboardStatItems', () => {
 				title: NAV_LABELS.signupRequests,
 				value: 3,
 				icon: NAV_ICONS.signupRequests,
-				href: '/aanmeldingen',
+				href: '/signup-requests',
 			},
 			{
 				key: 'teachers',

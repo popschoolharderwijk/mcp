@@ -67,12 +67,30 @@ describe('getAgendaEventDisplayTitle', () => {
 });
 
 describe('getAgendaEventIconColorClass', () => {
-	it('returns dark text for light colors', () => {
-		expect(getAgendaEventIconColorClass('#ffffff', null)).toBe('text-gray-900');
+	it('returns dark text for light custom colors', () => {
+		expect(getAgendaEventIconColorClass('#ffffff', null, baseResource())).toBe('text-gray-900');
 	});
 
-	it('returns white text for dark colors', () => {
-		expect(getAgendaEventIconColorClass('#000000', null)).toBe('text-white');
+	it('returns white text for dark custom colors', () => {
+		expect(getAgendaEventIconColorClass('#000000', null, baseResource())).toBe('text-white');
+	});
+
+	it('returns agenda foreground class for default manual events', () => {
+		expect(getAgendaEventIconColorClass(null, null, baseResource({ type: 'agenda', lessonTypeColor: null }))).toBe(
+			'text-agenda-manual-foreground',
+		);
+	});
+
+	it('returns agenda foreground class for default lesson events', () => {
+		expect(
+			getAgendaEventIconColorClass(null, null, baseResource({ type: 'agreement', lessonTypeColor: null })),
+		).toBe('text-agenda-lesson-foreground');
+	});
+
+	it('returns agenda foreground class for default group events', () => {
+		expect(
+			getAgendaEventIconColorClass(null, null, baseResource({ isGroupLesson: true, lessonTypeColor: null })),
+		).toBe('text-agenda-group-foreground');
 	});
 });
 

@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { MyStatisticsCards } from '@/components/statistics/MyStatisticsCards';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyStatisticsPage } from '@/hooks/useMyStatisticsPage';
 import { shouldRedirectMyStatistics, shouldShowMyStatisticsSkeleton } from '@/lib/statistics/myStatisticsPageHelpers';
@@ -14,16 +15,12 @@ export default function MyStatistics() {
 	}
 
 	if (shouldShowMyStatisticsSkeleton(authLoading, loading)) {
-		return <PageSkeleton variant="header-and-cards" />;
+		return <PageShell title={NAV_LABELS.myStatistics} description="Overzicht van je lesactiviteiten" loading />;
 	}
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-3xl font-bold">Mijn Statistieken</h1>
-				<p className="text-muted-foreground">Overzicht van je lesactiviteiten</p>
-			</div>
+		<PageShell title={NAV_LABELS.myStatistics} description="Overzicht van je lesactiviteiten">
 			<MyStatisticsCards stats={stats} />
-		</div>
+		</PageShell>
 	);
 }

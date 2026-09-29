@@ -16,7 +16,7 @@ type DashboardStatKey = (typeof DASHBOARD_STAT_KEYS)[number];
 const DASHBOARD_STAT_HREFS = {
 	students: '/students',
 	agreements: '/agreements',
-	signupRequests: '/aanmeldingen',
+	signupRequests: '/signup-requests',
 	teachers: '/teachers',
 	availability: '/teachers/availability',
 	lessonTypes: '/lesson-types',

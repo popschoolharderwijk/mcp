@@ -20,10 +20,10 @@ describe('sidebar nav item constants', () => {
 
 	it('maps finance nav items to hrefs', () => {
 		expect(financeNavItems.map((item) => item.href)).toEqual([
-			'/incasso',
-			'/mandaten',
-			'/facturen',
-			'/boekhouding',
+			'/direct-debit',
+			'/mandates',
+			'/invoices',
+			'/accounting',
 		]);
 	});
 
@@ -31,7 +31,7 @@ describe('sidebar nav item constants', () => {
 		expect(adminOperationalNavItems.map((item) => item.href)).toEqual([
 			'/agreements',
 			'/lesson-groups',
-			'/aanmeldingen',
+			'/signup-requests',
 			'/trial-lessons',
 		]);
 	});
@@ -80,8 +80,8 @@ describe('isSidebarParentActive', () => {
 
 	it('does not highlight a parent when a child is active', () => {
 		const financeChildHrefs = financeNavItems.map((item) => item.href);
-		expect(isSidebarParentActive('/mandaten', undefined, financeChildHrefs)).toBe(false);
-		expect(isSidebarParentActive('/incasso', undefined, financeChildHrefs)).toBe(false);
+		expect(isSidebarParentActive('/mandates', undefined, financeChildHrefs)).toBe(false);
+		expect(isSidebarParentActive('/direct-debit', undefined, financeChildHrefs)).toBe(false);
 		expect(isSidebarParentActive('/teachers/availability', '/teachers', teacherChildHrefs)).toBe(false);
 	});
 
@@ -96,8 +96,8 @@ describe('isSidebarParentActive', () => {
 
 describe('nextSidebarGroupOpen', () => {
 	it('toggles a parent that has no own page', () => {
-		expect(nextSidebarGroupOpen('/mandaten', undefined, true)).toBe(false);
-		expect(nextSidebarGroupOpen('/mandaten', undefined, false)).toBe(true);
+		expect(nextSidebarGroupOpen('/mandates', undefined, true)).toBe(false);
+		expect(nextSidebarGroupOpen('/mandates', undefined, false)).toBe(true);
 	});
 
 	it('toggles when already on the parent page', () => {

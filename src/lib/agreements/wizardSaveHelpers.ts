@@ -120,7 +120,7 @@ async function createAndNotifyDuoAgreements(params: {
 
 	const inviteResults = await Promise.all(
 		duoData.agreement_ids.map((aid) =>
-			supabase.functions.invoke('send-incasso-invite', { body: { lesson_agreement_id: aid } }),
+			supabase.functions.invoke('send-direct-debit-invite', { body: { lesson_agreement_id: aid } }),
 		),
 	);
 	const failedInvites = countFailedFunctionInvokes(inviteResults);
@@ -212,7 +212,7 @@ function showAgreementSavedToast(params: {
 }
 
 function getAgreementSavedNavigatePath(fromRequestId: string | null, fromTrialId: string | null): string {
-	if (fromRequestId) return '/aanmeldingen';
+	if (fromRequestId) return '/signup-requests';
 	if (fromTrialId) return '/trial-lessons';
 	return '/agreements';
 }

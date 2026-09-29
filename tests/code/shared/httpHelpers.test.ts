@@ -23,8 +23,8 @@ describe('resolveAllowedSiteUrl', () => {
 
 describe('resolveAllowedRedirectUrl', () => {
 	it('returns the full url for allowed https hosts', () => {
-		expect(resolveAllowedRedirectUrl('https://mcp.mplifi.nl/incasso/start?agreement=1')).toBe(
-			'https://mcp.mplifi.nl/incasso/start?agreement=1',
+		expect(resolveAllowedRedirectUrl('https://mcp.mplifi.nl/direct-debit/start?agreement=1')).toBe(
+			'https://mcp.mplifi.nl/direct-debit/start?agreement=1',
 		);
 	});
 

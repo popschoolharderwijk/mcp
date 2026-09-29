@@ -1,165 +1,165 @@
 # Database Testing (RLS + Auth)
 
-## Hoe het werkt
+## How it works
 
-Tests draaien tegen een **remote Supabase-project** (geen lokale instance). Er zijn twee projecten in gebruik:
+Tests run against a **remote Supabase project** (no local instance). Two projects are in use:
 
-- **mcp-test** (`jserlqacarlgtdzrblic`): gebruikt door **CI bij elke PR** en optioneel lokaal via `bun dev:test` / `bun test rls` (credentials in `.env.test` of env).
-- **mcp-dev** (`zdvscmogkfyddnnxzkdu`): development; lokaal kun je ook tegen mcp-dev testen als je env daarop wijst.
+- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI on every PR** and optionally locally via `bun dev:test` / `bun test rls` (credentials in `.env.test` or env).
+- **mcp-dev** (`zdvscmogkfyddnnxzkdu`): development; you can also test locally against mcp-dev if your env points there.
 
 **In CI** (`pull-request-test-code-and-supabase.yml`):
-- Workflow linkt naar **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
-- `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/test.sql` worden toegepast)
-- Credentials uit GitHub secrets (moeten van mcp-test zijn) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-- `bun test` draait RLS- en Auth-tests tegen mcp-test
+- The workflow links to **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
+- `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/test.sql` are applied)
+- Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
+- `bun test` runs RLS and Auth tests against mcp-test
 
 ---
 
-## Seed Data voor RLS Tests
+## Seed Data for RLS Tests
 
-Bij `supabase db reset --linked` worden twee seed-bestanden toegepast (zie `supabase/config.toml`):
+On `supabase db reset --linked`, two seed files are applied (see `supabase/config.toml`):
 
-| Bestand | Doel |
-|---------|------|
-| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql) | Productie-veilige referentiedata: lestypes, opties, e-mailtemplates, accounting singleton |
-| [`supabase/seeds/test.sql`](../supabase/seeds/test.sql) | RLS-testdata: testusers, rollen, agreements, agenda, projecten |
+| File | Purpose |
+|------|---------|
+| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql) | Production-safe reference data: lesson types, options, email templates, accounting singleton |
+| [`supabase/seeds/test.sql`](../supabase/seeds/test.sql) | RLS test data: test users, roles, agreements, agenda, projects |
 
-`seeds/test.sql` bevat onder andere:
+`seeds/test.sql` includes:
 
-| Type | Gebruikers |
-|------|-----------|
+| Type | Users |
+|------|-------|
 | **site_admin** | `site-admin@test.nl` (1) |
 | **admin** | `admin-one@test.nl`, `admin-two@test.nl` (2) |
-| **staff** | `staff-one@test.nl` t/m `staff-five@test.nl` (5) |
-| **teachers** | `teacher-alice@test.nl` t/m `teacher-jack@test.nl` (10) |
-| **students** | `student-001@test.nl` t/m `student-060@test.nl` (60) |
-| **users (geen rol)** | `user-001@test.nl` t/m `user-010@test.nl` (10) |
+| **staff** | `staff-one@test.nl` through `staff-five@test.nl` (5) |
+| **teachers** | `teacher-alice@test.nl` through `teacher-jack@test.nl` (10) |
+| **students** | `student-001@test.nl` through `student-060@test.nl` (60) |
+| **users (no role)** | `user-001@test.nl` through `user-010@test.nl` (10) |
 
-Daarnaast bevat `seeds/test.sql` (bootstrap levert lestypes):
-- **Lesson types**: Referentiedata in `seeds/bootstrap.sql` (niet in test.sql)
-- **Students**: Koppeling van student-gebruikers aan student-records
-- **Teachers**: Koppeling van teacher-gebruikers aan teacher-records
-- **Lesson agreements**: Lesovereenkomsten tussen studenten en docenten
-- **Project domains / labels / projects**: Referentiedata voor de projecten-module
+`seeds/test.sql` also contains (bootstrap supplies lesson types):
+- **Lesson types**: Reference data in `seeds/bootstrap.sql` (not in test.sql)
+- **Students**: Link student users to student records
+- **Teachers**: Link teacher users to teacher records
+- **Lesson agreements**: Agreements between students and teachers
+- **Project domains / labels / projects**: Reference data for the projects module
 
 ---
 
-## Test Structuur
+## Test Structure
 
 ### Test Fixtures (`tests/rls/fixtures.ts`)
 
-Alle seed data wordt éénmalig opgehaald en gecachet in `fixtures.ts`:
+All seed data is fetched once and cached in `fixtures.ts`:
 
 ```typescript
-fixtures.allProfiles         // Alle profielen
-fixtures.allStudents         // Alle student-records
-fixtures.allTeachers         // Alle teacher-records
-fixtures.allLessonTypes      // Alle lestypes
-fixtures.allLessonAgreements // Alle lesovereenkomsten
+fixtures.allProfiles         // All profiles
+fixtures.allStudents         // All student records
+fixtures.allTeachers         // All teacher records
+fixtures.allLessonTypes      // All lesson types
+fixtures.allLessonAgreements // All lesson agreements
 
-fixtures.requireUserId(email)                 // user_id op basis van email
-fixtures.requireStudentId(email)              // student.id op basis van email
-fixtures.requireTeacherId(email)              // teacher.id op basis van email
-fixtures.requireLessonTypeId(name)            // lesson_type.id op basis van naam
-fixtures.requireAgreementId(student, teacher) // agreement.id op basis van student+teacher
-fixtures.allProjectDomains / allProjectLabels / allProjects  // project-referentiedata
+fixtures.requireUserId(email)                 // user_id from email
+fixtures.requireStudentId(email)              // student.id from email
+fixtures.requireTeacherId(email)              // teacher.id from email
+fixtures.requireLessonTypeId(name)            // lesson_type.id from name
+fixtures.requireAgreementId(student, teacher) // agreement.id from student+teacher
+fixtures.allProjectDomains / allProjectLabels / allProjects  // project reference data
 ```
 
 ---
 
-## Wat wordt getest
+## What is tested
 
 ### RLS Tests (`tests/rls/`)
 
-#### Systeem (`system/`)
+#### System (`system/`)
 
-- ✅ RLS is enabled op alle verwachte tabellen
-- ✅ Alle verwachte policies bestaan
-- ✅ Geen onverwachte policies aanwezig
-- ✅ Security helper functions bestaan (`is_admin`, `is_teacher`, `is_student`, etc.)
-- ✅ Seed data ground truth (correct aantal users per type)
-- ✅ Triggers werken correct (immutability, updated_at, site_admin bescherming)
-- ✅ Anonieme gebruikers hebben geen toegang tot data
+- ✅ RLS is enabled on all expected tables
+- ✅ All expected policies exist
+- ✅ No unexpected policies
+- ✅ Security helper functions exist (`is_admin`, `is_teacher`, `is_student`, etc.)
+- ✅ Seed data ground truth (correct user counts per type)
+- ✅ Triggers work correctly (immutability, updated_at, site_admin protection)
+- ✅ Anonymous users have no access to data
 
 #### Profiles (`profiles/`)
 
-- ✅ SELECT: student ziet eigen profiel + profielen van eigen docenten; teacher ziet eigen profiel + profielen van eigen studenten; staff/admin/site_admin zien alles
-- ✅ UPDATE: eigen profiel aanpasbaar, staff/admin/site_admin kunnen alles aanpassen
-- ✅ INSERT/DELETE: geblokkeerd voor alle rollen (trigger/cascade)
-- ✅ Validatie: telefoonnummer (10 cijfers)
+- ✅ SELECT: student sees own profile + own teachers' profiles; teacher sees own profile + own students' profiles; staff/admin/site_admin see everything
+- ✅ UPDATE: own profile editable; staff/admin/site_admin can update everything
+- ✅ INSERT/DELETE: blocked for all roles (trigger/cascade)
+- ✅ Validation: phone number (10 digits)
 
 #### User Roles (`user-roles/`)
 
-- ✅ SELECT: admin/staff/site_admin zien alle rollen, overige gebruikers niet
-- ✅ INSERT: admin (geen site_admin), site_admin (alles)
-- ✅ UPDATE: admin (geen site_admin rollen), site_admin (alles)
-- ✅ DELETE: admin (geen site_admin rollen), site_admin (alles)
+- ✅ SELECT: admin/staff/site_admin see all roles; other users do not
+- ✅ INSERT: admin (not site_admin), site_admin (everything)
+- ✅ UPDATE: admin (not site_admin roles), site_admin (everything)
+- ✅ DELETE: admin (not site_admin roles), site_admin (everything)
 
 #### Students (`students/`)
 
-- ✅ SELECT: studenten zien eigen record; docenten zien eigen studenten (via lesson_agreements); staff/admin/site_admin zien alles
-- ✅ INSERT: geblokkeerd voor alle rollen (automatisch aangemaakt via triggers op lesson_agreements)
-- ✅ UPDATE: alleen admin/site_admin
-- ✅ DELETE: geblokkeerd voor alle rollen, inclusief site_admin (automatisch verwijderd via triggers wanneer alle lesson_agreements zijn verwijderd)
+- ✅ SELECT: students see own record; teachers see own students (via lesson_agreements); staff/admin/site_admin see everything
+- ✅ INSERT: blocked for all roles (created automatically via triggers on lesson_agreements)
+- ✅ UPDATE: admin/site_admin only
+- ✅ DELETE: blocked for all roles, including site_admin (removed automatically via triggers when all lesson_agreements are gone)
 
 #### Teachers (`teachers/`)
 
-- ✅ SELECT: studenten zien eigen docenten (via lesson_agreements); docenten zien eigen record; staff/admin/site_admin zien alles
-- ✅ INSERT/UPDATE/DELETE: alleen admin/site_admin
+- ✅ SELECT: students see own teachers (via lesson_agreements); teachers see own record; staff/admin/site_admin see everything
+- ✅ INSERT/UPDATE/DELETE: admin/site_admin only
 
 #### Lesson Types (`lesson-types/`)
 
-- ✅ SELECT: alle ingelogde gebruikers (publieke referentiedata)
-- ✅ INSERT/UPDATE/DELETE: alleen admin/site_admin
+- ✅ SELECT: all signed-in users (public reference data)
+- ✅ INSERT/UPDATE/DELETE: admin/site_admin only
 
 #### Lesson Agreements (`lesson-agreements/`)
 
-- ✅ SELECT: studenten zien eigen overeenkomsten, docenten zien eigen overeenkomsten, staff/admin/site_admin zien alles
-- ✅ INSERT/UPDATE/DELETE: alleen staff/admin/site_admin
-- ✅ Studenten en docenten kunnen geen overeenkomsten wijzigen
+- ✅ SELECT: students see own agreements, teachers see own agreements, staff/admin/site_admin see everything
+- ✅ INSERT/UPDATE/DELETE: staff/admin/site_admin only
+- ✅ Students and teachers cannot change agreements
 
 #### Project Domains / Labels / Projects (`projects/`)
 
-- ✅ SELECT: alle ingelogde gebruikers zien domains, labels en projecten
-- ✅ INSERT/UPDATE/DELETE domains en labels: alleen admin/site_admin
-- ✅ INSERT/UPDATE/DELETE projecten: alleen admin/site_admin (geen staff)
-- ✅ Anonieme gebruikers hebben geen toegang
+- ✅ SELECT: all signed-in users see domains, labels, and projects
+- ✅ INSERT/UPDATE/DELETE domains and labels: admin/site_admin only
+- ✅ INSERT/UPDATE/DELETE projects: admin/site_admin only (not staff)
+- ✅ Anonymous users have no access
 
-#### Users zonder rol (`users/`)
+#### Users without a role (`users/`)
 
-- ✅ SELECT: alleen eigen profiel, geen toegang tot students/teachers/agreements/roles
-- ✅ INSERT/UPDATE/DELETE: alleen eigen profiel updaten, verder niets
+- ✅ SELECT: own profile only; no access to students/teachers/agreements/roles
+- ✅ INSERT/UPDATE/DELETE: update own profile only, nothing else
 
 ### Auth Tests (`tests/auth/`)
 
 - ✅ Password policy enforcement (min. 32 chars, letters+digits+symbols)
-- ✅ Wachtwoorden zonder symbolen/cijfers/letters worden geweigerd
-- ✅ Valide wachtwoorden worden geaccepteerd (user unconfirmed)
+- ✅ Passwords without symbols/digits/letters are rejected
+- ✅ Valid passwords are accepted (user unconfirmed)
 - ✅ OTP/Magic Link sign-in flow
-- ✅ User deletion (CASCADE behavior, site_admin bescherming)
+- ✅ User deletion (CASCADE behaviour, site_admin protection)
 
 ---
 
-## Lokaal tests draaien
+## Running tests locally
 
-Lokaal kun je tegen **mcp-test** of **mcp-dev** testen. Zet in je omgeving (bijv. `.env.test`) de variabelen van het project dat je gebruikt:
+Locally you can test against **mcp-test** or **mcp-dev**. Put the project credentials in your environment (e.g. `.env.test`):
 
-- `SUPABASE_URL` — URL van het Supabase-project
-- `SUPABASE_SERVICE_ROLE_KEY` — service role key (voor bypass RLS in fixtures)
-- `SUPABASE_PUBLISHABLE_DEFAULT_KEY` — anon key (voor client)
-- `VITE_DEV_LOGIN_PASSWORD` — wachtwoord van seed-users (bijv. `password`)
+- `SUPABASE_URL` — URL of the Supabase project
+- `SUPABASE_SERVICE_ROLE_KEY` — service role key (to bypass RLS in fixtures)
+- `SUPABASE_PUBLISHABLE_DEFAULT_KEY` — anon key (for the client)
+- `VITE_DEV_LOGIN_PASSWORD` — password of seed users (e.g. `password`)
 
 ```bash
-# Alle database tests
+# All database tests
 bun test rls auth
 
-# Alleen RLS tests
+# RLS tests only
 bun test rls
 
-# Alleen Auth tests
+# Auth tests only
 bun test auth
 
-# Specifieke test categorie
+# Specific test category
 bun test tests/rls/lesson-agreements
 bun test tests/rls/teachers
 ```
@@ -168,4 +168,4 @@ bun test tests/rls/teachers
 
 ## Environment Variables
 
-Voor lokaal testen: zet de credentials in `.env.test` of exporteer ze in je shell (zelfde variabelen als in "Lokaal tests draaien"). Voor CI worden ze uit GitHub secrets gezet; zie [secrets.md](./secrets.md).
+For local testing: put credentials in `.env.test` or export them in your shell (same variables as in "Running tests locally"). For CI they come from GitHub secrets; see [secrets.md](./secrets.md).

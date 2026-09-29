@@ -1,4 +1,4 @@
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { StudentDetailBody } from '@/components/students/StudentDetailBody';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +6,6 @@ import { useStudentDetailPage } from '@/hooks/useStudentDetailPage';
 import { resolveStudentDetailPageContent } from '@/lib/students/studentDetailHelpers';
 
 export default function StudentDetail() {
-	const navigate = useNavigate();
 	const { isPrivileged, isTeacher, isLoading: authLoading } = useAuth();
 	const canView = isPrivileged || isTeacher;
 	const page = useStudentDetailPage({ authLoading, canView });
@@ -29,7 +28,6 @@ export default function StudentDetail() {
 			userId={content.userId}
 			agreements={content.agreements}
 			signupRequests={content.signupRequests}
-			onBack={() => navigate('/students')}
 		/>
 	);
 }

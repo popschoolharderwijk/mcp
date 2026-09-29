@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { MyStudentsAgreementsCell, MyStudentsLessonTypesCell } from '@/components/students/MyStudentsTableParts';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
@@ -152,14 +152,21 @@ export default function MyStudents() {
 	}
 
 	if (shouldShowMyStudentsSkeleton(authLoading, loading)) {
-		return <PageSkeleton variant="header-and-cards" />;
+		return (
+			<PageShell
+				title={NAV_LABELS.myStudents}
+				description="Overzicht van alle leerlingen met lesovereenkomsten bij jou. Klik op een leerling om de leshistorie te bekijken."
+				loading
+			/>
+		);
 	}
 
 	return (
-		<div>
+		<PageShell
+			title={NAV_LABELS.myStudents}
+			description="Overzicht van alle leerlingen met lesovereenkomsten bij jou. Klik op een leerling om de leshistorie te bekijken."
+		>
 			<DataTable
-				title={NAV_LABELS.myStudents}
-				description="Overzicht van alle leerlingen met lesovereenkomsten bij jou. Klik op een leerling om de leshistorie te bekijken."
 				data={students}
 				columns={columns}
 				searchQuery={searchQuery}
@@ -175,6 +182,6 @@ export default function MyStudents() {
 					onRowsPerPageChange: handleRowsPerPageChange,
 				}}
 			/>
-		</div>
+		</PageShell>
 	);
 }

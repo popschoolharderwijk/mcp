@@ -56,7 +56,7 @@ async function loadBatch(
 	batchId: string,
 ): Promise<{ ok: true; batch: BatchRow } | { ok: false; response: Response }> {
 	const { data: batch, error: bErr } = await admin
-		.from('incasso_batches')
+		.from('direct_debit_batches')
 		.select('id, batch_number, status, collection_date, message_id, xml_storage_path')
 		.eq('id', batchId)
 		.maybeSingle();
@@ -76,9 +76,9 @@ async function loadBatchItems(
 	batchId: string,
 ): Promise<{ ok: true; items: ItemRow[] } | { ok: false; response: Response }> {
 	const { data: itemsData, error: iErr } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.select(
-			'id, mandate_id, amount_cents, currency, end_to_end_id, remittance_info, sequence_type, sepa_mandates!incasso_batch_items_mandate_id_fkey(mandate_reference,iban,bic,account_holder,signed_at)',
+			'id, mandate_id, amount_cents, currency, end_to_end_id, remittance_info, sequence_type, sepa_mandates!direct_debit_batch_items_mandate_id_fkey(mandate_reference,iban,bic,account_holder,signed_at)',
 		)
 		.eq('batch_id', batchId)
 		.order('created_at');

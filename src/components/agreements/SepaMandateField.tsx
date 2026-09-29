@@ -34,7 +34,7 @@ function SepaMandateEmptyMessage() {
 	return (
 		<p className="text-sm text-amber-600">
 			Geen actief mandaat gevonden voor deze leerling. Maak eerst een mandaat aan via{' '}
-			<a href="/mandaten" className="underline">
+			<a href="/mandates" className="underline">
 				Mandaten
 			</a>
 			.

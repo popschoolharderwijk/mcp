@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuDownload, LuFileText, LuMail } from 'react-icons/lu';
+import { LuDownload, LuMail } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { PageHeader } from '@/components/ui/page-header';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import { supabase } from '@/integrations/supabase/client';
 import { downloadInvoicePdf, formatInvoiceStudentName } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { matchesInvoiceSearch } from '@/lib/invoices/invoiceSearchHelpers';
@@ -60,78 +60,65 @@ function List() {
 	const filtered = rows.filter((row) => matchesInvoiceSearch(row, search));
 
 	return (
-		<div className="space-y-6">
-			<PageHeader
-				title="Facturen"
-				subtitle="Alle uitgegeven facturen"
-				icon={<LuFileText className="h-16 w-16 text-primary" />}
-			/>
-
-			<div className="max-w-sm">
-				<Input
-					placeholder="Zoek op factuurnummer of leerling..."
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-				/>
-			</div>
-
-			{loading ? (
-				<Card>
-					<CardContent className="py-8 text-center text-muted-foreground">Laden...</CardContent>
-				</Card>
-			) : filtered.length === 0 ? (
-				<Card>
-					<CardContent className="py-12 text-center text-muted-foreground">Nog geen facturen.</CardContent>
-				</Card>
-			) : (
-				<Card>
-					<CardContent className="p-0">
-						<table className="w-full text-sm">
-							<thead className="bg-muted/50 text-left">
-								<tr>
-									<th className="p-3">Factuurnr.</th>
-									<th className="p-3">Leerling</th>
-									<th className="p-3">Datum</th>
-									<th className="p-3">Status</th>
-									<th className="p-3">Verstuurd</th>
-									<th className="p-3 text-right">Bedrag</th>
-									<th className="p-3" />
+		<PageShell title={NAV_LABELS.invoices} description="Overzicht van alle facturen">
+			<div className="space-y-4">
+				<div className="max-w-sm">
+					<Input
+						placeholder="Zoek op factuurnummer of leerling..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
+					/>
+				</div>
+				{loading ? (
+					<div className="py-8 text-center text-muted-foreground">Laden...</div>
+				) : filtered.length === 0 ? (
+					<div className="py-12 text-center text-muted-foreground">Nog geen facturen.</div>
+				) : (
+					<table className="w-full text-sm">
+						<thead className="bg-muted/50 text-left">
+							<tr>
+								<th className="p-3">Factuurnr.</th>
+								<th className="p-3">Leerling</th>
+								<th className="p-3">Datum</th>
+								<th className="p-3">Status</th>
+								<th className="p-3">Verstuurd</th>
+								<th className="p-3 text-right">Bedrag</th>
+								<th className="p-3" />
+							</tr>
+						</thead>
+						<tbody>
+							{filtered.map((inv) => (
+								<tr key={inv.id} className="border-t">
+									<td className="p-3 font-medium">{inv.invoice_number}</td>
+									<td className="p-3">{formatInvoiceStudentName(inv.profiles ?? null)}</td>
+									<td className="p-3">{inv.issue_date}</td>
+									<td className="p-3">
+										<Badge variant="secondary">{INVOICE_STATUS_LABELS[inv.status]}</Badge>
+									</td>
+									<td className="p-3">
+										{inv.sent_at ? (
+											<LuMail className="h-4 w-4 text-primary" />
+										) : (
+											<span className="text-muted-foreground">—</span>
+										)}
+									</td>
+									<td className="p-3 text-right">{formatCentsEUR(inv.amount_total_cents)}</td>
+									<td className="p-3 text-right">
+										<Button
+											size="sm"
+											variant="outline"
+											disabled={!inv.pdf_storage_path || downloading === inv.id}
+											onClick={() => handleDownload(inv.id)}
+										>
+											<LuDownload className="h-4 w-4 mr-1" /> PDF
+										</Button>
+									</td>
 								</tr>
-							</thead>
-							<tbody>
-								{filtered.map((inv) => (
-									<tr key={inv.id} className="border-t">
-										<td className="p-3 font-medium">{inv.invoice_number}</td>
-										<td className="p-3">{formatInvoiceStudentName(inv.profiles ?? null)}</td>
-										<td className="p-3">{inv.issue_date}</td>
-										<td className="p-3">
-											<Badge variant="secondary">{INVOICE_STATUS_LABELS[inv.status]}</Badge>
-										</td>
-										<td className="p-3">
-											{inv.sent_at ? (
-												<LuMail className="h-4 w-4 text-primary" />
-											) : (
-												<span className="text-muted-foreground">—</span>
-											)}
-										</td>
-										<td className="p-3 text-right">{formatCentsEUR(inv.amount_total_cents)}</td>
-										<td className="p-3 text-right">
-											<Button
-												size="sm"
-												variant="outline"
-												disabled={!inv.pdf_storage_path || downloading === inv.id}
-												onClick={() => handleDownload(inv.id)}
-											>
-												<LuDownload className="h-4 w-4 mr-1" /> PDF
-											</Button>
-										</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</CardContent>
-				</Card>
-			)}
-		</div>
+							))}
+						</tbody>
+					</table>
+				)}
+			</div>
+		</PageShell>
 	);
 }

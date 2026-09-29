@@ -14,10 +14,10 @@ import Announcements from './pages/Announcements';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
 import Dashboard from './pages/Dashboard';
+import DirectDebit from './pages/DirectDebit';
+import DirectDebitBatchDetail from './pages/DirectDebitBatchDetail';
+import DirectDebitStart from './pages/DirectDebitStart';
 import EmailTemplates from './pages/EmailTemplates';
-import Incasso from './pages/Incasso';
-import IncassoBatchDetail from './pages/IncassoBatchDetail';
-import IncassoStart from './pages/IncassoStart';
 import Invoices from './pages/Invoices';
 import LegacyImport from './pages/LegacyImport';
 import LessonGroups from './pages/LessonGroups';
@@ -25,7 +25,7 @@ import LessonGroupWizard from './pages/LessonGroupWizard';
 import LessonTypeInfo from './pages/LessonTypeInfo';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
-import Mandaten from './pages/Mandaten';
+import Mandates from './pages/Mandates';
 import MyAvailability from './pages/MyAvailability';
 import MyInvoices from './pages/MyInvoices';
 import MyStatistics from './pages/MyStatistics';
@@ -61,8 +61,8 @@ const App = () => (
 					<Route path="/login" element={<Login />} />
 					<Route path="/auth/callback" element={<AuthCallback />} />
 					<Route path="/auth/confirm" element={<AuthConfirm />} />
-					<Route path="/aanmelden" element={<PublicSignup />} />
-					<Route path="/incasso/start" element={<IncassoStart />} />
+					<Route path="/signup" element={<PublicSignup />} />
+					<Route path="/direct-debit/start" element={<DirectDebitStart />} />
 
 					{/* Protected dashboard routes */}
 					<Route
@@ -84,11 +84,11 @@ const App = () => (
 						<Route path="/lesson-groups/:id" element={<LessonGroupWizard />} />
 						<Route path="/agreements/new" element={<AgreementWizard />} />
 						<Route path="/agreements/:id" element={<AgreementWizard />} />
-						<Route path="/aanmeldingen" element={<SignupRequests />} />
+						<Route path="/signup-requests" element={<SignupRequests />} />
 						<Route path="/trial-lessons" element={<TrialLessons />} />
 						<Route path="/my-trial" element={<MyTrial />} />
 
-						<Route path="/lesvrije-periodes" element={<NoLessonPeriods />} />
+						<Route path="/no-lesson-periods" element={<NoLessonPeriods />} />
 						<Route path="/email-templates" element={<EmailTemplates />} />
 						<Route path="/account" element={<Account defaultTab="profile" />} />
 						<Route path="/account/profile" element={<Account defaultTab="profile" />} />
@@ -106,13 +106,13 @@ const App = () => (
 						<Route path="/students/my-profile" element={<MyStudentProfile />} />
 						<Route path="/students/:userId" element={<StudentDetail />} />
 						<Route path="/reports" element={<Reports />} />
-						<Route path="/boekhouding" element={<AccountingReport />} />
-						<Route path="/boekhouding/instellingen" element={<AccountingSettingsPage />} />
-						<Route path="/incasso" element={<Incasso />} />
-						<Route path="/incasso/batches/:id" element={<IncassoBatchDetail />} />
-						<Route path="/mandaten" element={<Mandaten />} />
-						<Route path="/facturen" element={<Invoices />} />
-						<Route path="/mijn-facturen" element={<MyInvoices />} />
+						<Route path="/accounting" element={<AccountingReport />} />
+						<Route path="/accounting/settings" element={<AccountingSettingsPage />} />
+						<Route path="/direct-debit" element={<DirectDebit />} />
+						<Route path="/direct-debit/batches/:id" element={<DirectDebitBatchDetail />} />
+						<Route path="/mandates" element={<Mandates />} />
+						<Route path="/invoices" element={<Invoices />} />
+						<Route path="/my-invoices" element={<MyInvoices />} />
 						<Route path="/data-import" element={<LegacyImport />} />
 						<Route path="/announcements" element={<Announcements />} />
 						<Route path="/manual" element={<UserManual />} />

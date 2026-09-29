@@ -36,7 +36,7 @@ export default {
 					foreground: 'hsl(var(--muted-foreground))',
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
+					DEFAULT: 'var(--accent)',
 					foreground: 'hsl(var(--accent-foreground))',
 				},
 				popover: {
@@ -52,7 +52,7 @@ export default {
 					foreground: 'hsl(var(--sidebar-foreground))',
 					primary: 'hsl(var(--sidebar-primary))',
 					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-					accent: 'hsl(var(--sidebar-accent))',
+					accent: 'var(--sidebar-accent)',
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))',
@@ -68,6 +68,15 @@ export default {
 				info: {
 					DEFAULT: 'hsl(var(--info))',
 					foreground: 'hsl(var(--info-foreground))',
+				},
+				'agenda-lesson': {
+					foreground: 'hsl(var(--agenda-lesson-foreground))',
+				},
+				'agenda-manual': {
+					foreground: 'hsl(var(--agenda-manual-foreground))',
+				},
+				'agenda-group': {
+					foreground: 'hsl(var(--agenda-group-foreground))',
 				},
 			},
 			borderRadius: {

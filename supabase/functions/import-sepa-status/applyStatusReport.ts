@@ -33,7 +33,7 @@ export async function findBatchForReport(
 		};
 	}
 
-	let batchQuery = admin.from('incasso_batches').select('id, message_id, status').limit(1);
+	let batchQuery = admin.from('direct_debit_batches').select('id, message_id, status').limit(1);
 	batchQuery = batchQuery.eq(resolveBatchLookupColumn(lookup), resolveBatchLookupValue(lookup));
 
 	const { data: batch, error: batchErr } = await batchQuery.maybeSingle();
@@ -58,7 +58,7 @@ async function applyPlannedBatchItemUpdates(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
 	for (const update of updates) {
 		const { error: updErr } = await admin
-			.from('incasso_batch_items')
+			.from('direct_debit_batch_items')
 			.update(buildBatchItemStatusUpdatePayload(update.status, update.reasonCode, now))
 			.eq('id', update.itemId);
 		if (updErr) {
@@ -74,7 +74,7 @@ export async function applyStatusReport(
 	report: ParsedReport,
 ): Promise<{ ok: true; result: ApplyReportResult } | { ok: false; response: Response }> {
 	const { data: items, error: itemsErr } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.select('id, end_to_end_id, mandate_id, status, sequence_type')
 		.eq('batch_id', batch.id);
 	if (itemsErr) return { ok: false, response: jsonResponse(500, { error: itemsErr.message }) };
@@ -115,7 +115,7 @@ async function promoteMandates(admin: SupabaseClient, mandateIds: Set<string>, n
 
 async function tryCloseBatch(admin: SupabaseClient, batch: BatchRow, now: string): Promise<boolean> {
 	const { count: openCount } = await admin
-		.from('incasso_batch_items')
+		.from('direct_debit_batch_items')
 		.select('id', { count: 'exact', head: true })
 		.eq('batch_id', batch.id)
 		.in('status', ['pending', 'submitted']);
@@ -123,7 +123,7 @@ async function tryCloseBatch(admin: SupabaseClient, batch: BatchRow, now: string
 	if (!shouldCloseBatchAfterImport(openCount ?? 0, batch.status)) return false;
 
 	const { error: closeErr } = await admin
-		.from('incasso_batches')
+		.from('direct_debit_batches')
 		.update(buildBatchCloseUpdatePayload(now))
 		.eq('id', batch.id);
 	return !closeErr;

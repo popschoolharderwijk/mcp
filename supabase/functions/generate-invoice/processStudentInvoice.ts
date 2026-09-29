@@ -27,7 +27,7 @@ import {
 import type {
 	AccountingSettings,
 	BatchItem,
-	IncassoBatch,
+	DirectDebitBatch,
 	ProfileRow,
 	StudentInfo,
 	StudentInvoiceResult,
@@ -37,7 +37,7 @@ import type {
 interface ProcessStudentArgs {
 	admin: SupabaseClient;
 	batchId: string;
-	batch: IncassoBatch;
+	batch: DirectDebitBatch;
 	settings: AccountingSettings;
 	studentUserId: string;
 	items: BatchItem[];

@@ -144,7 +144,7 @@ describe('resolvePortalReturnUrl', () => {
 
 	it('falls back to the profile route on the origin', () => {
 		expect(resolvePortalReturnUrl('https://app.example.com', undefined)).toBe(
-			'https://app.example.com/mijn-profiel',
+			'https://app.example.com/account/profile',
 		);
 	});
 });

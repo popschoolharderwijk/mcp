@@ -13,7 +13,6 @@ import {
 } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorIcon } from '@/components/ui/color-icon';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -66,8 +65,6 @@ export interface ServerPaginationProps {
 }
 
 interface DataTableProps<T> {
-	title: string;
-	description?: React.ReactNode;
 	data: T[];
 	columns: DataTableColumn<T>[];
 	searchQuery?: string;
@@ -78,7 +75,6 @@ interface DataTableProps<T> {
 	getRowKey: (item: T) => string;
 	getRowClassName?: (item: T) => string | undefined;
 	emptyMessage?: string;
-	headerActions?: React.ReactNode;
 	initialSortColumn?: string;
 	initialSortDirection?: SortDirection;
 	rowActions?: DataTableRowActions<T>;
@@ -103,8 +99,6 @@ interface DataTableProps<T> {
 }
 
 export function DataTable<T>({
-	title,
-	description,
 	data,
 	columns,
 	searchQuery,
@@ -115,7 +109,6 @@ export function DataTable<T>({
 	getRowKey,
 	getRowClassName,
 	emptyMessage = 'Geen resultaten gevonden',
-	headerActions,
 	initialSortColumn,
 	initialSortDirection = 'asc',
 	rowActions,
@@ -346,21 +339,12 @@ export function DataTable<T>({
 			});
 	}, [quickFilter]);
 
-	const showTitleBlock = (title?.trim() ?? '') !== '' || description != null || headerActions != null;
+	const showToolbar = onSearchChange != null || (quickFilter != null && quickFilter.length > 0);
 
 	return (
-		<Card>
-			<CardHeader>
+		<div className="space-y-4">
+			{showToolbar && (
 				<div className="space-y-4">
-					{showTitleBlock && (
-						<div className="flex items-center justify-between">
-							<div>
-								<CardTitle>{title}</CardTitle>
-								{description && <CardDescription className="mt-1">{description}</CardDescription>}
-							</div>
-							{headerActions}
-						</div>
-					)}
 					{onSearchChange && (
 						<div className="relative flex items-center gap-2">
 							<div className="relative flex-1">
@@ -478,268 +462,260 @@ export function DataTable<T>({
 						</div>
 					)}
 				</div>
-			</CardHeader>
-			<CardContent>
-				<div className="overflow-x-auto">
-					<table className="w-full table-fixed">
-						<thead className="bg-muted/30">
-							<tr className="border-b text-left text-sm text-muted-foreground">
-								{hasExpandableRows && (
-									<th className={cn('w-10 py-2 pl-2', compactRows ? 'py-2' : 'py-3')} />
-								)}
-								{columns.map((column) => {
-									const isSortable = column.sortable !== false;
-									const isSorted = sortColumn === column.key;
-									const SortIcon =
-										!isSorted || sortDirection === null
-											? LuArrowUpDown
-											: sortDirection === 'asc'
-												? LuArrowUp
-												: LuArrowDown;
+			)}
+			<div className="overflow-x-auto">
+				<table className="w-full table-fixed">
+					<thead className="bg-muted/30">
+						<tr className="border-b text-left text-sm text-muted-foreground">
+							{hasExpandableRows && (
+								<th className={cn('w-10 py-2 pl-2', compactRows ? 'py-2' : 'py-3')} />
+							)}
+							{columns.map((column) => {
+								const isSortable = column.sortable !== false;
+								const isSorted = sortColumn === column.key;
+								const SortIcon =
+									!isSorted || sortDirection === null
+										? LuArrowUpDown
+										: sortDirection === 'asc'
+											? LuArrowUp
+											: LuArrowDown;
 
-									return (
-										<th
+								return (
+									<th
+										key={column.key}
+										className={cn('py-2 pr-4 font-medium first:pl-2 last:pr-2', column.className)}
+									>
+										{isSortable ? (
+											<Button
+												variant="ghost"
+												size="sm"
+												className="h-auto p-0 font-medium text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus-visible:bg-transparent focus-visible:text-muted-foreground"
+												onClick={() => !loading && handleSort(column.key)}
+												style={{ pointerEvents: loading ? 'none' : 'auto' }}
+											>
+												<div className="flex items-center gap-2">
+													<span>{column.label}</span>
+													<SortIcon
+														className={cn(
+															'h-3.5 w-3.5 transition-opacity',
+															isSorted ? 'opacity-100' : 'opacity-40',
+														)}
+													/>
+												</div>
+											</Button>
+										) : (
+											<span>{column.label}</span>
+										)}
+									</th>
+								);
+							})}
+							{rowActions && <th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />}
+						</tr>
+					</thead>
+					<tbody className="text-sm">
+						{loading && paginatedData.length === 0 ? (
+							// Show skeleton loaders when loading and no data
+							DATA_TABLE_SKELETON_KEYS.slice(0, effectiveRowsPerPage).map((skeletonKey) => (
+								<tr key={skeletonKey} className="border-b last:border-0">
+									{hasExpandableRows && (
+										<td className={cn('pl-2', compactRows ? 'py-2' : 'py-4')}>
+											<Skeleton className="h-4 w-4" />
+										</td>
+									)}
+									{columns.map((column) => (
+										<td
 											key={column.key}
 											className={cn(
-												'py-2 pr-4 font-medium first:pl-2 last:pr-2',
+												'pr-4 first:pl-2 last:pr-2',
+												compactRows ? 'py-2' : 'py-4',
 												column.className,
 											)}
 										>
-											{isSortable ? (
-												<Button
-													variant="ghost"
-													size="sm"
-													className="h-auto p-0 font-medium text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus-visible:bg-transparent focus-visible:text-muted-foreground"
-													onClick={() => !loading && handleSort(column.key)}
-													style={{ pointerEvents: loading ? 'none' : 'auto' }}
+											<Skeleton className="h-4 w-full" />
+										</td>
+									))}
+									{rowActions && <td className={compactRows ? 'py-2' : 'py-4'} />}
+								</tr>
+							))
+						) : paginatedData.length === 0 ? (
+							// Show empty message
+							<tr>
+								<td
+									colSpan={columns.length + (rowActions ? 1 : 0) + (hasExpandableRows ? 1 : 0)}
+									className={cn('text-center text-muted-foreground', compactRows ? 'py-6' : 'py-12')}
+								>
+									{emptyMessage}
+								</td>
+							</tr>
+						) : (
+							// Show actual data
+							paginatedData.map((item) => {
+								const rowKey = getRowKey(item);
+								const isExpanded = hasExpandableRows && expandedRowKey === rowKey;
+								return (
+									<Fragment key={rowKey}>
+										<tr
+											key={rowKey}
+											className={cn(
+												'border-b transition-colors',
+												!isExpanded && 'last:border-0',
+												rowActions?.onEdit && 'cursor-pointer hover:bg-accent',
+												getRowClassName?.(item),
+												loading && 'opacity-50',
+											)}
+											onClick={() => rowActions?.onEdit?.(item)}
+											onKeyDown={(e) => {
+												if (e.key === 'Enter' || e.key === ' ') {
+													e.preventDefault();
+													rowActions?.onEdit?.(item);
+												}
+											}}
+											tabIndex={rowActions?.onEdit ? 0 : undefined}
+											role={rowActions?.onEdit ? 'button' : undefined}
+										>
+											{hasExpandableRows && (
+												<td
+													className={cn('pl-2 w-10', compactRows ? 'py-1.5' : 'py-4')}
+													onClick={(e) => {
+														e.stopPropagation();
+													}}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
+															e.stopPropagation();
+														}
+													}}
 												>
-													<div className="flex items-center gap-2">
-														<span>{column.label}</span>
-														<SortIcon
+													<Button
+														variant="ghost"
+														size="icon"
+														className="h-7 w-7"
+														onClick={() => onExpandToggle?.(isExpanded ? null : rowKey)}
+														aria-label={isExpanded ? 'Inklappen' : 'Uitklappen'}
+													>
+														<LuChevronDown
 															className={cn(
-																'h-3.5 w-3.5 transition-opacity',
-																isSorted ? 'opacity-100' : 'opacity-40',
+																'h-4 w-4 transition-transform',
+																isExpanded && 'rotate-180',
 															)}
 														/>
-													</div>
-												</Button>
-											) : (
-												<span>{column.label}</span>
+													</Button>
+												</td>
 											)}
-										</th>
-									);
-								})}
-								{rowActions && <th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />}
-							</tr>
-						</thead>
-						<tbody className="text-sm">
-							{loading && paginatedData.length === 0 ? (
-								// Show skeleton loaders when loading and no data
-								DATA_TABLE_SKELETON_KEYS.slice(0, effectiveRowsPerPage).map((skeletonKey) => (
-									<tr key={skeletonKey} className="border-b last:border-0">
-										{hasExpandableRows && (
-											<td className={cn('pl-2', compactRows ? 'py-2' : 'py-4')}>
-												<Skeleton className="h-4 w-4" />
-											</td>
-										)}
-										{columns.map((column) => (
-											<td
-												key={column.key}
-												className={cn(
-													'pr-4 first:pl-2 last:pr-2',
-													compactRows ? 'py-2' : 'py-4',
-													column.className,
-												)}
-											>
-												<Skeleton className="h-4 w-full" />
-											</td>
-										))}
-										{rowActions && <td className={compactRows ? 'py-2' : 'py-4'} />}
-									</tr>
-								))
-							) : paginatedData.length === 0 ? (
-								// Show empty message
-								<tr>
-									<td
-										colSpan={columns.length + (rowActions ? 1 : 0) + (hasExpandableRows ? 1 : 0)}
-										className={cn(
-											'text-center text-muted-foreground',
-											compactRows ? 'py-6' : 'py-12',
-										)}
-									>
-										{emptyMessage}
-									</td>
-								</tr>
-							) : (
-								// Show actual data
-								paginatedData.map((item) => {
-									const rowKey = getRowKey(item);
-									const isExpanded = hasExpandableRows && expandedRowKey === rowKey;
-									return (
-										<Fragment key={rowKey}>
-											<tr
-												key={rowKey}
-												className={cn(
-													'border-b transition-colors',
-													!isExpanded && 'last:border-0',
-													rowActions?.onEdit && 'cursor-pointer hover:bg-accent',
-													getRowClassName?.(item),
-													loading && 'opacity-50',
-												)}
-												onClick={() => rowActions?.onEdit?.(item)}
-												onKeyDown={(e) => {
-													if (e.key === 'Enter' || e.key === ' ') {
-														e.preventDefault();
-														rowActions?.onEdit?.(item);
-													}
-												}}
-												tabIndex={rowActions?.onEdit ? 0 : undefined}
-												role={rowActions?.onEdit ? 'button' : undefined}
-											>
-												{hasExpandableRows && (
-													<td
-														className={cn('pl-2 w-10', compactRows ? 'py-1.5' : 'py-4')}
-														onClick={(e) => {
+											{columns.map((column) => (
+												<td
+													key={column.key}
+													className={cn(
+														'overflow-hidden pr-4 first:pl-2 last:pr-2',
+														compactRows ? 'py-1.5' : 'py-4',
+														column.className,
+													)}
+												>
+													{column.render
+														? column.render(item)
+														: String(item[column.key as keyof T] ?? '')}
+												</td>
+											))}
+											{rowActions && (
+												<td
+													className={compactRows ? 'py-1.5' : 'py-4'}
+													onClick={(e) => {
+														e.stopPropagation();
+													}}
+													onKeyDown={(e) => {
+														if (e.key === 'Enter' || e.key === ' ') {
 															e.stopPropagation();
-														}}
-														onKeyDown={(e) => {
-															if (e.key === 'Enter' || e.key === ' ') {
-																e.stopPropagation();
-															}
-														}}
-													>
-														<Button
-															variant="ghost"
-															size="icon"
-															className="h-7 w-7"
-															onClick={() => onExpandToggle?.(isExpanded ? null : rowKey)}
-															aria-label={isExpanded ? 'Inklappen' : 'Uitklappen'}
-														>
-															<LuChevronDown
-																className={cn(
-																	'h-4 w-4 transition-transform',
-																	isExpanded && 'rotate-180',
-																)}
-															/>
-														</Button>
-													</td>
-												)}
-												{columns.map((column) => (
-													<td
-														key={column.key}
-														className={cn(
-															'overflow-hidden pr-4 first:pl-2 last:pr-2',
-															compactRows ? 'py-1.5' : 'py-4',
-															column.className,
-														)}
-													>
-														{column.render
-															? column.render(item)
-															: String(item[column.key as keyof T] ?? '')}
-													</td>
-												))}
-												{rowActions && (
-													<td
-														className={compactRows ? 'py-1.5' : 'py-4'}
-														onClick={(e) => {
-															e.stopPropagation();
-														}}
-														onKeyDown={(e) => {
-															if (e.key === 'Enter' || e.key === ' ') {
-																e.stopPropagation();
-															}
-														}}
-													>
-														{rowActions.render ? (
-															rowActions.render(item)
-														) : (
-															<div className="flex items-center gap-2">
-																{rowActions.onDelete && (
-																	<Button
-																		variant="ghost"
-																		size="icon"
-																		className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-																		onClick={() => rowActions.onDelete?.(item)}
-																	>
-																		<LuTrash2 className="h-4 w-4" />
-																	</Button>
-																)}
-															</div>
-														)}
-													</td>
-												)}
+														}
+													}}
+												>
+													{rowActions.render ? (
+														rowActions.render(item)
+													) : (
+														<div className="flex items-center gap-2">
+															{rowActions.onDelete && (
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+																	onClick={() => rowActions.onDelete?.(item)}
+																>
+																	<LuTrash2 className="h-4 w-4" />
+																</Button>
+															)}
+														</div>
+													)}
+												</td>
+											)}
+										</tr>
+										{isExpanded && (
+											<tr key={`${rowKey}-expanded`} className="border-b last:border-0">
+												<td
+													colSpan={columns.length + (rowActions ? 1 : 0) + 1}
+													className="bg-muted/20 px-4 py-3"
+												>
+													{renderExpandedRow?.(item)}
+												</td>
 											</tr>
-											{isExpanded && (
-												<tr key={`${rowKey}-expanded`} className="border-b last:border-0">
-													<td
-														colSpan={columns.length + (rowActions ? 1 : 0) + 1}
-														className="bg-muted/20 px-4 py-3"
-													>
-														{renderExpandedRow?.(item)}
-													</td>
-												</tr>
-											)}
-										</Fragment>
-									);
-								})
-							)}
-						</tbody>
-					</table>
-				</div>
-				{paginated && (
-					<div className="mt-4 flex items-center justify-between">
-						<div className="text-sm text-muted-foreground">
-							{effectiveTotalCount === 0
-								? 'Geen resultaten'
-								: effectiveTotalCount === 1
-									? '1 resultaat'
-									: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
+										)}
+									</Fragment>
+								);
+							})
+						)}
+					</tbody>
+				</table>
+			</div>
+			{paginated && (
+				<div className="mt-4 flex items-center justify-between">
+					<div className="text-sm text-muted-foreground">
+						{effectiveTotalCount === 0
+							? 'Geen resultaten'
+							: effectiveTotalCount === 1
+								? '1 resultaat'
+								: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
+					</div>
+					<div className="flex items-center gap-4">
+						<div className="flex items-center gap-2">
+							<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
+							<Select
+								value={String(effectiveRowsPerPage)}
+								onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
+							>
+								<SelectTrigger className="h-8 w-[70px]">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="10">10</SelectItem>
+									<SelectItem value="20">20</SelectItem>
+									<SelectItem value="50">50</SelectItem>
+									<SelectItem value="100">100</SelectItem>
+								</SelectContent>
+							</Select>
 						</div>
-						<div className="flex items-center gap-4">
-							<div className="flex items-center gap-2">
-								<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
-								<Select
-									value={String(effectiveRowsPerPage)}
-									onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
-								>
-									<SelectTrigger className="h-8 w-[70px]">
-										<SelectValue />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="10">10</SelectItem>
-										<SelectItem value="20">20</SelectItem>
-										<SelectItem value="50">50</SelectItem>
-										<SelectItem value="100">100</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<div className="flex items-center gap-2">
-								<Button
-									variant="outline"
-									size="icon"
-									className="h-8 w-8"
-									onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
-									disabled={effectiveCurrentPage === 1 || loading}
-								>
-									<LuChevronLeft className="h-4 w-4" />
-								</Button>
-								<span className="text-sm text-muted-foreground">
-									Pagina {effectiveCurrentPage} van {totalPages}
-								</span>
-								<Button
-									variant="outline"
-									size="icon"
-									className="h-8 w-8"
-									onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
-									disabled={effectiveCurrentPage === totalPages || loading}
-								>
-									<LuChevronRight className="h-4 w-4" />
-								</Button>
-							</div>
+						<div className="flex items-center gap-2">
+							<Button
+								variant="outline"
+								size="icon"
+								className="h-8 w-8"
+								onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
+								disabled={effectiveCurrentPage === 1 || loading}
+							>
+								<LuChevronLeft className="h-4 w-4" />
+							</Button>
+							<span className="text-sm text-muted-foreground">
+								Pagina {effectiveCurrentPage} van {totalPages}
+							</span>
+							<Button
+								variant="outline"
+								size="icon"
+								className="h-8 w-8"
+								onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
+								disabled={effectiveCurrentPage === totalPages || loading}
+							>
+								<LuChevronRight className="h-4 w-4" />
+							</Button>
 						</div>
 					</div>
-				)}
-			</CardContent>
-		</Card>
+				</div>
+			)}
+		</div>
 	);
 }

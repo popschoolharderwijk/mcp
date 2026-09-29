@@ -630,28 +630,34 @@ describe('agenda-calendar-config: getEventStyle', () => {
 		expect(style.style.backgroundColor).toBe('#00ff00');
 	});
 
-	it('returns group lesson color for group lessons', () => {
+	it('returns group lesson tokens for group lessons', () => {
 		const event = mockCalendarEvent({
 			resource: mockCalendarEventResource({ isGroupLesson: true, color: null, lessonTypeColor: null }),
 		});
 		const style = getEventStyle(event, 'week');
-		expect(style.style.backgroundColor).toBe('#6366f1');
+		expect(style.style.backgroundColor).toBe('hsl(var(--agenda-group))');
+		expect(style.style.color).toBe('hsl(var(--agenda-group-foreground))');
+		expect(style.style.borderColor).toBe('var(--agenda-group-border)');
 	});
 
-	it('returns agenda event color for manual events', () => {
+	it('returns manual agenda tokens for manual events', () => {
 		const event = mockCalendarEvent({
 			resource: mockCalendarEventResource({ type: 'agenda', color: null, lessonTypeColor: null }),
 		});
 		const style = getEventStyle(event, 'week');
-		expect(style.style.backgroundColor).toBe('#3b82f6');
+		expect(style.style.backgroundColor).toBe('hsl(var(--agenda-manual))');
+		expect(style.style.color).toBe('hsl(var(--agenda-manual-foreground))');
+		expect(style.style.borderColor).toBe('var(--agenda-manual-border)');
 	});
 
-	it('returns agreement color for lesson agreements', () => {
+	it('returns lesson tokens for lesson agreements', () => {
 		const event = mockCalendarEvent({
 			resource: mockCalendarEventResource({ type: 'agreement', color: null, lessonTypeColor: null }),
 		});
 		const style = getEventStyle(event, 'week');
-		expect(style.style.backgroundColor).toBe('#10b981');
+		expect(style.style.backgroundColor).toBe('hsl(var(--agenda-lesson))');
+		expect(style.style.color).toBe('hsl(var(--agenda-lesson-foreground))');
+		expect(style.style.borderColor).toBe('var(--agenda-lesson-border)');
 	});
 
 	it('returns reduced opacity for cancelled events', () => {

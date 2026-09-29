@@ -12,6 +12,8 @@ interface PeriodPresetControlsProps<T extends string> {
 	onStartDateChange: (value: string) => void;
 	onEndDateChange: (value: string) => void;
 	customPreset?: T;
+	/** Optional control aligned to the right of the preset row (e.g. settings icon). */
+	trailing?: React.ReactNode;
 }
 
 export function PeriodPresetControls<T extends string>({
@@ -24,20 +26,24 @@ export function PeriodPresetControls<T extends string>({
 	onStartDateChange,
 	onEndDateChange,
 	customPreset = 'custom' as T,
+	trailing,
 }: PeriodPresetControlsProps<T>) {
 	return (
 		<>
-			<div className="flex flex-wrap gap-2">
-				{presets.map((p) => (
-					<Button
-						key={p}
-						variant={preset === p ? 'default' : 'outline'}
-						size="sm"
-						onClick={() => onPresetChange(p)}
-					>
-						{labels[p]}
-					</Button>
-				))}
+			<div className="flex flex-wrap items-start gap-2">
+				<div className="flex min-w-0 flex-1 flex-wrap gap-2">
+					{presets.map((p) => (
+						<Button
+							key={p}
+							variant={preset === p ? 'default' : 'outline'}
+							size="sm"
+							onClick={() => onPresetChange(p)}
+						>
+							{labels[p]}
+						</Button>
+					))}
+				</div>
+				{trailing}
 			</div>
 
 			{preset === customPreset && (

@@ -40,6 +40,21 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/agreements', items: [{ label: NAV_LABELS.agreements, href: '/agreements' }] },
 	{ pattern: '/projects', items: [{ label: NAV_LABELS.projects, href: '/projects' }] },
 	{
+		pattern: '/lesson-groups/new',
+		items: [
+			{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' },
+			{ label: 'Nieuwe lesgroep', href: '/lesson-groups/new' },
+		],
+	},
+	// /lesson-groups/:id – base only; page adds group name via suffix
+	{
+		pattern: /^\/lesson-groups\/[^/]+$/,
+		items: [{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' }],
+	},
+	{ pattern: '/lesson-groups', items: [{ label: NAV_LABELS.lessonGroups, href: '/lesson-groups' }] },
+	{ pattern: '/signup-requests', items: [{ label: NAV_LABELS.signupRequests, href: '/signup-requests' }] },
+	{ pattern: '/trial-lessons', items: [{ label: NAV_LABELS.trialLessons, href: '/trial-lessons' }] },
+	{
 		pattern: /^\/agreements\/[^/]+$/,
 		items: [{ label: NAV_LABELS.agreements, href: '/agreements' }],
 	},
@@ -55,15 +70,34 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		pattern: '/account/danger',
 		items: [{ label: NAV_LABELS.accountDanger, href: '/account/danger' }],
 	},
-	{ pattern: '/boekhouding', items: [{ label: NAV_LABELS.accounting, href: '/boekhouding' }] },
+	{ pattern: '/accounting', items: [{ label: NAV_LABELS.accounting, href: '/accounting' }] },
 	{
-		pattern: '/boekhouding/instellingen',
+		pattern: '/accounting/settings',
 		items: [
-			{ label: NAV_LABELS.accounting, href: '/boekhouding' },
-			{ label: 'Instellingen', href: '/boekhouding/instellingen' },
+			{ label: NAV_LABELS.accounting, href: '/accounting' },
+			{ label: 'Instellingen', href: '/accounting/settings' },
 		],
 	},
+	{
+		pattern: /^\/direct-debit\/batches\/[^/]+$/,
+		items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }],
+	},
+	{ pattern: '/direct-debit', items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }] },
+	{ pattern: '/mandates', items: [{ label: NAV_LABELS.mandates, href: '/mandates' }] },
+	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
 	{ pattern: '/data-import', items: [{ label: NAV_LABELS.dataImport, href: '/data-import' }] },
+	{
+		pattern: '/email-templates',
+		items: [{ label: NAV_LABELS.emailTemplates, href: '/email-templates' }],
+	},
+	{
+		pattern: '/announcements',
+		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],
+	},
+	{
+		pattern: '/no-lesson-periods',
+		items: [{ label: NAV_LABELS.noLessonPeriods, href: '/no-lesson-periods' }],
+	},
 	{ pattern: '/teachers', items: [{ label: NAV_LABELS.teachers, href: '/teachers' }] },
 	{
 		pattern: '/teachers/availability',
@@ -112,6 +146,11 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: NAV_LABELS.students, href: '/students' },
 			{ label: NAV_LABELS.myProfile, href: '/students/my-profile' },
 		],
+	},
+	// /students/:userId – base only; page adds student name via suffix
+	{
+		pattern: /^\/students\/[^/]+$/,
+		items: [{ label: NAV_LABELS.students, href: '/students' }],
 	},
 	{ pattern: '/reports', items: [{ label: NAV_LABELS.reports, href: '/reports' }] },
 	{ pattern: '/manual', items: [{ label: NAV_LABELS.manual, href: '/manual' }] },

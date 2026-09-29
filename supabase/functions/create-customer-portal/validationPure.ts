@@ -30,7 +30,7 @@ export function resolveMissingStripeCustomerResponse(): Response {
 }
 
 export function resolvePortalReturnUrl(origin: string, returnUrl: string | undefined): string {
-	return returnUrl ?? `${origin}/mijn-profiel`;
+	return returnUrl ?? `${origin}/account/profile`;
 }
 
 export function buildCustomerPortalSuccessPayload(url: string | null): { url: string | null } {

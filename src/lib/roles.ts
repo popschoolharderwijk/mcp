@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react';
-import { LuShieldCheck, LuStar, LuUser, LuUserCog } from 'react-icons/lu';
+import { LuShieldCheck, LuStar, LuUserCog } from 'react-icons/lu';
 import type { Enums } from '@/integrations/supabase/types';
 
 /** Application role type from Supabase database */
@@ -24,15 +24,3 @@ export const roleLabels: Record<AppRole, RoleConfig> = {
 	admin: { label: 'Admin', variant: 'default', icon: LuShieldCheck },
 	staff: { label: 'Medewerker', variant: 'secondary', icon: LuUserCog },
 };
-
-/**
- * Returns the icon component for a given role
- * @param role - The application role
- * @returns The icon component for the role
- */
-export function getIcon(role: AppRole | null): ComponentType<{ className?: string }> {
-	if (!role) {
-		return LuUser;
-	}
-	return roleLabels[role].icon;
-}

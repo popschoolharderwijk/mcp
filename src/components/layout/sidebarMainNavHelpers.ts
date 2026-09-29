@@ -58,7 +58,7 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 		items.push(
 			{ key: 'my-profile', href: '/students/my-profile', label: NAV_LABELS.myProfile, icon: NAV_ICONS.myProfile },
 			{ key: 'my-trial', href: '/my-trial', label: NAV_LABELS.myTrial, icon: NAV_ICONS.myTrial },
-			{ key: 'my-invoices', href: '/mijn-facturen', label: NAV_LABELS.myInvoices, icon: NAV_ICONS.myInvoices },
+			{ key: 'my-invoices', href: '/my-invoices', label: NAV_LABELS.myInvoices, icon: NAV_ICONS.myInvoices },
 		);
 	}
 

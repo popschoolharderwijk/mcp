@@ -27,7 +27,7 @@ export async function uploadAndFinalizeBatch(
 	await promoteFirstUseMandates(admin, args.items);
 
 	await admin
-		.from('incasso_batches')
+		.from('direct_debit_batches')
 		.update({
 			message_id: args.msgId,
 			xml_storage_path: path,

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { PRIMARY_HEX } from '../../../src/lib/color/brand-hex';
 import {
 	buildInvoiceEmailDeliveryContent,
 	buildInvoiceEmailHtml,
@@ -13,6 +14,7 @@ import {
 	filterStudentItems,
 	getCollectionDate,
 	hasAdminRole,
+	INVOICE_MAIL_PRIMARY_HEX,
 	isServiceRoleToken,
 	readInvoiceMailEnv,
 	resolveAgeCategory,
@@ -22,7 +24,7 @@ import {
 } from '../../../supabase/functions/generate-invoice/invoicePure';
 import type {
 	BatchItem,
-	IncassoBatch,
+	DirectDebitBatch,
 	InvoiceLine,
 	ProfileRow,
 	StudentRow,
@@ -238,7 +240,7 @@ describe('filterStudentItems', () => {
 
 describe('getCollectionDate', () => {
 	it('returns the batch collection date', () => {
-		const batch: IncassoBatch = { collection_date: '2026-09-15' };
+		const batch: DirectDebitBatch = { collection_date: '2026-09-15' };
 		expect(getCollectionDate(batch)).toBe('2026-09-15');
 	});
 });
@@ -321,6 +323,18 @@ describe('buildInvoiceEmailHtml', () => {
 				companyName: 'PopSchool',
 			}),
 		).toContain('<strong>INV-001</strong>');
+	});
+
+	it('uses mail header hex mirrored from PRIMARY_HEX', () => {
+		expect(INVOICE_MAIL_PRIMARY_HEX.toLowerCase()).toBe(PRIMARY_HEX);
+		const html = buildInvoiceEmailHtml({
+			firstName: 'Anna',
+			invoiceNumber: 'INV-001',
+			totalFormatted: '€ 25,00',
+			paymentNote: '',
+			companyName: 'PopSchool',
+		});
+		expect(html).toContain(`background:${INVOICE_MAIL_PRIMARY_HEX}`);
 	});
 });
 

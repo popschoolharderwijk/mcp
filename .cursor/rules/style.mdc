@@ -2,13 +2,24 @@
 alwaysApply: true
 ---
 
-* Documentation (in ./docs/) should always be written in Dutch. 
-* Code and code comments should always be written in English
-* Front-end UI Elements (labels, buttons, error messages, placeholders) should always be written in Dutch
+* Documentation (`./docs/`, `README.md`, and other project markdown) should always be written in English.
+* Code, code comments, and file names should always be written in English.
+* Supabase identifiers (tables, columns, RPCs, indexes, policies, migration filenames) should always be English.
+* Front-end UI Elements (labels, buttons, error messages, placeholders) should always be written in Dutch. `CHANGELOG.md` and HTML email templates for users (`docs/email-templates/`) are UI copy and stay Dutch.
 * Tools, CLI tools should always be completely written in English (output, input and code)
 * **Icons**: Use only **react-icons** (e.g. `react-icons/lu`, `react-icons/fi`); do **not** use `lucide-react`.
 * For loading spinners, always use `LuLoaderCircle` from `react-icons/lu` with `animate-spin` class.
 * Never use `any`, always deduce the required type and use that.
+
+## Theme colors and brand hex
+
+* **Canonical CSS:** [`src/styles/theme-tokens.css`](../../src/styles/theme-tokens.css) — edit `:root` / `.dark` here for rebrand; do not duplicate HSL in components.
+* **`--accent`:** `color-mix` of primary + background (see `theme-tokens.css`); Tailwind `accent.DEFAULT` and `sidebar.accent` use `var(...)`, not `hsl(var(...))`.
+* **DOM / agenda defaults:** use `hsl(var(--…))` or `var(--agenda-*-border)` strings from [`agenda-default-style-vars.ts`](../../src/lib/agenda/agenda-default-style-vars.ts); custom user/lesson-type hex keeps [`color-utils`](../../src/lib/color/color-utils.ts).
+* **Hex outside the browser** (mail, PDF, HexColorPicker fallback): [`brand-hex.ts`](../../src/lib/color/brand-hex.ts) `PRIMARY_HEX` with edge mirrors in `invoicePure.ts` / `buildPdfPure.ts` (mirror-comments required).
+* **Agenda icon classes:** use `agendaDefaultForegroundClass` (literal Tailwind class strings — no template literals for JIT).
+* **Custom-colored agenda icons:** allowlist `text-gray-900` / `text-white` only when derived from user hex via `isLightColor`.
+* See [`docs/theme-tokens.md`](../../docs/theme-tokens.md).
 
 ## End pages (detail pages)
 

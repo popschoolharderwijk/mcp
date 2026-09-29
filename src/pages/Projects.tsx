@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectsPageController } from '@/hooks/useProjectsPageController';
@@ -103,42 +104,45 @@ export default function Projects() {
 
 	return (
 		<div>
-			<DataTable
+			<PageShell
 				title={NAV_LABELS.projects}
 				description={`Beheer alle ${NAV_LABELS.projects.toLowerCase()}`}
-				data={projects}
-				columns={PROJECT_COLUMNS}
-				searchQuery={searchQuery}
-				onSearchChange={setSearchQuery}
-				searchFields={[
-					(p) => p.name,
-					(p) => p.description ?? undefined,
-					(p) => p.cost_center ?? undefined,
-					(p) => p.domain_name,
-					(p) => p.label_name,
-				]}
-				loading={loading}
-				getRowKey={(p) => p.id}
-				emptyMessage="Geen projecten gevonden"
-				initialSortColumn="name"
-				initialSortDirection="asc"
-				expandedRowKey={expandedProjectId}
-				onExpandToggle={setExpandedProjectId}
-				renderExpandedRow={(project) => (
-					<ProjectAgendaEvents
-						projectId={project.id}
-						canSchedule={resolveProjectAgendaCanSchedule(permissions.canSchedule, project.is_active)}
-					/>
-				)}
-				headerActions={
+				actions={
 					<ProjectsHeaderActions
 						canEdit={permissions.canEdit}
 						runAction={runAction}
 						setSettingsModalOpen={setSettingsModalOpen}
 					/>
 				}
-				rowActions={rowActions}
-			/>
+			>
+				<DataTable
+					data={projects}
+					columns={PROJECT_COLUMNS}
+					searchQuery={searchQuery}
+					onSearchChange={setSearchQuery}
+					searchFields={[
+						(p) => p.name,
+						(p) => p.description ?? undefined,
+						(p) => p.cost_center ?? undefined,
+						(p) => p.domain_name,
+						(p) => p.label_name,
+					]}
+					loading={loading}
+					getRowKey={(p) => p.id}
+					emptyMessage="Geen projecten gevonden"
+					initialSortColumn="name"
+					initialSortDirection="asc"
+					expandedRowKey={expandedProjectId}
+					onExpandToggle={setExpandedProjectId}
+					renderExpandedRow={(project) => (
+						<ProjectAgendaEvents
+							projectId={project.id}
+							canSchedule={resolveProjectAgendaCanSchedule(permissions.canSchedule, project.is_active)}
+						/>
+					)}
+					rowActions={rowActions}
+				/>
+			</PageShell>
 
 			<ProjectFormDialog
 				open={formDialog.open}

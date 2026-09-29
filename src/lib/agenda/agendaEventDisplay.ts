@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { CalendarEventResource } from '@/components/agenda/types';
+import { agendaDefaultForegroundClass, resolveAgendaDefaultKind } from '@/lib/agenda/agenda-default-style-vars';
 import { isLightColor } from '@/lib/color/color-utils';
 import { formatTimeFromDate } from '@/lib/time/time-format';
 
@@ -13,8 +14,6 @@ export interface AgendaEventTypeFlags {
 	isDuoLesson: boolean;
 	hasMultipleParticipants: boolean;
 }
-
-const DEFAULT_EVENT_COLOR = '#3b82f6';
 
 export function getEventDurationMinutes(start: Date | undefined, end: Date | undefined): number {
 	if (!start || !end) return 30;
@@ -35,9 +34,17 @@ export function getAgendaEventDisplayTitle(view: string, start: Date | undefined
 	return title;
 }
 
-export function getAgendaEventIconColorClass(color: string | null | undefined, lessonTypeColor: string | null): string {
-	const effectiveColor = color || lessonTypeColor || DEFAULT_EVENT_COLOR;
-	return isLightColor(effectiveColor) ? 'text-gray-900' : 'text-white';
+export function getAgendaEventIconColorClass(
+	color: string | null | undefined,
+	lessonTypeColor: string | null,
+	resource: CalendarEventResource,
+): string {
+	const customColor = color || lessonTypeColor;
+	if (customColor) {
+		return isLightColor(customColor) ? 'text-gray-900' : 'text-white';
+	}
+	const kind = resolveAgendaDefaultKind(resource) ?? 'lesson';
+	return agendaDefaultForegroundClass(kind);
 }
 
 export function buildAgendaEventTypeFlags(resource: CalendarEventResource): AgendaEventTypeFlags {

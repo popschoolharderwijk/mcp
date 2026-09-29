@@ -2,7 +2,7 @@ import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { formatIban } from '@/lib/incasso/iban';
+import { formatIban } from '@/lib/direct-debit/iban';
 import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
 import { SignupFormField } from './SignupFormField';
 

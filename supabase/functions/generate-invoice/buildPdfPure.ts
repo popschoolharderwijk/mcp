@@ -1,4 +1,19 @@
+// Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep PDF header fill in sync; see buildPdfPure.test.ts
+
 import type { StudentInfo } from './types.ts';
+
+/** Normalized sRGB for pdf-lib rgb(); matches brand primary #c4ab7c */
+export const PDF_RGB = {
+	red: 0.7686274509803922,
+	green: 0.6705882352941176,
+	blue: 0.48627450980392156,
+} as const;
+
+export const PDF_GRAY_TEXT_RGB = { red: 0.3, green: 0.3, blue: 0.3 } as const;
+
+export const PDF_BLACK_RGB = { red: 0.1, green: 0.1, blue: 0.1 } as const;
+
+export const PDF_WHITE_RGB = { red: 1, green: 1, blue: 1 } as const;
 
 export function buildCompanyBlockLines(settings: Record<string, unknown>): string[] {
 	return [

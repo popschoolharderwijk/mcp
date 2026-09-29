@@ -1,114 +1,114 @@
 # Supabase Server Setup
 
-Stappenplan om een lege Supabase server werkend te krijgen met deze applicatie.
+How to get an empty Supabase project working with this application.
 
 ---
 
-## Stap 1: Nieuw Supabase Project
+## Step 1: New Supabase Project
 
-1. Ga naar [supabase.com/dashboard](https://supabase.com/dashboard)
-2. Klik "New Project"
-3. Kies organisatie en vul in:
-   - **Name**: `mcp-dev` of `mcp-prod`
-   - **Database Password**: Genereer en bewaar veilig
-   - **Region**: `West EU (Frankfurt)` (dichtbij)
-4. Wacht tot project is aangemaakt
-5. Noteer de **Project ID** (uit de URL of Project Settings)
+1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
+2. Click "New Project"
+3. Choose an organisation and fill in:
+   - **Name**: `mcp-dev` or `mcp-prod`
+   - **Database Password**: Generate and store securely
+   - **Region**: `West EU (Frankfurt)` (closest)
+4. Wait until the project is created
+5. Note the **Project ID** (from the URL or Project Settings)
 
 ---
 
-## Stap 2: Migraties Toepassen
+## Step 2: Apply Migrations
 
 ```bash
-# Link aan het nieuwe project
+# Link to the new project
 supabase link --project-ref <project-id>
 
-# Push alle migraties
+# Push all migrations
 supabase db push
 ```
 
-Migraties staan in `supabase/migrations/` als domain-bestanden (bijv. `_lesson_groups`, `_projects`, `_sepa_incasso`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) worden in die migraties via `INSERT INTO storage.buckets` aangemaakt. Iteratieve GRANT/DROP-patches zijn samengevoegd in die domain-migraties. Na schema-wijzigingen: `bun run db:reset`.
+Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_sepa_direct_debit`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: `bun run db:reset`.
 
 ---
 
-## Stap 3: Authentication Configureren
+## Step 3: Configure Authentication
 
-### Providers inschakelen
+### Enable providers
 
 **Dashboard** → **Authentication** → **Providers**
 
-- ✅ Email (moet aan staan)
-- Andere providers naar wens
+- ✅ Email (must be on)
+- Other providers as needed
 
-### Auth Settings via config.toml
+### Auth settings via config.toml
 
-Alle authentication settings worden beheerd via `supabase/config.toml` en gepusht naar remote projects. **Geen handmatige Dashboard configuratie nodig!**
+All authentication settings are managed in `supabase/config.toml` and pushed to remote projects. **No manual Dashboard configuration is required.**
 
-#### Remote Project Settings
+#### Remote project settings
 
-De `[remotes.test.auth]`, `[remotes.dev.auth]` en `[remotes.prod.auth]` secties overschrijven de defaults voor remote projects. mcp-dev en mcp-test delen Lovable-URLs, `localhost:5173` en het `[DEV]`-mailonderwerp. Productie (`[remotes.prod.auth]`) heeft `mcp.mplifi.nl`, geen publieke signup, strakkere rate limits en subject `Je inloglink`.
+The `[remotes.test.auth]`, `[remotes.dev.auth]`, and `[remotes.prod.auth]` sections override defaults for remote projects. mcp-dev and mcp-test share Lovable URLs, `localhost:5173`, and the `[DEV]` mail subject. Production (`[remotes.prod.auth]`) uses `mcp.mplifi.nl`, no public signup, tighter rate limits, and subject `Je inloglink`.
 
-#### Settings Pushen naar Remote
+#### Push settings to remote
 
-Na het configureren van `config.toml`, push de settings naar je remote project:
+After configuring `config.toml`, push settings to the remote project:
 
 ```bash
-# Link aan het project (als nog niet gedaan)
+# Link to the project (if not already done)
 supabase link --project-ref <project-id>
 
-# Push configuratie naar remote
+# Push configuration to remote
 supabase config push
 
-# Review de changes die gepusht worden
-# Type 'Y' om te bevestigen
+# Review the changes that will be pushed
+# Type 'Y' to confirm
 ```
 
-> ⚠️ **Waarom zo complexe password requirements?**
-> 
-> Deze applicatie gebruikt uitsluitend **OTP/Magic Link** voor authenticatie. De frontend biedt **geen mogelijkheid** om een wachtwoord in te stellen of te gebruiken.
-> 
-> Echter, Supabase ondersteunt aan de achterkant technisch gezien wel password-based authenticatie via de API. Om misbruik via directe API calls te voorkomen, stellen we de password requirements zo hoog mogelijk in. Een wachtwoord van 32+ karakters met letters, cijfers én symbolen is praktisch onmogelijk te raden of bruteforcen.
+> ⚠️ **Why are password requirements so strict?**
+>
+> This application uses **OTP/Magic Link** only for authentication. The frontend provides **no way** to set or use a password.
+>
+> Supabase still technically supports password-based authentication via the API. To prevent abuse via direct API calls, password requirements are set as high as possible. A password of 32+ characters with letters, digits, and symbols is practically impossible to guess or brute-force.
 
-> 💡 **Verificatie via tests**
-> 
-> De password policy wordt geverifieerd door `tests/auth/password-signup.test.ts`. Deze test controleert dat:
-> - Wachtwoorden korter dan 32 karakters worden geweigerd
-> - Wachtwoorden zonder symbolen, cijfers, of letters worden geweigerd
-> - Alleen wachtwoorden die aan alle eisen voldoen worden geaccepteerd
+> 💡 **Verification via tests**
+>
+> The password policy is verified by `tests/auth/password-signup.test.ts`. That test checks that:
+> - Passwords shorter than 32 characters are rejected
+> - Passwords without symbols, digits, or letters are rejected
+> - Only passwords that meet all requirements are accepted
 
-> 📝 **Belangrijk**: Wijzigingen in `config.toml` worden **niet automatisch** naar remote gepusht. Gebruik altijd `supabase config push` na wijzigingen en review de diff zorgvuldig voordat je bevestigt.
-
----
-
-## Stap 4: Email Templates & SMTP
-
-Zie [email-templates.md](email-templates.md) voor:
-- Magic Link template instellen
-- SMTP configuratie via `config.toml` (Resend)
+> 📝 **Important**: Changes in `config.toml` are **not** pushed to remote automatically. Always use `supabase config push` after changes and review the diff carefully before confirming.
 
 ---
 
-## Stap 5: API Keys Ophalen
+## Step 4: Email Templates & SMTP
+
+See [email-templates.md](email-templates.md) for:
+- Setting the Magic Link template
+- SMTP configuration via `config.toml` (Resend)
+
+---
+
+## Step 5: Fetch API Keys
 
 **Dashboard** → **Project Settings** → **API**
 
-Noteer:
+Note:
 - **Project URL**: `https://<project-id>.supabase.co`
-- **Anon/Public Key**: Voor frontend (`VITE_SUPABASE_ANON_KEY`)
-- **Service Role Key**: Voor backend/tests (⚠️ geheim houden!)
+- **Anon/Public Key**: For the frontend (`VITE_SUPABASE_ANON_KEY`)
+- **Service Role Key**: For backend/tests (⚠️ keep secret!)
 
 ---
 
-## Stap 6: Environment Files Aanmaken
+## Step 6: Create Environment Files
 
-### Voor development (.env.development)
+### For development (.env.development)
 
 ```bash
 VITE_SUPABASE_URL=https://<project-id>.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 
-### Voor test database (.env.test)
+### For the test database (.env.test)
 
 ```bash
 VITE_SUPABASE_URL=https://<project-id>.supabase.co
@@ -116,7 +116,7 @@ VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=<anon-key>
 VITE_DEV_LOGIN_PASSWORD=<test-password>
 ```
 
-### Voor scripts en tests (.env)
+### For scripts and tests (.env)
 
 ```bash
 SUPABASE_URL=https://<project-id>.supabase.co
@@ -124,63 +124,65 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 RESEND_API_KEY=<resend-api-key>
 ```
 
-> 📝 **Belangrijk**: De `RESEND_API_KEY` is nodig voor SMTP email delivery. Deze wordt gebruikt door de SMTP configuratie in `config.toml`.
+> 📝 **Important**: `RESEND_API_KEY` is required for SMTP email delivery. It is used by the SMTP configuration in `config.toml`.
 
 ---
 
-## Stap 7: Secrets Configureren
+## Step 7: Configure Secrets
 
-Zie [secrets.md](secrets.md) voor:
-- GitHub Secrets (voor CI/CD)
+See [secrets.md](secrets.md) for:
+- GitHub Secrets (for CI/CD)
 - Edge Function Secrets
 
 ---
 
-## Stap 8: Config.toml Bijwerken
+## Step 8: Update config.toml
 
-Update `supabase/config.toml` met de nieuwe project ID en auth settings:
+Update `supabase/config.toml` with the new project ID and auth settings:
 
 ```toml
-[remotes.nieuw]
-project_id = "<nieuwe-project-id>"
+[remotes.new]
+project_id = "<new-project-id>"
 
-[remotes.nieuw.db.seed]
-enabled = true  # false voor production
-sql_paths = ["./seeds/bootstrap.sql", "./seeds/test.sql"]  # prod: alleen bootstrap.sql
+[remotes.new.db.seed]
+enabled = true  # false for production
+sql_paths = ["./seeds/bootstrap.sql", "./seeds/test.sql"]  # prod: bootstrap.sql only
+```
 
-[remotes.nieuw.auth]
-site_url = "https://jouw-domein.nl"
-additional_redirect_urls = ["https://jouw-domein.nl/**"]
+```toml
+[remotes.new.auth]
+site_url = "https://your-domain.example"
+additional_redirect_urls = ["https://your-domain.example/**"]
 minimum_password_length = 32
 password_requirements = "lower_upper_letters_digits_symbols"
 ```
 
-**Push de configuratie naar remote:**
+**Push the configuration to remote:**
 
 ```bash
-supabase link --project-ref <nieuwe-project-id>
+supabase link --project-ref <new-project-id>
 supabase config push
-# Review de diff en type 'Y' om te bevestigen
+# Review the diff and type 'Y' to confirm
 ```
 
 ---
 
 ## Checklist
 
-- [ ] Project aangemaakt
-- [ ] Migraties toegepast (`supabase db push` / `db reset`) — storage buckets via migraties
-- [ ] Email provider ingeschakeld (Dashboard)
-- [ ] `config.toml` bijgewerkt met project ID
-- [ ] Auth settings geconfigureerd in `config.toml`:
+- [ ] Project created
+- [ ] Migrations applied (`supabase db push` / `db reset`) — storage buckets via migrations
+- [ ] Email provider enabled (Dashboard)
+- [ ] `config.toml` updated with project ID
+- [ ] Auth settings configured in `config.toml`:
   - [ ] `minimum_password_length = 32`
   - [ ] `password_requirements = "lower_upper_letters_digits_symbols"`
   - [ ] `otp_length = 8`
-  - [ ] `site_url` en `additional_redirect_urls` correct
-- [ ] Config gepusht naar remote (`supabase config push`)
-- [ ] Password policy tests draaien (`bun test tests/auth/password-signup.test.ts`)
-- [ ] Email templates ingesteld
-- [ ] SMTP geconfigureerd in `config.toml` (Resend)
-- [ ] `RESEND_API_KEY` toegevoegd aan `.env`
-- [ ] Config gepusht naar remote (`supabase config push`)
-- [ ] API keys opgehaald
-- [ ] Environment files aangemaakt (`.env`)
+  - [ ] `site_url` and `additional_redirect_urls` correct
+- [ ] Config pushed to remote (`supabase config push`)
+- [ ] Password policy tests run (`bun test tests/auth/password-signup.test.ts`)
+- [ ] Email templates configured
+- [ ] SMTP configured in `config.toml` (Resend)
+- [ ] `RESEND_API_KEY` added to `.env`
+- [ ] Config pushed to remote (`supabase config push`)
+- [ ] API keys fetched
+- [ ] Environment files created (`.env`)

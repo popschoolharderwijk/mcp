@@ -1,6 +1,7 @@
 import { StudentDeleteDialog } from '@/components/students/StudentDeleteDialog';
 import { StudentFormDialog } from '@/components/students/StudentFormDialog';
 import { DataTable } from '@/components/ui/data-table';
+import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
 import type { useListPageTableState } from '@/hooks/useListPageTableState';
 import type { useStudentsPageController } from '@/hooks/useStudentsPageController';
@@ -25,29 +26,29 @@ export function StudentsPageContent({
 
 	return (
 		<div>
-			<DataTable
-				title={NAV_LABELS.students}
-				description="Beheer alle leerlingen en hun gegevens"
-				data={controller.students}
-				columns={controller.columns}
-				searchQuery={tableState.searchQuery}
-				onSearchChange={tableState.handleSearchChange}
-				loading={tableState.loading}
-				getRowKey={(student) => student.user_id}
-				emptyMessage="Geen leerlingen gevonden"
-				quickFilter={tableState.quickFilterGroups}
-				serverPagination={{
-					totalCount: tableState.totalCount,
-					currentPage: tableState.currentPage,
-					rowsPerPage: tableState.rowsPerPage,
-					onPageChange: tableState.handlePageChange,
-					onRowsPerPageChange: tableState.handleRowsPerPageChange,
-				}}
-				initialSortColumn={tableState.sortColumn || undefined}
-				initialSortDirection={tableState.sortDirection || undefined}
-				onSortChange={tableState.handleSortChange}
-				rowActions={rowActions}
-			/>
+			<PageShell title={NAV_LABELS.students} description="Beheer alle leerlingen en hun gegevens">
+				<DataTable
+					data={controller.students}
+					columns={controller.columns}
+					searchQuery={tableState.searchQuery}
+					onSearchChange={tableState.handleSearchChange}
+					loading={tableState.loading}
+					getRowKey={(student) => student.user_id}
+					emptyMessage="Geen leerlingen gevonden"
+					quickFilter={tableState.quickFilterGroups}
+					serverPagination={{
+						totalCount: tableState.totalCount,
+						currentPage: tableState.currentPage,
+						rowsPerPage: tableState.rowsPerPage,
+						onPageChange: tableState.handlePageChange,
+						onRowsPerPageChange: tableState.handleRowsPerPageChange,
+					}}
+					initialSortColumn={tableState.sortColumn || undefined}
+					initialSortDirection={tableState.sortDirection || undefined}
+					onSortChange={tableState.handleSortChange}
+					rowActions={rowActions}
+				/>
+			</PageShell>
 
 			<StudentFormDialog
 				open={controller.studentFormDialog.open}

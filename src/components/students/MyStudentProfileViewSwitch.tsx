@@ -2,7 +2,8 @@ import { Navigate } from 'react-router-dom';
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
 import { MyStudentProfileContent } from '@/components/students/MyStudentProfileContent';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { PageShell } from '@/components/ui/page-shell';
+import { NAV_LABELS } from '@/config/nav-labels';
 import type { MyStudentProfileView } from '@/lib/students/myStudentProfileHelpers';
 import type { MyStudentProfileData } from '@/lib/students/myStudentProfileLoadHelpers';
 import { resolveMyStudentProfileRenderedView } from '@/lib/students/myStudentProfileViewHelpers';
@@ -27,7 +28,13 @@ export function MyStudentProfileViewSwitch({
 	}
 
 	if (renderedView === 'skeleton') {
-		return <PageSkeleton variant="header-and-cards" />;
+		return (
+			<PageShell
+				title={NAV_LABELS.myProfile}
+				description="Bekijk je profielgegevens en lesovereenkomsten"
+				loading
+			/>
+		);
 	}
 
 	return (

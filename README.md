@@ -1,26 +1,26 @@
 # Mplifi Community Portal
 
-Webapplicatie voor het beheer van een muziekschool: leerlingen en docenten, lesovereenkomsten, agenda met recurring lessen, projecten, Stripe-incasso voor lesgeld, e-mailtemplates en uren-/financiële rapportage.
+Web app for running a music school: students and teachers, lesson agreements, a recurring-lesson agenda, projects, Stripe direct debit for tuition, email templates, and hours/financial reporting.
 
 ## Tech Stack
 
 - **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, `react-icons/lu`
-- **Backend**: Supabase (Auth, Postgres + RLS, Edge Functions op Deno)
-- **Betalingen**: Stripe (SEPA Direct Debit via iDEAL setup)
-- **Email**: Resend (custom SMTP voor Supabase Auth + transactionele templates)
-- **Testing**: Bun test runner (unit + RLS tegen remote Supabase preview branches)
+- **Backend**: Supabase (Auth, Postgres + RLS, Edge Functions on Deno)
+- **Payments**: Stripe (SEPA Direct Debit via iDEAL setup)
+- **Email**: Resend (custom SMTP for Supabase Auth + transactional templates)
+- **Testing**: Bun test runner (unit + RLS against remote Supabase preview branches)
 - **Linting/format**: Biome
 - **CI/CD**: GitHub Actions + Supabase GitHub Integration (branching)
 
-## Kernfeatures
+## Core features
 
-- Passwordless inloggen via Magic Link (OTP) — geen wachtwoorden in productie.
-- Lesovereenkomsten met leeftijdsafhankelijke tarieven (<21 / 21+), wekelijks/tweewekelijks ritme, lesvrije periodes met **verschuif-logica** (lessen schuiven door, augustus blijft pauze).
-- Agenda met recurring events, afwijkingen, annuleringen (docent vs leerling) en multi-participant projecten.
-- Stripe SEPA-incasso per lesovereenkomst: setup via iDEAL, daarna maandelijkse `SubscriptionSchedule` over 11 maanden.
-- Database-backed e-mailtemplates met inline preview en testverzending.
-- Projecten (domein → label → project), polymorfe agenda-koppeling, kostenplaats.
-- Uren-/accounting-rapportage met BTW per leeftijdscategorie en lesdatum.
+- Passwordless sign-in via Magic Link (OTP) — no passwords in production.
+- Lesson agreements with age-based rates (<21 / 21+), weekly/biweekly cadence, no-lesson periods with **shift logic** (lessons shift forward; August stays a pause).
+- Agenda with recurring events, deviations, cancellations (teacher vs student) and multi-participant projects.
+- Stripe SEPA direct debit per lesson agreement: setup via iDEAL, then a monthly `SubscriptionSchedule` over 11 months.
+- Database-backed email templates with inline preview and test send.
+- Projects (domain → label → project), polymorphic agenda linking, cost centre.
+- Hours/accounting reports with VAT by age category and lesson date.
 
 ## Quick Start
 
@@ -28,33 +28,33 @@ Webapplicatie voor het beheer van een muziekschool: leerlingen en docenten, leso
 # Install dependencies
 bun install
 
-# Run development server (tegen mcp-dev Supabase project)
+# Run development server (against the mcp-dev Supabase project)
 bun dev
 
 # Run tests
 bun test --bail
 ```
 
-> ℹ️ Op Windows kan `bun install` problemen geven met esbuild — gebruik dan `npm install` voor de eerste install en daarna `bun dev`.
+> ℹ️ On Windows, `bun install` can fail with esbuild — use `npm install` for the first install, then `bun dev`.
 
-## Documentatie
+## Documentation
 
-| Onderwerp | Bestand |
-|-----------|---------|
-| Architectuur & datamodel | [docs/architecture.md](docs/architecture.md) |
+| Topic | File |
+|-------|------|
+| Architecture & data model | [docs/architecture.md](docs/architecture.md) |
 | Supabase server setup | [docs/supabase-setup.md](docs/supabase-setup.md) |
 | Git branching strategy | [docs/git-branching.md](docs/git-branching.md) |
 | CI/CD workflows | [docs/cicd-workflows.md](docs/cicd-workflows.md) |
 | Database testing (RLS + Auth) | [docs/database-testing.md](docs/database-testing.md) |
-| Secrets configuratie | [docs/secrets.md](docs/secrets.md) |
+| Secrets configuration | [docs/secrets.md](docs/secrets.md) |
 | Deployment | [docs/deployment.md](docs/deployment.md) |
 | Merge workflow (Lovable → Main) | [docs/merge-workflow.md](docs/merge-workflow.md) |
 | Commands cheat sheet | [docs/commands.md](docs/commands.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
-| E-mailtemplates & SMTP | [docs/email-templates.md](docs/email-templates.md) |
-| Stripe SEPA-incasso | [docs/integrations/stripe-incasso.md](docs/integrations/stripe-incasso.md) |
+| Email templates & SMTP | [docs/email-templates.md](docs/email-templates.md) |
+| Stripe SEPA direct debit | [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md) |
 
-> Het bestand [`stripe-lesgeld-incasso-plan.md`](stripe-lesgeld-incasso-plan.md) is een **historisch planningsdocument** (mei 2026) en niet langer leidend. De actuele beschrijving van de Stripe-flow staat in [docs/integrations/stripe-incasso.md](docs/integrations/stripe-incasso.md).
+> [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is a **historical planning document** (May 2026) and is no longer authoritative. The current Stripe flow is described in [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md).
 
 ## License
 

@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react';
-import { LuMusic } from 'react-icons/lu';
+import { BrandLockup } from '@/components/layout/BrandLockup';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
 import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
 import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
@@ -32,14 +32,8 @@ export function PublicSignupLayout(props: PublicSignupLayoutProps) {
 		<div className="min-h-screen bg-background py-8 px-4">
 			<div className="max-w-2xl mx-auto">
 				<header className="text-center mb-8">
-					<div className="inline-flex items-center gap-2 mb-3">
-						<div className="h-10 w-10 rounded-lg bg-primary text-primary-foreground flex items-center justify-center">
-							<LuMusic className="h-5 w-5" />
-						</div>
-						<span className="text-xl font-bold">
-							<span className="text-primary uppercase">POP</span>
-							<span className="lowercase">school Harderwijk</span>
-						</span>
+					<div className="mb-3 flex justify-center">
+						<BrandLockup />
 					</div>
 					<h1 className="text-3xl font-bold">Aanmelden voor lessen</h1>
 					<p className="text-muted-foreground mt-2">Stap {props.step} van 3</p>

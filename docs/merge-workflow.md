@@ -1,35 +1,35 @@
 # Merge Workflow: Lovable → Main
 
-## Stap 1: Lokale voorbereiding (CLI)
+## Step 1: Local preparation (CLI)
 
 ```bash
-# Switch naar lovable branch
+# Switch to lovable branch
 git switch lovable
 
-# Haal laatste wijzigingen van remote op (fetch)
+# Fetch latest remote changes
 git fetch origin
 
-# Rebase lovable op de nieuwste origin/main (lineair, geen merge commit)
+# Rebase lovable onto the latest origin/main (linear, no merge commit)
 git rebase origin/main
 
-# --- Mogelijke situatie: rebase conflicts ---
-# Als je een conflict krijgt in src/integrations/supabase/types.ts:
-# 1. Herstel conflict door types opnieuw te genereren:
+# --- Possible situation: rebase conflicts ---
+# If you get a conflict in src/integrations/supabase/types.ts:
+# 1. Resolve by regenerating types:
 #    supabase gen types typescript --linked > src/integrations/supabase/types.ts
-# 2. Laat Biome types netjes formatteren
+# 2. Let Biome format types
 #    biome check --write src/integrations/supabase/types.ts
-# 3. Voeg file toe en ga verder met rebase
+# 3. Stage the file and continue the rebase
 #    git add src/integrations/supabase/types.ts
 #    git rebase --continue
-# Herhaal indien meerdere commits conflicten geven
+# Repeat if multiple commits conflict
 
-# Types opnieuw genereren na andere wijzigingen (nooit overslaan)
+# Regenerate types after other changes (never skip)
 bun run db:reset
 
-# Run Biome fix voor de rest van de code (format + lint autofix)
+# Run Biome fix for the rest of the code (format + lint autofix)
 bun run fix
 
-# Commit en push eventuele fixes
+# Commit and push any fixes
 git add .
 git commit -m "fix: regenerate and format Supabase types, lint fixes"
 git push --force-with-lease origin lovable
@@ -37,45 +37,45 @@ git push --force-with-lease origin lovable
 
 ---
 
-## Stap 2: Open Pull Request op GitHub
+## Step 2: Open a Pull Request on GitHub
 
-- Ga naar repository op GitHub
-- Klik "Compare & pull request" of maak nieuwe PR
+- Go to the repository on GitHub
+- Click "Compare & pull request" or create a new PR
 - Base: `main` ← Compare: `lovable`
-- Voeg beschrijving toe van de wijzigingen
+- Add a description of the changes
 
 ---
 
-## Stap 3: Wacht op CI Checks
+## Step 3: Wait for CI Checks
 
-| Check | Beschrijving |
-|-------|--------------|
-| **Biome Linting** | Code formatting en linting |
+| Check | Description |
+|-------|-------------|
+| **Biome Linting** | Code formatting and linting |
 | **Unit Tests** | Tests in `tests/code/` |
-| **Supabase Tests** | RLS + Auth tests tegen **mcp-test** in CI (bij wijzigingen in supabase/** of tests/**) |
+| **Supabase Tests** | RLS + Auth tests against **mcp-test** in CI (on changes in supabase/** or tests/**) |
 
 ---
 
-## Stap 4: Review en Fix
+## Step 4: Review and Fix
 
-- Bekijk CI resultaten in de PR
-- Fix eventuele failures lokaal en push opnieuw
-
----
-
-## Stap 5: Merge de PR
-
-- Kies "Squash and merge" of "Merge commit"
-- **Delete lovable branch NIET!**
+- Check CI results in the PR
+- Fix any failures locally and push again
 
 ---
 
-## Stap 6: Post-merge Sync
+## Step 5: Merge the PR
+
+- Choose "Squash and merge" or "Merge commit"
+- **Do NOT delete the lovable branch!**
+
+---
+
+## Step 6: Post-merge Sync
 
 ```bash
-# Reset lovable branch naar main (verliest Lovable history awareness!)
+# Reset lovable branch to main (loses Lovable history awareness!)
 git checkout -B lovable origin/main
 git push -u origin lovable --force
 ```
 
-> ⚠️ **Let op**: Deze force push reset de lovable branch volledig naar main. Lovable verliest hierdoor awareness van eerdere commits op de lovable branch.
+> ⚠️ **Note**: This force push fully resets the lovable branch to main. Lovable then loses awareness of earlier commits on the lovable branch.
