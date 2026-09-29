@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-labels';
 import {
 	assembleTeacherDashboardData,
 	buildTeacherDashboardStatItems,
@@ -44,28 +44,24 @@ describe('buildTeacherDashboardStatItems', () => {
 				key: 'myStudents',
 				title: NAV_LABELS.myStudents,
 				value: 2,
-				icon: NAV_ICONS.myStudents,
 				href: '/students/my-students',
 			},
 			{
 				key: 'agreements',
 				title: NAV_LABELS.agreements,
 				value: 3,
-				icon: NAV_ICONS.agreements,
 				href: '/agenda',
 			},
 			{
 				key: 'lessonGroups',
 				title: NAV_LABELS.lessonGroups,
 				value: 1,
-				icon: NAV_ICONS.lessonGroups,
 				href: '/agenda',
 			},
 			{
 				key: 'myAvailability',
 				title: NAV_LABELS.myAvailability,
 				value: 4,
-				icon: NAV_ICONS.myAvailability,
 				href: '/teachers/my-availability',
 			},
 		]);

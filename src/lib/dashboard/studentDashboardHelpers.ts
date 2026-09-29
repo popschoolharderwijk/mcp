@@ -1,5 +1,5 @@
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_LABELS } from '@/config/nav-labels';
 import type { Enums } from '@/integrations/supabase/types';
 import { type DashboardStatItem, inactiveCountDescription } from '@/lib/dashboard/dashboardStatsGridHelpers';
 import type { InvoiceStatus } from '@/lib/invoices/types';
@@ -91,7 +91,6 @@ export function buildStudentDashboardStatItems(stats: StudentDashboardStats): Da
 			key: 'agreements',
 			title: NAV_LABELS.agreements,
 			value: stats.activeAgreements,
-			icon: NAV_ICONS.agreements,
 			href: '/students/my-profile',
 			description: inactiveCountDescription(stats.inactiveAgreements),
 		},
@@ -99,14 +98,12 @@ export function buildStudentDashboardStatItems(stats: StudentDashboardStats): Da
 			key: 'myInvoices',
 			title: NAV_LABELS.myInvoices,
 			value: stats.openInvoices,
-			icon: NAV_ICONS.myInvoices,
 			href: '/my-invoices',
 		},
 		{
 			key: 'myTrial',
 			title: NAV_LABELS.myTrial,
 			value: stats.trialCount,
-			icon: NAV_ICONS.myTrial,
 			href: '/my-trial',
 			description: trialStatusDescription(stats.trialStatus),
 		},

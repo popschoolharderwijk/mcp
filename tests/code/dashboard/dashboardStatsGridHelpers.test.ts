@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-labels';
 import type { DashboardStats } from '../../../src/lib/dashboard/dashboardDataHelpers';
 import {
 	buildDashboardStatItems,
@@ -19,20 +19,18 @@ const stats: DashboardStats = {
 };
 
 describe('buildDashboardStatItems', () => {
-	it('uses canonical nav labels, icons and values', () => {
+	it('uses canonical nav labels and values', () => {
 		expect(buildDashboardStatItems(stats)).toEqual([
 			{
 				key: 'students',
 				title: NAV_LABELS.students,
 				value: 10,
-				icon: NAV_ICONS.students,
 				href: '/students',
 			},
 			{
 				key: 'agreements',
 				title: NAV_LABELS.agreements,
 				value: 7,
-				icon: NAV_ICONS.agreements,
 				href: '/agreements',
 				description: '2 inactief',
 			},
@@ -40,28 +38,24 @@ describe('buildDashboardStatItems', () => {
 				key: 'signupRequests',
 				title: NAV_LABELS.signupRequests,
 				value: 3,
-				icon: NAV_ICONS.signupRequests,
 				href: '/signup-requests',
 			},
 			{
 				key: 'teachers',
 				title: NAV_LABELS.teachers,
 				value: 3,
-				icon: NAV_ICONS.teachers,
 				href: '/teachers',
 			},
 			{
 				key: 'availability',
 				title: NAV_LABELS.availability,
 				value: 12,
-				icon: NAV_ICONS.availability,
 				href: '/teachers/availability',
 			},
 			{
 				key: 'lessonTypes',
 				title: NAV_LABELS.lessonTypes,
 				value: 4,
-				icon: NAV_ICONS.lessonTypes,
 				href: '/lesson-types',
 			},
 		]);
@@ -72,7 +66,6 @@ describe('buildDashboardStatItems', () => {
 			key: 'agreements',
 			title: NAV_LABELS.agreements,
 			value: 7,
-			icon: NAV_ICONS.agreements,
 			href: '/agreements',
 			description: undefined,
 		});
@@ -91,15 +84,15 @@ describe('inactiveCountDescription', () => {
 
 describe('dashboardStatsGridClass', () => {
 	it('uses three columns for student-sized grids', () => {
-		expect(dashboardStatsGridClass(3)).toBe('grid gap-3 md:grid-cols-2 lg:grid-cols-3');
+		expect(dashboardStatsGridClass(3)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-3');
 	});
 
 	it('uses four columns for teacher-sized grids', () => {
-		expect(dashboardStatsGridClass(4)).toBe('grid gap-3 md:grid-cols-2 lg:grid-cols-4');
+		expect(dashboardStatsGridClass(4)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-4');
 	});
 
 	it('uses six columns for privileged grids', () => {
-		expect(dashboardStatsGridClass(6)).toBe('grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6');
+		expect(dashboardStatsGridClass(6)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6');
 	});
 });
 
