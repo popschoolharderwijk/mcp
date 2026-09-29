@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 — 2026-09-29
+
+- Nieuwe **Mplifi**-huisstijl: logo, favicon en gouden merkkleur
+- Overzichtspagina's met vaste kop, korte toelichting
+
 ## 1.0.1 — 2026-09-15
 
 - Dashboard voor **docenten** en **leerlingen**
