@@ -36,14 +36,18 @@ export function UserDisplay({ profile, showEmail = false, nameSuffix, className,
 	const initials = getUserInitials(profile);
 
 	return (
-		<div className={cn('flex items-center gap-3', className)}>
+		<div className={cn('flex min-w-0 w-full items-center gap-3', className)}>
 			<Avatar className="h-8 w-8 flex-shrink-0">
 				<AvatarImage src={profile.avatar_url ?? undefined} alt={displayName} />
 				<AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
 			</Avatar>
 			<div className="min-w-0 flex-1 text-left">
 				{href ? (
-					<Link to={href} className="hover:underline text-primary" onClick={(e) => e.stopPropagation()}>
+					<Link
+						to={href}
+						className="block min-w-0 hover:underline text-primary"
+						onClick={(e) => e.stopPropagation()}
+					>
 						<p className="font-medium truncate text-sm">
 							{displayName}
 							{nameSuffix}
