@@ -3,7 +3,8 @@ alwaysApply: true
 ---
 
 * Documentation (`./docs/`, `README.md`, and other project markdown) should always be written in English.
-* Code and code comments should always be written in English
+* Code, code comments, and file names should always be written in English.
+* Supabase identifiers (tables, columns, RPCs, indexes, policies, migration filenames) should always be English.
 * Front-end UI Elements (labels, buttons, error messages, placeholders) should always be written in Dutch. `CHANGELOG.md` and HTML email templates for users (`docs/email-templates/`) are UI copy and stay Dutch.
 * Tools, CLI tools should always be completely written in English (output, input and code)
 * **Icons**: Use only **react-icons** (e.g. `react-icons/lu`, `react-icons/fi`); do **not** use `lucide-react`.
