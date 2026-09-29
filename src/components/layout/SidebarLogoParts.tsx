@@ -1,45 +1,35 @@
-import { LuChevronLeft, LuMusic } from 'react-icons/lu';
+import type { MouseEvent } from 'react';
+import { LuChevronLeft } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-interface SidebarLogoBrandProps {
-	collapsed: boolean;
-}
-
-export function SidebarLogoBrand({ collapsed }: SidebarLogoBrandProps) {
-	return (
-		<>
-			<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-				<LuMusic className="h-5 w-5" />
-			</div>
-			{!collapsed && (
-				<div className="flex flex-col">
-					<span className="text-lg font-bold leading-tight">
-						<span className="text-primary uppercase">POP</span>
-						<span className="text-sidebar-foreground lowercase">school</span>
-					</span>
-					<span className="text-[10px] uppercase tracking-widest text-muted-foreground leading-tight mt-0.5">
-						HARDERWIJK
-					</span>
-				</div>
-			)}
-		</>
-	);
-}
 
 interface SidebarLogoToggleButtonProps {
 	collapsed: boolean;
 	onToggle?: () => void;
 }
 
+const collapsedToggleClassName =
+	'absolute left-1/2 top-1/2 z-10 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-lg text-primary-foreground opacity-0 transition-opacity hover:bg-primary hover:opacity-100 group-hover:bg-primary group-hover:opacity-100 focus-visible:ring-0 focus-visible:ring-offset-0';
+
 export function SidebarLogoToggleButton({ collapsed, onToggle }: SidebarLogoToggleButtonProps) {
 	const className = collapsed
-		? 'absolute right-2 top-4 h-8 w-8 text-muted-foreground hover:text-foreground'
+		? collapsedToggleClassName
 		: 'ml-auto h-8 w-8 text-muted-foreground hover:text-foreground';
 
+	function handleToggle(event: MouseEvent<HTMLButtonElement>) {
+		onToggle?.();
+		event.currentTarget.blur();
+	}
+
 	return (
-		<Button variant="ghost" size="icon" className={className} onClick={onToggle}>
-			<LuChevronLeft className={cn('h-4 w-4 transition-transform', collapsed && 'rotate-180')} />
+		<Button
+			variant="ghost"
+			size="icon"
+			className={className}
+			onClick={handleToggle}
+			aria-label={collapsed ? 'Zijbalk uitklappen' : 'Zijbalk inklappen'}
+		>
+			<LuChevronLeft className={cn('h-4 w-4', collapsed && 'rotate-180')} />
 		</Button>
 	);
 }

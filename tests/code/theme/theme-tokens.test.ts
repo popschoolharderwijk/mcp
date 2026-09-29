@@ -78,6 +78,14 @@ describe('theme-tokens.css', () => {
 		expect(hslChannelsToHex(39.2, 37.9, 62.7)).toBe(PRIMARY_HEX);
 	});
 
+	it('uses PRIMARY_HEX in production and local favicons', () => {
+		const publicDir = join(import.meta.dir, '../../../public');
+		const production = readFileSync(join(publicDir, 'favicon.svg'), 'utf8');
+		const local = readFileSync(join(publicDir, 'favicon-local.svg'), 'utf8');
+		expect(production).toContain(`fill="${PRIMARY_HEX}"`);
+		expect(local).toContain(`fill="${PRIMARY_HEX}"`);
+	});
+
 	it('requires a .dark counterpart for each HSL literal in :root (scoped exclusions)', () => {
 		const missingInDark: string[] = [];
 		for (const [name, value] of rootTokens) {
