@@ -92,6 +92,13 @@ describe('getAgendaEventIconColorClass', () => {
 			getAgendaEventIconColorClass(null, null, baseResource({ isGroupLesson: true, lessonTypeColor: null })),
 		).toBe('text-agenda-group-foreground');
 	});
+
+	it('returns muted foreground in list agenda regardless of event colors', () => {
+		expect(getAgendaEventIconColorClass('#000000', null, baseResource(), 'agenda')).toBe('text-muted-foreground');
+		expect(
+			getAgendaEventIconColorClass(null, null, baseResource({ type: 'agreement', lessonTypeColor: null }), 'agenda'),
+		).toBe('text-muted-foreground');
+	});
 });
 
 describe('buildAgendaEventTypeFlags and resolveAgendaEventIconType', () => {
