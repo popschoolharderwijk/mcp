@@ -69,6 +69,15 @@ export default {
 					DEFAULT: 'hsl(var(--info))',
 					foreground: 'hsl(var(--info-foreground))',
 				},
+				'agenda-lesson': {
+					foreground: 'hsl(var(--agenda-lesson-foreground))',
+				},
+				'agenda-manual': {
+					foreground: 'hsl(var(--agenda-manual-foreground))',
+				},
+				'agenda-group': {
+					foreground: 'hsl(var(--agenda-group-foreground))',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

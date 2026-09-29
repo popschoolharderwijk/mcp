@@ -10,6 +10,15 @@ alwaysApply: true
 * For loading spinners, always use `LuLoaderCircle` from `react-icons/lu` with `animate-spin` class.
 * Never use `any`, always deduce the required type and use that.
 
+## Theme colors and brand hex
+
+* **Canonical CSS:** [`src/styles/theme-tokens.css`](../../src/styles/theme-tokens.css) — edit `:root` / `.dark` here for rebrand; do not duplicate HSL in components.
+* **DOM / agenda defaults:** use `hsl(var(--…))` or `var(--agenda-*-border)` strings from [`agenda-default-style-vars.ts`](../../src/lib/agenda/agenda-default-style-vars.ts); custom user/lesson-type hex keeps [`color-utils`](../../src/lib/color/color-utils.ts).
+* **Hex outside the browser** (mail, PDF, HexColorPicker fallback): [`brand-hex.ts`](../../src/lib/color/brand-hex.ts) `PRIMARY_HEX` with edge mirrors in `invoicePure.ts` / `buildPdfPure.ts` (mirror-comments required).
+* **Agenda icon classes:** use `agendaDefaultForegroundClass` (literal Tailwind class strings — no template literals for JIT).
+* **Custom-colored agenda icons:** allowlist `text-gray-900` / `text-white` only when derived from user hex via `isLightColor`.
+* See [`docs/huisstijl-tokens.md`](../../docs/huisstijl-tokens.md).
+
 ## End pages (detail pages)
 
 **End pages** are detail pages for a single entity: e.g. TeacherInfo, LessonTypeInfo, a student detail page, AgreementWizard for one agreement. For these pages:

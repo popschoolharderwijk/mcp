@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'bun:test';
+import { PRIMARY_HEX } from '../../../src/lib/color/brand-hex';
 import {
 	buildCompanyBlockLines,
 	buildPdfPaymentNoteText,
+	PDF_ORANGE_RGB,
 	resolveBillToCityLine,
 	resolveBillToEmail,
 	resolveBillToName,
@@ -22,6 +24,20 @@ const student = {
 	debtor_city: 'Harderwijk',
 	debtor_info_same_as_student: false,
 };
+
+function normalizedRgbToHex(red: number, green: number, blue: number): string {
+	const toHex = (n: number) =>
+		Math.round(Math.min(255, Math.max(0, n * 255)))
+			.toString(16)
+			.padStart(2, '0');
+	return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
+}
+
+describe('PDF_ORANGE_RGB', () => {
+	it('matches PRIMARY_HEX brand orange', () => {
+		expect(normalizedRgbToHex(PDF_ORANGE_RGB.red, PDF_ORANGE_RGB.green, PDF_ORANGE_RGB.blue)).toBe(PRIMARY_HEX);
+	});
+});
 
 describe('buildCompanyBlockLines', () => {
 	it('builds company lines from settings', () => {

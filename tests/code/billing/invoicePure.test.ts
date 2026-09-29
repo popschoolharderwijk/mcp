@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { PRIMARY_HEX } from '../../../src/lib/color/brand-hex';
 import {
 	buildInvoiceEmailDeliveryContent,
 	buildInvoiceEmailHtml,
@@ -13,6 +14,7 @@ import {
 	filterStudentItems,
 	getCollectionDate,
 	hasAdminRole,
+	INVOICE_MAIL_PRIMARY_HEX,
 	isServiceRoleToken,
 	readInvoiceMailEnv,
 	resolveAgeCategory,
@@ -321,6 +323,18 @@ describe('buildInvoiceEmailHtml', () => {
 				companyName: 'PopSchool',
 			}),
 		).toContain('<strong>INV-001</strong>');
+	});
+
+	it('uses mail header hex mirrored from PRIMARY_HEX', () => {
+		expect(INVOICE_MAIL_PRIMARY_HEX.toLowerCase()).toBe(PRIMARY_HEX);
+		const html = buildInvoiceEmailHtml({
+			firstName: 'Anna',
+			invoiceNumber: 'INV-001',
+			totalFormatted: '€ 25,00',
+			paymentNote: '',
+			companyName: 'PopSchool',
+		});
+		expect(html).toContain(`background:${INVOICE_MAIL_PRIMARY_HEX}`);
 	});
 });
 

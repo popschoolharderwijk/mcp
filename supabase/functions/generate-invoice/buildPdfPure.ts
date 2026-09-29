@@ -1,4 +1,15 @@
+// Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep PDF orange in sync; see buildPdfPure.test.ts
+
 import type { StudentInfo } from './types.ts';
+
+/** Normalized sRGB for pdf-lib rgb(); matches brand orange #f97316 */
+export const PDF_ORANGE_RGB = { red: 0.976, green: 0.451, blue: 0.086 } as const;
+
+export const PDF_GRAY_TEXT_RGB = { red: 0.3, green: 0.3, blue: 0.3 } as const;
+
+export const PDF_BLACK_RGB = { red: 0.1, green: 0.1, blue: 0.1 } as const;
+
+export const PDF_WHITE_RGB = { red: 1, green: 1, blue: 1 } as const;
 
 export function buildCompanyBlockLines(settings: Record<string, unknown>): string[] {
 	return [

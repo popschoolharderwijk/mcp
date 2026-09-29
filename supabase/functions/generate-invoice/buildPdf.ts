@@ -2,6 +2,10 @@ import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from 'npm
 import {
 	buildCompanyBlockLines,
 	buildPdfPaymentNoteText,
+	PDF_BLACK_RGB,
+	PDF_GRAY_TEXT_RGB,
+	PDF_ORANGE_RGB,
+	PDF_WHITE_RGB,
 	resolveBillToCityLine,
 	resolveBillToEmail,
 	resolveBillToName,
@@ -10,10 +14,10 @@ import {
 import { fmtDateNL, fmtEUR, wrap } from './format.ts';
 import type { InvoiceLine, InvoiceTotals, StudentInfo } from './types.ts';
 
-const ORANGE = rgb(0.976, 0.451, 0.086);
-const GRAY_TEXT = rgb(0.3, 0.3, 0.3);
-const BLACK = rgb(0.1, 0.1, 0.1);
-const WHITE = rgb(1, 1, 1);
+const ORANGE = rgb(PDF_ORANGE_RGB.red, PDF_ORANGE_RGB.green, PDF_ORANGE_RGB.blue);
+const GRAY_TEXT = rgb(PDF_GRAY_TEXT_RGB.red, PDF_GRAY_TEXT_RGB.green, PDF_GRAY_TEXT_RGB.blue);
+const BLACK = rgb(PDF_BLACK_RGB.red, PDF_BLACK_RGB.green, PDF_BLACK_RGB.blue);
+const WHITE = rgb(PDF_WHITE_RGB.red, PDF_WHITE_RGB.green, PDF_WHITE_RGB.blue);
 
 interface PdfFonts {
 	font: PDFFont;

@@ -19,7 +19,7 @@ export function AgendaEvent({ event, title }: AgendaEventProps) {
 	const iconType = resolveAgendaEventIconType(typeFlags);
 	const isTeacherCancelled = isCancelled && cancellationType === 'teacher';
 	const displayTitle = getAgendaEventDisplayTitle(view ?? 'week', event.start, title);
-	const iconColorClass = getAgendaEventIconColorClass(color, lessonTypeColor);
+	const iconColorClass = getAgendaEventIconColorClass(color, lessonTypeColor, event.resource);
 	const durationMinutes = getEventDurationMinutes(event.start, event.end);
 	const lineClampClass = getLineClampClassForDuration(durationMinutes);
 

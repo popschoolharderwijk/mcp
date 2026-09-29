@@ -1,3 +1,5 @@
+// Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep mail header in sync; see invoicePure.test.ts
+
 import { ageAtDate } from './format.ts';
 import type {
 	BatchItem,
@@ -8,6 +10,9 @@ import type {
 	StudentInfo,
 	StudentRow,
 } from './types.ts';
+
+/** Mail HTML header background; must match src/lib/color/brand-hex.ts PRIMARY_HEX */
+export const INVOICE_MAIL_PRIMARY_HEX = '#f97316';
 
 export function buildStudentInfo(sid: string, profile: ProfileRow, stRow: StudentRow | undefined): StudentInfo {
 	return {
@@ -118,7 +123,7 @@ export function buildInvoiceEmailHtml(args: {
 	companyName: string;
 }): string {
 	return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
-<div style="background:#F97316;padding:18px 24px;color:#fff;font-weight:700;font-size:18px">popschool harderwijk</div>
+<div style="background:${INVOICE_MAIL_PRIMARY_HEX};padding:18px 24px;color:#fff;font-weight:700;font-size:18px">popschool harderwijk</div>
 <div style="padding:24px;background:#fff;color:#111">
 <p>Beste ${args.firstName ?? 'leerling'},</p>
 <p>Hierbij ontvang je factuur <strong>${args.invoiceNumber}</strong> ten bedrage van <strong>${args.totalFormatted}</strong>.</p>

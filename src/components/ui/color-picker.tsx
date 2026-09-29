@@ -4,6 +4,7 @@ import { LuPipette } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { PRIMARY_HEX } from '@/lib/color/brand-hex';
 import { cn } from '@/lib/utils';
 
 interface ColorPickerProps {
@@ -62,9 +63,10 @@ export function ColorPicker({
 						className={cn(
 							'h-6 w-6 rounded-full border-2 border-border hover:border-primary transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
 							disabled && 'opacity-50 cursor-not-allowed hover:border-border',
+							!displayColor && 'bg-primary',
 							className,
 						)}
-						style={{ backgroundColor: displayColor || '#3b82f6' }}
+						style={displayColor ? { backgroundColor: displayColor } : undefined}
 						aria-label="Kies kleur"
 					/>
 				) : (
@@ -93,14 +95,14 @@ export function ColorPicker({
 			<PopoverContent className="w-[280px] p-3" align="start">
 				<div className="space-y-3">
 					<HexColorPicker
-						color={displayColor || '#3b82f6'}
+						color={displayColor || PRIMARY_HEX}
 						onChange={handlePickerChange}
 						style={{ width: '100%' }}
 					/>
 					<div className="flex items-center gap-2">
 						<div
-							className="h-8 w-8 rounded-md border shrink-0"
-							style={{ backgroundColor: displayColor || '#ffffff' }}
+							className={cn('h-8 w-8 rounded-md border shrink-0', !displayColor && 'bg-background')}
+							style={displayColor ? { backgroundColor: displayColor } : undefined}
 						/>
 						<Input
 							value={hexInput}
