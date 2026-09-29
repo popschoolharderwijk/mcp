@@ -3,7 +3,7 @@ import { PRIMARY_HEX } from '../../../src/lib/color/brand-hex';
 import {
 	buildCompanyBlockLines,
 	buildPdfPaymentNoteText,
-	PDF_ORANGE_RGB,
+	PDF_RGB,
 	resolveBillToCityLine,
 	resolveBillToEmail,
 	resolveBillToName,
@@ -33,9 +33,9 @@ function normalizedRgbToHex(red: number, green: number, blue: number): string {
 	return `#${toHex(red)}${toHex(green)}${toHex(blue)}`;
 }
 
-describe('PDF_ORANGE_RGB', () => {
-	it('matches PRIMARY_HEX brand orange', () => {
-		expect(normalizedRgbToHex(PDF_ORANGE_RGB.red, PDF_ORANGE_RGB.green, PDF_ORANGE_RGB.blue)).toBe(PRIMARY_HEX);
+describe('PDF_RGB', () => {
+	it('matches PRIMARY_HEX brand primary', () => {
+		expect(normalizedRgbToHex(PDF_RGB.red, PDF_RGB.green, PDF_RGB.blue)).toBe(PRIMARY_HEX);
 	});
 });
 

@@ -4,7 +4,7 @@ import {
 	buildPdfPaymentNoteText,
 	PDF_BLACK_RGB,
 	PDF_GRAY_TEXT_RGB,
-	PDF_ORANGE_RGB,
+	PDF_RGB,
 	PDF_WHITE_RGB,
 	resolveBillToCityLine,
 	resolveBillToEmail,
@@ -14,7 +14,7 @@ import {
 import { fmtDateNL, fmtEUR, wrap } from './format.ts';
 import type { InvoiceLine, InvoiceTotals, StudentInfo } from './types.ts';
 
-const ORANGE = rgb(PDF_ORANGE_RGB.red, PDF_ORANGE_RGB.green, PDF_ORANGE_RGB.blue);
+const HEADER_FILL = rgb(PDF_RGB.red, PDF_RGB.green, PDF_RGB.blue);
 const GRAY_TEXT = rgb(PDF_GRAY_TEXT_RGB.red, PDF_GRAY_TEXT_RGB.green, PDF_GRAY_TEXT_RGB.blue);
 const BLACK = rgb(PDF_BLACK_RGB.red, PDF_BLACK_RGB.green, PDF_BLACK_RGB.blue);
 const WHITE = rgb(PDF_WHITE_RGB.red, PDF_WHITE_RGB.green, PDF_WHITE_RGB.blue);
@@ -33,7 +33,7 @@ interface PdfLayout {
 
 function drawHeader(layout: PdfLayout, companyName: string): void {
 	const { page, width, margin, fonts } = layout;
-	page.drawRectangle({ x: 0, y: 791, width, height: 50, color: ORANGE });
+	page.drawRectangle({ x: 0, y: 791, width, height: 50, color: HEADER_FILL });
 	page.drawText(companyName, { x: margin, y: 808, size: 20, font: fonts.bold, color: WHITE });
 	page.drawText('FACTUUR', { x: width - margin - 90, y: 808, size: 20, font: fonts.bold, color: WHITE });
 }
@@ -77,7 +77,7 @@ function drawInvoiceMeta(
 function drawBillTo(layout: PdfLayout, student: StudentInfo): void {
 	const { page, margin, fonts } = layout;
 	let y = 660;
-	page.drawText('Factuuradres', { x: margin, y, size: 10, font: fonts.bold, color: ORANGE });
+	page.drawText('Factuuradres', { x: margin, y, size: 10, font: fonts.bold, color: HEADER_FILL });
 	y -= 14;
 
 	const useDebtor = shouldUseDebtorBillTo(student);
@@ -172,7 +172,13 @@ function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number)
 		ty -= 14;
 	}
 
-	page.drawRectangle({ x: totalsX - 6, y: ty - 4, width: width - margin - totalsX + 6, height: 22, color: ORANGE });
+	page.drawRectangle({
+		x: totalsX - 6,
+		y: ty - 4,
+		width: width - margin - totalsX + 6,
+		height: 22,
+		color: HEADER_FILL,
+	});
 	page.drawText('TOTAAL', { x: totalsX, y: ty + 4, size: 11, font: fonts.bold, color: WHITE });
 	page.drawText(fmtEUR(totals.total), {
 		x: width - margin - 60,

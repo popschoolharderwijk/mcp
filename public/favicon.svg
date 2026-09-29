@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="POPschool">
-	<rect width="32" height="32" rx="8" fill="hsl(24, 95%, 53%)" />
+	<rect width="32" height="32" rx="8" fill="#c4ab7c" />
 	<g
 		transform="translate(6, 6) scale(0.833)"
 		fill="none"

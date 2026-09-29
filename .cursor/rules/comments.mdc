@@ -4,14 +4,35 @@ alwaysApply: true
 
 # Comments
 
-Write as if a first-time reader opened this file (code, docs, skills, rules). Add a comment only when it provides context that cannot be reasonably inferred from the surrounding text.
+Write as if a first-time reader opened this file. **English** in code, tests, and config comments (see `style.mdc` for UI/docs language).
+
+Add a comment only when it explains **current** behavior or a **standing** constraint that is not obvious from the code. If the code is clear, **omit** the comment.
 
 ## NEVER
 
-* Comments that exist because you just changed something ("no longer X", "we used to Y", "do not do Z — we removed Z")
-* Restating what the next line does
-* Documenting the absence of a deleted feature or an alternative you did not take
+* **Change log or legacy contrast** — do not describe how the code differs from an earlier version, a removed approach, or a bug you fixed ("no longer X", "we used to Y", "instead of hsl(...)", "after the refactor")
+* **Restate the next line** — what the code already says plainly
+* **Absent features or rejected alternatives** — do not document what you did not implement or deleted
+* **Config noise** — do not explain a Tailwind/CSS mapping in a comment when the rule belongs in `.cursor/rules/` or `docs/` (e.g. token shape conventions)
 
 ## ALWAYS
 
-* Comment only standing invariants a first-time reader would otherwise miss: non-obvious constraints or why the obvious approach is wrong.
+* Describe **what this code does now** and **why**, only when a reader would miss it without the comment
+* Prefer **invariants** readers must respect: non-obvious constraints, domain rules, or why the obvious approach is wrong **in this codebase**
+* Put **cross-file conventions** (token formats, mirror files, drift tests) in rules/docs — not repeated above every usage
+
+## Examples
+
+```ts
+// BAD: documents a diff, not current behavior
+// --accent is color-mix(...), not HSL channels (we fixed hover)
+
+// BAD: narrates the edit
+// Moved getContrastTextColor into the custom branch only
+
+// GOOD: standing invariant
+// Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see invoicePure.test.ts
+
+// GOOD: omit — obvious
+const kind = resolveAgendaDefaultKind(resource) ?? 'lesson';
+```

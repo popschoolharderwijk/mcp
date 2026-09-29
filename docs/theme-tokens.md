@@ -6,17 +6,20 @@ Alle semantische kleuren staan in [`src/styles/theme-tokens.css`](../src/styles/
 
 Wijzig geen HSL-waarden in Tailwind-config of inline in componenten voor themakleuren — pas `theme-tokens.css` aan.
 
-## Merkoranje buiten de browser
+Hover/selectie (`--accent`, o.a. sidebar `hover:bg-accent`) is een `color-mix` van `--primary` met `--background` (geen HSL-kanalen). Tailwind gebruikt `var(--accent)`, niet `hsl(var(--accent))`. Wijzig primary, dan volgt hover mee.
+
+## Merkkleur buiten de browser
 
 Sommige kanalen kunnen geen `hsl(var(--primary))` gebruiken (mail-HTML, PDF). Daarvoor geldt:
 
 | Bestand | Rol |
 |---------|-----|
 | [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts) | `PRIMARY_HEX` (web + HexColorPicker-fallback) |
+| [`public/favicon.svg`](../public/favicon.svg), [`public/favicon-local.svg`](../public/favicon-local.svg) | Tabblad-icoon (hex in SVG) |
 | [`supabase/functions/generate-invoice/invoicePure.ts`](../supabase/functions/generate-invoice/invoicePure.ts) | Spiegel voor mailheader |
-| [`supabase/functions/generate-invoice/buildPdfPure.ts`](../supabase/functions/generate-invoice/buildPdfPure.ts) | Spiegel voor PDF-oranje (`PDF_ORANGE_RGB`) |
+| [`supabase/functions/generate-invoice/buildPdfPure.ts`](../supabase/functions/generate-invoice/buildPdfPure.ts) | Spiegel voor PDF-header (`PDF_RGB`) |
 
-Bij wijziging van `--primary` / merkoranje: **alle drie** spiegels + mirror-comments bijwerken. Drift-tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
+Bij wijziging van `--primary` / merkkleur: **alle drie** spiegels + mirror-comments bijwerken. Drift-tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
 
 ## Agenda
 

@@ -1,9 +1,13 @@
-// Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep PDF orange in sync; see buildPdfPure.test.ts
+// Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep PDF header fill in sync; see buildPdfPure.test.ts
 
 import type { StudentInfo } from './types.ts';
 
-/** Normalized sRGB for pdf-lib rgb(); matches brand orange #f97316 */
-export const PDF_ORANGE_RGB = { red: 0.976, green: 0.451, blue: 0.086 } as const;
+/** Normalized sRGB for pdf-lib rgb(); matches brand primary #c4ab7c */
+export const PDF_RGB = {
+	red: 0.7686274509803922,
+	green: 0.6705882352941176,
+	blue: 0.48627450980392156,
+} as const;
 
 export const PDF_GRAY_TEXT_RGB = { red: 0.3, green: 0.3, blue: 0.3 } as const;
 

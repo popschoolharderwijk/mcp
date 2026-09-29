@@ -12,7 +12,7 @@ import type {
 } from './types.ts';
 
 /** Mail HTML header background; must match src/lib/color/brand-hex.ts PRIMARY_HEX */
-export const INVOICE_MAIL_PRIMARY_HEX = '#f97316';
+export const INVOICE_MAIL_PRIMARY_HEX = '#c4ab7c';
 
 export function buildStudentInfo(sid: string, profile: ProfileRow, stRow: StudentRow | undefined): StudentInfo {
 	return {

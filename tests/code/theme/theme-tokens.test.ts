@@ -5,7 +5,7 @@ import { PRIMARY_HEX } from '../../../src/lib/color/brand-hex';
 
 const THEME_TOKENS_PATH = join(import.meta.dir, '../../../src/styles/theme-tokens.css');
 
-/** HSL channel triple → #rrggbb (rounded; matches CSS --primary 24.6 95% 53.1%) */
+/** HSL channel triple → #rrggbb (rounded; matches CSS --primary 39.2 37.9% 62.7%) */
 function hslChannelsToHex(h: number, sPercent: number, lPercent: number): string {
 	const s = sPercent / 100;
 	const l = lPercent / 100;
@@ -73,9 +73,9 @@ describe('theme-tokens.css', () => {
 	it('maps --primary to PRIMARY_HEX in light and dark', () => {
 		const lightPrimary = rootTokens.get('primary');
 		const darkPrimary = darkTokens.get('primary');
-		expect(lightPrimary).toBe('24.6 95% 53.1%');
+		expect(lightPrimary).toBe('39.2 37.9% 62.7%');
 		expect(darkPrimary).toBe(lightPrimary);
-		expect(hslChannelsToHex(24.6, 95, 53.1)).toBe(PRIMARY_HEX);
+		expect(hslChannelsToHex(39.2, 37.9, 62.7)).toBe(PRIMARY_HEX);
 	});
 
 	it('requires a .dark counterpart for each HSL literal in :root (scoped exclusions)', () => {
