@@ -1,57 +1,57 @@
 # Troubleshooting
 
-## Database tests falen in CI (RLS/Auth)
+## Database tests fail in CI (RLS/Auth)
 
-1. Controleer of alle vereiste GitHub secrets aanwezig zijn: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
-2. Controleer of `supabase db reset --linked --yes` in de workflow is geslaagd (`seeds/bootstrap.sql` + `seeds/test.sql` worden dan toegepast)
-3. Verifieer dat `RESEND_API_KEY` secret is ingesteld in GitHub (voor email-tests)
-4. Voor Auth tests: controleer of password policy correct is in `config.toml`
-
----
-
-## Migraties niet toegepast
-
-1. Controleer of je lokaal `supabase db push` hebt gedraaid
-2. Check of de migratie files in `supabase/migrations/` staan
-3. Verifieer dat Supabase project correct gelinked is (`supabase link`)
+1. Check that all required GitHub secrets are present: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
+2. Check that `supabase db reset --linked --yes` succeeded in the workflow (`seeds/bootstrap.sql` + `seeds/test.sql` are then applied)
+3. Verify that the `RESEND_API_KEY` secret is set in GitHub (for email tests)
+4. For Auth tests: check that the password policy in `config.toml` is correct
 
 ---
 
-## Tests falen lokaal (RLS/Auth)
+## Migrations not applied
 
-1. Zet in je omgeving (of `.env.test`) de credentials van het project waar je tegen test: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed-users: wachtwoord `password`). Gebruik **mcp-test**-credentials om hetzelfde als CI te gebruiken, of **mcp-dev** als je daar tegen ontwikkelt.
-2. Optioneel: voor mcp-dev kun je `bun run db:reset` draaien voor een schone database met `seeds/bootstrap.sql` + `seeds/test.sql`.
+1. Check that you ran `supabase db push` locally
+2. Check that the migration files are in `supabase/migrations/`
+3. Verify that the Supabase project is linked correctly (`supabase link`)
+
+---
+
+## Tests fail locally (RLS/Auth)
+
+1. Put credentials for the project you test against in your environment (or `.env.test`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed users: password `password`). Use **mcp-test** credentials to match CI, or **mcp-dev** if you develop against that.
+2. Optional: for mcp-dev you can run `bun run db:reset` for a clean database with `seeds/bootstrap.sql` + `seeds/test.sql`.
 
 ---
 
 ## Edge Functions errors
 
 1. Check logs: https://supabase.com/dashboard/project/<project-id>/functions
-2. Verifieer secrets in Edge Function settings
-3. Test lokaal met `supabase functions serve`
+2. Verify secrets in Edge Function settings
+3. Test locally with `supabase functions serve`
 
-### verify_jwt = true geeft 401 bij POST
+### verify_jwt = true returns 401 on POST
 
-**Probleem**: Met `verify_jwt = true` in `config.toml` krijgen POST requests een 401 Unauthorized, zelfs met een geldige JWT.
+**Problem**: With `verify_jwt = true` in `config.toml`, POST requests get 401 Unauthorized even with a valid JWT.
 
-**Oorzaak**: De JWT gebruikt ES256 (asymmetrische signing), maar de Supabase Edge Runtime lijkt dit niet correct te verifiëren.
+**Cause**: The JWT uses ES256 (asymmetric signing), but the Supabase Edge Runtime does not appear to verify this correctly.
 
-**Oplossing**: Gebruik `verify_jwt = false` en verifieer de JWT handmatig in de Edge Function via `supabase.auth.getUser()`. Dit werkt correct en controleert ook de sessie-status.
+**Fix**: Use `verify_jwt = false` and verify the JWT yourself in the Edge Function via `supabase.auth.getUser()`. That works correctly and also checks session status.
 
 ```typescript
-// In de Edge Function:
+// In the Edge Function:
 const { data: { user }, error } = await supabase.auth.getUser();
 if (error || !user) {
   return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 }
 ```
 
-> 📝 Zie ook de FIXME in `supabase/config.toml` voor meer context.
+> 📝 See also the FIXME in `supabase/config.toml` for more context.
 
 ---
 
-## Email verzenden faalt
+## Email sending fails
 
-1. Controleer of `RESEND_API_KEY` correct is ingesteld
-2. Verifieer SMTP config in `supabase/config.toml`
-3. Check Resend dashboard voor delivery status
+1. Check that `RESEND_API_KEY` is set correctly
+2. Verify SMTP config in `supabase/config.toml`
+3. Check the Resend dashboard for delivery status

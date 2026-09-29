@@ -1,4 +1,4 @@
-# Architectuur
+# Architecture
 
 ## Tech Stack
 
@@ -12,122 +12,122 @@
 
 ## Database Schema
 
-### Overzicht
+### Overview
 
 ```
 auth.users
     ├── profiles        (1:1, via trigger on_auth_user_created)
-    ├── user_roles      (0..1:1, optioneel — alleen voor site_admin/admin/staff)
-    ├── students        (0..1:1, optioneel — leerling-registratie)
-    └── teachers        (0..1:1, optioneel — docent-registratie)
+    ├── user_roles      (0..1:1, optional — only for site_admin/admin/staff)
+    ├── students        (0..1:1, optional — student registration)
+    └── teachers        (0..1:1, optional — teacher registration)
 
 students ──┐
-teachers ──┼── lesson_agreements (N:M via koppeltabel)
+teachers ──┼── lesson_agreements (N:M via join table)
 lesson_types ─┘
 
-project_domains ── project_labels ── projects (eigenaar: auth.users)
+project_domains ── project_labels ── projects (owner: auth.users)
 agenda_events (source: manual | lesson_agreement | project) ── agenda_participants
 ```
 
-Agenda: `agenda_events` kan gekoppeld zijn aan een lesovereenkomst (`source_type = 'lesson_agreement'`), een project (`source_type = 'project'`) of handmatig (`source_type = 'manual'`). Deelnemers via `agenda_participants`.
+Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'lesson_agreement'`), a project (`source_type = 'project'`), or created manually (`source_type = 'manual'`). Participants go through `agenda_participants`.
 
-### Tabellen
+### Tables
 
-| Tabel | Beschrijving |
+| Table | Description |
 |-------|-------------|
-| `profiles` | Gebruikersprofiel (naam, email, telefoon, avatar). Automatisch aangemaakt via trigger bij registratie. |
-| `user_roles` | Expliciete rollen (`site_admin`, `admin`, `staff`). Eén rol per gebruiker. |
-| `students` | Leerling-registratie. **Automatisch beheerd** via triggers op `lesson_agreements`. Bevat o.a. `date_of_birth` voor BTW-leeftijdslogica. |
-| `teachers` | Docent-registratie. Koppelt een `auth.users` aan een teacher-record. |
-| `lesson_types` | Lestypes (Gitaar, Piano, …). Referentiedata, zichtbaar voor alle ingelogde gebruikers. |
-| `lesson_type_options` | Frequenties + tarieven per lestype, met aparte velden `price_per_lesson_under_21_cents` en `price_per_lesson_adult_cents`. |
-| `lesson_agreements` | Lesovereenkomsten tussen student en docent. Dag/tijd, start/einddatum, actief-status, notities, `stripe_schedule_id`. |
-| `no_lesson_periods` | Schoolvakanties / lesvrije periodes. Triggert de **verschuif-logica** in `calculateYearlyAmount` en `eventGenerators`. |
-| `project_domains` / `project_labels` / `projects` | Hierarchische projectstructuur met kostenplaats. Beheer alleen admin/site_admin. |
-| `agenda_events` | Agenda-items (handmatig, les of project). Bevat `source_type` / `source_id`, start/eind, recurring. |
-| `agenda_participants` | Koppelt deelnemers (auth.users) aan agenda_events. |
-| `agenda_event_deviations` | Afwijkingen op recurring events (verplaatsen, afzeggen, incl. `cancellation_type`). |
-| `email_templates` | App-level transactionele mailtemplates (`event_key`, `subject`, `body_html`, `is_enabled`). Beheerd via Settings UI. |
+| `profiles` | User profile (name, email, phone, avatar). Created automatically via trigger on registration. |
+| `user_roles` | Explicit roles (`site_admin`, `admin`, `staff`). One role per user. |
+| `students` | Student registration. **Managed automatically** via triggers on `lesson_agreements`. Includes `date_of_birth` for VAT age logic. |
+| `teachers` | Teacher registration. Links an `auth.users` row to a teacher record. |
+| `lesson_types` | Lesson types (Guitar, Piano, …). Reference data, visible to all signed-in users. |
+| `lesson_type_options` | Frequencies and rates per lesson type, with separate `price_per_lesson_under_21_cents` and `price_per_lesson_adult_cents`. |
+| `lesson_agreements` | Lesson agreements between student and teacher. Day/time, start/end date, active status, notes, `stripe_schedule_id`. |
+| `no_lesson_periods` | School holidays / no-lesson periods. Triggers **shift logic** in `calculateYearlyAmount` and `eventGenerators`. |
+| `project_domains` / `project_labels` / `projects` | Hierarchical project structure with cost centre. Managed by admin/site_admin only. |
+| `agenda_events` | Agenda items (manual, lesson, or project). Contains `source_type` / `source_id`, start/end, recurring. |
+| `agenda_participants` | Links participants (`auth.users`) to agenda events. |
+| `agenda_event_deviations` | Deviations on recurring events (reschedule, cancel, including `cancellation_type`). |
+| `email_templates` | App-level transactional mail templates (`event_key`, `subject`, `body_html`, `is_enabled`). Managed via the Settings UI. |
 | `stripe_customers` | 1:1 mapping `auth.users.id` ↔ `stripe_customer_id`. |
-| `subscriptions` | Spiegel van Stripe Subscription per `lesson_agreement_id` (status, periode, payment method, `stripe_schedule_id`). |
-| `subscription_invoices` | Spiegel van Stripe Invoices (bedrag, status, hosted URL, periode). |
-| `incasso_invitations` | Audit van verzonden SEPA-onboarding magic links. |
-| `accounting_settings` | Per-organisatie BTW-/grootboek instellingen (`account_btw_21`, `btw_code_21`, `btw_code_exempt`, …). |
-| `announcements` | Nieuwsberichten voor het dashboard (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publiek leesbaar zodra actief én gepubliceerd; alleen staff/admin/site_admin kan beheren. Optionele afbeeldingen in storage-bucket `announcement-images` (publiek, max 5 MB, alleen privileged kan uploaden). |
+| `subscriptions` | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`). |
+| `subscription_invoices` | Mirror of Stripe Invoices (amount, status, hosted URL, period). |
+| `incasso_invitations` | Audit of sent SEPA-onboarding magic links. |
+| `accounting_settings` | Per-organisation VAT/ledger settings (`account_btw_21`, `btw_code_21`, `btw_code_exempt`, …). |
+| `announcements` | Dashboard news (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publicly readable once active and published; only staff/admin/site_admin can manage. Optional images in the `announcement-images` storage bucket (public, max 5 MB; only privileged users can upload). |
 
 ### Views
 
-| View | Beschrijving |
+| View | Description |
 |------|-------------|
-| `view_profiles_with_display_name` | Profielgegevens met berekend `display_name`. Gebruikt `security_invoker = on` zodat RLS op profiles wordt gerespecteerd. |
+| `view_profiles_with_display_name` | Profile data with computed `display_name`. Uses `security_invoker = on` so RLS on profiles is respected. |
 
 ---
 
-## Rollen en Permissies
+## Roles and Permissions
 
-De applicatie gebruikt een role-based access control (RBAC) systeem met de volgende rollen:
+The application uses role-based access control (RBAC) with these roles:
 
-| Rol | Beschrijving |
-|-----|-------------|
-| `site_admin` | Volledige toegang, kan alle rollen beheren |
-| `admin` | Kan gebruikers en rollen beheren (behalve site_admin) |
-| `staff` | Kan gebruikersgegevens inzien, lesovereenkomsten beheren |
-| *(geen rol)* | Standaard gebruiker, alleen eigen profiel |
+| Role | Description |
+|------|-------------|
+| `site_admin` | Full access; can manage all roles |
+| `admin` | Can manage users and roles (except site_admin) |
+| `staff` | Can view user data and manage lesson agreements |
+| *(no role)* | Default user; own profile only |
 
-> 📝 **Docenten en leerlingen** worden **niet** via `user_roles` geïdentificeerd, maar via de `teachers` en `students` tabellen. Een gebruiker kan zowel een rol (admin/staff) als een teacher/student record hebben.
+> 📝 **Teachers and students** are **not** identified via `user_roles`, but via the `teachers` and `students` tables. A user can have both a role (admin/staff) and a teacher/student record.
 
-### Role Management Permissies
+### Role Management Permissions
 
-| Actie | admin | site_admin |
-|-------|-------|------------|
-| Rollen toewijzen (INSERT) | ✅ (geen site_admin) | ✅ |
-| Rollen wijzigen (UPDATE) | ✅ (geen site_admin) | ✅ |
-| Rollen verwijderen (DELETE) | ✅ (geen site_admin) | ✅ |
-| Eigen rol wijzigen | ❌ | ❌ |
+| Action | admin | site_admin |
+|--------|-------|------------|
+| Assign roles (INSERT) | ✅ (not site_admin) | ✅ |
+| Change roles (UPDATE) | ✅ (not site_admin) | ✅ |
+| Remove roles (DELETE) | ✅ (not site_admin) | ✅ |
+| Change own role | ❌ | ❌ |
 
-> ⚠️ **Bescherming**: De laatste `site_admin` kan niet worden verwijderd of gedemoteerd (database trigger).
+> ⚠️ **Protection**: The last `site_admin` cannot be removed or demoted (database trigger).
 
 ---
 
-## RLS Permissies per Tabel
+## RLS Permissions per Table
 
 ### profiles
 
-| Actie | student | teacher | staff | admin | site_admin |
-|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen + eigen docenten) | ✅ (eigen + eigen studenten) | ✅ (alle) | ✅ (alle) | ✅ (alle) |
-| UPDATE | ✅ (eigen) | ✅ (eigen) | ✅ (alle) | ✅ (alle) | ✅ (alle) |
+| Action | student | teacher | staff | admin | site_admin |
+|--------|:-------:|:-------:|:-----:|:-----:|:----------:|
+| SELECT | ✅ (own + own teachers) | ✅ (own + own students) | ✅ (all) | ✅ (all) | ✅ (all) |
+| UPDATE | ✅ (own) | ✅ (own) | ✅ (all) | ✅ (all) | ✅ (all) |
 | INSERT | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) | ❌ (trigger) |
 | DELETE | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) | ❌ (cascade) |
 
-> **Eigen docenten** = profielen van teachers waarmee de student een lesson_agreement heeft. **Eigen studenten** = profielen van studenten waarmee de teacher een lesson_agreement heeft.
+> **Own teachers** = profiles of teachers with whom the student has a lesson agreement. **Own students** = profiles of students with whom the teacher has a lesson agreement.
 
 ### students
 
-| Actie | student | teacher | staff | admin | site_admin |
-|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen) | ✅ (eigen studenten) | ✅ | ✅ | ✅ |
+| Action | student | teacher | staff | admin | site_admin |
+|--------|:-------:|:-------:|:-----:|:-----:|:----------:|
+| SELECT | ✅ (own) | ✅ (own students) | ✅ | ✅ | ✅ |
 | INSERT | ❌ | ❌ | ❌ | ❌ | ❌ |
 | UPDATE | ❌ | ❌ | ❌ | ✅ | ✅ |
 | DELETE | ❌ | ❌ | ❌ | ❌ | ❌ |
 
-> **Eigen studenten** = studenten waarmee de teacher een lesson_agreement heeft. Students kunnen **NIET** handmatig worden verwijderd; ze worden automatisch aangemaakt/verwijderd via triggers op lesson_agreements.
+> **Own students** = students with whom the teacher has a lesson agreement. Students **cannot** be deleted manually; they are created/removed automatically via triggers on lesson_agreements.
 
 ### teachers
 
-| Actie | student | teacher | staff | admin | site_admin |
-|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen docenten) | ✅ (eigen) | ✅ | ✅ | ✅ |
+| Action | student | teacher | staff | admin | site_admin |
+|--------|:-------:|:-------:|:-----:|:-----:|:----------:|
+| SELECT | ✅ (own teachers) | ✅ (own) | ✅ | ✅ | ✅ |
 | INSERT | ❌ | ❌ | ❌ | ✅ | ✅ |
 | UPDATE | ❌ | ❌ | ❌ | ✅ | ✅ |
 | DELETE | ❌ | ❌ | ❌ | ✅ | ✅ |
 
-> **Eigen docenten** = teachers waarmee de student een lesson_agreement heeft.
+> **Own teachers** = teachers with whom the student has a lesson agreement.
 
 ### lesson_types
 
-| Actie | iedereen (ingelogd) | staff | admin | site_admin |
-|-------|:-------------------:|:-----:|:-----:|:----------:|
+| Action | everyone (signed in) | staff | admin | site_admin |
+|--------|:--------------------:|:-----:|:-----:|:----------:|
 | SELECT | ✅ | ✅ | ✅ | ✅ |
 | INSERT | ❌ | ❌ | ✅ | ✅ |
 | UPDATE | ❌ | ❌ | ✅ | ✅ |
@@ -135,103 +135,103 @@ De applicatie gebruikt een role-based access control (RBAC) systeem met de volge
 
 ### lesson_agreements
 
-| Actie | student | teacher | staff | admin | site_admin |
-|-------|:-------:|:-------:|:-----:|:-----:|:----------:|
-| SELECT | ✅ (eigen) | ✅ (eigen) | ✅ (alle) | ✅ (alle) | ✅ (alle) |
+| Action | student | teacher | staff | admin | site_admin |
+|--------|:-------:|:-------:|:-----:|:-----:|:----------:|
+| SELECT | ✅ (own) | ✅ (own) | ✅ (all) | ✅ (all) | ✅ (all) |
 | INSERT | ❌ | ❌ | ✅ | ✅ | ✅ |
 | UPDATE | ❌ | ❌ | ✅ | ✅ | ✅ |
 | DELETE | ❌ | ❌ | ✅ | ✅ | ✅ |
 
-> **Eigen** = student ziet alleen overeenkomsten waar zij de student zijn; teacher ziet alleen overeenkomsten waar zij de docent zijn.
+> **Own** = a student only sees agreements where they are the student; a teacher only sees agreements where they are the teacher.
 
 ---
 
 ## Helper Functions
 
-| Functie | Beschrijving | Security |
-|---------|-------------|----------|
-| `is_site_admin()` | Check of de **ingelogde** gebruiker site_admin is | `SECURITY INVOKER` |
-| `is_admin()` | Check of de ingelogde gebruiker admin is | `SECURITY INVOKER` |
-| `is_staff()` | Check of de ingelogde gebruiker staff is | `SECURITY INVOKER` |
-| `is_privileged()` | Staff, admin of site_admin voor de ingelogde gebruiker (één query) | `SECURITY INVOKER` |
-| `_has_role(uuid, app_role)` | Intern; alleen vanuit andere `SECURITY DEFINER` functies; **geen** `GRANT` aan `authenticated` | `SECURITY DEFINER` |
-| `is_student(uuid)` / `is_teacher(uuid)` | Check op student/teacher-record | `SECURITY DEFINER` |
-| `get_teacher_user_id(uuid)` | Resolve teacher user_id op basis van user_id | `SECURITY DEFINER` |
-| `can_delete_user(uuid)` | Mag huidige sessie het gegeven `user_id` verwijderen? | `SECURITY DEFINER` |
-| `can_manage_agenda_event(ev_id)` | Mag huidige sessie een specifiek agenda-event beheren? | `SECURITY DEFINER` |
-| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS-helpers voor projects | `SECURITY DEFINER` |
-| `get_hours_report(start_date, end_date, user_id)` | Rapportagefunctie voor uren + financiële uitsplitsing per docent/leerling, incl. BTW-bepaling via `accounting_settings` en lesdatum-leeftijd. | `SECURITY INVOKER` |
-| `is_valid_phone_number(text)` | `IMMUTABLE`: NL-mobiel `06` + 8 cijfers; gebruikt door CHECK op o.a. `profiles.phone_number` | — |
+| Function | Description | Security |
+|----------|-------------|----------|
+| `is_site_admin()` | Whether the **signed-in** user is site_admin | `SECURITY INVOKER` |
+| `is_admin()` | Whether the signed-in user is admin | `SECURITY INVOKER` |
+| `is_staff()` | Whether the signed-in user is staff | `SECURITY INVOKER` |
+| `is_privileged()` | Staff, admin, or site_admin for the signed-in user (single query) | `SECURITY INVOKER` |
+| `_has_role(uuid, app_role)` | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated` | `SECURITY DEFINER` |
+| `is_student(uuid)` / `is_teacher(uuid)` | Check for a student/teacher record | `SECURITY DEFINER` |
+| `get_teacher_user_id(uuid)` | Resolve teacher user_id from user_id | `SECURITY DEFINER` |
+| `can_delete_user(uuid)` | May the current session delete the given `user_id`? | `SECURITY DEFINER` |
+| `can_manage_agenda_event(ev_id)` | May the current session manage a specific agenda event? | `SECURITY DEFINER` |
+| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects | `SECURITY DEFINER` |
+| `get_hours_report(start_date, end_date, user_id)` | Hours report plus financial breakdown per teacher/student, including VAT via `accounting_settings` and lesson-date age. | `SECURITY INVOKER` |
+| `is_valid_phone_number(text)` | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number` | — |
 
-> Publieke role-checks (`is_admin()`, `is_privileged()`, …) zijn **`SECURITY INVOKER`** met één `EXISTS` op `user_roles`. `can_manage_agenda_event` is **`SECURITY DEFINER`** en gebruikt **`current_user_id()`** + **`is_privileged()`**. `_has_role` is niet voor clients. `profiles.email` is `UNIQUE` en volgt `auth.users.email`. Telefoonregels staan centraal in **`is_valid_phone_number`**.
+> Public role checks (`is_admin()`, `is_privileged()`, …) are **`SECURITY INVOKER`** with a single `EXISTS` on `user_roles`. `can_manage_agenda_event` is **`SECURITY DEFINER`** and uses **`current_user_id()`** + **`is_privileged()`**. `_has_role` is not for clients. `profiles.email` is `UNIQUE` and follows `auth.users.email`. Phone rules are centralised in **`is_valid_phone_number`**.
 
 ---
 
-## Automatisch Lifecycle Management
+## Automatic Lifecycle Management
 
 ### Students
 
-Students worden **automatisch beheerd** via database triggers:
+Students are **managed automatically** via database triggers:
 
-- **Aanmaken**: Wanneer een `lesson_agreement` wordt ingevoegd, wordt automatisch een `student` record aangemaakt voor de `student_user_id` (als deze nog niet bestaat).
-- **Verwijderen**: Wanneer alle `lesson_agreements` voor een student zijn verwijderd, wordt het `student` record automatisch verwijderd.
-- **Geen handmatige beheer**: Students kunnen **NIET** handmatig worden aangemaakt of verwijderd, zelfs niet door `site_admin`. Er zijn geen INSERT of DELETE policies op de `students` tabel.
+- **Create**: When a `lesson_agreement` is inserted, a `student` record is created for `student_user_id` if it does not already exist.
+- **Delete**: When all `lesson_agreements` for a student are removed, the `student` record is deleted automatically.
+- **No manual management**: Students **cannot** be created or deleted by hand, even by `site_admin`. There are no INSERT or DELETE policies on the `students` table.
 
-**Design rationale**: Students zijn een **gevolg** van lesovereenkomsten, niet een voorwaarde. Dit voorkomt orphaned student records en zorgt voor automatisch lifecycle management.
+**Design rationale**: Students are a **consequence** of lesson agreements, not a prerequisite. That avoids orphaned student records and keeps lifecycle automatic.
 
-**CASCADE gedrag**:
-- Als een `auth.users` record wordt verwijderd, worden alle bijbehorende `lesson_agreements` automatisch verwijderd (via `ON DELETE CASCADE`).
-- Wanneer alle `lesson_agreements` zijn verwijderd, wordt de `student` automatisch verwijderd door de trigger.
+**CASCADE behaviour**:
+- If an `auth.users` record is deleted, all related `lesson_agreements` are deleted (`ON DELETE CASCADE`).
+- When all `lesson_agreements` are gone, the `student` is removed by the trigger.
 
 ---
 
-## Security: SECURITY DEFINER Views en Functions
+## Security: SECURITY DEFINER Views and Functions
 
-### Overzicht
+### Overview
 
-PostgreSQL views en functions kunnen `SECURITY DEFINER` gebruiken, wat betekent dat ze draaien met de rechten van de eigenaar (meestal `postgres`) in plaats van de aanroepende gebruiker. Dit kan RLS policies omzeilen en is daarom een security risico.
+PostgreSQL views and functions can use `SECURITY DEFINER`, which means they run with the owner's privileges (usually `postgres`) instead of the calling user. That can bypass RLS and is therefore a security risk.
 
-### Beveiligingsmaatregelen
+### Mitigations
 
-1. **Whitelist in baseline tests**: Alle SECURITY DEFINER views moeten expliciet worden toegevoegd aan `ALLOWED_SECURITY_DEFINER_VIEWS` in `tests/rls/system/baseline.security.test.ts`. Nieuwe views zonder `security_invoker = on` zullen de CI tests laten falen.
+1. **Whitelist in baseline tests**: All SECURITY DEFINER views must be added explicitly to `ALLOWED_SECURITY_DEFINER_VIEWS` in `tests/rls/system/baseline.security.test.ts`. New views without `security_invoker = on` will fail CI.
 
-2. **Verplichte documentatie**: Elke SECURITY DEFINER view/function moet documentatie bevatten over:
-   - Waarom SECURITY DEFINER nodig is
-   - Welke auth.uid() checks worden uitgevoerd
-   - Welke kolommen worden geëxposeerd
-   - Verwijzing naar relevante tests
+2. **Required documentation**: Every SECURITY DEFINER view/function must document:
+   - Why SECURITY DEFINER is needed
+   - Which `auth.uid()` checks run
+   - Which columns are exposed
+   - A pointer to the relevant tests
 
-3. **Automatische tests**: De baseline security tests verifiëren dat:
-   - Geen onverwachte SECURITY DEFINER views bestaan
-   - Alle toegestane SECURITY DEFINER views correct zijn gedocumenteerd
-   - Views met `security_invoker = on` RLS respecteren
+3. **Automated tests**: Baseline security tests verify that:
+   - No unexpected SECURITY DEFINER views exist
+   - All allowed SECURITY DEFINER views are documented
+   - Views with `security_invoker = on` respect RLS
 
-### Toegestane SECURITY DEFINER Views
+### Allowed SECURITY DEFINER Views
 
-Geen. Alle views gebruiken `security_invoker = on` of zijn verwijderd; studenten zien hun teachers via RLS op de `teachers`- en `profiles`-tabellen.
+None. All views use `security_invoker = on` or have been removed; students see their teachers via RLS on the `teachers` and `profiles` tables.
 
 ### Linter Warnings
 
-De Supabase linter rapporteert warnings voor SECURITY DEFINER views. Voor views in de whitelist zijn dit **false positives** omdat:
-- De security expliciet is geïmplementeerd via `auth.uid()` checks
-- Tests in `tests/rls/` verifiëren dat unauthorized access wordt geblokkeerd
-- De whitelist entry vereist expliciete goedkeuring
+The Supabase linter reports warnings for SECURITY DEFINER views. For views on the whitelist these are **false positives** because:
+- Security is implemented explicitly via `auth.uid()` checks
+- Tests in `tests/rls/` verify that unauthorized access is blocked
+- A whitelist entry requires explicit approval
 
 ---
 
-## Supabase Omgevingen
+## Supabase Environments
 
-Dit project gebruikt drie aparte Supabase omgevingen:
+This project uses three separate Supabase environments:
 
-| Omgeving | Project ID | Gebruik |
-|----------|------------|---------|
-| **mcp-test** | `jserlqacarlgtdzrblic` | Testproject: `bun dev:test` en **CI/PR-checks** (workflow linkt via `SUPABASE_PROJECT_REF`) |
-| **mcp-dev** | `zdvscmogkfyddnnxzkdu` | Development: Lovable / `bun dev`, en lokaal `db:reset` |
-| **Production** | `bnagepkxryauifzyoxgo` | Productie deployment (`bun prod`) |
+| Environment | Project ID | Use |
+|-------------|------------|-----|
+| **mcp-test** | `jserlqacarlgtdzrblic` | Test project: `bun dev:test` and **CI/PR checks** (workflow links via `SUPABASE_PROJECT_REF`) |
+| **mcp-dev** | `zdvscmogkfyddnnxzkdu` | Development: Lovable / `bun dev`, and local `db:reset` |
+| **Production** | `bnagepkxryauifzyoxgo` | Production deployment (`bun prod`) |
 
-### Hoe dit werkt
+### How this works
 
-1. **Lovable** is verbonden met **mcp-dev** — development database.
-2. **Lokaal testen** (`bun dev:test` of `bun test --bail rls`): gebruik **mcp-test** of mcp-dev via `.env.test` (SUPABASE_URL etc.).
-3. **CI bij een PR**: de workflow **pull-request-test-code-and-supabase** linkt naar **mcp-test** (via GitHub secret `SUPABASE_PROJECT_REF`), doet `supabase db reset --linked --yes`, en draait daar alle tests. Zie [secrets.md](./secrets.md) en [cicd-workflows.md](./cicd-workflows.md).
-4. Bij **merge naar main** worden migraties handmatig toegepast op production via `supabase db push`.
+1. **Lovable** is connected to **mcp-dev** — development database.
+2. **Local testing** (`bun dev:test` or `bun test --bail rls`): use **mcp-test** or mcp-dev via `.env.test` (`SUPABASE_URL`, etc.).
+3. **CI on a PR**: the **pull-request-test-code-and-supabase** workflow links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs all tests there. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
+4. On **merge to main**, migrations are applied to production via `supabase db push`.

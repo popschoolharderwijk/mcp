@@ -1,149 +1,149 @@
-# Stripe-incasso (SEPA, per lesovereenkomst)
+# Stripe direct debit (SEPA, per lesson agreement)
 
-Eén centraal document dat de volledige Stripe-flow beschrijft: van de uitnodigingsmail tot de maandelijkse SEPA-incasso, inclusief schedule-fases, webhooks en beheer.
+One document for the full Stripe flow: from the invitation email to monthly SEPA collection, including schedule phases, webhooks, and admin.
 
-> Vervangt het oudere document `stripe-subscriptions.md` (verwijderd op 13 mei 2026).
+> Replaces the older document `stripe-subscriptions.md` (removed 13 May 2026).
 
-## 1. Wat doen we?
+## 1. What we do
 
-Per `lesson_agreements`-rij koppelen we **één Stripe `Subscription`** voor maandelijkse incasso.
+For each `lesson_agreements` row we attach **one Stripe `Subscription`** for monthly collection.
 
-- **Eerste stap (setup):** klant kiest betaalmethode via **iDEAL** in Stripe Checkout (verplicht in NL voor het afgeven van een SEPA-mandaat).
-- **Daarna:** maandelijks automatisch incasseren via **SEPA Direct Debit** op het afgegeven mandaat.
-- **Schedule-fases:** een `SubscriptionSchedule` definieert per maand het exacte bedrag, zodat schoolvakanties en de juiste leeftijdscategorie (BTW) verdisconteerd worden in een vaste maandtermijn.
-- **Beheer:** klant beheert betaalmethode/factuur/annulering via de Stripe **Customer Portal**; admin kan namens de klant het portaal openen.
+- **First step (setup):** the customer picks a payment method via **iDEAL** in Stripe Checkout (required in NL to issue a SEPA mandate).
+- **After that:** monthly automatic collection via **SEPA Direct Debit** on the issued mandate.
+- **Schedule phases:** a `SubscriptionSchedule` sets the exact amount per month so holidays and the correct age category (VAT) are folded into a fixed monthly instalment.
+- **Management:** the customer manages payment method/invoice/cancellation via the Stripe **Customer Portal**; an admin can open the portal on their behalf.
 
 ## 2. End-to-end flow
 
 ```text
-[Overeenkomst (admin)]
+[Agreement (admin)]
         │
         │ 1. SubscriptionCard → "Stuur betaaluitnodiging"
         ▼
-[send-direct-debit-invite] ──► magic-link mail naar leerling/ouder
+[send-direct-debit-invite] ──► magic-link mail to student/parent
                                 │
-                                │ 2. klik link
+                                │ 2. click link
                                 ▼
                        [/direct-debit/start]  (DirectDebitStart.tsx)
                                 │
-                                │ 3. magic-link → sessie (PKCE of token_hash)
+                                │ 3. magic-link → session (PKCE or token_hash)
                                 │ 4. POST create-subscription-checkout {mode:"checkout"}
                                 ▼
                     [Stripe Checkout — iDEAL setup]
                                 │
                                 │ 5. setup_intent.succeeded (webhook)
                                 ▼
-                  [stripe-webhook] maakt SubscriptionSchedule
+                  [stripe-webhook] creates SubscriptionSchedule
                                 │
                                 │ 6. customer.subscription.created/updated
                                 ▼
-                       [subscriptions tabel]  (status: scheduled → active)
+                       [subscriptions table]  (status: scheduled → active)
                                 │
-                                │ 7. maandelijks invoice.created → invoice.paid
+                                │ 7. monthly invoice.created → invoice.paid
                                 ▼
-                  [subscription_invoices tabel]
+                  [subscription_invoices table]
 ```
 
-## 3. Datamodel
+## 3. Data model
 
-| Tabel | Doel |
+| Table | Purpose |
 |---|---|
-| `stripe_customers` | 1:1 koppeling tussen `auth.users.id` en `stripe_customer_id`. |
-| `subscriptions` | Spiegel van Stripe Subscription. Bevat `lesson_agreement_id`, status, periode, default payment method (merk/last4), `stripe_schedule_id`. |
-| `subscription_invoices` | Spiegel van Stripe Invoices: bedrag, status, `hosted_invoice_url`, periode. |
-| `incasso_invitations` | Logt elke verzonden uitnodiging (timestamp, magic-link ID, agreement). |
-| `accounting_settings` | Per-organisatie BTW- en grootboekinstellingen (account/btw-code voor 21% en vrijgesteld). Gebruikt door de rapportage en door `pickAgeTariff` voor BTW-toewijzing. |
+| `stripe_customers` | 1:1 link between `auth.users.id` and `stripe_customer_id`. |
+| `subscriptions` | Mirror of Stripe Subscription. Contains `lesson_agreement_id`, status, period, default payment method (brand/last4), `stripe_schedule_id`. |
+| `subscription_invoices` | Mirror of Stripe Invoices: amount, status, `hosted_invoice_url`, period. |
+| `incasso_invitations` | Logs each sent invitation (timestamp, magic-link ID, agreement). |
+| `accounting_settings` | Per-organisation VAT and ledger settings (account/VAT code for 21% and exempt). Used by reporting and by `pickAgeTariff` for VAT assignment. |
 
-> ℹ️ Schedule-fases worden **niet** gespiegeld in een aparte DB-tabel — ze worden bij elke push uit `_shared/billing.ts` opgebouwd op basis van de actuele `calculateYearlyAmount`-output (incl. verschuif-logica voor `no_lesson_periods` en augustus-pauze).
+> ℹ️ Schedule phases are **not** mirrored in a separate DB table — they are built on every push from `_shared/billing.ts` based on the current `calculateYearlyAmount` output (including shift logic for `no_lesson_periods` and the August pause).
 
-Alle tabellen hebben **PERMISSIVE, geconsolideerde** RLS. Schrijven is alleen toegestaan voor de service-role (webhook of edge function); lezen mag voor:
+All tables have **PERMISSIVE, consolidated** RLS. Writes are allowed only for the service role (webhook or edge function); reads are allowed for:
 - `is_privileged()` (admin/staff)
-- de gekoppelde leerling of docent van de `lesson_agreement`
+- the linked student or teacher of the `lesson_agreement`
 
 ## 4. Edge functions
 
-| Functie | Auth | Doel |
+| Function | Auth | Purpose |
 |---|---|---|
-| `send-direct-debit-invite` | JWT (admin/staff) | Genereert server-side magic link, mailt deze naar de leerling, logt in `incasso_invitations`. |
-| `create-subscription-checkout` | JWT | Maakt Stripe Checkout (mode=`checkout`) of activeert direct op een bestaand mandaat (mode=`direct`) of rondt een retour-flow af (mode=`complete`). |
-| `create-customer-portal` | JWT | Opent Stripe Customer Portal voor de ingelogde gebruiker (of voor een meegegeven `user_id` als de aanroeper privileged is). |
-| `sync-stripe-subscription` | JWT (admin/staff) | Trekt status van een subscription opnieuw uit Stripe en schrijft naar de DB. |
-| `rebuild-subscription-schedule` | JWT (admin/staff) | Herberekent de toekomstige schedule-fases met de huidige tarieven (na prijswijziging). |
-| `force-start-subscription` | JWT (admin) | **Dev/test only.** Cancelt het bestaande schedule en start het abonnement onmiddellijk. UI-knop staat achter `import.meta.env.DEV`. |
-| `stripe-webhook` | publiek (signature-validatie) | Ontvangt en verwerkt Stripe-events. |
+| `send-direct-debit-invite` | JWT (admin/staff) | Generates a server-side magic link, emails it to the student, logs in `incasso_invitations`. |
+| `create-subscription-checkout` | JWT | Creates Stripe Checkout (`mode=checkout`) or activates immediately on an existing mandate (`mode=direct`) or completes a return flow (`mode=complete`). |
+| `create-customer-portal` | JWT | Opens Stripe Customer Portal for the signed-in user (or for a given `user_id` if the caller is privileged). |
+| `sync-stripe-subscription` | JWT (admin/staff) | Pulls subscription status from Stripe again and writes it to the DB. |
+| `rebuild-subscription-schedule` | JWT (admin/staff) | Recalculates future schedule phases with current rates (after a price change). |
+| `force-start-subscription` | JWT (admin) | **Dev/test only.** Cancels the existing schedule and starts the subscription immediately. UI button is behind `import.meta.env.DEV`. |
+| `stripe-webhook` | public (signature validation) | Receives and handles Stripe events. |
 
-Gedeelde logica staat in `supabase/functions/_shared/`:
-- `billing.ts` — schoolyear, occurrences, `calculateYearly` (incl. **verschuif-logica** voor `no_lesson_periods`), `pickAgeTariff`, schedule-fase-bouwers. Augustus blijft een pure pauze; overige periodes verschuiven het ritme door met exact de periodelengte.
-- `stripe.ts` — Stripe-client constructor (npm:stripe).
-- `subscription-storage.ts` — DB upserts voor `subscriptions`.
-- `email-events.ts` — register van app-mail events (gebruikt door `send-template-email`).
-- `errors.ts` — `getSafeErrorMessage` (geen interne stack-traces lekken).
+Shared logic lives in `supabase/functions/_shared/`:
+- `billing.ts` — school year, occurrences, `calculateYearly` (including **shift logic** for `no_lesson_periods`), `pickAgeTariff`, schedule-phase builders. August stays a pure pause; other periods shift the cadence by exactly the period length.
+- `stripe.ts` — Stripe client constructor (npm:stripe).
+- `subscription-storage.ts` — DB upserts for `subscriptions`.
+- `email-events.ts` — register of app mail events (used by `send-template-email`).
+- `errors.ts` — `getSafeErrorMessage` (do not leak internal stack traces).
 
 ## 5. Magic link & email
 
-De uitnodigingsmail (`docs/email-templates/magic-link.html`) gebruikt het custom `token_hash` formaat:
+The invitation email (`docs/email-templates/magic-link.html`) uses the custom `token_hash` format:
 
 ```
 {{ .RedirectTo }}#token_hash={{ .TokenHash }}&type=email
 ```
 
-Hierdoor consumeren mail-scanners (Outlook/SafeLinks) de link niet vooraf, want `verifyOtp` met token_hash vereist een actieve browsersessie.
+Mail scanners (Outlook/SafeLinks) therefore do not consume the link in advance, because `verifyOtp` with token_hash requires an active browser session.
 
-`DirectDebitStart` (`src/pages/DirectDebitStart.tsx`) verwerkt twee link-formaten via `src/lib/auth/magicLink.ts`:
+`DirectDebitStart` (`src/pages/DirectDebitStart.tsx`) handles two link formats via `src/lib/auth/magicLink.ts`:
 
-1. **PKCE** — `?code=...` in querystring → `supabase.auth.exchangeCodeForSession`.
+1. **PKCE** — `?code=...` in the query string → `supabase.auth.exchangeCodeForSession`.
 2. **Custom token_hash** — `#token_hash=...&type=email` → `supabase.auth.verifyOtp`.
 
-De legacy implicit-flow (`#access_token=...&refresh_token=...`) wordt **niet** meer ondersteund; de huidige template levert geen access_tokens in de hash.
+The legacy implicit flow (`#access_token=...&refresh_token=...`) is **no longer** supported; the current template does not put access tokens in the hash.
 
 ## 6. Webhook events
 
-`stripe-webhook` verwerkt:
+`stripe-webhook` handles:
 
 | Event | Effect |
 |---|---|
-| `checkout.session.completed` | Logt de afgeronde Checkout, koppelt `setup_intent` aan agreement. |
-| `setup_intent.succeeded` | Mandaat actief → maakt `SubscriptionSchedule` aan met fases uit `_shared/billing.ts`. |
-| `customer.subscription.created` / `updated` | Upsert in `subscriptions` (status, periode, default payment method). |
+| `checkout.session.completed` | Logs completed Checkout, links `setup_intent` to the agreement. |
+| `setup_intent.succeeded` | Mandate active → creates `SubscriptionSchedule` with phases from `_shared/billing.ts`. |
+| `customer.subscription.created` / `updated` | Upsert in `subscriptions` (status, period, default payment method). |
 | `customer.subscription.deleted` | Status → `canceled`. |
 | `invoice.created` / `finalized` / `paid` / `payment_failed` | Upsert in `subscription_invoices`. |
 
-Signing: gebruik **`STRIPE_WEBHOOK_SECRET`** voor signature-validatie. Falende validatie geeft 401 zonder details te lekken.
+Signing: use **`STRIPE_WEBHOOK_SECRET`** for signature validation. Failed validation returns 401 without leaking details.
 
 ## 7. Edge cases
 
-- **Bestaand mandaat hergebruiken** — `mode: 'direct'` slaat Checkout over en activeert het abonnement op het al gekoppelde `default_payment_method`.
-- **Prijswijziging** — admin klikt "Pas nieuwe tarieven toe" → `rebuild-subscription-schedule` herberekent alleen toekomstige fases (huidige fase blijft staan om de lopende factuur niet te raken).
-- **Mislukte betaling** — `invoice.payment_failed` zet de subscription op `past_due`. UI toont status-badge; klant lost op via Customer Portal.
-- **Mandaat ingetrokken** — Stripe stuurt `payment_method.detached` / subscription wordt `unpaid`. Admin kan een nieuwe uitnodiging sturen.
-- **Leerling wordt 21 mid-jaar** — `pickAgeTariff` (zie `_shared/billing.ts`) bepaalt per `lessonDate` welk tarief geldt; de schedule-fases verdisconteren dit per maand. De keuze van BTW-code volgt dezelfde leeftijdslogica via `accounting_settings`.
-- **Lesvrije periode in schooljaar** — `calculateYearlyAmount` past **verschuif-logica** toe: lessen die in een periode vallen schuiven door met exact de lengte van de periode. Lessen die hierdoor voorbij `periodEnd` (31 juli) komen, vervallen. Zie `src/lib/billing/calculateYearlyAmount.ts` en `tests/code/billing/shiftNoLessonPeriod.test.ts`.
-- **Augustus** — blijft een pure skip (zomerpauze, geen shift-mutatie).
+- **Reuse an existing mandate** — `mode: 'direct'` skips Checkout and activates the subscription on the already linked `default_payment_method`.
+- **Price change** — admin clicks "Pas nieuwe tarieven toe" → `rebuild-subscription-schedule` recalculates only future phases (current phase stays so the running invoice is not touched).
+- **Failed payment** — `invoice.payment_failed` sets the subscription to `past_due`. UI shows a status badge; the customer resolves it via Customer Portal.
+- **Mandate revoked** — Stripe sends `payment_method.detached` / subscription becomes `unpaid`. Admin can send a new invitation.
+- **Student turns 21 mid-year** — `pickAgeTariff` (see `_shared/billing.ts`) picks the rate per `lessonDate`; schedule phases fold this in per month. VAT code follows the same age logic via `accounting_settings`.
+- **No-lesson period in the school year** — `calculateYearlyAmount` applies **shift logic**: lessons that fall in a period shift by exactly the period length. Lessons that then pass `periodEnd` (31 July) are dropped. See `src/lib/billing/calculateYearlyAmount.ts` and `tests/code/billing/shiftNoLessonPeriod.test.ts`.
+- **August** — stays a pure skip (summer pause, no shift mutation).
 
 ## 8. Stripe dashboard checklist
 
-1. **Producten + prijzen** aanmaken per lesvariant (recurring `month`). Zet de Stripe Price ID op de juiste `lesson_agreements.stripe_price_id`.
-2. **Payment methods** activeren: iDEAL én SEPA Direct Debit (Settings → Payment methods).
-3. **Customer portal** activeren (Settings → Billing → Customer portal). Sta minimaal toe: betaalmethode wijzigen, factuurhistorie bekijken, abonnement annuleren.
-4. **Webhook endpoint** registreren:
+1. Create **products + prices** per lesson variant (recurring `month`). Put the Stripe Price ID on the correct `lesson_agreements.stripe_price_id`.
+2. Enable **payment methods**: iDEAL and SEPA Direct Debit (Settings → Payment methods).
+3. Enable **Customer portal** (Settings → Billing → Customer portal). Allow at least: change payment method, view invoice history, cancel subscription.
+4. Register a **webhook endpoint**:
    - URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
    - Events: `checkout.session.completed`, `setup_intent.succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.created`, `invoice.finalized`, `invoice.paid`, `invoice.payment_failed`
-   - Kopieer signing secret naar `STRIPE_WEBHOOK_SECRET`.
+   - Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
 
 ## 9. Secrets
 
-Allemaal alleen beschikbaar in edge functions via `Deno.env.get(...)` — **nooit** met `VITE_` prefix:
+Available only in edge functions via `Deno.env.get(...)` — **never** with a `VITE_` prefix:
 
 - `STRIPE_SECRET_KEY` — server-side Stripe key (sk_live / sk_test).
-- `STRIPE_WEBHOOK_SECRET` — signing secret van het webhook endpoint.
-- `SUPABASE_SERVICE_ROLE_KEY` — voor schrijven in DB vanuit webhook.
+- `STRIPE_WEBHOOK_SECRET` — signing secret of the webhook endpoint.
+- `SUPABASE_SERVICE_ROLE_KEY` — for writing to the DB from the webhook.
 
-## 10. Lokaal testen
+## 10. Local testing
 
 ```bash
-# Webhook forwarden naar je lokale Supabase functions runtime
+# Forward webhooks to your local Supabase functions runtime
 stripe listen --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook
-# (of naar een remote preview branch)
+# (or to a remote preview branch)
 stripe listen --forward-to https://<preview-ref>.supabase.co/functions/v1/stripe-webhook
 
 # Billing unit tests (Bun, app-side — source of truth)
@@ -151,15 +151,15 @@ bun test tests/code/billing/calculateYearlyAmount.test.ts
 bun test tests/code/billing/shiftNoLessonPeriod.test.ts
 ```
 
-Stripe testkaarten / iDEAL-simulator: zie [Stripe testing docs](https://stripe.com/docs/testing).
+Stripe test cards / iDEAL simulator: see [Stripe testing docs](https://stripe.com/docs/testing).
 
-## 11. Gerelateerde features
+## 11. Related features
 
-- **Rapportage** — `AccountingReport.tsx` + `get_hours_report()` (zie `src/pages/AccountingReport.tsx` en migratie `20260604113315`) leveren een per-docent / per-leerling uitsplitsing met BTW per lesdatum. Bron-data: agenda + `accounting_settings`.
-- **App-mailtemplates** — alle incasso-gerelateerde mails lopen via `send-template-email` met events uit `_shared/email-events.ts`. Templates worden beheerd in **Settings → E-mailtemplates** (zie [email-templates.md](../email-templates.md)).
-- **Annuleringen** — `cancellation_type` (`'student' | 'teacher'`) bepaalt of een geannuleerde les meetelt voor de berekening. Zie geheugen `mem://logic/lesson-cancellation-requirements`.
+- **Reporting** — `AccountingReport.tsx` + `get_hours_report()` (see `src/pages/AccountingReport.tsx` and migration `20260604113315`) give a per-teacher / per-student breakdown with VAT per lesson date. Source data: agenda + `accounting_settings`.
+- **App mail templates** — all direct-debit related mail goes through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Settings → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
+- **Cancellations** — `cancellation_type` (`'student' | 'teacher'`) determines whether a cancelled lesson counts in the calculation. See memory `mem://logic/lesson-cancellation-requirements`.
 
-## 12. Bekende beperkingen / TODO
+## 12. Known limitations / TODO
 
-- **Prijswijzigingen Stripe → DB** worden niet teruggeschreven naar `lesson_agreements.price_per_lesson`; admin past tarief in de app aan en klikt "Pas nieuwe tarieven toe".
-- **`force-start-subscription`** is alleen voor dev/test (UI-knop achter `import.meta.env.DEV`).
+- **Price changes Stripe → DB** are not written back to `lesson_agreements.price_per_lesson`; admin changes the rate in the app and clicks "Pas nieuwe tarieven toe".
+- **`force-start-subscription`** is dev/test only (UI button behind `import.meta.env.DEV`).

@@ -2,9 +2,9 @@
 alwaysApply: true
 ---
 
-* Documentation (in ./docs/) should always be written in Dutch. 
+* Documentation (`./docs/`, `README.md`, and other project markdown) should always be written in English.
 * Code and code comments should always be written in English
-* Front-end UI Elements (labels, buttons, error messages, placeholders) should always be written in Dutch
+* Front-end UI Elements (labels, buttons, error messages, placeholders) should always be written in Dutch. `CHANGELOG.md` and HTML email templates for users (`docs/email-templates/`) are UI copy and stay Dutch.
 * Tools, CLI tools should always be completely written in English (output, input and code)
 * **Icons**: Use only **react-icons** (e.g. `react-icons/lu`, `react-icons/fi`); do **not** use `lucide-react`.
 * For loading spinners, always use `LuLoaderCircle` from `react-icons/lu` with `animate-spin` class.

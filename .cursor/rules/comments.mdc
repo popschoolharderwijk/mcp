@@ -4,7 +4,7 @@ alwaysApply: true
 
 # Comments
 
-Write as if a first-time reader opened this file. **English** in code, tests, and config comments (see `style.mdc` for UI/docs language).
+Write as if a first-time reader opened this file. **English** in code, tests, config comments, and project docs (see `style.mdc` for UI vs docs language).
 
 Add a comment only when it explains **current** behavior or a **standing** constraint that is not obvious from the code. If the code is clear, **omit** the comment.
 

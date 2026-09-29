@@ -1,136 +1,136 @@
-# Deployment naar Productie
+# Deployment to Production
 
-Na het mergen van een PR naar `main` worden migraties via de Supabase GitHub Integration automatisch toegepast op het production-project. Edge functions en config-pushes blijven handmatig (of via CLI).
+After merging a PR to `main`, migrations are applied automatically to the production project via the Supabase GitHub Integration. Edge functions and config pushes stay manual (or via CLI).
 
 ---
 
-## Wanneer wat?
+## What to do when?
 
-| Wijziging | Actie |
-|-----------|-------|
-| Database migraties (`supabase/migrations/`) | Automatisch via Supabase GitHub Integration na merge naar `main`. |
-| Auth/config wijzigingen (`supabase/config.toml`) | Handmatig: `supabase config push`. |
-| Edge Functions | Handmatig: `supabase functions deploy <name>`. |
-| Frontend code | Automatisch (Lovable deploy). |
-| CSP (Content-Security-Policy) | Meta-tag in `index.html` (meereist met Lovable publish). Geen HTTP-header: prod draait op Lovable hosting, niet op eigen Cloudflare/Vercel. |
+| Change | Action |
+|--------|--------|
+| Database migrations (`supabase/migrations/`) | Automatic via Supabase GitHub Integration after merge to `main`. |
+| Auth/config changes (`supabase/config.toml`) | Manual: `supabase config push`. |
+| Edge Functions | Manual: `supabase functions deploy <name>`. |
+| Frontend code | Automatic (Lovable deploy). |
+| CSP (Content-Security-Policy) | Meta tag in `index.html` (ships with Lovable publish). No HTTP header: prod runs on Lovable hosting, not on your own Cloudflare/Vercel. |
 
 ---
 
 ## Content-Security-Policy (Lovable hosting)
 
-Productie staat op **Lovable Cloud** (`mcp.mplifi.nl`). Lovable levert HSTS/nosniff/referrer-policy, maar geen configureerbare HTTP CSP-header zonder externe host of CDN-login.
+Production is on **Lovable Cloud** (`mcp.mplifi.nl`). Lovable provides HSTS/nosniff/referrer-policy, but no configurable HTTP CSP header without an external host or CDN login.
 
-Daarom staat CSP als **meta-tag** in `index.html`:
+Therefore CSP is a **meta tag** in `index.html`:
 
-- Werkt na elke Lovable publish (zit in de gebouwde HTML).
-- `connect-src` / `img-src` gebruiken `https://*.supabase.co` zodat dev, test en prod werken.
-- `frame-ancestors` is niet mogelijk via meta; clickjacking blijft deels platform-afhankelijk.
+- Works after every Lovable publish (it is in the built HTML).
+- `connect-src` / `img-src` use `https://*.supabase.co` so that dev, test, and prod work.
+- `frame-ancestors` is not possible via meta; clickjacking remains partly platform-dependent.
 
-Voor een volledige HTTP CSP (Report-Only, `frame-ancestors`): frontend extern hosten — zie [Deploying outside Lovable](https://docs.lovable.dev/tips-tricks/external-deployment-hosting) (Vercel/Netlify + `vercel.json` of `_headers`).
+For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewhere — see [Deploying outside Lovable](https://docs.lovable.dev/tips-tricks/external-deployment-hosting) (Vercel/Netlify + `vercel.json` or `_headers`).
 
 ---
 
-## Stap 1: Link aan Production
+## Step 1: Link to Production
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo
 ```
 
-## Stap 2: Migraties controleren
+## Step 2: Check migrations
 
 ```bash
 supabase db push --dry-run
-# Migraties worden normaal automatisch toegepast; gebruik dit alleen als sanity check.
+# Migrations are normally applied automatically; use this only as a sanity check.
 ```
 
-## Stap 2b: Bootstrap-seed op productie (optioneel)
+## Step 2b: Bootstrap seed on production (optional)
 
-Migraties bevatten geen referentiedata. Voor lestypes, e-mailtemplates en accounting-defaults staat [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Productie heeft `enabled = false` voor seed; pas bootstrap **handmatig** toe na nieuwe bootstrap-events:
+Migrations do not contain reference data. Lesson types, email templates, and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Production has `enabled = false` for seed; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo
 supabase db push --include-seed
 ```
 
-Alleen `bootstrap.sql` draait op prod (geen `test.sql`). Idempotent — overschrijft geen bestaande aangepaste templates. **Nooit** `db reset --linked` op productie.
+Only `bootstrap.sql` runs on prod (not `test.sql`). Idempotent — does not overwrite existing custom templates. **Never** run `db reset --linked` on production.
 
-## Stap 3: Config pushen (indien gewijzigd)
+## Step 3: Push config (if changed)
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo
 supabase config push   # review diff, type Y
 ```
 
-> ⚠️ `config push` overschrijft remote settings. Review altijd de diff!
+> ⚠️ `config push` overwrites remote settings. Always review the diff!
 
-Productie-auth (`[remotes.prod.auth]` in `config.toml`):
+Production auth (`[remotes.prod.auth]` in `config.toml`):
 
-- `enable_signup = false` — geen publieke registratie via de Auth API; nieuwe users alleen via admin/edge functions (`create-user`, `approve-signup-request`, …). Login (magic link/OTP), `/signup` en staff-flows blijven werken.
-- Strakkere rate limits en e-mailfrequentie (zie `[remotes.prod.auth.email]` / `[remotes.prod.auth.rate_limit]`).
+- `enable_signup = false` — no public registration via the Auth API; new users only via admin/edge functions (`create-user`, `approve-signup-request`, …). Login (magic link/OTP), `/signup`, and staff flows still work.
+- Tighter rate limits and email frequency (see `[remotes.prod.auth.email]` / `[remotes.prod.auth.rate_limit]`).
 
-## Stap 4: Edge Functions deployen
+## Step 4: Deploy Edge Functions
 
 ```bash
 supabase functions deploy <function-name>
-# of alles in één keer:
+# or everything at once:
 supabase functions deploy
 ```
 
 ---
 
-## Beschikbare Edge Functions
+## Available Edge Functions
 
-| Function | Doel | Vereiste secrets |
-|----------|------|------------------|
-| `delete-user` | AVG: account verwijderen (self of admin). | Standaard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
-| `create-user` | Admin-script-only: gebruiker aanmaken met optioneel wachtwoord. | Standaard |
-| `submit-signup-request` | Publieke aanmeldformulieren (proefles, inschrijving). | Standaard, `RESEND_API_KEY` |
-| `approve-signup-request` | Admin keurt aanmelding goed → user + welkomstmail. | Standaard, `RESEND_API_KEY` |
-| `schedule-trial-lesson` | Plant een proefles in de agenda na intake. | Standaard, `RESEND_API_KEY` |
-| `send-template-email` | Verzendt e-mail op basis van `email_templates` + variabelen. | Standaard, `RESEND_API_KEY` |
-| `send-direct-debit-invite` | Genereert magic link voor SEPA-onboarding en mailt deze. | Standaard, `RESEND_API_KEY` |
-| `create-subscription-checkout` | Maakt Stripe Checkout (iDEAL setup) of activeert direct op bestaand mandaat. | Standaard, `STRIPE_SECRET_KEY` |
-| `create-customer-portal` | Opent Stripe Customer Portal voor klant of (privileged) namens klant. | Standaard, `STRIPE_SECRET_KEY` |
-| `sync-stripe-subscription` | Re-sync van één subscription uit Stripe naar DB. | Standaard, `STRIPE_SECRET_KEY` |
-| `rebuild-subscription-schedule` | Herberekent toekomstige schedule-fases na prijswijziging. | Standaard, `STRIPE_SECRET_KEY` |
-| `force-start-subscription` | Dev/test only: cancel huidige schedule en start direct. UI achter `import.meta.env.DEV`. | Standaard, `STRIPE_SECRET_KEY` |
-| `stripe-webhook` | Verwerkt Stripe events (setup, subscription, invoice). **`verify_jwt = false`** vereist. | Standaard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Function | Purpose | Required secrets |
+|----------|---------|------------------|
+| `delete-user` | GDPR: delete account (self or admin). | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
+| `create-user` | Admin-script only: create a user with optional password. | Standard |
+| `submit-signup-request` | Public signup forms (trial lesson, enrolment). | Standard, `RESEND_API_KEY` |
+| `approve-signup-request` | Admin approves signup → user + welcome email. | Standard, `RESEND_API_KEY` |
+| `schedule-trial-lesson` | Schedules a trial lesson on the agenda after intake. | Standard, `RESEND_API_KEY` |
+| `send-template-email` | Sends email from `email_templates` + variables. | Standard, `RESEND_API_KEY` |
+| `send-direct-debit-invite` | Generates a magic link for SEPA onboarding and emails it. | Standard, `RESEND_API_KEY` |
+| `create-subscription-checkout` | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate. | Standard, `STRIPE_SECRET_KEY` |
+| `create-customer-portal` | Opens Stripe Customer Portal for the customer or (privileged) on their behalf. | Standard, `STRIPE_SECRET_KEY` |
+| `sync-stripe-subscription` | Re-sync one subscription from Stripe into the DB. | Standard, `STRIPE_SECRET_KEY` |
+| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change. | Standard, `STRIPE_SECRET_KEY` |
+| `force-start-subscription` | Dev/test only: cancel current schedule and start immediately. UI behind `import.meta.env.DEV`. | Standard, `STRIPE_SECRET_KEY` |
+| `stripe-webhook` | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
-> 💡 "Standaard" = de automatisch geïnjecteerde Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). Zie [secrets.md](./secrets.md).
+> 💡 "Standard" = the auto-injected Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md).
 
 ---
 
-## Edge Functions structuur
+## Edge Functions structure
 
-Gedeelde helpers staan in `supabase/functions/_shared/`:
+Shared helpers live in `supabase/functions/_shared/`:
 
-- `cors.ts` — gedeelde CORS headers (browser invocations).
-- `errors.ts` — `getSafeErrorMessage` voorkomt het lekken van interne stack traces.
-- `billing.ts` — schoolyear, occurrences, `calculateYearly`, `pickAgeTariff`, schedule-fase-bouwers.
+- `cors.ts` — shared CORS headers (browser invocations).
+- `errors.ts` — `getSafeErrorMessage` prevents leaking internal stack traces.
+- `billing.ts` — school year, occurrences, `calculateYearly`, `pickAgeTariff`, schedule-phase builders.
 - `stripe.ts` — Stripe client constructor.
-- `subscription-storage.ts` — DB upserts voor `subscriptions`.
-- `email-events.ts` — register van app-mail events (event keys + variabelen).
+- `subscription-storage.ts` — DB upserts for `subscriptions`.
+- `email-events.ts` — register of app mail events (event keys + variables).
 
-### Nieuwe Edge Function aanmaken
+### Creating a new Edge Function
 
-1. Map: `supabase/functions/<function-name>/index.ts`
-2. Importeer `corsHeaders` uit `../_shared/cors.ts`.
-3. Handle `OPTIONS` voor preflight.
-4. Wrap errors met `getSafeErrorMessage`.
-5. Configureer in `supabase/config.toml`:
+1. Folder: `supabase/functions/<function-name>/index.ts`
+2. Import `corsHeaders` from `../_shared/cors.ts`.
+3. Handle `OPTIONS` for preflight.
+4. Wrap errors with `getSafeErrorMessage`.
+5. Configure in `supabase/config.toml`:
 
 ```toml
 [functions.<name>]
-verify_jwt = true   # of false voor publieke endpoints (stripe-webhook)
+verify_jwt = true   # or false for public endpoints (stripe-webhook)
 ```
 
-> ⚠️ Met `verify_jwt = false` moet je zelf JWT/auth validatie doen — zie [troubleshooting.md](./troubleshooting.md#verify_jwt--true-geeft-401-bij-post).
+> ⚠️ With `verify_jwt = false` you must validate JWT/auth yourself — see [troubleshooting.md](./troubleshooting.md#verify_jwt--true-returns-401-on-post).
 
 ---
 
-## Checklist na merge naar `main`
+## Checklist after merge to `main`
 
-- [ ] Supabase GitHub Integration heeft migraties toegepast (check Dashboard → Database → Migrations).
-- [ ] `supabase config push` als `config.toml` is gewijzigd.
-- [ ] `supabase functions deploy` voor gewijzigde edge functions.
-- [ ] Productie smoke-test: login, agenda, één Stripe-flow.
+- [ ] Supabase GitHub Integration applied migrations (check Dashboard → Database → Migrations).
+- [ ] `supabase config push` if `config.toml` changed.
+- [ ] `supabase functions deploy` for changed edge functions.
+- [ ] Production smoke test: login, agenda, one Stripe flow.

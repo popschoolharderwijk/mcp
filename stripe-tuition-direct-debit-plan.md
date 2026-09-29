@@ -1,44 +1,50 @@
-# Plan: Stripe Lesgeld-Incasso (v2) — HISTORISCH DOCUMENT
+# Plan: Stripe tuition direct debit (v2) — HISTORICAL DOCUMENT
 
-> 📌 **Dit is een historisch planningsdocument (12 mei 2026).** Het beschrijft de oorspronkelijke aanpak en bevat verouderde details. Voor de actuele technische beschrijving van de Stripe-incassoflow, zie:
+> 📌 **This is a historical planning document (12 May 2026).** It describes the original approach and contains outdated details. For the current technical description of the Stripe direct-debit flow, see:
 >
 > **→ [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md)**
 >
-> Belangrijkste afwijkingen t.o.v. de actuele implementatie:
+> Main differences versus the current implementation:
 >
-> - **Lesvrije periodes**: het plan ging uit van "skip" (lessen vervallen); de huidige implementatie gebruikt **verschuif-logica** (`src/lib/billing/calculateYearlyAmount.ts`) — lessen schuiven door met de lengte van de periode. Augustus blijft wél skip.
-> - **`subscription_schedule_phases` tabel**: nooit aangemaakt; de schedule-fases worden direct uit `_shared/billing.ts` opgebouwd en niet apart gemirrored.
-> - **Webhook trigger**: schedule wordt aangemaakt bij `setup_intent.succeeded` (niet bij `checkout.session.completed`).
-> - **Extra edge functions toegevoegd**: `create-customer-portal`, `sync-stripe-subscription`, `rebuild-subscription-schedule`, `force-start-subscription`, `send-template-email`, `send-direct-debit-invite`.
-> - **Extra tabellen toegevoegd**: `incasso_invitations`, `accounting_settings`, `email_templates`.
+> - **No-lesson periods**: the plan assumed "skip" (lessons dropped); the current implementation uses **shift logic** (`src/lib/billing/calculateYearlyAmount.ts`) — lessons shift by the length of the period. August still skips.
+> - **`subscription_schedule_phases` table**: never created; schedule phases are built directly from `_shared/billing.ts` and not mirrored separately.
+> - **Webhook trigger**: the schedule is created on `setup_intent.succeeded` (not `checkout.session.completed`).
+> - **Extra edge functions added**: `create-customer-portal`, `sync-stripe-subscription`, `rebuild-subscription-schedule`, `force-start-subscription`, `send-template-email`, `send-direct-debit-invite`.
+> - **Extra tables added**: `incasso_invitations`, `accounting_settings`, `email_templates`.
 
 ---
 
-_Onderstaande inhoud is bewaard voor historische context. Wijzig niet — werk in plaats daarvan `docs/integrations/stripe-direct-debit.md` bij._
+_The content below is kept for historical context. Do not change it — update `docs/integrations/stripe-direct-debit.md` instead._
 
-## Doel
-Maandelijkse SEPA-incasso van lesgeld via Stripe, gespreid over **11 maanden per jaar** (augustus overslaan), op basis van een prijs per les en de frequentie van de lessen per leerling.
+## Goal
 
-## Kernontwerp (origineel plan)
+Monthly SEPA collection of tuition via Stripe, spread over **11 months per year** (skip August), based on a price per lesson and the student's lesson frequency.
 
-### Prijzen per les
-Opgeslagen op `lesson_type_options`, uitgebreid met twee leeftijdstarieven (<21 en 21+). ✅ Geïmplementeerd.
+## Core design (original plan)
 
-### Schooljaar
-1 september → 31 juli (11 incassomaanden, augustus pauze). ✅ Geïmplementeerd.
+### Prices per lesson
 
-### Berekening jaarbedrag
+Stored on `lesson_type_options`, extended with two age tariffs (<21 and 21+). ✅ Implemented.
+
+### School year
+
+1 September → 31 July (11 collection months, August pause). ✅ Implemented.
+
+### Yearly amount calculation
+
 - `yearlyCents = lessonsCount × pricePerLessonCents`
-- `monthlyCents = floor(yearlyCents / 11)` met restbedrag in laatste maand
+- `monthlyCents = floor(yearlyCents / 11)` with remainder in the last month
 
-Implementatie wijkt af: gebruikt **verschuif-logica** voor `no_lesson_periods` i.p.v. simpele skip.
+Implementation differs: uses **shift logic** for `no_lesson_periods` instead of a simple skip.
 
 ### Stripe Subscription Schedule
-11 phases per jaar (sept t/m juli), augustus pauze. ✅ Geïmplementeerd in `_shared/billing.ts`.
 
-### Beslissingen (origineel, nog geldig)
-- ✅ Augustus overslaan via Schedule phases
-- ✅ Beide flows: Checkout én direct activeren op bestaand mandaat
-- ✅ Prijswijzigingen: vanaf volgende incassomaand, geen proration
-- ✅ Leeftijdsbepaling per `lessonDate` (afwijking van origineel: niet per fase-startdatum)
-- ✅ Schooljaar: 1 september – 31 juli
+11 phases per year (Sep through Jul), August pause. ✅ Implemented in `_shared/billing.ts`.
+
+### Decisions (original, still valid)
+
+- ✅ Skip August via Schedule phases
+- ✅ Both flows: Checkout and activate immediately on an existing mandate
+- ✅ Price changes: from the next collection month, no proration
+- ✅ Age determination per `lessonDate` (differs from original: not per phase start date)
+- ✅ School year: 1 September – 31 July

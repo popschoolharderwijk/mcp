@@ -1,46 +1,46 @@
-# Huisstijl en kleurtokens
+# Brand and colour tokens
 
-## Canonieke bron
+## Canonical source
 
-Alle semantische kleuren staan in [`src/styles/theme-tokens.css`](../src/styles/theme-tokens.css) (`:root` en `.dark`). Het bestand wordt geladen vóór [`src/index.css`](../src/index.css) via [`src/main.tsx`](../src/main.tsx).
+All semantic colours live in [`src/styles/theme-tokens.css`](../src/styles/theme-tokens.css) (`:root` and `.dark`). The file is loaded before [`src/index.css`](../src/index.css) via [`src/main.tsx`](../src/main.tsx).
 
-Wijzig geen HSL-waarden in Tailwind-config of inline in componenten voor themakleuren — pas `theme-tokens.css` aan.
+Do not change HSL values in the Tailwind config or inline in components for theme colours — edit `theme-tokens.css`.
 
-Hover/selectie (`--accent`, o.a. sidebar `hover:bg-accent`) is een `color-mix` van `--primary` met `--background` (geen HSL-kanalen). Tailwind gebruikt `var(--accent)`, niet `hsl(var(--accent))`. Wijzig primary, dan volgt hover mee.
+Hover/selection (`--accent`, including sidebar `hover:bg-accent`) is a `color-mix` of `--primary` with `--background` (not HSL channels). Tailwind uses `var(--accent)`, not `hsl(var(--accent))`. Change primary and hover follows.
 
-## Merkkleur buiten de browser
+## Brand colour outside the browser
 
-Sommige kanalen kunnen geen `hsl(var(--primary))` gebruiken (mail-HTML, PDF). Daarvoor geldt:
+Some channels cannot use `hsl(var(--primary))` (mail HTML, PDF). For those:
 
-| Bestand | Rol |
-|---------|-----|
-| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts) | `PRIMARY_HEX` (web + HexColorPicker-fallback) |
-| [`public/favicon.svg`](../public/favicon.svg), [`public/favicon-local.svg`](../public/favicon-local.svg) | Tabblad-icoon (hex in SVG) |
-| [`supabase/functions/generate-invoice/invoicePure.ts`](../supabase/functions/generate-invoice/invoicePure.ts) | Spiegel voor mailheader |
-| [`supabase/functions/generate-invoice/buildPdfPure.ts`](../supabase/functions/generate-invoice/buildPdfPure.ts) | Spiegel voor PDF-header (`PDF_RGB`) |
+| File | Role |
+|------|------|
+| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts) | `PRIMARY_HEX` (web + HexColorPicker fallback) |
+| [`public/favicon.svg`](../public/favicon.svg), [`public/favicon-local.svg`](../public/favicon-local.svg) | Tab icon (hex in SVG) |
+| [`supabase/functions/generate-invoice/invoicePure.ts`](../supabase/functions/generate-invoice/invoicePure.ts) | Mirror for mail header |
+| [`supabase/functions/generate-invoice/buildPdfPure.ts`](../supabase/functions/generate-invoice/buildPdfPure.ts) | Mirror for PDF header (`PDF_RGB`) |
 
-Bij wijziging van `--primary` / merkkleur: **alle drie** spiegels + mirror-comments bijwerken. Drift-tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
+When changing `--primary` / brand colour: update **all three** mirrors plus mirror comments. Drift tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
 
 ## Agenda
 
-- **Custom kleur** (lesstype / handmatig): hex + `color-utils` (`darkenColor`, `getContrastTextColor`).
-- **Default** (geen custom hex): CSS-tokens `--agenda-*`, borders via `--agenda-*-border` (`color-mix` in CSS). TypeScript gebruikt alleen `hsl(var(...))` en `var(--agenda-*-border)`.
-- Classificatie: [`resolveAgendaDefaultKind`](../src/lib/agenda/agenda-default-style-vars.ts) — zelfde volgorde als `getEventStyle`.
+- **Custom colour** (lesson type / manual): hex + `color-utils` (`darkenColor`, `getContrastTextColor`).
+- **Default** (no custom hex): CSS tokens `--agenda-*`, borders via `--agenda-*-border` (`color-mix` in CSS). TypeScript uses only `hsl(var(...))` and `var(--agenda-*-border)`.
+- Classification: [`resolveAgendaDefaultKind`](../src/lib/agenda/agenda-default-style-vars.ts) — same order as `getEventStyle`.
 
 ## Modal overlay
 
-Dialogs gebruiken `bg-black/80 dark:bg-black/60` (geen `--overlay`-token tenzij bewust gekozen na visuele check).
+Dialogs use `bg-black/80 dark:bg-black/60` (no `--overlay` token unless chosen deliberately after a visual check).
 
-## Rebrand-checklist
+## Rebrand checklist
 
-1. `theme-tokens.css` — primary, status, agenda-mapping, group literal dark.
-2. `brand-hex.ts` + edge-spiegels (invoicePure, buildPdfPure).
-3. `tailwind.config.ts` — alleen mappen wat als Tailwind-class nodig is (bijv. `text-agenda-*-foreground`).
-4. Visueel: agenda defaults (lesson/manual zijn bewust andere tint dan oude hex), modals light/dark.
+1. `theme-tokens.css` — primary, status, agenda mapping, group literal dark.
+2. `brand-hex.ts` + edge mirrors (invoicePure, buildPdfPure).
+3. `tailwind.config.ts` — only map what is needed as a Tailwind class (e.g. `text-agenda-*-foreground`).
+4. Visual: agenda defaults (lesson/manual are a different tint from the old hex by design), modals light/dark.
 5. `bun test tests/code/theme/theme-tokens.test.ts tests/code/billing/invoicePure.test.ts tests/code/billing/buildPdfPure.test.ts tests/code/agenda/utils.test.ts`
 
-## Nog niet in deze ship
+## Not in this ship
 
-- Tailwind-palette (`red-500`, `emerald-*`, …) — aparte migratie.
-- Les-type kleuren in de database.
-- Fonts centraliseren.
+- Tailwind palette (`red-500`, `emerald-*`, …) — separate migration.
+- Lesson-type colours in the database.
+- Centralising fonts.
