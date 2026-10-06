@@ -28,17 +28,33 @@ describe('applyInitialStudentsSearchParam', () => {
 
 describe('buildStudentsRowActions', () => {
 	it('returns edit and delete handlers for privileged admins', () => {
+		const editedIds: string[] = [];
 		const actions: string[] = [];
-		const rowActions = buildStudentsRowActions(true, true, false, (action) => {
-			actions.push(action.kind);
-		});
+		const rowActions = buildStudentsRowActions(
+			true,
+			true,
+			false,
+			(student) => {
+				editedIds.push(student.user_id);
+			},
+			(action) => {
+				actions.push(action.kind);
+			},
+		);
 		rowActions.onEdit?.({ user_id: 'student-1' } as never);
 		rowActions.onDelete?.({ user_id: 'student-1' } as never);
-		expect(actions).toEqual(['edit', 'delete']);
+		expect(editedIds).toEqual(['student-1']);
+		expect(actions).toEqual(['delete']);
 	});
 
 	it('returns no handlers when user lacks permissions', () => {
-		const rowActions = buildStudentsRowActions(false, false, false, () => {});
+		const rowActions = buildStudentsRowActions(
+			false,
+			false,
+			false,
+			() => {},
+			() => {},
+		);
 		expect(rowActions.onEdit).toBeUndefined();
 		expect(rowActions.onDelete).toBeUndefined();
 	});

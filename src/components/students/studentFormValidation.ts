@@ -1,31 +1,18 @@
-import {
-	isValidEmail,
-	isValidPhone,
-	type StudentFormMode,
-	type StudentFormState,
-} from '@/components/students/studentFormTypes';
+import { isValidEmail, isValidPhone, type StudentFormState } from '@/components/students/studentFormTypes';
 
-function getCreateModeValidationError(
-	form: StudentFormState,
-	mode: StudentFormMode,
-	selectedUserId: string | null,
-): string | null {
-	if (mode === 'existing-user' && !selectedUserId) {
-		return 'Selecteer een gebruiker';
-	}
-	if (mode === 'new-user' && !form.email) {
-		return 'Email is verplicht';
-	}
-	return null;
-}
+export type StudentFormSaveScope = 'profile' | 'parent';
 
-function getContactValidationError(form: StudentFormState): string | null {
+function getPersonalContactValidationError(form: StudentFormState): string | null {
 	if (form.email && !isValidEmail(form.email)) {
 		return 'Ongeldig emailadres';
 	}
 	if (form.phone_number && !isValidPhone(form.phone_number)) {
 		return 'Telefoonnummer moet 10 cijfers bevatten';
 	}
+	return null;
+}
+
+function getParentContactValidationError(form: StudentFormState): string | null {
 	if (form.parent_phone_number && !isValidPhone(form.parent_phone_number)) {
 		return 'Ouder telefoonnummer moet 10 cijfers bevatten';
 	}
@@ -40,23 +27,29 @@ function getDebtorValidationError(form: StudentFormState): string | null {
 	return 'Alle debiteur NAW velden zijn verplicht als debiteurinformatie niet gelijk is aan leerlinginformatie';
 }
 
-interface StudentFormValidationContext {
-	isEditMode: boolean;
-	mode: StudentFormMode;
-	selectedUserId: string | null;
+export function getStudentProfileTabValidationError(form: StudentFormState): string | null {
+	const contactError = getPersonalContactValidationError(form);
+	if (contactError) return contactError;
+	return getDebtorValidationError(form);
 }
 
-export function getStudentFormValidationError(
-	form: StudentFormState,
-	context: StudentFormValidationContext,
-): string | null {
-	if (!context.isEditMode) {
-		const createError = getCreateModeValidationError(form, context.mode, context.selectedUserId);
-		if (createError) return createError;
+export function getStudentParentTabValidationError(form: StudentFormState): string | null {
+	return getParentContactValidationError(form);
+}
+
+function getValidationErrorForScope(form: StudentFormState, scope: StudentFormSaveScope): string | null {
+	if (scope === 'parent') return getStudentParentTabValidationError(form);
+	return getStudentProfileTabValidationError(form);
+}
+
+/** Toast message when save should be blocked; null when validation passes. */
+export function resolveStudentProfileSaveValidationError(params: {
+	form: StudentFormState;
+	scope: StudentFormSaveScope;
+	dateOfBirthDraftSynced?: boolean;
+}): string | null {
+	if (params.scope === 'profile' && params.dateOfBirthDraftSynced === false) {
+		return 'Geboortedatum is ongeldig';
 	}
-
-	const contactError = getContactValidationError(form);
-	if (contactError) return contactError;
-
-	return getDebtorValidationError(form);
+	return getValidationErrorForScope(params.form, params.scope);
 }

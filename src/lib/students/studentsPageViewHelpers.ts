@@ -23,12 +23,13 @@ export function buildStudentsRowActions(
 	isPrivileged: boolean,
 	isAdmin: boolean,
 	isSiteAdmin: boolean,
+	onEdit: (student: StudentWithAgreements) => void,
 	runAction: (action: StudentAction) => void,
 ): StudentsRowActions {
 	const actions: StudentsRowActions = {};
 
 	if (isPrivileged) {
-		actions.onEdit = (student) => runAction({ kind: 'edit', student });
+		actions.onEdit = onEdit;
 	}
 
 	if (isAdmin || isSiteAdmin) {

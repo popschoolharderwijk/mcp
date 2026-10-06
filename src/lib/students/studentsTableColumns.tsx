@@ -39,7 +39,7 @@ export function buildStudentColumns(
 						e.stopPropagation();
 						navigate(`/students/${s.user_id}`);
 					}}
-					className="block w-full min-w-0 text-left hover:underline"
+					className="block w-full min-w-0 text-left"
 				>
 					<UserDisplay profile={s} showEmail />
 				</button>
@@ -74,7 +74,7 @@ export function buildStudentColumns(
 						e.stopPropagation();
 						navigate(`/students/${s.user_id}`);
 					}}
-					className="text-sm hover:underline"
+					className="text-sm"
 				>
 					{formatAgreementListCount(s.agreements.length)}
 				</button>
@@ -92,7 +92,7 @@ export function buildStudentColumns(
 							e.stopPropagation();
 							navigate(`/students/${s.user_id}`);
 						}}
-						className="text-sm hover:underline"
+						className="text-sm"
 					>
 						{formatSignupRequestCount(count)}
 					</button>

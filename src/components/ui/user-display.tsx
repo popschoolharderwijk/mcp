@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getDisplayName } from '@/lib/display-name';
+import { getUserInitials } from '@/lib/user-initials';
 import { cn } from '@/lib/utils';
 import type { UserOptional } from '@/types/users';
+
+export { getUserInitials } from '@/lib/user-initials';
 
 interface UserDisplayProps {
 	/** User profile data */
@@ -15,16 +18,6 @@ interface UserDisplayProps {
 	className?: string;
 	/** Optional href to link the user's name */
 	href?: string;
-}
-
-export function getUserInitials(profile: UserOptional): string {
-	if (profile.first_name && profile.last_name) {
-		return `${profile.first_name[0]}${profile.last_name[0]}`.toUpperCase();
-	}
-	if (profile.first_name) {
-		return profile.first_name.slice(0, 2).toUpperCase();
-	}
-	return (profile.email ?? '??').slice(0, 2).toUpperCase();
 }
 
 /**

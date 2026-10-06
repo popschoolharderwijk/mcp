@@ -10,7 +10,7 @@ import {
 	type StudentWithAgreements,
 } from '@/types/students';
 
-type StudentRunActionKind = 'open-edit' | 'open-delete' | 'confirm-delete';
+type StudentRunActionKind = 'open-delete' | 'confirm-delete';
 
 export interface ExecuteStudentsPageLoadParams {
 	authLoading: boolean;
@@ -92,13 +92,9 @@ export function applyStudentsPageLoadOutcome(
 	return outcome.kind !== 'skipped';
 }
 
-export type StudentAction =
-	| { kind: 'edit'; student: StudentWithAgreements }
-	| { kind: 'delete'; student: StudentWithAgreements }
-	| { kind: 'confirm-delete' };
+export type StudentAction = { kind: 'delete'; student: StudentWithAgreements } | { kind: 'confirm-delete' };
 
-function resolveStudentRunAction(action: { kind: 'edit' | 'delete' | 'confirm-delete' }): StudentRunActionKind {
-	if (action.kind === 'edit') return 'open-edit';
+function resolveStudentRunAction(action: { kind: 'delete' | 'confirm-delete' }): StudentRunActionKind {
 	if (action.kind === 'delete') return 'open-delete';
 	return 'confirm-delete';
 }
@@ -135,13 +131,11 @@ async function executeStudentDelete(student: StudentWithAgreements, deleteUser: 
 }
 
 export interface StudentPageControllerSetters {
-	setStudentFormDialog: (value: { open: boolean; student: StudentWithAgreements | null }) => void;
 	setDeleteDialog: (value: { open: boolean; student: StudentWithAgreements; deleteUser: boolean } | null) => void;
 	loadStudents: () => void;
 }
 
 type StudentPageActionOutcome =
-	| { kind: 'open-edit'; student: StudentWithAgreements }
 	| { kind: 'open-delete'; student: StudentWithAgreements }
 	| { kind: 'execute-delete'; student: StudentWithAgreements; deleteUser: boolean }
 	| { kind: 'noop' };
@@ -151,9 +145,6 @@ function resolveStudentPageActionOutcome(
 	deleteDialog: { open: boolean; student: StudentWithAgreements; deleteUser: boolean } | null,
 ): StudentPageActionOutcome {
 	const resolved = resolveStudentRunAction(action);
-	if (resolved === 'open-edit' && action.kind === 'edit') {
-		return { kind: 'open-edit', student: action.student };
-	}
 	if (resolved === 'open-delete' && action.kind === 'delete') {
 		return { kind: 'open-delete', student: action.student };
 	}
@@ -173,10 +164,6 @@ export async function runStudentPageAction(
 	setters: StudentPageControllerSetters,
 ): Promise<void> {
 	const outcome = resolveStudentPageActionOutcome(action, deleteDialog);
-	if (outcome.kind === 'open-edit') {
-		setters.setStudentFormDialog({ open: true, student: outcome.student });
-		return;
-	}
 	if (outcome.kind === 'open-delete') {
 		setters.setDeleteDialog({ open: true, student: outcome.student, deleteUser: false });
 		return;

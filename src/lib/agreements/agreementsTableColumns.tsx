@@ -12,13 +12,13 @@ export const AGREEMENT_COLUMNS: DataTableColumn<AgreementTableRow>[] = [
 		key: 'student',
 		label: 'Leerling',
 		sortable: true,
-		render: (row) => <UserDisplay profile={row.student} href={`/students/${row.student_user_id}`} showEmail />,
+		render: (row) => <UserDisplay profile={row.student} showEmail />,
 	},
 	{
 		key: 'teacher',
 		label: 'Docent',
 		sortable: true,
-		render: (row) => <UserDisplay profile={row.teacher} href={`/teachers/${row.teacher_user_id}`} />,
+		render: (row) => <UserDisplay profile={row.teacher} />,
 	},
 	{
 		key: 'lesson',

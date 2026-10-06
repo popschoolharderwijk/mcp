@@ -1,10 +1,10 @@
-import type { StudentFormDialogViewModel } from '@/components/students/useStudentFormDialog';
+import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { applyDebtorSameAsStudentToggle } from '@/lib/students/studentFormFieldsHelpers';
 
 interface StudentFormDebtorSectionProps {
-	vm: StudentFormDialogViewModel;
+	vm: StudentFormFieldsViewModel;
 }
 
 export function StudentFormDebtorSection({ vm }: StudentFormDebtorSectionProps) {
