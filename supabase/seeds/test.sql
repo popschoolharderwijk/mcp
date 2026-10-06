@@ -22,6 +22,19 @@
 --   40000000 = teacher
 --   50000000 = student
 --   60000000 = user (no role, no teacher, no student)
+--   70000000 = project_domain
+--   71000000 = project_label
+--   72000000 = project
+--   73000000 = lesson_group
+--   74000000 = lesson_signup_request
+--   75000000 = trial_lesson
+--   76000000 = no_lesson_period
+--   77000000 = announcement
+--   78000000 = sepa_mandate
+--   79000000 = direct_debit_batch
+--   7a000000 = direct_debit_batch_item
+--   7b000000 = invoice
+--   7c000000 = invoice_line
 --
 -- Examples:
 --   10000000-0001-0000-0000-000000000000 = site_admin, 1st
@@ -1288,6 +1301,622 @@ project_events AS (
 )
 INSERT INTO public.agenda_participants (event_id, user_id)
 SELECT id, owner_user_id FROM project_events;
+
+-- -----------------------------------------------------------------------------
+-- LESSON GROUP (Bandcoaching)
+-- -----------------------------------------------------------------------------
+-- One group for Eve's existing Monday 14:00 Bandcoaching slot.
+-- Link the 8 agreements before inserting members. The member trigger inserts
+-- a new agreement when none exists yet for that group and student.
+-- -----------------------------------------------------------------------------
+DO $$
+DECLARE
+  v_group_id uuid := '73000000-0001-0000-0000-000000000000';
+  v_eve uuid := '40000000-0005-0000-0000-000000000000';
+  v_site_admin uuid := '10000000-0001-0000-0000-000000000000';
+  v_lt uuid;
+  v_linked integer;
+BEGIN
+  SELECT id INTO v_lt FROM public.lesson_types WHERE name = 'Bandcoaching';
+  IF v_lt IS NULL THEN
+    RAISE EXCEPTION 'Bandcoaching lesson type missing from bootstrap seed';
+  END IF;
+
+  INSERT INTO public.lesson_groups (
+    id, name, lesson_type_id, teacher_user_id,
+    duration_minutes, frequency, price_per_lesson,
+    day_of_week, start_time, start_date, is_active, created_by
+  ) VALUES (
+    v_group_id, 'Bandcoaching maandag', v_lt, v_eve,
+    60, 'biweekly'::public.lesson_frequency, 60,
+    1, '14:00'::time, CURRENT_DATE - 45, true, v_site_admin
+  );
+
+  UPDATE public.lesson_agreements
+  SET lesson_group_id = v_group_id
+  WHERE teacher_user_id = v_eve AND lesson_type_id = v_lt;
+
+  GET DIAGNOSTICS v_linked = ROW_COUNT;
+  IF v_linked <> 8 THEN
+    RAISE EXCEPTION 'expected 8 Bandcoaching agreements, linked %', v_linked;
+  END IF;
+
+  INSERT INTO public.lesson_group_members (lesson_group_id, student_user_id, joined_date)
+  SELECT v_group_id, la.student_user_id, la.start_date
+  FROM public.lesson_agreements la
+  WHERE la.lesson_group_id = v_group_id;
+
+  GET DIAGNOSTICS v_linked = ROW_COUNT;
+  IF v_linked <> 8 THEN
+    RAISE EXCEPTION 'expected 8 lesson group members, inserted %', v_linked;
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- SIGNUP REQUESTS
+-- -----------------------------------------------------------------------------
+-- One pending row uses student-001@test.nl so that student's Aanmeldingen tab
+-- has a row. The other emails match no profile: user-001 must see zero rows,
+-- and student-009 / teacher-alice tests require every visible row to be their email.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.lesson_signup_requests (
+  id, lesson_type_id, first_name, last_name, email, phone_number,
+  date_of_birth, parent_name, parent_email, parent_phone_number,
+  notes, status, processed_by, processed_at, created_by
+)
+SELECT
+  v.id,
+  lt.id,
+  v.first_name,
+  v.last_name,
+  v.email,
+  v.phone_number,
+  v.date_of_birth,
+  v.parent_name,
+  v.parent_email,
+  v.parent_phone_number,
+  v.notes,
+  v.status::public.signup_request_status,
+  v.processed_by,
+  v.processed_at,
+  '10000000-0001-0000-0000-000000000000'
+FROM (VALUES
+  (
+    '74000000-0001-0000-0000-000000000000'::uuid,
+    'Gitaarles',
+    'Lucas',
+    'van der Berg',
+    'student-001@test.nl',
+    '0656789012',
+    '2009-01-15'::date,
+    'Karin van der Berg',
+    'karin.vandenberg@example.nl',
+    '0612340001',
+    'Wil graag op maandag.',
+    'pending',
+    NULL::uuid,
+    NULL::timestamptz
+  ),
+  (
+    '74000000-0002-0000-0000-000000000000'::uuid,
+    'Bandcoaching',
+    'Noa',
+    'Jansen',
+    'noa.jansen@example.nl',
+    '0687650002',
+    '2011-04-12'::date,
+    'Ingrid Jansen',
+    'ingrid.jansen@example.nl',
+    '0687650003',
+    NULL,
+    'trial_scheduled',
+    NULL::uuid,
+    NULL::timestamptz
+  ),
+  (
+    '74000000-0003-0000-0000-000000000000'::uuid,
+    'Zangles',
+    'Milan',
+    'Bakker',
+    'milan.bakker@example.nl',
+    '0687650004',
+    '2004-09-01'::date,
+    NULL,
+    NULL,
+    NULL,
+    'Akkoord, overeenkomst volgt.',
+    'approved',
+    '10000000-0001-0000-0000-000000000000'::uuid,
+    now() - interval '3 days'
+  ),
+  (
+    '74000000-0004-0000-0000-000000000000'::uuid,
+    'Drumles',
+    'Eva',
+    'Smit',
+    'eva.smit@example.nl',
+    '0687650005',
+    '1998-02-20'::date,
+    NULL,
+    NULL,
+    NULL,
+    'Geen plek op het gewenste tijdstip.',
+    'rejected',
+    '20000000-0001-0000-0000-000000000000'::uuid,
+    now() - interval '10 days'
+  )
+) AS v(
+  id, lesson_type_name, first_name, last_name, email, phone_number,
+  date_of_birth, parent_name, parent_email, parent_phone_number,
+  notes, status, processed_by, processed_at
+)
+JOIN public.lesson_types lt ON lt.name = v.lesson_type_name;
+
+-- -----------------------------------------------------------------------------
+-- TRIAL LESSONS
+-- -----------------------------------------------------------------------------
+-- scheduled is student 001 with Eve, linked to the trial_scheduled signup,
+-- so /my-trial has a row. No agenda event: the list reads trial_lessons.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.trial_lessons (
+  id, signup_request_id, student_user_id, teacher_user_id, lesson_type_id,
+  scheduled_date, scheduled_start_time, duration_minutes, status, notes, created_by
+)
+SELECT
+  v.id,
+  v.signup_request_id,
+  v.student_user_id,
+  v.teacher_user_id,
+  lt.id,
+  v.scheduled_date,
+  v.scheduled_start_time,
+  v.duration_minutes,
+  v.status::public.trial_lesson_status,
+  v.notes,
+  '10000000-0001-0000-0000-000000000000'
+FROM (VALUES
+  (
+    '75000000-0001-0000-0000-000000000000'::uuid,
+    '74000000-0002-0000-0000-000000000000'::uuid,
+    '50000000-0001-0000-0000-000000000000'::uuid,
+    '40000000-0005-0000-0000-000000000000'::uuid,
+    'Bandcoaching',
+    CURRENT_DATE + 7,
+    '16:00'::time,
+    60,
+    'scheduled',
+    'Proefles na aanmelding.'
+  ),
+  (
+    '75000000-0002-0000-0000-000000000000'::uuid,
+    NULL::uuid,
+    '50000000-0021-0000-0000-000000000000'::uuid,
+    '40000000-0002-0000-0000-000000000000'::uuid,
+    'Basles',
+    CURRENT_DATE - 14,
+    '11:00'::time,
+    30,
+    'completed',
+    NULL
+  ),
+  (
+    '75000000-0003-0000-0000-000000000000'::uuid,
+    NULL::uuid,
+    '50000000-0033-0000-0000-000000000000'::uuid,
+    '40000000-0003-0000-0000-000000000000'::uuid,
+    'Saxofoonles',
+    CURRENT_DATE - 3,
+    '15:00'::time,
+    30,
+    'cancelled',
+    'Leerling afgemeld.'
+  ),
+  (
+    '75000000-0004-0000-0000-000000000000'::uuid,
+    NULL::uuid,
+    '50000000-0045-0000-0000-000000000000'::uuid,
+    '40000000-0004-0000-0000-000000000000'::uuid,
+    'DJ / Beats',
+    CURRENT_DATE - 30,
+    '18:00'::time,
+    45,
+    'converted',
+    NULL
+  )
+) AS v(
+  id, signup_request_id, student_user_id, teacher_user_id, lesson_type_name,
+  scheduled_date, scheduled_start_time, duration_minutes, status, notes
+)
+JOIN public.lesson_types lt ON lt.name = v.lesson_type_name;
+
+-- -----------------------------------------------------------------------------
+-- NO-LESSON PERIODS
+-- -----------------------------------------------------------------------------
+INSERT INTO public.no_lesson_periods (id, name, start_date, end_date, description, created_by)
+VALUES
+  (
+    '76000000-0001-0000-0000-000000000000',
+    'Studiedagen',
+    CURRENT_DATE,
+    CURRENT_DATE + 1,
+    'Geen lessen tijdens de studiedagen.',
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '76000000-0002-0000-0000-000000000000',
+    'Herfstvakantie',
+    CURRENT_DATE + 30,
+    CURRENT_DATE + 44,
+    'Schoolvakantie, lessen hervatten daarna.',
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+-- -----------------------------------------------------------------------------
+-- ANNOUNCEMENTS
+-- -----------------------------------------------------------------------------
+-- One published row shows on the dashboard. The inactive row is only in beheer.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.announcements (id, title, body, audience, published_at, is_active, created_by)
+VALUES
+  (
+    '77000000-0001-0000-0000-000000000000',
+    'Extra repetitie bandcoaching',
+    'Volgende week repeteren we extra op maandag. Neem je instrument mee.',
+    ARRAY['teachers', 'students']::text[],
+    now() - interval '2 days',
+    true,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '77000000-0002-0000-0000-000000000000',
+    'Concept: zomervakantie',
+    'Dit bericht is nog niet gepubliceerd.',
+    ARRAY['students']::text[],
+    NULL,
+    false,
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+-- -----------------------------------------------------------------------------
+-- SEPA MANDATES
+-- -----------------------------------------------------------------------------
+-- pending / active / revoked so each status is visible.
+-- Sequence is bumped so the next mandate reference does not collide.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.sepa_mandates (
+  id, student_user_id, mandate_reference, iban, bic, account_holder,
+  signed_at, signature_method, status, sequence_type, first_used_at, revoked_at, created_by
+)
+VALUES
+  (
+    '78000000-0001-0000-0000-000000000000',
+    '50000000-0001-0000-0000-000000000000',
+    'MND-000001',
+    'NL91ABNA0417164300',
+    'ABNANL2A',
+    'Lucas van der Berg',
+    NULL,
+    'digital',
+    'pending',
+    'FRST',
+    NULL,
+    NULL,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '78000000-0002-0000-0000-000000000000',
+    '50000000-0009-0000-0000-000000000000',
+    'MND-000002',
+    'NL91ABNA0417164300',
+    'ABNANL2A',
+    'Luuk de Vries',
+    CURRENT_DATE - 60,
+    'digital',
+    'active',
+    'RCUR',
+    now() - interval '40 days',
+    NULL,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '78000000-0003-0000-0000-000000000000',
+    '50000000-0012-0000-0000-000000000000',
+    'MND-000003',
+    'NL91ABNA0417164300',
+    'ABNANL2A',
+    'Max van Leeuwen',
+    CURRENT_DATE - 90,
+    'paper',
+    'revoked',
+    'RCUR',
+    now() - interval '80 days',
+    now() - interval '5 days',
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+-- Both guitar agreements of student 009 point at the one active mandate,
+-- so "Samenstellen" on a draft batch inserts two rows.
+UPDATE public.lesson_agreements la
+SET
+  payment_method = 'sepa',
+  sepa_mandate_id = '78000000-0002-0000-0000-000000000000',
+  monthly_amount_cents = 4500
+FROM public.profiles sp, public.lesson_types lt
+WHERE la.student_user_id = sp.user_id
+  AND la.lesson_type_id = lt.id
+  AND sp.email = 'student-009@test.nl'
+  AND lt.name = 'Gitaarles'
+  AND la.is_active = true;
+
+UPDATE public.accounting_settings
+SET
+  sepa_mandate_next_seq = 4,
+  invoice_number_next = 4
+WHERE id = true;
+
+-- -----------------------------------------------------------------------------
+-- DIRECT DEBIT BATCHES
+-- -----------------------------------------------------------------------------
+-- Draft has no items (Samenstellen). Approved has the two SEPA rows.
+-- Submitted is an earlier collection for student 012 (mandate now revoked).
+-- -----------------------------------------------------------------------------
+INSERT INTO public.direct_debit_batches (
+  id, batch_number, status, collection_date, message_id,
+  total_amount_cents, item_count, approved_by, approved_at, submitted_at, created_by
+)
+VALUES
+  (
+    '79000000-0001-0000-0000-000000000000',
+    'INC-2026-001',
+    'draft',
+    (date_trunc('month', CURRENT_DATE) + interval '1 month' + interval '26 days')::date,
+    NULL,
+    0,
+    0,
+    NULL,
+    NULL,
+    NULL,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '79000000-0002-0000-0000-000000000000',
+    'INC-2026-002',
+    'approved',
+    (date_trunc('month', CURRENT_DATE) + interval '26 days')::date,
+    NULL,
+    0,
+    0,
+    '10000000-0001-0000-0000-000000000000',
+    now() - interval '1 day',
+    NULL,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '79000000-0003-0000-0000-000000000000',
+    'INC-2026-003',
+    'submitted',
+    (date_trunc('month', CURRENT_DATE) - interval '1 month' + interval '26 days')::date,
+    'SEED-MSG-0003',
+    0,
+    0,
+    '10000000-0001-0000-0000-000000000000',
+    now() - interval '25 days',
+    now() - interval '20 days',
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+INSERT INTO public.direct_debit_batch_items (
+  id, batch_id, lesson_agreement_id, mandate_id, student_user_id,
+  end_to_end_id, amount_cents, remittance_info, kind, sequence_type, status, created_by
+)
+SELECT
+  ('7a000000-' || lpad(src.n::text, 4, '0') || '-0000-0000-000000000000')::uuid,
+  '79000000-0002-0000-0000-000000000000',
+  src.agreement_id,
+  '78000000-0002-0000-0000-000000000000',
+  src.student_user_id,
+  'SEED-E2E-' || lpad(src.n::text, 4, '0'),
+  4500,
+  'Lesgeld ' || to_char(CURRENT_DATE, 'YYYY-MM') || ' - Luuk de Vries',
+  'subscription',
+  'RCUR',
+  'pending',
+  '10000000-0001-0000-0000-000000000000'
+FROM (
+  SELECT
+    la.id AS agreement_id,
+    la.student_user_id,
+    row_number() OVER (ORDER BY tp.email, la.start_time) AS n
+  FROM public.lesson_agreements la
+  JOIN public.profiles sp ON sp.user_id = la.student_user_id
+  JOIN public.profiles tp ON tp.user_id = la.teacher_user_id
+  JOIN public.lesson_types lt ON lt.id = la.lesson_type_id
+  WHERE sp.email = 'student-009@test.nl'
+    AND lt.name = 'Gitaarles'
+    AND la.is_active = true
+    AND la.payment_method = 'sepa'
+) src;
+
+INSERT INTO public.direct_debit_batch_items (
+  id, batch_id, lesson_agreement_id, mandate_id, student_user_id,
+  end_to_end_id, amount_cents, remittance_info, kind, sequence_type, status, status_updated_at, created_by
+)
+SELECT
+  '7a000000-0003-0000-0000-000000000000',
+  '79000000-0003-0000-0000-000000000000',
+  la.id,
+  '78000000-0003-0000-0000-000000000000',
+  la.student_user_id,
+  'SEED-E2E-0003',
+  3000,
+  'Lesgeld ' || to_char(CURRENT_DATE - interval '1 month', 'YYYY-MM') || ' - Max van Leeuwen',
+  'subscription',
+  'RCUR',
+  'accepted',
+  now() - interval '18 days',
+  '10000000-0001-0000-0000-000000000000'
+FROM public.lesson_agreements la
+JOIN public.profiles sp ON sp.user_id = la.student_user_id
+JOIN public.profiles tp ON tp.user_id = la.teacher_user_id
+JOIN public.lesson_types lt ON lt.id = la.lesson_type_id
+WHERE sp.email = 'student-012@test.nl'
+  AND tp.email = 'teacher-alice@test.nl'
+  AND lt.name = 'Gitaarles'
+  AND la.is_active = true;
+
+SELECT public.recalc_direct_debit_batch('79000000-0002-0000-0000-000000000000');
+SELECT public.recalc_direct_debit_batch('79000000-0003-0000-0000-000000000000');
+
+DO $$
+DECLARE
+  v_sepa integer;
+  v_approved integer;
+  v_submitted integer;
+BEGIN
+  SELECT count(*) INTO v_sepa
+  FROM public.lesson_agreements
+  WHERE sepa_mandate_id = '78000000-0002-0000-0000-000000000000'
+    AND payment_method = 'sepa';
+  IF v_sepa <> 2 THEN
+    RAISE EXCEPTION 'expected 2 SEPA agreements, got %', v_sepa;
+  END IF;
+
+  SELECT count(*) INTO v_approved
+  FROM public.direct_debit_batch_items
+  WHERE batch_id = '79000000-0002-0000-0000-000000000000';
+  IF v_approved <> 2 THEN
+    RAISE EXCEPTION 'expected 2 approved batch items, got %', v_approved;
+  END IF;
+
+  SELECT item_count INTO v_approved
+  FROM public.direct_debit_batches
+  WHERE id = '79000000-0002-0000-0000-000000000000';
+  IF v_approved <> 2 THEN
+    RAISE EXCEPTION 'approved batch item_count is %, expected 2', v_approved;
+  END IF;
+
+  SELECT count(*) INTO v_submitted
+  FROM public.direct_debit_batch_items
+  WHERE batch_id = '79000000-0003-0000-0000-000000000000';
+  IF v_submitted <> 1 THEN
+    RAISE EXCEPTION 'expected 1 submitted batch item, got %', v_submitted;
+  END IF;
+END $$;
+
+-- -----------------------------------------------------------------------------
+-- INVOICES
+-- -----------------------------------------------------------------------------
+-- issued on student 001 (batch null) fills /my-invoices. No PDF path.
+-- Numbers stay below accounting_settings.invoice_number_next.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.invoices (
+  id, invoice_number, student_user_id, batch_id,
+  issue_date, due_date, period_start, period_end,
+  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  age_category, status, sent_at, paid_at, email_sent_to, created_by
+)
+VALUES
+  (
+    '7b000000-0001-0000-0000-000000000000',
+    'INV-2026-00001',
+    '50000000-0012-0000-0000-000000000000',
+    NULL,
+    CURRENT_DATE,
+    CURRENT_DATE + 14,
+    date_trunc('month', CURRENT_DATE)::date,
+    (date_trunc('month', CURRENT_DATE) + interval '1 month' - interval '1 day')::date,
+    3000, 0, 3000,
+    'under_21', 'draft',
+    NULL, NULL, NULL,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '7b000000-0002-0000-0000-000000000000',
+    'INV-2026-00002',
+    '50000000-0001-0000-0000-000000000000',
+    NULL,
+    CURRENT_DATE - 2,
+    CURRENT_DATE + 12,
+    date_trunc('month', CURRENT_DATE)::date,
+    (date_trunc('month', CURRENT_DATE) + interval '1 month' - interval '1 day')::date,
+    4500, 0, 4500,
+    'under_21', 'issued',
+    now() - interval '1 day', NULL, 'student-001@test.nl',
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '7b000000-0003-0000-0000-000000000000',
+    'INV-2026-00003',
+    '50000000-0012-0000-0000-000000000000',
+    '79000000-0003-0000-0000-000000000000',
+    CURRENT_DATE - 40,
+    CURRENT_DATE - 26,
+    (date_trunc('month', CURRENT_DATE) - interval '1 month')::date,
+    (date_trunc('month', CURRENT_DATE) - interval '1 day')::date,
+    3000, 0, 3000,
+    'under_21', 'paid',
+    now() - interval '35 days', now() - interval '20 days', 'student-012@test.nl',
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+INSERT INTO public.invoice_lines (
+  id, invoice_id, batch_item_id, description, lesson_date,
+  quantity, unit_price_cents, btw_rate,
+  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  sort_order, created_by
+)
+VALUES
+  (
+    '7c000000-0001-0000-0000-000000000000',
+    '7b000000-0001-0000-0000-000000000000',
+    NULL,
+    'Gitaarles',
+    CURRENT_DATE,
+    1, 3000, 0, 3000, 0, 3000,
+    0,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '7c000000-0002-0000-0000-000000000000',
+    '7b000000-0002-0000-0000-000000000000',
+    NULL,
+    'Bandcoaching',
+    CURRENT_DATE - 2,
+    1, 4500, 0, 4500, 0, 4500,
+    0,
+    '10000000-0001-0000-0000-000000000000'
+  ),
+  (
+    '7c000000-0003-0000-0000-000000000000',
+    '7b000000-0003-0000-0000-000000000000',
+    '7a000000-0003-0000-0000-000000000000',
+    'Gitaarles',
+    CURRENT_DATE - 40,
+    1, 3000, 0, 3000, 0, 3000,
+    0,
+    '10000000-0001-0000-0000-000000000000'
+  );
+
+-- -----------------------------------------------------------------------------
+-- PARENT CONTACT (under-18 students 001-003)
+-- -----------------------------------------------------------------------------
+UPDATE public.students SET
+  parent_name = 'Karin van der Berg',
+  parent_email = 'karin.vandenberg@example.nl',
+  parent_phone_number = '0612340001'
+WHERE user_id = '50000000-0001-0000-0000-000000000000';
+
+UPDATE public.students SET
+  parent_name = 'Peter de Jong',
+  parent_email = 'peter.dejong@example.nl',
+  parent_phone_number = '0612340002'
+WHERE user_id = '50000000-0002-0000-0000-000000000000';
+
+UPDATE public.students SET
+  parent_name = 'Sandra Bakker',
+  parent_email = 'sandra.bakker@example.nl',
+  parent_phone_number = '0612340003'
+WHERE user_id = '50000000-0003-0000-0000-000000000000';
 
 -- =============================================================================
 -- END SEED
