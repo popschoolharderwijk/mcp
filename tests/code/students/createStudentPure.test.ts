@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildStudentAuthCreatePayload,
+	buildStudentProfileFields,
 	buildStudentRowFields,
 	type CreateStudentMode,
 	resolveExistingStudentUserId,
@@ -105,6 +106,48 @@ describe('buildStudentRowFields', () => {
 			debtor_address: 'Street 1',
 			debtor_postal_code: '1234AB',
 			debtor_city: 'Utrecht',
+		});
+	});
+
+	it('collapses parent and debtor text fields', () => {
+		expect(
+			buildStudentRowFields({
+				...baseBody,
+				parent_name: '  Ouder   Anna ',
+				parent_email: '  ouder@example.com  ',
+				debtor_info_same_as_student: false,
+				debtor_name: 'Debiteur   BV',
+				debtor_address: 'Straat   1',
+				debtor_postal_code: ' 1234AB ',
+				debtor_city: 'Utrecht   Oost',
+			}),
+		).toEqual({
+			date_of_birth: null,
+			parent_name: 'Ouder Anna',
+			parent_email: 'ouder@example.com',
+			parent_phone_number: null,
+			debtor_info_same_as_student: false,
+			debtor_name: 'Debiteur BV',
+			debtor_address: 'Straat 1',
+			debtor_postal_code: '1234AB',
+			debtor_city: 'Utrecht Oost',
+		});
+	});
+});
+
+describe('buildStudentProfileFields', () => {
+	it('collapses names and trims phone', () => {
+		expect(
+			buildStudentProfileFields({
+				...baseBody,
+				first_name: '  Anna   Marie ',
+				last_name: '  Bakker  ',
+				phone_number: ' 0612345678 ',
+			}),
+		).toEqual({
+			first_name: 'Anna Marie',
+			last_name: 'Bakker',
+			phone_number: '0612345678',
 		});
 	});
 });

@@ -1,5 +1,5 @@
 import type { SubmitUserFormResult } from '@/lib/users/submitUserForm';
-import type { UserFormState } from '@/lib/users/userFormHelpers';
+import { trimUserFormState, type UserFormState } from '@/lib/users/userFormHelpers';
 import type { User } from '@/types/users';
 
 export function handleUserFormDialogOpenChange(
@@ -27,13 +27,13 @@ export function buildUserFormStateForOpen(
 	emptyForm: UserFormState,
 ): UserFormState {
 	if (!user) return emptyForm;
-	return {
+	return trimUserFormState({
 		email: user.email,
 		first_name: user.first_name ?? '',
 		last_name: user.last_name ?? '',
 		phone_number: user.phone_number ?? '',
 		role: user.role,
-	};
+	});
 }
 
 export function handleUserFormDialogCancel(

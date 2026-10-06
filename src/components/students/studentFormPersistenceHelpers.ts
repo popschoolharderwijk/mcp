@@ -1,5 +1,11 @@
 import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
 import { studentRecordFields } from '@/components/students/studentFormTypes';
+import {
+	normalizeCompactText,
+	normalizeCompactTextOrNull,
+	normalizeTrimmedText,
+	normalizeTrimmedTextOrNull,
+} from '@/lib/text/normalizeText';
 
 export type StudentSubmitError = { ok: false; title: string; description?: string };
 export type StudentSubmitSuccess = { ok: true; userId?: string };
@@ -11,9 +17,9 @@ export function buildStudentProfileUpdateFields(form: StudentFormState): {
 	phone_number: string | null;
 } {
 	return {
-		first_name: form.first_name || null,
-		last_name: form.last_name || null,
-		phone_number: form.phone_number || null,
+		first_name: normalizeCompactTextOrNull(form.first_name),
+		last_name: normalizeCompactTextOrNull(form.last_name),
+		phone_number: normalizeTrimmedTextOrNull(form.phone_number),
 	};
 }
 
@@ -22,13 +28,17 @@ export function buildCreateStudentPayload(
 	mode: StudentFormMode,
 	selectedUserId: string | null,
 ) {
+	const email = normalizeTrimmedText(form.email);
+	const firstName = normalizeCompactText(form.first_name);
+	const lastName = normalizeCompactText(form.last_name);
+	const phoneNumber = normalizeTrimmedText(form.phone_number);
 	return {
 		mode,
 		existing_user_id: mode === 'existing-user' ? (selectedUserId ?? undefined) : undefined,
-		email: form.email,
-		first_name: form.first_name || undefined,
-		last_name: form.last_name || undefined,
-		phone_number: form.phone_number || undefined,
+		email,
+		first_name: firstName || undefined,
+		last_name: lastName || undefined,
+		phone_number: phoneNumber || undefined,
 		...studentRecordFields(form),
 	};
 }

@@ -7,6 +7,7 @@ import {
 	buildCreatedUserInfo,
 	buildCreateUserPayload,
 	buildProfileUpdatePayload,
+	trimUserFormState,
 	type UserFormEditContext,
 	type UserFormState,
 	validateUserFormSubmit,
@@ -105,15 +106,16 @@ export async function submitUserForm(
 	isSiteAdmin: boolean,
 	editContext: UserFormEditContext | null,
 ): Promise<SubmitUserFormResult> {
-	const validation = validateUserFormSubmit(form, isSiteAdmin);
+	const trimmedForm = trimUserFormState(form);
+	const validation = validateUserFormSubmit(trimmedForm, isSiteAdmin);
 	if (validation.ok === false) {
 		toast.error(validation.message, validation.description ? { description: validation.description } : undefined);
 		return { ok: false };
 	}
 
 	if (editContext) {
-		return submitUserEdit(form, editContext);
+		return submitUserEdit(trimmedForm, editContext);
 	}
 
-	return submitUserCreate(form, isSiteAdmin);
+	return submitUserCreate(trimmedForm, isSiteAdmin);
 }

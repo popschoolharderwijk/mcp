@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import type { AccountFormData, AccountFormErrors, AccountProfileState } from '@/lib/account/persistence';
 import {
 	dispatchProfileUpdated,
+	normalizeAccountFormData,
 	persistAvatarUpload,
 	persistProfile,
 	validateProfilePhone,
@@ -13,11 +14,12 @@ function hasProfileValidationErrors(errors: AccountFormErrors): boolean {
 }
 
 function mergeProfileFromForm(profile: AccountProfileState, formData: AccountFormData): AccountProfileState {
+	const normalized = normalizeAccountFormData(formData);
 	return {
 		...profile,
-		first_name: formData.first_name || null,
-		last_name: formData.last_name || null,
-		phone_number: formData.phone_number || null,
+		first_name: normalized.first_name || null,
+		last_name: normalized.last_name || null,
+		phone_number: normalized.phone_number || null,
 	};
 }
 

@@ -40,6 +40,27 @@ describe('buildUserFormStateForOpen', () => {
 			role: 'admin',
 		});
 	});
+
+	it('trims and collapses loaded user string fields', () => {
+		expect(
+			buildUserFormStateForOpen(
+				{
+					email: '  jan@example.com  ',
+					first_name: ' Jan   Piet ',
+					last_name: ' van   der  Berg ',
+					phone_number: ' 0612345678 ',
+					role: 'admin',
+				},
+				emptyForm,
+			),
+		).toEqual({
+			email: 'jan@example.com',
+			first_name: 'Jan Piet',
+			last_name: 'van der Berg',
+			phone_number: '0612345678',
+			role: 'admin',
+		});
+	});
 });
 
 describe('handleUserFormDialogCancel', () => {

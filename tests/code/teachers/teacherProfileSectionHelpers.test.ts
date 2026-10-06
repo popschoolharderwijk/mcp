@@ -65,23 +65,40 @@ describe('buildTeacherProfileUpdate', () => {
 			vog_expires_at: null,
 		});
 	});
+
+	it('trims bio without collapsing internal spaces', () => {
+		expect(
+			buildTeacherProfileUpdate({
+				bio: '\tHello   world\n',
+				hasVog: true,
+				vogExpiresAt: '2027-01-01',
+				firstName: 'Jan',
+				lastName: 'Docent',
+				phoneNumber: '',
+			}),
+		).toEqual({
+			bio: 'Hello   world',
+			has_vog: true,
+			vog_expires_at: '2027-01-01',
+		});
+	});
 });
 
 describe('buildTeacherProfileNameUpdate', () => {
-	it('maps empty names to null', () => {
+	it('collapses whitespace in names, trims phone, and nullifies blanks', () => {
 		expect(
 			buildTeacherProfileNameUpdate({
 				bio: '',
 				hasVog: false,
 				vogExpiresAt: '',
-				firstName: '',
-				lastName: 'Docent',
-				phoneNumber: '',
+				firstName: '\tJan   Piet  ',
+				lastName: '  ',
+				phoneNumber: ' 0612345678 ',
 			}),
 		).toEqual({
-			first_name: null,
-			last_name: 'Docent',
-			phone_number: null,
+			first_name: 'Jan Piet',
+			last_name: null,
+			phone_number: '0612345678',
 		});
 	});
 });

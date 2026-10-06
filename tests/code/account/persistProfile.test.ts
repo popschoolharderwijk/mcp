@@ -68,6 +68,21 @@ describe('persistProfile', () => {
 		});
 	});
 
+	it('collapses whitespace in names and trims phone', async () => {
+		const result = await persistProfile('user-2', {
+			first_name: '  Anna   Marie ',
+			last_name: '  van   der Berg ',
+			phone_number: ' 0612345678 ',
+		});
+
+		expect(result).toEqual({ error: null });
+		expect(lastUpdatePayload).toEqual({
+			first_name: 'Anna Marie',
+			last_name: 'van der Berg',
+			phone_number: '0612345678',
+		});
+	});
+
 	it('returns the Supabase error message when update fails', async () => {
 		updateResult = { error: { message: 'update failed' } };
 		const result = await persistProfile('user-3', {

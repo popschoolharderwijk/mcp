@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
-import { unwrap, unwrapError } from '../../utils';
+import { unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -77,6 +77,137 @@ describe('Triggers: profiles immutability', () => {
 			.from('profiles')
 			.update({ first_name: profile.first_name, last_name: profile.last_name })
 			.eq('user_id', profile.user_id);
+	});
+
+	it('collapses and trims profile names including tabs, and nullifies blanks', async () => {
+		const db = await createClientAs(TestUsers.STUDENT_001);
+		const profile = requireProfile(TestUsers.STUDENT_001);
+
+		const trimmed = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: '\tAnna   Marie\n', last_name: '  van   der  Berg  ' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
+
+		expect(trimmed).toHaveLength(1);
+		expect(trimmed[0]?.first_name).toBe('Anna Marie');
+		expect(trimmed[0]?.last_name).toBe('van der Berg');
+
+		const blanked = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: '\t\n', last_name: '   ' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
+
+		expect(blanked).toHaveLength(1);
+		expect(blanked[0]?.first_name).toBeNull();
+		expect(blanked[0]?.last_name).toBeNull();
+
+		await db
+			.from('profiles')
+			.update({ first_name: profile.first_name, last_name: profile.last_name })
+			.eq('user_id', profile.user_id);
+	});
+
+	it('trims leading and trailing whitespace on phone_number', async () => {
+		const db = await createClientAs(TestUsers.STUDENT_001);
+		const profile = requireProfile(TestUsers.STUDENT_001);
+		const originalPhoneNumber = profile.phone_number;
+
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ phone_number: '\t0612345678\n' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
+
+		expect(data).toHaveLength(1);
+		expect(data[0]?.phone_number).toBe('0612345678');
+
+		await db.from('profiles').update({ phone_number: originalPhoneNumber }).eq('user_id', profile.user_id);
+	});
+});
+
+describe('Triggers: students text normalize', () => {
+	it('collapses parent/debtor text and nullifies blanks', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+		const studentUserId = fixtures.requireStudentId(TestUsers.STUDENT_001);
+		const original = unwrapSingleRow(
+			await db
+				.from('students')
+				.select('parent_name, debtor_name, debtor_info_same_as_student')
+				.eq('user_id', studentUserId)
+				.single(),
+		);
+
+		const collapsed = unwrapSingleRow(
+			await db
+				.from('students')
+				.update({
+					parent_name: '\tOuder   Anna\n',
+					debtor_info_same_as_student: false,
+					debtor_name: '  Debiteur   BV  ',
+				})
+				.eq('user_id', studentUserId)
+				.select('parent_name, debtor_name')
+				.single(),
+		);
+
+		expect(collapsed.parent_name).toBe('Ouder Anna');
+		expect(collapsed.debtor_name).toBe('Debiteur BV');
+
+		const blanked = unwrapSingleRow(
+			await db
+				.from('students')
+				.update({ parent_name: '\t\n', debtor_name: '   ' })
+				.eq('user_id', studentUserId)
+				.select('parent_name, debtor_name')
+				.single(),
+		);
+
+		expect(blanked.parent_name).toBeNull();
+		expect(blanked.debtor_name).toBeNull();
+
+		await db
+			.from('students')
+			.update({
+				parent_name: original.parent_name,
+				debtor_name: original.debtor_name,
+				debtor_info_same_as_student: original.debtor_info_same_as_student,
+			})
+			.eq('user_id', studentUserId);
+	});
+});
+
+describe('Triggers: teachers text normalize', () => {
+	it('trims bio ends without collapsing internal spaces', async () => {
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		const teacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
+		const original = unwrapSingleRow(await db.from('teachers').select('bio').eq('user_id', teacherUserId).single());
+
+		const trimmed = unwrapSingleRow(
+			await db
+				.from('teachers')
+				.update({ bio: '\tHello   world\n' })
+				.eq('user_id', teacherUserId)
+				.select('bio')
+				.single(),
+		);
+
+		expect(trimmed.bio).toBe('Hello   world');
+
+		const blanked = unwrapSingleRow(
+			await db.from('teachers').update({ bio: '\t\n' }).eq('user_id', teacherUserId).select('bio').single(),
+		);
+
+		expect(blanked.bio).toBeNull();
+
+		await db.from('teachers').update({ bio: original.bio }).eq('user_id', teacherUserId);
 	});
 });
 

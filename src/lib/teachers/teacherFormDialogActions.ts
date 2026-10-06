@@ -1,12 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { diffLessonTypeIds, type TeacherFormState } from '@/lib/teachers/teacherFormDialogHelpers';
+import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '@/lib/text/normalizeText';
 
 export async function createTeacherRecord(userId: string, form: TeacherFormState): Promise<{ user_id: string } | null> {
 	const { data, error } = await supabase
 		.from('teachers')
 		.insert({
 			user_id: userId,
-			bio: form.bio || null,
+			bio: normalizeTrimmedTextOrNull(form.bio),
 			is_active: true,
 		})
 		.select('user_id')
@@ -31,7 +32,7 @@ export async function linkTeacherLessonTypes(teacherUserId: string, lessonTypeId
 export async function updateTeacherBio(teacherUserId: string, bio: string): Promise<string | null> {
 	const { error } = await supabase
 		.from('teachers')
-		.update({ bio: bio || null })
+		.update({ bio: normalizeTrimmedTextOrNull(bio) })
 		.eq('user_id', teacherUserId);
 	return error?.message ?? null;
 }
@@ -43,9 +44,9 @@ export async function updateTeacherProfileFields(
 	const { error } = await supabase
 		.from('profiles')
 		.update({
-			first_name: form.first_name || null,
-			last_name: form.last_name || null,
-			phone_number: form.phone_number || null,
+			first_name: normalizeCompactTextOrNull(form.first_name),
+			last_name: normalizeCompactTextOrNull(form.last_name),
+			phone_number: normalizeTrimmedTextOrNull(form.phone_number),
 		})
 		.eq('user_id', teacherUserId);
 	return error?.message ?? null;

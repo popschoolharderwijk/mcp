@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { removeUserAvatarFiles } from '@/lib/storage/avatars';
+import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '@/lib/text/normalizeText';
 
 export type AccountFormData = {
 	first_name: string;
@@ -24,14 +25,22 @@ export function dispatchProfileUpdated(): void {
 	window.dispatchEvent(new Event('profile-updated'));
 }
 
+export function normalizeAccountFormData(formData: AccountFormData): AccountFormData {
+	return {
+		first_name: normalizeCompactTextOrNull(formData.first_name) ?? '',
+		last_name: normalizeCompactTextOrNull(formData.last_name) ?? '',
+		phone_number: normalizeTrimmedTextOrNull(formData.phone_number) ?? '',
+	};
+}
+
 export async function persistProfile(userId: string, formData: AccountFormData): Promise<{ error: string | null }> {
-	const normalizedPhone = formData.phone_number || null;
+	const normalized = normalizeAccountFormData(formData);
 	const { error } = await supabase
 		.from('profiles')
 		.update({
-			first_name: formData.first_name || null,
-			last_name: formData.last_name || null,
-			phone_number: normalizedPhone,
+			first_name: normalized.first_name || null,
+			last_name: normalized.last_name || null,
+			phone_number: normalized.phone_number || null,
 		})
 		.eq('user_id', userId);
 	return { error: error?.message ?? null };
