@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 — 2026-10-06
+
+- Leerlingdetail met tabbladen
+- Namen en contactgegevens automatisch opgeschoond
+- Meerdere UI verbeteringen
+
 ## 1.1.0 — 2026-09-29
 
 - Nieuwe **Mplifi**-huisstijl: logo, favicon en gouden merkkleur
