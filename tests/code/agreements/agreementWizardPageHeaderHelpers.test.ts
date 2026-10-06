@@ -48,6 +48,24 @@ describe('buildAgreementWizardStudentDisplay', () => {
 		});
 	});
 
+	it('uses the last surname word for student initials', () => {
+		expect(
+			buildAgreementWizardStudentDisplay(
+				mockRow({
+					student: {
+						first_name: 'Adam',
+						last_name: 'van der Wal',
+						avatar_url: null,
+						email: 'adam@example.com',
+					},
+				}),
+			),
+		).toEqual({
+			studentName: 'Adam van der Wal',
+			studentInitials: 'AW',
+		});
+	});
+
 	it('falls back to email when names are missing', () => {
 		expect(
 			buildAgreementWizardStudentDisplay(

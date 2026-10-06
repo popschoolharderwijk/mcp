@@ -1,4 +1,5 @@
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
+import { getUserInitials } from '@/lib/user-initials';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
 
@@ -12,7 +13,7 @@ export interface StudentProfileData {
 }
 
 export function buildStudentInitials(profile: StudentProfileData): string {
-	return (profile.first_name?.[0] ?? '') + (profile.last_name?.[0] ?? '');
+	return getUserInitials(profile);
 }
 
 export function buildStudentAvatarFallback(profile: StudentProfileData, initials: string): string {

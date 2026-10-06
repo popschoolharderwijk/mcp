@@ -5,6 +5,7 @@ import {
 	type FreeSlotForTeacher,
 	getFreeSlotsAcrossTeachers,
 } from '@/lib/agreementSlots';
+import { getUserInitials } from '@/lib/user-initials';
 
 export interface TeacherDisplayInfo {
 	firstName: string | null;
@@ -33,9 +34,11 @@ export function getTeacherDisplayName(teacher: TeacherDisplayInfo | undefined): 
 
 export function getTeacherInitials(teacher: TeacherDisplayInfo | undefined): string {
 	if (!teacher) return '?';
-	const first = (teacher.firstName ?? '?')[0] ?? '?';
-	const last = (teacher.lastName ?? '')[0] ?? '';
-	return `${first}${last}`.toUpperCase();
+	return getUserInitials({
+		first_name: teacher.firstName,
+		last_name: teacher.lastName,
+		email: null,
+	});
 }
 
 export interface ScheduleTrialLessonFormInput {

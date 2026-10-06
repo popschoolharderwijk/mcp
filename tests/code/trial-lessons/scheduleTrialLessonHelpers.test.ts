@@ -37,6 +37,10 @@ describe('getTeacherInitials', () => {
 	it('returns initials from teacher name', () => {
 		expect(getTeacherInitials({ firstName: 'Jan', lastName: 'Docent', avatarUrl: null })).toBe('JD');
 	});
+
+	it('uses the last surname word for the second initial', () => {
+		expect(getTeacherInitials({ firstName: 'Adam', lastName: 'van der Wal', avatarUrl: null })).toBe('AW');
+	});
 });
 
 describe('buildScheduleTrialLessonPayload', () => {

@@ -42,6 +42,16 @@ describe('buildStudentInitials', () => {
 	it('combines first letters of names', () => {
 		expect(buildStudentInitials(profile)).toBe('JL');
 	});
+
+	it('uses the last surname word for the second initial', () => {
+		expect(
+			buildStudentInitials({
+				...profile,
+				first_name: 'Adam',
+				last_name: 'van der Wal',
+			}),
+		).toBe('AW');
+	});
 });
 
 describe('buildStudentAvatarFallback', () => {
