@@ -5,15 +5,52 @@ import {
 	buildCreateUserPayload,
 	buildProfileUpdatePayload,
 	getUserFormDialogCopy,
+	hasUserFormChanges,
 	isUserRoleLocked,
 	parseUserRoleSelectValue,
+	resolveUserFormSubmitDisabled,
+	trimUserFormState,
 	validateUserFormSubmit,
 } from '../../../src/lib/users/userFormHelpers';
+
+const baseForm = {
+	email: 'user@example.com',
+	first_name: 'Anna',
+	last_name: 'Jansen',
+	phone_number: '0612345678',
+	role: 'admin' as const,
+};
+
+describe('trimUserFormState', () => {
+	it('collapses whitespace in names and trims email and phone', () => {
+		expect(
+			trimUserFormState({
+				email: '\tuser@example.com  ',
+				first_name: '\tAnna   Marie\n',
+				last_name: 'van   der  Berg',
+				phone_number: ' 0612345678 ',
+				role: null,
+			}),
+		).toEqual({
+			email: 'user@example.com',
+			first_name: 'Anna Marie',
+			last_name: 'van der Berg',
+			phone_number: '0612345678',
+			role: null,
+		});
+	});
+});
 
 describe('validateUserFormSubmit', () => {
 	it('requires email', () => {
 		expect(
 			validateUserFormSubmit({ email: '', first_name: '', last_name: '', phone_number: '', role: null }, true),
+		).toEqual({ ok: false, message: 'Email is verplicht' });
+	});
+
+	it('requires email when only whitespace', () => {
+		expect(
+			validateUserFormSubmit({ email: '   ', first_name: '', last_name: '', phone_number: '', role: null }, true),
 		).toEqual({ ok: false, message: 'Email is verplicht' });
 	});
 
@@ -64,6 +101,23 @@ describe('buildProfileUpdatePayload', () => {
 			phone_number: null,
 		});
 	});
+
+	it('trims string fields before mapping', () => {
+		expect(
+			buildProfileUpdatePayload({
+				email: '  user@example.com  ',
+				first_name: ' Anna ',
+				last_name: '  ',
+				phone_number: ' 0612345678 ',
+				role: null,
+			}),
+		).toEqual({
+			email: 'user@example.com',
+			first_name: 'Anna',
+			last_name: null,
+			phone_number: '0612345678',
+		});
+	});
 });
 
 describe('buildCreateUserPayload', () => {
@@ -79,6 +133,24 @@ describe('buildCreateUserPayload', () => {
 		).toEqual({
 			email: 'user@example.com',
 			first_name: undefined,
+			last_name: 'Jansen',
+			phone_number: undefined,
+			role: 'admin',
+		});
+	});
+
+	it('trims string fields before mapping', () => {
+		expect(
+			buildCreateUserPayload({
+				email: '  user@example.com  ',
+				first_name: ' Anna ',
+				last_name: ' Jansen ',
+				phone_number: '  ',
+				role: 'admin',
+			}),
+		).toEqual({
+			email: 'user@example.com',
+			first_name: 'Anna',
 			last_name: 'Jansen',
 			phone_number: undefined,
 			role: 'admin',
@@ -146,5 +218,37 @@ describe('isUserRoleLocked', () => {
 
 	it('does not lock roles in create mode', () => {
 		expect(isUserRoleLocked(false, true, false, 'site_admin')).toBe(false);
+	});
+});
+
+describe('hasUserFormChanges', () => {
+	it('returns false when only whitespace normalization differs', () => {
+		expect(hasUserFormChanges(baseForm, { ...baseForm, first_name: ' Anna ' })).toBe(false);
+		expect(
+			hasUserFormChanges({ ...baseForm, first_name: 'Anna Marie' }, { ...baseForm, first_name: 'Anna   Marie' }),
+		).toBe(false);
+		expect(hasUserFormChanges(baseForm, { ...baseForm, first_name: '\tAnna\n' })).toBe(false);
+	});
+
+	it('returns true when role changed', () => {
+		expect(hasUserFormChanges(baseForm, { ...baseForm, role: null })).toBe(true);
+	});
+});
+
+describe('resolveUserFormSubmitDisabled', () => {
+	it('disables create submit when email is only whitespace', () => {
+		expect(resolveUserFormSubmitDisabled(false, { ...baseForm, email: '   ' }, baseForm)).toBe(true);
+	});
+
+	it('enables create submit with email even without changes', () => {
+		expect(resolveUserFormSubmitDisabled(false, baseForm, baseForm)).toBe(false);
+	});
+
+	it('disables edit submit when only whitespace changed', () => {
+		expect(resolveUserFormSubmitDisabled(true, { ...baseForm, last_name: ' Jansen ' }, baseForm)).toBe(true);
+	});
+
+	it('enables edit submit when something changed', () => {
+		expect(resolveUserFormSubmitDisabled(true, { ...baseForm, last_name: 'De Vries' }, baseForm)).toBe(false);
 	});
 });

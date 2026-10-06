@@ -23,6 +23,7 @@ import {
 	assignableRoles,
 	getUserFormDialogCopy,
 	isUserRoleLocked,
+	resolveUserFormSubmitDisabled,
 	type UserFormState,
 } from '@/lib/users/userFormHelpers';
 import type { User } from '@/types/users';
@@ -84,6 +85,8 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 	const { dialogTitle, dialogDescription, submitLabel, savingLabel } = getUserFormDialogCopy(isEditMode, form);
 	const roleLocked = isUserRoleLocked(isEditMode, isAdmin, isSiteAdmin, user?.role);
 	const roles = assignableRoles(isSiteAdmin);
+	const initialForm = buildUserFormStateForOpen(user, emptyForm);
+	const submitDisabled = resolveUserFormSubmitDisabled(isEditMode, form, initialForm);
 
 	return (
 		<Dialog
@@ -117,7 +120,7 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 						onClick={() => void handleSubmit()}
 						loading={saving}
 						loadingLabel={savingLabel}
-						disabled={!form.email}
+						disabled={submitDisabled}
 					>
 						{submitLabel}
 					</SubmitButton>

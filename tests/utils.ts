@@ -3,7 +3,7 @@
  */
 
 import { expect } from 'bun:test';
-import type { PostgrestError, User } from '@supabase/supabase-js';
+import type { PostgrestError, PostgrestSingleResponse, User } from '@supabase/supabase-js';
 import { PostgresErrorCodes } from '../src/integrations/supabase/errorcodes';
 
 export function expectNonNull<T>(data: T | null | undefined): asserts data is T {
@@ -36,7 +36,7 @@ export function unwrap<T>({ data, error }: PostgressResult<T | null>): T {
 }
 
 /** Like {@link unwrap}, but narrows away `null` / `undefined` (e.g. after `.single()`). */
-export function unwrapSingleRow<T>(result: PostgressResult<T | null>): NonNullable<T> {
+export function unwrapSingleRow<T>(result: PostgrestSingleResponse<T>): T {
 	const { data, error } = result;
 	expect(error).toBeNull();
 	if (!isNonNullish(data)) {

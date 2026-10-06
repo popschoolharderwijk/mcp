@@ -103,6 +103,31 @@ describe('studentRecordFields', () => {
 			debtor_city: null,
 		});
 	});
+
+	it('collapses parent and debtor name fields', () => {
+		expect(
+			studentRecordFields({
+				...emptyStudentForm,
+				parent_name: '  Ouder   Anna  ',
+				parent_email: '  ouder@example.com  ',
+				debtor_info_same_as_student: false,
+				debtor_name: 'Debiteur   BV',
+				debtor_address: 'Straat   1',
+				debtor_postal_code: ' 1234AB ',
+				debtor_city: 'Amsterdam   Centrum',
+			}),
+		).toEqual({
+			date_of_birth: null,
+			parent_name: 'Ouder Anna',
+			parent_email: 'ouder@example.com',
+			parent_phone_number: null,
+			debtor_info_same_as_student: false,
+			debtor_name: 'Debiteur BV',
+			debtor_address: 'Straat 1',
+			debtor_postal_code: '1234AB',
+			debtor_city: 'Amsterdam Centrum',
+		});
+	});
 });
 
 describe('studentFormFromStudent', () => {

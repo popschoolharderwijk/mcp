@@ -215,6 +215,8 @@ const EXPECTED_FUNCTIONS = [
 	'mark_trial_lesson_completed',
 	'next_invoice_number',
 	'next_mandate_reference',
+	'normalize_compact_text',
+	'normalize_trim_text',
 	'policy_exists',
 	'recalc_direct_debit_batch',
 	'shift_recurring_deviation_to_next_week',

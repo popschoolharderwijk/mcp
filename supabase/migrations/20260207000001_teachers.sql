@@ -25,12 +25,36 @@ CREATE TABLE IF NOT EXISTS public.teachers (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
   -- Teacher profile information
-  bio TEXT,
+  bio TEXT
+    CHECK (bio IS NULL OR bio = public.normalize_trim_text(bio)),
   is_active BOOLEAN NOT NULL DEFAULT true
 );
 
 -- Add audit columns to teachers
 SELECT public.apply_audit_trail('public.teachers');
+
+CREATE OR REPLACE FUNCTION public.normalize_teachers_text_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  -- Trim only: preserve intentional internal spacing/newlines in bio.
+  NEW.bio := public.normalize_trim_text(NEW.bio);
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.normalize_teachers_text_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.normalize_teachers_text_fields() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.normalize_teachers_text_fields() FROM authenticated;
+
+CREATE TRIGGER normalize_teachers_text_fields
+BEFORE INSERT OR UPDATE ON public.teachers
+FOR EACH ROW
+EXECUTE FUNCTION public.normalize_teachers_text_fields();
 
 -- Add foreign key to profiles (ensures teacher always has a profile)
 DO $$

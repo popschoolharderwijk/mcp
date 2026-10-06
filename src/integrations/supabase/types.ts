@@ -2158,6 +2158,8 @@ export type Database = {
 			};
 			next_invoice_number: { Args: never; Returns: string };
 			next_mandate_reference: { Args: never; Returns: string };
+			normalize_compact_text: { Args: { p_value: string }; Returns: string };
+			normalize_trim_text: { Args: { p_value: string }; Returns: string };
 			policy_exists: {
 				Args: { p_policy_name: string; p_table_name: string };
 				Returns: boolean;

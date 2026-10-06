@@ -4,6 +4,7 @@ import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AppRole } from '@/lib/roles';
 import { roleLabels } from '@/lib/roles';
+import { normalizeCompactText, normalizeTrimmedText } from '@/lib/text/normalizeText';
 import { parseUserRoleSelectValue, type UserFormState } from '@/lib/users/userFormHelpers';
 
 interface UserFormFieldsProps {
@@ -19,6 +20,14 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 		onFieldChange({ ...form, [key]: value });
 	};
 
+	const normalizeNameField = (key: 'first_name' | 'last_name') => {
+		updateField(key, normalizeCompactText(form[key]));
+	};
+
+	const normalizeTrimField = (key: 'email' | 'phone_number') => {
+		updateField(key, normalizeTrimmedText(form[key]));
+	};
+
 	return (
 		<div className="space-y-4 py-4">
 			<div className="grid grid-cols-2 gap-4">
@@ -28,6 +37,7 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						id="user-first-name"
 						value={form.first_name}
 						onChange={(e) => updateField('first_name', e.target.value)}
+						onBlur={() => normalizeNameField('first_name')}
 						autoFocus
 					/>
 				</div>
@@ -37,6 +47,7 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						id="user-last-name"
 						value={form.last_name}
 						onChange={(e) => updateField('last_name', e.target.value)}
+						onBlur={() => normalizeNameField('last_name')}
 					/>
 				</div>
 			</div>
@@ -48,6 +59,7 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						type="email"
 						value={form.email}
 						onChange={(e) => updateField('email', e.target.value)}
+						onBlur={() => normalizeTrimField('email')}
 						placeholder="gebruiker@voorbeeld.nl"
 						disabled={isEditMode}
 					/>
@@ -59,6 +71,7 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						label="Telefoonnummer"
 						value={form.phone_number}
 						onChange={(value) => updateField('phone_number', value)}
+						onBlur={() => normalizeTrimField('phone_number')}
 					/>
 				</div>
 			</div>

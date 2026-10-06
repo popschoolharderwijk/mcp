@@ -23,17 +23,25 @@ CREATE TABLE IF NOT EXISTS public.students (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
 
   -- Parent/guardian information (for minors)
-  parent_name TEXT,
-  parent_email TEXT,
-  parent_phone_number TEXT CHECK (public.is_valid_phone_number(parent_phone_number)),
+  parent_name TEXT
+    CHECK (parent_name IS NULL OR parent_name = public.normalize_compact_text(parent_name)),
+  parent_email TEXT
+    CHECK (parent_email IS NULL OR parent_email = public.normalize_trim_text(parent_email)),
+  parent_phone_number TEXT
+    CHECK (public.is_valid_phone_number(parent_phone_number))
+    CHECK (parent_phone_number IS NULL OR parent_phone_number = public.normalize_trim_text(parent_phone_number)),
   date_of_birth DATE,
 
   -- Debtor information (for billing)
   debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true,
-  debtor_name TEXT,
-  debtor_address TEXT,
-  debtor_postal_code TEXT,
+  debtor_name TEXT
+    CHECK (debtor_name IS NULL OR debtor_name = public.normalize_compact_text(debtor_name)),
+  debtor_address TEXT
+    CHECK (debtor_address IS NULL OR debtor_address = public.normalize_compact_text(debtor_address)),
+  debtor_postal_code TEXT
+    CHECK (debtor_postal_code IS NULL OR debtor_postal_code = public.normalize_compact_text(debtor_postal_code)),
   debtor_city TEXT
+    CHECK (debtor_city IS NULL OR debtor_city = public.normalize_compact_text(debtor_city))
 );
 
 -- Add audit columns to students
@@ -78,6 +86,34 @@ REVOKE ALL ON FUNCTION public.is_student(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.is_student(UUID) FROM anon;
 GRANT EXECUTE ON FUNCTION public.is_student(UUID) TO authenticated;
 ALTER FUNCTION public.is_student(UUID) OWNER TO postgres;
+
+CREATE OR REPLACE FUNCTION public.normalize_students_text_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  NEW.parent_name := public.normalize_compact_text(NEW.parent_name);
+  NEW.parent_email := public.normalize_trim_text(NEW.parent_email);
+  NEW.parent_phone_number := public.normalize_trim_text(NEW.parent_phone_number);
+  NEW.debtor_name := public.normalize_compact_text(NEW.debtor_name);
+  NEW.debtor_address := public.normalize_compact_text(NEW.debtor_address);
+  NEW.debtor_postal_code := public.normalize_compact_text(NEW.debtor_postal_code);
+  NEW.debtor_city := public.normalize_compact_text(NEW.debtor_city);
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.normalize_students_text_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.normalize_students_text_fields() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.normalize_students_text_fields() FROM authenticated;
+
+CREATE TRIGGER normalize_students_text_fields
+BEFORE INSERT OR UPDATE ON public.students
+FOR EACH ROW
+EXECUTE FUNCTION public.normalize_students_text_fields();
 
 -- =============================================================================
 -- SECTION 5: RLS POLICIES

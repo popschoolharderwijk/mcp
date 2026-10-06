@@ -56,6 +56,21 @@ describe('buildStudentProfileUpdateFields', () => {
 			phone_number: null,
 		});
 	});
+
+	it('collapses names and trims phone', () => {
+		expect(
+			buildStudentProfileUpdateFields({
+				...emptyStudentForm,
+				first_name: '  Anna   Marie ',
+				last_name: '  Bakker  ',
+				phone_number: ' 0612345678 ',
+			}),
+		).toEqual({
+			first_name: 'Anna Marie',
+			last_name: 'Bakker',
+			phone_number: '0612345678',
+		});
+	});
 });
 
 describe('resolveCreateStudentInvokeResult', () => {

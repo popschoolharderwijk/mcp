@@ -150,16 +150,64 @@ REVOKE ALL ON FUNCTION public.is_valid_phone_number(text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.is_valid_phone_number(text) TO authenticated;
 ALTER FUNCTION public.is_valid_phone_number(text) OWNER TO postgres;
 
+-- Collapse whitespace runs, then trim ends; blank → NULL. Matches JS normalizeCompactText.
+-- Order matters: btrim alone leaves leading tabs/newlines; collapse first turns them into spaces.
+CREATE OR REPLACE FUNCTION public.normalize_compact_text(p_value text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN p_value IS NULL THEN NULL
+    ELSE nullif(
+      regexp_replace(regexp_replace(p_value, '\s+', ' ', 'g'), '^\s+|\s+$', '', 'g'),
+      ''
+    )
+  END;
+$$;
+
+REVOKE ALL ON FUNCTION public.normalize_compact_text(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.normalize_compact_text(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.normalize_compact_text(text) TO authenticated;
+ALTER FUNCTION public.normalize_compact_text(text) OWNER TO postgres;
+
+-- Trim ends only (any whitespace); blank → NULL. Matches JS String#trim / normalizeTrimmedText.
+-- Do not use btrim: it only strips spaces, not tabs/newlines.
+CREATE OR REPLACE FUNCTION public.normalize_trim_text(p_value text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN p_value IS NULL THEN NULL
+    ELSE nullif(regexp_replace(p_value, '^\s+|\s+$', '', 'g'), '')
+  END;
+$$;
+
+REVOKE ALL ON FUNCTION public.normalize_trim_text(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.normalize_trim_text(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.normalize_trim_text(text) TO authenticated;
+ALTER FUNCTION public.normalize_trim_text(text) OWNER TO postgres;
+
 -- =============================================================================
 -- SECTION 2: TABLES
 -- =============================================================================
 
 CREATE TABLE IF NOT EXISTS public.profiles (
   user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL UNIQUE,
-  first_name TEXT,
-  last_name TEXT,
-  phone_number TEXT CHECK (public.is_valid_phone_number(phone_number)),
+  email TEXT NOT NULL UNIQUE
+    CHECK (email = public.normalize_trim_text(email)),
+  first_name TEXT
+    CHECK (first_name IS NULL OR first_name = public.normalize_compact_text(first_name)),
+  last_name TEXT
+    CHECK (last_name IS NULL OR last_name = public.normalize_compact_text(last_name)),
+  phone_number TEXT
+    CHECK (public.is_valid_phone_number(phone_number))
+    CHECK (phone_number IS NULL OR phone_number = public.normalize_trim_text(phone_number)),
   avatar_url TEXT
 );
 
@@ -547,6 +595,38 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_user_id_change();
 
+-- Normalize free-text profile fields on every write (defense in depth vs client normalize).
+-- Trigger name sorts before prevent_profiles_* so email is trimmed before the immutability check.
+CREATE OR REPLACE FUNCTION public.normalize_profiles_text_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  NEW.email := coalesce(public.normalize_trim_text(NEW.email), '');
+  IF NEW.email = '' THEN
+    RAISE EXCEPTION 'profiles.email cannot be blank';
+  END IF;
+
+  NEW.first_name := public.normalize_compact_text(NEW.first_name);
+  NEW.last_name := public.normalize_compact_text(NEW.last_name);
+  NEW.phone_number := public.normalize_trim_text(NEW.phone_number);
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.normalize_profiles_text_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.normalize_profiles_text_fields() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.normalize_profiles_text_fields() FROM authenticated;
+
+CREATE TRIGGER normalize_profiles_text_fields
+BEFORE INSERT OR UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.normalize_profiles_text_fields();
+
 -- email immutable (but allow internal auth trigger sync)
 CREATE OR REPLACE FUNCTION public.prevent_profile_email_change()
 RETURNS TRIGGER
@@ -558,7 +638,12 @@ AS $$
 BEGIN
   IF NEW.email IS DISTINCT FROM OLD.email THEN
     -- Single source of truth: profile email must always match auth.users (sync via handle_auth_user_email_update).
-    IF NEW.email IS DISTINCT FROM (SELECT u.email FROM auth.users u WHERE u.id = NEW.user_id) THEN
+    -- Compare trimmed auth email so normalize_profiles_text_fields and auth stay compatible.
+    IF NEW.email IS DISTINCT FROM (
+      SELECT coalesce(public.normalize_trim_text(u.email), '')
+      FROM auth.users u
+      WHERE u.id = NEW.user_id
+    ) THEN
       RAISE EXCEPTION 'profiles.email is read-only; it follows your auth email';
     END IF;
   END IF;
@@ -591,6 +676,7 @@ SET row_security = off
 AS $$
 BEGIN
   -- use raw_user_meta_data.first_name and last_name (can be NULL) for atomic setting of profile name
+  -- profiles.normalize_profiles_text_fields trims/nullifies these on insert
   INSERT INTO public.profiles (user_id, email, first_name, last_name)
   VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'last_name')
   ON CONFLICT (user_id) DO NOTHING;

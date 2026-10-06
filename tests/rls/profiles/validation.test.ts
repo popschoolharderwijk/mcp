@@ -116,9 +116,10 @@ describe('Constraints: phone_number validation', () => {
 		expect(data).toBeNull();
 	});
 
-	it('rejects empty string phone number', async () => {
+	it('coerces empty string phone number to null', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
+		const originalPhoneNumber = profile.phone_number;
 
 		const { data, error } = await db
 			.from('profiles')
@@ -126,8 +127,10 @@ describe('Constraints: phone_number validation', () => {
 			.eq('user_id', profile.user_id)
 			.select();
 
-		// CHECK constraint should reject: empty string is not NULL and doesn't match pattern
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		expect(error).toBeNull();
+		expect(data).toHaveLength(1);
+		expect(data?.[0]?.phone_number).toBeNull();
+
+		await db.from('profiles').update({ phone_number: originalPhoneNumber }).eq('user_id', profile.user_id);
 	});
 });

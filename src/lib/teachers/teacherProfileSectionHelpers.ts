@@ -1,3 +1,5 @@
+import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '@/lib/text/normalizeText';
+
 export interface TeacherProfileInitials {
 	initialBio?: string | null;
 	initialFirstName?: string | null;
@@ -65,7 +67,7 @@ export interface TeacherProfileSaveInput {
 
 export function buildTeacherProfileUpdate(input: TeacherProfileSaveInput) {
 	return {
-		bio: input.bio || null,
+		bio: normalizeTrimmedTextOrNull(input.bio),
 		has_vog: input.hasVog,
 		vog_expires_at: input.vogExpiresAt || null,
 	};
@@ -73,9 +75,9 @@ export function buildTeacherProfileUpdate(input: TeacherProfileSaveInput) {
 
 export function buildTeacherProfileNameUpdate(input: TeacherProfileSaveInput) {
 	return {
-		first_name: input.firstName || null,
-		last_name: input.lastName || null,
-		phone_number: input.phoneNumber || null,
+		first_name: normalizeCompactTextOrNull(input.firstName),
+		last_name: normalizeCompactTextOrNull(input.lastName),
+		phone_number: normalizeTrimmedTextOrNull(input.phoneNumber),
 	};
 }
 

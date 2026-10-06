@@ -1,9 +1,6 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../src/integrations/supabase/types';
 import type { TestUser } from './rls/test-users';
-
-// Cache authenticated clients per user to avoid rate limiting
-const clientCache = new Map<TestUser, SupabaseClient<Database>>();
 
 export function createClientBypassRLS() {
 	const url = process.env.SUPABASE_URL;
@@ -15,6 +12,11 @@ export function createClientBypassRLS() {
 
 	return createClient<Database>(url, key);
 }
+
+type TypedSupabaseClient = ReturnType<typeof createClientBypassRLS>;
+
+// Cache authenticated clients per user to avoid rate limiting
+const clientCache = new Map<TestUser, TypedSupabaseClient>();
 
 export function createClientAnon() {
 	const url = process.env.SUPABASE_URL;
