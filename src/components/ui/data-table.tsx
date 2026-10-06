@@ -670,11 +670,11 @@ export function DataTable<T>({
 			{paginated && (
 				<div className="mt-4 flex items-center justify-between">
 					<div className="text-sm text-muted-foreground">
-						{effectiveTotalCount === 0
-							? 'Geen resultaten'
-							: effectiveTotalCount === 1
-								? '1 resultaat'
-								: `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`}
+						{effectiveTotalCount === 1
+							? '1 resultaat'
+							: effectiveTotalCount > 1
+								? `${startIndex + 1}-${Math.min(endIndex, effectiveTotalCount)} van ${effectiveTotalCount} resultaten`
+								: null}
 					</div>
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2">
