@@ -132,22 +132,9 @@ describe('studentsPageControllerHelpers', () => {
 	describe('runStudentPageAction', () => {
 		const student = { user_id: 'student-1', agreements: [] } as never;
 
-		it('opens edit dialog for edit action', async () => {
-			let openedStudent: unknown = null;
-			await runStudentPageAction({ kind: 'edit', student }, null, {
-				setStudentFormDialog: (value) => {
-					openedStudent = value.student;
-				},
-				setDeleteDialog: () => {},
-				loadStudents: () => {},
-			});
-			expect(openedStudent).toBe(student);
-		});
-
 		it('opens delete dialog for delete action', async () => {
 			let openedStudent: unknown = null;
 			await runStudentPageAction({ kind: 'delete', student }, null, {
-				setStudentFormDialog: () => {},
 				setDeleteDialog: (value) => {
 					openedStudent = value?.student ?? null;
 				},
@@ -163,7 +150,6 @@ describe('studentsPageControllerHelpers', () => {
 				{ kind: 'confirm-delete' },
 				{ open: true, student, deleteUser: false },
 				{
-					setStudentFormDialog: () => {},
 					setDeleteDialog: (value) => {
 						dialogCleared = value === null;
 					},

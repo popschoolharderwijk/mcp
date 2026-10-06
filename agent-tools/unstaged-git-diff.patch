@@ -1,0 +1,898 @@
+diff --git a/src/components/students/StudentFormPersonalSection.tsx b/src/components/students/StudentFormPersonalSection.tsx
+index f584e36..98118a7 100644
+--- a/src/components/students/StudentFormPersonalSection.tsx
++++ b/src/components/students/StudentFormPersonalSection.tsx
+@@ -3,15 +3,14 @@ import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+ import { Input } from '@/components/ui/input';
+ import { Label } from '@/components/ui/label';
+ import { PhoneInput } from '@/components/ui/phone-input';
+-import { isStudentEmailFieldDisabled } from '@/lib/students/studentFormPersonalSectionHelpers';
+ 
+ interface StudentFormPersonalSectionProps {
+ 	vm: StudentFormFieldsViewModel;
++	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
+ }
+ 
+-export function StudentFormPersonalSection({ vm }: StudentFormPersonalSectionProps) {
++export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange }: StudentFormPersonalSectionProps) {
+ 	const { form, setForm, isEditMode } = vm;
+-	const emailDisabled = isStudentEmailFieldDisabled(isEditMode);
+ 
+ 	return (
+ 		<div className="space-y-3">
+@@ -35,16 +34,14 @@ export function StudentFormPersonalSection({ vm }: StudentFormPersonalSectionPro
+ 			</div>
+ 			<div className="grid grid-cols-2 gap-4">
+ 				<div className="space-y-1.5">
+-					<Label htmlFor="student-email">
+-						Email <span className="text-destructive">*</span>
+-					</Label>
++					<Label htmlFor="student-email">Email</Label>
+ 					<Input
+ 						id="student-email"
+ 						type="email"
+ 						value={form.email}
+ 						onChange={(e) => setForm({ ...form, email: e.target.value })}
+ 						placeholder="leerling@voorbeeld.nl"
+-						disabled={emailDisabled}
++						disabled
+ 					/>
+ 					{isEditMode && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
+ 				</div>
+@@ -62,6 +59,7 @@ export function StudentFormPersonalSection({ vm }: StudentFormPersonalSectionPro
+ 						id="student-dob"
+ 						value={form.date_of_birth}
+ 						onChange={(value) => setForm({ ...form, date_of_birth: value })}
++						onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+ 					/>
+ 				</div>
+ 			</div>
+diff --git a/src/components/students/StudentProfileSection.tsx b/src/components/students/StudentProfileSection.tsx
+index 909bb03..1ef2195 100644
+--- a/src/components/students/StudentProfileSection.tsx
++++ b/src/components/students/StudentProfileSection.tsx
+@@ -7,13 +7,19 @@ interface StudentProfileSectionProps {
+ 	vm: StudentFormFieldsViewModel;
+ 	saving: boolean;
+ 	onSave: () => void;
++	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
+ }
+ 
+-export function StudentProfileSection({ vm, saving, onSave }: StudentProfileSectionProps) {
++export function StudentProfileSection({
++	vm,
++	saving,
++	onSave,
++	onDateOfBirthDraftSyncedChange,
++}: StudentProfileSectionProps) {
+ 	return (
+ 		<StudentFormSaveCard title="Gegevens" saving={saving} onSave={onSave}>
+ 			<div className="space-y-4">
+-				<StudentFormPersonalSection vm={vm} />
++				<StudentFormPersonalSection vm={vm} onDateOfBirthDraftSyncedChange={onDateOfBirthDraftSyncedChange} />
+ 				<StudentFormDebtorSection vm={vm} />
+ 			</div>
+ 		</StudentFormSaveCard>
+diff --git a/src/components/students/studentFormSubmitHelpers.ts b/src/components/students/studentFormSubmitHelpers.ts
+index 9284acd..7b308d1 100644
+--- a/src/components/students/studentFormSubmitHelpers.ts
++++ b/src/components/students/studentFormSubmitHelpers.ts
+@@ -1,18 +1,25 @@
+ import { toast } from 'sonner';
+ import { showStudentSubmitError, updateExistingStudent } from '@/components/students/studentFormPersistence';
+ import type { StudentFormState } from '@/components/students/studentFormTypes';
+-import { getStudentFormValidationError } from '@/components/students/studentFormValidation';
++import {
++	resolveStudentProfileSaveValidationError,
++	type StudentFormSaveScope,
++} from '@/components/students/studentFormValidation';
+ import type { Student } from '@/types/students';
+ 
++export type { StudentFormSaveScope };
++
+ export interface StudentProfileSaveParams {
+ 	form: StudentFormState;
+ 	student: Student;
++	scope: StudentFormSaveScope;
++	dateOfBirthDraftSynced?: boolean;
+ }
+ 
+ export type StudentFormSubmitOutcome = 'validation-error' | 'persist-error' | 'success';
+ 
+ export async function executeStudentProfileSave(params: StudentProfileSaveParams): Promise<StudentFormSubmitOutcome> {
+-	const validationError = getStudentFormValidationError(params.form);
++	const validationError = resolveStudentProfileSaveValidationError(params);
+ 	if (validationError) {
+ 		toast.error(validationError);
+ 		return 'validation-error';
+diff --git a/src/components/students/studentFormValidation.ts b/src/components/students/studentFormValidation.ts
+index ac441b8..b0d09e6 100644
+--- a/src/components/students/studentFormValidation.ts
++++ b/src/components/students/studentFormValidation.ts
+@@ -1,12 +1,18 @@
+ import { isValidEmail, isValidPhone, type StudentFormState } from '@/components/students/studentFormTypes';
+ 
+-function getContactValidationError(form: StudentFormState): string | null {
++export type StudentFormSaveScope = 'profile' | 'parent';
++
++function getPersonalContactValidationError(form: StudentFormState): string | null {
+ 	if (form.email && !isValidEmail(form.email)) {
+ 		return 'Ongeldig emailadres';
+ 	}
+ 	if (form.phone_number && !isValidPhone(form.phone_number)) {
+ 		return 'Telefoonnummer moet 10 cijfers bevatten';
+ 	}
++	return null;
++}
++
++function getParentContactValidationError(form: StudentFormState): string | null {
+ 	if (form.parent_phone_number && !isValidPhone(form.parent_phone_number)) {
+ 		return 'Ouder telefoonnummer moet 10 cijfers bevatten';
+ 	}
+@@ -21,9 +27,31 @@ function getDebtorValidationError(form: StudentFormState): string | null {
+ 	return 'Alle debiteur NAW velden zijn verplicht als debiteurinformatie niet gelijk is aan leerlinginformatie';
+ }
+ 
+-export function getStudentFormValidationError(form: StudentFormState): string | null {
+-	const contactError = getContactValidationError(form);
++/** Validation for the Profiel tab (personal + debtor). */
++export function getStudentProfileTabValidationError(form: StudentFormState): string | null {
++	const contactError = getPersonalContactValidationError(form);
+ 	if (contactError) return contactError;
+-
+ 	return getDebtorValidationError(form);
+ }
++
++/** Validation for the Ouder/voogd tab. */
++export function getStudentParentTabValidationError(form: StudentFormState): string | null {
++	return getParentContactValidationError(form);
++}
++
++function getValidationErrorForScope(form: StudentFormState, scope: StudentFormSaveScope): string | null {
++	if (scope === 'parent') return getStudentParentTabValidationError(form);
++	return getStudentProfileTabValidationError(form);
++}
++
++/** Toast message when save should be blocked; null when validation passes. */
++export function resolveStudentProfileSaveValidationError(params: {
++	form: StudentFormState;
++	scope: StudentFormSaveScope;
++	dateOfBirthDraftSynced?: boolean;
++}): string | null {
++	if (params.scope === 'profile' && params.dateOfBirthDraftSynced === false) {
++		return 'Geboortedatum is ongeldig';
++	}
++	return getValidationErrorForScope(params.form, params.scope);
++}
+diff --git a/src/components/students/useStudentProfileForm.ts b/src/components/students/useStudentProfileForm.ts
+index 9a92fdd..e914f4b 100644
+--- a/src/components/students/useStudentProfileForm.ts
++++ b/src/components/students/useStudentProfileForm.ts
+@@ -1,15 +1,17 @@
+-import { useEffect, useState } from 'react';
++import { useCallback, useEffect, useState } from 'react';
+ import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
+-import { executeStudentProfileSave } from '@/components/students/studentFormSubmitHelpers';
++import { executeStudentProfileSave, type StudentFormSaveScope } from '@/components/students/studentFormSubmitHelpers';
+ import { type StudentFormState, studentFormFromStudent } from '@/components/students/studentFormTypes';
+ import type { Student } from '@/types/students';
+ 
+ export function useStudentProfileForm(student: Student, onUpdate?: () => void) {
+ 	const [form, setForm] = useState<StudentFormState>(() => studentFormFromStudent(student));
+ 	const [saving, setSaving] = useState(false);
++	const [dateOfBirthDraftSynced, setDateOfBirthDraftSynced] = useState(true);
+ 
+ 	useEffect(() => {
+ 		setForm(studentFormFromStudent(student));
++		setDateOfBirthDraftSynced(true);
+ 	}, [student]);
+ 
+ 	const vm: StudentFormFieldsViewModel = {
+@@ -18,15 +20,23 @@ export function useStudentProfileForm(student: Student, onUpdate?: () => void) {
+ 		isEditMode: true,
+ 	};
+ 
+-	const runSave = async () => {
+-		setSaving(true);
+-		try {
+-			const outcome = await executeStudentProfileSave({ form, student });
+-			if (outcome === 'success') onUpdate?.();
+-		} finally {
+-			setSaving(false);
+-		}
+-	};
++	const runSave = useCallback(
++		async (scope: StudentFormSaveScope) => {
++			setSaving(true);
++			try {
++				const outcome = await executeStudentProfileSave({
++					form,
++					student,
++					scope,
++					dateOfBirthDraftSynced,
++				});
++				if (outcome === 'success') onUpdate?.();
++			} finally {
++				setSaving(false);
++			}
++		},
++		[dateOfBirthDraftSynced, form, onUpdate, student],
++	);
+ 
+-	return { vm, saving, runSave };
++	return { vm, saving, runSave, setDateOfBirthDraftSynced };
+ }
+diff --git a/src/components/ui/calendar-dropdown.tsx b/src/components/ui/calendar-dropdown.tsx
+index 3a2c975..c3cda51 100644
+--- a/src/components/ui/calendar-dropdown.tsx
++++ b/src/components/ui/calendar-dropdown.tsx
+@@ -19,7 +19,7 @@ export function CalendarDropdown({ value, onChange, options, disabled }: Dropdow
+ 			<SelectTrigger className="h-8 w-auto gap-1 px-2 text-xs font-medium">
+ 				<SelectValue />
+ 			</SelectTrigger>
+-			<SelectContent className="max-h-60 min-w-[var(--radix-select-trigger-width)]">
++			<SelectContent className="max-h-60 min-w-[var(--radix-select-trigger-width)] [&_[data-radix-select-viewport]]:h-auto [&_[data-radix-select-viewport]]:max-h-60">
+ 				{options?.map((option) => (
+ 					<SelectItem key={option.value} value={String(option.value)} disabled={option.disabled}>
+ 						{option.label}
+diff --git a/src/components/ui/date-of-birth-picker.tsx b/src/components/ui/date-of-birth-picker.tsx
+index e2da758..b71fbe7 100644
+--- a/src/components/ui/date-of-birth-picker.tsx
++++ b/src/components/ui/date-of-birth-picker.tsx
+@@ -1,6 +1,7 @@
+ 'use client';
+ 
+-import { useEffect, useState } from 'react';
++import { startOfDay } from 'date-fns';
++import { useEffect, useMemo, useState } from 'react';
+ import { LuCalendar } from 'react-icons/lu';
+ import { Button } from '@/components/ui/button';
+ import { Calendar } from '@/components/ui/calendar';
+@@ -8,10 +9,10 @@ import { Input } from '@/components/ui/input';
+ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+ import { DATE_FORMAT_UI, formatDateToDb, now } from '@/lib/date/date-format';
+ import {
++	DOB_EARLIEST,
+ 	formatDbDateOfBirthForInput,
+ 	parseDbDateOfBirthValue,
+ 	parseUiDateOfBirthToDb,
+-	resolveDateOfBirthInputBlur,
+ } from '@/lib/date/dateOfBirthPickerHelpers';
+ import { cn } from '@/lib/utils';
+ 
+@@ -19,6 +20,8 @@ interface DateOfBirthPickerProps {
+ 	/** Value in YYYY-MM-dd format */
+ 	value: string | null;
+ 	onChange: (value: string | null) => void;
++	/** Called whenever the typed draft matches (or not) the committed value. */
++	onDraftSyncedChange?: (synced: boolean) => void;
+ 	placeholder?: string;
+ 	disabled?: boolean;
+ 	id?: string;
+@@ -34,12 +37,13 @@ const DOB_START_MONTH = new Date(1900, 0);
+ export function DateOfBirthPicker({
+ 	value,
+ 	onChange,
++	onDraftSyncedChange,
+ 	placeholder = DATE_FORMAT_UI,
+ 	disabled = false,
+ 	id,
+ 	className,
+ }: DateOfBirthPickerProps) {
+-	const today = now();
++	const today = useMemo(() => startOfDay(now()), []);
+ 	const [open, setOpen] = useState(false);
+ 	const [text, setText] = useState(() => formatDbDateOfBirthForInput(value));
+ 
+@@ -49,25 +53,53 @@ export function DateOfBirthPicker({
+ 
+ 	const selectedDate = parseDbDateOfBirthValue(value);
+ 
+-	const commitFromText = (next: string) => {
++	const applyText = (next: string) => {
++		setText(next);
+ 		const trimmed = next.trim();
+ 		if (!trimmed) {
+ 			onChange(null);
++			onDraftSyncedChange?.(true);
+ 			return;
+ 		}
+ 		const db = parseUiDateOfBirthToDb(next, today);
+-		if (db) onChange(db);
++		if (db) {
++			onChange(db);
++			onDraftSyncedChange?.(true);
++			return;
++		}
++		onDraftSyncedChange?.(false);
++	};
++
++	const handleBlur = () => {
++		const trimmed = text.trim();
++		if (!trimmed) {
++			onChange(null);
++			setText('');
++			onDraftSyncedChange?.(true);
++			return;
++		}
++		const db = parseUiDateOfBirthToDb(text, today);
++		if (db) {
++			onChange(db);
++			setText(formatDbDateOfBirthForInput(db));
++			onDraftSyncedChange?.(true);
++			return;
++		}
++		setText(formatDbDateOfBirthForInput(value));
++		onDraftSyncedChange?.(true);
+ 	};
+ 
+ 	const handleSelect = (date: Date | undefined) => {
+ 		if (!date) {
+ 			onChange(null);
+ 			setText('');
++			onDraftSyncedChange?.(true);
+ 			return;
+ 		}
+ 		const db = formatDateToDb(date);
+ 		onChange(db);
+ 		setText(formatDbDateOfBirthForInput(db));
++		onDraftSyncedChange?.(true);
+ 		setOpen(false);
+ 	};
+ 
+@@ -81,14 +113,8 @@ export function DateOfBirthPicker({
+ 				inputMode="numeric"
+ 				autoComplete="bday"
+ 				className="pr-10"
+-				onChange={(event) => {
+-					const next = event.target.value;
+-					setText(next);
+-					commitFromText(next);
+-				}}
+-				onBlur={() => {
+-					setText(resolveDateOfBirthInputBlur(text, value));
+-				}}
++				onChange={(event) => applyText(event.target.value)}
++				onBlur={handleBlur}
+ 			/>
+ 			<Popover open={open} onOpenChange={setOpen}>
+ 				<PopoverTrigger asChild>
+@@ -112,7 +138,7 @@ export function DateOfBirthPicker({
+ 						captionLayout="dropdown"
+ 						startMonth={DOB_START_MONTH}
+ 						endMonth={today}
+-						disabled={{ after: today }}
++						disabled={{ before: DOB_EARLIEST, after: today }}
+ 					/>
+ 				</PopoverContent>
+ 			</Popover>
+diff --git a/src/components/ui/date-picker.tsx b/src/components/ui/date-picker.tsx
+index 9464b78..6646612 100644
+--- a/src/components/ui/date-picker.tsx
++++ b/src/components/ui/date-picker.tsx
+@@ -1,7 +1,6 @@
+ 'use client';
+ 
+ import * as React from 'react';
+-import type { Matcher } from 'react-day-picker';
+ import { LuChevronDown } from 'react-icons/lu';
+ import { Button } from '@/components/ui/button';
+ import { Calendar } from '@/components/ui/calendar';
+@@ -19,17 +18,6 @@ interface DatePickerProps {
+ 	className?: string;
+ 	/** Ref for the trigger (e.g. for autofocus) */
+ 	triggerRef?: React.RefObject<HTMLButtonElement | null>;
+-	/**
+-	 * Calendar caption layout. Use `dropdown` for month/year selectors
+-	 * (e.g. date of birth). See shadcn Date of Birth picker.
+-	 */
+-	captionLayout?: 'label' | 'dropdown' | 'dropdown-months' | 'dropdown-years';
+-	/** Earliest navigable month (with captionLayout dropdown). */
+-	startMonth?: Date;
+-	/** Latest navigable month (with captionLayout dropdown). */
+-	endMonth?: Date;
+-	/** Dates that cannot be selected in the calendar. */
+-	disabledDates?: Matcher | Matcher[];
+ }
+ 
+ function parseDbDateValue(value: string | null): Date | undefined {
+@@ -49,10 +37,6 @@ export function DatePicker({
+ 	id,
+ 	className,
+ 	triggerRef,
+-	captionLayout,
+-	startMonth,
+-	endMonth,
+-	disabledDates,
+ }: DatePickerProps) {
+ 	const [open, setOpen] = React.useState(false);
+ 
+@@ -86,16 +70,7 @@ export function DatePicker({
+ 				</Button>
+ 			</PopoverTrigger>
+ 			<PopoverContent className="w-auto p-0" align="start">
+-				<Calendar
+-					mode="single"
+-					selected={selectedDate}
+-					onSelect={handleSelect}
+-					defaultMonth={selectedDate}
+-					captionLayout={captionLayout}
+-					startMonth={startMonth}
+-					endMonth={endMonth}
+-					disabled={disabledDates}
+-				/>
++				<Calendar mode="single" selected={selectedDate} onSelect={handleSelect} defaultMonth={selectedDate} />
+ 			</PopoverContent>
+ 		</Popover>
+ 	);
+diff --git a/src/components/ui/select.tsx b/src/components/ui/select.tsx
+index 593ce5d..3667f05 100644
+--- a/src/components/ui/select.tsx
++++ b/src/components/ui/select.tsx
+@@ -81,7 +81,7 @@ const SelectContent = React.forwardRef<
+ 				className={cn(
+ 					'p-1',
+ 					position === 'popper' &&
+-						'max-h-[min(15rem,var(--radix-select-content-available-height))] w-full min-w-[var(--radix-select-trigger-width)]',
++						'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+ 				)}
+ 			>
+ 				{children}
+diff --git a/src/hooks/useStudentDetailPage.ts b/src/hooks/useStudentDetailPage.ts
+index 04ba793..51535bd 100644
+--- a/src/hooks/useStudentDetailPage.ts
++++ b/src/hooks/useStudentDetailPage.ts
+@@ -1,4 +1,4 @@
+-import { useCallback, useEffect, useState } from 'react';
++import { useCallback, useEffect, useRef, useState } from 'react';
+ import { useParams } from 'react-router-dom';
+ import { toast } from 'sonner';
+ import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
+@@ -22,11 +22,23 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
+ 	const [student, setStudent] = useState<Student | null>(null);
+ 	const [agreements, setAgreements] = useState<LessonAgreementWithTeacher[]>([]);
+ 	const [signupRequests, setSignupRequests] = useState<SignupRequestDetail[]>([]);
++	const hasLoadedContentRef = useRef(false);
+ 	const { setBreadcrumbSuffix } = useBreadcrumb();
+ 
++	useEffect(() => {
++		hasLoadedContentRef.current = false;
++		setProfile(null);
++		setStudent(null);
++		setAgreements([]);
++		setSignupRequests([]);
++		if (userId) setLoading(true);
++	}, [userId]);
++
+ 	const load = useCallback(async () => {
+ 		if (!userId) return;
+-		setLoading(true);
++		if (!hasLoadedContentRef.current) {
++			setLoading(true);
++		}
+ 		try {
+ 			const result = await runStudentDetailPageLoad(supabase, userId);
+ 			if (!result) {
+@@ -37,6 +49,7 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
+ 			setStudent(result.student);
+ 			setAgreements(result.agreements);
+ 			setSignupRequests(result.signupRequests);
++			hasLoadedContentRef.current = true;
+ 			setLoading(false);
+ 		} catch (error) {
+ 			console.error(error);
+diff --git a/src/lib/date/dateOfBirthPickerHelpers.ts b/src/lib/date/dateOfBirthPickerHelpers.ts
+index fb8b6e4..dc95f6d 100644
+--- a/src/lib/date/dateOfBirthPickerHelpers.ts
++++ b/src/lib/date/dateOfBirthPickerHelpers.ts
+@@ -2,7 +2,7 @@ import { format, isAfter, isBefore, isValid, parse, startOfDay } from 'date-fns'
+ import { DATE_FORMAT_UI, formatDateToDb, formatDbDateToUi, now } from '@/lib/date/date-format';
+ 
+ const DATE_FORMAT_DB = 'yyyy-MM-dd' as const;
+-const DOB_EARLIEST = startOfDay(new Date(1900, 0, 1));
++export const DOB_EARLIEST = startOfDay(new Date(1900, 0, 1));
+ 
+ export function formatDbDateOfBirthForInput(value: string | null): string {
+ 	if (!value?.trim()) return '';
+@@ -33,6 +33,13 @@ export function parseUiDateOfBirthToDb(ui: string, today: Date = now()): string
+ 	return formatDateToDb(parsed);
+ }
+ 
++/** True when the visible input text matches the committed DB value (or both empty). */
++export function isDateOfBirthDraftSynced(text: string, committedDbValue: string | null, today: Date = now()): boolean {
++	const trimmed = text.trim();
++	if (!trimmed) return committedDbValue === null || committedDbValue === '';
++	return parseUiDateOfBirthToDb(trimmed, today) === committedDbValue;
++}
++
+ export function resolveDateOfBirthInputBlur(text: string, committedDbValue: string | null): string {
+ 	const parsed = parseUiDateOfBirthToDb(text);
+ 	if (parsed) return formatDbDateOfBirthForInput(parsed);
+diff --git a/src/lib/students/studentDetailHelpers.ts b/src/lib/students/studentDetailHelpers.ts
+index d53d66e..c3dcade 100644
+--- a/src/lib/students/studentDetailHelpers.ts
++++ b/src/lib/students/studentDetailHelpers.ts
+@@ -25,14 +25,16 @@ export function formatStudentPhoneSubtitle(email: string, phoneNumber: string |
+ 
+ type StudentDetailViewState = 'redirect' | 'loading' | 'not-found' | 'content';
+ 
+-function resolveStudentDetailViewState(
++/** Full-page skeleton only when there is nothing to show yet; refresh keeps content. */
++export function resolveStudentDetailViewState(
+ 	authLoading: boolean,
+ 	canView: boolean,
+ 	loading: boolean,
+ 	hasProfile: boolean,
+ ): StudentDetailViewState {
+ 	if (!authLoading && !canView) return 'redirect';
+-	if (loading || authLoading) return 'loading';
++	if (authLoading && !hasProfile) return 'loading';
++	if (loading && !hasProfile) return 'loading';
+ 	if (!hasProfile) return 'not-found';
+ 	return 'content';
+ }
+@@ -79,13 +81,9 @@ export function resolveStudentDetailPageContent(args: {
+ 	agreements: LessonAgreementWithTeacher[];
+ 	signupRequests: SignupRequestDetail[];
+ }): StudentDetailPageContent {
+-	const viewState = resolveStudentDetailViewState(
+-		args.authLoading,
+-		args.canView,
+-		args.loading,
+-		Boolean(args.profile && args.student),
+-	);
+-	const renderTarget = resolveStudentDetailRenderTarget(viewState, Boolean(args.profile && args.student));
++	const hasProfile = Boolean(args.profile && args.student);
++	const viewState = resolveStudentDetailViewState(args.authLoading, args.canView, args.loading, hasProfile);
++	const renderTarget = resolveStudentDetailRenderTarget(viewState, hasProfile);
+ 
+ 	if (renderTarget === 'loading') return { kind: 'loading' };
+ 	if (renderTarget === '/') return { kind: 'redirect', to: '/' };
+diff --git a/src/lib/students/studentFormPersonalSectionHelpers.ts b/src/lib/students/studentFormPersonalSectionHelpers.ts
+deleted file mode 100644
+index 98b4f11..0000000
+--- a/src/lib/students/studentFormPersonalSectionHelpers.ts
++++ /dev/null
+@@ -1,3 +0,0 @@
+-export function isStudentEmailFieldDisabled(isEditMode: boolean): boolean {
+-	return isEditMode;
+-}
+diff --git a/src/lib/students/studentInfoTabsHelpers.ts b/src/lib/students/studentInfoTabsHelpers.ts
+index 783b8e4..39d95e5 100644
+--- a/src/lib/students/studentInfoTabsHelpers.ts
++++ b/src/lib/students/studentInfoTabsHelpers.ts
+@@ -4,10 +4,7 @@ export function resolveStudentInfoTabsDefaultValue(isPrivileged: boolean): Stude
+ 	return isPrivileged ? 'profile' : 'agreements';
+ }
+ 
+-export function formatStudentTabCountLabel(label: string, count: number): string {
+-	return `${label} (${count})`;
+-}
+-
++/** Teachers may view a student agenda; only privileged users may edit it. */
+ export function resolveStudentDetailAccess(
+ 	isPrivileged: boolean,
+ 	isTeacher: boolean,
+@@ -15,6 +12,8 @@ export function resolveStudentDetailAccess(
+ 	canView: boolean;
+ 	canEditAgenda: boolean;
+ } {
+-	const canView = isPrivileged || isTeacher;
+-	return { canView, canEditAgenda: canView };
++	return {
++		canView: isPrivileged || isTeacher,
++		canEditAgenda: isPrivileged,
++	};
+ }
+diff --git a/src/pages/student-detail/StudentInfoTabs.tsx b/src/pages/student-detail/StudentInfoTabs.tsx
+index bb7c187..63c745d 100644
+--- a/src/pages/student-detail/StudentInfoTabs.tsx
++++ b/src/pages/student-detail/StudentInfoTabs.tsx
+@@ -6,7 +6,7 @@ import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/s
+ import { StudentProfileSection } from '@/components/students/StudentProfileSection';
+ import { useStudentProfileForm } from '@/components/students/useStudentProfileForm';
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+-import { formatStudentTabCountLabel, resolveStudentInfoTabsDefaultValue } from '@/lib/students/studentInfoTabsHelpers';
++import { resolveStudentInfoTabsDefaultValue } from '@/lib/students/studentInfoTabsHelpers';
+ import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
+ import type { Student } from '@/types/students';
+ 
+@@ -21,16 +21,20 @@ interface StudentInfoTabsProps {
+ }
+ 
+ function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Student; onProfileUpdate: () => void }) {
+-	const { vm, saving, runSave } = useStudentProfileForm(student, onProfileUpdate);
+-	const onSave = () => void runSave();
++	const { vm, saving, runSave, setDateOfBirthDraftSynced } = useStudentProfileForm(student, onProfileUpdate);
+ 
+ 	return (
+ 		<>
+ 			<TabsContent value="profile">
+-				<StudentProfileSection vm={vm} saving={saving} onSave={onSave} />
++				<StudentProfileSection
++					vm={vm}
++					saving={saving}
++					onSave={() => void runSave('profile')}
++					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
++				/>
+ 			</TabsContent>
+ 			<TabsContent value="parent">
+-				<StudentParentSection vm={vm} saving={saving} onSave={onSave} />
++				<StudentParentSection vm={vm} saving={saving} onSave={() => void runSave('parent')} />
+ 			</TabsContent>
+ 		</>
+ 	);
+@@ -50,12 +54,8 @@ export function StudentInfoTabs({
+ 			<TabsList>
+ 				{isPrivileged && <TabsTrigger value="profile">Profiel</TabsTrigger>}
+ 				{isPrivileged && <TabsTrigger value="parent">Ouder/voogd</TabsTrigger>}
+-				<TabsTrigger value="agreements">
+-					{formatStudentTabCountLabel('Lesovereenkomsten', agreements.length)}
+-				</TabsTrigger>
+-				<TabsTrigger value="signups">
+-					{formatStudentTabCountLabel('Aanmeldingen', signupRequests.length)}
+-				</TabsTrigger>
++				<TabsTrigger value="agreements">Lesovereenkomsten ({agreements.length})</TabsTrigger>
++				<TabsTrigger value="signups">Aanmeldingen ({signupRequests.length})</TabsTrigger>
+ 				<TabsTrigger value="agenda">Agenda</TabsTrigger>
+ 			</TabsList>
+ 
+diff --git a/tests/code/date/dateOfBirthPickerHelpers.test.ts b/tests/code/date/dateOfBirthPickerHelpers.test.ts
+index 4af319e..424fbb2 100644
+--- a/tests/code/date/dateOfBirthPickerHelpers.test.ts
++++ b/tests/code/date/dateOfBirthPickerHelpers.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from 'bun:test';
+ import {
+ 	formatDbDateOfBirthForInput,
++	isDateOfBirthDraftSynced,
+ 	parseUiDateOfBirthToDb,
+ 	resolveDateOfBirthInputBlur,
+ } from '../../../src/lib/date/dateOfBirthPickerHelpers';
+@@ -35,11 +36,31 @@ describe('parseUiDateOfBirthToDb', () => {
+ 		expect(parseUiDateOfBirthToDb('07-10-2026', today)).toBeNull();
+ 	});
+ 
++	it('accepts today as a valid date of birth', () => {
++		expect(parseUiDateOfBirthToDb('06-10-2026', today)).toBe('2026-10-06');
++	});
++
++	it('accepts 01-01-1900 as the earliest date of birth', () => {
++		expect(parseUiDateOfBirthToDb('01-01-1900', today)).toBe('1900-01-01');
++	});
++
+ 	it('returns null for dates before 1900', () => {
+ 		expect(parseUiDateOfBirthToDb('31-12-1899', today)).toBeNull();
+ 	});
+ });
+ 
++describe('isDateOfBirthDraftSynced', () => {
++	const today = new Date(2026, 9, 6);
++
++	it('treats matching typed and committed values as synced', () => {
++		expect(isDateOfBirthDraftSynced('14-02-2010', '2010-02-14', today)).toBe(true);
++	});
++
++	it('treats incomplete typed text as unsynced', () => {
++		expect(isDateOfBirthDraftSynced('14-02-201', '2010-02-14', today)).toBe(false);
++	});
++});
++
+ describe('resolveDateOfBirthInputBlur', () => {
+ 	it('keeps a valid typed date formatted for the input', () => {
+ 		expect(resolveDateOfBirthInputBlur('14-02-2010', null)).toBe('14-02-2010');
+diff --git a/tests/code/students/studentDetailHelpers.test.ts b/tests/code/students/studentDetailHelpers.test.ts
+index 69fa7e4..4545ad2 100644
+--- a/tests/code/students/studentDetailHelpers.test.ts
++++ b/tests/code/students/studentDetailHelpers.test.ts
+@@ -99,6 +99,28 @@ describe('resolveStudentDetailPageContent', () => {
+ 		).toEqual({ kind: 'loading' });
+ 	});
+ 
++	it('keeps body content while refreshing after profile and student are loaded', () => {
++		expect(
++			resolveStudentDetailPageContent({
++				authLoading: false,
++				canView: true,
++				loading: true,
++				profile,
++				student,
++				userId: 'u-1',
++				agreements: [],
++				signupRequests: [],
++			}),
++		).toEqual({
++			kind: 'body',
++			profile,
++			student,
++			userId: 'u-1',
++			agreements: [],
++			signupRequests: [],
++		});
++	});
++
+ 	it('returns body content when profile and student are available', () => {
+ 		expect(
+ 			resolveStudentDetailPageContent({
+diff --git a/tests/code/students/studentFormPersonalSectionHelpers.test.ts b/tests/code/students/studentFormPersonalSectionHelpers.test.ts
+deleted file mode 100644
+index 51e9ea7..0000000
+--- a/tests/code/students/studentFormPersonalSectionHelpers.test.ts
++++ /dev/null
+@@ -1,12 +0,0 @@
+-import { describe, expect, it } from 'bun:test';
+-import { isStudentEmailFieldDisabled } from '../../../src/lib/students/studentFormPersonalSectionHelpers';
+-
+-describe('isStudentEmailFieldDisabled', () => {
+-	it('disables email in edit mode', () => {
+-		expect(isStudentEmailFieldDisabled(true)).toBe(true);
+-	});
+-
+-	it('keeps email enabled outside edit mode', () => {
+-		expect(isStudentEmailFieldDisabled(false)).toBe(false);
+-	});
+-});
+diff --git a/tests/code/students/studentFormSubmitHelpers.test.ts b/tests/code/students/studentFormSubmitHelpers.test.ts
+deleted file mode 100644
+index 13bf8e7..0000000
+--- a/tests/code/students/studentFormSubmitHelpers.test.ts
++++ /dev/null
+@@ -1,16 +0,0 @@
+-import { describe, expect, it } from 'bun:test';
+-import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
+-
+-describe('executeStudentProfileSave', () => {
+-	it('returns validation-error for invalid student form', async () => {
+-		const { executeStudentProfileSave } = await import('../../../src/components/students/studentFormSubmitHelpers');
+-		const outcome = await executeStudentProfileSave({
+-			form: {
+-				...emptyStudentForm,
+-				email: 'invalid-email',
+-			},
+-			student: { user_id: 'student-1' } as never,
+-		});
+-		expect(outcome).toBe('validation-error');
+-	});
+-});
+diff --git a/tests/code/students/studentFormValidation.test.ts b/tests/code/students/studentFormValidation.test.ts
+index 95af8c1..59e52c9 100644
+--- a/tests/code/students/studentFormValidation.test.ts
++++ b/tests/code/students/studentFormValidation.test.ts
+@@ -1,20 +1,23 @@
+ import { describe, expect, it } from 'bun:test';
+ import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
+-import { getStudentFormValidationError } from '../../../src/components/students/studentFormValidation';
++import {
++	getStudentParentTabValidationError,
++	getStudentProfileTabValidationError,
++	resolveStudentProfileSaveValidationError,
++} from '../../../src/components/students/studentFormValidation';
+ 
+-describe('getStudentFormValidationError', () => {
+-	it('validates email and phone fields', () => {
+-		const error = getStudentFormValidationError({
++describe('getStudentProfileTabValidationError', () => {
++	it('validates personal email and phone fields', () => {
++		const error = getStudentProfileTabValidationError({
+ 			...emptyStudentForm,
+ 			email: 'invalid-email',
+ 			phone_number: '123',
+-			parent_phone_number: '456',
+ 		});
+ 		expect(error).toBe('Ongeldig emailadres');
+ 	});
+ 
+ 	it('requires all debtor fields when debtor info differs from the student', () => {
+-		const error = getStudentFormValidationError({
++		const error = getStudentProfileTabValidationError({
+ 			...emptyStudentForm,
+ 			email: 'student@example.com',
+ 			debtor_info_same_as_student: false,
+@@ -25,8 +28,17 @@ describe('getStudentFormValidationError', () => {
+ 		);
+ 	});
+ 
+-	it('returns null for a valid edit form', () => {
+-		const error = getStudentFormValidationError({
++	it('ignores invalid parent phone on the profile tab', () => {
++		const error = getStudentProfileTabValidationError({
++			...emptyStudentForm,
++			email: 'student@example.com',
++			parent_phone_number: '123',
++		});
++		expect(error).toBeNull();
++	});
++
++	it('returns null for a valid profile form', () => {
++		const error = getStudentProfileTabValidationError({
+ 			...emptyStudentForm,
+ 			email: 'student@example.com',
+ 			phone_number: '0612345678',
+@@ -36,6 +48,52 @@ describe('getStudentFormValidationError', () => {
+ 			debtor_postal_code: '1234AB',
+ 			debtor_city: 'Amsterdam',
+ 		});
+-		expect(error).toBe(null);
++		expect(error).toBeNull();
++	});
++});
++
++describe('getStudentParentTabValidationError', () => {
++	it('validates parent phone only', () => {
++		expect(
++			getStudentParentTabValidationError({
++				...emptyStudentForm,
++				parent_phone_number: '123',
++			}),
++		).toBe('Ouder telefoonnummer moet 10 cijfers bevatten');
++	});
++
++	it('ignores incomplete debtor fields on the parent tab', () => {
++		expect(
++			getStudentParentTabValidationError({
++				...emptyStudentForm,
++				debtor_info_same_as_student: false,
++				debtor_name: 'Debiteur BV',
++			}),
++		).toBeNull();
++	});
++});
++
++describe('resolveStudentProfileSaveValidationError', () => {
++	it('blocks profile save when date of birth draft is not synced', () => {
++		expect(
++			resolveStudentProfileSaveValidationError({
++				form: { ...emptyStudentForm, email: 'student@example.com' },
++				scope: 'profile',
++				dateOfBirthDraftSynced: false,
++			}),
++		).toBe('Geboortedatum is ongeldig');
++	});
++
++	it('ignores incomplete debtor fields on parent scope', () => {
++		expect(
++			resolveStudentProfileSaveValidationError({
++				form: {
++					...emptyStudentForm,
++					debtor_info_same_as_student: false,
++					debtor_name: 'Debiteur BV',
++				},
++				scope: 'parent',
++			}),
++		).toBeNull();
+ 	});
+ });
+diff --git a/tests/code/students/studentInfoTabsHelpers.test.ts b/tests/code/students/studentInfoTabsHelpers.test.ts
+index 06bbb89..5e6a2f4 100644
+--- a/tests/code/students/studentInfoTabsHelpers.test.ts
++++ b/tests/code/students/studentInfoTabsHelpers.test.ts
+@@ -1,6 +1,5 @@
+ import { describe, expect, it } from 'bun:test';
+ import {
+-	formatStudentTabCountLabel,
+ 	resolveStudentDetailAccess,
+ 	resolveStudentInfoTabsDefaultValue,
+ } from '../../../src/lib/students/studentInfoTabsHelpers';
+@@ -15,20 +14,13 @@ describe('resolveStudentInfoTabsDefaultValue', () => {
+ 	});
+ });
+ 
+-describe('formatStudentTabCountLabel', () => {
+-	it('appends the count in parentheses', () => {
+-		expect(formatStudentTabCountLabel('Lesovereenkomsten', 3)).toBe('Lesovereenkomsten (3)');
+-		expect(formatStudentTabCountLabel('Aanmeldingen', 0)).toBe('Aanmeldingen (0)');
+-	});
+-});
+-
+ describe('resolveStudentDetailAccess', () => {
+ 	it('allows privileged users to view and edit agenda', () => {
+ 		expect(resolveStudentDetailAccess(true, false)).toEqual({ canView: true, canEditAgenda: true });
+ 	});
+ 
+-	it('allows teachers to view and edit agenda', () => {
+-		expect(resolveStudentDetailAccess(false, true)).toEqual({ canView: true, canEditAgenda: true });
++	it('allows teachers to view but not edit agenda', () => {
++		expect(resolveStudentDetailAccess(false, true)).toEqual({ canView: true, canEditAgenda: false });
+ 	});
+ 
+ 	it('denies users without privileged or teacher access', () => {

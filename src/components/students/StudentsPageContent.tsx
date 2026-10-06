@@ -1,5 +1,4 @@
 import { StudentDeleteDialog } from '@/components/students/StudentDeleteDialog';
-import { StudentFormDialog } from '@/components/students/StudentFormDialog';
 import { DataTable } from '@/components/ui/data-table';
 import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
@@ -22,7 +21,13 @@ export function StudentsPageContent({
 	tableState,
 	controller,
 }: StudentsPageContentProps) {
-	const rowActions = buildStudentsRowActions(isPrivileged, isAdmin, isSiteAdmin, controller.runAction);
+	const rowActions = buildStudentsRowActions(
+		isPrivileged,
+		isAdmin,
+		isSiteAdmin,
+		controller.handleEdit,
+		controller.runAction,
+	);
 
 	return (
 		<div>
@@ -49,13 +54,6 @@ export function StudentsPageContent({
 					rowActions={rowActions}
 				/>
 			</PageShell>
-
-			<StudentFormDialog
-				open={controller.studentFormDialog.open}
-				onOpenChange={(open) => controller.setStudentFormDialog({ ...controller.studentFormDialog, open })}
-				onSuccess={controller.loadStudents}
-				student={controller.studentFormDialog.student ?? undefined}
-			/>
 
 			<StudentDeleteDialog
 				deleteDialog={controller.deleteDialog}

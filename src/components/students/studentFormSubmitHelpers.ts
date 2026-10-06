@@ -1,52 +1,35 @@
 import { toast } from 'sonner';
+import { showStudentSubmitError, updateExistingStudent } from '@/components/students/studentFormPersistence';
+import type { StudentFormState } from '@/components/students/studentFormTypes';
 import {
-	createStudentRecord,
-	showStudentSubmitError,
-	updateExistingStudent,
-} from '@/components/students/studentFormPersistence';
-import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
-import { getStudentFormValidationError } from '@/components/students/studentFormValidation';
+	resolveStudentProfileSaveValidationError,
+	type StudentFormSaveScope,
+} from '@/components/students/studentFormValidation';
 import type { Student } from '@/types/students';
 
-export interface StudentFormSubmitParams {
+export type { StudentFormSaveScope };
+
+export interface StudentProfileSaveParams {
 	form: StudentFormState;
-	isEditMode: boolean;
-	mode: StudentFormMode;
-	selectedUserId: string | null;
-	student?: Student;
+	student: Student;
+	scope: StudentFormSaveScope;
+	dateOfBirthDraftSynced?: boolean;
 }
 
 export type StudentFormSubmitOutcome = 'validation-error' | 'persist-error' | 'success';
 
-export async function executeStudentFormSubmit(params: StudentFormSubmitParams): Promise<StudentFormSubmitOutcome> {
-	const validationError = getStudentFormValidationError(params.form, {
-		isEditMode: params.isEditMode,
-		mode: params.mode,
-		selectedUserId: params.selectedUserId,
-	});
+export async function executeStudentProfileSave(params: StudentProfileSaveParams): Promise<StudentFormSubmitOutcome> {
+	const validationError = resolveStudentProfileSaveValidationError(params);
 	if (validationError) {
 		toast.error(validationError);
 		return 'validation-error';
 	}
 
-	if (params.isEditMode && params.student) {
-		const result = await updateExistingStudent(params.student, params.form);
-		if (result.ok === false) {
-			showStudentSubmitError(result);
-			return 'persist-error';
-		}
-		toast.success('Leerling bijgewerkt');
-		return 'success';
-	}
-
-	const result = await createStudentRecord(params.form, params.mode, params.selectedUserId);
+	const result = await updateExistingStudent(params.student, params.form);
 	if (result.ok === false) {
 		showStudentSubmitError(result);
 		return 'persist-error';
 	}
-
-	toast.success('Leerling aangemaakt', {
-		description: `Leerling ${params.form.email} is succesvol aangemaakt.`,
-	});
+	toast.success('Leerling bijgewerkt');
 	return 'success';
 }

@@ -1,5 +1,6 @@
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
+import type { Student } from '@/types/students';
 
 export interface StudentProfileData {
 	user_id: string;
@@ -24,6 +25,7 @@ export function formatStudentPhoneSubtitle(email: string, phoneNumber: string | 
 
 type StudentDetailViewState = 'redirect' | 'loading' | 'not-found' | 'content';
 
+/** Full-page skeleton only when there is nothing to show yet; refresh keeps content. */
 function resolveStudentDetailViewState(
 	authLoading: boolean,
 	canView: boolean,
@@ -31,7 +33,8 @@ function resolveStudentDetailViewState(
 	hasProfile: boolean,
 ): StudentDetailViewState {
 	if (!authLoading && !canView) return 'redirect';
-	if (loading || authLoading) return 'loading';
+	if (authLoading && !hasProfile) return 'loading';
+	if (loading && !hasProfile) return 'loading';
 	if (!hasProfile) return 'not-found';
 	return 'content';
 }
@@ -62,6 +65,7 @@ export type StudentDetailPageContent =
 	| {
 			kind: 'body';
 			profile: StudentProfileData;
+			student: Student;
 			userId: string;
 			agreements: LessonAgreementWithTeacher[];
 			signupRequests: SignupRequestDetail[];
@@ -72,26 +76,24 @@ export function resolveStudentDetailPageContent(args: {
 	canView: boolean;
 	loading: boolean;
 	profile: StudentProfileData | null;
+	student: Student | null;
 	userId: string | undefined;
 	agreements: LessonAgreementWithTeacher[];
 	signupRequests: SignupRequestDetail[];
 }): StudentDetailPageContent {
-	const viewState = resolveStudentDetailViewState(
-		args.authLoading,
-		args.canView,
-		args.loading,
-		Boolean(args.profile),
-	);
-	const renderTarget = resolveStudentDetailRenderTarget(viewState, Boolean(args.profile));
+	const hasProfile = Boolean(args.profile && args.student);
+	const viewState = resolveStudentDetailViewState(args.authLoading, args.canView, args.loading, hasProfile);
+	const renderTarget = resolveStudentDetailRenderTarget(viewState, hasProfile);
 
 	if (renderTarget === 'loading') return { kind: 'loading' };
 	if (renderTarget === '/') return { kind: 'redirect', to: '/' };
 	if (renderTarget === '/students') return { kind: 'redirect', to: '/students' };
-	if (!args.profile || !args.userId) return { kind: 'redirect', to: '/students' };
+	if (!args.profile || !args.student || !args.userId) return { kind: 'redirect', to: '/students' };
 
 	return {
 		kind: 'body',
 		profile: args.profile,
+		student: args.student,
 		userId: args.userId,
 		agreements: args.agreements,
 		signupRequests: args.signupRequests,

@@ -5,7 +5,7 @@ import { LuChevronDown } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { DATE_FORMAT_UI, formatDbDateToUi } from '@/lib/date/date-format';
+import { DATE_FORMAT_UI, formatDateToDb, formatDbDateToUi } from '@/lib/date/date-format';
 import { cn } from '@/lib/utils';
 
 interface DatePickerProps {
@@ -18,6 +18,11 @@ interface DatePickerProps {
 	className?: string;
 	/** Ref for the trigger (e.g. for autofocus) */
 	triggerRef?: React.RefObject<HTMLButtonElement | null>;
+}
+
+function parseDbDateValue(value: string | null): Date | undefined {
+	if (!value) return undefined;
+	return new Date(value + (value.length === 10 ? 'T12:00:00' : ''));
 }
 
 /**
@@ -35,17 +40,14 @@ export function DatePicker({
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false);
 
-	const selectedDate = value ? new Date(value + (value.length === 10 ? 'T12:00:00' : '')) : undefined;
+	const selectedDate = parseDbDateValue(value);
 
 	const handleSelect = (date: Date | undefined) => {
 		if (!date) {
 			onChange(null);
 			return;
 		}
-		const year = date.getFullYear();
-		const month = String(date.getMonth() + 1).padStart(2, '0');
-		const day = String(date.getDate()).padStart(2, '0');
-		onChange(`${year}-${month}-${day}`);
+		onChange(formatDateToDb(date));
 		setOpen(false);
 	};
 

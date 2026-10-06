@@ -47,10 +47,6 @@ export function useStudentsPageController(params: UseStudentsPageControllerParam
 		student: StudentWithAgreements;
 		deleteUser: boolean;
 	} | null>(null);
-	const [studentFormDialog, setStudentFormDialog] = useState<{
-		open: boolean;
-		student: StudentWithAgreements | null;
-	}>({ open: false, student: null });
 
 	const loadStudents = useCallback(async () => {
 		setLoading(true);
@@ -93,10 +89,16 @@ export function useStudentsPageController(params: UseStudentsPageControllerParam
 
 	const runAction = (action: StudentAction) =>
 		runStudentPageAction(action, deleteDialog, {
-			setStudentFormDialog,
 			setDeleteDialog,
 			loadStudents,
 		});
+
+	const handleEdit = useCallback(
+		(student: StudentWithAgreements) => {
+			navigate(`/students/${student.user_id}`);
+		},
+		[navigate],
+	);
 
 	const columns = buildStudentColumns(navigate, requestsByEmail);
 
@@ -105,8 +107,7 @@ export function useStudentsPageController(params: UseStudentsPageControllerParam
 		columns,
 		deleteDialog,
 		setDeleteDialog,
-		studentFormDialog,
-		setStudentFormDialog,
+		handleEdit,
 		loadStudents,
 		runAction,
 	};

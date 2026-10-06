@@ -1,18 +1,17 @@
-import type { StudentFormDialogViewModel } from '@/components/students/useStudentFormDialog';
+import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface StudentFormParentSectionProps {
-	vm: StudentFormDialogViewModel;
+	vm: StudentFormFieldsViewModel;
 }
 
 export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) {
 	const { form, setForm } = vm;
 
 	return (
-		<div className="space-y-3 border-t pt-3">
-			<h3 className="text-sm font-semibold">Ouder/voogd gegevens (optioneel)</h3>
+		<div className="space-y-3">
 			<div className="grid grid-cols-2 gap-4">
 				<div className="space-y-1.5">
 					<Label htmlFor="parent-name">Naam</Label>

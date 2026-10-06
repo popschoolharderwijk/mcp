@@ -3,6 +3,7 @@
 import { isBefore, startOfDay } from 'date-fns';
 import { DayPicker, getDefaultClassNames } from 'react-day-picker';
 import { nl } from 'react-day-picker/locale';
+import { CalendarDropdown } from '@/components/ui/calendar-dropdown';
 import { cn } from '@/lib/utils';
 
 import 'react-day-picker/style.css';
@@ -17,11 +18,12 @@ export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 const defaultClassNames = getDefaultClassNames();
 
-/** Extend default class names with Tailwind; nav/caption layout from style.css + calendar-overrides.css */
+/** Extend default class names with Tailwind; nav/caption layout from style.css + calendar.css */
 const calendarClassNames = {
 	...defaultClassNames,
 	root: cn(defaultClassNames.root, 'p-2'),
 	day_button: cn(defaultClassNames.day_button, 'rounded', 'hover:bg-primary hover:text-primary-foreground'),
+	dropdowns: cn(defaultClassNames.dropdowns, 'gap-1.5'),
 };
 
 /** Modifier: past days get a muted look */
@@ -33,6 +35,7 @@ const pastModifiersClassNames = {
 /**
  * Calendar component (shadcn-style) using react-day-picker.
  * Dutch locale, Monday as first day of week. Pure Tailwind via classNames slots.
+ * Month/year dropdowns use CalendarDropdown (Select) for correct theme styling.
  */
 function Calendar({
 	className,
@@ -40,6 +43,7 @@ function Calendar({
 	showOutsideDays = true,
 	modifiers: propsModifiers,
 	modifiersClassNames: propsModifiersClassNames,
+	components,
 	...props
 }: CalendarProps) {
 	return (
@@ -56,6 +60,10 @@ function Calendar({
 			showOutsideDays={showOutsideDays}
 			modifiers={{ ...pastModifiers, ...propsModifiers }}
 			modifiersClassNames={{ ...pastModifiersClassNames, ...propsModifiersClassNames }}
+			components={{
+				Dropdown: CalendarDropdown,
+				...components,
+			}}
 			{...props}
 		/>
 	);
