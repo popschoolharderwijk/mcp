@@ -62,17 +62,17 @@
 --   30000000-0004-0000-0000-000000000000
 --   30000000-0005-0000-0000-000000000000
 --
--- teachers (10)
---   40000000-0001-0000-0000-000000000000 (Teacher Alice - has students)
---   40000000-0002-0000-0000-000000000000 (Teacher Bob - has students)
---   40000000-0003-0000-0000-000000000000 (Teacher Charlie - has students)
---   40000000-0004-0000-0000-000000000000 (Teacher Diana - has students)
---   40000000-0005-0000-0000-000000000000 (Teacher Eve - has students, Bandcoaching)
---   40000000-0006-0000-0000-000000000000 (Teacher Frank - has students)
---   40000000-0007-0000-0000-000000000000 (Teacher Grace - has students)
---   40000000-0008-0000-0000-000000000000 (Teacher Henry - has students)
---   40000000-0009-0000-0000-000000000000 (Teacher Iris - has students)
---   40000000-0010-0000-0000-000000000000 (Teacher Jack - NO students)
+-- teachers (10) — VOG (coc_issued_on): Alice–Grace yes; Henry, Iris, Jack null
+--   40000000-0001-0000-0000-000000000000 (Teacher Alice - has students, VOG)
+--   40000000-0002-0000-0000-000000000000 (Teacher Bob - has students, VOG)
+--   40000000-0003-0000-0000-000000000000 (Teacher Charlie - has students, VOG)
+--   40000000-0004-0000-0000-000000000000 (Teacher Diana - has students, VOG)
+--   40000000-0005-0000-0000-000000000000 (Teacher Eve - has students, Bandcoaching, VOG)
+--   40000000-0006-0000-0000-000000000000 (Teacher Frank - has students, VOG)
+--   40000000-0007-0000-0000-000000000000 (Teacher Grace - has students, VOG)
+--   40000000-0008-0000-0000-000000000000 (Teacher Henry - has students, no VOG)
+--   40000000-0009-0000-0000-000000000000 (Teacher Iris - has students, no VOG)
+--   40000000-0010-0000-0000-000000000000 (Teacher Jack - NO students, no VOG)
 --
 -- students (60)
 --   50000000-0001 t/m 50000000-0060
@@ -289,6 +289,64 @@ BEGIN
   WHERE p.user_id = nu.id;
 
   -- -------------------------------------------------------------------------
+  -- FAKE ADDRESSES (deterministic; mix of full, partial, and all-NULL)
+  -- -------------------------------------------------------------------------
+  WITH ranked AS (
+    SELECT
+      id,
+      row_number() OVER (ORDER BY email) AS rn
+    FROM new_users
+  ),
+  streets AS (
+    SELECT ARRAY[
+      'Hoofdstraat', 'Kerkstraat', 'Dorpsstraat', 'Stationsweg',
+      'Schoolstraat', 'Lindelaan', 'Parkweg', 'Molenstraat'
+    ]::text[] AS names
+  ),
+  cities AS (
+    SELECT ARRAY[
+      'Amsterdam', 'Rotterdam', 'Utrecht', 'Den Haag',
+      'Eindhoven', 'Groningen', 'Tilburg', 'Breda'
+    ]::text[] AS names
+  ),
+  additions AS (
+    SELECT ARRAY[
+      NULL, 'A', NULL, 'bis', NULL, 'B', NULL, 'Huis', NULL, 'Rood'
+    ]::text[] AS vals
+  )
+  UPDATE public.profiles p
+  SET
+    street_name = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      ELSE s.names[((r.rn - 1) % array_length(s.names, 1)) + 1]
+    END,
+    house_number = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN a.vals[((r.rn - 1) % array_length(a.vals, 1)) + 1] IS NULL
+        THEN (((r.rn - 1) % 98) + 1)::text
+      ELSE (((r.rn - 1) % 98) + 1)::text || a.vals[((r.rn - 1) % array_length(a.vals, 1)) + 1]
+    END,
+    postal_code = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN r.rn % 7 = 0 THEN NULL
+      ELSE
+        lpad((((r.rn * 37) % 9000) + 1000)::text, 4, '0')
+        || chr(65 + ((r.rn - 1) % 26)::int)
+        || chr(65 + ((r.rn * 3) % 26)::int)
+    END,
+    city = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN r.rn % 13 = 0 THEN NULL
+      ELSE c.names[((r.rn - 1) % array_length(c.names, 1)) + 1]
+    END,
+    country_code = CASE
+      WHEN r.rn % 19 = 0 THEN 'BE'
+      ELSE 'NL'
+    END
+  FROM ranked r, streets s, cities c, additions a
+  WHERE p.user_id = r.id;
+
+  -- -------------------------------------------------------------------------
   -- Drop the temporary table
   -- -------------------------------------------------------------------------
   DROP TABLE IF EXISTS new_users;
@@ -324,24 +382,28 @@ ON CONFLICT (user_id) DO NOTHING;
 -- -----------------------------------------------------------------------------
 -- TEACHERS (for test users - teachers are identified by this table, not by role)
 -- -----------------------------------------------------------------------------
--- Logic: Insert all 10 teachers
+-- Logic: Insert all 10 teachers with VOG (Certificate of Conduct) mix
 -- - Teachers 1-9 have students (will have lesson agreements)
 -- - Teacher 10 (Jack) has NO students (no lesson agreements)
+-- - VOG present (coc_issued_on set): Alice, Bob, Charlie, Diana, Eve, Frank, Grace (7)
+-- - VOG absent (null): Henry, Iris, Jack (3)
 -- -----------------------------------------------------------------------------
-INSERT INTO public.teachers (user_id)
-SELECT user_id FROM public.profiles
-WHERE email IN (
-  'teacher-alice@test.nl',
-  'teacher-bob@test.nl',
-  'teacher-charlie@test.nl',
-  'teacher-diana@test.nl',
-  'teacher-eve@test.nl',
-  'teacher-frank@test.nl',
-  'teacher-grace@test.nl',
-  'teacher-henry@test.nl',
-  'teacher-iris@test.nl',
-  'teacher-jack@test.nl'
-)
+INSERT INTO public.teachers (user_id, coc_issued_on)
+SELECT p.user_id, teacher_data.coc_issued_on
+FROM (
+  VALUES
+    ('teacher-alice@test.nl', DATE '2023-12-06'),
+    ('teacher-bob@test.nl', DATE '2024-01-15'),
+    ('teacher-charlie@test.nl', DATE '2022-06-01'),
+    ('teacher-diana@test.nl', DATE '2024-09-20'),
+    ('teacher-eve@test.nl', DATE '2023-03-10'),
+    ('teacher-frank@test.nl', DATE '2021-11-28'),
+    ('teacher-grace@test.nl', DATE '2024-05-02'),
+    ('teacher-henry@test.nl', NULL::date),
+    ('teacher-iris@test.nl', NULL::date),
+    ('teacher-jack@test.nl', NULL::date)
+) AS teacher_data(email, coc_issued_on)
+INNER JOIN public.profiles p ON p.email = teacher_data.email
 ON CONFLICT (user_id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------

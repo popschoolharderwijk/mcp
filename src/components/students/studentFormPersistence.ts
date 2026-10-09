@@ -2,15 +2,13 @@ import { toast } from 'sonner';
 import {
 	buildCreateStudentPayload,
 	buildStudentProfileUpdateFields,
+	buildStudentRecordUpdateFields,
 	resolveCreateStudentInvokeResult,
 	type StudentSubmitError,
 	type StudentSubmitResult,
 } from '@/components/students/studentFormPersistenceHelpers';
-import {
-	type StudentFormMode,
-	type StudentFormState,
-	studentRecordFields,
-} from '@/components/students/studentFormTypes';
+import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
+import type { StudentFormSaveScope } from '@/components/students/studentFormValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import type { Student } from '@/types/students';
@@ -19,12 +17,12 @@ export type { StudentSubmitError, StudentSubmitResult } from '@/components/stude
 
 async function updateProfileForUser(
 	userId: string,
-	form: StudentFormState,
+	fields: NonNullable<ReturnType<typeof buildStudentProfileUpdateFields>>,
 	errorTitle: string,
 ): Promise<StudentSubmitResult> {
 	const { error } = await supabase
 		.from('profiles')
-		.update(buildStudentProfileUpdateFields(form))
+		.update(fields as never)
 		.eq('user_id', userId);
 
 	if (error) {
@@ -33,17 +31,27 @@ async function updateProfileForUser(
 	return { ok: true };
 }
 
-export async function updateExistingStudent(student: Student, form: StudentFormState): Promise<StudentSubmitResult> {
-	const profileResult = await updateProfileForUser(student.user_id, form, 'Fout bij bijwerken profiel');
-	if (!profileResult.ok) return profileResult;
+export async function updateExistingStudent(
+	student: Student,
+	form: StudentFormState,
+	scope: StudentFormSaveScope,
+): Promise<StudentSubmitResult> {
+	const profileFields = buildStudentProfileUpdateFields(form, scope);
+	if (profileFields) {
+		const profileResult = await updateProfileForUser(student.user_id, profileFields, 'Fout bij bijwerken profiel');
+		if (!profileResult.ok) return profileResult;
+	}
 
-	const { error: studentError } = await supabase
-		.from('students')
-		.update(studentRecordFields(form))
-		.eq('user_id', student.user_id);
+	const studentFields = buildStudentRecordUpdateFields(form, scope);
+	if (studentFields) {
+		const { error: studentError } = await supabase
+			.from('students')
+			.update(studentFields)
+			.eq('user_id', student.user_id);
 
-	if (studentError) {
-		return { ok: false, title: 'Fout bij bijwerken leerling', description: studentError.message };
+		if (studentError) {
+			return { ok: false, title: 'Fout bij bijwerken leerling', description: studentError.message };
+		}
 	}
 
 	return { ok: true };

@@ -111,6 +111,8 @@ interface DataTableProps<T> {
 	onExpandToggle?: (key: string | null) => void;
 	/** Render content below the expanded row. Only used when onExpandToggle is provided. */
 	renderExpandedRow?: (item: T) => React.ReactNode;
+	/** Extra classes on the `<table>` (e.g. `min-w-[56rem]` so narrow viewports scroll instead of crushing columns). */
+	tableClassName?: string;
 }
 
 export function DataTable<T>({
@@ -137,6 +139,7 @@ export function DataTable<T>({
 	expandedRowKey,
 	onExpandToggle,
 	renderExpandedRow,
+	tableClassName,
 }: DataTableProps<T>) {
 	const hasExpandableRows = !!onExpandToggle && !!renderExpandedRow;
 	const [sortColumn, setSortColumn] = useState<string | null>(() =>
@@ -369,7 +372,7 @@ export function DataTable<T>({
 									placeholder={searchPlaceholder}
 									value={localSearchQuery}
 									onChange={(e) => handleSearchChange(e.target.value)}
-									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
 								/>
 							</div>
 							{quickFilter && (
@@ -478,7 +481,7 @@ export function DataTable<T>({
 				</div>
 			)}
 			<div className="overflow-x-auto">
-				<table className="w-full table-fixed">
+				<table className={cn('w-full table-fixed', tableClassName)}>
 					<thead className="bg-muted/30">
 						<tr className="border-b text-left text-sm text-muted-foreground">
 							{hasExpandableRows && (

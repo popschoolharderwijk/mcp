@@ -4,7 +4,9 @@ import {
 	buildTeacherProfileNameUpdate,
 	buildTeacherProfileUpdate,
 	canSaveTeacherProfile,
+	canSubmitTeacherProfileForm,
 	createTeacherProfileFormState,
+	isTeacherProfileCocValid,
 	mapLoadedTeacherProfile,
 	shouldFetchTeacherProfile,
 	shouldStartProfileLoading,
@@ -31,55 +33,104 @@ describe('shouldFetchTeacherProfile', () => {
 });
 
 describe('mapLoadedTeacherProfile', () => {
-	it('maps teacher and profile fields', () => {
+	it('maps teacher and profile fields and marks VOG present when date exists', () => {
 		expect(
 			mapLoadedTeacherProfile(
-				{ bio: 'Docent bio', has_vog: true, vog_expires_at: '2027-01-01' },
-				{ first_name: 'Jan', last_name: 'Docent', phone_number: '0612345678' },
+				{ bio: 'Docent bio', coc_issued_on: '2023-12-06' },
+				{ first_name: 'Jan', last_name: 'Docent', email: 'jan@example.com', phone_number: '0612345678' },
 			),
 		).toEqual({
 			bio: 'Docent bio',
-			hasVog: true,
-			vogExpiresAt: '2027-01-01',
+			cocIssuedOn: '2023-12-06',
+			hasCoc: true,
 			firstName: 'Jan',
 			lastName: 'Docent',
+			email: 'jan@example.com',
 			phoneNumber: '0612345678',
+		});
+	});
+
+	it('marks VOG absent when issue date is null', () => {
+		expect(
+			mapLoadedTeacherProfile(
+				{ bio: null, coc_issued_on: null },
+				{ first_name: 'Jan', last_name: 'Docent', email: null, phone_number: null },
+			),
+		).toEqual({
+			bio: '',
+			cocIssuedOn: '',
+			hasCoc: false,
+			firstName: 'Jan',
+			lastName: 'Docent',
+			email: '',
+			phoneNumber: '',
 		});
 	});
 });
 
+describe('isTeacherProfileCocValid', () => {
+	it('allows save when VOG is off even without a date', () => {
+		expect(isTeacherProfileCocValid({ hasCoc: false, cocIssuedOn: '' })).toBe(true);
+	});
+
+	it('requires a date when VOG is on', () => {
+		expect(isTeacherProfileCocValid({ hasCoc: true, cocIssuedOn: '' })).toBe(false);
+		expect(isTeacherProfileCocValid({ hasCoc: true, cocIssuedOn: '2023-12-06' })).toBe(true);
+	});
+});
+
+describe('canSubmitTeacherProfileForm', () => {
+	it('requires edit permission', () => {
+		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true)).toBe(false);
+	});
+
+	it('requires a VOG date when VOG is on', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true)).toBe(false);
+	});
+
+	it('blocks submit when VOG date draft is not synced', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false)).toBe(false);
+	});
+
+	it('allows submit when VOG is off', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false)).toBe(true);
+	});
+
+	it('allows submit when VOG date is present and draft is synced', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true)).toBe(true);
+	});
+});
+
 describe('buildTeacherProfileUpdate', () => {
-	it('maps empty bio and expiry to null', () => {
+	it('clears coc date when VOG is off', () => {
 		expect(
 			buildTeacherProfileUpdate({
 				bio: '',
-				hasVog: false,
-				vogExpiresAt: '',
+				hasCoc: false,
+				cocIssuedOn: '2023-12-06',
 				firstName: 'Jan',
 				lastName: 'Docent',
 				phoneNumber: '',
 			}),
 		).toEqual({
 			bio: null,
-			has_vog: false,
-			vog_expires_at: null,
+			coc_issued_on: null,
 		});
 	});
 
-	it('trims bio without collapsing internal spaces', () => {
+	it('persists coc date when VOG is on', () => {
 		expect(
 			buildTeacherProfileUpdate({
 				bio: '\tHello   world\n',
-				hasVog: true,
-				vogExpiresAt: '2027-01-01',
+				hasCoc: true,
+				cocIssuedOn: '2023-12-06',
 				firstName: 'Jan',
 				lastName: 'Docent',
 				phoneNumber: '',
 			}),
 		).toEqual({
 			bio: 'Hello   world',
-			has_vog: true,
-			vog_expires_at: '2027-01-01',
+			coc_issued_on: '2023-12-06',
 		});
 	});
 });
@@ -89,8 +140,8 @@ describe('buildTeacherProfileNameUpdate', () => {
 		expect(
 			buildTeacherProfileNameUpdate({
 				bio: '',
-				hasVog: false,
-				vogExpiresAt: '',
+				hasCoc: false,
+				cocIssuedOn: '',
 				firstName: '\tJan   Piet  ',
 				lastName: '  ',
 				phoneNumber: ' 0612345678 ',
@@ -114,23 +165,24 @@ describe('canSaveTeacherProfile', () => {
 });
 
 describe('createTeacherProfileFormState', () => {
-	it('builds initial form state from props', () => {
+	it('builds initial form state from props including VOG flag', () => {
 		expect(
 			createTeacherProfileFormState({
 				initialBio: 'Bio',
 				initialFirstName: 'Jan',
 				initialLastName: 'Docent',
+				initialEmail: 'jan@example.com',
 				initialPhoneNumber: '0612345678',
-				initialHasVog: true,
-				initialVogExpiresAt: '2027-01-01',
+				initialCocIssuedOn: '2023-12-06',
 			}),
 		).toEqual({
 			bio: 'Bio',
 			firstName: 'Jan',
 			lastName: 'Docent',
+			email: 'jan@example.com',
 			phoneNumber: '0612345678',
-			hasVog: true,
-			vogExpiresAt: '2027-01-01',
+			cocIssuedOn: '2023-12-06',
+			hasCoc: true,
 		});
 	});
 });
@@ -143,9 +195,10 @@ describe('applyTeacherProfileInitials', () => {
 					bio: 'Current bio',
 					firstName: 'Current',
 					lastName: 'Name',
+					email: 'current@example.com',
 					phoneNumber: '0612345678',
-					hasVog: false,
-					vogExpiresAt: '',
+					cocIssuedOn: '',
+					hasCoc: false,
 				},
 				{ initialBio: 'New bio' },
 			),
@@ -153,9 +206,10 @@ describe('applyTeacherProfileInitials', () => {
 			bio: 'New bio',
 			firstName: 'Current',
 			lastName: 'Name',
+			email: 'current@example.com',
 			phoneNumber: '0612345678',
-			hasVog: false,
-			vogExpiresAt: '',
+			cocIssuedOn: '',
+			hasCoc: false,
 		});
 	});
 });

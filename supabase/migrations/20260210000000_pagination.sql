@@ -242,6 +242,7 @@ BEGIN
       SELECT
         t.user_id,
         t.bio,
+        t.coc_issued_on,
         t.is_active,
         t.created_at,
         t.updated_at,
@@ -315,6 +316,7 @@ BEGIN
             'id', pt.user_id,
             'user_id', pt.user_id,
             'bio', pt.bio,
+            'coc_issued_on', pt.coc_issued_on,
             'is_active', pt.is_active,
             'created_at', pt.created_at,
             'updated_at', pt.updated_at,

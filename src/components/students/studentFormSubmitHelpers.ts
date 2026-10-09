@@ -25,7 +25,7 @@ export async function executeStudentProfileSave(params: StudentProfileSaveParams
 		return 'validation-error';
 	}
 
-	const result = await updateExistingStudent(params.student, params.form);
+	const result = await updateExistingStudent(params.student, params.form, params.scope);
 	if (result.ok === false) {
 		showStudentSubmitError(result);
 		return 'persist-error';

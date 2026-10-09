@@ -10,10 +10,10 @@ import {
 } from '@/lib/trial-lessons/loadTrialLessonSchedulingDataHelpers';
 
 export interface TrialLessonSchedulingTeacher {
-	userId: string;
-	firstName: string | null;
-	lastName: string | null;
-	avatarUrl: string | null;
+	user_id: string;
+	first_name: string | null;
+	last_name: string | null;
+	avatar_url: string | null;
 }
 
 export interface TrialLessonSchedulingData {

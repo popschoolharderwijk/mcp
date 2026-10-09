@@ -23,6 +23,7 @@ const paginatedTeacher: TeacherWithLessonTypes = {
 	updated_by: null,
 	is_active: true,
 	bio: null,
+	coc_issued_on: null,
 	email: 'piet@example.com',
 	first_name: 'Piet',
 	last_name: 'Docent',
@@ -50,6 +51,7 @@ describe('executeTeachersPageLoad', () => {
 						updated_by: null,
 						is_active: true,
 						bio: null,
+						coc_issued_on: null,
 						profile: {
 							user_id: 'teacher-1',
 							email: 'piet@example.com',

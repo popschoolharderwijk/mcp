@@ -1,7 +1,10 @@
 import { format, parse, parseISO } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
+/** date-fns token pattern for Dutch UI dates (day-month-year). */
 export const DATE_FORMAT_UI = 'dd-MM-yyyy' as const;
+/** Placeholder shown in date inputs (jjjj = jaar). */
+export const DATE_FORMAT_UI_PLACEHOLDER = 'dd-mm-jjjj' as const;
 export const DATE_FORMAT_DB = 'yyyy-MM-dd' as const;
 
 export function now() {

@@ -1,9 +1,10 @@
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { getUserInitials } from '@/lib/user-initials';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
+import type { ProfileAddressFields } from '@/types/profile-address';
 import type { Student } from '@/types/students';
 
-export interface StudentProfileData {
+export interface StudentProfileData extends ProfileAddressFields {
 	user_id: string;
 	email: string;
 	first_name: string | null;

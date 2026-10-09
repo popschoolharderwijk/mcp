@@ -14,6 +14,11 @@ const profile = {
 	last_name: 'Leerling',
 	phone_number: null,
 	avatar_url: null,
+	street_name: null,
+	house_number: null,
+	postal_code: null,
+	city: null,
+	country_code: 'NL',
 };
 
 const student = {
@@ -59,12 +64,9 @@ describe('buildStudentAvatarFallback', () => {
 		expect(
 			buildStudentAvatarFallback(
 				{
-					user_id: 'u-1',
-					email: 'jan@test.nl',
+					...profile,
 					first_name: null,
 					last_name: null,
-					phone_number: null,
-					avatar_url: null,
 				},
 				'',
 			),

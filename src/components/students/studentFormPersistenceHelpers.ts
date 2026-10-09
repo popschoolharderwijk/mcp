@@ -1,5 +1,7 @@
 import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
 import { studentRecordFields } from '@/components/students/studentFormTypes';
+import type { StudentFormSaveScope } from '@/components/students/studentFormValidation';
+import { buildProfileAddressUpdateFields } from '@/lib/profile/profileAddressHelpers';
 import {
 	normalizeCompactText,
 	normalizeCompactTextOrNull,
@@ -11,15 +13,41 @@ export type StudentSubmitError = { ok: false; title: string; description?: strin
 export type StudentSubmitSuccess = { ok: true; userId?: string };
 export type StudentSubmitResult = StudentSubmitError | StudentSubmitSuccess;
 
-export function buildStudentProfileUpdateFields(form: StudentFormState): {
-	first_name: string | null;
-	last_name: string | null;
-	phone_number: string | null;
-} {
+/** Profiles columns to update for a scoped save; null when that scope does not touch profiles. */
+export function buildStudentProfileUpdateFields(form: StudentFormState, scope: StudentFormSaveScope) {
+	if (scope === 'address') {
+		return buildProfileAddressUpdateFields(form);
+	}
+	if (scope === 'parent') {
+		return null;
+	}
 	return {
 		first_name: normalizeCompactTextOrNull(form.first_name),
 		last_name: normalizeCompactTextOrNull(form.last_name),
 		phone_number: normalizeTrimmedTextOrNull(form.phone_number),
+	};
+}
+
+/** Students columns to update for a scoped save; null when that scope does not touch students. */
+export function buildStudentRecordUpdateFields(form: StudentFormState, scope: StudentFormSaveScope) {
+	if (scope === 'address') {
+		return null;
+	}
+	const fields = studentRecordFields(form);
+	if (scope === 'parent') {
+		return {
+			parent_name: fields.parent_name,
+			parent_email: fields.parent_email,
+			parent_phone_number: fields.parent_phone_number,
+		};
+	}
+	return {
+		date_of_birth: fields.date_of_birth,
+		debtor_info_same_as_student: fields.debtor_info_same_as_student,
+		debtor_name: fields.debtor_name,
+		debtor_address: fields.debtor_address,
+		debtor_postal_code: fields.debtor_postal_code,
+		debtor_city: fields.debtor_city,
 	};
 }
 

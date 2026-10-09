@@ -1,12 +1,14 @@
+import { emptyProfileAddressForm, profileAddressFormFromFields } from '@/lib/profile/profileAddressHelpers';
 import {
 	normalizeCompactText,
 	normalizeCompactTextOrNull,
 	normalizeTrimmedText,
 	normalizeTrimmedTextOrNull,
 } from '@/lib/text/normalizeText';
+import type { ProfileAddressFormState } from '@/types/profile-address';
 import type { Student } from '@/types/students';
 
-export interface StudentFormState {
+export interface StudentFormState extends ProfileAddressFormState {
 	email: string;
 	first_name: string;
 	last_name: string;
@@ -38,6 +40,7 @@ export const emptyStudentForm: StudentFormState = {
 	debtor_address: '',
 	debtor_postal_code: '',
 	debtor_city: '',
+	...emptyProfileAddressForm,
 };
 
 export function isValidEmail(email: string): boolean {
@@ -79,5 +82,6 @@ export function studentFormFromStudent(student: Student): StudentFormState {
 		debtor_address: normalizeCompactText(student.debtor_address ?? ''),
 		debtor_postal_code: normalizeCompactText(student.debtor_postal_code ?? ''),
 		debtor_city: normalizeCompactText(student.debtor_city ?? ''),
+		...profileAddressFormFromFields(student),
 	};
 }

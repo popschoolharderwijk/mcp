@@ -1,5 +1,5 @@
 import type { FreeSlotForTeacher } from '@/lib/agreementSlots';
-import type { TeacherDisplayInfo } from '@/lib/trial-lessons/scheduleTrialLessonHelpers';
+import type { TrialLessonSchedulingTeacher } from '@/lib/trial-lessons/loadTrialLessonSchedulingData';
 
 export function isTrialLessonSlotSelected(selected: FreeSlotForTeacher | null, slot: FreeSlotForTeacher): boolean {
 	if (!selected) return false;
@@ -19,11 +19,11 @@ export function mapTeacherInfoFromProfile(profile: {
 	first_name: string | null;
 	last_name: string | null;
 	avatar_url: string | null;
-}): { userId: string } & TeacherDisplayInfo {
+}): TrialLessonSchedulingTeacher {
 	return {
-		userId: profile.user_id,
-		firstName: profile.first_name ?? null,
-		lastName: profile.last_name ?? null,
-		avatarUrl: profile.avatar_url ?? null,
+		user_id: profile.user_id,
+		first_name: profile.first_name ?? null,
+		last_name: profile.last_name ?? null,
+		avatar_url: profile.avatar_url ?? null,
 	};
 }
