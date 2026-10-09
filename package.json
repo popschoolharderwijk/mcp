@@ -11,6 +11,7 @@
 		"build": "vite build",
 		"build:dev": "vite build --mode development",
 		"create-user": "bun run scripts/createuser.ts",
+		"import:teachers": "bun run import/teachers/cli.ts",
 		"fix": "biome check --write",
 		"check": "biome check --error-on-warnings",
 		"check:ci": "biome ci --error-on-warnings && tsc -b --noEmit && bun test code && rm -f *.tsbuildinfo && echo 'no errors'",
