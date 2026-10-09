@@ -114,6 +114,10 @@ export const TEACHERS = {
 	// All teachers are active by default (is_active DEFAULT true)
 	ACTIVE: 10,
 	INACTIVE: 0,
+	/** Teachers with coc_issued_on set (Alice–Grace) */
+	WITH_COC: 7,
+	/** Teachers without VOG (Henry, Iris, Jack) */
+	WITHOUT_COC: 3,
 } as const;
 
 /**

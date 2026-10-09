@@ -80,6 +80,18 @@ export function isTeacherProfileCocValid(input: Pick<TeacherProfileSaveInput, 'h
 	return Boolean(input.cocIssuedOn.trim());
 }
 
+/** Submit enabled only when editable, VOG rules pass, and typed VOG date draft is synced. */
+export function canSubmitTeacherProfileForm(
+	canEdit: boolean,
+	form: Pick<TeacherProfileSaveInput, 'hasCoc' | 'cocIssuedOn'>,
+	cocIssuedOnDraftSynced: boolean,
+): boolean {
+	if (!canEdit) return false;
+	if (!isTeacherProfileCocValid(form)) return false;
+	if (form.hasCoc && !cocIssuedOnDraftSynced) return false;
+	return true;
+}
+
 export function buildTeacherProfileUpdate(input: TeacherProfileSaveInput) {
 	return {
 		bio: normalizeTrimmedTextOrNull(input.bio),

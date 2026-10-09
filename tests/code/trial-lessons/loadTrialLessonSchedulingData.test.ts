@@ -85,10 +85,10 @@ describe('loadTrialLessonSchedulingData', () => {
 
 		const result = await loadTrialLessonSchedulingData('lt-1', '2026-09-01', '2026-09-30');
 		expect(result.teachers.get('t-1')).toEqual({
-			userId: 't-1',
-			firstName: 'Jan',
-			lastName: 'Docent',
-			avatarUrl: null,
+			user_id: 't-1',
+			first_name: 'Jan',
+			last_name: 'Docent',
+			avatar_url: null,
 		});
 		expect(result.availabilityByTeacher.get('t-1')).toEqual([
 			{ day_of_week: 1, start_time: '09:00', end_time: '12:00' },
@@ -124,7 +124,7 @@ describe('loadTrialLessonSchedulingData', () => {
 		tableResults.trial_lessons = { data: [], error: null };
 
 		const result = await loadTrialLessonSchedulingData(null, '2026-09-01', '2026-09-30');
-		expect(result.teachers.get('t-2')?.firstName).toBe('Piet');
+		expect(result.teachers.get('t-2')?.first_name).toBe('Piet');
 		expect(result.availabilityByTeacher.size).toBe(0);
 	});
 });

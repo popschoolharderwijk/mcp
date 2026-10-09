@@ -1,11 +1,13 @@
-import { DatePicker } from '@/components/ui/date-picker';
+import { TeacherProfileCocFields } from '@/components/teachers/TeacherProfileCocFields';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Textarea } from '@/components/ui/textarea';
-import { pastDatePickerRange } from '@/lib/date/datePickerHelpers';
-import { isTeacherProfileCocValid, type TeacherProfileFormValues } from '@/lib/teachers/teacherProfileSectionHelpers';
+import {
+	canSubmitTeacherProfileForm,
+	type TeacherProfileFormValues,
+} from '@/lib/teachers/teacherProfileSectionHelpers';
 
 interface TeacherProfileFormProps {
 	form: TeacherProfileFormValues;
@@ -17,47 +19,6 @@ interface TeacherProfileFormProps {
 	onSave: () => void;
 }
 
-function TeacherProfileCocFields({
-	form,
-	canEdit,
-	onChange,
-	onCocIssuedOnDraftSyncedChange,
-}: Pick<TeacherProfileFormProps, 'form' | 'canEdit' | 'onChange' | 'onCocIssuedOnDraftSyncedChange'>) {
-	return (
-		<div className="space-y-3">
-			<label className="flex items-center gap-2 cursor-pointer">
-				<input
-					id="has-coc"
-					type="checkbox"
-					checked={form.hasCoc}
-					onChange={(e) => onChange({ hasCoc: e.target.checked })}
-					disabled={!canEdit}
-					className="h-4 w-4 rounded border-input"
-				/>
-				<span className="text-sm font-medium">VOG aanwezig</span>
-			</label>
-			{form.hasCoc && (
-				<div className="space-y-2">
-					<Label htmlFor="coc-issued-on">
-						Afgiftedatum <span className="text-destructive">*</span>
-					</Label>
-					<DatePicker
-						variant="input"
-						id="coc-issued-on"
-						value={form.cocIssuedOn || null}
-						onChange={(value) => onChange({ cocIssuedOn: value ?? '' })}
-						onDraftSyncedChange={onCocIssuedOnDraftSyncedChange}
-						disabled={!canEdit}
-						className="max-w-xs"
-						{...pastDatePickerRange()}
-						calendarAriaLabel="Kies afgiftedatum"
-					/>
-				</div>
-			)}
-		</div>
-	);
-}
-
 export function TeacherProfileForm({
 	form,
 	canEdit,
@@ -67,7 +28,7 @@ export function TeacherProfileForm({
 	onCocIssuedOnDraftSyncedChange,
 	onSave,
 }: TeacherProfileFormProps) {
-	const canSubmit = canEdit && isTeacherProfileCocValid(form) && (!form.hasCoc || cocIssuedOnDraftSynced);
+	const canSubmit = canSubmitTeacherProfileForm(canEdit, form, cocIssuedOnDraftSynced);
 
 	return (
 		<div className="space-y-4">

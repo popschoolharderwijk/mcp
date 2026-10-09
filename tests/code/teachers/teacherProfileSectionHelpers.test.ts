@@ -4,6 +4,7 @@ import {
 	buildTeacherProfileNameUpdate,
 	buildTeacherProfileUpdate,
 	canSaveTeacherProfile,
+	canSubmitTeacherProfileForm,
 	createTeacherProfileFormState,
 	isTeacherProfileCocValid,
 	mapLoadedTeacherProfile,
@@ -75,6 +76,28 @@ describe('isTeacherProfileCocValid', () => {
 	it('requires a date when VOG is on', () => {
 		expect(isTeacherProfileCocValid({ hasCoc: true, cocIssuedOn: '' })).toBe(false);
 		expect(isTeacherProfileCocValid({ hasCoc: true, cocIssuedOn: '2023-12-06' })).toBe(true);
+	});
+});
+
+describe('canSubmitTeacherProfileForm', () => {
+	it('requires edit permission', () => {
+		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true)).toBe(false);
+	});
+
+	it('requires a VOG date when VOG is on', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true)).toBe(false);
+	});
+
+	it('blocks submit when VOG date draft is not synced', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false)).toBe(false);
+	});
+
+	it('allows submit when VOG is off', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false)).toBe(true);
+	});
+
+	it('allows submit when VOG date is present and draft is synced', () => {
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true)).toBe(true);
 	});
 });
 

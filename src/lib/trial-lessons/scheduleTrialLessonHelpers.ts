@@ -5,13 +5,6 @@ import {
 	type FreeSlotForTeacher,
 	getFreeSlotsAcrossTeachers,
 } from '@/lib/agreementSlots';
-import { getUserInitials } from '@/lib/user-initials';
-
-export interface TeacherDisplayInfo {
-	firstName: string | null;
-	lastName: string | null;
-	avatarUrl: string | null;
-}
 
 const DAY_NAMES = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 
@@ -24,21 +17,6 @@ export function todayPlus(days: number): string {
 export function formatTrialLessonDateHeader(dateStr: string): string {
 	const d = new Date(`${dateStr}T12:00:00`);
 	return `${DAY_NAMES[d.getDay()]} ${d.getDate()} ${d.toLocaleString('nl-NL', { month: 'long' })}`;
-}
-
-export function getTeacherDisplayName(teacher: TeacherDisplayInfo | undefined): string {
-	if (!teacher) return 'Onbekende docent';
-	const name = `${teacher.firstName ?? ''} ${teacher.lastName ?? ''}`.trim();
-	return name || 'Docent';
-}
-
-export function getTeacherInitials(teacher: TeacherDisplayInfo | undefined): string {
-	if (!teacher) return '?';
-	return getUserInitials({
-		first_name: teacher.firstName,
-		last_name: teacher.lastName,
-		email: null,
-	});
 }
 
 export interface ScheduleTrialLessonFormInput {

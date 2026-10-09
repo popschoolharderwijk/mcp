@@ -1,21 +1,23 @@
-import { LuUser } from 'react-icons/lu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserDisplay } from '@/components/ui/user-display';
 import type { FreeSlotForTeacher } from '@/lib/agreementSlots';
-import {
-	formatTrialLessonDateHeader,
-	getTeacherDisplayName,
-	getTeacherInitials,
-	type TeacherDisplayInfo,
-} from '@/lib/trial-lessons/scheduleTrialLessonHelpers';
+import type { TrialLessonSchedulingTeacher } from '@/lib/trial-lessons/loadTrialLessonSchedulingData';
+import { formatTrialLessonDateHeader } from '@/lib/trial-lessons/scheduleTrialLessonHelpers';
 import { getTrialLessonSlotKey, isTrialLessonSlotSelected } from '@/lib/trial-lessons/scheduleTrialLessonSlotHelpers';
 import { resolveTrialLessonSlotRowClassName } from '@/lib/trial-lessons/trialLessonSlotRowHelpers';
 
 interface TrialLessonSlotPickerProps {
 	slotsGroupedByDate: Map<string, FreeSlotForTeacher[]>;
-	teachers: Map<string, TeacherDisplayInfo & { userId: string }>;
+	teachers: Map<string, TrialLessonSchedulingTeacher>;
 	selected: FreeSlotForTeacher | null;
 	onSelect: (slot: FreeSlotForTeacher) => void;
 }
+
+const UNKNOWN_TEACHER_PROFILE = {
+	first_name: null,
+	last_name: null,
+	email: 'Onbekende docent',
+	avatar_url: null,
+};
 
 function TrialLessonSlotRow({
 	slot,
@@ -24,13 +26,10 @@ function TrialLessonSlotRow({
 	onSelect,
 }: {
 	slot: FreeSlotForTeacher;
-	teacher: (TeacherDisplayInfo & { userId: string }) | undefined;
+	teacher: TrialLessonSchedulingTeacher | undefined;
 	isSelected: boolean;
 	onSelect: (slot: FreeSlotForTeacher) => void;
 }) {
-	const displayName = getTeacherDisplayName(teacher);
-	const initials = getTeacherInitials(teacher);
-
 	return (
 		<li>
 			<button
@@ -38,16 +37,10 @@ function TrialLessonSlotRow({
 				onClick={() => onSelect(slot)}
 				className={resolveTrialLessonSlotRowClassName(isSelected)}
 			>
-				<span className="w-24 font-mono tabular-nums">
+				<span className="w-24 shrink-0 font-mono tabular-nums">
 					{slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
 				</span>
-				<Avatar className="h-6 w-6">
-					{teacher?.avatarUrl ? <AvatarImage src={teacher.avatarUrl} alt={displayName} /> : null}
-					<AvatarFallback className="text-[10px]">
-						{teacher ? initials : <LuUser className="h-3 w-3" />}
-					</AvatarFallback>
-				</Avatar>
-				<span className="truncate">{displayName}</span>
+				<UserDisplay profile={teacher ?? UNKNOWN_TEACHER_PROFILE} />
 			</button>
 		</li>
 	);

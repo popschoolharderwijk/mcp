@@ -40,10 +40,10 @@ describe('mapTeacherInfoFromProfile', () => {
 				avatar_url: 'https://example.com/a.png',
 			}),
 		).toEqual({
-			userId: 'teacher-1',
-			firstName: 'Jan',
-			lastName: 'Docent',
-			avatarUrl: 'https://example.com/a.png',
+			user_id: 'teacher-1',
+			first_name: 'Jan',
+			last_name: 'Docent',
+			avatar_url: 'https://example.com/a.png',
 		});
 	});
 });
