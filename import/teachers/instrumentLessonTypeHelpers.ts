@@ -1,5 +1,5 @@
 /** Bootstrap lesson type names from supabase/seeds/bootstrap.sql */
-export const BOOTSTRAP_LESSON_TYPE_NAMES = [
+const BOOTSTRAP_LESSON_TYPE_NAMES = [
 	'Gitaarles',
 	'Drumles',
 	'Zangles',

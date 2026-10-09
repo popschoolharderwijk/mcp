@@ -15,9 +15,16 @@ describe('buildTeachersSql', () => {
 				firstName: 'Femke',
 				lastName: 'Bosman',
 				phoneNumber: '0694350865',
-				bio: 'Hello',
+				streetName: 'Voorbeeldstraat',
+				houseNumber: '12A',
+				postalCode: '1234 AB',
+				city: 'Amsterdam',
+				countryCode: 'NL',
+				cocIssuedOn: '2023-12-06',
 				lessonTypeNames: ['Zangles'],
 				unmatchedInstruments: [],
+				invalidCocIssuedOn: null,
+				invalidCountryCode: null,
 			},
 		]);
 
@@ -26,9 +33,18 @@ describe('buildTeachersSql', () => {
 		expect(sql).toContain('UPDATE public.profiles');
 		expect(sql).toContain('INSERT INTO public.teachers');
 		expect(sql).toContain('INSERT INTO public.teacher_lesson_types');
+		expect(sql).toContain('coc_issued_on');
+		expect(sql).toContain("'2023-12-06'::date");
 		expect(sql).toContain("'Zangles'");
 		expect(sql).toContain("'teacher@example.com'");
 		expect(sql).toContain("'0694350865'");
+		expect(sql).toContain("'Voorbeeldstraat'");
+		expect(sql).toContain("'12A'");
+		expect(sql).toContain("'1234 AB'");
+		expect(sql).toContain("'Amsterdam'");
+		expect(sql).toContain("'NL'");
+		expect(sql).toContain('street_name = t.street_name');
+		expect(sql).toContain('country_code = t.country_code');
 		expect(sql).toContain("'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid");
 		expect(sql).toContain('ON CONFLICT (user_id) DO UPDATE');
 	});

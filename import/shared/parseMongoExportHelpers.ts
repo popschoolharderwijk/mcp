@@ -1,28 +1,38 @@
+function unwrapMongoDate(dateVal: unknown): unknown {
+	if (typeof dateVal === 'string') return dateVal;
+	if (dateVal !== null && typeof dateVal === 'object' && '$numberLong' in (dateVal as object)) {
+		const ms = Number((dateVal as { $numberLong: string }).$numberLong);
+		return Number.isFinite(ms) ? new Date(ms).toISOString() : dateVal;
+	}
+	return dateVal;
+}
+
+function unwrapExtendedSingleton(record: Record<string, unknown>): unknown | undefined {
+	const keys = Object.keys(record);
+	if (keys.length !== 1) return undefined;
+	if (keys[0] === '$oid' && typeof record.$oid === 'string') return record.$oid;
+	if (keys[0] === '$date') return unwrapMongoDate(record.$date);
+	return undefined;
+}
+
+function unwrapMongoObject(record: Record<string, unknown>): unknown {
+	const singleton = unwrapExtendedSingleton(record);
+	if (singleton !== undefined) return singleton;
+
+	const out: Record<string, unknown> = {};
+	for (const [key, nested] of Object.entries(record)) {
+		out[key] = unwrapMongoExtendedJson(nested);
+	}
+	return out;
+}
+
 /** Unwrap Mongo extended JSON `{ "$oid": "…" }` / `{ "$date": "…" }` (and nested values). */
 export function unwrapMongoExtendedJson(value: unknown): unknown {
 	if (Array.isArray(value)) {
 		return value.map(unwrapMongoExtendedJson);
 	}
 	if (value !== null && typeof value === 'object') {
-		const record = value as Record<string, unknown>;
-		const keys = Object.keys(record);
-		if (keys.length === 1 && keys[0] === '$oid' && typeof record.$oid === 'string') {
-			return record.$oid;
-		}
-		if (keys.length === 1 && keys[0] === '$date') {
-			const dateVal = record.$date;
-			if (typeof dateVal === 'string') return dateVal;
-			if (dateVal !== null && typeof dateVal === 'object' && '$numberLong' in (dateVal as object)) {
-				const ms = Number((dateVal as { $numberLong: string }).$numberLong);
-				return Number.isFinite(ms) ? new Date(ms).toISOString() : dateVal;
-			}
-			return dateVal;
-		}
-		const out: Record<string, unknown> = {};
-		for (const [key, nested] of Object.entries(record)) {
-			out[key] = unwrapMongoExtendedJson(nested);
-		}
-		return out;
+		return unwrapMongoObject(value as Record<string, unknown>);
 	}
 	return value;
 }

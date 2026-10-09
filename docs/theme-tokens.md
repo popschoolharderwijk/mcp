@@ -27,6 +27,10 @@ When changing `--primary` / brand colour: update **all three** mirrors plus mirr
 - **Default** (no custom hex): CSS tokens `--agenda-*`, borders via `--agenda-*-border` (`color-mix` in CSS). TypeScript uses only `hsl(var(...))` and `var(--agenda-*-border)`.
 - Classification: [`resolveAgendaDefaultKind`](../src/lib/agenda/agenda-default-style-vars.ts) — same order as `getEventStyle`.
 
+## Placeholders
+
+Form placeholder colour is `--placeholder` in `theme-tokens.css` (`hsl(var(--foreground) / …)` at low opacity so it never reads as entered text). Applied once in [`src/index.css`](../src/index.css) via unlayered `input::placeholder` / `textarea::placeholder` (must match Tailwind preflight specificity) — do not set `placeholder:text-*` per component.
+
 ## Modal overlay
 
 Dialogs use `bg-black/80 dark:bg-black/60` (no `--overlay` token unless chosen deliberately after a visual check).

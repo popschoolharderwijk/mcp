@@ -21,6 +21,7 @@
 
 	--muted: 210 40% 96%;
 	--muted-foreground: 215 16% 47%;
+	--placeholder: hsl(var(--foreground) / 0.26);
 
 	--accent: color-mix(in srgb, hsl(var(--primary)) 38%, hsl(var(--background)));
 	--accent-foreground: 222 47% 11%;
@@ -85,6 +86,7 @@
 
 	--muted: 222 47% 18%;
 	--muted-foreground: 215 20% 65%;
+	--placeholder: hsl(var(--foreground) / 0.2);
 
 	--accent-foreground: 210 40% 98%;
 

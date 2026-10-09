@@ -11,3 +11,9 @@ export function sqlUuid(value: string): string {
 export function sqlBoolean(value: boolean): string {
 	return value ? 'TRUE' : 'FALSE';
 }
+
+/** SQL date literal `YYYY-MM-DD`::date, or NULL. */
+export function sqlDate(value: string | null | undefined): string {
+	if (value == null) return 'NULL';
+	return `${sqlString(value)}::date`;
+}

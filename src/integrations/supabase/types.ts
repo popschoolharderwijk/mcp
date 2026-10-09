@@ -1287,36 +1287,51 @@ export type Database = {
 			profiles: {
 				Row: {
 					avatar_url: string | null;
+					city: string | null;
+					country_code: string;
 					created_at: string;
 					created_by: string | null;
 					email: string;
 					first_name: string | null;
+					house_number: string | null;
 					last_name: string | null;
 					phone_number: string | null;
+					postal_code: string | null;
+					street_name: string | null;
 					updated_at: string;
 					updated_by: string | null;
 					user_id: string;
 				};
 				Insert: {
 					avatar_url?: string | null;
+					city?: string | null;
+					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
 					email: string;
 					first_name?: string | null;
+					house_number?: string | null;
 					last_name?: string | null;
 					phone_number?: string | null;
+					postal_code?: string | null;
+					street_name?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
 					user_id: string;
 				};
 				Update: {
 					avatar_url?: string | null;
+					city?: string | null;
+					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
 					email?: string;
 					first_name?: string | null;
+					house_number?: string | null;
 					last_name?: string | null;
 					phone_number?: string | null;
+					postal_code?: string | null;
+					street_name?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
 					user_id?: string;
@@ -1810,6 +1825,7 @@ export type Database = {
 			teachers: {
 				Row: {
 					bio: string | null;
+					coc_issued_on: string | null;
 					created_at: string;
 					created_by: string | null;
 					is_active: boolean;
@@ -1819,6 +1835,7 @@ export type Database = {
 				};
 				Insert: {
 					bio?: string | null;
+					coc_issued_on?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					is_active?: boolean;
@@ -1828,6 +1845,7 @@ export type Database = {
 				};
 				Update: {
 					bio?: string | null;
+					coc_issued_on?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					is_active?: boolean;
@@ -2150,6 +2168,7 @@ export type Database = {
 			is_staff: { Args: never; Returns: boolean };
 			is_student: { Args: { _user_id: string }; Returns: boolean };
 			is_teacher: { Args: { _user_id: string }; Returns: boolean };
+			is_valid_country_code: { Args: { p_code: string }; Returns: boolean };
 			is_valid_iban: { Args: { p_iban: string }; Returns: boolean };
 			is_valid_phone_number: { Args: { p_phone: string }; Returns: boolean };
 			mark_trial_lesson_completed: {

@@ -1,4 +1,4 @@
-export type StudentInfoTabId = 'profile' | 'parent' | 'agreements' | 'signups' | 'agenda';
+export type StudentInfoTabId = 'profile' | 'address' | 'parent' | 'agreements' | 'signups' | 'agenda';
 
 export function resolveStudentInfoTabsDefaultValue(isPrivileged: boolean): StudentInfoTabId {
 	return isPrivileged ? 'profile' : 'agreements';

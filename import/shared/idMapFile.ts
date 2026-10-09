@@ -1,17 +1,14 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import { createEmptyIdMap, type MongoIdMap } from './idMapHelpers';
+import { idMapFromMissingFile, parseIdMapJson } from './idMapFileHelpers';
+import type { MongoIdMap } from './idMapHelpers';
 
 export async function loadIdMap(path: string): Promise<MongoIdMap> {
 	const file = Bun.file(path);
 	if (!(await file.exists())) {
-		return createEmptyIdMap();
+		return idMapFromMissingFile();
 	}
-	const parsed = (await file.json()) as unknown;
-	if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-		throw new Error(`Invalid id-map JSON at ${path}: expected object`);
-	}
-	return parsed as MongoIdMap;
+	return parseIdMapJson(await file.json(), path);
 }
 
 export async function saveIdMap(path: string, map: MongoIdMap): Promise<void> {

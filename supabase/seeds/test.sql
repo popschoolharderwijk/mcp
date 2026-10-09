@@ -289,6 +289,64 @@ BEGIN
   WHERE p.user_id = nu.id;
 
   -- -------------------------------------------------------------------------
+  -- FAKE ADDRESSES (deterministic; mix of full, partial, and all-NULL)
+  -- -------------------------------------------------------------------------
+  WITH ranked AS (
+    SELECT
+      id,
+      row_number() OVER (ORDER BY email) AS rn
+    FROM new_users
+  ),
+  streets AS (
+    SELECT ARRAY[
+      'Hoofdstraat', 'Kerkstraat', 'Dorpsstraat', 'Stationsweg',
+      'Schoolstraat', 'Lindelaan', 'Parkweg', 'Molenstraat'
+    ]::text[] AS names
+  ),
+  cities AS (
+    SELECT ARRAY[
+      'Amsterdam', 'Rotterdam', 'Utrecht', 'Den Haag',
+      'Eindhoven', 'Groningen', 'Tilburg', 'Breda'
+    ]::text[] AS names
+  ),
+  additions AS (
+    SELECT ARRAY[
+      NULL, 'A', NULL, 'bis', NULL, 'B', NULL, 'Huis', NULL, 'Rood'
+    ]::text[] AS vals
+  )
+  UPDATE public.profiles p
+  SET
+    street_name = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      ELSE s.names[((r.rn - 1) % array_length(s.names, 1)) + 1]
+    END,
+    house_number = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN a.vals[((r.rn - 1) % array_length(a.vals, 1)) + 1] IS NULL
+        THEN (((r.rn - 1) % 98) + 1)::text
+      ELSE (((r.rn - 1) % 98) + 1)::text || a.vals[((r.rn - 1) % array_length(a.vals, 1)) + 1]
+    END,
+    postal_code = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN r.rn % 7 = 0 THEN NULL
+      ELSE
+        lpad((((r.rn * 37) % 9000) + 1000)::text, 4, '0')
+        || chr(65 + ((r.rn - 1) % 26)::int)
+        || chr(65 + ((r.rn * 3) % 26)::int)
+    END,
+    city = CASE
+      WHEN r.rn % 11 = 0 THEN NULL
+      WHEN r.rn % 13 = 0 THEN NULL
+      ELSE c.names[((r.rn - 1) % array_length(c.names, 1)) + 1]
+    END,
+    country_code = CASE
+      WHEN r.rn % 19 = 0 THEN 'BE'
+      ELSE 'NL'
+    END
+  FROM ranked r, streets s, cities c, additions a
+  WHERE p.user_id = r.id;
+
+  -- -------------------------------------------------------------------------
   -- Drop the temporary table
   -- -------------------------------------------------------------------------
   DROP TABLE IF EXISTS new_users;

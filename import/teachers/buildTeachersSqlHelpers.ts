@@ -1,4 +1,4 @@
-import { sqlBoolean, sqlString, sqlUuid } from '../shared/sqlEscapeHelpers';
+import { sqlBoolean, sqlDate, sqlString, sqlUuid } from '../shared/sqlEscapeHelpers';
 import type { MappedTeacherRow } from './types';
 
 /** Same bcrypt hash as supabase/seeds/test.sql (password "password"); accounts use magic link later. */
@@ -13,7 +13,7 @@ export function buildTeachersSql(rows: TeacherSqlRow[]): string {
 
 	const valueTuples = rows
 		.map((row) => {
-			return `    (${sqlUuid(row.userId)}, ${sqlString(row.email)}, ${sqlString(row.firstName)}, ${sqlString(row.lastName)}, ${sqlString(row.phoneNumber)}, ${sqlString(row.bio)})`;
+			return `    (${sqlUuid(row.userId)}, ${sqlString(row.email)}, ${sqlString(row.firstName)}, ${sqlString(row.lastName)}, ${sqlString(row.phoneNumber)}, ${sqlString(row.streetName)}, ${sqlString(row.houseNumber)}, ${sqlString(row.postalCode)}, ${sqlString(row.city)}, ${sqlString(row.countryCode)}, ${sqlDate(row.cocIssuedOn)})`;
 		})
 		.join(',\n');
 
@@ -51,10 +51,15 @@ BEGIN
     first_name TEXT,
     last_name TEXT,
     phone_number TEXT,
-    bio TEXT
+    street_name TEXT,
+    house_number TEXT,
+    postal_code TEXT,
+    city TEXT,
+    country_code TEXT NOT NULL DEFAULT 'NL',
+    coc_issued_on DATE
   ) ON COMMIT DROP;
 
-  INSERT INTO mongo_import_teachers (id, email, first_name, last_name, phone_number, bio)
+  INSERT INTO mongo_import_teachers (id, email, first_name, last_name, phone_number, street_name, house_number, postal_code, city, country_code, coc_issued_on)
   VALUES
 ${valueTuples};
 
@@ -132,15 +137,20 @@ ${valueTuples};
     first_name = t.first_name,
     last_name = t.last_name,
     phone_number = t.phone_number,
-    email = t.email
+    email = t.email,
+    street_name = t.street_name,
+    house_number = t.house_number,
+    postal_code = t.postal_code,
+    city = t.city,
+    country_code = t.country_code
   FROM mongo_import_teachers t
   WHERE p.user_id = t.id;
 
-  INSERT INTO public.teachers (user_id, bio, is_active)
-  SELECT id, bio, ${sqlBoolean(true)}
+  INSERT INTO public.teachers (user_id, coc_issued_on, is_active)
+  SELECT id, coc_issued_on, ${sqlBoolean(true)}
   FROM mongo_import_teachers
   ON CONFLICT (user_id) DO UPDATE SET
-    bio = EXCLUDED.bio,
+    coc_issued_on = EXCLUDED.coc_issued_on,
     is_active = EXCLUDED.is_active,
     updated_at = now();
 
