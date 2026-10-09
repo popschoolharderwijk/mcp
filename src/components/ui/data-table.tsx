@@ -24,6 +24,21 @@ const DATA_TABLE_SKELETON_KEYS = Array.from({ length: 100 }, (_, index) => `data
 
 export type SortDirection = 'asc' | 'desc' | null;
 
+/** Sort column only when the caller names a sortable column. Omitted sort keeps query order. */
+export function resolveDataTableSortColumn(
+	columns: readonly { key: string; sortable?: boolean }[],
+	preferred: string | null | undefined,
+): string | null {
+	if (!preferred) return null;
+	const match = columns.find((column) => column.key === preferred && column.sortable !== false);
+	return match?.key ?? null;
+}
+
+export function resolveDataTableSortDirection(direction: SortDirection | undefined): SortDirection {
+	if (direction === 'asc' || direction === 'desc') return direction;
+	return null;
+}
+
 export interface DataTableColumn<T> {
 	key: string;
 	label: string;
@@ -124,10 +139,15 @@ export function DataTable<T>({
 	renderExpandedRow,
 }: DataTableProps<T>) {
 	const hasExpandableRows = !!onExpandToggle && !!renderExpandedRow;
-	const [sortColumn, setSortColumn] = useState<string | null>(initialSortColumn ?? null);
-	const [sortDirection, setSortDirection] = useState<SortDirection>(
-		initialSortColumn ? (initialSortDirection ?? 'asc') : null,
+	const [sortColumn, setSortColumn] = useState<string | null>(() =>
+		resolveDataTableSortColumn(columns, initialSortColumn),
 	);
+	const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+		if (!resolveDataTableSortColumn(columns, initialSortColumn)) return null;
+		return resolveDataTableSortDirection(initialSortDirection) ?? 'asc';
+	});
+	const activeSortColumn = resolveDataTableSortColumn(columns, sortColumn);
+	const activeSortDirection = activeSortColumn ? (sortDirection ?? 'asc') : null;
 	const [filterOpen, setFilterOpen] = useState(false);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
@@ -170,13 +190,14 @@ export function DataTable<T>({
 		}
 	}, [searchQuery, localSearchQuery]);
 
-	// Sync sort state with initial props (for server-side pagination)
+	// Server tables mirror the caller's sort. An omitted column stays unsorted.
 	useEffect(() => {
-		if (isServerPagination && initialSortColumn !== undefined) {
-			setSortColumn(initialSortColumn ?? null);
-			setSortDirection(initialSortColumn ? (initialSortDirection ?? 'asc') : null);
-		}
-	}, [isServerPagination, initialSortColumn, initialSortDirection]);
+		if (!isServerPagination || initialSortColumn === undefined) return;
+		const column = resolveDataTableSortColumn(columns, initialSortColumn);
+		if (!column) return;
+		setSortColumn(column);
+		setSortDirection(resolveDataTableSortDirection(initialSortDirection) ?? 'asc');
+	}, [isServerPagination, initialSortColumn, initialSortDirection, columns]);
 
 	// Filter data based on search query if searchFields are provided
 	const filteredData = useMemo(() => {
@@ -199,21 +220,14 @@ export function DataTable<T>({
 		const column = columns.find((col) => col.key === columnKey);
 		if (!column || column.sortable === false) return;
 
-		let newSortColumn: string | null;
-		let newSortDirection: SortDirection;
+		let newSortColumn: string;
+		let newSortDirection: 'asc' | 'desc';
 
-		if (sortColumn === columnKey) {
-			// Cycle: asc -> desc -> asc (no null state)
-			if (sortDirection === 'asc') {
-				newSortColumn = columnKey;
-				newSortDirection = 'desc';
-			} else {
-				// desc or null -> asc
-				newSortColumn = columnKey;
-				newSortDirection = 'asc';
-			}
+		if (activeSortColumn === columnKey) {
+			// Cycle: asc -> desc -> asc
+			newSortColumn = columnKey;
+			newSortDirection = activeSortDirection === 'asc' ? 'desc' : 'asc';
 		} else {
-			// Different column: set to asc, previous column becomes null
 			newSortColumn = columnKey;
 			newSortDirection = 'asc';
 		}
@@ -235,9 +249,9 @@ export function DataTable<T>({
 			return dataToSort;
 		}
 
-		if (!sortColumn || !sortDirection) return dataToSort;
+		if (!activeSortColumn) return dataToSort;
 
-		const column = columns.find((col) => col.key === sortColumn);
+		const column = columns.find((col) => col.key === activeSortColumn);
 		if (!column || column.sortable === false) return dataToSort;
 
 		const getValue = (item: T) => {
@@ -256,14 +270,14 @@ export function DataTable<T>({
 			const bValue = getValue(b);
 
 			if (aValue < bValue) {
-				return sortDirection === 'asc' ? -1 : 1;
+				return activeSortDirection === 'asc' ? -1 : 1;
 			}
 			if (aValue > bValue) {
-				return sortDirection === 'asc' ? 1 : -1;
+				return activeSortDirection === 'asc' ? 1 : -1;
 			}
 			return 0;
 		});
-	}, [filteredData, sortColumn, sortDirection, columns, isServerPagination]);
+	}, [filteredData, activeSortColumn, activeSortDirection, columns, isServerPagination]);
 
 	// Pagination calculations - use server-side values if available
 	const effectiveRowsPerPage = isServerPagination ? serverPagination.rowsPerPage : rowsPerPage;
@@ -472,33 +486,46 @@ export function DataTable<T>({
 							)}
 							{columns.map((column) => {
 								const isSortable = column.sortable !== false;
-								const isSorted = sortColumn === column.key;
-								const SortIcon =
-									!isSorted || sortDirection === null
-										? LuArrowUpDown
-										: sortDirection === 'asc'
-											? LuArrowUp
-											: LuArrowDown;
+								const isSorted = activeSortColumn === column.key;
+								const SortIcon = !isSorted
+									? LuArrowUpDown
+									: activeSortDirection === 'asc'
+										? LuArrowUp
+										: LuArrowDown;
 
 								return (
 									<th
 										key={column.key}
+										aria-sort={
+											!isSortable
+												? undefined
+												: isSorted && activeSortDirection === 'asc'
+													? 'ascending'
+													: isSorted && activeSortDirection === 'desc'
+														? 'descending'
+														: 'none'
+										}
 										className={cn('py-2 pr-4 font-medium first:pl-2 last:pr-2', column.className)}
 									>
 										{isSortable ? (
 											<Button
 												variant="ghost"
 												size="sm"
-												className="h-auto p-0 font-medium text-muted-foreground hover:bg-transparent hover:text-muted-foreground focus-visible:bg-transparent focus-visible:text-muted-foreground"
+												className={cn(
+													'h-auto p-0 font-medium hover:bg-transparent focus-visible:bg-transparent',
+													isSorted
+														? 'text-foreground hover:text-foreground focus-visible:text-foreground [&_svg]:text-primary'
+														: 'text-muted-foreground hover:text-foreground focus-visible:text-foreground',
+												)}
 												onClick={() => !loading && handleSort(column.key)}
 												style={{ pointerEvents: loading ? 'none' : 'auto' }}
 											>
-												<div className="flex items-center gap-2">
+												<div className="flex items-center gap-1.5">
 													<span>{column.label}</span>
 													<SortIcon
 														className={cn(
-															'h-3.5 w-3.5 transition-opacity',
-															isSorted ? 'opacity-100' : 'opacity-40',
+															'h-3.5 w-3.5 shrink-0',
+															isSorted ? 'text-primary' : 'opacity-40',
 														)}
 													/>
 												</div>
@@ -557,9 +584,9 @@ export function DataTable<T>({
 										<tr
 											key={rowKey}
 											className={cn(
-												'border-b transition-colors',
+												'border-b transition-colors hover:bg-accent',
 												!isExpanded && 'last:border-0',
-												rowActions?.onEdit && 'cursor-pointer hover:bg-accent',
+												rowActions?.onEdit && 'cursor-pointer',
 												getRowClassName?.(item),
 												loading && 'opacity-50',
 											)}

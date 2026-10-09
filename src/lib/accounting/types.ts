@@ -40,10 +40,16 @@ export interface AccountingSettings {
 	invoice_footer_text: string | null;
 }
 
-export type AgeCategory = 'under_21' | '21_plus' | 'unknown';
+export type AgeCategory = 'under_21' | '21_plus' | 'unknown' | 'mixed';
 
 export interface AccountingInvoice {
 	invoice_id: string;
+	/** Set when the report row is one invoice line. */
+	line_id?: string;
+	/** Exempt excl. VAT. Set on mixed invoices so both revenue accounts can be posted. */
+	amount_excl_under_21_cents?: number;
+	/** Taxable excl. VAT. Set on mixed invoices so both revenue accounts can be posted. */
+	amount_excl_21_plus_cents?: number;
 	stripe_invoice_id: string;
 	status: string;
 	amount_due_cents: number;
@@ -66,10 +72,11 @@ export interface AccountingInvoice {
 
 export interface AccountingSummary {
 	invoice_count: number;
-	total_omzet_under_21_cents: number;
-	total_omzet_21_plus_excl_cents: number;
-	total_btw_cents: number;
-	total_debiteuren_cents: number;
+	total_revenue_under_21_cents: number;
+	total_revenue_unknown_age_cents: number;
+	total_revenue_21_plus_excl_cents: number;
+	total_vat_cents: number;
+	total_receivables_cents: number;
 	total_paid_cents: number;
 	total_open_cents: number;
 }
@@ -77,10 +84,11 @@ export interface AccountingSummary {
 export interface AccountingCostCenter {
 	cost_center: string;
 	invoice_count: number;
-	omzet_under_21_cents: number;
-	omzet_21_plus_excl_cents: number;
-	btw_cents: number;
-	total_debiteuren_cents: number;
+	revenue_under_21_cents: number;
+	revenue_unknown_age_cents: number;
+	revenue_21_plus_excl_cents: number;
+	vat_cents: number;
+	total_receivables_cents: number;
 }
 
 export interface AccountingReport {

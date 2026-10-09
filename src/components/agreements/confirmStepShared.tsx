@@ -10,13 +10,7 @@ export {
 	isWizardTeacherChanged,
 } from './confirmStepHelpers';
 
-export function ConfirmStudentRow({
-	selectedUser,
-	studentUserId,
-}: {
-	selectedUser: UserOptional | null;
-	studentUserId: string;
-}) {
+export function ConfirmStudentRow({ selectedUser }: { selectedUser: UserOptional | null }) {
 	return (
 		<ConfirmStepRow label="Leerling" alwaysSame>
 			{selectedUser ? (
@@ -27,7 +21,6 @@ export function ConfirmStudentRow({
 						email: selectedUser.email,
 						avatar_url: selectedUser.avatar_url,
 					}}
-					href={`/students/${studentUserId}`}
 					showEmail
 				/>
 			) : (

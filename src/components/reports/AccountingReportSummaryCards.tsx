@@ -10,16 +10,17 @@ const SUMMARY_ITEMS: Array<{
 	key: keyof AccountingSummary;
 	title: string;
 }> = [
-	{ key: 'total_omzet_under_21_cents', title: 'Omzet <21 (vrijgesteld)' },
-	{ key: 'total_omzet_21_plus_excl_cents', title: 'Omzet 21+ (excl. BTW)' },
-	{ key: 'total_btw_cents', title: 'BTW 21%' },
+	{ key: 'total_revenue_under_21_cents', title: 'Omzet <21 (vrijgesteld)' },
+	{ key: 'total_revenue_unknown_age_cents', title: 'Omzet onbekende leeftijd' },
+	{ key: 'total_revenue_21_plus_excl_cents', title: 'Omzet 21+ (excl. BTW)' },
+	{ key: 'total_vat_cents', title: 'BTW 21%' },
 	{ key: 'total_paid_cents', title: 'Betaald (bank)' },
 	{ key: 'total_open_cents', title: 'Openstaand' },
 ];
 
 export function AccountingReportSummaryCards({ summary }: AccountingReportSummaryCardsProps) {
 	return (
-		<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+		<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 			{SUMMARY_ITEMS.map(({ key, title }) => (
 				<Card key={key}>
 					<CardHeader className="pb-2">

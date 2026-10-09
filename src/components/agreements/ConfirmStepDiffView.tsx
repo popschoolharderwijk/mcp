@@ -55,7 +55,7 @@ function ConfirmStepCurrentAgreementCard({
 		<Card className="border-muted">
 			<CardContent className="p-4">
 				<p className="mb-3 text-sm font-semibold text-muted-foreground">Huidige overeenkomst</p>
-				<ConfirmStudentRow selectedUser={selectedUser} studentUserId={initialAgreement.student_user_id} />
+				<ConfirmStudentRow selectedUser={selectedUser} />
 				<ConfirmInitialAgreementRows agreement={initialAgreement} />
 				<ConfirmStepDiffRow
 					label="Periode"
@@ -67,12 +67,7 @@ function ConfirmStepCurrentAgreementCard({
 					label="Docent"
 					hideIcon
 					changed={isWizardTeacherChanged(initialAgreement.teacher_user_id, selectedTeacherUserId)}
-					oldValue={
-						<ConfirmTeacherDiffValue
-							teacher={initialAgreement.teacher}
-							href={`/teachers/${initialAgreement.teacher_user_id}`}
-						/>
-					}
+					oldValue={<ConfirmTeacherDiffValue teacher={initialAgreement.teacher} />}
 				/>
 				<ConfirmStepDiffRow
 					label="Tijdslot"
@@ -110,7 +105,7 @@ function ConfirmStepNewAgreementCard({
 		<Card>
 			<CardContent className="p-4">
 				<p className="mb-3 text-sm font-semibold text-primary">Nieuwe overeenkomst</p>
-				<ConfirmStudentRow selectedUser={selectedUser} studentUserId={initialAgreement.student_user_id} />
+				<ConfirmStudentRow selectedUser={selectedUser} />
 				<ConfirmSelectedLessonTypeRows lessonType={selectedLessonType} />
 				<ConfirmStepDiffRow
 					label="Periode"
@@ -125,12 +120,7 @@ function ConfirmStepNewAgreementCard({
 				<ConfirmStepDiffRow
 					label="Docent"
 					changed={isWizardTeacherChanged(initialAgreement.teacher_user_id, selectedTeacherUserId)}
-					newValue={
-						<ConfirmTeacherDiffValue
-							teacher={selectedTeacher}
-							href={selectedTeacher ? `/teachers/${selectedTeacher.userId}` : undefined}
-						/>
-					}
+					newValue={<ConfirmTeacherDiffValue teacher={selectedTeacher} />}
 				/>
 				<ConfirmStepDiffRow
 					label="Tijdslot"

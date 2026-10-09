@@ -215,3 +215,158 @@ REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM PUBLIC
 REVOKE ALL ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM anon;
 REVOKE EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.cleanup_student_if_no_agreements(UUID) TO service_role;
+
+-- Accounting report reads school invoices. JSON key stripe_invoice_id stays the invoice number.
+CREATE FUNCTION public.get_accounting_report(
+  p_start_date date,
+  p_end_date date
+)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  v_result json;
+BEGIN
+  IF public.current_user_id() IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated' USING ERRCODE = '42501';
+  END IF;
+  IF NOT public.is_privileged() THEN
+    RAISE EXCEPTION 'Permission denied' USING ERRCODE = '42501';
+  END IF;
+
+  WITH
+  invoice_base AS (
+    SELECT
+      i.id AS invoice_id,
+      il.id AS line_id,
+      il.sort_order,
+      i.invoice_number AS stripe_invoice_id,
+      i.status,
+      il.amount_total_cents AS amount_due,
+      CASE WHEN i.status = 'paid' THEN il.amount_total_cents ELSE 0 END AS amount_paid,
+      lower(settings.currency) AS currency,
+      COALESCE(i.period_start, i.issue_date) AS period_start,
+      i.paid_at,
+      NULL::text AS hosted_invoice_url,
+      CASE
+        WHEN il.btw_rate > 0 THEN '21_plus'
+        WHEN i.age_category = 'unknown' THEN 'unknown'
+        ELSE 'under_21'
+      END AS age_category,
+      il.amount_excl_btw_cents,
+      il.btw_amount_cents,
+      CASE
+        WHEN il.btw_rate = 0 AND i.age_category IS DISTINCT FROM 'unknown' THEN il.amount_excl_btw_cents
+        ELSE 0
+      END AS excl_under_21_cents,
+      CASE
+        WHEN il.btw_rate = 0 AND i.age_category = 'unknown' THEN il.amount_excl_btw_cents
+        ELSE 0
+      END AS excl_unknown_cents,
+      CASE WHEN il.btw_rate > 0 THEN il.amount_excl_btw_cents ELSE 0 END AS excl_21_plus_cents,
+      i.student_user_id,
+      by_agreement.id AS lesson_type_id,
+      by_agreement.name AS lesson_type_name,
+      by_agreement.icon AS lesson_type_icon,
+      by_agreement.color AS lesson_type_color,
+      COALESCE(NULLIF(by_agreement.cost_center, ''), by_agreement.name, 'Onbekend') AS cost_center,
+      sp.first_name AS student_first_name,
+      sp.last_name AS student_last_name,
+      sp.email AS student_email
+    FROM public.invoices i
+    JOIN public.invoice_lines il ON il.invoice_id = i.id
+    CROSS JOIN public.accounting_settings settings
+    LEFT JOIN public.direct_debit_batch_items bi ON bi.id = il.batch_item_id
+    LEFT JOIN public.lesson_agreements la ON la.id = bi.lesson_agreement_id
+    LEFT JOIN public.lesson_types by_agreement ON by_agreement.id = la.lesson_type_id
+    LEFT JOIN public.profiles sp ON sp.user_id = i.student_user_id
+    WHERE settings.id = true
+      AND i.status IN ('issued', 'paid')
+      AND COALESCE(i.period_start, i.issue_date) >= p_start_date
+      AND COALESCE(i.period_start, i.issue_date) <= p_end_date
+  ),
+  invoices_json AS (
+    SELECT json_agg(
+      json_build_object(
+        'invoice_id', ib.invoice_id,
+        'line_id', ib.line_id,
+        'stripe_invoice_id', ib.stripe_invoice_id,
+        'status', ib.status,
+        'amount_due_cents', ib.amount_due,
+        'amount_paid_cents', ib.amount_paid,
+        'amount_excl_btw_cents', ib.amount_excl_btw_cents,
+        'btw_amount_cents', ib.btw_amount_cents,
+        'currency', ib.currency,
+        'period_start', ib.period_start,
+        'paid_at', ib.paid_at,
+        'hosted_invoice_url', ib.hosted_invoice_url,
+        'age_category', ib.age_category,
+        'cost_center', ib.cost_center,
+        'lesson_type_id', ib.lesson_type_id,
+        'lesson_type_name', ib.lesson_type_name,
+        'lesson_type_icon', ib.lesson_type_icon,
+        'lesson_type_color', ib.lesson_type_color,
+        'student_user_id', ib.student_user_id,
+        'student_name', COALESCE(
+          NULLIF(TRIM(COALESCE(ib.student_first_name, '') || ' ' || COALESCE(ib.student_last_name, '')), ''),
+          ib.student_email
+        )
+      )
+      ORDER BY ib.period_start, ib.invoice_id, ib.sort_order, ib.line_id
+    ) AS data
+    FROM invoice_base ib
+  ),
+  summary AS (
+    SELECT
+      COUNT(DISTINCT invoice_id)::int AS invoice_count,
+      COALESCE(SUM(excl_under_21_cents), 0)::int AS total_revenue_under_21_cents,
+      COALESCE(SUM(excl_unknown_cents), 0)::int AS total_revenue_unknown_age_cents,
+      COALESCE(SUM(excl_21_plus_cents), 0)::int AS total_revenue_21_plus_excl_cents,
+      COALESCE(SUM(btw_amount_cents), 0)::int AS total_vat_cents,
+      COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents,
+      COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_paid ELSE 0 END), 0)::int AS total_paid_cents,
+      COALESCE(SUM(CASE WHEN status <> 'paid' THEN amount_due ELSE 0 END), 0)::int AS total_open_cents
+    FROM invoice_base
+  ),
+  by_cost_center AS (
+    SELECT json_agg(
+      json_build_object(
+        'cost_center', cc,
+        'invoice_count', invoice_count,
+        'revenue_under_21_cents', revenue_under_21_cents,
+        'revenue_unknown_age_cents', revenue_unknown_age_cents,
+        'revenue_21_plus_excl_cents', revenue_21_plus_excl_cents,
+        'vat_cents', vat_cents,
+        'total_receivables_cents', total_receivables_cents
+      )
+      ORDER BY cc
+    ) AS data
+    FROM (
+      SELECT
+        cost_center AS cc,
+        COUNT(DISTINCT invoice_id)::int AS invoice_count,
+        COALESCE(SUM(excl_under_21_cents), 0)::int AS revenue_under_21_cents,
+        COALESCE(SUM(excl_unknown_cents), 0)::int AS revenue_unknown_age_cents,
+        COALESCE(SUM(excl_21_plus_cents), 0)::int AS revenue_21_plus_excl_cents,
+        COALESCE(SUM(btw_amount_cents), 0)::int AS vat_cents,
+        COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents
+      FROM invoice_base
+      GROUP BY cost_center
+    ) sub
+  )
+  SELECT json_build_object(
+    'period', json_build_object('start', p_start_date, 'end', p_end_date),
+    'summary', (SELECT row_to_json(summary.*) FROM summary),
+    'invoices', COALESCE((SELECT data FROM invoices_json), '[]'::json),
+    'by_cost_center', COALESCE((SELECT data FROM by_cost_center), '[]'::json)
+  )
+  INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_accounting_report(date, date) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.get_accounting_report(date, date) FROM anon;

@@ -47,10 +47,11 @@ describe('resolveAccountingReportCostCenterRows', () => {
 	const row = {
 		cost_center: 'Piano',
 		invoice_count: 1,
-		omzet_under_21_cents: 100,
-		omzet_21_plus_excl_cents: 200,
-		btw_cents: 42,
-		total_debiteuren_cents: 342,
+		revenue_under_21_cents: 100,
+		revenue_unknown_age_cents: 0,
+		revenue_21_plus_excl_cents: 200,
+		vat_cents: 42,
+		total_receivables_cents: 342,
 	};
 
 	it('returns rows when report has cost centers', () => {

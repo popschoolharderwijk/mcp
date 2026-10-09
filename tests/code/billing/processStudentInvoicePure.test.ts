@@ -255,6 +255,17 @@ describe('prepareStudentInvoiceData', () => {
 		expect(success.lines).toHaveLength(1);
 		expect(success.totals.total).toBe(1210);
 	});
+
+	it('stores unknown when the student has no date of birth', () => {
+		const prepared = prepareStudentInvoiceData({
+			studentUserId: STUDENT_ID,
+			profile,
+			studentRow: { ...studentRow, date_of_birth: null },
+			items: [batchItem],
+			collectionDate: '2026-09-01',
+		});
+		expect(prepared).toMatchObject({ ok: true, ageCategory: 'unknown' });
+	});
 });
 
 describe('resolvePreparedStudentInvoiceResult', () => {

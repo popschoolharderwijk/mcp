@@ -59,20 +59,13 @@ export function ConfirmPeriodDisplayRow({ startDate, endDate }: { startDate: str
 
 export function ConfirmTeacherDisplayRow({
 	teacher,
-	href,
 }: {
 	teacher: WizardTeacherInfo | WizardInitialAgreement['teacher'] | null | undefined;
-	href?: string;
 }) {
 	const profile = teacherProfileFromWizard(teacher);
-	const resolvedHref = href ?? teacherHrefFromWizard(teacher);
 	return (
 		<ConfirmStepRow label="Docent">
-			{profile ? (
-				<UserDisplay profile={profile} href={resolvedHref} showEmail />
-			) : (
-				<p className="font-medium">-</p>
-			)}
+			{profile ? <UserDisplay profile={profile} showEmail /> : <p className="font-medium">-</p>}
 		</ConfirmStepRow>
 	);
 }
@@ -134,14 +127,12 @@ export function ConfirmInitialAgreementRows({ agreement }: { agreement: WizardIn
 
 export function ConfirmTeacherDiffValue({
 	teacher,
-	href,
 }: {
 	teacher: WizardTeacherInfo | WizardInitialAgreement['teacher'] | null | undefined;
-	href?: string;
 }) {
 	const profile = teacherProfileFromWizard(teacher);
 	if (!profile) return <span>-</span>;
-	return <UserDisplay profile={profile} href={href ?? teacherHrefFromWizard(teacher)} showEmail />;
+	return <UserDisplay profile={profile} showEmail />;
 }
 
 function teacherProfileFromWizard(teacher: WizardTeacherInfo | WizardInitialAgreement['teacher'] | null | undefined) {
@@ -160,11 +151,6 @@ function teacherProfileFromWizard(teacher: WizardTeacherInfo | WizardInitialAgre
 		email: teacher.email,
 		avatar_url: teacher.avatar_url,
 	};
-}
-
-function teacherHrefFromWizard(teacher: WizardTeacherInfo | WizardInitialAgreement['teacher'] | null | undefined) {
-	if (teacher && 'userId' in teacher && teacher.userId) return `/teachers/${teacher.userId}`;
-	return undefined;
 }
 
 export function ConfirmStepDiffRow({

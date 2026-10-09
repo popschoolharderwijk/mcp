@@ -19,7 +19,6 @@ const sections: ManualSection[] = [
 			'Actiepunten: openstaande aanmeldingen, ontbrekende beschikbaarheid en ontbrekende incassomandaten.',
 			'Recente leerlingen: de vijf meest recent aangemaakte leerlingen (gesorteerd op aanmaakdatum, nieuwste eerst) — klik door naar de leerlingenlijst.',
 			'Docent beschikbaarheid: overzicht per docent van gekoppelde lessoorten en het aantal beschikbare tijdsblokken.',
-			'Nieuwsberichten: actieve berichten voor jouw rol verschijnen bovenaan met titel, datum en eventuele afbeelding.',
 			'Docenten en leerlingen zien een vereenvoudigde versie met alleen hun eigen relevante blokken.',
 		],
 	},
@@ -259,13 +258,11 @@ const sections: ManualSection[] = [
 	{
 		icon: NAV_ICONS.announcements,
 		title: NAV_LABELS.announcements,
-		description:
-			'Publiceer korte nieuwsberichten die zichtbaar zijn op het dashboard van docenten en/of leerlingen.',
+		description: 'Beheer korte nieuwsberichten voor docenten en/of leerlingen.',
 		details: [
 			'Aanmaken: titel, bericht, doelgroep (docenten, leerlingen of beide) en optionele publicatiedatum.',
 			'Afbeelding: upload optioneel een afbeelding (JPG, PNG, WEBP of GIF, max. 5 MB). Alleen Staff/Admin/Site Admin kan uploaden; afbeeldingen staan in de publieke storage-bucket "announcement-images".',
 			'Actief / inactief: zet een bericht op inactief om het te verbergen zonder te verwijderen.',
-			'Zichtbaarheid: verschijnt op het dashboard zodra het actief is, op of na de publicatiedatum, en de doelgroep matcht met de rol van de kijker.',
 			'Beheer: Instellingen → Nieuwsberichten.',
 		],
 	},
