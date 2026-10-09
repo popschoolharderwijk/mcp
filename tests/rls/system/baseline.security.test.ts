@@ -210,6 +210,7 @@ const EXPECTED_FUNCTIONS = [
 	'is_staff',
 	'is_student',
 	'is_teacher',
+	'is_valid_country_code',
 	'is_valid_iban',
 	'is_valid_phone_number',
 	'mark_trial_lesson_completed',
