@@ -6,5 +6,5 @@
 		"lib": ["ES2023", "DOM"],
 		"jsx": "react-jsx"
 	},
-	"include": ["tests/**/*.ts", "tests/**/*.test.ts"]
+	"include": ["tests/**/*.ts", "tests/**/*.test.ts", "src/vite-env.d.ts"]
 }
