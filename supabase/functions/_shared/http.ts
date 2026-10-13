@@ -76,7 +76,7 @@ export async function beginAuthenticatedPostWithUuidField<T>(
 	return { ok: true, authHeader: begun.authHeader, body: begun.body, uuid: uuid as string };
 }
 
-const FALLBACK_SITE_URL = 'https://mcp.mplifi.nl';
+export const FALLBACK_SITE_URL = 'https://mcp.mplifi.nl';
 const ALLOWED_SITE_HOSTS = new Set([
 	'mcp.mplifi.nl',
 	'instant-setup-kit.lovable.app',

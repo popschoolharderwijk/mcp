@@ -1,5 +1,5 @@
 export function isDirectDebitInvitePrivilegedRole(role: string | null | undefined): boolean {
-	return role === 'admin' || role === 'site_admin' || role === 'teacher';
+	return role === 'admin' || role === 'site_admin' || role === 'staff';
 }
 
 export function canAccessDirectDebitInviteAgreement(

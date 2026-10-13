@@ -1,5 +1,10 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
+import {
+	buildPaymentMethodMap,
+	collectAgreementIds,
+	excludeStripeAgreementItems,
+} from '../_shared/paymentMethodPure.ts';
 import { buildBatchContextFromLoadedData, extractMandateIds, hasBatchItems } from './loadBatchContextPure.ts';
 import type { AccountingSettings, BatchItem, DirectDebitBatch, ProfileRow, StudentRow } from './types.ts';
 
@@ -45,7 +50,19 @@ async function loadBatchItems(
 	if (error || !hasBatchItems(data)) {
 		return { ok: false, response: jsonResponse(400, { error: 'Geen regels in deze batch' }) };
 	}
-	return { ok: true, items: data as BatchItem[] };
+	const items = await excludeStripePaidItems(admin, data as BatchItem[]);
+	if (!hasBatchItems(items)) {
+		return { ok: false, response: jsonResponse(400, { error: 'Geen regels in deze batch' }) };
+	}
+	return { ok: true, items };
+}
+
+/** Stripe invoices itself: never create an own invoice for agreements paid via Stripe. */
+async function excludeStripePaidItems(admin: SupabaseClient, items: BatchItem[]): Promise<BatchItem[]> {
+	const agreementIds = collectAgreementIds(items);
+	if (agreementIds.length === 0) return items;
+	const { data } = await admin.from('lesson_agreements').select('id, payment_method').in('id', agreementIds);
+	return excludeStripeAgreementItems(items, buildPaymentMethodMap(data ?? []));
 }
 
 async function loadBatchRelatedMaps(admin: SupabaseClient, items: BatchItem[]) {

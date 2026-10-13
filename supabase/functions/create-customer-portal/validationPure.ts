@@ -1,4 +1,10 @@
-import { jsonResponse, UUID_RE } from '../_shared/http.ts';
+import {
+	FALLBACK_SITE_URL,
+	jsonResponse,
+	resolveAllowedRedirectUrl,
+	resolveAllowedSiteUrl,
+	UUID_RE,
+} from '../_shared/http.ts';
 
 export interface CustomerPortalBody {
 	user_id?: string;
@@ -29,8 +35,16 @@ export function resolveMissingStripeCustomerResponse(): Response {
 	return jsonResponse(404, { error: 'Geen Stripe klant gekoppeld' });
 }
 
+/**
+ * Return URL for the Stripe customer portal. Both the requested return_url and the
+ * request Origin are untrusted: only https URLs on our own domains are accepted,
+ * otherwise we fall back to the profile page on the production domain.
+ */
 export function resolvePortalReturnUrl(origin: string, returnUrl: string | undefined): string {
-	return returnUrl ?? `${origin}/account/profile`;
+	const allowedReturnUrl = resolveAllowedRedirectUrl(returnUrl);
+	if (allowedReturnUrl) return allowedReturnUrl;
+	const base = resolveAllowedSiteUrl(origin) ?? FALLBACK_SITE_URL;
+	return `${base}/account/profile`;
 }
 
 export function buildCustomerPortalSuccessPayload(url: string | null): { url: string | null } {

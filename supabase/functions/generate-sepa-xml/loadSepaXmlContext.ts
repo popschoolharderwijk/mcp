@@ -1,6 +1,11 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
 import {
+	buildPaymentMethodMap,
+	collectAgreementIds,
+	excludeStripeAgreementItems,
+} from '../_shared/paymentMethodPure.ts';
+import {
 	normalizeSepaSettings,
 	resolveSepaBatchItemsFailure,
 	resolveSepaBatchLoadFailure,
@@ -78,7 +83,7 @@ async function loadBatchItems(
 	const { data: itemsData, error: iErr } = await admin
 		.from('direct_debit_batch_items')
 		.select(
-			'id, mandate_id, amount_cents, currency, end_to_end_id, remittance_info, sequence_type, sepa_mandates!direct_debit_batch_items_mandate_id_fkey(mandate_reference,iban,bic,account_holder,signed_at)',
+			'id, lesson_agreement_id, mandate_id, amount_cents, currency, end_to_end_id, remittance_info, sequence_type, sepa_mandates!direct_debit_batch_items_mandate_id_fkey(mandate_reference,iban,bic,account_holder,signed_at)',
 		)
 		.eq('batch_id', batchId)
 		.order('created_at');
@@ -86,5 +91,21 @@ async function loadBatchItems(
 	const itemsFailure = resolveSepaBatchItemsFailure((itemsData ?? []) as ItemRow[], iErr?.message);
 	if (itemsFailure) return { ok: false, response: jsonResponse(itemsFailure.status, { error: itemsFailure.error }) };
 
-	return { ok: true, items: itemsData as ItemRow[] };
+	const items = itemsData as ItemRow[];
+	const stripeFailure = await resolveStripeItemsInBatch(admin, items);
+	if (stripeFailure) return { ok: false, response: stripeFailure };
+
+	return { ok: true, items };
+}
+
+/** Rejects the batch when it still contains agreements that are paid via Stripe (double-payment guard). */
+async function resolveStripeItemsInBatch(admin: SupabaseClient, items: ItemRow[]): Promise<Response | null> {
+	const agreementIds = collectAgreementIds(items);
+	if (agreementIds.length === 0) return null;
+	const { data } = await admin.from('lesson_agreements').select('id, payment_method').in('id', agreementIds);
+	const kept = excludeStripeAgreementItems(items, buildPaymentMethodMap(data ?? []));
+	if (kept.length === items.length) return null;
+	return jsonResponse(409, {
+		error: 'Deze batch bevat overeenkomsten die via Stripe betalen. Bouw de batch opnieuw op.',
+	});
 }
