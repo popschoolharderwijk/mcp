@@ -19,7 +19,7 @@ export function resolveNotStripeAgreementFailure(
 }
 
 /** Drops batch items whose linked agreement is paid via Stripe. Items without agreement are kept. */
-export function excludeStripeAgreementItems<T extends { lesson_agreement_id: string | null }>(
+export function excludeStripeAgreementItems<T extends { lesson_agreement_id?: string | null }>(
 	items: T[],
 	paymentMethodByAgreementId: Map<string, string>,
 ): T[] {
@@ -29,7 +29,7 @@ export function excludeStripeAgreementItems<T extends { lesson_agreement_id: str
 	});
 }
 
-export function collectAgreementIds(items: Array<{ lesson_agreement_id: string | null }>): string[] {
+export function collectAgreementIds(items: Array<{ lesson_agreement_id?: string | null }>): string[] {
 	return [...new Set(items.map((item) => item.lesson_agreement_id).filter((id): id is string => Boolean(id)))];
 }
 
