@@ -18,13 +18,14 @@ const STUDENT_ID = '22222222-2222-2222-2222-222222222222';
 const OTHER_USER_ID = '33333333-3333-3333-3333-333333333333';
 
 describe('isDirectDebitInvitePrivilegedRole', () => {
-	it('returns true for admin, site_admin and teacher roles', () => {
+	it('returns true for admin, site_admin and staff roles', () => {
 		expect(isDirectDebitInvitePrivilegedRole('admin')).toBe(true);
 		expect(isDirectDebitInvitePrivilegedRole('site_admin')).toBe(true);
-		expect(isDirectDebitInvitePrivilegedRole('teacher')).toBe(true);
+		expect(isDirectDebitInvitePrivilegedRole('staff')).toBe(true);
 	});
 
-	it('returns false for student and missing roles', () => {
+	it('returns false for teacher, student and missing roles', () => {
+		expect(isDirectDebitInvitePrivilegedRole('teacher')).toBe(false);
 		expect(isDirectDebitInvitePrivilegedRole('student')).toBe(false);
 		expect(isDirectDebitInvitePrivilegedRole(null)).toBe(false);
 	});

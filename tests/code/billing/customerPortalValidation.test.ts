@@ -136,15 +136,33 @@ describe('resolveMissingStripeCustomerResponse', () => {
 });
 
 describe('resolvePortalReturnUrl', () => {
-	it('uses the provided return url when present', () => {
-		expect(resolvePortalReturnUrl('https://app.example.com', 'https://example.com/back')).toBe(
-			'https://example.com/back',
+	it('uses the provided return url when it is on our own domain', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://mcp.mplifi.nl/agreements/abc')).toBe(
+			'https://mcp.mplifi.nl/agreements/abc',
 		);
 	});
 
-	it('falls back to the profile route on the origin', () => {
+	it('ignores a return url on an external domain', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://evil.example.com/back')).toBe(
+			'https://mcp.mplifi.nl/account/profile',
+		);
+	});
+
+	it('ignores a non-https return url on our own domain', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'http://mcp.mplifi.nl/back')).toBe(
+			'https://mcp.mplifi.nl/account/profile',
+		);
+	});
+
+	it('falls back to the profile route on an allowed origin', () => {
+		expect(resolvePortalReturnUrl('https://instant-setup-kit.lovable.app', undefined)).toBe(
+			'https://instant-setup-kit.lovable.app/account/profile',
+		);
+	});
+
+	it('falls back to the production domain when the origin is not ours', () => {
 		expect(resolvePortalReturnUrl('https://app.example.com', undefined)).toBe(
-			'https://app.example.com/account/profile',
+			'https://mcp.mplifi.nl/account/profile',
 		);
 	});
 });
