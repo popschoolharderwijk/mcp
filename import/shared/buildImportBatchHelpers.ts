@@ -35,7 +35,7 @@ export function buildImportBatch<TRow extends MappedImportRow, TSqlRow>(
 			recordKeys(ignoredKeySet, classified.ignoredKeys);
 		}
 
-		const mapped = converter.mapDoc(doc);
+		const mapped = converter.mapDoc(doc, idMap);
 		if (!mapped.ok) {
 			report.failed += 1;
 			report.failures.push({ oid: mapped.oid, reason: mapped.reason });
@@ -44,13 +44,14 @@ export function buildImportBatch<TRow extends MappedImportRow, TSqlRow>(
 
 		const ensured = ensureMappedId(idMap, converter.entityType, mapped.row.mongoOid, createId);
 		idMap = ensured.map;
-		sqlRows.push(converter.assignId(mapped.row, ensured.id));
+		const sqlRow = converter.assignId(mapped.row, ensured.id);
+		sqlRows.push(sqlRow);
 		if (ensured.created) {
 			report.created += 1;
 		} else {
 			report.updated += 1;
 		}
-		for (const reason of converter.warningsForRow(mapped.row)) {
+		for (const reason of converter.warningsForRow(sqlRow)) {
 			report.warnings.push({ oid: mapped.row.mongoOid, reason });
 		}
 	}

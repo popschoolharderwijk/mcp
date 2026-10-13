@@ -1,6 +1,12 @@
 import type { ImportConverter } from '../shared/converterTypes';
 import { buildTeachersSql, type TeacherSqlRow } from './buildTeachersSqlHelpers';
-import { IGNORED_KEYS, MAPPED_KEYS, mapTeacherDoc, teacherRowWarningReasons } from './mapTeacherHelpers';
+import {
+	IGNORED_KEYS,
+	MAPPED_KEYS,
+	mapTeacherDoc,
+	resetTeacherEmailDedup,
+	teacherRowWarningReasons,
+} from './mapTeacherHelpers';
 import type { MappedTeacherRow } from './types';
 
 export const teachersConverter: ImportConverter<MappedTeacherRow, TeacherSqlRow> = {
@@ -8,6 +14,9 @@ export const teachersConverter: ImportConverter<MappedTeacherRow, TeacherSqlRow>
 	entityType: 'teacher',
 	mappedKeys: MAPPED_KEYS,
 	ignoredKeys: IGNORED_KEYS,
+	prepareContext() {
+		resetTeacherEmailDedup();
+	},
 	mapDoc: mapTeacherDoc,
 	warningsForRow: teacherRowWarningReasons,
 	assignId: (row, id) => ({ ...row, userId: id }),

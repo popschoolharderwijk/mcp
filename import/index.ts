@@ -2,9 +2,10 @@
  * Legacy Mongo import dispatcher.
  *
  * Usage:
- *   bun import teachers
  *   bun import courses
+ *   bun import teachers
  *   bun import students
+ *   bun import agreements_courses
  *   bun import all
  */
 

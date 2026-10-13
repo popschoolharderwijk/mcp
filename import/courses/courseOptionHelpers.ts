@@ -1,3 +1,4 @@
+import { asFiniteNumber } from '../shared/numberHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import type { LessonFrequency, MappedCourseOption, ScheduleFrequencyEntry } from './types';
 
@@ -6,15 +7,6 @@ export type CoursePriceEntry = {
 	price: number;
 	startDate: string;
 };
-
-function asFiniteNumber(value: unknown): number | null {
-	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string') {
-		const n = Number(value);
-		return Number.isFinite(n) ? n : null;
-	}
-	return null;
-}
 
 export function readFrequencyPriceEntries(raw: unknown): CoursePriceEntry[] {
 	if (!Array.isArray(raw)) return [];

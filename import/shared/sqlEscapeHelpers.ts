@@ -29,3 +29,9 @@ export function sqlDate(value: string | null | undefined): string {
 	if (value == null) return 'NULL';
 	return `${sqlString(value)}::date`;
 }
+
+/** SQL time literal `HH:MM:SS`::time, or NULL. */
+export function sqlTime(value: string | null | undefined): string {
+	if (value == null) return 'NULL';
+	return `${sqlString(value)}::time`;
+}

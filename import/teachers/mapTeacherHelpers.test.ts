@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'bun:test';
-import { classifyTeacherKeys, mapTeacherDoc } from './mapTeacherHelpers';
+import { beforeEach, describe, expect, it } from 'bun:test';
+import { classifyTeacherKeys, mapTeacherDoc, resetTeacherEmailDedup } from './mapTeacherHelpers';
 
 describe('classifyTeacherKeys', () => {
 	it('splits unmapped keys into skipped vs intentionally ignored', () => {
@@ -25,6 +25,10 @@ describe('classifyTeacherKeys', () => {
 });
 
 describe('mapTeacherDoc', () => {
+	beforeEach(() => {
+		resetTeacherEmailDedup();
+	});
+
 	it('maps a complete teacher document without instrument links', () => {
 		const result = mapTeacherDoc({
 			_id: { $oid: '65deed9a4ab30f9a3714f069' },
@@ -52,6 +56,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: '65deed9a4ab30f9a3714f069',
 				email: 'Thomas_Kok68_anon@kpnmail.nl',
+				emailWarning: null,
 				firstName: 'Femke',
 				lastName: 'Bosman',
 				phoneNumber: '0694350865',
@@ -82,6 +87,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-house',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,
@@ -111,6 +117,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-nederland',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,
@@ -140,6 +147,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-country',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,
@@ -169,6 +177,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-coc',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,
@@ -184,7 +193,7 @@ describe('mapTeacherDoc', () => {
 		});
 	});
 
-	it('fails without email', () => {
+	it('maps without email using a null email for placeholder assignment', () => {
 		expect(
 			mapTeacherDoc({
 				_id: { $oid: '65deed9a4ab30f9a3714f071' },
@@ -194,9 +203,23 @@ describe('mapTeacherDoc', () => {
 				phone: '',
 			}),
 		).toEqual({
-			ok: false,
-			oid: '65deed9a4ab30f9a3714f071',
-			reason: 'Missing email',
+			ok: true,
+			row: {
+				mongoOid: '65deed9a4ab30f9a3714f071',
+				email: 'missing_65deed9a4ab30f9a3714f071@example.com',
+				emailWarning: 'Missing email; using "missing_65deed9a4ab30f9a3714f071@example.com"',
+				firstName: 'Roos',
+				lastName: 'de Jong',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				cocIssuedOn: null,
+				invalidCocIssuedOn: null,
+				invalidCountryCode: null,
+			},
 		});
 	});
 
@@ -214,8 +237,47 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-1',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				cocIssuedOn: null,
+				invalidCocIssuedOn: null,
+				invalidCountryCode: null,
+			},
+		});
+	});
+
+	it('rewrites duplicate emails with duplicate_N_ prefix', () => {
+		expect(
+			mapTeacherDoc({
+				_id: { $oid: 'oid-first' },
+				name: 'First',
+				surname: 'Teacher',
+				email: 'kevindegroot@gmail.com',
+			}).ok,
+		).toBe(true);
+
+		expect(
+			mapTeacherDoc({
+				_id: { $oid: 'oid-second' },
+				name: 'Second',
+				surname: 'Teacher',
+				email: 'kevindegroot@gmail.com',
+			}),
+		).toEqual({
+			ok: true,
+			row: {
+				mongoOid: 'oid-second',
+				email: 'duplicate_1_kevindegroot@gmail.com',
+				emailWarning: 'Duplicate email "kevindegroot@gmail.com"; using "duplicate_1_kevindegroot@gmail.com"',
+				firstName: 'Second',
+				lastName: 'Teacher',
 				phoneNumber: null,
 				streetName: null,
 				houseNumber: null,

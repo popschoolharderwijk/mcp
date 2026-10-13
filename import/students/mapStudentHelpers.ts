@@ -2,6 +2,11 @@ import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../sr
 import { classifySourceKeys, type SourceKeyClassification } from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import {
+	allocateImportEmail,
+	createImportEmailDedupState,
+	type ImportEmailDedupState,
+} from '../shared/importEmailHelpers';
+import {
 	asOptionalString,
 	asOptionalStringOrNumber,
 	combineHouseNumber,
@@ -32,11 +37,11 @@ export const IGNORED_KEYS = new Set(['studentnumber', 'orgdebnumber', 'comments'
 
 export type StudentKeyClassification = SourceKeyClassification;
 
-const seenEmails = new Set<string>();
+let emailDedupState: ImportEmailDedupState = createImportEmailDedupState();
 
 /** Clear in-batch email dedup state before converting a source file. */
 export function resetStudentEmailDedup(): void {
-	seenEmails.clear();
+	emailDedupState = createImportEmailDedupState();
 }
 
 /** Classify unmapped student keys into unexpected (skipped) vs intentionally ignored. */
@@ -47,6 +52,9 @@ export function classifyStudentKeys(doc: object): StudentKeyClassification {
 /** Convert mapped-row soft issues into import-report warning reasons. */
 export function studentRowWarningReasons(row: MappedStudentRow): string[] {
 	const reasons: string[] = [];
+	if (row.emailWarning != null) {
+		reasons.push(row.emailWarning);
+	}
 	if (row.invalidDateOfBirth) {
 		reasons.push(`Invalid birthday "${row.invalidDateOfBirth}" (expected YYYY-MM-DD)`);
 	}
@@ -67,16 +75,11 @@ export function mapStudentDoc(doc: unknown): StudentMapResult {
 		return { ok: false, oid: null, reason: 'Missing _id.$oid' };
 	}
 
-	const email = normalizeTrimmedTextOrNull(asOptionalString(student.email));
-	if (!email) {
-		return { ok: false, oid: mongoOid, reason: 'Missing email' };
-	}
-
-	const emailKey = email.toLowerCase();
-	if (seenEmails.has(emailKey)) {
-		return { ok: false, oid: mongoOid, reason: `Duplicate email "${email}"` };
-	}
-	seenEmails.add(emailKey);
+	const allocated = allocateImportEmail(
+		emailDedupState,
+		normalizeTrimmedTextOrNull(asOptionalString(student.email)),
+		mongoOid,
+	);
 
 	const rawDateOfBirth = asOptionalString(student.birthday);
 	const dateOfBirth = normalizeIsoDate(rawDateOfBirth);
@@ -87,7 +90,8 @@ export function mapStudentDoc(doc: unknown): StudentMapResult {
 
 	const row: MappedStudentRow = {
 		mongoOid,
-		email,
+		email: allocated.email,
+		emailWarning: allocated.warning,
 		firstName: normalizeCompactTextOrNull(asOptionalString(student.name)),
 		lastName: normalizeCompactTextOrNull(asOptionalString(student.surname)),
 		phoneNumber: normalizeDutchMobilePhone(asOptionalString(student.phone)),

@@ -2,6 +2,11 @@ import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../sr
 import { classifySourceKeys, type SourceKeyClassification } from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import {
+	allocateImportEmail,
+	createImportEmailDedupState,
+	type ImportEmailDedupState,
+} from '../shared/importEmailHelpers';
+import {
 	asOptionalString,
 	asOptionalStringOrNumber,
 	combineHouseNumber,
@@ -32,6 +37,13 @@ export const IGNORED_KEYS = new Set(['assets', 'comments', 'instrument', 'note_t
 
 export type TeacherKeyClassification = SourceKeyClassification;
 
+let emailDedupState: ImportEmailDedupState = createImportEmailDedupState();
+
+/** Clear in-batch email dedup state before converting a source file. */
+export function resetTeacherEmailDedup(): void {
+	emailDedupState = createImportEmailDedupState();
+}
+
 /** Classify unmapped teacher keys into unexpected (skipped) vs intentionally ignored. */
 export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
 	return classifySourceKeys(doc, MAPPED_KEYS, IGNORED_KEYS);
@@ -40,6 +52,9 @@ export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
 /** Convert mapped-row soft issues into import-report warning reasons. */
 export function teacherRowWarningReasons(row: MappedTeacherRow): string[] {
 	const reasons: string[] = [];
+	if (row.emailWarning != null) {
+		reasons.push(row.emailWarning);
+	}
 	if (row.invalidCocIssuedOn) {
 		reasons.push(`Invalid vogdateissued "${row.invalidCocIssuedOn}" (expected YYYY-MM-DD)`);
 	}
@@ -60,10 +75,11 @@ export function mapTeacherDoc(doc: unknown): TeacherMapResult {
 		return { ok: false, oid: null, reason: 'Missing _id.$oid' };
 	}
 
-	const email = normalizeTrimmedTextOrNull(asOptionalString(teacher.email));
-	if (!email) {
-		return { ok: false, oid: mongoOid, reason: 'Missing email' };
-	}
+	const allocated = allocateImportEmail(
+		emailDedupState,
+		normalizeTrimmedTextOrNull(asOptionalString(teacher.email)),
+		mongoOid,
+	);
 
 	const rawCocIssuedOn = asOptionalString(teacher.vogdateissued);
 	const cocIssuedOn = normalizeIsoDate(rawCocIssuedOn);
@@ -74,7 +90,8 @@ export function mapTeacherDoc(doc: unknown): TeacherMapResult {
 
 	const row: MappedTeacherRow = {
 		mongoOid,
-		email,
+		email: allocated.email,
+		emailWarning: allocated.warning,
 		firstName: normalizeCompactTextOrNull(asOptionalString(teacher.name)),
 		lastName: normalizeCompactTextOrNull(asOptionalString(teacher.surname)),
 		phoneNumber: normalizeDutchMobilePhone(asOptionalString(teacher.phone)),

@@ -56,6 +56,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: '65deed9e3f515bbe5a0eca83',
 				email: 'Eva.Koning14_anon@gmail.com',
+				emailWarning: null,
 				firstName: 'Nick',
 				lastName: 'van de Brink',
 				phoneNumber: '0621599555',
@@ -71,7 +72,7 @@ describe('mapStudentDoc', () => {
 		});
 	});
 
-	it('fails without email', () => {
+	it('maps without email using a null email for placeholder assignment', () => {
 		expect(
 			mapStudentDoc({
 				_id: { $oid: 'oid-no-email' },
@@ -80,13 +81,27 @@ describe('mapStudentDoc', () => {
 				email: '',
 			}),
 		).toEqual({
-			ok: false,
-			oid: 'oid-no-email',
-			reason: 'Missing email',
+			ok: true,
+			row: {
+				mongoOid: 'oid-no-email',
+				email: 'missing_oid-no-email@example.com',
+				emailWarning: 'Missing email; using "missing_oid-no-email@example.com"',
+				firstName: 'Britt',
+				lastName: 'de Groot',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				dateOfBirth: null,
+				invalidDateOfBirth: null,
+				invalidCountryCode: null,
+			},
 		});
 	});
 
-	it('fails later rows with the same email', () => {
+	it('rewrites later rows with the same email using duplicate_N_ prefix', () => {
 		expect(
 			mapStudentDoc({
 				_id: { $oid: 'oid-first' },
@@ -104,9 +119,23 @@ describe('mapStudentDoc', () => {
 				email: 'Shared@example.com',
 			}),
 		).toEqual({
-			ok: false,
-			oid: 'oid-second',
-			reason: 'Duplicate email "Shared@example.com"',
+			ok: true,
+			row: {
+				mongoOid: 'oid-second',
+				email: 'duplicate_1_Shared@example.com',
+				emailWarning: 'Duplicate email "Shared@example.com"; using "duplicate_1_Shared@example.com"',
+				firstName: 'Second',
+				lastName: 'Student',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				dateOfBirth: null,
+				invalidDateOfBirth: null,
+				invalidCountryCode: null,
+			},
 		});
 	});
 
@@ -124,6 +153,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-dob',
 				email: 'noa@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,
@@ -157,6 +187,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: 'oid-house',
 				email: 'noa-house@example.com',
+				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
 				phoneNumber: null,

@@ -21,7 +21,10 @@ export type MongoTeacherDoc = {
 
 export type MappedTeacherRow = {
 	mongoOid: string;
+	/** Real email, or `missing_<mongoOid>@example.com` / `duplicate_N_…` rewrite. */
 	email: string;
+	/** From shared `allocateImportEmail` (missing / duplicate); includes replacement address. */
+	emailWarning: string | null;
 	firstName: string | null;
 	lastName: string | null;
 	phoneNumber: string | null;

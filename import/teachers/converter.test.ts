@@ -4,7 +4,8 @@ import { createEmptyIdMap } from '../shared/idMapHelpers';
 import { teachersConverter } from './converter';
 
 describe('teachersConverter', () => {
-	it('creates rows, reuses id-map, and records failures without instrument links', () => {
+	it('creates rows, reuses id-map, and assigns placeholders for missing/duplicate emails', () => {
+		teachersConverter.prepareContext?.([]);
 		const initial = createEmptyIdMap();
 		initial.teacher = { 'oid-known': 'uuid-known' };
 
@@ -30,26 +31,45 @@ describe('teachersConverter', () => {
 					mystery_field: true,
 				},
 				{
-					_id: { $oid: 'oid-fail' },
+					_id: { $oid: 'oid-no-email' },
 					name: 'No',
 					surname: 'Email',
 					email: '',
 					user: 'legacy-user',
 				},
+				{
+					_id: { $oid: 'oid-dup' },
+					name: 'Dup',
+					surname: 'Email',
+					email: 'a@example.com',
+				},
 			],
 			teachersConverter,
 			initial,
-			() => 'uuid-new',
+			(() => {
+				let n = 0;
+				return () => `uuid-new-${++n}`;
+			})(),
 		);
 
-		expect(batch.report.created).toBe(1);
+		expect(batch.report.created).toBe(3);
 		expect(batch.report.updated).toBe(1);
-		expect(batch.report.failed).toBe(1);
-		expect(batch.sqlRows).toHaveLength(2);
+		expect(batch.report.failed).toBe(0);
+		expect(batch.sqlRows).toHaveLength(4);
 		expect(batch.idMap.teacher?.['oid-known']).toBe('uuid-known');
-		expect(batch.idMap.teacher?.['oid-new']).toBe('uuid-new');
-		expect(batch.report.warnings).toEqual([]);
-		expect(batch.report.failures).toEqual([{ oid: 'oid-fail', reason: 'Missing email' }]);
+		expect(batch.idMap.teacher?.['oid-new']).toBe('uuid-new-1');
+		expect(batch.idMap.teacher?.['oid-no-email']).toBe('uuid-new-2');
+		expect(batch.idMap.teacher?.['oid-dup']).toBe('uuid-new-3');
+		expect(batch.sqlRows[2]?.email).toBe('missing_oid-no-email@example.com');
+		expect(batch.sqlRows[3]?.email).toBe('duplicate_1_a@example.com');
+		expect(batch.report.warnings).toEqual([
+			{ oid: 'oid-no-email', reason: 'Missing email; using "missing_oid-no-email@example.com"' },
+			{
+				oid: 'oid-dup',
+				reason: 'Duplicate email "a@example.com"; using "duplicate_1_a@example.com"',
+			},
+		]);
+		expect(batch.report.failures).toEqual([]);
 		expect(batch.report.skippedKeys).toEqual(['mystery_field']);
 		expect(batch.report.ignoredKeys).toEqual(['assets', 'comments', 'instrument', 'user', 'vog']);
 	});

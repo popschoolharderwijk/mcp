@@ -12,6 +12,7 @@ describe('buildStudentsSql', () => {
 				mongoOid: 'oid-1',
 				userId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
 				email: 'student@example.com',
+				emailWarning: null,
 				firstName: 'Nick',
 				lastName: 'van de Brink',
 				phoneNumber: '0621599555',

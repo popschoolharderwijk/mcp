@@ -1,3 +1,4 @@
+import { asFiniteNumber } from '../shared/numberHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import { classifyCourseFlags } from './courseFlagsHelpers';
 import { resolveCourseIconColor } from './courseIconHelpers';
@@ -26,15 +27,6 @@ let scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry> = new Map();
 
 export function setCourseScheduleFrequencyMap(map: Map<string, ScheduleFrequencyEntry>): void {
 	scheduleFrequencyMap = map;
-}
-
-function asFiniteNumber(value: unknown): number | null {
-	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string') {
-		const n = Number(value);
-		return Number.isFinite(n) ? n : null;
-	}
-	return null;
 }
 
 function asOptionalString(value: unknown): string | null {
