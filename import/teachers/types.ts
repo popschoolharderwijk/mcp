@@ -1,3 +1,4 @@
+import type { MapDocResult } from '../shared/converterTypes';
 import type { BootstrapLessonTypeName } from './instrumentLessonTypeHelpers';
 
 export type MongoTeacherDoc = {
@@ -42,4 +43,4 @@ export type MappedTeacherRow = {
 	invalidCountryCode: string | null;
 };
 
-export type TeacherMapResult = { ok: true; row: MappedTeacherRow } | { ok: false; oid: string | null; reason: string };
+export type TeacherMapResult = MapDocResult<MappedTeacherRow>;

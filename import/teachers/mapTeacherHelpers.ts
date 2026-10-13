@@ -1,5 +1,9 @@
 import { DEFAULT_COUNTRY_CODE, normalizeCountryCode } from '../../src/lib/profile/profileAddressHelpers';
 import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../src/lib/text/normalizeText';
+import {
+	classifySourceKeys,
+	type SourceKeyClassification,
+} from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import { normalizeDutchMobilePhone } from '../shared/phoneHelpers';
@@ -9,7 +13,7 @@ import type { MappedTeacherRow, MongoTeacherDoc, TeacherMapResult } from './type
 const ISO_COUNTRY_CODE_RE = /^[A-Z]{2}$/;
 
 /** Mongo keys that `mapTeacherDoc` reads into the import. */
-const MAPPED_TEACHER_KEYS = new Set([
+export const MAPPED_TEACHER_KEYS = new Set([
 	'_id',
 	'name',
 	'surname',
@@ -26,12 +30,9 @@ const MAPPED_TEACHER_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-const IGNORED_TEACHER_KEYS = new Set(['assets', 'comments', 'note_to_teacher', 'user', 'vog']);
+export const IGNORED_TEACHER_KEYS = new Set(['assets', 'comments', 'note_to_teacher', 'user', 'vog']);
 
-export type TeacherKeyClassification = {
-	skippedKeys: string[];
-	ignoredKeys: string[];
-};
+export type TeacherKeyClassification = SourceKeyClassification;
 
 function asOptionalString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
@@ -66,21 +67,24 @@ function normalizeIsoCountryCode(raw: string | null): {
 	return { countryCode: DEFAULT_COUNTRY_CODE, invalidCountryCode: raw.trim() };
 }
 
-/** Classify unmapped source keys into unexpected (skipped) vs intentionally ignored. */
+/** Classify unmapped teacher keys into unexpected (skipped) vs intentionally ignored. */
 export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
-	const skippedKeys: string[] = [];
-	const ignoredKeys: string[] = [];
+	return classifySourceKeys(doc, MAPPED_TEACHER_KEYS, IGNORED_TEACHER_KEYS);
+}
 
-	for (const key of Object.keys(doc).sort((a, b) => a.localeCompare(b))) {
-		if (MAPPED_TEACHER_KEYS.has(key)) continue;
-		if (IGNORED_TEACHER_KEYS.has(key)) {
-			ignoredKeys.push(key);
-			continue;
-		}
-		skippedKeys.push(key);
+/** Convert mapped-row soft issues into import-report warning reasons. */
+export function teacherRowWarningReasons(row: MappedTeacherRow): string[] {
+	const reasons: string[] = [];
+	for (const unmatched of row.unmatchedInstruments) {
+		reasons.push(`Unmapped instrument "${unmatched}" (no lesson type link)`);
 	}
-
-	return { skippedKeys, ignoredKeys };
+	if (row.invalidCocIssuedOn) {
+		reasons.push(`Invalid vogdateissued "${row.invalidCocIssuedOn}" (expected YYYY-MM-DD)`);
+	}
+	if (row.invalidCountryCode) {
+		reasons.push(`Invalid country "${row.invalidCountryCode}" (expected ISO 3166-1 alpha-2)`);
+	}
+	return reasons;
 }
 
 export function mapTeacherDoc(doc: unknown): TeacherMapResult {
