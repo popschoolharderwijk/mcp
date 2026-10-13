@@ -1,4 +1,4 @@
-import { LuSignature, LuWallet } from 'react-icons/lu';
+import { LuCreditCard, LuSignature, LuWallet } from 'react-icons/lu';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { handlePaymentMethodSelection, type PaymentMethodValue } from '@/lib/agreements/paymentMethodSectionHelpers';
 
@@ -30,6 +30,21 @@ export function PaymentMethodOptions({
 					</div>
 					<p className="text-xs text-muted-foreground">
 						Maandelijks automatisch incasseren via een SEPA-mandaat.
+					</p>
+				</div>
+			</label>
+
+			<label
+				htmlFor="pm-stripe"
+				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
+			>
+				<RadioGroupItem value="stripe" id="pm-stripe" className="mt-1" />
+				<div className="flex-1">
+					<div className="flex items-center gap-2 font-medium">
+						<LuCreditCard className="h-4 w-4" /> Stripe
+					</div>
+					<p className="text-xs text-muted-foreground">
+						De leerling machtigt via iDEAL; Stripe incasseert maandelijks en maakt zelf de facturen.
 					</p>
 				</div>
 			</label>
