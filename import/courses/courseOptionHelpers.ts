@@ -27,7 +27,6 @@ export function readFrequencyPriceEntries(raw: unknown): CoursePriceEntry[] {
 export function pickLatestCourseOptions(
 	entries: CoursePriceEntry[],
 	scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry>,
-	under21Cents: number | null,
 ): { options: MappedCourseOption[]; warnings: string[] } {
 	const latest = new Map<
 		string,
@@ -59,14 +58,18 @@ export function pickLatestCourseOptions(
 			if (a.durationMinutes !== b.durationMinutes) return a.durationMinutes - b.durationMinutes;
 			return a.frequency.localeCompare(b.frequency);
 		})
-		.map((opt) => ({
-			durationMinutes: opt.durationMinutes,
-			frequency: opt.frequency,
-			pricePerLesson: opt.price,
-			pricePerLessonUnder21Cents: under21Cents,
-			startDate: opt.startDate || null,
-			skippedUnknownOid: null,
-		}));
+		.map((opt) => {
+			const priceCents = Math.round(opt.price * 100);
+			return {
+				durationMinutes: opt.durationMinutes,
+				frequency: opt.frequency,
+				pricePerLesson: opt.price,
+				pricePerLessonUnder21Cents: priceCents,
+				pricePerLessonAdultCents: priceCents,
+				startDate: opt.startDate || null,
+				skippedUnknownOid: null,
+			};
+		});
 
 	return { options, warnings };
 }

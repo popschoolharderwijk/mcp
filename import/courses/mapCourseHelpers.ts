@@ -12,7 +12,6 @@ export const MAPPED_KEYS = new Set([
 	'name',
 	'ledgeraccount',
 	'maxparticipants',
-	'price',
 	'frequency_mnd_prices',
 	'triallesson',
 	'registrationform',
@@ -21,7 +20,7 @@ export const MAPPED_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-export const IGNORED_KEYS = new Set<string>();
+export const IGNORED_KEYS = new Set(['price']);
 
 let scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry> = new Map();
 
@@ -33,10 +32,6 @@ function asOptionalString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
-}
-
-function eurosToCents(euros: number): number {
-	return Math.round(euros * 100);
 }
 
 /** Convert a Mongo course document into a mapped lesson-type row. */
@@ -55,14 +50,11 @@ export function mapCourseDoc(doc: unknown): CourseMapResult {
 	}
 
 	const maxParticipants = asFiniteNumber(record.maxparticipants);
-	const topPrice = asFiniteNumber(record.price);
-	const under21Cents = topPrice != null && topPrice > 0 ? eurosToCents(topPrice) : null;
 	const { isDuoLesson, isGroupLesson } = classifyCourseFlags(name, maxParticipants);
 	const { icon, color } = resolveCourseIconColor(name);
 	const { options, warnings } = pickLatestCourseOptions(
 		readFrequencyPriceEntries(record.frequency_mnd_prices),
 		scheduleFrequencyMap,
-		under21Cents,
 	);
 
 	return {

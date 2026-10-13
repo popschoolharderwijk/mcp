@@ -10,8 +10,11 @@ export type ScheduleFrequencyEntry = {
 export type MappedCourseOption = {
 	durationMinutes: number;
 	frequency: LessonFrequency;
+	/** Euro amount stored in legacy `price_per_lesson`. */
 	pricePerLesson: number;
-	pricePerLessonUnder21Cents: number | null;
+	/** Same catalog price in cents for both age bands. */
+	pricePerLessonUnder21Cents: number;
+	pricePerLessonAdultCents: number;
 	startDate: string | null;
 	skippedUnknownOid: string | null;
 };

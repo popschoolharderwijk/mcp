@@ -44,7 +44,6 @@ describe('pickLatestCourseOptions', () => {
 				{ durationFreqOid: 'oid-biweekly-30', price: 38, startDate: '' },
 			],
 			schedule,
-			1950,
 		);
 		expect(result.warnings).toEqual(['Unknown durationfreq oid unknown']);
 		expect(result.options).toEqual([
@@ -52,7 +51,8 @@ describe('pickLatestCourseOptions', () => {
 				durationMinutes: 30,
 				frequency: 'biweekly',
 				pricePerLesson: 38,
-				pricePerLessonUnder21Cents: 1950,
+				pricePerLessonUnder21Cents: 3800,
+				pricePerLessonAdultCents: 3800,
 				startDate: null,
 				skippedUnknownOid: null,
 			},
@@ -60,7 +60,8 @@ describe('pickLatestCourseOptions', () => {
 				durationMinutes: 30,
 				frequency: 'weekly',
 				pricePerLesson: 73,
-				pricePerLessonUnder21Cents: 1950,
+				pricePerLessonUnder21Cents: 7300,
+				pricePerLessonAdultCents: 7300,
 				startDate: '2026-01-01',
 				skippedUnknownOid: null,
 			},

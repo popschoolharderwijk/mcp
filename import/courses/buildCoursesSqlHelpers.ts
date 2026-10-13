@@ -25,7 +25,7 @@ function buildLessonTypeOptionsInsert(rows: CourseSqlRow[]): string {
 	for (const row of rows) {
 		for (const opt of row.options) {
 			optionTuples.push(
-				`  (${sqlString(row.name)}, ${sqlInteger(opt.durationMinutes)}, '${opt.frequency}'::public.lesson_frequency, ${sqlNumber(opt.pricePerLesson)}, ${sqlInteger(opt.pricePerLessonUnder21Cents)})`,
+				`  (${sqlString(row.name)}, ${sqlInteger(opt.durationMinutes)}, '${opt.frequency}'::public.lesson_frequency, ${sqlNumber(opt.pricePerLesson)}, ${sqlInteger(opt.pricePerLessonUnder21Cents)}, ${sqlInteger(opt.pricePerLessonAdultCents)})`,
 			);
 		}
 	}
@@ -35,18 +35,20 @@ function buildLessonTypeOptionsInsert(rows: CourseSqlRow[]): string {
 `;
 	}
 
-	return `  -- Lesson type options (latest startdate per duration+frequency; price as-is)
+	const valuesSql = optionTuples.join(',\n');
+	return `  -- Lesson type options (latest startdate per duration+frequency; same price for <21 and 21+)
   INSERT INTO public.lesson_type_options (
     lesson_type_id,
     duration_minutes,
     frequency,
     price_per_lesson,
-    price_per_lesson_under_21_cents
+    price_per_lesson_under_21_cents,
+    price_per_lesson_adult_cents
   )
-  SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson, opt.price_per_lesson_under_21_cents
+  SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson, opt.price_per_lesson_under_21_cents, opt.price_per_lesson_adult_cents
   FROM (VALUES
-${optionTuples.join(',\n')}
-  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents)
+${valuesSql}
+  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
   INNER JOIN public.lesson_types lt ON lt.name = opt.lesson_type_name
   WHERE NOT EXISTS (
     SELECT 1 FROM public.lesson_type_options lto
@@ -57,6 +59,21 @@ ${optionTuples.join(',\n')}
   );
   GET DIAGNOSTICS n = ROW_COUNT;
   RAISE NOTICE 'public.lesson_type_options: % row(s) inserted (existing skipped)', n;
+
+  UPDATE public.lesson_type_options AS lto
+  SET
+    price_per_lesson_under_21_cents = opt.price_per_lesson_under_21_cents,
+    price_per_lesson_adult_cents = opt.price_per_lesson_adult_cents
+  FROM (VALUES
+${valuesSql}
+  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
+  INNER JOIN public.lesson_types lt ON lt.name = opt.lesson_type_name
+  WHERE lto.lesson_type_id = lt.id
+    AND lto.duration_minutes = opt.duration_minutes
+    AND lto.frequency = opt.frequency
+    AND lto.price_per_lesson = opt.price_per_lesson;
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RAISE NOTICE 'public.lesson_type_options: % row(s) updated (age-band cents)', n;
 `;
 }
 

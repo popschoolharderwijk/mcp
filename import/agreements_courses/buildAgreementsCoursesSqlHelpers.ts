@@ -10,9 +10,9 @@ function buildSynthesizedOptionsInsert(rows: AgreementCourseSqlRow[]): string {
 		const key = `${row.lessonTypeId}:${row.durationMinutes}:${row.frequency}:${row.pricePerLesson}`;
 		if (seen.has(key)) continue;
 		seen.add(key);
-		const under21Cents = Math.round(row.pricePerLesson * 100);
+		const priceCents = Math.round(row.pricePerLesson * 100);
 		tuples.push(
-			`  (${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(under21Cents)})`,
+			`  (${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(priceCents)}, ${sqlInteger(priceCents)})`,
 		);
 	}
 
@@ -27,17 +27,19 @@ function buildSynthesizedOptionsInsert(rows: AgreementCourseSqlRow[]): string {
     duration_minutes,
     frequency,
     price_per_lesson,
-    price_per_lesson_under_21_cents
+    price_per_lesson_under_21_cents,
+    price_per_lesson_adult_cents
   )
   SELECT
     v.lesson_type_id,
     v.duration_minutes,
     v.frequency,
     v.price_per_lesson,
-    v.price_per_lesson_under_21_cents
+    v.price_per_lesson_under_21_cents,
+    v.price_per_lesson_adult_cents
   FROM (VALUES
 ${tuples.join(',\n')}
-  ) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents)
+  ) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
   WHERE NOT EXISTS (
     SELECT 1 FROM public.lesson_type_options lto
     WHERE lto.lesson_type_id = v.lesson_type_id

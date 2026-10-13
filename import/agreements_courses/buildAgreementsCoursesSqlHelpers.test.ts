@@ -74,6 +74,7 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("'biweekly'::public.lesson_frequency");
 		expect(sql).toContain('16.34');
 		expect(sql).toContain('1634');
+		expect(sql).toContain('price_per_lesson_adult_cents');
 		expect(sql.indexOf('lesson_type_options')).toBeLessThan(sql.indexOf('lesson_agreements'));
 		const optionsSection = sql.slice(0, sql.indexOf('INSERT INTO public.lesson_agreements'));
 		expect(optionsSection.split("'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid")).toHaveLength(2);

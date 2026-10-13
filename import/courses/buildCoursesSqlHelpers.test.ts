@@ -17,7 +17,8 @@ const sampleRow: CourseSqlRow = {
 			durationMinutes: 30,
 			frequency: 'weekly',
 			pricePerLesson: 73.38,
-			pricePerLessonUnder21Cents: 1950,
+			pricePerLessonUnder21Cents: 7338,
+			pricePerLessonAdultCents: 7338,
 			startDate: '2026-09-01',
 			skippedUnknownOid: null,
 		},
@@ -33,8 +34,10 @@ describe('buildCoursesSql', () => {
 		expect(sql).toContain('is_duo_lesson');
 		expect(sql).toContain('INSERT INTO public.lesson_type_options');
 		expect(sql).toContain('73.38');
-		expect(sql).toContain('1950');
+		expect(sql).toContain('7338');
+		expect(sql).toContain('price_per_lesson_adult_cents');
 		expect(sql).toContain('WHERE NOT EXISTS');
+		expect(sql).toContain('updated (age-band cents)');
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_types:");
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_type_options:");
 	});
