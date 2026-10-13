@@ -10,7 +10,7 @@ Tests run against a **remote Supabase project** (no local instance). Two project
 **In CI** (`pull-request-supabase.yml`):
 - Runs only when `supabase/**` or `tests/**` changes, excluding `tests/code/**`
 - The workflow links to **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
-- `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/test.sql` are applied)
+- `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are applied)
 - Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 - `bun test tests/rls tests/auth tests/e2e` runs against mcp-test
 
@@ -22,7 +22,8 @@ On `supabase db reset --linked`, two seed files are applied (see `supabase/confi
 
 | File | Purpose |
 |------|---------|
-| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql) | Production-safe reference data: lesson types, options, email templates, accounting singleton |
+| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql) | Production-safe reference data: email templates, accounting singleton |
+| [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) | Default lesson types + options (dev/test only; not on production) |
 | [`supabase/seeds/test.sql`](../supabase/seeds/test.sql) | RLS test data: test users, roles, agreements, agenda, projects |
 
 `seeds/test.sql` includes:
@@ -36,8 +37,8 @@ On `supabase db reset --linked`, two seed files are applied (see `supabase/confi
 | **students** | `student-001@test.nl` through `student-060@test.nl` (60) |
 | **users (no role)** | `user-001@test.nl` through `user-010@test.nl` (10) |
 
-`seeds/test.sql` also contains (bootstrap supplies lesson types):
-- **Lesson types**: Reference data in `seeds/bootstrap.sql` (not in test.sql)
+`seeds/test.sql` also contains (lesson-types.sql supplies lesson types):
+- **Lesson types**: Reference data in `seeds/lesson-types.sql` (not in test.sql)
 - **Students**: Link student users to student records
 - **Teachers**: Link teacher users to teacher records
 - **Lesson agreements**: Agreements between students and teachers

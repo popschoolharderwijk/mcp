@@ -146,7 +146,7 @@ project_id = "<new-project-id>"
 
 [remotes.new.db.seed]
 enabled = true  # false for production
-sql_paths = ["./seeds/bootstrap.sql", "./seeds/test.sql"]  # prod: bootstrap.sql only
+sql_paths = ["./seeds/bootstrap.sql", "./seeds/lesson-types.sql", "./seeds/test.sql"]  # prod: bootstrap.sql only
 ```
 
 ```toml

@@ -1,7 +1,7 @@
 -- =============================================================================
 -- TEST SEED (RLS / CI only — not for production)
 -- =============================================================================
--- Requires supabase/seeds/bootstrap.sql to run first (lesson types, etc.).
+-- Requires supabase/seeds/bootstrap.sql and supabase/seeds/lesson-types.sql to run first.
 -- These users are seeded in auth.users for local/preview testing.
 -- Password for all users: "password"
 -- RLS policies rely on public.current_user_id() matching these values

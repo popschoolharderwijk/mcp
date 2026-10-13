@@ -46,7 +46,7 @@ supabase db push --dry-run
 
 ## Step 2b: Bootstrap seed on production (optional)
 
-Migrations do not contain reference data. Lesson types, email templates, and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Production has `enabled = false` for seed; apply bootstrap **manually** after new bootstrap events:
+Migrations do not contain reference data. Email templates and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo
