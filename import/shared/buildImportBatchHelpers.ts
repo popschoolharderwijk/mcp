@@ -1,13 +1,9 @@
 import { classifySourceKeys } from './classifySourceKeysHelpers';
-import type { ImportConverter, MappedImportRow } from './converterTypes';
+import type { ImportBatch, ImportConverter, MappedImportRow } from './converterTypes';
 import { ensureMappedId, type MongoIdMap } from './idMapHelpers';
-import { createEmptyReport, type ImportReport } from './reportHelpers';
+import { createEmptyReport } from './reportHelpers';
 
-export type ImportBatch<TSqlRow> = {
-	idMap: MongoIdMap;
-	sqlRows: TSqlRow[];
-	report: ImportReport;
-};
+export type { ImportBatch } from './converterTypes';
 
 function recordKeys(target: Set<string>, keys: string[]): void {
 	for (const key of keys) {

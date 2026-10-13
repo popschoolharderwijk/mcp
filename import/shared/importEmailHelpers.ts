@@ -53,3 +53,16 @@ export function allocateImportEmail(
 		warning: `Duplicate email "${rawEmail}"; using "${allocated}"`,
 	};
 }
+
+/**
+ * Keep the source email and mark it seen (for same name+email profile merges).
+ * Does not emit `duplicate_N_…`.
+ */
+export function keepExistingImportEmail(state: ImportEmailDedupState, rawEmail: string): AllocatedImportEmail {
+	const key = rawEmail.toLowerCase();
+	state.set(key, Math.max(state.get(key) ?? 0, 1));
+	return {
+		email: rawEmail,
+		warning: 'Same name and email as existing profile; sharing user id',
+	};
+}

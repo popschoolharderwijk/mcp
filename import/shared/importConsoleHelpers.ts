@@ -16,7 +16,7 @@ function wrap(text: string, codes: string[], useColor: boolean): string {
 	return `${codes.join('')}${text}${ANSI.reset}`;
 }
 
-/** Colored banner so converters are visually separated in `bun import all`. */
+/** Colored banner so converters are visually separated in `bun import`. */
 export function formatImportConverterBanner(
 	name: string,
 	index = 0,

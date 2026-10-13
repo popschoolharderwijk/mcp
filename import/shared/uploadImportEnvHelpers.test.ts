@@ -5,10 +5,10 @@ describe('orderImportSqlFileNames', () => {
 	it('keeps preferred converter order and appends extras alphabetically', () => {
 		expect(
 			orderImportSqlFileNames(
-				['z.sql', 'teachers.sql', 'readme.txt', 'courses.sql', 'agreements_courses.sql'],
-				['courses.sql', 'teachers.sql', 'students.sql', 'agreements_courses.sql'],
+				['z.sql', 'teachers.sql', 'profiles.sql', 'readme.txt', 'courses.sql', 'students.sql'],
+				['courses.sql', 'profiles.sql', 'students.sql', 'teachers.sql', 'agreements_courses.sql'],
 			),
-		).toEqual(['courses.sql', 'teachers.sql', 'agreements_courses.sql', 'z.sql']);
+		).toEqual(['courses.sql', 'profiles.sql', 'students.sql', 'teachers.sql', 'z.sql']);
 	});
 });
 

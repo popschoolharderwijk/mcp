@@ -5,6 +5,7 @@ import {
 	allocateImportEmail,
 	createImportEmailDedupState,
 	type ImportEmailDedupState,
+	keepExistingImportEmail,
 } from '../shared/importEmailHelpers';
 import {
 	asOptionalString,
@@ -37,9 +38,10 @@ export const IGNORED_KEYS = new Set(['assets', 'comments', 'instrument', 'note_t
 
 export type TeacherKeyClassification = SourceKeyClassification;
 
+/** Default state for unit tests; profiles passes a shared batch state. */
 let emailDedupState: ImportEmailDedupState = createImportEmailDedupState();
 
-/** Clear in-batch email dedup state before converting a source file. */
+/** Clear module email dedup state before converting in isolation (tests). */
 export function resetTeacherEmailDedup(): void {
 	emailDedupState = createImportEmailDedupState();
 }
@@ -64,7 +66,16 @@ export function teacherRowWarningReasons(row: MappedTeacherRow): string[] {
 	return reasons;
 }
 
-export function mapTeacherDoc(doc: unknown): TeacherMapResult {
+export type MapTeacherDocOptions = {
+	/** Keep source email (no duplicate_N_); same name+email as an existing profile. */
+	keepExistingEmail?: boolean;
+};
+
+export function mapTeacherDoc(
+	doc: unknown,
+	emailState: ImportEmailDedupState = emailDedupState,
+	options?: MapTeacherDocOptions,
+): TeacherMapResult {
 	if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
 		return { ok: false, oid: null, reason: 'Document is not an object' };
 	}
@@ -75,11 +86,11 @@ export function mapTeacherDoc(doc: unknown): TeacherMapResult {
 		return { ok: false, oid: null, reason: 'Missing _id.$oid' };
 	}
 
-	const allocated = allocateImportEmail(
-		emailDedupState,
-		normalizeTrimmedTextOrNull(asOptionalString(teacher.email)),
-		mongoOid,
-	);
+	const rawEmail = normalizeTrimmedTextOrNull(asOptionalString(teacher.email));
+	const allocated =
+		options?.keepExistingEmail && rawEmail != null
+			? keepExistingImportEmail(emailState, rawEmail)
+			: allocateImportEmail(emailState, rawEmail, mongoOid);
 
 	const rawCocIssuedOn = asOptionalString(teacher.vogdateissued);
 	const cocIssuedOn = normalizeIsoDate(rawCocIssuedOn);

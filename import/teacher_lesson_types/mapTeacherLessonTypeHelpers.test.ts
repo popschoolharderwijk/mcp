@@ -16,8 +16,14 @@ function baseIdMap() {
 describe('buildKnownTeacherOidSet', () => {
 	it('collects teacher oids from teacher docs', () => {
 		expect(
-			buildKnownTeacherOidSet([{ _id: { $oid: 't-1' } }, { _id: { $oid: 't-2' } }, null, { _id: 'bad' }]),
-		).toEqual(new Set(['t-1', 't-2']));
+			buildKnownTeacherOidSet([
+				{ _id: { $oid: 't-1' } },
+				{ _id: { $oid: 't-2' } },
+				null,
+				{ _id: 'plain-oid' },
+				{ _id: '' },
+			]),
+		).toEqual(new Set(['t-1', 't-2', 'plain-oid']));
 	});
 });
 

@@ -53,7 +53,10 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
 	const extraFileDocs = loaded.slice(1).map((file) => parseMongoExportText(file.text, file.path));
 	converter.prepareContext?.(extraFileDocs);
 
-	const batch = buildImportBatch(primaryDocs, converter, await loadIdMap(mapPath));
+	const idMap = await loadIdMap(mapPath);
+	const batch = converter.buildBatch
+		? converter.buildBatch(primaryDocs, extraFileDocs, idMap, () => crypto.randomUUID())
+		: buildImportBatch(primaryDocs, converter, idMap);
 	const sql = converter.buildSql(batch.sqlRows);
 
 	await mkdir(dirname(outPath), { recursive: true });

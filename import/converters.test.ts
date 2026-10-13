@@ -2,13 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import { IMPORT_CONVERTER_NAMES } from './converters';
 
 describe('IMPORT_CONVERTERS', () => {
-	it('runs bun import all in dependency order', () => {
+	it('runs bun import in dependency order', () => {
 		expect(IMPORT_CONVERTER_NAMES).toEqual([
 			'courses',
-			'teachers',
+			'profiles',
 			'students',
-			'agreements_courses',
+			'teachers',
 			'teacher_lesson_types',
+			'agreements_courses',
 		]);
 	});
 });

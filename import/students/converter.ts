@@ -1,24 +1,20 @@
-import type { ImportConverter } from '../shared/converterTypes';
+import type { ImportConverter, MappedImportRow } from '../shared/converterTypes';
+import { buildStudentsRoleBatch } from './buildRoleBatchHelpers';
 import { buildStudentsSql, type StudentSqlRow } from './buildStudentsSqlHelpers';
-import {
-	IGNORED_KEYS,
-	MAPPED_KEYS,
-	mapStudentDoc,
-	resetStudentEmailDedup,
-	studentRowWarningReasons,
-} from './mapStudentHelpers';
-import type { MappedStudentRow } from './types';
 
-export const studentsConverter: ImportConverter<MappedStudentRow, StudentSqlRow> = {
+/** Student role rows only — requires profiles id-map entries. */
+export const studentsConverter: ImportConverter<MappedImportRow, StudentSqlRow> = {
 	name: 'students',
 	entityType: 'student',
-	mappedKeys: MAPPED_KEYS,
-	ignoredKeys: IGNORED_KEYS,
-	prepareContext() {
-		resetStudentEmailDedup();
+	mappedKeys: new Set(),
+	ignoredKeys: new Set(),
+	buildBatch(primaryDocs, _extra, idMap) {
+		return buildStudentsRoleBatch(primaryDocs, idMap);
 	},
-	mapDoc: mapStudentDoc,
-	warningsForRow: studentRowWarningReasons,
-	assignId: (row, id) => ({ ...row, userId: id }),
+	mapDoc() {
+		return { ok: false, oid: null, reason: 'students converter uses buildBatch' };
+	},
+	warningsForRow: () => [],
+	assignId: (row) => row as unknown as StudentSqlRow,
 	buildSql: buildStudentsSql,
 };

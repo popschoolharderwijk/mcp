@@ -2,19 +2,20 @@ import { describe, expect, it } from 'bun:test';
 import type { ImportConverter } from './converterTypes';
 import { type ImportCliDeps, runImportCli } from './importCliHelpers';
 
-const stubConverter = { name: 'teachers' } as ImportConverter;
+const stubCourses = { name: 'courses' } as ImportConverter;
+const stubProfiles = { name: 'profiles' } as ImportConverter;
 
 function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 	return {
-		converterNames: ['teachers'],
-		converters: { teachers: stubConverter } as ImportCliDeps['converters'],
+		converterNames: ['courses', 'profiles'],
+		converters: { courses: stubCourses, profiles: stubProfiles } as ImportCliDeps['converters'],
 		logPath: 'import/out/import.log',
 		outDir: 'import/out',
-		preferredSqlOrder: ['teachers.sql'],
+		preferredSqlOrder: ['courses.sql', 'profiles.sql'],
 		resolvePath: (path) => `/abs/${path}`,
 		resetImportLog: async () => {},
 		runImportConverter: async () => {},
-		uploadImportSqlFiles: async () => ({ ok: true, files: ['teachers.sql'] }),
+		uploadImportSqlFiles: async () => ({ ok: true, files: ['courses.sql', 'profiles.sql'] }),
 		log: () => {},
 		error: () => {},
 		...overrides,
@@ -24,16 +25,19 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 describe('runImportCli', () => {
 	it('returns 1 when the command is invalid', async () => {
 		const errors: string[] = [];
-		const code = await runImportCli(['bun', 'import/index.ts'], baseDeps({ error: (m) => errors.push(m) }));
+		const code = await runImportCli(
+			['bun', 'import/index.ts', 'teachers'],
+			baseDeps({ error: (m) => errors.push(m) }),
+		);
 		expect(code).toBe(1);
 		expect(errors).toHaveLength(1);
 	});
 
-	it('runs converters then uploads when --upload is set', async () => {
+	it('always runs the full pipeline then uploads when --upload is set', async () => {
 		const ran: string[] = [];
 		const logs: string[] = [];
 		const code = await runImportCli(
-			['bun', 'import/index.ts', 'teachers', '--upload'],
+			['bun', 'import/index.ts', '--upload'],
 			baseDeps({
 				resetImportLog: async (path) => {
 					ran.push(`reset:${path}`);
@@ -43,14 +47,19 @@ describe('runImportCli', () => {
 				},
 				uploadImportSqlFiles: async (params) => {
 					ran.push(`upload:${params.outDir}`);
-					return { ok: true, files: ['teachers.sql'] };
+					return { ok: true, files: ['courses.sql', 'profiles.sql'] };
 				},
 				log: (m) => logs.push(m),
 			}),
 		);
 		expect(code).toBe(0);
-		expect(ran).toEqual(['reset:/abs/import/out/import.log', 'convert:teachers', 'upload:/abs/import/out']);
-		expect(logs.some((line) => line.includes('Uploaded: teachers.sql'))).toBe(true);
+		expect(ran).toEqual([
+			'reset:/abs/import/out/import.log',
+			'convert:courses',
+			'convert:profiles',
+			'upload:/abs/import/out',
+		]);
+		expect(logs.some((line) => line.includes('Uploaded: courses.sql, profiles.sql'))).toBe(true);
 	});
 
 	it('returns 1 when upload fails', async () => {

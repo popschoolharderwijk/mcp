@@ -1,14 +1,8 @@
 /**
- * Legacy Mongo import dispatcher.
+ * Legacy Mongo import (full pipeline).
  *
  * Usage:
- *   bun import courses
- *   bun import teachers
- *   bun import students
- *   bun import agreements_courses
- *   bun import teacher_lesson_types
- *   bun import all
- *   bun import all --upload
+ *   bun import
  *   bun import --upload
  */
 

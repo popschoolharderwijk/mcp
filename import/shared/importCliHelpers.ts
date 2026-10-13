@@ -20,23 +20,21 @@ export type ImportCliDeps = {
 	error?: (message: string) => void;
 };
 
-/** Run `bun import …` and return a process exit code. */
+/** Run `bun import [--upload]` (full pipeline) and return a process exit code. */
 export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise<number> {
 	const log = deps.log ?? console.log;
 	const error = deps.error ?? console.error;
 
-	const parsed = parseImportCommand(argv, deps.converterNames);
+	const parsed = parseImportCommand(argv);
 	if (!parsed.ok) {
 		error(parsed.error);
 		return 1;
 	}
 
-	if (parsed.names.length > 0) {
-		await deps.resetImportLog(deps.resolvePath(deps.logPath));
-		for (const [index, name] of parsed.names.entries()) {
-			log(formatImportConverterBanner(name, index, false));
-			await deps.runImportConverter(deps.converters[name]);
-		}
+	await deps.resetImportLog(deps.resolvePath(deps.logPath));
+	for (const [index, name] of deps.converterNames.entries()) {
+		log(formatImportConverterBanner(name, index, false));
+		await deps.runImportConverter(deps.converters[name]);
 	}
 
 	if (!parsed.upload) {

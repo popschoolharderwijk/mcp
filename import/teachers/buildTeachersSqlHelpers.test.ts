@@ -6,46 +6,46 @@ describe('buildTeachersSql', () => {
 		expect(buildTeachersSql([])).toBe('-- No teachers to import\n');
 	});
 
-	it('includes auth users, identities, profiles, and teachers without lesson type links', () => {
+	it('emits public.teachers upsert only and dedupes by user id', () => {
 		const sql = buildTeachersSql([
 			{
-				mongoOid: 'oid-1',
-				userId: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-				email: 'teacher@example.com',
+				mongoOid: 't1',
+				userId: '11111111-1111-1111-1111-111111111111',
+				email: 'a@example.com',
 				emailWarning: null,
-				firstName: 'Femke',
-				lastName: 'Bosman',
-				phoneNumber: '0694350865',
-				streetName: 'Voorbeeldstraat',
-				houseNumber: '12A',
-				postalCode: '1234 AB',
-				city: 'Amsterdam',
+				firstName: 'A',
+				lastName: 'B',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
 				countryCode: 'NL',
-				cocIssuedOn: '2023-12-06',
+				cocIssuedOn: '2023-01-01',
+				invalidCocIssuedOn: null,
+				invalidCountryCode: null,
+			},
+			{
+				mongoOid: 't2',
+				userId: '11111111-1111-1111-1111-111111111111',
+				email: 'a@example.com',
+				emailWarning: null,
+				firstName: 'A',
+				lastName: 'B',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				cocIssuedOn: null,
 				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},
 		]);
-
-		expect(sql).toContain('INSERT INTO auth.users');
-		expect(sql).toContain('INSERT INTO auth.identities');
-		expect(sql).toContain('UPDATE public.profiles');
 		expect(sql).toContain('INSERT INTO public.teachers');
-		expect(sql).not.toContain('teacher_lesson_types');
-		expect(sql).toContain('coc_issued_on');
-		expect(sql).toContain("'2023-12-06'::date");
-		expect(sql).toContain("'teacher@example.com'");
-		expect(sql).toContain("'0694350865'");
-		expect(sql).toContain("'Voorbeeldstraat'");
-		expect(sql).toContain("'12A'");
-		expect(sql).toContain("'1234 AB'");
-		expect(sql).toContain("'Amsterdam'");
-		expect(sql).toContain("'NL'");
-		expect(sql).toContain('street_name = t.street_name');
-		expect(sql).toContain('country_code = t.country_code');
-		expect(sql).toContain("'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid");
-		expect(sql).toContain('ON CONFLICT (user_id) DO UPDATE');
-		expect(sql).toContain("RAISE NOTICE 'auth.users:");
-		expect(sql).toContain("RAISE NOTICE 'public.teachers:");
+		expect(sql).not.toContain('INSERT INTO auth.users');
+		expect(sql).toContain('2023-01-01');
+		expect(sql.split("'11111111-1111-1111-1111-111111111111'::uuid")).toHaveLength(2);
 	});
 });
