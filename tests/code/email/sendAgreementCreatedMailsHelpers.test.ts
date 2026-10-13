@@ -64,7 +64,7 @@ describe('buildAgreementMailContext', () => {
 		expect(context.sharedVars.dag).toBe('maandag');
 		expect(context.sharedVars.tijd).toBe('14:30');
 		expect(context.sharedVars.startdatum).toBe('07-09-2026');
-		expect(context.sharedVars.betaalmethode).toBe('Automatische incasso (SEPA)');
+		expect(context.sharedVars.betaalmethode).toBe('Stripe (iDEAL + automatische incasso)');
 	});
 
 	it('returns empty price and date for nullish inputs', () => {

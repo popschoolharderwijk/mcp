@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
 import { getSiteBaseUrl, type LessonAgreementPostContext } from '../_shared/http-serve.ts';
+import { resolveNotStripeAgreementFailure } from '../_shared/paymentMethodPure.ts';
 import { getSafeErrorMessage } from '../_shared/stripe.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
 import {
@@ -32,13 +33,16 @@ async function prepareDirectDebitInvite(ctx: LessonAgreementPostContext): Promis
 
 	const { data: agreement, error: agErr } = await auth.admin
 		.from('lesson_agreements')
-		.select('id, student_user_id, is_active')
+		.select('id, student_user_id, is_active, payment_method')
 		.eq('id', ctx.lessonAgreementId)
 		.maybeSingle();
 	const access = resolveDirectDebitAgreementAccessError(agreement, agErr, isPrivileged, auth.user.id);
 	if (!access.ok) {
 		return { ok: false, response: jsonResponse(access.status, { error: access.error }) };
 	}
+
+	const notStripe = resolveNotStripeAgreementFailure(agreement?.payment_method);
+	if (notStripe) return { ok: false, response: jsonResponse(notStripe.status, { error: notStripe.error }) };
 
 	const recipientResult = await resolveDirectDebitInviteRecipientEmail(auth.admin, access.agreement.student_user_id);
 	if (!recipientResult.ok) return recipientResult;

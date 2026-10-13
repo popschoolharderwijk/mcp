@@ -120,13 +120,16 @@ const sections: ManualSection[] = [
 			'Duo-flow: bij een duo-lessoort maakt de wizard automatisch twee gekoppelde overeenkomsten via een edge function. In de agenda zien beide leerlingen hetzelfde slot met een duo-badge.',
 			'Doorklikken: leerling- en docentnamen zijn klikbaar vanuit de wizard, de bevestigingspagina en het overzicht.',
 			'Bewerken / beëindigen: open een overeenkomst om gegevens aan te passen of een einddatum te zetten; toekomstige lessen verdwijnen dan uit de agenda.',
+			'Betaalmethode: kies per overeenkomst SEPA-incasso (eigen incasso + eigen factuur), Stripe (iDEAL-machtiging, Stripe incasseert en factureert) of Handmatig / op factuur.',
+			'Stripe-abonnement: bij een opgeslagen overeenkomst met betaalmethode Stripe staat onder de wizard de kaart "Abonnement via Stripe" met: Stuur betaaluitnodiging (mail met inloglink naar /direct-debit/start → iDEAL-machtiging), status, Open klantportaal, Pas nieuwe tarieven toe en Synchroniseer.',
+			'Geen dubbele betaling: overeenkomsten met betaalmethode Stripe komen nooit in een SEPA-incassobatch en krijgen geen eigen factuur. Zet je een overeenkomst om naar Stripe, dan verdwijnt die automatisch uit concept-batches.',
 		],
 	},
 	{
 		icon: NAV_ICONS.invoices,
 		title: NAV_LABELS.invoices,
 		description:
-			'Automatisch genereren, versturen en archiveren van facturen per incasso-batch. Iedere leerling krijgt één factuur per batch, met de juiste BTW-categorie en SEPA-verwijzing.',
+			'Automatisch genereren, versturen en archiveren van facturen per incasso-batch. Iedere leerling krijgt één factuur per batch, met de juiste BTW-categorie en SEPA-verwijzing. Overeenkomsten die via Stripe betalen worden overgeslagen; daarvoor maakt Stripe de factuur.',
 		details: [
 			'Stap 1 – Bedrijfsgegevens vullen: ga naar Instellingen → Boekhouding → "Bedrijfsgegevens & factuur" en vul bedrijfsnaam, adres, KvK, BTW-nummer, IBAN, e-mail en telefoon in. Stel ook factuurnummer-prefix (bv. INV-), startnummer, betalingstermijn (dagen) en optioneel een footertekst in. Zonder deze gegevens kan generate-invoice niet draaien.',
 			'Stap 2 – Mandaten en batch klaarzetten: zorg dat de betreffende leerlingen een actief SEPA-mandaat hebben (Mandaten). Maak vervolgens via Incasso een nieuwe batch aan met collection date, en voeg per leerling één of meer batch-items toe (bedrag in centen + remittance-info).',

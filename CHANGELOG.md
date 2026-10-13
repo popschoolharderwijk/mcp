@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.0 — 2026-10-13
+
+- **Stripe** weer beschikbaar als betaalmethode, naast SEPA-incasso en handmatig
+- Kaart "Abonnement via Stripe" op de overeenkomst: betaaluitnodiging, status, klantportaal, nieuwe tarieven, synchroniseren
+- Beveiliging tegen dubbel betalen: Stripe-overeenkomsten komen niet in SEPA-batches of eigen facturen
+- Terugkeerlink van het Stripe-klantportaal beperkt tot eigen domeinen
+- Medewerkers (staff) kunnen weer betaaluitnodigingen versturen
+
 ## 1.1.1 — 2026-10-06
 
 - Leerlingdetail met tabbladen

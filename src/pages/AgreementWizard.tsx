@@ -4,9 +4,13 @@ import { WizardNavigation } from '@/components/agreements/WizardNavigation';
 import { WizardStepBody } from '@/components/agreements/WizardStepBody';
 import { type WizardStep, WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
 import { useAgreementWizard } from '@/components/agreements/wizard/useAgreementWizard';
+import { SubscriptionCard } from '@/components/subscriptions/SubscriptionCard';
+import { useAuth } from '@/hooks/useAuth';
+import { shouldShowSubscriptionCard } from '@/lib/subscriptions/subscriptionCardHelpers';
 
 export default function AgreementWizard() {
 	const wizard = useAgreementWizard();
+	const { isPrivileged } = useAuth();
 
 	if (wizard.loadingAgreement) {
 		return (
@@ -32,6 +36,14 @@ export default function AgreementWizard() {
 			</div>
 
 			<WizardNavigation wizard={wizard} />
+
+			{wizard.agreement &&
+				shouldShowSubscriptionCard(wizard.isEditMode, isPrivileged, wizard.agreement.payment_method) && (
+					<SubscriptionCard
+						lessonAgreementId={wizard.agreement.id}
+						studentUserId={wizard.agreement.student_user_id}
+					/>
+				)}
 
 			<PartialSlotConfirmDialog
 				open={wizard.partialConfirmOpen}

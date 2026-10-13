@@ -10,6 +10,7 @@ export interface AgreementRow {
 	id: string;
 	student_user_id: string;
 	is_active: boolean;
+	payment_method?: string | null;
 }
 
 export interface ProfileRow {

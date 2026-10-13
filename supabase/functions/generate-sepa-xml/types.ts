@@ -20,6 +20,7 @@ export interface BatchRow {
 
 export interface ItemRow {
 	id: string;
+	lesson_agreement_id?: string | null;
 	mandate_id: string;
 	amount_cents: number;
 	currency: string;
