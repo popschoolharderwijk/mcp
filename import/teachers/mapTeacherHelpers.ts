@@ -1,15 +1,18 @@
-import { DEFAULT_COUNTRY_CODE, normalizeCountryCode } from '../../src/lib/profile/profileAddressHelpers';
 import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../src/lib/text/normalizeText';
 import { classifySourceKeys, type SourceKeyClassification } from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
+import {
+	asOptionalString,
+	asOptionalStringOrNumber,
+	combineHouseNumber,
+	normalizeIsoCountryCode,
+} from '../shared/mapPersonFieldHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import { normalizeDutchMobilePhone } from '../shared/phoneHelpers';
 import type { MappedTeacherRow, MongoTeacherDoc, TeacherMapResult } from './types';
 
-const ISO_COUNTRY_CODE_RE = /^[A-Z]{2}$/;
-
 /** Mongo keys that `mapTeacherDoc` reads into the import. */
-export const MAPPED_TEACHER_KEYS = new Set([
+export const MAPPED_KEYS = new Set([
 	'_id',
 	'name',
 	'surname',
@@ -25,46 +28,13 @@ export const MAPPED_TEACHER_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-export const IGNORED_TEACHER_KEYS = new Set(['assets', 'comments', 'instrument', 'note_to_teacher', 'user', 'vog']);
+export const IGNORED_KEYS = new Set(['assets', 'comments', 'instrument', 'note_to_teacher', 'user', 'vog']);
 
 export type TeacherKeyClassification = SourceKeyClassification;
 
-function asOptionalString(value: unknown): string | null {
-	if (typeof value !== 'string') return null;
-	return value;
-}
-
-/** String or finite number → string; used for house numbers / zip that Mongo may store as numbers. */
-function asOptionalStringOrNumber(value: unknown): string | null {
-	if (typeof value === 'string') return value;
-	if (typeof value === 'number' && Number.isFinite(value)) return String(value);
-	return null;
-}
-
-/** Trim houseno + housenoadd, then concatenate into a single house_number. */
-function combineHouseNumber(number: string | null, addition: string | null): string | null {
-	const houseNumber = (number ?? '').trim();
-	const houseNumberAddition = (addition ?? '').trim();
-	return normalizeCompactTextOrNull(`${houseNumber}${houseNumberAddition}`);
-}
-
-function normalizeIsoCountryCode(raw: string | null): {
-	countryCode: string;
-	invalidCountryCode: string | null;
-} {
-	if (raw == null || raw.trim() === '') {
-		return { countryCode: DEFAULT_COUNTRY_CODE, invalidCountryCode: null };
-	}
-	const normalized = normalizeCountryCode(raw);
-	if (ISO_COUNTRY_CODE_RE.test(normalized)) {
-		return { countryCode: normalized, invalidCountryCode: null };
-	}
-	return { countryCode: DEFAULT_COUNTRY_CODE, invalidCountryCode: raw.trim() };
-}
-
 /** Classify unmapped teacher keys into unexpected (skipped) vs intentionally ignored. */
 export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
-	return classifySourceKeys(doc, MAPPED_TEACHER_KEYS, IGNORED_TEACHER_KEYS);
+	return classifySourceKeys(doc, MAPPED_KEYS, IGNORED_KEYS);
 }
 
 /** Convert mapped-row soft issues into import-report warning reasons. */

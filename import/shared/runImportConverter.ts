@@ -1,11 +1,19 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { IMPORT_ID_MAP_PATH, IMPORT_OUT_DIR, IMPORT_OUTPUTS, IMPORT_SOURCE_DIR, IMPORT_SOURCES } from '../config';
+import {
+	IMPORT_ID_MAP_PATH,
+	IMPORT_LOG_PATH,
+	IMPORT_OUT_DIR,
+	IMPORT_OUTPUTS,
+	IMPORT_SOURCE_DIR,
+	IMPORT_SOURCES,
+} from '../config';
 import { buildImportBatch } from './buildImportBatchHelpers';
 import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { loadIdMap, saveIdMap } from './idMapFile';
+import { appendImportLog } from './importLogHelpers';
 import { parseMongoExportText } from './parseMongoExportHelpers';
-import { formatImportReport } from './reportHelpers';
+import { formatImportReportIssues, formatImportReportSummary } from './reportHelpers';
 
 async function requireImportSourceFile(
 	relativePath: string,
@@ -28,6 +36,7 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
 	const sourceFiles = IMPORT_SOURCES[converter.name];
 	const outPath = resolvePath(join(IMPORT_OUT_DIR, IMPORT_OUTPUTS[converter.name]));
 	const mapPath = resolvePath(IMPORT_ID_MAP_PATH);
+	const logPath = resolvePath(IMPORT_LOG_PATH);
 
 	const loaded = [];
 	for (const fileName of sourceFiles) {
@@ -50,8 +59,10 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
 	await mkdir(dirname(outPath), { recursive: true });
 	await Bun.write(outPath, sql);
 	await saveIdMap(mapPath, batch.idMap);
+	await appendImportLog(logPath, formatImportReportIssues(batch.report, converter.name));
 
 	console.log(`Wrote ${outPath}`);
 	console.log(`Updated ${mapPath}`);
-	console.log(formatImportReport(batch.report));
+	console.log(formatImportReportSummary(batch.report));
+	console.log(`Log: ${logPath}`);
 }

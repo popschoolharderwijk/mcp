@@ -97,6 +97,35 @@ describe('mapTeacherDoc', () => {
 		});
 	});
 
+	it('maps country name Nederland to NL without warning', () => {
+		expect(
+			mapTeacherDoc({
+				_id: { $oid: 'oid-nederland' },
+				name: 'Noa',
+				surname: 'Noa',
+				email: 'noa@example.com',
+				country: 'Nederland',
+			}),
+		).toEqual({
+			ok: true,
+			row: {
+				mongoOid: 'oid-nederland',
+				email: 'noa@example.com',
+				firstName: 'Noa',
+				lastName: 'Noa',
+				phoneNumber: null,
+				streetName: null,
+				houseNumber: null,
+				postalCode: null,
+				city: null,
+				countryCode: 'NL',
+				cocIssuedOn: null,
+				invalidCocIssuedOn: null,
+				invalidCountryCode: null,
+			},
+		});
+	});
+
 	it('warns via invalidCountryCode when country is not ISO alpha-2', () => {
 		expect(
 			mapTeacherDoc({
@@ -104,7 +133,7 @@ describe('mapTeacherDoc', () => {
 				name: 'Noa',
 				surname: 'Noa',
 				email: 'noa@example.com',
-				country: 'Nederland',
+				country: 'Hollandia',
 			}),
 		).toEqual({
 			ok: true,
@@ -121,7 +150,7 @@ describe('mapTeacherDoc', () => {
 				countryCode: 'NL',
 				cocIssuedOn: null,
 				invalidCocIssuedOn: null,
-				invalidCountryCode: 'Nederland',
+				invalidCountryCode: 'Hollandia',
 			},
 		});
 	});

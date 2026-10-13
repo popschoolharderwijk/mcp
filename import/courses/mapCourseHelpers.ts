@@ -5,7 +5,7 @@ import { pickLatestCourseOptions, readFrequencyPriceEntries } from './courseOpti
 import type { CourseMapResult, MappedCourseRow, ScheduleFrequencyEntry } from './types';
 
 /** Mongo keys that `mapCourseDoc` reads into the import. */
-export const MAPPED_COURSE_KEYS = new Set([
+export const MAPPED_KEYS = new Set([
 	'_id',
 	'code',
 	'name',
@@ -20,7 +20,7 @@ export const MAPPED_COURSE_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-export const IGNORED_COURSE_KEYS = new Set<string>();
+export const IGNORED_KEYS = new Set<string>();
 
 let scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry> = new Map();
 

@@ -2,8 +2,8 @@ import type { ImportConverter } from '../shared/converterTypes';
 import { buildCoursesSql } from './buildCoursesSqlHelpers';
 import {
 	courseRowWarningReasons,
-	IGNORED_COURSE_KEYS,
-	MAPPED_COURSE_KEYS,
+	IGNORED_KEYS,
+	MAPPED_KEYS,
 	mapCourseDoc,
 	setCourseScheduleFrequencyMap,
 } from './mapCourseHelpers';
@@ -13,8 +13,8 @@ import type { CourseSqlRow, MappedCourseRow } from './types';
 export const coursesConverter: ImportConverter<MappedCourseRow, CourseSqlRow> = {
 	name: 'courses',
 	entityType: 'lesson_type',
-	mappedKeys: MAPPED_COURSE_KEYS,
-	ignoredKeys: IGNORED_COURSE_KEYS,
+	mappedKeys: MAPPED_KEYS,
+	ignoredKeys: IGNORED_KEYS,
 	prepareContext(extraFileDocs) {
 		const scheduleDocs = extraFileDocs[0] ?? [];
 		setCourseScheduleFrequencyMap(buildScheduleFrequencyMap(scheduleDocs));

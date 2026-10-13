@@ -26,20 +26,36 @@ function formatKeyList(keys: string[]): string {
 	return `[${keys.join(', ')}]`;
 }
 
-export function formatImportReport(report: ImportReport): string {
-	const lines = [
+/** Console summary: counts and key lists only (no per-row issues). */
+export function formatImportReportSummary(report: ImportReport): string {
+	return [
 		`created: ${report.created}`,
 		`updated: ${report.updated}`,
 		`failed: ${report.failed}`,
 		`warnings: ${report.warnings.length}`,
 		`skipped: ${formatKeyList(report.skippedKeys)}`,
 		`ignored: ${formatKeyList(report.ignoredKeys)}`,
-	];
+	].join('\n');
+}
+
+/** Per-row failures and warnings for `import.log`. */
+export function formatImportReportIssues(report: ImportReport, converterName?: string): string {
+	const lines: string[] = [];
+	if (converterName) {
+		lines.push(`=== ${converterName} ===`);
+	}
 	for (const failure of report.failures) {
-		lines.push(`  - ${failure.oid ?? '(no oid)'}: ${failure.reason}`);
+		lines.push(`ERROR ${failure.oid ?? '(no oid)'}: ${failure.reason}`);
 	}
 	for (const warning of report.warnings) {
-		lines.push(`  WARN ${warning.oid ?? '(no oid)'}: ${warning.reason}`);
+		lines.push(`WARN ${warning.oid ?? '(no oid)'}: ${warning.reason}`);
 	}
-	return lines.join('\n');
+	if (report.failures.length === 0 && report.warnings.length === 0) {
+		lines.push('(no errors or warnings)');
+	}
+	return `${lines.join('\n')}\n`;
+}
+
+export function formatImportReport(report: ImportReport): string {
+	return `${formatImportReportSummary(report)}\n${formatImportReportIssues(report).trimEnd()}`;
 }
