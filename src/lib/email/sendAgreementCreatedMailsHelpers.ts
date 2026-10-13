@@ -7,7 +7,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
 };
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
-	stripe: 'Automatische incasso (SEPA)',
+	stripe: 'Stripe (iDEAL + automatische incasso)',
 	sepa: 'SEPA-incasso',
 	manual: 'Handmatige facturatie',
 };
