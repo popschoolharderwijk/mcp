@@ -6,7 +6,7 @@ describe('buildTeachersSql', () => {
 		expect(buildTeachersSql([])).toBe('-- No teachers to import\n');
 	});
 
-	it('includes auth users, identities, profiles, teachers, and lesson type links', () => {
+	it('includes auth users, identities, profiles, and teachers without lesson type links', () => {
 		const sql = buildTeachersSql([
 			{
 				mongoOid: 'oid-1',
@@ -21,8 +21,6 @@ describe('buildTeachersSql', () => {
 				city: 'Amsterdam',
 				countryCode: 'NL',
 				cocIssuedOn: '2023-12-06',
-				lessonTypeNames: ['Zangles'],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},
@@ -32,10 +30,9 @@ describe('buildTeachersSql', () => {
 		expect(sql).toContain('INSERT INTO auth.identities');
 		expect(sql).toContain('UPDATE public.profiles');
 		expect(sql).toContain('INSERT INTO public.teachers');
-		expect(sql).toContain('INSERT INTO public.teacher_lesson_types');
+		expect(sql).not.toContain('teacher_lesson_types');
 		expect(sql).toContain('coc_issued_on');
 		expect(sql).toContain("'2023-12-06'::date");
-		expect(sql).toContain("'Zangles'");
 		expect(sql).toContain("'teacher@example.com'");
 		expect(sql).toContain("'0694350865'");
 		expect(sql).toContain("'Voorbeeldstraat'");

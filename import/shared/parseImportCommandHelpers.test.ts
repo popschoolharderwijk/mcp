@@ -10,9 +10,7 @@ describe('parseImportCommand', () => {
 	});
 
 	it('accepts all and expands to every converter name', () => {
-		expect(
-			parseImportCommand(['bun', 'import/index.ts', 'all'], ['teachers', 'students']),
-		).toEqual({
+		expect(parseImportCommand(['bun', 'import/index.ts', 'all'], ['teachers', 'students'])).toEqual({
 			ok: true,
 			names: ['teachers', 'students'],
 		});
@@ -21,12 +19,8 @@ describe('parseImportCommand', () => {
 	it('rejects missing, unknown, or extra args', () => {
 		expect(parseImportCommand(['bun', 'import/index.ts'], ['teachers']).ok).toBe(false);
 		expect(parseImportCommand(['bun', 'import/index.ts', 'nope'], ['teachers']).ok).toBe(false);
-		expect(parseImportCommand(['bun', 'import/index.ts', 'teachers', 'extra'], ['teachers']).ok).toBe(
-			false,
-		);
-		expect(parseImportCommand(['bun', 'import/index.ts', 'all', 'extra'], ['teachers']).ok).toBe(
-			false,
-		);
+		expect(parseImportCommand(['bun', 'import/index.ts', 'teachers', 'extra'], ['teachers']).ok).toBe(false);
+		expect(parseImportCommand(['bun', 'import/index.ts', 'all', 'extra'], ['teachers']).ok).toBe(false);
 		expect(importUsage(['teachers'])).toBe('Usage: bun import <all|teachers>');
 	});
 });

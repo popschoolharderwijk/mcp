@@ -4,7 +4,7 @@ import { createEmptyIdMap } from '../shared/idMapHelpers';
 import { teachersConverter } from './converter';
 
 describe('teachersConverter', () => {
-	it('creates rows, reuses id-map, and records failures and warnings', () => {
+	it('creates rows, reuses id-map, and records failures without instrument links', () => {
 		const initial = createEmptyIdMap();
 		initial.teacher = { 'oid-known': 'uuid-known' };
 
@@ -48,11 +48,9 @@ describe('teachersConverter', () => {
 		expect(batch.sqlRows).toHaveLength(2);
 		expect(batch.idMap.teacher?.['oid-known']).toBe('uuid-known');
 		expect(batch.idMap.teacher?.['oid-new']).toBe('uuid-new');
-		expect(batch.report.warnings).toEqual([
-			{ oid: 'oid-new', reason: 'Unmapped instrument "studio" (no lesson type link)' },
-		]);
+		expect(batch.report.warnings).toEqual([]);
 		expect(batch.report.failures).toEqual([{ oid: 'oid-fail', reason: 'Missing email' }]);
 		expect(batch.report.skippedKeys).toEqual(['mystery_field']);
-		expect(batch.report.ignoredKeys).toEqual(['assets', 'comments', 'user', 'vog']);
+		expect(batch.report.ignoredKeys).toEqual(['assets', 'comments', 'instrument', 'user', 'vog']);
 	});
 });

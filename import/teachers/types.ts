@@ -1,5 +1,4 @@
 import type { MapDocResult } from '../shared/converterTypes';
-import type { BootstrapLessonTypeName } from './instrumentLessonTypeHelpers';
 
 export type MongoTeacherDoc = {
 	_id?: unknown;
@@ -35,8 +34,6 @@ export type MappedTeacherRow = {
 	countryCode: string;
 	/** Certificate of Conduct issue date `YYYY-MM-DD`, or null. */
 	cocIssuedOn: string | null;
-	lessonTypeNames: BootstrapLessonTypeName[];
-	unmatchedInstruments: string[];
 	/** Set when vogdateissued was present but not a valid YYYY-MM-DD date. */
 	invalidCocIssuedOn: string | null;
 	/** Set when country was present but not a valid ISO 3166-1 alpha-2 code. */

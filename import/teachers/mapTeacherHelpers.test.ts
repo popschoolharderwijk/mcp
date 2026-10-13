@@ -19,13 +19,13 @@ describe('classifyTeacherKeys', () => {
 			}),
 		).toEqual({
 			skippedKeys: ['mystery_field'],
-			ignoredKeys: ['assets', 'comments', 'vog'],
+			ignoredKeys: ['assets', 'comments', 'instrument', 'vog'],
 		});
 	});
 });
 
 describe('mapTeacherDoc', () => {
-	it('maps a complete teacher document', () => {
+	it('maps a complete teacher document without instrument links', () => {
 		const result = mapTeacherDoc({
 			_id: { $oid: '65deed9a4ab30f9a3714f069' },
 			name: 'Femke',
@@ -61,8 +61,6 @@ describe('mapTeacherDoc', () => {
 				city: 'Amsterdam',
 				countryCode: 'NL',
 				cocIssuedOn: '2023-12-06',
-				lessonTypeNames: ['Zangles'],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},
@@ -93,8 +91,6 @@ describe('mapTeacherDoc', () => {
 				city: null,
 				countryCode: 'NL',
 				cocIssuedOn: null,
-				lessonTypeNames: [],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},
@@ -124,8 +120,6 @@ describe('mapTeacherDoc', () => {
 				city: null,
 				countryCode: 'NL',
 				cocIssuedOn: null,
-				lessonTypeNames: [],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: null,
 				invalidCountryCode: 'Nederland',
 			},
@@ -155,40 +149,7 @@ describe('mapTeacherDoc', () => {
 				city: null,
 				countryCode: 'NL',
 				cocIssuedOn: null,
-				lessonTypeNames: [],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: '06-12-2023',
-				invalidCountryCode: null,
-			},
-		});
-	});
-
-	it('warns via unmatchedInstruments when instrument cannot be linked', () => {
-		expect(
-			mapTeacherDoc({
-				_id: { $oid: 'oid-studio' },
-				name: 'Sem',
-				surname: 'Prinsen',
-				email: 'sem@example.com',
-				instrument: 'studio / concierge',
-			}),
-		).toEqual({
-			ok: true,
-			row: {
-				mongoOid: 'oid-studio',
-				email: 'sem@example.com',
-				firstName: 'Sem',
-				lastName: 'Prinsen',
-				phoneNumber: null,
-				streetName: null,
-				houseNumber: null,
-				postalCode: null,
-				city: null,
-				countryCode: 'NL',
-				cocIssuedOn: null,
-				lessonTypeNames: [],
-				unmatchedInstruments: ['studio', 'concierge'],
-				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},
 		});
@@ -233,8 +194,6 @@ describe('mapTeacherDoc', () => {
 				city: null,
 				countryCode: 'NL',
 				cocIssuedOn: null,
-				lessonTypeNames: [],
-				unmatchedInstruments: [],
 				invalidCocIssuedOn: null,
 				invalidCountryCode: null,
 			},

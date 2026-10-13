@@ -1,1 +1,0 @@
-export { teachersConverter } from './converter';

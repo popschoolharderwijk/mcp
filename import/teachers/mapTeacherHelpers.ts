@@ -1,13 +1,9 @@
 import { DEFAULT_COUNTRY_CODE, normalizeCountryCode } from '../../src/lib/profile/profileAddressHelpers';
 import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../src/lib/text/normalizeText';
-import {
-	classifySourceKeys,
-	type SourceKeyClassification,
-} from '../shared/classifySourceKeysHelpers';
+import { classifySourceKeys, type SourceKeyClassification } from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import { normalizeDutchMobilePhone } from '../shared/phoneHelpers';
-import { mapInstrumentToLessonTypes } from './instrumentLessonTypeHelpers';
 import type { MappedTeacherRow, MongoTeacherDoc, TeacherMapResult } from './types';
 
 const ISO_COUNTRY_CODE_RE = /^[A-Z]{2}$/;
@@ -19,7 +15,6 @@ export const MAPPED_TEACHER_KEYS = new Set([
 	'surname',
 	'email',
 	'phone',
-	'instrument',
 	'vogdateissued',
 	'street',
 	'houseno',
@@ -30,7 +25,7 @@ export const MAPPED_TEACHER_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-export const IGNORED_TEACHER_KEYS = new Set(['assets', 'comments', 'note_to_teacher', 'user', 'vog']);
+export const IGNORED_TEACHER_KEYS = new Set(['assets', 'comments', 'instrument', 'note_to_teacher', 'user', 'vog']);
 
 export type TeacherKeyClassification = SourceKeyClassification;
 
@@ -75,9 +70,6 @@ export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
 /** Convert mapped-row soft issues into import-report warning reasons. */
 export function teacherRowWarningReasons(row: MappedTeacherRow): string[] {
 	const reasons: string[] = [];
-	for (const unmatched of row.unmatchedInstruments) {
-		reasons.push(`Unmapped instrument "${unmatched}" (no lesson type link)`);
-	}
 	if (row.invalidCocIssuedOn) {
 		reasons.push(`Invalid vogdateissued "${row.invalidCocIssuedOn}" (expected YYYY-MM-DD)`);
 	}
@@ -103,7 +95,6 @@ export function mapTeacherDoc(doc: unknown): TeacherMapResult {
 		return { ok: false, oid: mongoOid, reason: 'Missing email' };
 	}
 
-	const instrumentMatch = mapInstrumentToLessonTypes(asOptionalString(teacher.instrument));
 	const rawCocIssuedOn = asOptionalString(teacher.vogdateissued);
 	const cocIssuedOn = normalizeIsoDate(rawCocIssuedOn);
 	const invalidCocIssuedOn =
@@ -126,8 +117,6 @@ export function mapTeacherDoc(doc: unknown): TeacherMapResult {
 		city: normalizeCompactTextOrNull(asOptionalString(teacher.city)),
 		countryCode,
 		cocIssuedOn,
-		lessonTypeNames: instrumentMatch.lessonTypeNames,
-		unmatchedInstruments: instrumentMatch.unmatchedTokens,
 		invalidCocIssuedOn,
 		invalidCountryCode,
 	};

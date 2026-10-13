@@ -4,9 +4,7 @@ export function importUsage(converterNames: readonly ImportConverterName[]): str
 	return `Usage: bun import <all|${converterNames.join('|')}>`;
 }
 
-export type ParseImportCommandResult =
-	| { ok: true; names: ImportConverterName[] }
-	| { ok: false; error: string };
+export type ParseImportCommandResult = { ok: true; names: ImportConverterName[] } | { ok: false; error: string };
 
 /** Resolve `bun import <all|name>` with no further args. */
 export function parseImportCommand(

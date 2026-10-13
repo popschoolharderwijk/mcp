@@ -14,6 +14,11 @@ describe('unwrapMongoExtendedJson', () => {
 			}),
 		).toEqual({ _id: 'abc', assets: 'def' });
 	});
+
+	it('unwraps $numberDecimal to a finite number', () => {
+		expect(unwrapMongoExtendedJson({ $numberDecimal: '73.38' })).toBe(73.38);
+		expect(unwrapMongoExtendedJson({ $numberDecimal: 19.5 })).toBe(19.5);
+	});
 });
 
 describe('extractMongoOid', () => {

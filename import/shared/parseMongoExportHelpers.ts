@@ -7,11 +7,23 @@ function unwrapMongoDate(dateVal: unknown): unknown {
 	return dateVal;
 }
 
+function unwrapNumberDecimal(value: unknown): number | undefined {
+	if (typeof value === 'number' && Number.isFinite(value)) return value;
+	if (typeof value === 'string') {
+		const n = Number(value);
+		return Number.isFinite(n) ? n : undefined;
+	}
+	return undefined;
+}
+
 function unwrapExtendedSingleton(record: Record<string, unknown>): unknown | undefined {
 	const keys = Object.keys(record);
 	if (keys.length !== 1) return undefined;
 	if (keys[0] === '$oid' && typeof record.$oid === 'string') return record.$oid;
 	if (keys[0] === '$date') return unwrapMongoDate(record.$date);
+	if (keys[0] === '$numberDecimal') {
+		return unwrapNumberDecimal(record.$numberDecimal);
+	}
 	return undefined;
 }
 

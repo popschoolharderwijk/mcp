@@ -14,6 +14,8 @@ export type ImportConverter<TRow extends MappedImportRow = MappedImportRow, TSql
 	entityType: string;
 	mappedKeys: ReadonlySet<string>;
 	ignoredKeys: ReadonlySet<string>;
+	/** Optional: load docs from source files after the primary (index 0). */
+	prepareContext?: (extraFileDocs: unknown[][]) => void;
 	mapDoc: (doc: unknown) => MapDocResult<TRow>;
 	warningsForRow: (row: TRow) => string[];
 	assignId: (row: TRow, id: string) => TSqlRow;

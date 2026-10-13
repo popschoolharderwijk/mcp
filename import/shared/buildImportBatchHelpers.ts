@@ -1,5 +1,5 @@
-import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { classifySourceKeys } from './classifySourceKeysHelpers';
+import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { ensureMappedId, type MongoIdMap } from './idMapHelpers';
 import { createEmptyReport, type ImportReport } from './reportHelpers';
 
