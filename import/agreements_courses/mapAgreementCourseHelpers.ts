@@ -1,3 +1,4 @@
+import { classifyCourseFlags } from '../courses/courseFlagsHelpers';
 import type { ScheduleFrequencyEntry } from '../courses/types';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import { getMappedId, type MongoIdMap } from '../shared/idMapHelpers';
@@ -40,6 +41,7 @@ export const IGNORED_KEYS = new Set([
 
 let scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry> = new Map();
 let coursePriceIndex: CoursePriceIndex = new Map();
+let duoCourseOids: Set<string> = new Set();
 
 export function setAgreementScheduleFrequencyMap(map: Map<string, ScheduleFrequencyEntry>): void {
 	scheduleFrequencyMap = map;
@@ -47,6 +49,27 @@ export function setAgreementScheduleFrequencyMap(map: Map<string, ScheduleFreque
 
 export function setAgreementCoursePriceIndex(index: CoursePriceIndex): void {
 	coursePriceIndex = index;
+}
+
+export function setAgreementDuoCourseOids(oids: Set<string>): void {
+	duoCourseOids = oids;
+}
+
+/** Course Mongo oids whose name classifies as DUO (same rules as courses import). */
+export function buildDuoCourseOidSet(courseDocs: unknown[]): Set<string> {
+	const oids = new Set<string>();
+	for (const doc of courseDocs) {
+		if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) continue;
+		const record = doc as Record<string, unknown>;
+		const oid = extractMongoOid(record._id);
+		if (!oid) continue;
+		const name = typeof record.name === 'string' ? record.name.trim() : '';
+		if (!name) continue;
+		if (classifyCourseFlags(name, asFiniteNumber(record.maxparticipants)).isDuoLesson) {
+			oids.add(oid);
+		}
+	}
+	return oids;
 }
 
 function asOptionalString(value: unknown): string | null {
@@ -290,6 +313,7 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		signupSource: 'staff',
 		paymentMethod: payment.paymentMethod,
 		monthlyAmountCents: monthlyPrice != null ? eurosToCents(monthlyPrice) : null,
+		duoPairId: duoCourseOids.has(parties.parties.courseOid) ? crypto.randomUUID() : null,
 		synthesizeLessonTypeOption: durationPrice.value.synthesizeLessonTypeOption,
 		optionWarning: durationPrice.value.optionWarning,
 	};

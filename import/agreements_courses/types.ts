@@ -17,6 +17,11 @@ export type MappedAgreementCourseRow = MappedImportRow & {
 	signupSource: 'staff';
 	paymentMethod: 'sepa' | 'manual';
 	monthlyAmountCents: number | null;
+	/**
+	 * Required by DB when lesson type is duo. Import assigns a fresh UUID per agreement
+	 * (unpaired half is allowed; max two agreements share a pair).
+	 */
+	duoPairId: string | null;
 	/** When true, SQL also upserts this duration/frequency onto lesson_type_options. */
 	synthesizeLessonTypeOption: boolean;
 	/** Warning when a missing catalog durationfreq was synthesized from course fallback price. */

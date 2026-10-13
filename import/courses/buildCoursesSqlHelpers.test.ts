@@ -35,6 +35,8 @@ describe('buildCoursesSql', () => {
 		expect(sql).toContain('73.38');
 		expect(sql).toContain('1950');
 		expect(sql).toContain('WHERE NOT EXISTS');
+		expect(sql).toContain("RAISE NOTICE 'public.lesson_types:");
+		expect(sql).toContain("RAISE NOTICE 'public.lesson_type_options:");
 	});
 
 	it('returns a comment when there are no rows', () => {

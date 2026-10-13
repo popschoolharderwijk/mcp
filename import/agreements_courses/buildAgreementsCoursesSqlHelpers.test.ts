@@ -20,6 +20,7 @@ const sampleRow: AgreementCourseSqlRow = {
 	signupSource: 'staff',
 	paymentMethod: 'sepa',
 	monthlyAmountCents: 4250,
+	duoPairId: null,
 	synthesizeLessonTypeOption: false,
 	optionWarning: null,
 };
@@ -33,7 +34,16 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid");
 		expect(sql).toContain("'weekly'::public.lesson_frequency");
 		expect(sql).toContain('73.38');
+		expect(sql).toContain('NULL::date');
+		expect(sql).toContain('NULL::uuid');
+		expect(sql).toContain('duo_pair_id');
 		expect(sql).toContain('WHERE NOT EXISTS');
+		expect(sql).toContain("RAISE NOTICE 'public.lesson_agreements:");
+	});
+
+	it('emits duo_pair_id when the agreement is for a duo lesson type', () => {
+		const sql = buildAgreementsCoursesSql([{ ...sampleRow, duoPairId: 'ffffffff-ffff-ffff-ffff-ffffffffffff' }]);
+		expect(sql).toContain("'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid");
 	});
 
 	it('emits synthesized lesson_type_options before agreements when needed', () => {

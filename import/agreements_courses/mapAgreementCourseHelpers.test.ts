@@ -5,6 +5,7 @@ import {
 	mapAgreementCourseDoc,
 	pickLatestScheduleSlot,
 	setAgreementCoursePriceIndex,
+	setAgreementDuoCourseOids,
 	setAgreementScheduleFrequencyMap,
 } from './mapAgreementCourseHelpers';
 
@@ -58,6 +59,7 @@ describe('pickLatestScheduleSlot', () => {
 
 describe('mapAgreementCourseDoc', () => {
 	beforeEach(() => {
+		setAgreementDuoCourseOids(new Set());
 		setAgreementScheduleFrequencyMap(new Map([[DF_WEEKLY_30, { durationMinutes: 30, frequency: 'weekly' }]]));
 		setAgreementCoursePriceIndex(
 			buildCoursePriceIndex([
@@ -92,9 +94,18 @@ describe('mapAgreementCourseDoc', () => {
 			signupSource: 'staff',
 			paymentMethod: 'sepa',
 			monthlyAmountCents: 4250,
+			duoPairId: null,
 			synthesizeLessonTypeOption: false,
 			optionWarning: null,
 		});
+	});
+
+	it('assigns a duo_pair_id when the course is classified as DUO', () => {
+		setAgreementDuoCourseOids(new Set([COURSE_OID]));
+		const result = mapAgreementCourseDoc(validDoc(), baseIdMap());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.duoPairId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
 	});
 
 	it('synthesizes a lesson_type_option when durationfreq is missing from frequency_mnd_prices', () => {

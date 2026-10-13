@@ -24,14 +24,14 @@ export function sqlInteger(value: number | null | undefined): string {
 	return String(Math.trunc(value));
 }
 
-/** SQL date literal `YYYY-MM-DD`::date, or NULL. */
+/** SQL date literal `YYYY-MM-DD`::date, or typed NULL (needed in VALUES → date columns). */
 export function sqlDate(value: string | null | undefined): string {
-	if (value == null) return 'NULL';
+	if (value == null) return 'NULL::date';
 	return `${sqlString(value)}::date`;
 }
 
-/** SQL time literal `HH:MM:SS`::time, or NULL. */
+/** SQL time literal `HH:MM:SS`::time, or typed NULL (needed in VALUES → time columns). */
 export function sqlTime(value: string | null | undefined): string {
-	if (value == null) return 'NULL';
+	if (value == null) return 'NULL::time';
 	return `${sqlString(value)}::time`;
 }

@@ -17,100 +17,108 @@ function buildSynthesizedOptionsInsert(rows: AgreementCourseSqlRow[]): string {
 	}
 
 	if (tuples.length === 0) {
-		return '';
+		return `  RAISE NOTICE 'public.lesson_type_options: 0 row(s) inserted (no synthesis needed)';
+`;
 	}
 
-	return `-- Synthesized lesson_type_options (agreement durationfreq missing from course frequency_mnd_prices)
-INSERT INTO public.lesson_type_options (
-  lesson_type_id,
-  duration_minutes,
-  frequency,
-  price_per_lesson,
-  price_per_lesson_under_21_cents
-)
-SELECT
-  v.lesson_type_id,
-  v.duration_minutes,
-  v.frequency,
-  v.price_per_lesson,
-  v.price_per_lesson_under_21_cents
-FROM (VALUES
+	return `  -- Synthesized lesson_type_options (agreement durationfreq missing from course frequency_mnd_prices)
+  INSERT INTO public.lesson_type_options (
+    lesson_type_id,
+    duration_minutes,
+    frequency,
+    price_per_lesson,
+    price_per_lesson_under_21_cents
+  )
+  SELECT
+    v.lesson_type_id,
+    v.duration_minutes,
+    v.frequency,
+    v.price_per_lesson,
+    v.price_per_lesson_under_21_cents
+  FROM (VALUES
 ${tuples.join(',\n')}
-) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents)
-WHERE NOT EXISTS (
-  SELECT 1 FROM public.lesson_type_options lto
-  WHERE lto.lesson_type_id = v.lesson_type_id
-    AND lto.duration_minutes = v.duration_minutes
-    AND lto.frequency = v.frequency
-    AND lto.price_per_lesson = v.price_per_lesson
-);
-
+  ) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM public.lesson_type_options lto
+    WHERE lto.lesson_type_id = v.lesson_type_id
+      AND lto.duration_minutes = v.duration_minutes
+      AND lto.frequency = v.frequency
+      AND lto.price_per_lesson = v.price_per_lesson
+  );
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RAISE NOTICE 'public.lesson_type_options: % row(s) inserted (existing skipped)', n;
 `;
 }
 
 function buildLessonAgreementsInsert(rows: AgreementCourseSqlRow[]): string {
 	const tuples = rows
 		.map((row) => {
-			return `  (${sqlUuid(row.agreementId)}, ${sqlUuid(row.studentUserId)}, ${sqlUuid(row.teacherUserId)}, ${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(row.dayOfWeek)}, ${sqlTime(row.startTime)}, ${sqlDate(row.startDate)}, NULL, ${sqlBoolean(row.isActive)}, ${sqlString(row.notes)}, ${sqlString(row.signupSource)}, ${sqlString(row.paymentMethod)}, ${sqlInteger(row.monthlyAmountCents)})`;
+			const duoPairId = row.duoPairId != null ? sqlUuid(row.duoPairId) : 'NULL::uuid';
+			return `  (${sqlUuid(row.agreementId)}, ${sqlUuid(row.studentUserId)}, ${sqlUuid(row.teacherUserId)}, ${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(row.dayOfWeek)}, ${sqlTime(row.startTime)}, ${sqlDate(row.startDate)}, ${sqlDate(row.endDate)}, ${sqlBoolean(row.isActive)}, ${sqlString(row.notes)}, ${sqlString(row.signupSource)}, ${sqlString(row.paymentMethod)}, ${sqlInteger(row.monthlyAmountCents)}, ${duoPairId})`;
 		})
 		.join(',\n');
 
-	return `INSERT INTO public.lesson_agreements (
-  id,
-  student_user_id,
-  teacher_user_id,
-  lesson_type_id,
-  duration_minutes,
-  frequency,
-  price_per_lesson,
-  day_of_week,
-  start_time,
-  start_date,
-  end_date,
-  is_active,
-  notes,
-  signup_source,
-  payment_method,
-  monthly_amount_cents
-)
-SELECT
-  v.id,
-  v.student_user_id,
-  v.teacher_user_id,
-  v.lesson_type_id,
-  v.duration_minutes,
-  v.frequency,
-  v.price_per_lesson,
-  v.day_of_week,
-  v.start_time,
-  v.start_date,
-  v.end_date,
-  v.is_active,
-  v.notes,
-  v.signup_source,
-  v.payment_method,
-  v.monthly_amount_cents
-FROM (VALUES
+	return `  INSERT INTO public.lesson_agreements (
+    id,
+    student_user_id,
+    teacher_user_id,
+    lesson_type_id,
+    duration_minutes,
+    frequency,
+    price_per_lesson,
+    day_of_week,
+    start_time,
+    start_date,
+    end_date,
+    is_active,
+    notes,
+    signup_source,
+    payment_method,
+    monthly_amount_cents,
+    duo_pair_id
+  )
+  SELECT
+    v.id,
+    v.student_user_id,
+    v.teacher_user_id,
+    v.lesson_type_id,
+    v.duration_minutes,
+    v.frequency,
+    v.price_per_lesson,
+    v.day_of_week,
+    v.start_time,
+    v.start_date,
+    v.end_date,
+    v.is_active,
+    v.notes,
+    v.signup_source,
+    v.payment_method,
+    v.monthly_amount_cents,
+    v.duo_pair_id
+  FROM (VALUES
 ${tuples}
-) AS v(
-  id,
-  student_user_id,
-  teacher_user_id,
-  lesson_type_id,
-  duration_minutes,
-  frequency,
-  price_per_lesson,
-  day_of_week,
-  start_time,
-  start_date,
-  end_date,
-  is_active,
-  notes,
-  signup_source,
-  payment_method,
-  monthly_amount_cents
-)
-WHERE NOT EXISTS (SELECT 1 FROM public.lesson_agreements WHERE lesson_agreements.id = v.id);
+  ) AS v(
+    id,
+    student_user_id,
+    teacher_user_id,
+    lesson_type_id,
+    duration_minutes,
+    frequency,
+    price_per_lesson,
+    day_of_week,
+    start_time,
+    start_date,
+    end_date,
+    is_active,
+    notes,
+    signup_source,
+    payment_method,
+    monthly_amount_cents,
+    duo_pair_id
+  )
+  WHERE NOT EXISTS (SELECT 1 FROM public.lesson_agreements WHERE lesson_agreements.id = v.id);
+  GET DIAGNOSTICS n = ROW_COUNT;
+  RAISE NOTICE 'public.lesson_agreements: % row(s) inserted (existing skipped)', n;
 `;
 }
 
@@ -121,5 +129,10 @@ export function buildAgreementsCoursesSql(rows: AgreementCourseSqlRow[]): string
 	}
 
 	return `-- Generated by import/agreements_courses — apply manually to the target database.
-${buildSynthesizedOptionsInsert(rows)}${buildLessonAgreementsInsert(rows)}`;
+DO $$
+DECLARE
+  n integer;
+BEGIN
+${buildSynthesizedOptionsInsert(rows)}${buildLessonAgreementsInsert(rows)}END $$;
+`;
 }

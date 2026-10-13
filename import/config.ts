@@ -11,6 +11,7 @@ export const IMPORT_SOURCES = {
 	teachers: ['teachers.jsonl'],
 	students: ['students.jsonl'],
 	agreements_courses: ['agreements_course.jsonl', 'schedule_frequencies.jsonl', 'courses.json'],
+	teacher_lesson_types: ['agreements_course.jsonl', 'teachers.jsonl'],
 } as const;
 
 export const IMPORT_OUTPUTS = {
@@ -18,6 +19,7 @@ export const IMPORT_OUTPUTS = {
 	teachers: 'teachers.sql',
 	students: 'students.sql',
 	agreements_courses: 'agreements_courses.sql',
+	teacher_lesson_types: 'teacher_lesson_types.sql',
 } as const;
 
 export type ImportConverterName = keyof typeof IMPORT_SOURCES;

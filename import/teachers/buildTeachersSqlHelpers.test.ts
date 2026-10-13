@@ -45,5 +45,7 @@ describe('buildTeachersSql', () => {
 		expect(sql).toContain('country_code = t.country_code');
 		expect(sql).toContain("'a1b2c3d4-e5f6-7890-abcd-ef1234567890'::uuid");
 		expect(sql).toContain('ON CONFLICT (user_id) DO UPDATE');
+		expect(sql).toContain("RAISE NOTICE 'auth.users:");
+		expect(sql).toContain("RAISE NOTICE 'public.teachers:");
 	});
 });
