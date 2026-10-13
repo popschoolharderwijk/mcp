@@ -45,9 +45,9 @@ describe('excludeStripeAgreementItems (no double payment)', () => {
 	});
 
 	it('returns nothing when the batch contains only Stripe agreements', () => {
-		expect(excludeStripeAgreementItems([{ id: '1', lesson_agreement_id: STRIPE_AGREEMENT }], paymentMethods)).toEqual(
-			[],
-		);
+		expect(
+			excludeStripeAgreementItems([{ id: '1', lesson_agreement_id: STRIPE_AGREEMENT }], paymentMethods),
+		).toEqual([]);
 	});
 });
 

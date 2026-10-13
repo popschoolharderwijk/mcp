@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from './types';
 import { brokeredPreviewStorage } from './previewAuthStorage';
+import type { Database } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;

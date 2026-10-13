@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { resolveNotStripeAgreementFailure } from '../_shared/paymentMethodPure.ts';
 import { getSiteBaseUrl, type LessonAgreementPostContext } from '../_shared/http-serve.ts';
+import { resolveNotStripeAgreementFailure } from '../_shared/paymentMethodPure.ts';
 import { getSafeErrorMessage } from '../_shared/stripe.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
 import {

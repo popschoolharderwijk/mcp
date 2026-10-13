@@ -53,7 +53,9 @@ export function resolveSubscriptionActionSuccess(action: SubscriptionAction, dat
 	};
 	switch (action) {
 		case 'send-invite':
-			return payload.recipient ? `Betaaluitnodiging verstuurd naar ${payload.recipient}` : 'Betaaluitnodiging verstuurd';
+			return payload.recipient
+				? `Betaaluitnodiging verstuurd naar ${payload.recipient}`
+				: 'Betaaluitnodiging verstuurd';
 		case 'rebuild': {
 			const updated = payload.results?.[0]?.detail?.updatedPhases ?? 0;
 			return updated > 0
