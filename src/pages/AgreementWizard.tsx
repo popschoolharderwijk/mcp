@@ -37,12 +37,13 @@ export default function AgreementWizard() {
 
 			<WizardNavigation wizard={wizard} />
 
-			{wizard.agreement && shouldShowSubscriptionCard(wizard.isEditMode, isPrivileged, wizard.agreement.payment_method) && (
-				<SubscriptionCard
-					lessonAgreementId={wizard.agreement.id}
-					studentUserId={wizard.agreement.student_user_id}
-				/>
-			)}
+			{wizard.agreement &&
+				shouldShowSubscriptionCard(wizard.isEditMode, isPrivileged, wizard.agreement.payment_method) && (
+					<SubscriptionCard
+						lessonAgreementId={wizard.agreement.id}
+						studentUserId={wizard.agreement.student_user_id}
+					/>
+				)}
 
 			<PartialSlotConfirmDialog
 				open={wizard.partialConfirmOpen}

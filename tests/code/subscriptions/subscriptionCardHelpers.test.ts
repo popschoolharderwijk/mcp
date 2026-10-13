@@ -18,7 +18,9 @@ describe('shouldShowSubscriptionCard', () => {
 
 describe('buildSubscriptionActionBody', () => {
 	it('opens the portal for the student with a return url', () => {
-		expect(buildSubscriptionActionBody('open-portal', 'agr', 'stu', 'https://mcp.mplifi.nl/agreements/agr')).toEqual({
+		expect(
+			buildSubscriptionActionBody('open-portal', 'agr', 'stu', 'https://mcp.mplifi.nl/agreements/agr'),
+		).toEqual({
 			user_id: 'stu',
 			return_url: 'https://mcp.mplifi.nl/agreements/agr',
 		});

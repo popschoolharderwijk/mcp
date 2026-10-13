@@ -93,7 +93,11 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 						<LuMail className="mr-1.5 h-4 w-4" />
 						{lastInviteAt ? 'Stuur uitnodiging opnieuw' : 'Stuur betaaluitnodiging'}
 					</Button>
-					<Button variant="outline" onClick={() => runAction('open-portal')} disabled={busy !== null || !subscription}>
+					<Button
+						variant="outline"
+						onClick={() => runAction('open-portal')}
+						disabled={busy !== null || !subscription}
+					>
 						<LuExternalLink className="mr-1.5 h-4 w-4" /> Open klantportaal
 					</Button>
 					<Button
