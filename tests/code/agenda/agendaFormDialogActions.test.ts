@@ -97,8 +97,10 @@ describe('agendaFormDialogActions', () => {
 	let actions: typeof import('../../../src/components/agenda/agendaFormDialogActions');
 	let deleteAgendaEventModule: typeof import('../../../src/lib/agenda/deleteAgendaEvent');
 	let notifyAgendaOpResultModule: typeof import('../../../src/lib/agenda/notifyAgendaOpResult');
+	let revertMergedSlotLessonsModule: typeof import('../../../src/lib/agenda/revertMergedSlotLessons');
 	let deleteAgendaEventSpy: ReturnType<typeof spyOn>;
 	let notifyAgendaOpResultSpy: ReturnType<typeof spyOn>;
+	let revertMergedSlotLessonsSpy: ReturnType<typeof spyOn>;
 
 	beforeAll(async () => {
 		mock.module('sonner', () => ({
@@ -114,14 +116,9 @@ describe('agendaFormDialogActions', () => {
 		mock.module('../../../src/integrations/supabase/client', () => ({
 			supabase: supabaseMock,
 		}));
-		mock.module('../../../src/lib/agenda/revertMergedSlotLessons', () => ({
-			revertMergedSlotLessons: async (members: unknown, fallback?: { eventId: string; originalDate: string }) => {
-				revertCalls.push({ members, fallback });
-				return { ok: true, message: '' };
-			},
-		}));
 		deleteAgendaEventModule = await import('../../../src/lib/agenda/deleteAgendaEvent');
 		notifyAgendaOpResultModule = await import('../../../src/lib/agenda/notifyAgendaOpResult');
+		revertMergedSlotLessonsModule = await import('../../../src/lib/agenda/revertMergedSlotLessons');
 		actions = await import('../../../src/components/agenda/agendaFormDialogActions');
 	});
 
@@ -147,6 +144,12 @@ describe('agendaFormDialogActions', () => {
 				return result.ok;
 			},
 		);
+		revertMergedSlotLessonsSpy = spyOn(revertMergedSlotLessonsModule, 'revertMergedSlotLessons').mockImplementation(
+			async (members: unknown, fallback?: { eventId: string; originalDate: string }) => {
+				revertCalls.push({ members, fallback });
+				return { ok: true, message: '' };
+			},
+		);
 		toastMessages.length = 0;
 		deleteCalls.length = 0;
 		revertCalls.length = 0;
@@ -158,6 +161,7 @@ describe('agendaFormDialogActions', () => {
 	afterEach(() => {
 		deleteAgendaEventSpy.mockRestore();
 		notifyAgendaOpResultSpy.mockRestore();
+		revertMergedSlotLessonsSpy.mockRestore();
 	});
 
 	it('returns undefined delete handler without manage permissions', () => {
