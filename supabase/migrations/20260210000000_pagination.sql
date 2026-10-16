@@ -364,7 +364,7 @@ CREATE OR REPLACE FUNCTION get_lesson_agreements_paginated(
   p_teacher_user_id UUID DEFAULT NULL,
   p_lesson_type_id UUID DEFAULT NULL,
   p_is_active BOOLEAN DEFAULT NULL,
-  p_sort_column TEXT DEFAULT 'start_date',
+  p_sort_column TEXT DEFAULT 'created_at',
   p_sort_direction TEXT DEFAULT 'desc'
 )
 RETURNS JSON
@@ -380,14 +380,13 @@ DECLARE
   v_query TEXT;
 BEGIN
   v_sort_column := CASE p_sort_column
-    WHEN 'student_name' THEN 'student_display_name'
-    WHEN 'teacher_name' THEN 'teacher_display_name'
-    WHEN 'lesson_type' THEN 'lesson_type_name'
-    WHEN 'day_of_week' THEN 'day_of_week'
-    WHEN 'start_time' THEN 'start_time'
-    WHEN 'start_date' THEN 'start_date'
-    WHEN 'is_active' THEN 'is_active'
-    ELSE 'start_date'
+    WHEN 'student' THEN 'student_display_name'
+    WHEN 'teacher' THEN 'teacher_display_name'
+    WHEN 'lesson' THEN 'day_of_week'
+    WHEN 'duration_minutes' THEN 'duration_minutes'
+    WHEN 'end_date' THEN 'end_date'
+    WHEN 'created_at' THEN 'created_at'
+    ELSE 'created_at'
   END;
 
   v_sort_direction := CASE LOWER(p_sort_direction)
@@ -402,12 +401,15 @@ BEGIN
   END;
 
   v_query := format($q$
-    WITH     agreement_base AS (
+    WITH agreement_base AS (
       SELECT
         la.id,
         la.student_user_id,
         la.teacher_user_id,
         la.lesson_type_id,
+        la.duration_minutes,
+        la.frequency,
+        la.price_per_lesson,
         la.day_of_week,
         la.start_time,
         la.start_date,
@@ -423,6 +425,7 @@ BEGIN
         sp.avatar_url AS student_avatar_url,
         sp.display_name AS student_display_name,
         tp.user_id AS teacher_user_id_profile,
+        tp.email AS teacher_email,
         tp.first_name AS teacher_first_name,
         tp.last_name AS teacher_last_name,
         tp.avatar_url AS teacher_avatar_url,
@@ -441,6 +444,7 @@ BEGIN
         OR LOWER(sp.email) LIKE $1
         OR LOWER(tp.display_name) LIKE $1
         OR LOWER(tp.email) LIKE $1
+        OR LOWER(lt.name) LIKE $1
       )
       AND (
         $2 IS NULL
@@ -476,6 +480,9 @@ BEGIN
             'student_user_id', pa.student_user_id,
             'teacher_user_id', pa.teacher_user_id,
             'lesson_type_id', pa.lesson_type_id,
+            'duration_minutes', pa.duration_minutes,
+            'frequency', pa.frequency,
+            'price_per_lesson', pa.price_per_lesson,
             'day_of_week', pa.day_of_week,
             'start_time', pa.start_time,
             'start_date', pa.start_date,
@@ -494,6 +501,7 @@ BEGIN
             ),
             'teacher', JSON_BUILD_OBJECT(
               'user_id', pa.teacher_user_id_profile,
+              'email', pa.teacher_email,
               'first_name', pa.teacher_first_name,
               'last_name', pa.teacher_last_name,
               'avatar_url', pa.teacher_avatar_url,
@@ -527,7 +535,7 @@ REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, 
 REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) TO authenticated;
 
-COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with all related data (student profile, teacher profile, lesson type) in a single efficient query. SECURITY INVOKER: access enforced by RLS on lesson_agreements. Supports search, filtering by student, teacher, lesson type, and active status, and sorting.';
+COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type in one query (avoids large PostgREST in-filters). SECURITY INVOKER: access enforced by RLS on lesson_agreements. Supports search, filtering by student, teacher, lesson type, and active status, and sorting.';
 
 -- =============================================================================
 -- get_users_paginated

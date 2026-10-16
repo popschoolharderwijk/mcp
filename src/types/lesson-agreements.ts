@@ -183,3 +183,44 @@ export type AgreementTableRow = LessonAgreementTableFields & {
 	teacher: Pick<User, 'first_name' | 'last_name' | 'avatar_url' | 'email'>;
 	lesson_type: LessonTypeDisplayFields;
 };
+
+/** Nested profile shape from get_lesson_agreements_paginated. */
+export type PaginatedAgreementProfile = {
+	user_id: string;
+	email: string | null;
+	first_name: string | null;
+	last_name: string | null;
+	avatar_url: string | null;
+	display_name: string;
+};
+
+/** One agreement row from get_lesson_agreements_paginated. */
+export type PaginatedAgreementRow = {
+	id: string;
+	student_user_id: string;
+	teacher_user_id: string;
+	lesson_type_id: string;
+	duration_minutes: number;
+	frequency: LessonFrequency;
+	price_per_lesson: number;
+	duo_pair_id: string | null;
+	day_of_week: number;
+	start_time: string;
+	start_date: string;
+	end_date: string | null;
+	is_active: boolean;
+	notes: string | null;
+	created_at: string;
+	updated_at: string;
+	student: PaginatedAgreementProfile;
+	teacher: PaginatedAgreementProfile;
+	lesson_type: LessonTypeDisplayFields;
+};
+
+/** Raw paginated response from get_lesson_agreements_paginated RPC. */
+export interface PaginatedAgreementsResponseRaw {
+	data: PaginatedAgreementRow[];
+	total_count: number;
+	limit: number;
+	offset: number;
+}

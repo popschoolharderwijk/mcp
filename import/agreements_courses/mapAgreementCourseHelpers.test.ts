@@ -100,6 +100,27 @@ describe('mapAgreementCourseDoc', () => {
 		});
 	});
 
+	it('maps enddate onto endDate when present', () => {
+		const result = mapAgreementCourseDoc(validDoc({ enddate: '2025-01-01' }), baseIdMap());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.endDate).toBe('2025-01-01');
+	});
+
+	it('fails when enddate is invalid or before startdate', () => {
+		expect(mapAgreementCourseDoc(validDoc({ enddate: 'not-a-date' }), baseIdMap())).toEqual({
+			ok: false,
+			oid: AGREEMENT_OID,
+			reason: 'Invalid enddate',
+		});
+
+		expect(mapAgreementCourseDoc(validDoc({ enddate: '2024-01-01' }), baseIdMap())).toEqual({
+			ok: false,
+			oid: AGREEMENT_OID,
+			reason: 'enddate must be >= startdate',
+		});
+	});
+
 	it('assigns a duo_pair_id when the course is classified as DUO', () => {
 		setAgreementDuoCourseOids(new Set([COURSE_OID]));
 		const result = mapAgreementCourseDoc(validDoc(), baseIdMap());

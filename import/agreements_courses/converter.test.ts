@@ -56,13 +56,13 @@ describe('agreementsCoursesConverter', () => {
 		expect(batch.sqlRows).toHaveLength(1);
 		expect(batch.sqlRows[0]?.agreementId).toBe('agreement-uuid');
 		expect(batch.sqlRows[0]?.pricePerLesson).toBe(50);
+		expect(batch.sqlRows[0]?.endDate).toBe('2025-01-01');
 		expect(batch.idMap.lesson_agreement?.['agreement-1']).toBe('agreement-uuid');
 		expect(batch.report.skippedKeys).toEqual(['mystery_field']);
 		expect(batch.report.ignoredKeys).toEqual([
 			'autorenewal',
 			'custom_monthly_price',
 			'debtor',
-			'enddate',
 			'events',
 			'extra_costs',
 			'funding',

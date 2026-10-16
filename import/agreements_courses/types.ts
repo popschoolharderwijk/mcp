@@ -11,7 +11,7 @@ export type MappedAgreementCourseRow = MappedImportRow & {
 	dayOfWeek: number;
 	startTime: string;
 	startDate: string;
-	endDate: null;
+	endDate: string | null;
 	isActive: true;
 	notes: string | null;
 	signupSource: 'staff';

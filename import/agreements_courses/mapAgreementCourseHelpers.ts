@@ -19,6 +19,7 @@ export const MAPPED_KEYS = new Set([
 	'paymenttype',
 	'monthlyprice',
 	'startdate',
+	'enddate',
 	'comments',
 	'schedule',
 ]);
@@ -32,7 +33,6 @@ export const IGNORED_KEYS = new Set([
 	'numberoflessons',
 	'autorenewal',
 	'custom_monthly_price',
-	'enddate',
 	'funding',
 	'haltbilling',
 	'noscheduling',
@@ -229,7 +229,7 @@ function resolveScheduleAndStart(
 	record: Record<string, unknown>,
 	agreementOid: string,
 ):
-	| { ok: true; dayOfWeek: number; startTime: string; startDate: string }
+	| { ok: true; dayOfWeek: number; startTime: string; startDate: string; endDate: string | null }
 	| { ok: false; result: AgreementCourseMapResult } {
 	const scheduleSlot = pickLatestScheduleSlot(record.schedule);
 	if (!scheduleSlot) {
@@ -241,11 +241,24 @@ function resolveScheduleAndStart(
 		return { ok: false, result: mapFail(agreementOid, 'Missing or invalid startdate') };
 	}
 
+	const endDateRaw = asOptionalString(record.enddate);
+	let endDate: string | null = null;
+	if (endDateRaw != null) {
+		endDate = normalizeIsoDate(endDateRaw);
+		if (!endDate) {
+			return { ok: false, result: mapFail(agreementOid, 'Invalid enddate') };
+		}
+		if (endDate < startDate) {
+			return { ok: false, result: mapFail(agreementOid, 'enddate must be >= startdate') };
+		}
+	}
+
 	return {
 		ok: true,
 		dayOfWeek: scheduleSlot.dayOfWeek,
 		startTime: scheduleSlot.startTime,
 		startDate,
+		endDate,
 	};
 }
 
@@ -303,7 +316,7 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		dayOfWeek: scheduleStart.dayOfWeek,
 		startTime: scheduleStart.startTime,
 		startDate: scheduleStart.startDate,
-		endDate: null,
+		endDate: scheduleStart.endDate,
 		isActive: true,
 		notes: buildNotes(
 			asOptionalString(record.agreementnumber),

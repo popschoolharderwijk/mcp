@@ -46,6 +46,11 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("'ffffffff-ffff-ffff-ffff-ffffffffffff'::uuid");
 	});
 
+	it('emits end_date when present', () => {
+		const sql = buildAgreementsCoursesSql([{ ...sampleRow, endDate: '2025-01-01' }]);
+		expect(sql).toContain("'2025-01-01'::date");
+	});
+
 	it('emits synthesized lesson_type_options before agreements when needed', () => {
 		const sql = buildAgreementsCoursesSql([
 			{

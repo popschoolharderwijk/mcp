@@ -7,6 +7,20 @@ import { frequencyLabels } from '@/lib/frequencies';
 import { formatTime } from '@/lib/time/time-format';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
+const AGREEMENT_SORT_COLUMNS = new Set([
+	'student',
+	'teacher',
+	'lesson',
+	'duration_minutes',
+	'end_date',
+	'created_at',
+]);
+
+export function mapAgreementSortColumn(sortColumn: string | null): string {
+	if (!sortColumn || !AGREEMENT_SORT_COLUMNS.has(sortColumn)) return 'created_at';
+	return sortColumn;
+}
+
 export const AGREEMENT_COLUMNS: DataTableColumn<AgreementTableRow>[] = [
 	{
 		key: 'student',
