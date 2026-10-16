@@ -68,8 +68,11 @@ export type AgendaCoreDataResult =
 	| { status: 'events_error' }
 	| { status: 'deviations_error' };
 
-function getTeacherUserId(teachers: { user_id: string }[] | null | undefined): string | undefined {
-	return teachers?.[0]?.user_id;
+function getTeacherUserId(
+	teachers: { user_id: string } | { user_id: string }[] | null | undefined,
+): string | undefined {
+	const teacher = Array.isArray(teachers) ? teachers[0] : teachers;
+	return teacher?.user_id;
 }
 
 function normalizeLessonType(lt: LessonAgreementQuery['lesson_types']): {

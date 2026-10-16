@@ -1,6 +1,7 @@
 import { LuX } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import type { ParticipantBadgeState } from '@/lib/agenda/agendaEventFormParticipantsHelpers';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 
 export function ParticipantBadgeLabel({
 	badgeState,
@@ -13,7 +14,7 @@ export function ParticipantBadgeLabel({
 }) {
 	if (badgeState.useSelfLabel) return badgeState.label;
 	return (
-		<Link to={`/students/${id}`} className="text-primary hover:underline" onClick={onCloseDialog}>
+		<Link to={buildStudentDetailPath(id)} className="text-primary hover:underline" onClick={onCloseDialog}>
 			{badgeState.label}
 		</Link>
 	);

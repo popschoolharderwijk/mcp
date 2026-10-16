@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import type { DashboardTeacher } from '@/hooks/useDashboardData';
+import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 
 const TeachersIcon = NAV_ICONS.teachers;
 
@@ -45,7 +46,7 @@ export function TeacherAvailability({ teachers, isLoading = false }: TeacherAvai
 								key={teacher.user_id}
 								type="button"
 								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-accent cursor-pointer transition-colors text-left"
-								onClick={() => navigate(`/teachers/${teacher.user_id}`)}
+								onClick={() => navigate(buildTeacherInfoPath(teacher.user_id))}
 							>
 								<div className="flex items-center gap-3">
 									<Avatar className="h-9 w-9">

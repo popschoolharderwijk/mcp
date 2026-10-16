@@ -1,79 +1,7 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { filterAgreementRows, sortAgreementRows } from '@/lib/agreements/agreementListHelpers';
-import { mapRawAgreementToTableRow, type RawAgreementRow } from '@/lib/agreements/mapAgreementTableRow';
-import type { AgreementTableRow } from '@/types/lesson-agreements';
-
-const AGREEMENTS_LIST_SELECT =
-	'id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, duo_pair_id, lesson_types(id, name, icon, color), teachers(user_id)';
-
-const EMPTY_AGREEMENT_PROFILE = {
-	first_name: null,
-	last_name: null,
-	avatar_url: null,
-	email: '',
-} as const;
-
-function agreementsListQuery() {
-	return supabase.from('lesson_agreements').select(AGREEMENTS_LIST_SELECT, { count: 'exact' });
-}
-
-type AgreementsListQuery = ReturnType<typeof agreementsListQuery>;
-
-function applyAgreementFilters(
-	query: AgreementsListQuery,
-	statusFilter: string | null,
-	selectedLessonTypeId: string | null,
-) {
-	let nextQuery = query;
-	if (statusFilter === 'active') nextQuery = nextQuery.eq('is_active', true);
-	if (statusFilter === 'inactive') nextQuery = nextQuery.eq('is_active', false);
-	if (selectedLessonTypeId) nextQuery = nextQuery.eq('lesson_type_id', selectedLessonTypeId);
-	return nextQuery;
-}
-
-function resolveAgreementSortUsesClientSideProfile(sortColumn: string | null): boolean {
-	return sortColumn === 'student' || sortColumn === 'teacher';
-}
-
-function applyAgreementSort(
-	query: AgreementsListQuery,
-	sortColumn: string | null,
-	sortDirection: 'asc' | 'desc' | null,
-) {
-	if (resolveAgreementSortUsesClientSideProfile(sortColumn)) {
-		return query.order('start_date', { ascending: false });
-	}
-
-	const ascending = sortDirection === 'asc';
-	const sortHandlers: Record<string, (q: AgreementsListQuery) => AgreementsListQuery> = {
-		created_at: (q) => q.order('created_at', { ascending }),
-		dayAndTime: (q) => q.order('day_of_week', { ascending: true }).order('start_time', { ascending: true }),
-		end_date: (q) => q.order('end_date', { ascending: true, nullsFirst: false }),
-		duration_minutes: (q) => q.order('duration_minutes', { ascending: true }),
-		status: (q) => q.order('is_active', { ascending: true }),
-	};
-
-	const handler = sortColumn ? sortHandlers[sortColumn] : undefined;
-	if (handler) return handler(query);
-	return query.order('start_date', { ascending: false });
-}
-
-function collectAgreementProfileUserIds(raw: RawAgreementRow[]): string[] {
-	const studentUserIds = [...new Set(raw.map((agreement) => agreement.student_user_id))];
-	const teacherUserIds = [
-		...new Set(
-			raw
-				.map((agreement) => {
-					const teachers = agreement.teachers;
-					const teacherRef = Array.isArray(teachers) ? teachers[0] : teachers;
-					return teacherRef?.user_id;
-				})
-				.filter(Boolean) as string[],
-		),
-	];
-	return [...new Set([...studentUserIds, ...teacherUserIds])];
-}
+import { mapAgreementSortColumn } from '@/lib/agreements/agreementsTableColumns';
+import type { AgreementTableRow, LessonFrequency, PaginatedAgreementsResponseRaw } from '@/types/lesson-agreements';
 
 export interface ExecuteAgreementsPageLoadParams {
 	authLoading: boolean;
@@ -96,13 +24,62 @@ export type AgreementsPageLoadOutcome =
 	  }
 	| { kind: 'error' };
 
-function paginateAgreementRows(
-	rows: AgreementTableRow[],
-	currentPage: number,
-	rowsPerPage: number,
-): AgreementTableRow[] {
-	const startIndex = (currentPage - 1) * rowsPerPage;
-	return rows.slice(startIndex, startIndex + rowsPerPage);
+function resolveIsActiveFilter(statusFilter: string | null): boolean | undefined {
+	if (statusFilter === 'active') return true;
+	if (statusFilter === 'inactive') return false;
+	return undefined;
+}
+
+function buildAgreementsPageLoadRpcParams(params: ExecuteAgreementsPageLoadParams) {
+	return {
+		p_limit: params.rowsPerPage,
+		p_offset: (params.currentPage - 1) * params.rowsPerPage,
+		p_search: params.debouncedSearchQuery ? params.debouncedSearchQuery : undefined,
+		p_lesson_type_id: params.selectedLessonTypeId ?? undefined,
+		p_is_active: resolveIsActiveFilter(params.statusFilter),
+		p_sort_column: mapAgreementSortColumn(params.sortColumn),
+		p_sort_direction: params.sortDirection || 'desc',
+	};
+}
+
+function mapPaginatedAgreementToTableRow(row: PaginatedAgreementsResponseRaw['data'][number]): AgreementTableRow {
+	return {
+		id: row.id,
+		created_at: row.created_at,
+		day_of_week: row.day_of_week,
+		start_time: row.start_time,
+		start_date: row.start_date,
+		end_date: row.end_date,
+		is_active: row.is_active,
+		notes: row.notes,
+		student_user_id: row.student_user_id,
+		teacher_user_id: row.teacher_user_id,
+		lesson_type_id: row.lesson_type_id,
+		duration_minutes: row.duration_minutes,
+		frequency: row.frequency as LessonFrequency,
+		price_per_lesson: row.price_per_lesson,
+		duo_pair_id: row.duo_pair_id,
+		payment_method: 'stripe',
+		sepa_mandate_id: null,
+		student: {
+			first_name: row.student.first_name,
+			last_name: row.student.last_name,
+			avatar_url: row.student.avatar_url,
+			email: row.student.email ?? '',
+		},
+		teacher: {
+			first_name: row.teacher.first_name,
+			last_name: row.teacher.last_name,
+			avatar_url: row.teacher.avatar_url,
+			email: row.teacher.email ?? '',
+		},
+		lesson_type: {
+			id: row.lesson_type.id,
+			name: row.lesson_type.name,
+			icon: row.lesson_type.icon,
+			color: row.lesson_type.color,
+		},
+	};
 }
 
 export async function executeAgreementsPageLoad(
@@ -113,65 +90,26 @@ export async function executeAgreementsPageLoad(
 	}
 
 	try {
-		let query = agreementsListQuery();
-		query = applyAgreementFilters(query, params.statusFilter, params.selectedLessonTypeId);
-		query = applyAgreementSort(query, params.sortColumn, params.sortDirection);
+		const { data, error } = await supabase.rpc(
+			'get_lesson_agreements_paginated',
+			buildAgreementsPageLoadRpcParams(params),
+		);
 
-		const { data: agreementsData, error: agreementsError, count } = await query;
-
-		if (agreementsError) {
-			console.error('Error loading agreements:', agreementsError);
+		if (error) {
+			console.error('Error loading agreements:', error);
 			toast.error('Fout bij laden overeenkomsten');
 			return { kind: 'error' };
 		}
 
-		const raw = (agreementsData ?? []) as unknown as RawAgreementRow[];
-		const profileUserIds = collectAgreementProfileUserIds(raw);
-
-		if (profileUserIds.length === 0) {
-			return {
-				kind: 'success',
-				agreements: [],
-				totalCount: 0,
-			};
-		}
-
-		const { data: profilesData, error: profilesError } = await supabase
-			.from('profiles')
-			.select('user_id, first_name, last_name, avatar_url, email')
-			.in('user_id', profileUserIds);
-
-		if (profilesError) {
-			console.error('Error loading profiles:', profilesError);
-			toast.error('Fout bij laden profielen');
-			return { kind: 'error' };
-		}
-
-		const profileMap = new Map(
-			(profilesData ?? []).map((profile) => [
-				profile.user_id,
-				{
-					first_name: profile.first_name,
-					last_name: profile.last_name,
-					avatar_url: profile.avatar_url ?? null,
-					email: profile.email ?? '',
-				},
-			]),
-		);
-
-		let rows = raw.map((agreement) =>
-			mapRawAgreementToTableRow(agreement, profileMap, EMPTY_AGREEMENT_PROFILE, EMPTY_AGREEMENT_PROFILE),
-		);
-		rows = filterAgreementRows(rows, params.debouncedSearchQuery);
-		rows = sortAgreementRows(rows, params.sortColumn, params.sortDirection);
+		const result = data as unknown as PaginatedAgreementsResponseRaw;
 
 		return {
 			kind: 'success',
-			agreements: paginateAgreementRows(rows, params.currentPage, params.rowsPerPage),
-			totalCount: params.debouncedSearchQuery ? rows.length : (count ?? rows.length),
+			agreements: (result.data ?? []).map(mapPaginatedAgreementToTableRow),
+			totalCount: result.total_count ?? 0,
 		};
-	} catch (error) {
-		console.error('Error loading agreements:', error);
+	} catch (loadError) {
+		console.error('Error loading agreements:', loadError);
 		toast.error('Fout bij laden overeenkomsten');
 		return { kind: 'error' };
 	}

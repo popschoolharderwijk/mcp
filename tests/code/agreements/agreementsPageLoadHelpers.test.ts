@@ -1,22 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
-import type { RawAgreementRow } from '../../../src/lib/agreements/mapAgreementTableRow';
 
-let agreementsResult: { data: unknown; error: { message: string } | null; count: number | null } = {
-	data: [],
+let rpcResult: { data: unknown; error: { message: string } | null } = {
+	data: null,
 	error: null,
-	count: 0,
-};
-let profilesResult: { data: unknown; error: { message: string } | null } = {
-	data: [],
-	error: null,
-};
-
-const createAgreementsQuery = () => {
-	const query = Object.assign(Promise.resolve(agreementsResult), {
-		eq: () => query,
-		order: () => query,
-	});
-	return query;
 };
 
 mock.module('sonner', () => ({
@@ -27,22 +13,14 @@ mock.module('sonner', () => ({
 
 mock.module('../../../src/integrations/supabase/client', () => ({
 	supabase: {
-		from: (table: string) => ({
-			select: () => {
-				if (table === 'lesson_agreements') {
-					return createAgreementsQuery();
-				}
-				return {
-					in: () => Promise.resolve(profilesResult),
-				};
-			},
-		}),
+		rpc: () => Promise.resolve(rpcResult),
 	},
 }));
 
-const rawAgreement: RawAgreementRow = {
+const paginatedAgreement = {
 	id: 'agreement-1',
 	created_at: '2026-01-01T00:00:00Z',
+	updated_at: '2026-01-01T00:00:00Z',
 	day_of_week: 1,
 	start_time: '14:00:00',
 	start_date: '2026-01-01',
@@ -56,8 +34,23 @@ const rawAgreement: RawAgreementRow = {
 	frequency: 'weekly',
 	price_per_lesson: 2500,
 	duo_pair_id: null,
-	lesson_types: { id: 'lesson-1', name: 'Piano', icon: 'piano', color: '#000000' },
-	teachers: { user_id: 'teacher-1' },
+	student: {
+		user_id: 'student-1',
+		first_name: 'Anna',
+		last_name: 'Leerling',
+		avatar_url: null,
+		email: 'anna@example.com',
+		display_name: 'Anna Leerling',
+	},
+	teacher: {
+		user_id: 'teacher-1',
+		first_name: 'Piet',
+		last_name: 'Docent',
+		avatar_url: null,
+		email: 'piet@example.com',
+		display_name: 'Piet Docent',
+	},
+	lesson_type: { id: 'lesson-1', name: 'Piano', icon: 'piano', color: '#000000' },
 };
 
 describe('agreementsPageLoadHelpers', () => {
@@ -73,24 +66,13 @@ describe('agreementsPageLoadHelpers', () => {
 	});
 
 	beforeEach(() => {
-		agreementsResult = { data: [rawAgreement], error: null, count: 1 };
-		profilesResult = {
-			data: [
-				{
-					user_id: 'student-1',
-					first_name: 'Anna',
-					last_name: 'Leerling',
-					avatar_url: null,
-					email: 'anna@example.com',
-				},
-				{
-					user_id: 'teacher-1',
-					first_name: 'Piet',
-					last_name: 'Docent',
-					avatar_url: null,
-					email: 'piet@example.com',
-				},
-			],
+		rpcResult = {
+			data: {
+				data: [paginatedAgreement],
+				total_count: 1,
+				limit: 10,
+				offset: 0,
+			},
 			error: null,
 		};
 	});
@@ -146,7 +128,7 @@ describe('agreementsPageLoadHelpers', () => {
 			).toEqual({ kind: 'skipped' });
 		});
 
-		it('returns success with one agreement row', async () => {
+		it('returns success with one agreement row from paginated RPC', async () => {
 			const outcome = await executeAgreementsPageLoad({
 				authLoading: false,
 				hasAccess: true,
@@ -165,34 +147,29 @@ describe('agreementsPageLoadHelpers', () => {
 						id: 'agreement-1',
 						student_user_id: 'student-1',
 						teacher_user_id: 'teacher-1',
+						student: expect.objectContaining({ first_name: 'Anna' }),
+						teacher: expect.objectContaining({ first_name: 'Piet' }),
 					}),
 				],
 				totalCount: 1,
 			});
 		});
 
-		it('loads profile data when sorting by student column', async () => {
-			const outcome = await executeAgreementsPageLoad({
-				authLoading: false,
-				hasAccess: true,
-				statusFilter: null,
-				selectedLessonTypeId: null,
-				debouncedSearchQuery: '',
-				sortColumn: 'student',
-				sortDirection: 'asc',
-				currentPage: 1,
-				rowsPerPage: 10,
-			});
-			expect(outcome).toEqual({
-				kind: 'success',
-				agreements: [
-					expect.objectContaining({
-						id: 'agreement-1',
-						student: expect.objectContaining({ first_name: 'Anna' }),
-					}),
-				],
-				totalCount: 1,
-			});
+		it('returns error when the RPC fails', async () => {
+			rpcResult = { data: null, error: { message: 'Bad Request' } };
+			expect(
+				await executeAgreementsPageLoad({
+					authLoading: false,
+					hasAccess: true,
+					statusFilter: null,
+					selectedLessonTypeId: null,
+					debouncedSearchQuery: '',
+					sortColumn: 'student',
+					sortDirection: 'asc',
+					currentPage: 1,
+					rowsPerPage: 10,
+				}),
+			).toEqual({ kind: 'error' });
 		});
 	});
 });

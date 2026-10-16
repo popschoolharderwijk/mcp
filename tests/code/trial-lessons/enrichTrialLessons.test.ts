@@ -63,6 +63,7 @@ describe('enrichTrialLessons', () => {
 					first_name: 'Piet',
 					last_name: 'Docent',
 					email: 'piet@example.com',
+					avatar_url: 'https://example.com/piet.png',
 				},
 			],
 			error: null,
@@ -73,15 +74,20 @@ describe('enrichTrialLessons', () => {
 		};
 	});
 
-	it('adds teacher and lesson type names without student fields by default', async () => {
+	it('adds teacher profile and lesson type name without student fields by default', async () => {
 		const result = await enrichTrialLessons([trial]);
 		expect(result).toHaveLength(1);
-		expect(result[0]?.teacher_name).toBe('Piet Docent');
+		expect(result[0]?.teacher).toEqual({
+			first_name: 'Piet',
+			last_name: 'Docent',
+			email: 'piet@example.com',
+			avatar_url: 'https://example.com/piet.png',
+		});
 		expect(result[0]?.lesson_type_name).toBe('Piano');
-		expect(Object.hasOwn(result[0] ?? {}, 'student_name')).toBe(false);
+		expect(Object.hasOwn(result[0] ?? {}, 'student')).toBe(false);
 	});
 
-	it('adds student fields when includeStudent is true', async () => {
+	it('adds student profile when includeStudent is true', async () => {
 		profilesResult = {
 			data: [
 				{
@@ -89,29 +95,44 @@ describe('enrichTrialLessons', () => {
 					first_name: 'Piet',
 					last_name: 'Docent',
 					email: 'piet@example.com',
+					avatar_url: null,
 				},
 				{
 					user_id: 'stu-1',
 					first_name: 'Jan',
 					last_name: 'Jansen',
 					email: 'jan@example.com',
+					avatar_url: 'https://example.com/jan.png',
 				},
 			],
 			error: null,
 		};
 		const result = (await enrichTrialLessons([trial], { includeStudent: true })) as EnrichedTrialLessonStaff[];
-		expect(result[0]?.student_name).toBe('Jan Jansen');
-		expect(result[0]?.student_email).toBe('jan@example.com');
+		expect(result[0]?.student).toEqual({
+			first_name: 'Jan',
+			last_name: 'Jansen',
+			email: 'jan@example.com',
+			avatar_url: 'https://example.com/jan.png',
+		});
 	});
 
-	it('uses fallback labels when related records are missing', async () => {
+	it('uses empty profiles when related records are missing', async () => {
 		profilesResult = { data: [], error: null };
 		lessonTypesResult = { data: [], error: null };
 		const result = (await enrichTrialLessons([trial], { includeStudent: true })) as EnrichedTrialLessonStaff[];
-		expect(result[0]?.teacher_name).toBe('—');
+		expect(result[0]?.teacher).toEqual({
+			first_name: null,
+			last_name: null,
+			avatar_url: null,
+			email: '',
+		});
 		expect(result[0]?.lesson_type_name).toBeNull();
-		expect(result[0]?.student_name).toBe('—');
-		expect(result[0]?.student_email).toBe('');
+		expect(result[0]?.student).toEqual({
+			first_name: null,
+			last_name: null,
+			avatar_url: null,
+			email: '',
+		});
 	});
 
 	it('returns an empty array for no trials', async () => {
@@ -128,18 +149,21 @@ describe('enrichTrialLessons', () => {
 					first_name: 'Piet',
 					last_name: 'Docent',
 					email: 'piet@example.com',
+					avatar_url: null,
 				},
 				{
 					user_id: 'stu-1',
 					first_name: 'Jan',
 					last_name: 'Jansen',
 					email: 'jan@example.com',
+					avatar_url: null,
 				},
 				{
 					user_id: 'stu-2',
 					first_name: 'Anna',
 					last_name: 'Bakker',
 					email: 'anna@example.com',
+					avatar_url: null,
 				},
 			],
 			error: null,
@@ -149,9 +173,19 @@ describe('enrichTrialLessons', () => {
 			includeStudent: true,
 		})) as EnrichedTrialLessonStaff[];
 		expect(result).toHaveLength(2);
-		expect(result[0]?.student_name).toBe('Jan Jansen');
-		expect(result[1]?.student_name).toBe('Anna Bakker');
-		expect(result[0]?.teacher_name).toBe('Piet Docent');
+		expect(result[0]?.student).toEqual({
+			first_name: 'Jan',
+			last_name: 'Jansen',
+			email: 'jan@example.com',
+			avatar_url: null,
+		});
+		expect(result[1]?.student).toEqual({
+			first_name: 'Anna',
+			last_name: 'Bakker',
+			email: 'anna@example.com',
+			avatar_url: null,
+		});
+		expect(result[0]?.teacher.first_name).toBe('Piet');
 		expect(result[1]?.lesson_type_name).toBe('Piano');
 	});
 });

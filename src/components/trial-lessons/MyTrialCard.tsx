@@ -1,6 +1,7 @@
 import { LuCheck, LuX } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { UserDisplay } from '@/components/ui/user-display';
 import { formatDbDateLong } from '@/lib/date/date-format';
 import type { EnrichedTrialLessonStudent } from '@/lib/trial-lessons/enrichTrialLessons';
 import {
@@ -21,9 +22,9 @@ export function MyTrialCard({ trial, busyId, onDecide }: MyTrialCardProps) {
 	return (
 		<div className="rounded-lg border bg-card p-6 space-y-4">
 			<div className="flex items-start justify-between gap-3">
-				<div>
+				<div className="space-y-2 min-w-0">
 					<div className="text-lg font-semibold">{trial.lesson_type_name ?? 'Proefles'}</div>
-					<div className="text-sm text-muted-foreground">Docent: {trial.teacher_name}</div>
+					<UserDisplay profile={trial.teacher} />
 				</div>
 				<Badge variant="secondary">{getTrialStatusLabel(trial.status, 'student')}</Badge>
 			</div>

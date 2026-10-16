@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { getDisplayName } from '@/lib/display-name';
+import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 import { applyTeachersPageLoadOutcome, executeTeachersPageLoad } from '@/lib/teachers/teachersPageControllerHelpers';
 import { deleteTeacher } from '@/lib/teachers/teachersPageHelpers';
 import { buildTeachersColumns } from '@/lib/teachers/teachersTableColumns';
@@ -88,7 +89,7 @@ export function useTeachersPageController(params: UseTeachersPageControllerParam
 
 	const handleEdit = useCallback(
 		(teacher: TeacherWithLessonTypes) => {
-			navigate(`/teachers/${teacher.user_id}`);
+			navigate(buildTeacherInfoPath(teacher.user_id));
 		},
 		[navigate],
 	);

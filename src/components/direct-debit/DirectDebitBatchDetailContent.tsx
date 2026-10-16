@@ -1,12 +1,14 @@
 import { LuArrowLeft } from 'react-icons/lu';
 import { Link } from 'react-router-dom';
 import { DirectDebitBatchActionBar } from '@/components/direct-debit/DirectDebitBatchActionBar';
-import { DirectDebitBatchItemRowView } from '@/components/direct-debit/DirectDebitBatchItemRowView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
 import { PageHeader } from '@/components/ui/page-header';
+import { formatDbDateToUi } from '@/lib/date/date-format';
 import { resolveDirectDebitBatchActionFlags } from '@/lib/direct-debit/directDebitBatchDetailContentHelpers';
 import type { DirectDebitBatchItemRow } from '@/lib/direct-debit/directDebitBatchDetailHelpers';
+import { buildDirectDebitBatchItemColumns } from '@/lib/direct-debit/directDebitBatchItemTableColumns';
 import {
 	BATCH_STATUS_LABELS,
 	type BatchItemStatus,
@@ -40,12 +42,13 @@ export function DirectDebitBatchDetailContent({
 	onUpdateItemStatus,
 }: DirectDebitBatchDetailContentProps) {
 	const actionFlags = resolveDirectDebitBatchActionFlags(batch);
+	const itemColumns = buildDirectDebitBatchItemColumns({ itemStatusEditable, onUpdateItemStatus });
 
 	return (
 		<div className="space-y-6">
 			<PageHeader
 				title={`Batch ${batch.batch_number}`}
-				subtitle={`Incassodatum ${batch.collection_date} — ${BATCH_STATUS_LABELS[batch.status]}`}
+				subtitle={`Incassodatum ${formatDbDateToUi(batch.collection_date)} — ${BATCH_STATUS_LABELS[batch.status]}`}
 				actions={
 					<Link to="/direct-debit">
 						<Button variant="ghost" size="sm">
@@ -63,7 +66,7 @@ export function DirectDebitBatchDetailContent({
 					<Stat label="Status" value={BATCH_STATUS_LABELS[batch.status]} />
 					<Stat label="Regels" value={String(batch.item_count)} />
 					<Stat label="Totaal" value={formatCentsEUR(batch.total_amount_cents)} />
-					<Stat label="Incassodatum" value={batch.collection_date} />
+					<Stat label="Incassodatum" value={formatDbDateToUi(batch.collection_date)} />
 				</CardContent>
 			</Card>
 
@@ -79,34 +82,13 @@ export function DirectDebitBatchDetailContent({
 			/>
 
 			<Card>
-				<CardContent className="p-0">
-					{items.length === 0 ? (
-						<div className="p-8 text-center text-muted-foreground">
-							Nog geen regels. Klik "Vul concept" om actieve SEPA-overeenkomsten in te lezen.
-						</div>
-					) : (
-						<table className="w-full text-sm">
-							<thead className="bg-muted/50 text-left">
-								<tr>
-									<th className="p-3">Leerling</th>
-									<th className="p-3">Omschrijving</th>
-									<th className="p-3">Type</th>
-									<th className="p-3 text-right">Bedrag</th>
-									<th className="p-3">Status</th>
-								</tr>
-							</thead>
-							<tbody>
-								{items.map((item) => (
-									<DirectDebitBatchItemRowView
-										key={item.id}
-										item={item}
-										itemStatusEditable={itemStatusEditable}
-										onUpdateItemStatus={onUpdateItemStatus}
-									/>
-								))}
-							</tbody>
-						</table>
-					)}
+				<CardContent>
+					<DataTable
+						data={items}
+						columns={itemColumns}
+						getRowKey={(item) => item.id}
+						emptyMessage='Nog geen regels. Klik "Vul concept" om actieve SEPA-overeenkomsten in te lezen.'
+					/>
 				</CardContent>
 			</Card>
 		</div>

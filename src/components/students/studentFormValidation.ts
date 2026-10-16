@@ -1,6 +1,7 @@
 import { isValidEmail, isValidPhone, type StudentFormState } from '@/components/students/studentFormTypes';
+import { getProfileAddressValidationError } from '@/lib/profile/profileAddressHelpers';
 
-export type StudentFormSaveScope = 'profile' | 'parent';
+export type StudentFormSaveScope = 'profile' | 'parent' | 'address';
 
 function getPersonalContactValidationError(form: StudentFormState): string | null {
 	if (form.email && !isValidEmail(form.email)) {
@@ -37,8 +38,13 @@ export function getStudentParentTabValidationError(form: StudentFormState): stri
 	return getParentContactValidationError(form);
 }
 
+export function getStudentAddressTabValidationError(form: StudentFormState): string | null {
+	return getProfileAddressValidationError(form);
+}
+
 function getValidationErrorForScope(form: StudentFormState, scope: StudentFormSaveScope): string | null {
 	if (scope === 'parent') return getStudentParentTabValidationError(form);
+	if (scope === 'address') return getStudentAddressTabValidationError(form);
 	return getStudentProfileTabValidationError(form);
 }
 

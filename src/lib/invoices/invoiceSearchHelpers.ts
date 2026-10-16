@@ -9,17 +9,13 @@ export interface InvoiceSearchRow {
 	profiles?: InvoiceSearchProfile | null;
 }
 
-function buildInvoiceStudentSearchName(profile: InvoiceSearchProfile | null | undefined): string {
-	return `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`.toLowerCase();
+export function invoiceSearchHaystack(row: InvoiceSearchRow): string {
+	const profile = row.profiles;
+	const name = `${profile?.first_name ?? ''} ${profile?.last_name ?? ''}`;
+	return `${row.invoice_number} ${name} ${profile?.email ?? ''}`;
 }
 
 export function matchesInvoiceSearch(row: InvoiceSearchRow, search: string): boolean {
 	if (!search) return true;
-	const query = search.toLowerCase();
-	const name = buildInvoiceStudentSearchName(row.profiles);
-	return (
-		row.invoice_number.toLowerCase().includes(query) ||
-		name.includes(query) ||
-		(row.profiles?.email ?? '').toLowerCase().includes(query)
-	);
+	return invoiceSearchHaystack(row).toLowerCase().includes(search.toLowerCase());
 }

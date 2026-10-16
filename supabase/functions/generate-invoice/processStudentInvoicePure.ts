@@ -112,7 +112,7 @@ export function prepareStudentInvoiceData(args: {
 		studentItems,
 		lines,
 		totals: computeTotals(lines),
-		ageCategory: resolveAgeCategory(lines),
+		ageCategory: resolveAgeCategory(lines, student.date_of_birth, args.collectionDate),
 	};
 }
 

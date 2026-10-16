@@ -71,7 +71,12 @@ export function computeTotals(lines: InvoiceLine[]): InvoiceTotals {
 	);
 }
 
-export function resolveAgeCategory(lines: InvoiceLine[]): string {
+export function resolveAgeCategory(lines: InvoiceLine[], dateOfBirth: string | null, collectionDate: string): string {
+	// Missing date of birth is billed at 0%. ageAtDate still returns unknown, and that category
+	// is what the report uses to keep this revenue in its own total.
+	const lineAges = lines.map(() => ageAtDate(dateOfBirth, collectionDate));
+	if (lineAges.length > 0 && lineAges.every((age) => age === 'unknown')) return 'unknown';
+
 	const hasBtw = lines.some((l) => l.btw_rate === 21);
 	const hasExempt = lines.some((l) => l.btw_rate === 0);
 	if (hasBtw && hasExempt) return 'mixed';

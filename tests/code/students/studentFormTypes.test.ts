@@ -146,6 +146,11 @@ describe('studentFormFromStudent', () => {
 			debtor_address: 'Straat 1',
 			debtor_postal_code: '1234AB',
 			debtor_city: 'Amsterdam',
+			street_name: '',
+			house_number: '',
+			postal_code: '',
+			city: '',
+			country_code: 'NL',
 		});
 	});
 
@@ -179,6 +184,31 @@ describe('studentFormFromStudent', () => {
 			debtor_address: '',
 			debtor_postal_code: '',
 			debtor_city: '',
+			street_name: '',
+			house_number: '',
+			postal_code: '',
+			city: '',
+			country_code: 'NL',
+		});
+	});
+
+	it('maps profile address fields onto the form', () => {
+		expect(
+			studentFormFromStudent({
+				...baseStudent,
+				street_name: 'Hoofdstraat',
+				house_number: '12A',
+				postal_code: '1234AB',
+				city: 'Amsterdam',
+				country_code: 'nl',
+			}),
+		).toEqual({
+			...studentFormFromStudent(baseStudent),
+			street_name: 'Hoofdstraat',
+			house_number: '12A',
+			postal_code: '1234AB',
+			city: 'Amsterdam',
+			country_code: 'NL',
 		});
 	});
 });

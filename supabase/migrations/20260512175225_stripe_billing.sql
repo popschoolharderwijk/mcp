@@ -130,5 +130,3 @@ SELECT public.apply_audit_trail('public.subscription_invoices'::regclass);
 GRANT SELECT ON public.subscription_invoices TO authenticated;
 GRANT ALL ON public.subscription_invoices TO service_role;
 REVOKE ALL ON TABLE public.subscription_invoices FROM anon;
-
--- (Backfill of weekly/biweekly rates in supabase/seeds/bootstrap.sql)

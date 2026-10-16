@@ -5,9 +5,10 @@ import type { CalendarEvent } from '@/components/agenda/types';
 import type { useAgendaUI } from '@/hooks/useAgendaUI';
 import { supabase } from '@/integrations/supabase/client';
 import { deleteAgendaEvent } from '@/lib/agenda/deleteAgendaEvent';
+import { getRevertibleMergedSlotMembers } from '@/lib/agenda/mergeSameSlotLessonEvents';
 import { needsRecurrenceChoice } from '@/lib/agenda/needsRecurrenceChoice';
 import { notifyAgendaOpResult } from '@/lib/agenda/notifyAgendaOpResult';
-import { revertDeviation } from '@/lib/agenda/revertDeviation';
+import { revertMergedSlotLessons } from '@/lib/agenda/revertMergedSlotLessons';
 
 type AgendaUI = ReturnType<typeof useAgendaUI>;
 
@@ -32,11 +33,19 @@ export function buildAgendaDeleteHandler(ctx: ActionContext) {
 	};
 }
 
+function hasSingleEventRevertTarget(resource: NonNullable<AgendaUI['selectedEvent']>['resource']): boolean {
+	return (
+		Boolean(resource.isDeviation || resource.isCancelled) &&
+		Boolean(resource.deviationId && resource.eventId && resource.originalDate)
+	);
+}
+
 function canRevertDeviation(ui: AgendaUI, canManageAgenda: boolean, user: User | null): boolean {
 	const resource = ui.selectedEvent?.resource;
-	if (!resource) return false;
-	if (!(resource.isDeviation || resource.isCancelled)) return false;
-	return Boolean(resource.deviationId && resource.eventId && resource.originalDate && canManageAgenda && user);
+	if (!resource || !canManageAgenda || !user) return false;
+	return (
+		getRevertibleMergedSlotMembers(resource.mergedSlotMembers).length > 0 || hasSingleEventRevertTarget(resource)
+	);
 }
 
 export function buildAgendaRevertHandler(ctx: ActionContext) {
@@ -45,11 +54,17 @@ export function buildAgendaRevertHandler(ctx: ActionContext) {
 	if (!selected) return undefined;
 	const eventId = selected.resource.eventId;
 	const originalDate = selected.resource.originalDate;
-	if (!eventId || !originalDate) return undefined;
+	const mergedSlotMembers = selected.resource.mergedSlotMembers;
+	if (!eventId && getRevertibleMergedSlotMembers(mergedSlotMembers).length === 0) return undefined;
 	return async () => {
-		await notifyAgendaOpResult(await revertDeviation({ eventId, originalDate }), ctx.reloadAgenda, {
-			throwOnError: true,
-		});
+		await notifyAgendaOpResult(
+			await revertMergedSlotLessons(
+				mergedSlotMembers,
+				eventId && originalDate ? { eventId, originalDate } : undefined,
+			),
+			ctx.reloadAgenda,
+			{ throwOnError: true },
+		);
 	};
 }
 

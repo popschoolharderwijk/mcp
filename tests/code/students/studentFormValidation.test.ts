@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
 import {
+	getStudentAddressTabValidationError,
 	getStudentParentTabValidationError,
 	getStudentProfileTabValidationError,
 	resolveStudentProfileSaveValidationError,
@@ -73,6 +74,28 @@ describe('getStudentParentTabValidationError', () => {
 	});
 });
 
+describe('getStudentAddressTabValidationError', () => {
+	it('rejects an invalid country code', () => {
+		expect(
+			getStudentAddressTabValidationError({
+				...emptyStudentForm,
+				country_code: 'N',
+			}),
+		).toBe('Landcode moet uit 2 letters bestaan (ISO 3166-1 alpha-2)');
+	});
+
+	it('allows a complete optional address', () => {
+		expect(
+			getStudentAddressTabValidationError({
+				...emptyStudentForm,
+				street_name: 'Hoofdstraat',
+				house_number: '12',
+				country_code: 'NL',
+			}),
+		).toBeNull();
+	});
+});
+
 describe('resolveStudentProfileSaveValidationError', () => {
 	it('blocks profile save when date of birth draft is not synced', () => {
 		expect(
@@ -95,5 +118,14 @@ describe('resolveStudentProfileSaveValidationError', () => {
 				scope: 'parent',
 			}),
 		).toBeNull();
+	});
+
+	it('validates country code on address scope', () => {
+		expect(
+			resolveStudentProfileSaveValidationError({
+				form: { ...emptyStudentForm, country_code: '123' },
+				scope: 'address',
+			}),
+		).toBe('Landcode moet uit 2 letters bestaan (ISO 3166-1 alpha-2)');
 	});
 });

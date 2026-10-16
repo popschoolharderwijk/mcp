@@ -1,0 +1,5 @@
+# Directory basenames that recursive ACL scans may prune.
+# This file only skips scans; it does not grant or deny access by itself.
+# Callers must set ACLs on pruned roots explicitly (see run-agent.sh).
+.git
+node_modules

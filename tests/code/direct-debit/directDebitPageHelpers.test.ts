@@ -3,22 +3,7 @@ import {
 	buildDirectDebitBatchNumber,
 	computeDefaultCollectionDate,
 	mapDirectDebitBatchRows,
-	resolveDirectDebitBatchTableView,
 } from '../../../src/lib/direct-debit/directDebitPageHelpers';
-
-describe('resolveDirectDebitBatchTableView', () => {
-	it('returns loading while data loads', () => {
-		expect(resolveDirectDebitBatchTableView(true, 3)).toBe('loading');
-	});
-
-	it('returns empty when no rows exist', () => {
-		expect(resolveDirectDebitBatchTableView(false, 0)).toBe('empty');
-	});
-
-	it('returns table when rows exist', () => {
-		expect(resolveDirectDebitBatchTableView(false, 2)).toBe('table');
-	});
-});
 
 describe('computeDefaultCollectionDate', () => {
 	it('builds a collection date for the current month', () => {

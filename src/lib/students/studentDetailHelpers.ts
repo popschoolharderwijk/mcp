@@ -1,9 +1,11 @@
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
+import type { StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import { getUserInitials } from '@/lib/user-initials';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
+import type { ProfileAddressFields } from '@/types/profile-address';
 import type { Student } from '@/types/students';
 
-export interface StudentProfileData {
+export interface StudentProfileData extends ProfileAddressFields {
 	user_id: string;
 	email: string;
 	first_name: string | null;
@@ -98,5 +100,39 @@ export function resolveStudentDetailPageContent(args: {
 		userId: args.userId,
 		agreements: args.agreements,
 		signupRequests: args.signupRequests,
+	};
+}
+
+export type StudentDetailScreen =
+	| { kind: 'navigate'; to: string }
+	| { kind: 'loading' }
+	| {
+			kind: 'body';
+			activeTab: StudentInfoTabId;
+			profile: StudentProfileData;
+			student: Student;
+			userId: string;
+			agreements: LessonAgreementWithTeacher[];
+			signupRequests: SignupRequestDetail[];
+	  };
+
+/** Merge tab-route state with page content into a single render decision. */
+export function resolveStudentDetailScreen(args: {
+	tabRedirectTo: string | null;
+	activeTab: StudentInfoTabId | null;
+	content: StudentDetailPageContent;
+}): StudentDetailScreen {
+	if (args.tabRedirectTo) return { kind: 'navigate', to: args.tabRedirectTo };
+	if (args.content.kind === 'loading') return { kind: 'loading' };
+	if (args.content.kind === 'redirect') return { kind: 'navigate', to: args.content.to };
+	if (!args.activeTab) return { kind: 'loading' };
+	return {
+		kind: 'body',
+		activeTab: args.activeTab,
+		profile: args.content.profile,
+		student: args.content.student,
+		userId: args.content.userId,
+		agreements: args.content.agreements,
+		signupRequests: args.content.signupRequests,
 	};
 }

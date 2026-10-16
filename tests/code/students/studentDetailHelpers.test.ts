@@ -4,6 +4,7 @@ import {
 	buildStudentInitials,
 	formatStudentPhoneSubtitle,
 	resolveStudentDetailPageContent,
+	resolveStudentDetailScreen,
 } from '../../../src/lib/students/studentDetailHelpers';
 import type { Student } from '../../../src/types/students';
 
@@ -14,6 +15,11 @@ const profile = {
 	last_name: 'Leerling',
 	phone_number: null,
 	avatar_url: null,
+	street_name: null,
+	house_number: null,
+	postal_code: null,
+	city: null,
+	country_code: 'NL',
 };
 
 const student = {
@@ -59,12 +65,9 @@ describe('buildStudentAvatarFallback', () => {
 		expect(
 			buildStudentAvatarFallback(
 				{
-					user_id: 'u-1',
-					email: 'jan@test.nl',
+					...profile,
 					first_name: null,
 					last_name: null,
-					phone_number: null,
-					avatar_url: null,
 				},
 				'',
 			),
@@ -181,5 +184,69 @@ describe('resolveStudentDetailPageContent', () => {
 				signupRequests: [],
 			}),
 		).toEqual({ kind: 'redirect', to: '/students' });
+	});
+});
+
+describe('resolveStudentDetailScreen', () => {
+	it('prefers tab redirect over page content', () => {
+		expect(
+			resolveStudentDetailScreen({
+				tabRedirectTo: '/students/u-1/profile',
+				activeTab: 'profile',
+				content: { kind: 'loading' },
+			}),
+		).toEqual({ kind: 'navigate', to: '/students/u-1/profile' });
+	});
+
+	it('shows loading when the active tab is not ready yet', () => {
+		expect(
+			resolveStudentDetailScreen({
+				tabRedirectTo: null,
+				activeTab: null,
+				content: {
+					kind: 'body',
+					profile,
+					student,
+					userId: 'u-1',
+					agreements: [],
+					signupRequests: [],
+				},
+			}),
+		).toEqual({ kind: 'loading' });
+	});
+
+	it('maps body content with an active tab', () => {
+		expect(
+			resolveStudentDetailScreen({
+				tabRedirectTo: null,
+				activeTab: 'agenda',
+				content: {
+					kind: 'body',
+					profile,
+					student,
+					userId: 'u-1',
+					agreements: [],
+					signupRequests: [],
+				},
+			}),
+		).toEqual({
+			kind: 'body',
+			activeTab: 'agenda',
+			profile,
+			student,
+			userId: 'u-1',
+			agreements: [],
+			signupRequests: [],
+		});
+	});
+
+	it('maps content redirects to navigate screens', () => {
+		expect(
+			resolveStudentDetailScreen({
+				tabRedirectTo: null,
+				activeTab: 'profile',
+				content: { kind: 'redirect', to: '/' },
+			}),
+		).toEqual({ kind: 'navigate', to: '/' });
 	});
 });

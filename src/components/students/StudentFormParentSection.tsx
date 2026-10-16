@@ -19,6 +19,7 @@ export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) 
 						id="parent-name"
 						value={form.parent_name}
 						onChange={(e) => setForm({ ...form, parent_name: e.target.value })}
+						placeholder="Jan Jansen"
 					/>
 				</div>
 				<div className="space-y-1.5">

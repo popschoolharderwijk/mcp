@@ -107,7 +107,7 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		],
 	},
 	{
-		pattern: '/teachers/my-profile',
+		pattern: /^\/teachers\/my-profile(?:\/[^/]+)?$/,
 		items: [
 			{ label: NAV_LABELS.teachers, href: '/teachers' },
 			{ label: NAV_LABELS.myProfile, href: '/teachers/my-profile' },
@@ -127,9 +127,9 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: NAV_LABELS.myStatistics, href: '/teachers/my-statistics' },
 		],
 	},
-	// /teachers/:id – base only; page adds teacher name via suffix
+	// /teachers/:id(/:tab) – base only; page adds teacher name via suffix
 	{
-		pattern: /^\/teachers\/[^/]+$/,
+		pattern: /^\/teachers\/[^/]+(?:\/[^/]+)?$/,
 		items: [{ label: NAV_LABELS.teachers, href: '/teachers' }],
 	},
 	{ pattern: '/students', items: [{ label: NAV_LABELS.students, href: '/students' }] },
@@ -147,9 +147,9 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 			{ label: NAV_LABELS.myProfile, href: '/students/my-profile' },
 		],
 	},
-	// /students/:userId – base only; page adds student name via suffix
+	// /students/:userId(/:tab) – base only; page adds student name via suffix
 	{
-		pattern: /^\/students\/[^/]+$/,
+		pattern: /^\/students\/[^/]+(?:\/[^/]+)?$/,
 		items: [{ label: NAV_LABELS.students, href: '/students' }],
 	},
 	{ pattern: '/reports', items: [{ label: NAV_LABELS.reports, href: '/reports' }] },

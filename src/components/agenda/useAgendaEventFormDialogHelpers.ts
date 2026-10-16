@@ -100,6 +100,7 @@ export function buildAgendaEventFormParams(
 		occurrenceStartTime: props.occurrenceStartTime,
 		occurrenceEndTime: props.occurrenceEndTime,
 		occurrenceParticipantIds: props.occurrenceParticipantIds,
+		occurrenceParticipantProfiles: props.occurrenceParticipantProfiles,
 		occurrenceOverrides: props.occurrenceOverrides,
 		readonlyParticipantIds: defaults.readonlyParticipantIds,
 		sourceType: sourceSelection.effectiveSourceType,

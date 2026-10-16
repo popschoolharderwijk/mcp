@@ -4,9 +4,9 @@ export interface TeacherProfileInitials {
 	initialBio?: string | null;
 	initialFirstName?: string | null;
 	initialLastName?: string | null;
+	initialEmail?: string | null;
 	initialPhoneNumber?: string | null;
-	initialHasVog?: boolean | null;
-	initialVogExpiresAt?: string | null;
+	initialCocIssuedOn?: string | null;
 }
 
 export function shouldFetchTeacherProfile(
@@ -14,7 +14,13 @@ export function shouldFetchTeacherProfile(
 	teacherUserId: string,
 	userId: string,
 ): boolean {
-	if (initials.initialBio || initials.initialFirstName || initials.initialLastName || initials.initialPhoneNumber) {
+	if (
+		initials.initialBio ||
+		initials.initialFirstName ||
+		initials.initialLastName ||
+		initials.initialEmail ||
+		initials.initialPhoneNumber
+	) {
 		return false;
 	}
 	return !!teacherUserId && !!userId;
@@ -26,13 +32,13 @@ export function shouldStartProfileLoading(initials: TeacherProfileInitials): boo
 
 export interface TeacherRecord {
 	bio: string | null;
-	has_vog?: boolean | null;
-	vog_expires_at?: string | null;
+	coc_issued_on?: string | null;
 }
 
 export interface ProfileRecord {
 	first_name: string | null;
 	last_name: string | null;
+	email: string | null;
 	phone_number: string | null;
 }
 
@@ -40,36 +46,56 @@ export interface LoadedTeacherProfile {
 	bio: string;
 	firstName: string;
 	lastName: string;
+	email: string;
 	phoneNumber: string;
-	hasVog: boolean;
-	vogExpiresAt: string;
+	cocIssuedOn: string;
+	hasCoc: boolean;
 }
 
 export function mapLoadedTeacherProfile(teacher: TeacherRecord | null, profile: ProfileRecord): LoadedTeacherProfile {
+	const cocIssuedOn = teacher?.coc_issued_on ?? '';
 	return {
 		bio: teacher?.bio || '',
-		hasVog: teacher?.has_vog ?? false,
-		vogExpiresAt: teacher?.vog_expires_at ?? '',
+		cocIssuedOn,
+		hasCoc: Boolean(cocIssuedOn),
 		firstName: profile.first_name || '',
 		lastName: profile.last_name || '',
+		email: profile.email || '',
 		phoneNumber: profile.phone_number || '',
 	};
 }
 
 export interface TeacherProfileSaveInput {
 	bio: string;
-	hasVog: boolean;
-	vogExpiresAt: string;
+	cocIssuedOn: string;
+	hasCoc: boolean;
 	firstName: string;
 	lastName: string;
 	phoneNumber: string;
 }
 
+/** When VOG is off, persist NULL; when on, require a non-empty issue date. */
+export function isTeacherProfileCocValid(input: Pick<TeacherProfileSaveInput, 'hasCoc' | 'cocIssuedOn'>): boolean {
+	if (!input.hasCoc) return true;
+	return Boolean(input.cocIssuedOn.trim());
+}
+
+/** Submit enabled only when editable, VOG rules pass, and typed VOG date draft is synced. */
+export function canSubmitTeacherProfileForm(
+	canEdit: boolean,
+	form: Pick<TeacherProfileSaveInput, 'hasCoc' | 'cocIssuedOn'>,
+	cocIssuedOnDraftSynced: boolean,
+): boolean {
+	if (!canEdit) return false;
+	if (!isTeacherProfileCocValid(form)) return false;
+	if (form.hasCoc && !cocIssuedOnDraftSynced) return false;
+	return true;
+}
+
 export function buildTeacherProfileUpdate(input: TeacherProfileSaveInput) {
 	return {
 		bio: normalizeTrimmedTextOrNull(input.bio),
-		has_vog: input.hasVog,
-		vog_expires_at: input.vogExpiresAt || null,
+		coc_issued_on: input.hasCoc ? input.cocIssuedOn || null : null,
 	};
 }
 
@@ -94,37 +120,39 @@ export interface TeacherProfileFormValues {
 	bio: string;
 	firstName: string;
 	lastName: string;
+	email: string;
 	phoneNumber: string;
-	hasVog: boolean;
-	vogExpiresAt: string;
+	cocIssuedOn: string;
+	hasCoc: boolean;
 }
 
 export function applyTeacherProfileInitials(
 	current: TeacherProfileFormValues,
 	initials: TeacherProfileInitials,
 ): TeacherProfileFormValues {
+	const cocIssuedOn =
+		initials.initialCocIssuedOn !== undefined ? (initials.initialCocIssuedOn ?? '') : current.cocIssuedOn;
 	return {
 		bio: initials.initialBio !== undefined ? initials.initialBio || '' : current.bio,
 		firstName: initials.initialFirstName !== undefined ? initials.initialFirstName || '' : current.firstName,
 		lastName: initials.initialLastName !== undefined ? initials.initialLastName || '' : current.lastName,
+		email: initials.initialEmail !== undefined ? initials.initialEmail || '' : current.email,
 		phoneNumber:
 			initials.initialPhoneNumber !== undefined ? initials.initialPhoneNumber || '' : current.phoneNumber,
-		hasVog:
-			initials.initialHasVog !== undefined && initials.initialHasVog !== null
-				? initials.initialHasVog
-				: current.hasVog,
-		vogExpiresAt:
-			initials.initialVogExpiresAt !== undefined ? (initials.initialVogExpiresAt ?? '') : current.vogExpiresAt,
+		cocIssuedOn,
+		hasCoc: initials.initialCocIssuedOn !== undefined ? Boolean(initials.initialCocIssuedOn) : current.hasCoc,
 	};
 }
 
 export function createTeacherProfileFormState(initials: TeacherProfileInitials): TeacherProfileFormValues {
+	const cocIssuedOn = initials.initialCocIssuedOn ?? '';
 	return {
 		bio: initials.initialBio || '',
 		firstName: initials.initialFirstName || '',
 		lastName: initials.initialLastName || '',
+		email: initials.initialEmail || '',
 		phoneNumber: initials.initialPhoneNumber || '',
-		hasVog: initials.initialHasVog ?? false,
-		vogExpiresAt: initials.initialVogExpiresAt ?? '',
+		cocIssuedOn,
+		hasCoc: Boolean(cocIssuedOn),
 	};
 }

@@ -3,6 +3,7 @@ import type { EnrichAgendaEventContext } from '../../../src/lib/agenda/enrichAge
 import {
 	buildLessonAgreementStudentInfo,
 	buildLessonAgreementTeacherName,
+	buildLessonAgreementTitlePartyName,
 } from '../../../src/lib/agenda/enrichLessonAgreementHelpers';
 import type { AgendaLessonAgreement } from '../../../src/types/lesson-agreements';
 
@@ -90,5 +91,82 @@ describe('buildLessonAgreementTeacherName', () => {
 
 	it('returns a fallback label when profile is missing', () => {
 		expect(buildLessonAgreementTeacherName(null)).toBe('Docent onbekend');
+	});
+});
+
+describe('buildLessonAgreementTitlePartyName', () => {
+	const soloInfo = buildLessonAgreementStudentInfo(soloAgreement, 'event-1', 'tea-1', emptyContext());
+
+	it('shows the student when the viewer is the teacher', () => {
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: soloInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: 'tea-1',
+			}),
+		).toBe('Anna Bakker');
+	});
+
+	it('shows the teacher when the viewer is the student', () => {
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: soloInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: 'stu-a',
+			}),
+		).toBe('Piet Docent');
+	});
+
+	it('shows first names only when the teacher views a duo lesson', () => {
+		const ctx = emptyContext({
+			participantUserIdsByEventId: new Map([['event-1', ['stu-a', 'stu-b', 'tea-1']]]),
+			profileMap: new Map([
+				['stu-a', studentA],
+				['stu-b', studentB],
+				['tea-1', teacher],
+			]),
+		});
+		const duoInfo = buildLessonAgreementStudentInfo(soloAgreement, 'event-1', 'tea-1', ctx);
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: duoInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: 'tea-1',
+			}),
+		).toBe('Anna & Bram');
+	});
+
+	it('shows teacher and other student first names when a duo student is viewing', () => {
+		const ctx = emptyContext({
+			participantUserIdsByEventId: new Map([['event-1', ['stu-a', 'stu-b', 'tea-1']]]),
+			profileMap: new Map([
+				['stu-a', studentA],
+				['stu-b', studentB],
+				['tea-1', teacher],
+			]),
+		});
+		const duoInfo = buildLessonAgreementStudentInfo(soloAgreement, 'event-1', 'tea-1', ctx);
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: duoInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: 'stu-a',
+			}),
+		).toBe('Piet Docent & Bram');
+	});
+
+	it('falls back to student names when viewer is unknown', () => {
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: soloInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: undefined,
+			}),
+		).toBe('Anna Bakker');
 	});
 });

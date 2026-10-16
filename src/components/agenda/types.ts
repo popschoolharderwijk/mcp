@@ -40,6 +40,8 @@ export interface CalendarEventResource {
 	isLesson?: boolean;
 	/** Teacher name for lesson events (used in tooltip for student view) */
 	teacherName?: string;
+	/** Teacher user id for lesson events */
+	teacherUserId?: string;
 	/** True when the viewer is the teacher of this lesson */
 	viewerIsTeacher?: boolean;
 	/** Project ID when source_type is 'project' */
@@ -56,6 +58,22 @@ export interface CalendarEventResource {
 	needsReschedule?: boolean;
 	/** For group lessons: ids of participants whose attendance is cancelled for this occurrence */
 	cancelledParticipantIds?: string[];
+	/**
+	 * When multiple lesson_agreement events share one calendar slot, members keep their own
+	 * event/deviation identity so Terugzetten can restore each original lesson.
+	 */
+	mergedSlotMembers?: MergedSlotMember[];
+	/** True when this card is a same-slot merge of separate lesson_agreement events */
+	isSameSlotMerge?: boolean;
+}
+
+export interface MergedSlotMember {
+	eventId: string;
+	originalDate?: string;
+	deviationId?: string;
+	hasTimeOrDateChange?: boolean;
+	isDeviation?: boolean;
+	isCancelled?: boolean;
 }
 
 export interface CalendarEvent extends Event {

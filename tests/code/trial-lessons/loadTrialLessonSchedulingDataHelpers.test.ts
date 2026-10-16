@@ -27,10 +27,10 @@ describe('buildTeachersMap', () => {
 	it('maps profiles to teacher info', () => {
 		const map = buildTeachersMap([{ user_id: 't-1', first_name: 'Jan', last_name: 'Docent', avatar_url: null }]);
 		expect(map.get('t-1')).toEqual({
-			userId: 't-1',
-			firstName: 'Jan',
-			lastName: 'Docent',
-			avatarUrl: null,
+			user_id: 't-1',
+			first_name: 'Jan',
+			last_name: 'Docent',
+			avatar_url: null,
 		});
 	});
 });

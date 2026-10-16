@@ -24,6 +24,7 @@ export function AccountingReportCostCenterTable({ rows }: AccountingReportCostCe
 								<th className="py-2">Kostenplaats</th>
 								<th className="py-2 text-right">Facturen</th>
 								<th className="py-2 text-right">Omzet &lt;21</th>
+								<th className="py-2 text-right">Omzet onbekend</th>
 								<th className="py-2 text-right">Omzet 21+ excl</th>
 								<th className="py-2 text-right">BTW</th>
 								<th className="py-2 text-right">Totaal bruto</th>
@@ -37,14 +38,17 @@ export function AccountingReportCostCenterTable({ rows }: AccountingReportCostCe
 									</td>
 									<td className="py-2 text-right tabular-nums">{row.invoice_count}</td>
 									<td className="py-2 text-right tabular-nums">
-										{formatCentsEUR(row.omzet_under_21_cents)}
+										{formatCentsEUR(row.revenue_under_21_cents)}
 									</td>
 									<td className="py-2 text-right tabular-nums">
-										{formatCentsEUR(row.omzet_21_plus_excl_cents)}
+										{formatCentsEUR(row.revenue_unknown_age_cents)}
 									</td>
-									<td className="py-2 text-right tabular-nums">{formatCentsEUR(row.btw_cents)}</td>
+									<td className="py-2 text-right tabular-nums">
+										{formatCentsEUR(row.revenue_21_plus_excl_cents)}
+									</td>
+									<td className="py-2 text-right tabular-nums">{formatCentsEUR(row.vat_cents)}</td>
 									<td className="py-2 text-right tabular-nums font-medium">
-										{formatCentsEUR(row.total_debiteuren_cents)}
+										{formatCentsEUR(row.total_receivables_cents)}
 									</td>
 								</tr>
 							))}

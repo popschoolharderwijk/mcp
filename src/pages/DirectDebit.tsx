@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { LuPlus } from 'react-icons/lu';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,13 +12,16 @@ import { PageShell } from '@/components/ui/page-shell';
 import { NAV_LABELS } from '@/config/nav-labels';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDbDateToUi } from '@/lib/date/date-format';
+import { buildDirectDebitBatchColumns } from '@/lib/direct-debit/directDebitBatchTableColumns';
 import {
 	buildDirectDebitBatchNumber,
 	computeDefaultCollectionDate,
 	mapDirectDebitBatchRows,
-	resolveDirectDebitBatchTableView,
 } from '@/lib/direct-debit/directDebitPageHelpers';
-import { BATCH_STATUS_LABELS, type DirectDebitBatch, formatCentsEUR } from '@/lib/direct-debit/types';
+import { BATCH_STATUS_LABELS, type DirectDebitBatch } from '@/lib/direct-debit/types';
+
+const DIRECT_DEBIT_BATCH_COLUMNS = buildDirectDebitBatchColumns();
 
 export default function DirectDebit() {
 	return (
@@ -28,59 +31,11 @@ export default function DirectDebit() {
 	);
 }
 
-function DirectDebitBatchTableBody({ rows }: { rows: DirectDebitBatch[] }) {
-	return (
-		<table className="w-full text-sm">
-			<thead className="bg-muted/50 text-left">
-				<tr>
-					<th className="p-3">Nummer</th>
-					<th className="p-3">Incassodatum</th>
-					<th className="p-3">Status</th>
-					<th className="p-3 text-right">Regels</th>
-					<th className="p-3 text-right">Totaal</th>
-					<th className="p-3" />
-				</tr>
-			</thead>
-			<tbody>
-				{rows.map((batch) => (
-					<tr key={batch.id} className="border-t">
-						<td className="p-3 font-mono">{batch.batch_number}</td>
-						<td className="p-3">{batch.collection_date}</td>
-						<td className="p-3">
-							<Badge variant={batch.status === 'draft' ? 'secondary' : 'default'}>
-								{BATCH_STATUS_LABELS[batch.status]}
-							</Badge>
-						</td>
-						<td className="p-3 text-right">{batch.item_count}</td>
-						<td className="p-3 text-right">{formatCentsEUR(batch.total_amount_cents)}</td>
-						<td className="p-3 text-right">
-							<Link to={`/direct-debit/batches/${batch.id}`}>
-								<Button size="sm" variant="outline">
-									Openen
-								</Button>
-							</Link>
-						</td>
-					</tr>
-				))}
-			</tbody>
-		</table>
-	);
-}
-
-function DirectDebitBatchTableContent({ loading, rows }: { loading: boolean; rows: DirectDebitBatch[] }) {
-	const view = resolveDirectDebitBatchTableView(loading, rows.length);
-	if (view === 'loading') {
-		return <div className="p-8 text-center text-muted-foreground">Laden...</div>;
-	}
-	if (view === 'empty') {
-		return <div className="p-8 text-center text-muted-foreground">Nog geen batches</div>;
-	}
-	return <DirectDebitBatchTableBody rows={rows} />;
-}
-
 function DirectDebitContent() {
+	const navigate = useNavigate();
 	const [rows, setRows] = useState<DirectDebitBatch[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [search, setSearch] = useState('');
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const { settings } = useAccountingSettings();
 
@@ -120,9 +75,26 @@ function DirectDebitContent() {
 					/>
 				</Dialog>
 			}
-			contentClassName="p-0"
 		>
-			<DirectDebitBatchTableContent loading={loading} rows={rows} />
+			<DataTable
+				data={rows}
+				columns={DIRECT_DEBIT_BATCH_COLUMNS}
+				searchQuery={search}
+				onSearchChange={setSearch}
+				searchPlaceholder="Zoek op nummer of status..."
+				searchFields={[
+					(batch) => batch.batch_number,
+					(batch) => batch.collection_date,
+					(batch) => formatDbDateToUi(batch.collection_date),
+					(batch) => BATCH_STATUS_LABELS[batch.status],
+				]}
+				loading={loading}
+				getRowKey={(batch) => batch.id}
+				emptyMessage="Nog geen batches"
+				initialSortColumn="collection_date"
+				initialSortDirection="desc"
+				rowActions={{ onEdit: (batch) => navigate(`/direct-debit/batches/${batch.id}`) }}
+			/>
 		</PageShell>
 	);
 }

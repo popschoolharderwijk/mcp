@@ -15,6 +15,8 @@ Add a comment only when it explains **current** behavior or a **standing** const
 * **Absent features or rejected alternatives** — do not document what you did not implement or deleted
 * **Config noise** — do not explain a Tailwind/CSS mapping in a comment when the rule belongs in `.cursor/rules/` or `docs/` (e.g. token shape conventions)
 
+Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) are covered by `no-legacy.mdc`, not here.
+
 ## ALWAYS
 
 * Describe **what this code does now** and **why**, only when a reader would miss it without the comment

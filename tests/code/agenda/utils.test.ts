@@ -473,36 +473,15 @@ function mockCalendarEvent(overrides: Partial<CalendarEvent> = {}): CalendarEven
 }
 
 describe('agenda utils: buildTooltipText', () => {
-	it('shows lesson type and student name for normal lesson', () => {
-		const event = mockCalendarEvent();
-		const tooltip = buildTooltipText(event);
-		expect(tooltip).toContain('Piano');
-		expect(tooltip).toContain('Jan Jansen');
-	});
-
-	it('shows teacher name for student view (viewerIsTeacher=false)', () => {
+	it('shows lesson type, teacher and student for a normal lesson', () => {
 		const event = mockCalendarEvent({
 			resource: mockCalendarEventResource({
 				isLesson: true,
 				teacherName: 'Docent Piet',
-				viewerIsTeacher: false,
 			}),
 		});
 		const tooltip = buildTooltipText(event);
-		expect(tooltip).toContain('Docent Piet');
-	});
-
-	it('shows student name for teacher view (viewerIsTeacher=true)', () => {
-		const event = mockCalendarEvent({
-			resource: mockCalendarEventResource({
-				isLesson: true,
-				teacherName: 'Docent Piet',
-				viewerIsTeacher: true,
-			}),
-		});
-		const tooltip = buildTooltipText(event);
-		expect(tooltip).toContain('Jan Jansen');
-		expect(tooltip).not.toContain('Docent Piet');
+		expect(tooltip).toBe('Piano\nDocent: Docent Piet\nLeerling: Jan Jansen');
 	});
 
 	it('shows cancelled label for cancelled lesson', () => {
@@ -561,10 +540,12 @@ describe('agenda utils: buildTooltipText', () => {
 				isGroupLesson: true,
 				studentCount: 3,
 				studentName: 'Jan, Piet, Klaas',
+				teacherName: 'Docent Piet',
 			}),
 		});
 		const tooltip = buildTooltipText(event);
-		expect(tooltip).toContain('3 deelnemers:');
+		expect(tooltip).toContain('3 leerlingen:');
+		expect(tooltip).toContain('Docent: Docent Piet');
 		expect(tooltip).toContain('• Jan');
 		expect(tooltip).toContain('• Piet');
 		expect(tooltip).toContain('• Klaas');

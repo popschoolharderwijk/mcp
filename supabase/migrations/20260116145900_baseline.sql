@@ -150,6 +150,22 @@ REVOKE ALL ON FUNCTION public.is_valid_phone_number(text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.is_valid_phone_number(text) TO authenticated;
 ALTER FUNCTION public.is_valid_phone_number(text) OWNER TO postgres;
 
+-- ISO 3166-1 alpha-2 (exactly two uppercase letters).
+CREATE OR REPLACE FUNCTION public.is_valid_country_code(p_code text)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+SET search_path = public
+AS $$
+  SELECT p_code ~ '^[A-Z]{2}$';
+$$;
+
+REVOKE ALL ON FUNCTION public.is_valid_country_code(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_valid_country_code(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_valid_country_code(text) TO authenticated;
+ALTER FUNCTION public.is_valid_country_code(text) OWNER TO postgres;
+
 -- Collapse whitespace runs, then trim ends; blank → NULL. Matches JS normalizeCompactText.
 -- Order matters: btrim alone leaves leading tabs/newlines; collapse first turns them into spaces.
 CREATE OR REPLACE FUNCTION public.normalize_compact_text(p_value text)
@@ -208,7 +224,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   phone_number TEXT
     CHECK (public.is_valid_phone_number(phone_number))
     CHECK (phone_number IS NULL OR phone_number = public.normalize_trim_text(phone_number)),
-  avatar_url TEXT
+  avatar_url TEXT,
+  street_name TEXT
+    CHECK (street_name IS NULL OR street_name = public.normalize_compact_text(street_name)),
+  house_number TEXT
+    CHECK (house_number IS NULL OR house_number = public.normalize_compact_text(house_number)),
+  postal_code TEXT
+    CHECK (postal_code IS NULL OR postal_code = public.normalize_compact_text(postal_code)),
+  city TEXT
+    CHECK (city IS NULL OR city = public.normalize_compact_text(city)),
+  country_code TEXT NOT NULL DEFAULT 'NL'
+    CHECK (public.is_valid_country_code(country_code))
 );
 
 -- Add audit columns to profiles
@@ -613,6 +639,11 @@ BEGIN
   NEW.first_name := public.normalize_compact_text(NEW.first_name);
   NEW.last_name := public.normalize_compact_text(NEW.last_name);
   NEW.phone_number := public.normalize_trim_text(NEW.phone_number);
+  NEW.street_name := public.normalize_compact_text(NEW.street_name);
+  NEW.house_number := public.normalize_compact_text(NEW.house_number);
+  NEW.postal_code := public.normalize_compact_text(NEW.postal_code);
+  NEW.city := public.normalize_compact_text(NEW.city);
+  NEW.country_code := coalesce(upper(public.normalize_trim_text(NEW.country_code)), 'NL');
 
   RETURN NEW;
 END;

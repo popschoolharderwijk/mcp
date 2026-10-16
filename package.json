@@ -1,7 +1,7 @@
 {
 	"name": "mcp",
 	"private": true,
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"license": "GPL-3.0",
 	"type": "module",
 	"scripts": {
@@ -11,6 +11,7 @@
 		"build": "vite build",
 		"build:dev": "vite build --mode development",
 		"create-user": "bun run scripts/createuser.ts",
+		"import": "bun run import/index.ts",
 		"fix": "biome check --write",
 		"check": "biome check --error-on-warnings",
 		"check:ci": "biome ci --error-on-warnings && tsc -b --noEmit && bun test code && rm -f *.tsbuildinfo && echo 'no errors'",

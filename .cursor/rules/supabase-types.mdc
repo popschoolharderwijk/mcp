@@ -18,7 +18,7 @@ bun run db:reset
 
 **Do not run this command yourself.**
 
-That script resets the linked dev DB, applies migrations + `supabase/seeds/bootstrap.sql` + `supabase/seeds/test.sql`, runs `supabase gen types typescript --linked`, and formats the output. Use that instead of editing `types.ts` in the editor or in agent diffs.
+That script resets the linked dev DB, applies migrations + `supabase/seeds/bootstrap.sql` + `supabase/seeds/lesson-types.sql` + `supabase/seeds/test.sql`, runs `supabase gen types typescript --linked`, and formats the output. Use that instead of editing `types.ts` in the editor or in agent diffs.
 
 If types are missing or wrong locally, ask the user to run `bun run db:reset` — do not “fix” TypeScript by changing `types.ts`.
 

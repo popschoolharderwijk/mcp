@@ -24,6 +24,7 @@ Therefore CSP is a **meta tag** in `index.html`:
 
 - Works after every Lovable publish (it is in the built HTML).
 - `connect-src` / `img-src` use `https://*.supabase.co` so that dev, test, and prod work.
+- `img-src` also allows `https://flagcdn.com` for country flags in the land picker.
 - `frame-ancestors` is not possible via meta; clickjacking remains partly platform-dependent.
 
 For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewhere — see [Deploying outside Lovable](https://docs.lovable.dev/tips-tricks/external-deployment-hosting) (Vercel/Netlify + `vercel.json` or `_headers`).
@@ -45,7 +46,7 @@ supabase db push --dry-run
 
 ## Step 2b: Bootstrap seed on production (optional)
 
-Migrations do not contain reference data. Lesson types, email templates, and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Production has `enabled = false` for seed; apply bootstrap **manually** after new bootstrap events:
+Migrations do not contain reference data. Email templates and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo

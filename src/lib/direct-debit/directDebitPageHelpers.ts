@@ -1,13 +1,5 @@
 import type { DirectDebitBatch } from '@/lib/direct-debit/types';
 
-export type DirectDebitBatchTableView = 'loading' | 'empty' | 'table';
-
-export function resolveDirectDebitBatchTableView(loading: boolean, rowCount: number): DirectDebitBatchTableView {
-	if (loading) return 'loading';
-	if (rowCount === 0) return 'empty';
-	return 'table';
-}
-
 export function computeDefaultCollectionDate(defaultCollectionDay: number, now = new Date()): string {
 	const year = now.getFullYear();
 	const month = now.getMonth() + 1;

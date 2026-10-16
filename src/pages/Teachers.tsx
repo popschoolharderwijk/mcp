@@ -73,6 +73,7 @@ export default function Teachers() {
 					loading={loading}
 					getRowKey={(t) => t.user_id}
 					emptyMessage="Geen docenten gevonden"
+					tableClassName="min-w-[56rem]"
 					quickFilter={quickFilterGroups}
 					serverPagination={{
 						totalCount,

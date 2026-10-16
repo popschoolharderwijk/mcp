@@ -5,8 +5,6 @@ import {
 	getScheduleTrialLessonDescription,
 	getScheduleTrialLessonErrorMessage,
 	getScheduleTrialLessonResetValues,
-	getTeacherDisplayName,
-	getTeacherInitials,
 	groupFreeSlotsByDate,
 	todayPlus,
 } from '../../../src/lib/trial-lessons/scheduleTrialLessonHelpers';
@@ -20,26 +18,6 @@ describe('todayPlus', () => {
 describe('formatTrialLessonDateHeader', () => {
 	it('includes weekday and month name', () => {
 		expect(formatTrialLessonDateHeader('2026-09-07')).toContain('september');
-	});
-});
-
-describe('getTeacherDisplayName', () => {
-	it('returns full teacher name', () => {
-		expect(getTeacherDisplayName({ firstName: 'Jan', lastName: 'Docent', avatarUrl: null })).toBe('Jan Docent');
-	});
-
-	it('returns fallback for missing teacher', () => {
-		expect(getTeacherDisplayName(undefined)).toBe('Onbekende docent');
-	});
-});
-
-describe('getTeacherInitials', () => {
-	it('returns initials from teacher name', () => {
-		expect(getTeacherInitials({ firstName: 'Jan', lastName: 'Docent', avatarUrl: null })).toBe('JD');
-	});
-
-	it('uses the last surname word for the second initial', () => {
-		expect(getTeacherInitials({ firstName: 'Adam', lastName: 'van der Wal', avatarUrl: null })).toBe('AW');
 	});
 });
 

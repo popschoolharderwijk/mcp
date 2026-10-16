@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import type { Tables } from '@/integrations/supabase/types';
+import { PROFILE_ADDRESS_SELECT } from '@/lib/profile/profileAddressHelpers';
 import { fetchSignupRequestsByEmail } from '@/lib/signup-requests/signupRequestMappers';
 import { fetchStudentAgreementsWithRelations } from '@/lib/students/fetchStudentAgreements';
 import type { StudentProfileData } from '@/lib/students/studentDetailHelpers';
@@ -23,12 +24,12 @@ async function loadStudentProfileForDetailPage(
 ): Promise<StudentProfileData | null> {
 	const { data, error } = await supabase
 		.from('profiles')
-		.select('user_id, email, first_name, last_name, phone_number, avatar_url')
+		.select(`user_id, email, first_name, last_name, phone_number, avatar_url, ${PROFILE_ADDRESS_SELECT}`)
 		.eq('user_id', userId)
 		.maybeSingle();
 
 	if (error || !data) return null;
-	return data;
+	return data as unknown as StudentProfileData;
 }
 
 async function loadStudentRowForDetailPage(supabase: SupabaseClient, userId: string): Promise<StudentRow | null> {
@@ -47,6 +48,11 @@ export function mergeStudentDetailRecord(profile: StudentProfileData, studentRow
 		last_name: profile.last_name,
 		phone_number: profile.phone_number,
 		avatar_url: profile.avatar_url,
+		street_name: profile.street_name,
+		house_number: profile.house_number,
+		postal_code: profile.postal_code,
+		city: profile.city,
+		country_code: profile.country_code,
 	};
 }
 

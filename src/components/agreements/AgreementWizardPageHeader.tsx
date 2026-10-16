@@ -6,6 +6,7 @@ import {
 	buildAgreementWizardStudentDisplay,
 	shouldShowAgreementWizardEditHeader,
 } from '@/lib/agreements/agreementWizardPageHeaderHelpers';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
 interface AgreementWizardPageHeaderProps {
@@ -31,7 +32,7 @@ export function AgreementWizardPageHeader({ isEditMode, agreement }: AgreementWi
 						</Avatar>
 					}
 					title={
-						<Link to={`/students/${agreement.student_user_id}`} className="hover:underline">
+						<Link to={buildStudentDetailPath(agreement.student_user_id)} className="hover:underline">
 							{studentName}
 						</Link>
 					}

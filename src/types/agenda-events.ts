@@ -25,6 +25,8 @@ export interface DeviationInfo {
 	isCancelled?: boolean;
 	/** True when actual date/time differs from original (show "Gewijzigde afspraak" only then). */
 	hasTimeOrDateChange?: boolean;
+	/** Same-slot merge: number of separate lessons before they shared this slot. */
+	originalSeparateLessonCount?: number;
 }
 
 /** Scope for delete/cancel operations on recurring events */

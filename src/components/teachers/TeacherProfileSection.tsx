@@ -6,8 +6,9 @@ import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
-	resolveTeacherProfileSaveErrorLabel,
+	applyTeacherProfileSaveFeedback,
 	runTeacherProfileSave,
+	teacherProfileSaveFeedback,
 } from '@/lib/teachers/teacherProfileSaveActionHelpers';
 import {
 	applyTeacherProfileInitials,
@@ -27,15 +28,15 @@ interface TeacherProfileSectionProps {
 	initialBio?: string | null;
 	initialFirstName?: string | null;
 	initialLastName?: string | null;
+	initialEmail?: string | null;
 	initialPhoneNumber?: string | null;
-	initialHasVog?: boolean | null;
-	initialVogExpiresAt?: string | null;
+	initialCocIssuedOn?: string | null;
 }
 
 async function loadTeacherProfileData(teacherUserId: string, userId: string) {
 	const { data: teacherData, error: teacherError } = await supabase
 		.from('teachers')
-		.select('bio')
+		.select('bio, coc_issued_on')
 		.eq('user_id', teacherUserId)
 		.single();
 
@@ -43,7 +44,7 @@ async function loadTeacherProfileData(teacherUserId: string, userId: string) {
 
 	const { data: profileData, error: profileError } = await supabase
 		.from('profiles')
-		.select('first_name, last_name, phone_number')
+		.select('first_name, last_name, email, phone_number')
 		.eq('user_id', userId)
 		.single();
 
@@ -55,10 +56,11 @@ async function loadTeacherProfileData(teacherUserId: string, userId: string) {
 function applyLoadedProfile(setForm: (values: TeacherProfileFormValues) => void, loaded: TeacherProfileFormValues) {
 	setForm({
 		bio: loaded.bio,
-		hasVog: loaded.hasVog,
-		vogExpiresAt: loaded.vogExpiresAt,
+		cocIssuedOn: loaded.cocIssuedOn,
+		hasCoc: loaded.hasCoc,
 		firstName: loaded.firstName,
 		lastName: loaded.lastName,
+		email: loaded.email,
 		phoneNumber: loaded.phoneNumber,
 	});
 }
@@ -71,9 +73,9 @@ export function TeacherProfileSection({
 	initialBio,
 	initialFirstName,
 	initialLastName,
+	initialEmail,
 	initialPhoneNumber,
-	initialHasVog,
-	initialVogExpiresAt,
+	initialCocIssuedOn,
 }: TeacherProfileSectionProps) {
 	const { user } = useAuth();
 	const profileInitials: TeacherProfileInitials = useMemo(
@@ -81,16 +83,17 @@ export function TeacherProfileSection({
 			initialBio,
 			initialFirstName,
 			initialLastName,
+			initialEmail,
 			initialPhoneNumber,
-			initialHasVog,
-			initialVogExpiresAt,
+			initialCocIssuedOn,
 		}),
-		[initialBio, initialFirstName, initialLastName, initialPhoneNumber, initialHasVog, initialVogExpiresAt],
+		[initialBio, initialFirstName, initialLastName, initialEmail, initialPhoneNumber, initialCocIssuedOn],
 	);
 
 	const [form, setForm] = useState<TeacherProfileFormValues>(() => createTeacherProfileFormState(profileInitials));
 	const [loading, setLoading] = useState(shouldStartProfileLoading(profileInitials));
 	const [saving, setSaving] = useState(false);
+	const [cocIssuedOnDraftSynced, setCocIssuedOnDraftSynced] = useState(true);
 
 	useEffect(() => {
 		if (!shouldFetchTeacherProfile(profileInitials, teacherUserId, user_id)) return;
@@ -99,6 +102,7 @@ export function TeacherProfileSection({
 		void loadTeacherProfileData(teacherUserId, user_id)
 			.then((loaded) => {
 				applyLoadedProfile(setForm, loaded);
+				setCocIssuedOnDraftSynced(true);
 				setLoading(false);
 			})
 			.catch((error) => {
@@ -110,6 +114,7 @@ export function TeacherProfileSection({
 
 	useEffect(() => {
 		setForm((current) => applyTeacherProfileInitials(current, profileInitials));
+		setCocIssuedOnDraftSynced(true);
 	}, [profileInitials]);
 
 	const runAction = async () => {
@@ -121,20 +126,21 @@ export function TeacherProfileSection({
 			canEdit,
 			hasUser: !!user,
 			form,
+			cocIssuedOnDraftSynced,
 		});
 		setSaving(false);
 
-		if (!result.saved) {
-			if ('error' in result) {
-				console.error(`Error updating ${result.error}:`, result.message);
-				const label = resolveTeacherProfileSaveErrorLabel(result.error);
-				toast.error(`Fout bij bijwerken ${label}`, { description: result.message });
-			}
-			return;
-		}
-
-		toast.success('Profiel bijgewerkt');
-		onUpdate?.();
+		applyTeacherProfileSaveFeedback(teacherProfileSaveFeedback(result), {
+			onValidation: (message) => toast.error(message),
+			onError: (label, message) => {
+				console.error(`Error updating ${label}:`, message);
+				toast.error(`Fout bij bijwerken ${label}`, { description: message });
+			},
+			onSuccess: () => {
+				toast.success('Profiel bijgewerkt');
+				onUpdate?.();
+			},
+		});
 	};
 
 	if (loading) {
@@ -148,20 +154,12 @@ export function TeacherProfileSection({
 			</CardHeader>
 			<CardContent>
 				<TeacherProfileForm
-					firstName={form.firstName}
-					lastName={form.lastName}
-					phoneNumber={form.phoneNumber}
-					bio={form.bio}
-					hasVog={form.hasVog}
-					vogExpiresAt={form.vogExpiresAt}
+					form={form}
 					canEdit={canEdit}
 					saving={saving}
-					onFirstNameChange={(value) => setForm((current) => ({ ...current, firstName: value }))}
-					onLastNameChange={(value) => setForm((current) => ({ ...current, lastName: value }))}
-					onPhoneNumberChange={(value) => setForm((current) => ({ ...current, phoneNumber: value }))}
-					onBioChange={(value) => setForm((current) => ({ ...current, bio: value }))}
-					onHasVogChange={(value) => setForm((current) => ({ ...current, hasVog: value }))}
-					onVogExpiresAtChange={(value) => setForm((current) => ({ ...current, vogExpiresAt: value }))}
+					cocIssuedOnDraftSynced={cocIssuedOnDraftSynced}
+					onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
+					onCocIssuedOnDraftSyncedChange={setCocIssuedOnDraftSynced}
 					onSave={() => void runAction()}
 				/>
 			</CardContent>

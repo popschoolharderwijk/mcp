@@ -1,6 +1,7 @@
 import { TrialLessonsActionsCell } from '@/components/trial-lessons/TrialLessonsActionsCell';
 import { Badge } from '@/components/ui/badge';
 import type { DataTableColumn } from '@/components/ui/data-table';
+import { UserDisplay } from '@/components/ui/user-display';
 import { formatDbDateLong } from '@/lib/date/date-format';
 import type { EnrichedTrialLessonStaff } from '@/lib/trial-lessons/enrichTrialLessons';
 import { getTrialStatusLabel } from '@/lib/trial-lessons/statusLabels';
@@ -30,17 +31,12 @@ export function buildTrialLessonsColumns(params: BuildTrialLessonsColumnsParams)
 		{
 			key: 'student',
 			label: 'Leerling',
-			render: (row) => (
-				<div>
-					<div className="font-medium">{row.student_name}</div>
-					<div className="text-xs text-muted-foreground">{row.student_email}</div>
-				</div>
-			),
+			render: (row) => <UserDisplay profile={row.student} showEmail />,
 		},
 		{
 			key: 'teacher',
 			label: 'Docent',
-			render: (row) => <span className="text-sm">{row.teacher_name}</span>,
+			render: (row) => <UserDisplay profile={row.teacher} />,
 		},
 		{
 			key: 'lesson_type',

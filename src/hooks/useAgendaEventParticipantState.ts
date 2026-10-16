@@ -17,6 +17,7 @@ export function useAgendaEventParticipantState(
 	open: boolean,
 	eventId: string | undefined,
 	occurrenceParticipantIds: string[] | null | undefined,
+	occurrenceParticipantProfiles?: Record<string, ParticipantProfile> | null,
 ) {
 	const [participantIds, setParticipantIds] = useState<string[]>([]);
 	const [initialParticipantIds, setInitialParticipantIds] = useState<string[]>([]);
@@ -28,6 +29,9 @@ export function useAgendaEventParticipantState(
 		if (shouldUseOccurrenceParticipantIds(occurrenceParticipantIds)) {
 			setParticipantIds(occurrenceParticipantIds);
 			setInitialParticipantIds(occurrenceParticipantIds);
+			if (occurrenceParticipantProfiles) {
+				setParticipantProfiles(occurrenceParticipantProfiles);
+			}
 			return;
 		}
 
@@ -41,7 +45,7 @@ export function useAgendaEventParticipantState(
 				setParticipantIds(ids);
 				setInitialParticipantIds(ids);
 			});
-	}, [open, eventId, occurrenceParticipantIds]);
+	}, [open, eventId, occurrenceParticipantIds, occurrenceParticipantProfiles]);
 
 	useEffect(() => {
 		if (shouldClearParticipantProfiles(open, participantIds.length)) {
@@ -54,7 +58,8 @@ export function useAgendaEventParticipantState(
 			.select('user_id, first_name, last_name, email')
 			.in('user_id', participantIds)
 			.then(({ data }) => {
-				setParticipantProfiles(buildParticipantProfileMap(data));
+				const fetched = buildParticipantProfileMap(data);
+				setParticipantProfiles((current) => ({ ...current, ...fetched }));
 			});
 	}, [open, participantIds]);
 

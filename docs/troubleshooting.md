@@ -3,7 +3,7 @@
 ## Database tests fail in CI (RLS/Auth)
 
 1. Check that all required GitHub secrets are present: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
-2. Check that `supabase db reset --linked --yes` succeeded in the workflow (`seeds/bootstrap.sql` + `seeds/test.sql` are then applied)
+2. Check that `supabase db reset --linked --yes` succeeded in the workflow (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are then applied)
 3. Verify that the `RESEND_API_KEY` secret is set in GitHub (for email tests)
 4. For Auth tests: check that the password policy in `config.toml` is correct
 
@@ -20,7 +20,7 @@
 ## Tests fail locally (RLS/Auth)
 
 1. Put credentials for the project you test against in your environment (or `.env.test`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed users: password `password`). Use **mcp-test** credentials to match CI, or **mcp-dev** if you develop against that.
-2. Optional: for mcp-dev you can run `bun run db:reset` for a clean database with `seeds/bootstrap.sql` + `seeds/test.sql`.
+2. Optional: for mcp-dev you can run `bun run db:reset` for a clean database with `seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql`.
 
 ---
 

@@ -1,6 +1,9 @@
 import { LuRotateCcw } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
-import { getDeviationBannerPresentation } from '@/lib/agenda/deviationInfoBannerHelpers';
+import {
+	getDeviationBannerOriginalDescription,
+	getDeviationBannerPresentation,
+} from '@/lib/agenda/deviationInfoBannerHelpers';
 import type { DeviationInfo } from '@/types/agenda-events';
 
 interface DeviationInfoBannerProps {
@@ -12,6 +15,7 @@ interface DeviationInfoBannerProps {
 
 export function DeviationInfoBanner({ deviationInfo, onRevert, disabled, reverting }: DeviationInfoBannerProps) {
 	const presentation = getDeviationBannerPresentation(deviationInfo.isCancelled ?? false);
+	const originalDescription = getDeviationBannerOriginalDescription(deviationInfo);
 
 	return (
 		<div
@@ -19,9 +23,7 @@ export function DeviationInfoBanner({ deviationInfo, onRevert, disabled, reverti
 		>
 			<div>
 				<p className="font-medium">{presentation.title}</p>
-				<p className="text-xs mt-1">
-					Origineel: {deviationInfo.originalDate} om {deviationInfo.originalStartTime.substring(0, 5)}
-				</p>
+				<p className="text-xs mt-1">{originalDescription}</p>
 			</div>
 			<Button
 				type="button"

@@ -1,0 +1,21 @@
+---
+description: Never add unsolicited backwards-compatible aliases, dual APIs, or soft-migration shims
+alwaysApply: true
+---
+
+# No unsolicited legacy / compatibility layers
+
+Do **not** add backwards-compatible shims unless the user **explicitly** asks to keep old callers working.
+
+## NEVER (unless the user asked for compatibility)
+
+* ❌ Dual names for the same thing (e.g. sort/`CASE` branches for both `student` and `student_name`, `lesson` and `dayAndTime`)
+* ❌ “Also accept the old name / old shape” fallbacks, deprecated aliases, or soft-migration wrappers in new or edited code
+* ❌ Keeping a removed API surface alive “just in case” while introducing the current one
+
+## ALWAYS
+
+* ✅ One current contract: rename or replace, then update **all** callers to that single surface
+* ✅ When editing original migrations (user will `db:reset`): make the schema/RPC match **today’s** callers only — no parallel old keys
+
+Comments must not narrate the removal either — see `comments.mdc`.

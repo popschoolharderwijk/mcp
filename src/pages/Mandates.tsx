@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { LuPlus, LuTrash2 } from 'react-icons/lu';
+import { LuPlus } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DataTable } from '@/components/ui/data-table';
 import {
 	Dialog,
 	DialogContent,
@@ -25,18 +25,11 @@ import {
 	resolveHolderFromStudentSelection,
 	resolveMandateValidationToast,
 } from '@/lib/direct-debit/mandateCreateHelpers';
-import { formatProfileFullName } from '@/lib/direct-debit/mandateDisplayHelpers';
-import { MANDATE_STATUS_LABELS, type SepaMandate } from '@/lib/direct-debit/types';
+import { firstMandateProfile, mandateListProfileName } from '@/lib/direct-debit/mandateDisplayHelpers';
+import { type MandateListRow, mandateListQuery } from '@/lib/direct-debit/mandateListQuery';
+import { buildMandateColumns } from '@/lib/direct-debit/mandateTableColumns';
 
-interface MandateRow extends SepaMandate {
-	profiles: { first_name: string | null; last_name: string | null; email: string } | null;
-}
-
-function mandateStatusVariant(status: SepaMandate['status']): 'default' | 'destructive' | 'secondary' {
-	if (status === 'active') return 'default';
-	if (status === 'revoked') return 'destructive';
-	return 'secondary';
-}
+const MANDATE_COLUMNS = buildMandateColumns();
 
 export default function Mandates() {
 	return (
@@ -47,18 +40,16 @@ export default function Mandates() {
 }
 
 function MandatesContent() {
-	const [rows, setRows] = useState<MandateRow[]>([]);
+	const [rows, setRows] = useState<MandateListRow[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [search, setSearch] = useState('');
 	const [dialogOpen, setDialogOpen] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
-		const { data, error } = await supabase
-			.from('sepa_mandates')
-			.select('*, profiles!sepa_mandates_student_user_id_fkey(first_name,last_name,email)')
-			.order('created_at', { ascending: false });
+		const { data, error } = await mandateListQuery(supabase);
 		if (error) toast.error(error.message);
-		setRows((data ?? []) as unknown as MandateRow[]);
+		setRows(data ?? []);
 		setLoading(false);
 	}, []);
 
@@ -97,48 +88,25 @@ function MandatesContent() {
 					/>
 				</Dialog>
 			}
-			contentClassName="p-0"
 		>
-			{loading ? (
-				<div className="p-8 text-center text-muted-foreground">Laden...</div>
-			) : rows.length === 0 ? (
-				<div className="p-8 text-center text-muted-foreground">Nog geen mandaten</div>
-			) : (
-				<table className="w-full text-sm">
-					<thead className="bg-muted/50 text-left">
-						<tr>
-							<th className="p-3">Kenmerk</th>
-							<th className="p-3">Leerling</th>
-							<th className="p-3">IBAN</th>
-							<th className="p-3">Rekeninghouder</th>
-							<th className="p-3">Status</th>
-							<th className="p-3">Volgorde</th>
-							<th className="p-3 text-right">Acties</th>
-						</tr>
-					</thead>
-					<tbody>
-						{rows.map((m) => (
-							<tr key={m.id} className="border-t">
-								<td className="p-3 font-mono text-xs">{m.mandate_reference}</td>
-								<td className="p-3">{formatProfileFullName(m.profiles)}</td>
-								<td className="p-3 font-mono text-xs">{m.iban}</td>
-								<td className="p-3">{m.account_holder}</td>
-								<td className="p-3">
-									<Badge variant={mandateStatusVariant(m.status)}>
-										{MANDATE_STATUS_LABELS[m.status]}
-									</Badge>
-								</td>
-								<td className="p-3">{m.sequence_type}</td>
-								<td className="p-3 text-right space-x-2">
-									<Button size="sm" variant="ghost" onClick={() => handleDelete(m.id)}>
-										<LuTrash2 className="h-4 w-4" />
-									</Button>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-			)}
+			<DataTable
+				data={rows}
+				columns={MANDATE_COLUMNS}
+				searchQuery={search}
+				onSearchChange={setSearch}
+				searchPlaceholder="Zoek op kenmerk, leerling of IBAN..."
+				searchFields={[
+					(mandate) => mandate.mandate_reference,
+					(mandate) => mandate.iban,
+					(mandate) => mandate.account_holder,
+					(mandate) => mandateListProfileName(mandate.profiles),
+					(mandate) => firstMandateProfile(mandate.profiles)?.email,
+				]}
+				loading={loading}
+				getRowKey={(mandate) => mandate.id}
+				emptyMessage="Nog geen mandaten"
+				rowActions={{ onDelete: (mandate) => handleDelete(mandate.id) }}
+			/>
 		</PageShell>
 	);
 }

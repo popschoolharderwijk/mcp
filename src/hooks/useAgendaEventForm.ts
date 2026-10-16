@@ -21,6 +21,10 @@ export interface UseAgendaEventFormOptions {
 	occurrenceStartTime?: string | null;
 	occurrenceEndTime?: string | null;
 	occurrenceParticipantIds?: string[] | null;
+	occurrenceParticipantProfiles?: Record<
+		string,
+		{ first_name: string | null; last_name: string | null; email: string | null }
+	> | null;
 	occurrenceOverrides?: OccurrenceOverrides | null;
 	readonlyParticipantIds?: string[];
 	sourceType?: AgendaEventSourceType;
@@ -39,6 +43,7 @@ export function useAgendaEventForm(options: UseAgendaEventFormOptions) {
 		occurrenceStartTime,
 		occurrenceEndTime,
 		occurrenceParticipantIds,
+		occurrenceParticipantProfiles,
 		occurrenceOverrides,
 		readonlyParticipantIds = [],
 		sourceType: externalSourceType,
@@ -56,7 +61,7 @@ export function useAgendaEventForm(options: UseAgendaEventFormOptions) {
 		participantAddId,
 		setParticipantAddId,
 		participantProfiles,
-	} = useAgendaEventParticipantState(open, event?.id, occurrenceParticipantIds);
+	} = useAgendaEventParticipantState(open, event?.id, occurrenceParticipantIds, occurrenceParticipantProfiles);
 
 	const formFields = useAgendaEventFormInit({
 		open,

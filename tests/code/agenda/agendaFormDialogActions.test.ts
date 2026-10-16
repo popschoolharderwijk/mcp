@@ -1,12 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import type { CalendarEvent } from '../../../src/components/agenda/types';
-import * as deleteAgendaEventModule from '../../../src/lib/agenda/deleteAgendaEvent';
-import * as notifyAgendaOpResultModule from '../../../src/lib/agenda/notifyAgendaOpResult';
-import * as revertDeviationModule from '../../../src/lib/agenda/revertDeviation';
 
 const toastMessages: { type: 'error' | 'success'; message: string }[] = [];
 const deleteCalls: { eventId: string; scope: string; occurrenceDate?: string; userId: string }[] = [];
-const revertCalls: { eventId?: string; originalDate?: string }[] = [];
+const revertCalls: {
+	members?: unknown;
+	fallback?: { eventId: string; originalDate: string };
+}[] = [];
 const notifyCalls: { throwOnError?: boolean }[] = [];
 let updateError: { message: string } | null = null;
 let rpcError: { message: string } | null = null;
@@ -95,9 +95,12 @@ function createUiState(): UiState {
 
 describe('agendaFormDialogActions', () => {
 	let actions: typeof import('../../../src/components/agenda/agendaFormDialogActions');
+	let deleteAgendaEventModule: typeof import('../../../src/lib/agenda/deleteAgendaEvent');
+	let notifyAgendaOpResultModule: typeof import('../../../src/lib/agenda/notifyAgendaOpResult');
+	let revertMergedSlotLessonsModule: typeof import('../../../src/lib/agenda/revertMergedSlotLessons');
 	let deleteAgendaEventSpy: ReturnType<typeof spyOn>;
-	let revertDeviationSpy: ReturnType<typeof spyOn>;
 	let notifyAgendaOpResultSpy: ReturnType<typeof spyOn>;
+	let revertMergedSlotLessonsSpy: ReturnType<typeof spyOn>;
 
 	beforeAll(async () => {
 		mock.module('sonner', () => ({
@@ -113,6 +116,9 @@ describe('agendaFormDialogActions', () => {
 		mock.module('../../../src/integrations/supabase/client', () => ({
 			supabase: supabaseMock,
 		}));
+		deleteAgendaEventModule = await import('../../../src/lib/agenda/deleteAgendaEvent');
+		notifyAgendaOpResultModule = await import('../../../src/lib/agenda/notifyAgendaOpResult');
+		revertMergedSlotLessonsModule = await import('../../../src/lib/agenda/revertMergedSlotLessons');
 		actions = await import('../../../src/components/agenda/agendaFormDialogActions');
 	});
 
@@ -127,21 +133,21 @@ describe('agendaFormDialogActions', () => {
 				return { ok: true, message: '' };
 			},
 		);
-		revertDeviationSpy = spyOn(revertDeviationModule, 'revertDeviation').mockImplementation(
-			async (params: { eventId?: string; originalDate?: string }) => {
-				revertCalls.push(params);
-				return { ok: true, message: '' };
-			},
-		);
 		notifyAgendaOpResultSpy = spyOn(notifyAgendaOpResultModule, 'notifyAgendaOpResult').mockImplementation(
 			async (
-				result: notifyAgendaOpResultModule.AgendaOpResult,
+				result: { ok: boolean; message: string },
 				onSuccess?: () => void | Promise<void>,
 				options?: { throwOnError?: boolean },
 			) => {
 				notifyCalls.push(options ?? {});
 				await onSuccess?.();
 				return result.ok;
+			},
+		);
+		revertMergedSlotLessonsSpy = spyOn(revertMergedSlotLessonsModule, 'revertMergedSlotLessons').mockImplementation(
+			async (members: unknown, fallback?: { eventId: string; originalDate: string }) => {
+				revertCalls.push({ members, fallback });
+				return { ok: true, message: '' };
 			},
 		);
 		toastMessages.length = 0;
@@ -154,8 +160,8 @@ describe('agendaFormDialogActions', () => {
 
 	afterEach(() => {
 		deleteAgendaEventSpy.mockRestore();
-		revertDeviationSpy.mockRestore();
 		notifyAgendaOpResultSpy.mockRestore();
+		revertMergedSlotLessonsSpy.mockRestore();
 	});
 
 	it('returns undefined delete handler without manage permissions', () => {
@@ -232,8 +238,55 @@ describe('agendaFormDialogActions', () => {
 		});
 		expect(handler).toBeDefined();
 		await handler?.();
-		expect(revertCalls).toEqual([{ eventId: 'event-1', originalDate: '2026-09-07' }]);
+		expect(revertCalls).toEqual([
+			{
+				members: undefined,
+				fallback: { eventId: 'event-1', originalDate: '2026-09-07' },
+			},
+		]);
 		expect(reloaded).toBe(true);
+	});
+
+	it('reverts all deviant members of a same-slot merge', async () => {
+		const ui = createUiState();
+		const mergedMembers = [
+			{ eventId: 'event-anna', isDeviation: false, originalDate: '2026-09-07' },
+			{
+				eventId: 'event-bob',
+				isDeviation: true,
+				hasTimeOrDateChange: true,
+				deviationId: 'dev-bob',
+				originalDate: '2026-09-07',
+			},
+		];
+		ui.selectedEvent = mockCalendarEvent({
+			resource: {
+				...mockCalendarEvent().resource,
+				isDeviation: true,
+				hasTimeOrDateChange: true,
+				deviationId: 'dev-bob',
+				originalDate: '2026-09-07',
+				originalStartTime: '09:00:00',
+				isSameSlotMerge: true,
+				mergedSlotMembers: mergedMembers,
+			},
+		});
+		const handler = actions.buildAgendaRevertHandler({
+			ui: ui as never,
+			canEdit: true,
+			canManageAgenda: true,
+			user: { id: 'user-1' } as never,
+			reloadAgenda: () => {},
+			handleCancelLesson: async () => {},
+		});
+		expect(handler).toBeDefined();
+		await handler?.();
+		expect(revertCalls).toEqual([
+			{
+				members: mergedMembers,
+				fallback: { eventId: 'event-1', originalDate: '2026-09-07' },
+			},
+		]);
 	});
 
 	it('opens recurrence choice for recurring cancel actions', () => {

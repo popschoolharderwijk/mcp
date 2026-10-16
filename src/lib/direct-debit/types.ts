@@ -4,24 +4,6 @@ export type BatchStatus = 'draft' | 'approved' | 'submitted' | 'closed' | 'cance
 export type BatchItemStatus = 'pending' | 'submitted' | 'accepted' | 'rejected' | 'reversed';
 export type BatchItemKind = 'subscription' | 'correction' | 'manual';
 
-export interface SepaMandate {
-	id: string;
-	student_user_id: string;
-	mandate_reference: string;
-	iban: string;
-	bic: string | null;
-	account_holder: string;
-	signed_at: string | null;
-	signature_method: 'digital' | 'paper';
-	status: MandateStatus;
-	sequence_type: SequenceType;
-	first_used_at: string | null;
-	revoked_at: string | null;
-	notes: string | null;
-	created_at: string;
-	updated_at: string;
-}
-
 export interface DirectDebitBatch {
 	id: string;
 	batch_number: string;

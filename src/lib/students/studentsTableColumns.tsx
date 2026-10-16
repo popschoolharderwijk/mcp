@@ -3,6 +3,7 @@ import type { SignupRequestDetail } from '@/components/students/SignupRequestDia
 import { Badge } from '@/components/ui/badge';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { UserDisplay } from '@/components/ui/user-display';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import {
 	formatAgreementListCount,
 	formatSignupRequestCount,
@@ -37,7 +38,7 @@ export function buildStudentColumns(
 					type="button"
 					onClick={(e) => {
 						e.stopPropagation();
-						navigate(`/students/${s.user_id}`);
+						navigate(buildStudentDetailPath(s.user_id));
 					}}
 					className="block w-full min-w-0 text-left"
 				>
@@ -72,7 +73,7 @@ export function buildStudentColumns(
 					type="button"
 					onClick={(e) => {
 						e.stopPropagation();
-						navigate(`/students/${s.user_id}`);
+						navigate(buildStudentDetailPath(s.user_id, 'agreements'));
 					}}
 					className="text-sm"
 				>
@@ -90,7 +91,7 @@ export function buildStudentColumns(
 						type="button"
 						onClick={(e) => {
 							e.stopPropagation();
-							navigate(`/students/${s.user_id}`);
+							navigate(buildStudentDetailPath(s.user_id, 'signups'));
 						}}
 						className="text-sm"
 					>

@@ -12,6 +12,22 @@
 	}
 }
 
+/*
+ * Match Tailwind preflight specificity (input::placeholder beats bare ::placeholder).
+ * Unlayered so this wins over @layer base preflight.
+ */
+input::placeholder,
+textarea::placeholder {
+	color: var(--placeholder);
+	opacity: 1;
+}
+
+input::-moz-placeholder,
+textarea::-moz-placeholder {
+	color: var(--placeholder);
+	opacity: 1;
+}
+
 /* Smooth page transitions */
 @layer base {
 	html {

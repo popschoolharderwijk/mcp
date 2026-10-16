@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS public.teachers (
   -- Teacher profile information
   bio TEXT
     CHECK (bio IS NULL OR bio = public.normalize_trim_text(bio)),
+  -- Certificate of Conduct (VOG) issue date
+  coc_issued_on DATE,
   is_active BOOLEAN NOT NULL DEFAULT true
 );
 

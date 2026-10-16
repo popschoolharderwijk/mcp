@@ -188,7 +188,7 @@ describe('resolveAgeCategory', () => {
 				amount_total_cents: 1,
 			},
 		];
-		expect(resolveAgeCategory(lines)).toBe('mixed');
+		expect(resolveAgeCategory(lines, '1990-01-01', '2026-09-01')).toBe('mixed');
 	});
 
 	it('returns 21_plus when only 21% lines exist', () => {
@@ -205,10 +205,10 @@ describe('resolveAgeCategory', () => {
 				amount_total_cents: 1,
 			},
 		];
-		expect(resolveAgeCategory(lines)).toBe('21_plus');
+		expect(resolveAgeCategory(lines, '1990-01-01', '2026-09-01')).toBe('21_plus');
 	});
 
-	it('returns under_21 when only 0% lines exist', () => {
+	it('returns under_21 when only 0% lines exist for a student under 21', () => {
 		const lines: InvoiceLine[] = [
 			{
 				batch_item_id: '1',
@@ -222,11 +222,28 @@ describe('resolveAgeCategory', () => {
 				amount_total_cents: 1,
 			},
 		];
-		expect(resolveAgeCategory(lines)).toBe('under_21');
+		expect(resolveAgeCategory(lines, '2010-05-01', '2026-09-01')).toBe('under_21');
+	});
+
+	it('returns unknown when every line comes from a missing date of birth', () => {
+		const lines: InvoiceLine[] = [
+			{
+				batch_item_id: '1',
+				description: '',
+				lesson_date: null,
+				quantity: 1,
+				unit_price_cents: 1,
+				btw_rate: 0,
+				amount_excl_btw_cents: 1,
+				btw_amount_cents: 0,
+				amount_total_cents: 1,
+			},
+		];
+		expect(resolveAgeCategory(lines, null, '2026-09-01')).toBe('unknown');
 	});
 
 	it('returns unknown for an empty line list', () => {
-		expect(resolveAgeCategory([])).toBe('unknown');
+		expect(resolveAgeCategory([], null, '2026-09-01')).toBe('unknown');
 	});
 });
 

@@ -1,16 +1,16 @@
 /**
  * Seed data constants for RLS tests.
- * These values reflect the exact counts from supabase/seeds/test.sql (and bootstrap.sql for lesson types).
+ * These values reflect the exact counts from supabase/seeds/test.sql (and lesson-types.sql for lesson types).
  * Update this file when seed data changes, and all tests will automatically use the new values.
  */
 
 /**
- * Lesson type options row counts (supabase/seeds/bootstrap.sql).
+ * Lesson type options row counts (supabase/seeds/lesson-types.sql).
  * Full grid (e.g. guitar lesson type): 5 durations × 3 frequencies = 15 rows.
  * Saxophone lesson type (DB name `Saxofoonles`): 30 and 45 min only = 6 rows.
  */
 export const LESSON_TYPES = {
-	/** All lesson types in bootstrap.sql (all seeded active). */
+	/** All lesson types in lesson-types.sql (all seeded active). */
 	TOTAL: 8,
 	ACTIVE: 8,
 } as const;
@@ -18,7 +18,7 @@ export const LESSON_TYPES = {
 export const LESSON_TYPE_OPTIONS = {
 	FULL_GRID_ROW_COUNT: 15,
 	SAXOPHONE_LESSON_ROW_COUNT: 6,
-	/** All option rows across lesson types in bootstrap.sql. */
+	/** All option rows across lesson types in lesson-types.sql. */
 	TOTAL: 99,
 } as const;
 
@@ -114,6 +114,10 @@ export const TEACHERS = {
 	// All teachers are active by default (is_active DEFAULT true)
 	ACTIVE: 10,
 	INACTIVE: 0,
+	/** Teachers with coc_issued_on set (Alice–Grace) */
+	WITH_COC: 7,
+	/** Teachers without VOG (Henry, Iris, Jack) */
+	WITHOUT_COC: 3,
 } as const;
 
 /**

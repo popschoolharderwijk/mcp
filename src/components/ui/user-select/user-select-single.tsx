@@ -6,6 +6,7 @@ import { CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { UserDisplay } from '@/components/ui/user-display';
 import { supabase } from '@/integrations/supabase/client';
+import { USER_SELECT_PROFILE_COLUMNS } from '@/lib/profiles/searchProfilesForSelectHelpers';
 import { cn } from '@/lib/utils';
 import type { User } from '@/types/users';
 import type { UserSelectSingleProps } from './types';
@@ -45,7 +46,7 @@ export function UserSelectSingle({
 		const loadOne = async () => {
 			const { data, error } = await supabase
 				.from('profiles')
-				.select('user_id, first_name, last_name, email, avatar_url, phone_number')
+				.select(USER_SELECT_PROFILE_COLUMNS)
 				.eq('user_id', value)
 				.single();
 			if (error) {
@@ -83,7 +84,12 @@ export function UserSelectSingle({
 				</Button>
 			</PopoverTrigger>
 			<PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-				<UserSelectCommandList loading={loading} searchQuery={searchQuery} onSearchQueryChange={setSearchQuery}>
+				<UserSelectCommandList
+					loading={loading}
+					searchQuery={searchQuery}
+					onSearchQueryChange={setSearchQuery}
+					serverSearch={filter === 'all'}
+				>
 					{filteredUsers.map((user) => {
 						const isSelected = user.user_id === value;
 						return (

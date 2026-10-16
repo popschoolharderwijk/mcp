@@ -8,6 +8,7 @@
  *
  * Multiple users: comma-separate email, first name, last name and role (same count required).
  * Password (if set) applies to every user. Empty role entry = no role for that user.
+ * If the user already exists, only the role is updated.
  *
  * Configure in .env:
  *   SUPABASE_URL=https://xxx.supabase.co
@@ -59,66 +60,45 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const hasPassword = !!DEV_LOGIN_PASSWORD;
 
-const { data: existingUsers } = await supabase.auth.admin.listUsers();
-
 for (const user of users) {
 	const user_metadata: Record<string, string> = {};
 	if (user.firstName) user_metadata.first_name = user.firstName;
 	if (user.lastName) user_metadata.last_name = user.lastName;
 
-	const existingUser = existingUsers?.users.find((u) => u.email === user.email);
+	console.log(`Creating ${hasPassword ? 'password' : 'passwordless'} user: ${user.email}`);
+
+	const { data, error } = await supabase.auth.admin.createUser({
+		email: user.email,
+		email_confirm: true,
+		password: DEV_LOGIN_PASSWORD || undefined,
+		user_metadata,
+	});
 
 	let userId: string | undefined;
 	let action: 'created' | 'updated';
 
-	if (existingUser) {
-		console.log(`Updating existing user: ${user.email}`);
-
-		const mergedMetadata = { ...existingUser.user_metadata, ...user_metadata };
-
-		const { data, error } = await supabase.auth.admin.updateUserById(existingUser.id, {
-			password: DEV_LOGIN_PASSWORD || undefined,
-			user_metadata: mergedMetadata,
-		});
-
-		if (error) {
-			console.error('Error updating user:', error.message);
-			process.exit(1);
-		}
-
-		if (user.firstName || user.lastName) {
-			const profileUpdate: Record<string, string> = {};
-			if (user.firstName) profileUpdate.first_name = user.firstName;
-			if (user.lastName) profileUpdate.last_name = user.lastName;
-
-			const { error: profileError } = await supabase
-				.from('profiles')
-				.update(profileUpdate)
-				.eq('user_id', existingUser.id);
-
-			if (profileError) {
-				console.error('Error updating profile:', profileError.message);
-				process.exit(1);
-			}
-		}
-
-		userId = data.user?.id;
-		action = 'updated';
-	} else {
-		console.log(`Creating ${hasPassword ? 'password' : 'passwordless'} user: ${user.email}`);
-
-		const { data, error } = await supabase.auth.admin.createUser({
-			email: user.email,
-			email_confirm: true,
-			password: DEV_LOGIN_PASSWORD || undefined,
-			user_metadata,
-		});
-
-		if (error) {
+	if (error) {
+		if (!error.message.includes('already')) {
 			console.error('Error creating user:', error.message);
 			process.exit(1);
 		}
 
+		console.log(`User already exists, updating role only: ${user.email}`);
+
+		const { data: profile, error: profileError } = await supabase
+			.from('profiles')
+			.select('user_id')
+			.eq('email', user.email)
+			.single();
+
+		if (profileError || !profile) {
+			console.error('Error looking up existing user:', profileError?.message ?? 'not found');
+			process.exit(1);
+		}
+
+		userId = profile.user_id;
+		action = 'updated';
+	} else {
 		userId = data.user?.id;
 		action = 'created';
 	}

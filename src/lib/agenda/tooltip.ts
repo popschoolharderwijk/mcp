@@ -5,6 +5,7 @@ import {
 	buildTooltipStatusLines,
 } from '@/lib/agenda/tooltipHelpers';
 
+/** Native title text; react-big-calendar already prefixes the time range in week/day views. */
 export function buildTooltipText(event: CalendarEvent): string {
 	const lines = [
 		buildTooltipFirstLine(String(event.title), event.resource),

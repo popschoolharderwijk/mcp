@@ -50,10 +50,11 @@ function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {
 		period: { start: '2026-06-01', end: '2026-06-30' },
 		summary: {
 			invoice_count: 1,
-			total_omzet_under_21_cents: 0,
-			total_omzet_21_plus_excl_cents: 0,
-			total_btw_cents: 0,
-			total_debiteuren_cents: 0,
+			total_revenue_under_21_cents: 0,
+			total_revenue_unknown_age_cents: 0,
+			total_revenue_21_plus_excl_cents: 0,
+			total_vat_cents: 0,
+			total_receivables_cents: 0,
 			total_paid_cents: 0,
 			total_open_cents: 0,
 		},
@@ -150,6 +151,37 @@ describe('generateJournalLines', () => {
 		);
 		expect(lines.filter((l) => l.account === SETTINGS.account_btw_21)).toHaveLength(0);
 		expect(lines).toHaveLength(2);
+	});
+
+	it('posts both revenue accounts and VAT for a mixed invoice', () => {
+		const lines = generateJournalLines(
+			makeReport({
+				age_category: 'mixed',
+				status: 'open',
+				paid_at: null,
+				amount_paid_cents: 0,
+				amount_due_cents: 16100,
+				amount_excl_btw_cents: 14000,
+				amount_excl_under_21_cents: 4000,
+				amount_excl_21_plus_cents: 10000,
+				btw_amount_cents: 2100,
+			}),
+			SETTINGS,
+		);
+		expect(lines.find((l) => l.account === '8000')?.credit).toBe(4000);
+		expect(lines.find((l) => l.account === '8010')?.credit).toBe(10000);
+		expect(lines.find((l) => l.account === '1500')?.credit).toBe(2100);
+		const sumDeb = lines.reduce((s, l) => s + l.debit, 0);
+		const sumCred = lines.reduce((s, l) => s + l.credit, 0);
+		expect(sumDeb).toBe(16100);
+		expect(sumCred).toBe(16100);
+	});
+
+	it('posts a paid invoice to the SEPA bank account when the provider is sepa', () => {
+		const lines = generateJournalLines(makeReport(), { ...SETTINGS, payment_provider: 'sepa' });
+		const bankDebit = lines.find((l) => l.entryId === 'PAY-inv-1' && l.debit > 0);
+		expect(bankDebit?.account).toBe('1102');
+		expect(bankDebit?.debit).toBe(12100);
 	});
 
 	it('does not create bank lines for paid invoices with zero amount paid', () => {

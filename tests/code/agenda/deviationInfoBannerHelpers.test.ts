@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'bun:test';
-import { getDeviationBannerPresentation } from '../../../src/lib/agenda/deviationInfoBannerHelpers';
+import {
+	getDeviationBannerOriginalDescription,
+	getDeviationBannerPresentation,
+} from '../../../src/lib/agenda/deviationInfoBannerHelpers';
 
 describe('getDeviationBannerPresentation', () => {
 	it('returns cancelled styling for cancelled deviations', () => {
@@ -18,5 +21,26 @@ describe('getDeviationBannerPresentation', () => {
 			buttonClassName:
 				'text-amber-600 hover:text-amber-700 hover:bg-amber-500/20 dark:text-amber-400 dark:hover:text-amber-300',
 		});
+	});
+});
+
+describe('getDeviationBannerOriginalDescription', () => {
+	it('formats the original date and time', () => {
+		expect(
+			getDeviationBannerOriginalDescription({
+				originalDate: '2026-10-12',
+				originalStartTime: '14:30:00',
+			}),
+		).toBe('Origineel: maandag 12 oktober om 14:30');
+	});
+
+	it('mentions how many separate lessons the merge came from', () => {
+		expect(
+			getDeviationBannerOriginalDescription({
+				originalDate: '2026-10-12',
+				originalStartTime: '14:30:00',
+				originalSeparateLessonCount: 2,
+			}),
+		).toBe('Origineel: 2 losse lessen (o.a. maandag 12 oktober om 14:30)');
 	});
 });

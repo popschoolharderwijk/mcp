@@ -1,25 +1,38 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { indexByUserId } from '@/lib/collections';
-import { getDisplayName } from '@/lib/display-name';
+import type { User } from '@/types/users';
 
 type TrialLessonRow = Tables<'trial_lessons'>;
 
-type TrialLessonProfile = {
-	user_id: string;
-	first_name: string | null;
-	last_name: string | null;
-	email: string | null;
+export type TrialLessonDisplayProfile = Pick<User, 'first_name' | 'last_name' | 'avatar_url' | 'email'>;
+
+type TrialLessonProfileRow = TrialLessonDisplayProfile & { user_id: string };
+
+const EMPTY_PROFILE: TrialLessonDisplayProfile = {
+	first_name: null,
+	last_name: null,
+	avatar_url: null,
+	email: '',
 };
 
+function toDisplayProfile(profile: TrialLessonProfileRow | undefined): TrialLessonDisplayProfile {
+	if (!profile) return EMPTY_PROFILE;
+	return {
+		first_name: profile.first_name,
+		last_name: profile.last_name,
+		avatar_url: profile.avatar_url,
+		email: profile.email ?? '',
+	};
+}
+
 export type EnrichedTrialLessonStudent = TrialLessonRow & {
-	teacher_name: string;
+	teacher: TrialLessonDisplayProfile;
 	lesson_type_name: string | null;
 };
 
 export type EnrichedTrialLessonStaff = EnrichedTrialLessonStudent & {
-	student_name: string;
-	student_email: string;
+	student: TrialLessonDisplayProfile;
 };
 
 interface EnrichOptions {
@@ -28,14 +41,13 @@ interface EnrichOptions {
 
 function enrichSingleTrialLesson<T extends TrialLessonRow>(
 	trial: T,
-	profileMap: Map<string, TrialLessonProfile>,
+	profileMap: Map<string, TrialLessonProfileRow>,
 	lessonTypeMap: Map<string, string>,
 	includeStudent: boolean,
 ): (T & EnrichedTrialLessonStaff) | (T & EnrichedTrialLessonStudent) {
-	const teacherProfile = profileMap.get(trial.teacher_user_id);
 	const base = {
 		...trial,
-		teacher_name: teacherProfile ? getDisplayName(teacherProfile) : '—',
+		teacher: toDisplayProfile(profileMap.get(trial.teacher_user_id)),
 		lesson_type_name: lessonTypeMap.get(trial.lesson_type_id) ?? null,
 	};
 
@@ -43,11 +55,9 @@ function enrichSingleTrialLesson<T extends TrialLessonRow>(
 		return base;
 	}
 
-	const studentProfile = profileMap.get(trial.student_user_id);
 	return {
 		...base,
-		student_name: studentProfile ? getDisplayName(studentProfile) : '—',
-		student_email: studentProfile?.email ?? '',
+		student: toDisplayProfile(profileMap.get(trial.student_user_id)),
 	};
 }
 
@@ -66,14 +76,17 @@ export async function enrichTrialLessons<T extends TrialLessonRow>(
 
 	const [profilesRes, lessonTypesRes] = await Promise.all([
 		userIds.length > 0
-			? supabase.from('profiles').select('user_id, first_name, last_name, email').in('user_id', userIds)
+			? supabase
+					.from('profiles')
+					.select('user_id, first_name, last_name, email, avatar_url')
+					.in('user_id', userIds)
 			: Promise.resolve({ data: [], error: null }),
 		lessonTypeIds.length > 0
 			? supabase.from('lesson_types').select('id, name').in('id', lessonTypeIds)
 			: Promise.resolve({ data: [], error: null }),
 	]);
 
-	const profileMap = indexByUserId(profilesRes.data ?? []);
+	const profileMap = indexByUserId((profilesRes.data ?? []) as TrialLessonProfileRow[]);
 	const lessonTypeMap = new Map((lessonTypesRes.data ?? []).map((lt) => [lt.id, lt.name] as const));
 	const includeStudent = options.includeStudent ?? false;
 
