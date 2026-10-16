@@ -144,6 +144,7 @@ function enrichLessonAgreementAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEv
 			...ev.resource,
 			studentName: studentInfo.studentName,
 			teacherName,
+			teacherUserId: agreement.teacherUserId,
 			viewerIsTeacher: ctx.viewerUserId === agreement.teacherUserId,
 			lessonTypeName: agreement.lesson_types.name,
 			lessonTypeColor: agreement.lesson_types.color,

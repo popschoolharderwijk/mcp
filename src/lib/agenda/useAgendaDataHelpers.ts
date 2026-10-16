@@ -16,6 +16,7 @@ import {
 	fetchNoLessonPeriods,
 	fetchUserParticipantEventIds,
 } from '@/lib/agenda/loadAgendaData';
+import { mergeSameSlotLessonEvents } from '@/lib/agenda/mergeSameSlotLessonEvents';
 import type { AgendaEventDeviationRow, AgendaEventRow } from '@/types/agenda-events';
 import type { AgendaLessonAgreement } from '@/types/lesson-agreements';
 import type { ProjectInfo } from '@/types/projects';
@@ -124,7 +125,7 @@ export function buildEnrichedAgendaEvents(
 		state.noLessonPeriods,
 	);
 
-	return baseEvents.map((ev) =>
+	const enriched = baseEvents.map((ev) =>
 		enrichAgendaEvent(ev, {
 			participantCountByEventId: state.participantCountByEventId,
 			participantNamesByEventId: state.participantNamesByEventId,
@@ -139,6 +140,8 @@ export function buildEnrichedAgendaEvents(
 			viewerUserId,
 		}),
 	);
+
+	return mergeSameSlotLessonEvents(enriched);
 }
 
 export function buildAgendaDeviationIndexes(deviations: AgendaEventDeviationRow[]) {

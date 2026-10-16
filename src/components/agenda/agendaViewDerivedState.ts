@@ -1,4 +1,10 @@
 import type { DeviationInfo } from '@/components/agenda/AgendaEventFormDialog';
+import {
+	buildOccurrenceParticipantProfiles,
+	type OccurrenceParticipantProfile,
+	resolveOccurrenceParticipantIds,
+	resolveOriginalSeparateLessonCount,
+} from '@/components/agenda/agendaOccurrenceParticipantHelpers';
 import type { CalendarEvent } from '@/components/agenda/types';
 import type { useAgendaUI } from '@/hooks/useAgendaUI';
 import { formatTimeFromDate } from '@/lib/time/time-format';
@@ -17,8 +23,11 @@ interface DerivedStateInput {
 	isPrivileged: boolean;
 }
 
+export type { OccurrenceParticipantProfile };
+
 export interface AgendaViewDerivedState {
 	occurrenceParticipantIds: string[] | null;
+	occurrenceParticipantProfiles: Record<string, OccurrenceParticipantProfile> | null;
 	occurrenceOverrides: { title: string | null; description: string | null; color: string | null } | null;
 	occurrenceTimes: { start: string | null; end: string | null };
 	editingAgreement: AgendaLessonAgreement | undefined;
@@ -45,7 +54,18 @@ function getEditingAgreement(
 	return agreementsMap.get(ui.editingEvent.source_id) as AgendaLessonAgreement | undefined;
 }
 
-function buildReadonlyParticipantIds(editingAgreement: AgendaLessonAgreement | undefined): string[] {
+function buildReadonlyParticipantIds(
+	editingAgreement: AgendaLessonAgreement | undefined,
+	selectedEvent: CalendarEvent | null,
+): string[] {
+	const mergedParticipants = selectedEvent?.resource.participants;
+	if (mergedParticipants?.length) {
+		const ids = [...mergedParticipants];
+		if (editingAgreement?.teacherUserId && !ids.includes(editingAgreement.teacherUserId)) {
+			ids.push(editingAgreement.teacherUserId);
+		}
+		return ids;
+	}
 	if (!editingAgreement) return [];
 	if (editingAgreement.teacherUserId) {
 		return [editingAgreement.student_user_id, editingAgreement.teacherUserId];
@@ -68,15 +88,15 @@ function buildCanAddParticipants(
 
 function buildDeviationInfo(ui: AgendaUI): DeviationInfo | null {
 	const resource = ui.selectedEvent?.resource;
-	if (!resource) return null;
+	if (!resource?.deviationId || !resource.originalDate || !resource.originalStartTime) return null;
 	if (!(resource.isDeviation || resource.isCancelled)) return null;
-	if (!resource.deviationId || !resource.originalDate || !resource.originalStartTime) return null;
 	return {
 		deviationId: resource.deviationId,
 		originalDate: resource.originalDate,
 		originalStartTime: resource.originalStartTime,
 		isCancelled: resource.isCancelled,
 		hasTimeOrDateChange: resource.hasTimeOrDateChange ?? false,
+		originalSeparateLessonCount: resolveOriginalSeparateLessonCount(resource),
 	};
 }
 
@@ -94,10 +114,11 @@ export function buildAgendaViewDerivedState(input: DerivedStateInput): AgendaVie
 	const selectedOccurrenceDeviation = getSelectedOccurrenceDeviation(ui, deviationsByEventId);
 	const editingAgreement = getEditingAgreement(ui, agreementsMap);
 
-	const occurrenceParticipantIds =
-		selectedOccurrenceDeviation?.participant_ids && selectedOccurrenceDeviation.participant_ids.length > 0
-			? selectedOccurrenceDeviation.participant_ids
-			: null;
+	const occurrenceParticipantIds = resolveOccurrenceParticipantIds(
+		selectedOccurrenceDeviation?.participant_ids,
+		ui.selectedEvent,
+		editingAgreement,
+	);
 
 	const occurrenceOverrides = selectedOccurrenceDeviation
 		? {
@@ -116,10 +137,15 @@ export function buildAgendaViewDerivedState(input: DerivedStateInput): AgendaVie
 
 	return {
 		occurrenceParticipantIds,
+		occurrenceParticipantProfiles: buildOccurrenceParticipantProfiles(
+			ui.selectedEvent,
+			editingAgreement,
+			occurrenceParticipantIds,
+		),
 		occurrenceOverrides,
 		occurrenceTimes,
 		editingAgreement,
-		readonlyParticipantIds: buildReadonlyParticipantIds(editingAgreement),
+		readonlyParticipantIds: buildReadonlyParticipantIds(editingAgreement, ui.selectedEvent),
 		canAddParticipants: buildCanAddParticipants(isPrivileged, ui, editingAgreement, effectiveUserId),
 		deviationInfo: buildDeviationInfo(ui),
 		lessonType: buildLessonType(ui.selectedEvent),

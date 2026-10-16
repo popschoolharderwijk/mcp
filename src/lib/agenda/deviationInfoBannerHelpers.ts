@@ -1,3 +1,6 @@
+import { formatDbDateLong } from '@/lib/date/date-format';
+import { formatTime } from '@/lib/time/time-format';
+
 export interface DeviationBannerPresentation {
 	containerClassName: string;
 	title: string;
@@ -20,4 +23,17 @@ export function getDeviationBannerPresentation(isCancelled: boolean): DeviationB
 		buttonClassName:
 			'text-amber-600 hover:text-amber-700 hover:bg-amber-500/20 dark:text-amber-400 dark:hover:text-amber-300',
 	};
+}
+
+export function getDeviationBannerOriginalDescription(params: {
+	originalDate: string;
+	originalStartTime: string;
+	originalSeparateLessonCount?: number;
+}): string {
+	const when = `${formatDbDateLong(params.originalDate)} om ${formatTime(params.originalStartTime)}`;
+	const count = params.originalSeparateLessonCount;
+	if (count && count > 1) {
+		return `Origineel: ${count} losse lessen (o.a. ${when})`;
+	}
+	return `Origineel: ${when}`;
 }

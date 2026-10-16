@@ -26,6 +26,10 @@ export interface AgendaEventFormDialogProps {
 	occurrenceStartTime?: string | null;
 	occurrenceEndTime?: string | null;
 	occurrenceParticipantIds?: string[] | null;
+	occurrenceParticipantProfiles?: Record<
+		string,
+		{ first_name: string | null; last_name: string | null; email: string | null }
+	> | null;
 	occurrenceOverrides?: OccurrenceOverrides | null;
 	readonlyParticipantIds?: string[];
 	canAddParticipants?: boolean;

@@ -90,6 +90,7 @@ describe('buildAgendaEventFormParams', () => {
 			occurrenceStartTime: undefined,
 			occurrenceEndTime: undefined,
 			occurrenceParticipantIds: undefined,
+			occurrenceParticipantProfiles: undefined,
 			occurrenceOverrides: undefined,
 			readonlyParticipantIds: ['participant-1'],
 			sourceType: 'project',

@@ -1,6 +1,6 @@
 import type { EnrichAgendaEventContext } from '@/lib/agenda/enrichAgendaEventContext';
 import { buildParticipantInfo } from '@/lib/agenda/eventUtils';
-import { getDisplayName } from '@/lib/display-name';
+import { getDisplayName, getFirstName, joinFirstNames } from '@/lib/display-name';
 import type { AgendaLessonAgreement } from '@/types/lesson-agreements';
 import type { UserOptional } from '@/types/users';
 
@@ -53,6 +53,9 @@ export function buildLessonAgreementTitlePartyName(params: {
 	const { studentInfo, teacherName, teacherUserId, viewerUserId } = params;
 
 	if (!viewerUserId || viewerUserId === teacherUserId) {
+		if (studentInfo.isDuo) {
+			return joinFirstNames(studentInfo.studentUsers);
+		}
 		return studentInfo.studentName;
 	}
 
@@ -60,9 +63,9 @@ export function buildLessonAgreementTitlePartyName(params: {
 		return teacherName;
 	}
 
-	const otherStudentNames = studentInfo.studentUsers
+	const otherStudentFirstNames = studentInfo.studentUsers
 		.filter((user) => user.user_id !== viewerUserId)
-		.map((user) => getDisplayName(user))
-		.sort();
-	return [teacherName, ...otherStudentNames].join(' & ');
+		.map((user) => getFirstName(user))
+		.sort((left, right) => left.localeCompare(right, 'nl'));
+	return [teacherName, ...otherStudentFirstNames].join(' & ');
 }

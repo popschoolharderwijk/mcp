@@ -330,7 +330,7 @@ describe('enrichAgendaEvent', () => {
 			}),
 			ctx,
 		);
-		expect(result.title).toBe('Anna Bakker & Jan Jansen');
+		expect(result.title).toBe('Anna & Jan');
 		expect(result.resource.isDuoLesson).toBe(true);
 		expect(result.resource.users).toHaveLength(2);
 	});

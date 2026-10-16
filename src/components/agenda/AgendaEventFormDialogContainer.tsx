@@ -57,6 +57,7 @@ export function AgendaEventFormDialogContainer(props: AgendaEventFormDialogConta
 			onDelete={buildAgendaDeleteHandler(actionCtx)}
 			occurrenceDate={resolveAgendaEventOccurrenceDate(input.ui.selectedEvent)}
 			occurrenceParticipantIds={input.derived.occurrenceParticipantIds}
+			occurrenceParticipantProfiles={input.derived.occurrenceParticipantProfiles}
 			occurrenceOverrides={input.derived.occurrenceOverrides}
 			occurrenceStartTime={input.derived.occurrenceTimes.start}
 			occurrenceEndTime={input.derived.occurrenceTimes.end}

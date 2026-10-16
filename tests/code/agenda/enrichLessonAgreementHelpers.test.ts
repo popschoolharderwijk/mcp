@@ -119,7 +119,27 @@ describe('buildLessonAgreementTitlePartyName', () => {
 		).toBe('Piet Docent');
 	});
 
-	it('shows teacher and other students when a duo student is viewing', () => {
+	it('shows first names only when the teacher views a duo lesson', () => {
+		const ctx = emptyContext({
+			participantUserIdsByEventId: new Map([['event-1', ['stu-a', 'stu-b', 'tea-1']]]),
+			profileMap: new Map([
+				['stu-a', studentA],
+				['stu-b', studentB],
+				['tea-1', teacher],
+			]),
+		});
+		const duoInfo = buildLessonAgreementStudentInfo(soloAgreement, 'event-1', 'tea-1', ctx);
+		expect(
+			buildLessonAgreementTitlePartyName({
+				studentInfo: duoInfo,
+				teacherName: 'Piet Docent',
+				teacherUserId: 'tea-1',
+				viewerUserId: 'tea-1',
+			}),
+		).toBe('Anna & Bram');
+	});
+
+	it('shows teacher and other student first names when a duo student is viewing', () => {
 		const ctx = emptyContext({
 			participantUserIdsByEventId: new Map([['event-1', ['stu-a', 'stu-b', 'tea-1']]]),
 			profileMap: new Map([
@@ -136,7 +156,7 @@ describe('buildLessonAgreementTitlePartyName', () => {
 				teacherUserId: 'tea-1',
 				viewerUserId: 'stu-a',
 			}),
-		).toBe('Piet Docent & Bram Jansen');
+		).toBe('Piet Docent & Bram');
 	});
 
 	it('falls back to student names when viewer is unknown', () => {

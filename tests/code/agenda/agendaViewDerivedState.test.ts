@@ -102,6 +102,7 @@ describe('buildAgendaViewDerivedState', () => {
 		const result = buildState({ selectedEvent: null, editingEvent: null });
 		expect(result).toEqual({
 			occurrenceParticipantIds: null,
+			occurrenceParticipantProfiles: null,
 			occurrenceOverrides: null,
 			occurrenceTimes: { start: null, end: null },
 			editingAgreement: undefined,
@@ -137,6 +138,51 @@ describe('buildAgendaViewDerivedState', () => {
 		};
 		const result = buildState(ui, { deviationsByEventId });
 		expect(result.occurrenceParticipantIds).toBeNull();
+	});
+
+	it('uses merged same-slot participants when opening a multi-student lesson', () => {
+		const agreement = mockAgreement({
+			teacherProfile: {
+				first_name: 'Piet',
+				last_name: 'Docent',
+				email: 'piet@example.com',
+			},
+		});
+		const agreementsMap = new Map([['agr-1', agreement]]);
+		const ui: MockAgendaUI = {
+			selectedEvent: mockCalendarEvent({
+				resource: {
+					...mockCalendarEvent().resource,
+					isDuoLesson: true,
+					teacherUserId: 'tea-1',
+					participants: ['stu-1', 'stu-2'],
+					users: [
+						{
+							user_id: 'stu-1',
+							first_name: 'Jan',
+							last_name: 'Jansen',
+							email: 'jan@example.com',
+							avatar_url: null,
+							phone_number: null,
+						},
+						{
+							user_id: 'stu-2',
+							first_name: 'Anna',
+							last_name: 'Bakker',
+							email: 'anna@example.com',
+							avatar_url: null,
+							phone_number: null,
+						},
+					],
+				},
+			}),
+			editingEvent: { id: 'event-1', source_type: 'lesson_agreement', source_id: 'agr-1' },
+		};
+		const result = buildState(ui, { agreementsMap });
+		expect(result.occurrenceParticipantIds).toEqual(['tea-1', 'stu-1', 'stu-2']);
+		expect(result.readonlyParticipantIds).toEqual(['stu-1', 'stu-2', 'tea-1']);
+		expect(result.occurrenceParticipantProfiles?.['tea-1']?.first_name).toBe('Piet');
+		expect(result.occurrenceParticipantProfiles?.['stu-1']?.first_name).toBe('Jan');
 	});
 
 	it('formats occurrence times for deviation events', () => {
@@ -224,7 +270,86 @@ describe('buildAgendaViewDerivedState', () => {
 			originalStartTime: '09:00:00',
 			isCancelled: true,
 			hasTimeOrDateChange: true,
+			originalSeparateLessonCount: undefined,
 		});
+	});
+
+	it('includes original separate lesson count for same-slot merges', () => {
+		const ui: MockAgendaUI = {
+			selectedEvent: mockCalendarEvent({
+				resource: {
+					...mockCalendarEvent().resource,
+					isDeviation: true,
+					deviationId: 'dev-1',
+					originalDate: '2026-09-07',
+					originalStartTime: '09:00:00',
+					hasTimeOrDateChange: true,
+					isSameSlotMerge: true,
+					mergedSlotMembers: [
+						{ eventId: 'event-1', originalDate: '2026-09-07' },
+						{
+							eventId: 'event-2',
+							originalDate: '2026-09-07',
+							isDeviation: true,
+							hasTimeOrDateChange: true,
+						},
+					],
+				},
+			}),
+			editingEvent: null,
+		};
+		expect(buildState(ui).deviationInfo?.originalSeparateLessonCount).toBe(2);
+	});
+
+	it('returns null deviation info when required original fields are missing', () => {
+		const ui: MockAgendaUI = {
+			selectedEvent: mockCalendarEvent({
+				resource: {
+					...mockCalendarEvent().resource,
+					isDeviation: true,
+					deviationId: 'dev-1',
+					originalDate: '2026-09-07',
+					originalStartTime: undefined,
+				},
+			}),
+			editingEvent: null,
+		};
+		expect(buildState(ui).deviationInfo).toBeNull();
+	});
+
+	it('prepends teacher from agreement when merged participants omit teacherUserId', () => {
+		const agreement = mockAgreement({
+			teacherUserId: 'tea-1',
+			teacherProfile: {
+				first_name: 'Piet',
+				last_name: 'Docent',
+				email: 'piet@example.com',
+			},
+		});
+		const agreementsMap = new Map([['agr-1', agreement]]);
+		const ui: MockAgendaUI = {
+			selectedEvent: mockCalendarEvent({
+				resource: {
+					...mockCalendarEvent().resource,
+					isDuoLesson: true,
+					participants: ['stu-1', 'stu-2'],
+					users: [
+						{
+							user_id: 'stu-1',
+							first_name: 'Jan',
+							last_name: 'Jansen',
+							email: 'jan@example.com',
+							avatar_url: null,
+							phone_number: null,
+						},
+					],
+				},
+			}),
+			editingEvent: { id: 'event-1', source_type: 'lesson_agreement', source_id: 'agr-1' },
+		};
+		const result = buildState(ui, { agreementsMap });
+		expect(result.occurrenceParticipantIds).toEqual(['tea-1', 'stu-1', 'stu-2']);
+		expect(result.occurrenceParticipantProfiles?.['tea-1']?.first_name).toBe('Piet');
 	});
 
 	it('extracts lesson type display info from the selected event', () => {
