@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import {
 	applyStudentsPageLoadOutcome,
 	executeStudentsPageLoad,
@@ -95,7 +96,7 @@ export function useStudentsPageController(params: UseStudentsPageControllerParam
 
 	const handleEdit = useCallback(
 		(student: StudentWithAgreements) => {
-			navigate(`/students/${student.user_id}`);
+			navigate(buildStudentDetailPath(student.user_id));
 		},
 		[navigate],
 	);

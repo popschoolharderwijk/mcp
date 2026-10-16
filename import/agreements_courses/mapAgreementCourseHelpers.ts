@@ -42,6 +42,8 @@ export const IGNORED_KEYS = new Set([
 let scheduleFrequencyMap: Map<string, ScheduleFrequencyEntry> = new Map();
 let coursePriceIndex: CoursePriceIndex = new Map();
 let duoCourseOids: Set<string> = new Set();
+let groupCourseOids: Set<string> = new Set();
+let courseNameByOid: Map<string, string> = new Map();
 
 export function setAgreementScheduleFrequencyMap(map: Map<string, ScheduleFrequencyEntry>): void {
 	scheduleFrequencyMap = map;
@@ -55,21 +57,63 @@ export function setAgreementDuoCourseOids(oids: Set<string>): void {
 	duoCourseOids = oids;
 }
 
-/** Course Mongo oids whose name classifies as DUO (same rules as courses import). */
-export function buildDuoCourseOidSet(courseDocs: unknown[]): Set<string> {
-	const oids = new Set<string>();
+export function setAgreementGroupCourseOids(oids: Set<string>): void {
+	groupCourseOids = oids;
+}
+
+export function setAgreementCourseNameByOid(names: Map<string, string>): void {
+	courseNameByOid = names;
+}
+
+function readCourseName(record: Record<string, unknown>): string {
+	return typeof record.name === 'string' ? record.name.trim() : '';
+}
+
+/** Visit named course docs (oid + trimmed name); skips invalid / nameless rows. */
+function forEachNamedCourse(
+	courseDocs: unknown[],
+	visit: (oid: string, name: string, record: Record<string, unknown>) => void,
+): void {
 	for (const doc of courseDocs) {
 		if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) continue;
 		const record = doc as Record<string, unknown>;
 		const oid = extractMongoOid(record._id);
 		if (!oid) continue;
-		const name = typeof record.name === 'string' ? record.name.trim() : '';
+		const name = readCourseName(record);
 		if (!name) continue;
+		visit(oid, name, record);
+	}
+}
+
+/** Course Mongo oids whose name classifies as DUO (same rules as courses import). */
+export function buildDuoCourseOidSet(courseDocs: unknown[]): Set<string> {
+	const oids = new Set<string>();
+	forEachNamedCourse(courseDocs, (oid, name, record) => {
 		if (classifyCourseFlags(name, asFiniteNumber(record.maxparticipants)).isDuoLesson) {
 			oids.add(oid);
 		}
-	}
+	});
 	return oids;
+}
+
+/** Course Mongo oids classified as group lessons (same rules as courses import). */
+export function buildGroupCourseOidSet(courseDocs: unknown[]): Set<string> {
+	const oids = new Set<string>();
+	forEachNamedCourse(courseDocs, (oid, name, record) => {
+		if (classifyCourseFlags(name, asFiniteNumber(record.maxparticipants)).isGroupLesson) {
+			oids.add(oid);
+		}
+	});
+	return oids;
+}
+
+/** Mongo course oid → trimmed name (for lesson group titles). */
+export function buildCourseNameByOid(courseDocs: unknown[]): Map<string, string> {
+	const names = new Map<string, string>();
+	forEachNamedCourse(courseDocs, (oid, name) => {
+		names.set(oid, name);
+	});
+	return names;
 }
 
 function asOptionalString(value: unknown): string | null {
@@ -305,11 +349,15 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 	if (!payment.ok) return payment.result;
 
 	const monthlyPrice = asFiniteNumber(record.monthlyprice);
+	const courseOid = parties.parties.courseOid;
+	const isGroupLesson = groupCourseOids.has(courseOid);
 	const row: MappedAgreementCourseRow = {
 		mongoOid,
 		studentUserId: parties.parties.studentUserId,
 		teacherUserId: parties.parties.teacherUserId,
 		lessonTypeId: parties.parties.lessonTypeId,
+		courseOid,
+		courseName: isGroupLesson ? (courseNameByOid.get(courseOid) ?? null) : null,
 		durationMinutes: durationPrice.value.durationMinutes,
 		frequency: durationPrice.value.frequency,
 		pricePerLesson: durationPrice.value.pricePerLesson,
@@ -326,7 +374,8 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		signupSource: 'staff',
 		paymentMethod: payment.paymentMethod,
 		monthlyAmountCents: monthlyPrice != null ? eurosToCents(monthlyPrice) : null,
-		duoPairId: duoCourseOids.has(parties.parties.courseOid) ? crypto.randomUUID() : null,
+		duoPairId: !isGroupLesson && duoCourseOids.has(courseOid) ? crypto.randomUUID() : null,
+		isGroupLesson,
 		synthesizeLessonTypeOption: durationPrice.value.synthesizeLessonTypeOption,
 		optionWarning: durationPrice.value.optionWarning,
 	};

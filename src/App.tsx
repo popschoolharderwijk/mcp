@@ -97,13 +97,16 @@ const App = () => (
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/teachers" element={<Teachers />} />
 						<Route path="/teachers/availability" element={<TeacherAvailability />} />
+						<Route path="/teachers/my-profile/:tab" element={<TeacherInfo />} />
 						<Route path="/teachers/my-profile" element={<TeacherInfo />} />
 						<Route path="/teachers/my-availability" element={<MyAvailability />} />
 						<Route path="/teachers/my-statistics" element={<MyStatistics />} />
+						<Route path="/teachers/:id/:tab" element={<TeacherInfo />} />
 						<Route path="/teachers/:id" element={<TeacherInfo />} />
 						<Route path="/students" element={<Students />} />
 						<Route path="/students/my-students" element={<MyStudents />} />
 						<Route path="/students/my-profile" element={<MyStudentProfile />} />
+						<Route path="/students/:userId/:tab" element={<StudentDetail />} />
 						<Route path="/students/:userId" element={<StudentDetail />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/accounting" element={<AccountingReport />} />

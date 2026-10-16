@@ -188,6 +188,11 @@ BEGIN
     RAISE EXCEPTION 'Teacher not found for teacher_user_id %', NEW.teacher_user_id;
   END IF;
 
+  -- Group agreements are scheduled via a single lesson_group agenda_event, not per member.
+  IF NEW.lesson_group_id IS NOT NULL THEN
+    RETURN NEW;
+  END IF;
+
   -- Duo path: if an agenda_event already exists for another agreement in this duo_pair,
   -- add the student there as a participant and do NOT create a new event.
   IF NEW.duo_pair_id IS NOT NULL THEN

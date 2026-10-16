@@ -5,7 +5,20 @@ import { useTeacherInfoPage } from '@/hooks/useTeacherInfoPage';
 import { shouldRedirectTeacherInfo, shouldShowTeacherInfoSkeleton } from '@/lib/teachers/teacherInfoPageShellHelpers';
 
 export default function TeacherInfo() {
-	const { pageGate, targetTeacherUserId, teacherProfile, canAccess, onProfileUpdate } = useTeacherInfoPage();
+	const {
+		pageGate,
+		targetTeacherUserId,
+		teacherProfile,
+		canAccess,
+		activeTab,
+		tabRedirectTo,
+		onTabChange,
+		onProfileUpdate,
+	} = useTeacherInfoPage();
+
+	if (tabRedirectTo) {
+		return <Navigate to={tabRedirectTo} replace />;
+	}
 
 	if (shouldShowTeacherInfoSkeleton(pageGate, teacherProfile, targetTeacherUserId)) {
 		return <PageSkeleton variant="header-and-tabs" />;
@@ -20,6 +33,8 @@ export default function TeacherInfo() {
 			targetTeacherUserId={targetTeacherUserId}
 			teacherProfile={teacherProfile}
 			canAccess={canAccess}
+			activeTab={activeTab}
+			onTabChange={onTabChange}
 			onProfileUpdate={onProfileUpdate}
 		/>
 	);

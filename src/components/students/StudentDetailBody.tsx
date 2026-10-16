@@ -8,6 +8,7 @@ import {
 	formatStudentPhoneSubtitle,
 	type StudentProfileData,
 } from '@/lib/students/studentDetailHelpers';
+import type { StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import { StudentInfoTabs } from '@/pages/student-detail/StudentInfoTabs';
 import type { Student } from '@/types/students';
 
@@ -21,6 +22,8 @@ interface StudentDetailBodyProps extends StudentDetailPageData {
 	student: Student;
 	isPrivileged: boolean;
 	canEditAgenda: boolean;
+	activeTab: StudentInfoTabId;
+	onTabChange: (tab: StudentInfoTabId) => void;
 }
 
 export function StudentDetailBody({
@@ -31,6 +34,8 @@ export function StudentDetailBody({
 	signupRequests,
 	isPrivileged,
 	canEditAgenda,
+	activeTab,
+	onTabChange,
 	onProfileUpdate,
 }: StudentDetailBodyProps) {
 	const displayName = getDisplayName(profile);
@@ -58,6 +63,8 @@ export function StudentDetailBody({
 				signupRequests={signupRequests}
 				isPrivileged={isPrivileged}
 				canEditAgenda={canEditAgenda}
+				activeTab={activeTab}
+				onTabChange={onTabChange}
 				onProfileUpdate={onProfileUpdate}
 			/>
 		</div>

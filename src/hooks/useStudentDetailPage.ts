@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,23 +10,64 @@ import {
 	executeStudentDetailHookLoad,
 	runStudentDetailPageLoad,
 } from '@/lib/students/studentDetailPageLoadHelpers';
+import {
+	resolveStudentDetailTabState,
+	resolveStudentInfoTabRoute,
+	type StudentInfoTabId,
+} from '@/lib/students/studentInfoTabsHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
 
 interface UseStudentDetailPageParams {
 	authLoading: boolean;
 	canView: boolean;
+	isPrivileged: boolean;
+}
+
+function useStudentDetailTabRouting(authLoading: boolean, isPrivileged: boolean) {
+	const { userId, tab: tabParam } = useParams<{ userId: string; tab?: string }>();
+	const navigate = useNavigate();
+	const { activeTab, tabRedirectTo } = resolveStudentDetailTabState({
+		userId,
+		tabParam,
+		authLoading,
+		isPrivileged,
+	});
+
+	const onTabChange = useCallback(
+		(tab: StudentInfoTabId) => {
+			if (!userId) return;
+			navigate(resolveStudentInfoTabRoute(userId, tab), { replace: true });
+		},
+		[navigate, userId],
+	);
+
+	return { userId, activeTab, tabRedirectTo, onTabChange };
+}
+
+function useStudentDetailBreadcrumb(profile: StudentProfileData | null) {
+	const { setBreadcrumbSuffix } = useBreadcrumb();
+	useEffect(() => {
+		if (!profile) {
+			setBreadcrumbSuffix([]);
+			return;
+		}
+		setBreadcrumbSuffix([{ label: getDisplayName(profile) }]);
+		return () => setBreadcrumbSuffix([]);
+	}, [profile, setBreadcrumbSuffix]);
 }
 
 export function useStudentDetailPage(params: UseStudentDetailPageParams) {
-	const { userId } = useParams<{ userId: string }>();
+	const { userId, activeTab, tabRedirectTo, onTabChange } = useStudentDetailTabRouting(
+		params.authLoading,
+		params.isPrivileged,
+	);
 	const [loading, setLoading] = useState(true);
 	const [profile, setProfile] = useState<StudentProfileData | null>(null);
 	const [student, setStudent] = useState<Student | null>(null);
 	const [agreements, setAgreements] = useState<LessonAgreementWithTeacher[]>([]);
 	const [signupRequests, setSignupRequests] = useState<SignupRequestDetail[]>([]);
 	const hasLoadedContentRef = useRef(false);
-	const { setBreadcrumbSuffix } = useBreadcrumb();
 
 	useEffect(() => {
 		hasLoadedContentRef.current = false;
@@ -57,14 +98,7 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
 		if (!params.authLoading && params.canView) void load();
 	}, [params.authLoading, params.canView, load]);
 
-	useEffect(() => {
-		if (!profile) {
-			setBreadcrumbSuffix([]);
-			return;
-		}
-		setBreadcrumbSuffix([{ label: getDisplayName(profile) }]);
-		return () => setBreadcrumbSuffix([]);
-	}, [profile, setBreadcrumbSuffix]);
+	useStudentDetailBreadcrumb(profile);
 
 	const onProfileUpdate = useCallback(() => {
 		void load();
@@ -77,6 +111,9 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
 		student,
 		agreements,
 		signupRequests,
+		activeTab,
+		tabRedirectTo,
+		onTabChange,
 		onProfileUpdate,
 	};
 }

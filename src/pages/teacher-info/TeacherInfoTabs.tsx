@@ -2,13 +2,19 @@ import { AgendaView } from '@/components/agenda/AgendaView';
 import { TeacherAddressSection } from '@/components/teachers/TeacherAddressSection';
 import { TeacherInfoProfileTab } from '@/components/teachers/TeacherInfoProfileTab';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { teacherAddressFieldsFromProfile } from '@/lib/teachers/teacherInfoTabsHelpers';
+import {
+	isTeacherInfoTabId,
+	type TeacherInfoTabId,
+	teacherAddressFieldsFromProfile,
+} from '@/lib/teachers/teacherInfoTabsHelpers';
 import type { Teacher } from '@/types/teachers';
 
 interface TeacherInfoTabsProps {
 	targetTeacherUserId: string;
 	teacherProfile: Teacher;
 	canAccess: boolean;
+	activeTab: TeacherInfoTabId;
+	onTabChange: (tab: TeacherInfoTabId) => void;
 	onProfileUpdate: () => void;
 }
 
@@ -16,10 +22,18 @@ export function TeacherInfoTabs({
 	targetTeacherUserId,
 	teacherProfile,
 	canAccess,
+	activeTab,
+	onTabChange,
 	onProfileUpdate,
 }: TeacherInfoTabsProps) {
 	return (
-		<Tabs defaultValue="profile" className="space-y-2">
+		<Tabs
+			value={activeTab}
+			onValueChange={(value) => {
+				if (isTeacherInfoTabId(value)) onTabChange(value);
+			}}
+			className="space-y-2"
+		>
 			<TabsList>
 				<TabsTrigger value="profile">Profiel</TabsTrigger>
 				<TabsTrigger value="address">Adres</TabsTrigger>

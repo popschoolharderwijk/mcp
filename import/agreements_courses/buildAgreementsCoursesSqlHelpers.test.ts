@@ -8,6 +8,8 @@ const sampleRow: AgreementCourseSqlRow = {
 	studentUserId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
 	teacherUserId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
 	lessonTypeId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+	courseOid: 'course-oid',
+	courseName: null,
 	durationMinutes: 30,
 	frequency: 'weekly',
 	pricePerLesson: 73.38,
@@ -21,8 +23,33 @@ const sampleRow: AgreementCourseSqlRow = {
 	paymentMethod: 'sepa',
 	monthlyAmountCents: 4250,
 	duoPairId: null,
+	isGroupLesson: false,
 	synthesizeLessonTypeOption: false,
 	optionWarning: null,
+	lessonGroupId: null,
+};
+
+const groupMemberA: AgreementCourseSqlRow = {
+	...sampleRow,
+	mongoOid: 'group-a',
+	agreementId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+	studentUserId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+	courseOid: 'course-group',
+	courseName: 'Bandles',
+	durationMinutes: 60,
+	startTime: '19:00:00',
+	pricePerLesson: 20,
+	monthlyAmountCents: null,
+	notes: null,
+	isGroupLesson: true,
+	lessonGroupId: 'gggggggg-gggg-gggg-gggg-gggggggggggg',
+};
+
+const groupMemberB: AgreementCourseSqlRow = {
+	...groupMemberA,
+	mongoOid: 'group-b',
+	agreementId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+	studentUserId: 'ffffffff-ffff-ffff-ffff-ffffffffffff',
 };
 
 describe('buildAgreementsCoursesSql', () => {
@@ -37,8 +64,13 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain('NULL::date');
 		expect(sql).toContain('NULL::uuid');
 		expect(sql).toContain('duo_pair_id');
+		expect(sql).toContain('lesson_group_id');
 		expect(sql).toContain('WHERE NOT EXISTS');
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_agreements:");
+		expect(sql).toContain("RAISE NOTICE 'public.lesson_groups: 0 row(s) inserted (no group lessons)'");
+		expect(sql).toContain(
+			"RAISE NOTICE 'public.agenda_events (lesson_group): 0 row(s) inserted (no group lessons)'",
+		);
 	});
 
 	it('emits duo_pair_id when the agreement is for a duo lesson type', () => {
@@ -83,6 +115,77 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql.indexOf('lesson_type_options')).toBeLessThan(sql.indexOf('lesson_agreements'));
 		const optionsSection = sql.slice(0, sql.indexOf('INSERT INTO public.lesson_agreements'));
 		expect(optionsSection.split("'dddddddd-dddd-dddd-dddd-dddddddddddd'::uuid")).toHaveLength(2);
+	});
+
+	it('emits one lesson_group, members, and a single lesson_group agenda event for shared slots', () => {
+		const sql = buildAgreementsCoursesSql([groupMemberA, groupMemberB]);
+
+		expect(sql).toContain('INSERT INTO public.lesson_groups');
+		expect(sql).toContain('INSERT INTO public.lesson_group_members');
+		expect(sql).toContain('INSERT INTO public.agenda_events');
+		expect(sql).toContain("'lesson_group'::public.agenda_event_source_type");
+		expect(sql).toContain("'gggggggg-gggg-gggg-gggg-gggggggggggg'::uuid");
+		expect(sql).toContain("'Bandles dinsdag 19:00'");
+		expect(sql).toContain("'2024-08-27'::date");
+		expect(sql).toContain("'20:00:00'::time");
+
+		const agendaSection = sql.slice(sql.indexOf('INSERT INTO public.agenda_events'));
+		expect(agendaSection).toContain("'2024-08-27'::date, '19:00:00'::time, '2024-08-27'::date, '20:00:00'::time");
+
+		expect(sql.indexOf('INSERT INTO public.lesson_groups')).toBeLessThan(
+			sql.indexOf('INSERT INTO public.lesson_agreements'),
+		);
+		expect(sql.indexOf('INSERT INTO public.lesson_agreements')).toBeLessThan(
+			sql.indexOf('INSERT INTO public.lesson_group_members'),
+		);
+		expect(sql.indexOf('INSERT INTO public.lesson_group_members')).toBeLessThan(
+			sql.indexOf('INSERT INTO public.agenda_events'),
+		);
+
+		// VALUES tuple + WHERE NOT EXISTS guard = one agenda event per group
+		expect(sql.split("'lesson_group'::public.agenda_event_source_type")).toHaveLength(3);
+		// group id: lesson_groups + 2 agreements + 2 members + agenda source_id
+		expect(sql.split("'gggggggg-gggg-gggg-gggg-gggggggggggg'::uuid")).toHaveLength(7);
+	});
+
+	it('emits next-day end_date when a group lesson crosses midnight', () => {
+		const overnight: AgreementCourseSqlRow = {
+			...groupMemberA,
+			startTime: '23:57:12',
+			durationMinutes: 30,
+			dayOfWeek: 4,
+			startDate: '2024-02-29',
+			courseName: 'Laatbloeiers Gitaar 21+',
+		};
+		const sql = buildAgreementsCoursesSql([overnight]);
+		const agendaSection = sql.slice(sql.indexOf('INSERT INTO public.agenda_events'));
+		expect(agendaSection).toContain("'2024-02-29'::date, '23:57:12'::time, '2024-03-01'::date, '00:27:12'::time");
+	});
+
+	it('emits one lesson_group_members row when the same student has overlapping group agreements', () => {
+		const duplicateMembership: AgreementCourseSqlRow = {
+			...groupMemberA,
+			mongoOid: 'group-a-renewal',
+			agreementId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+			startDate: '2024-06-01',
+			endDate: '2024-07-31',
+		};
+		const laterMembership: AgreementCourseSqlRow = {
+			...groupMemberA,
+			startDate: '2024-08-29',
+			endDate: '2025-07-31',
+		};
+		const sql = buildAgreementsCoursesSql([duplicateMembership, laterMembership]);
+
+		const membersSection = sql.slice(
+			sql.indexOf('INSERT INTO public.lesson_group_members'),
+			sql.indexOf('INSERT INTO public.agenda_events'),
+		);
+		expect(membersSection.split("'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'::uuid")).toHaveLength(2);
+		expect(membersSection).toContain("'2024-06-01'::date");
+		expect(membersSection).toContain("'2025-07-31'::date");
+		// group id: lesson_groups + 2 agreements + 1 member + agenda source_id
+		expect(sql.split("'gggggggg-gggg-gggg-gggg-gggggggggggg'::uuid")).toHaveLength(6);
 	});
 
 	it('returns a comment when there are no rows', () => {

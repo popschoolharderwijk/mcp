@@ -20,6 +20,7 @@ import {
 	shouldShowMyStudentsSkeleton,
 	shouldSkipMyStudentsLoad,
 } from '@/lib/students/myStudentsPageHelpers';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import type { StudentWithAgreements } from '@/types/students';
 
 export default function MyStudents() {
@@ -106,7 +107,7 @@ export default function MyStudents() {
 								<TooltipTrigger asChild>
 									<div className="min-w-0 flex-1 overflow-hidden">
 										<Link
-											to={`/students/${student.user_id}`}
+											to={buildStudentDetailPath(student.user_id)}
 											className="block font-medium truncate hover:text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
 										>
 											{myStudentDisplayName(student)}

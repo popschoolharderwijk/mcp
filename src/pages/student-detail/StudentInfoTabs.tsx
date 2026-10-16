@@ -8,7 +8,7 @@ import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/s
 import { StudentProfileSection } from '@/components/students/StudentProfileSection';
 import { useStudentProfileForm } from '@/components/students/useStudentProfileForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { resolveStudentInfoTabsDefaultValue } from '@/lib/students/studentInfoTabsHelpers';
+import { isStudentInfoTabId, type StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
 
@@ -19,6 +19,8 @@ interface StudentInfoTabsProps {
 	signupRequests: SignupRequestDetail[];
 	isPrivileged: boolean;
 	canEditAgenda: boolean;
+	activeTab: StudentInfoTabId;
+	onTabChange: (tab: StudentInfoTabId) => void;
 	onProfileUpdate: () => void;
 }
 
@@ -107,10 +109,18 @@ export function StudentInfoTabs({
 	signupRequests,
 	isPrivileged,
 	canEditAgenda,
+	activeTab,
+	onTabChange,
 	onProfileUpdate,
 }: StudentInfoTabsProps) {
 	return (
-		<Tabs defaultValue={resolveStudentInfoTabsDefaultValue(isPrivileged)} className="space-y-2">
+		<Tabs
+			value={activeTab}
+			onValueChange={(value) => {
+				if (isStudentInfoTabId(value)) onTabChange(value);
+			}}
+			className="space-y-2"
+		>
 			<TabsList>
 				{isPrivileged && (
 					<>

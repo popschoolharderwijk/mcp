@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
 import type { DashboardStudent } from '@/hooks/useDashboardData';
 import { formatDateTimeShort } from '@/lib/date/date-format';
+import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 
 const StudentsIcon = NAV_ICONS.students;
 
@@ -63,7 +64,7 @@ export function RecentStudents({
 								key={student.user_id}
 								type="button"
 								className="w-full flex items-center justify-between rounded-lg p-2 hover:bg-accent cursor-pointer transition-colors text-left"
-								onClick={() => navigate(`/students/${student.user_id}`)}
+								onClick={() => navigate(buildStudentDetailPath(student.user_id))}
 							>
 								<div className="flex items-center gap-3">
 									<Avatar className="h-9 w-9">

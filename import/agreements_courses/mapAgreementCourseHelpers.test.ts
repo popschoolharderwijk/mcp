@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it } from 'bun:test';
 import { createEmptyIdMap, setMappedId } from '../shared/idMapHelpers';
 import { buildCoursePriceIndex } from './coursePriceIndexHelpers';
 import {
+	buildCourseNameByOid,
+	buildGroupCourseOidSet,
 	mapAgreementCourseDoc,
 	pickLatestScheduleSlot,
+	setAgreementCourseNameByOid,
 	setAgreementCoursePriceIndex,
 	setAgreementDuoCourseOids,
+	setAgreementGroupCourseOids,
 	setAgreementScheduleFrequencyMap,
 } from './mapAgreementCourseHelpers';
 
@@ -57,9 +61,34 @@ describe('pickLatestScheduleSlot', () => {
 	});
 });
 
+describe('buildGroupCourseOidSet', () => {
+	it('marks courses with maxparticipants > 1 as group lessons', () => {
+		expect(
+			buildGroupCourseOidSet([
+				{ _id: { $oid: 'g1' }, name: 'Band', maxparticipants: 8 },
+				{ _id: { $oid: 'g2' }, name: 'Piano', maxparticipants: 1 },
+				{ _id: { $oid: 'g3' }, name: 'DUO Piano', maxparticipants: 2 },
+			]),
+		).toEqual(new Set(['g1']));
+	});
+});
+
+describe('buildCourseNameByOid', () => {
+	it('maps trimmed course names by oid', () => {
+		expect(
+			buildCourseNameByOid([
+				{ _id: { $oid: 'c1' }, name: '  Bandles  ' },
+				{ _id: { $oid: 'c2' }, name: '' },
+			]),
+		).toEqual(new Map([['c1', 'Bandles']]));
+	});
+});
+
 describe('mapAgreementCourseDoc', () => {
 	beforeEach(() => {
 		setAgreementDuoCourseOids(new Set());
+		setAgreementGroupCourseOids(new Set());
+		setAgreementCourseNameByOid(new Map());
 		setAgreementScheduleFrequencyMap(new Map([[DF_WEEKLY_30, { durationMinutes: 30, frequency: 'weekly' }]]));
 		setAgreementCoursePriceIndex(
 			buildCoursePriceIndex([
@@ -82,6 +111,8 @@ describe('mapAgreementCourseDoc', () => {
 			studentUserId: 'student-uuid',
 			teacherUserId: 'teacher-uuid',
 			lessonTypeId: 'lesson-type-uuid',
+			courseOid: COURSE_OID,
+			courseName: null,
 			durationMinutes: 30,
 			frequency: 'weekly',
 			pricePerLesson: 73.38,
@@ -95,9 +126,21 @@ describe('mapAgreementCourseDoc', () => {
 			paymentMethod: 'sepa',
 			monthlyAmountCents: 4250,
 			duoPairId: null,
+			isGroupLesson: false,
 			synthesizeLessonTypeOption: false,
 			optionWarning: null,
 		});
+	});
+
+	it('flags group lessons and keeps the course name for the lesson group title', () => {
+		setAgreementGroupCourseOids(new Set([COURSE_OID]));
+		setAgreementCourseNameByOid(new Map([[COURSE_OID, 'Bandles']]));
+		const result = mapAgreementCourseDoc(validDoc(), baseIdMap());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.isGroupLesson).toBe(true);
+		expect(result.row.courseName).toBe('Bandles');
+		expect(result.row.duoPairId).toBeNull();
 	});
 
 	it('maps enddate onto endDate when present', () => {
@@ -127,6 +170,16 @@ describe('mapAgreementCourseDoc', () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.row.duoPairId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+	});
+
+	it('does not assign duo_pair_id when the course is also marked as group', () => {
+		setAgreementDuoCourseOids(new Set([COURSE_OID]));
+		setAgreementGroupCourseOids(new Set([COURSE_OID]));
+		const result = mapAgreementCourseDoc(validDoc(), baseIdMap());
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.isGroupLesson).toBe(true);
+		expect(result.row.duoPairId).toBeNull();
 	});
 
 	it('synthesizes a lesson_type_option when durationfreq is missing from frequency_mnd_prices', () => {

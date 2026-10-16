@@ -1,34 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { stdin as input, stdout as output } from 'node:process';
-import { createInterface } from 'node:readline/promises';
-import { extractSupabaseProjectRef, isProductionDb, PRODUCTION_SUPABASE_PROJECT_REF } from './supabaseTargetHelpers';
+import { extractSupabaseProjectRef } from './supabaseTargetHelpers';
 import { orderImportSqlFileNames, readUploadImportEnv } from './uploadImportEnvHelpers';
-
-async function confirmProductionUpload(
-	projectRef: string,
-	ask: (question: string) => Promise<string>,
-): Promise<{ ok: true } | { ok: false; error: string }> {
-	const answer = (
-		await ask(
-			`WARNING: SUPABASE_URL points at production (${projectRef}). Type "${PRODUCTION_SUPABASE_PROJECT_REF}" to continue: `,
-		)
-	).trim();
-
-	if (answer !== PRODUCTION_SUPABASE_PROJECT_REF) {
-		return { ok: false, error: 'Production upload aborted (project ref confirmation mismatch)' };
-	}
-	return { ok: true };
-}
-
-async function defaultAskLine(question: string): Promise<string> {
-	const rl = createInterface({ input, output });
-	try {
-		return await rl.question(question);
-	} finally {
-		rl.close();
-	}
-}
 
 async function defaultRunPsqlFile(
 	dbUrl: string,
@@ -54,7 +27,6 @@ export async function uploadImportSqlFiles(params: {
 	outDir: string;
 	preferredSqlOrder: readonly string[];
 	env?: NodeJS.ProcessEnv;
-	ask?: (question: string) => Promise<string>;
 	runPsqlFile?: RunPsqlFile;
 	log?: (message: string) => void;
 }): Promise<{ ok: true; files: string[] } | { ok: false; error: string }> {
@@ -67,11 +39,6 @@ export async function uploadImportSqlFiles(params: {
 			ok: false,
 			error: `Could not parse Supabase project ref from SUPABASE_URL: ${envResult.value.supabaseUrl}`,
 		};
-	}
-
-	if (isProductionDb(envResult.value.supabaseUrl)) {
-		const confirmed = await confirmProductionUpload(projectRef, params.ask ?? defaultAskLine);
-		if (!confirmed.ok) return confirmed;
 	}
 
 	const entries = await readdir(params.outDir);

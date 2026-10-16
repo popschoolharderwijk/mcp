@@ -4,6 +4,7 @@ import { TeacherFormDialog } from '@/components/teachers/TeacherFormDialog';
 import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { getDisplayName } from '@/lib/display-name';
+import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 import { buildTeacherFormDialogOpenChangeHandler } from '@/lib/teachers/teachersPageShellHelpers';
 import type { TeacherWithLessonTypes } from '@/types/teachers';
 
@@ -34,7 +35,7 @@ export function TeachersPageDialogs({
 				onSuccess={(teacherUserId) => {
 					loadTeachers();
 					if (teacherUserId) {
-						navigate(`/teachers/${teacherUserId}`);
+						navigate(buildTeacherInfoPath(teacherUserId));
 					}
 				}}
 				teacher={teacherFormDialog.teacher ?? undefined}
