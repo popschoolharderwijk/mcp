@@ -272,7 +272,7 @@ describe('enrichAgendaEvent', () => {
 			}),
 			ctx,
 		);
-		expect(result.title).toBe('Jan Jansen - Piano');
+		expect(result.title).toBe('Jan Jansen');
 		expect(result.resource.teacherName).toBe('Piet Docent');
 		expect(result.resource.viewerIsTeacher).toBe(true);
 		expect(result.resource.isDuoLesson).toBe(false);
@@ -330,9 +330,57 @@ describe('enrichAgendaEvent', () => {
 			}),
 			ctx,
 		);
-		expect(result.title).toBe('Anna Bakker & Jan Jansen - Piano');
+		expect(result.title).toBe('Anna Bakker & Jan Jansen');
 		expect(result.resource.isDuoLesson).toBe(true);
 		expect(result.resource.users).toHaveLength(2);
+	});
+
+	it('shows the teacher name in the title when the viewer is the student', () => {
+		const agreement: AgendaLessonAgreement = {
+			id: 'agr-1',
+			day_of_week: 1,
+			start_time: '14:00',
+			start_date: '2026-09-01',
+			end_date: null,
+			is_active: true,
+			student_user_id: 'stu-1',
+			lesson_type_id: 'lt-1',
+			duration_minutes: 60,
+			frequency: 'weekly',
+			price_per_lesson: 30,
+			profiles: studentProfile,
+			lesson_types: {
+				id: 'lt-1',
+				name: 'Piano',
+				icon: 'piano',
+				color: '#10b981',
+				is_group_lesson: false,
+			},
+			teacherUserId: 'tea-1',
+			teacherProfile: teacherProfile,
+		};
+		const ctx = emptyContext({
+			agreementsMap: new Map([['agr-1', agreement]]),
+			participantUserIdsByEventId: new Map([['event-1', ['stu-1', 'tea-1']]]),
+			profileMap: new Map([
+				['stu-1', studentProfile],
+				['tea-1', teacherProfile],
+			]),
+			viewerUserId: 'stu-1',
+		});
+		const result = enrichAgendaEvent(
+			mockEvent({
+				resource: {
+					...mockEvent().resource,
+					sourceType: 'lesson_agreement',
+					agreementId: 'agr-1',
+				},
+			}),
+			ctx,
+		);
+		expect(result.title).toBe('Piet Docent');
+		expect(result.resource.viewerIsTeacher).toBe(false);
+		expect(result.resource.studentName).toBe('Jan Jansen');
 	});
 
 	it('returns the event unchanged when no enrichment source matches', () => {

@@ -42,3 +42,27 @@ export function buildLessonAgreementStudentInfo(
 export function buildLessonAgreementTeacherName(teacherProfile: UserOptional | null | undefined): string {
 	return teacherProfile ? getDisplayName(teacherProfile) : 'Docent onbekend';
 }
+
+/** Party names for the calendar title: omit the viewer (teacher → students; student → teacher [+ other duo students]). */
+export function buildLessonAgreementTitlePartyName(params: {
+	studentInfo: LessonAgreementStudentInfo;
+	teacherName: string;
+	teacherUserId: string | undefined;
+	viewerUserId: string | undefined;
+}): string {
+	const { studentInfo, teacherName, teacherUserId, viewerUserId } = params;
+
+	if (!viewerUserId || viewerUserId === teacherUserId) {
+		return studentInfo.studentName;
+	}
+
+	if (!studentInfo.isDuo) {
+		return teacherName;
+	}
+
+	const otherStudentNames = studentInfo.studentUsers
+		.filter((user) => user.user_id !== viewerUserId)
+		.map((user) => getDisplayName(user))
+		.sort();
+	return [teacherName, ...otherStudentNames].join(' & ');
+}

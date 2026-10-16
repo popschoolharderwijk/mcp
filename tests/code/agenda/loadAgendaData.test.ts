@@ -243,6 +243,13 @@ describe('loadAgendaData pure helpers', () => {
 			['tea-1', teacherProfile],
 		]);
 		const result = loadAgendaData.buildAgendaAgreementsWithProfiles([mockAgreement()], null, profileMap);
+		const objectJoinResult = loadAgendaData.buildAgendaAgreementsWithProfiles(
+			[mockAgreement({ teachers: { user_id: 'tea-1' } })],
+			null,
+			profileMap,
+		);
+		expect(objectJoinResult[0]?.teacherUserId).toBe('tea-1');
+		expect(objectJoinResult[0]?.teacherProfile).toEqual(teacherProfile);
 		expect(result).toHaveLength(1);
 		expect(result[0]?.teacherUserId).toBe('tea-1');
 		expect(result[0]?.profiles).toEqual(studentProfile);

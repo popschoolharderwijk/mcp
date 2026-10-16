@@ -125,7 +125,10 @@ describe('getCalendarProps', () => {
 	});
 
 	it('exposes calendar accessors and availability bounds', () => {
-		const event = mockCalendarEvent();
+		const event = mockCalendarEvent({
+			isLesson: true,
+			teacherName: 'Piet Docent',
+		});
 		const props = getCalendarProps({
 			...baseParams,
 			canEdit: false,
@@ -140,7 +143,6 @@ describe('getCalendarProps', () => {
 		expect(props.min).toEqual(new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0));
 		expect(props.max).toEqual(new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0));
 		expect(props.eventPropGetter(event).style?.backgroundColor).toBe('#ff0000');
-		expect(props.tooltipAccessor(event)).toContain('Piano');
-		expect(props.tooltipAccessor(event)).toContain('Anna Bakker');
+		expect(props.tooltipAccessor(event)).toBe('Piano\nDocent: Piet Docent\nLeerling: Anna Bakker');
 	});
 });

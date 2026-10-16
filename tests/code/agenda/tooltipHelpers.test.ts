@@ -38,8 +38,18 @@ describe('buildTooltipFirstLine', () => {
 });
 
 describe('buildTooltipParticipantLines', () => {
-	it('shows teacher name for student viewers on single lessons', () => {
-		expect(buildTooltipParticipantLines(baseResource)).toEqual(['Jan Docent']);
+	it('shows teacher and student labels for single lessons', () => {
+		expect(buildTooltipParticipantLines(baseResource)).toEqual(['Docent: Jan Docent', 'Leerling: Anna Bakker']);
+	});
+
+	it('shows teacher and both students for duo lessons', () => {
+		expect(
+			buildTooltipParticipantLines({
+				...baseResource,
+				isDuoLesson: true,
+				studentName: 'Anna Bakker & Bob Jansen',
+			}),
+		).toEqual(['Docent: Jan Docent', 'Leerlingen: Anna Bakker, Bob Jansen']);
 	});
 
 	it('lists group lesson participants', () => {
@@ -50,7 +60,7 @@ describe('buildTooltipParticipantLines', () => {
 				studentCount: 2,
 				studentName: 'Anna Bakker, Bob Jansen',
 			}),
-		).toEqual(['2 deelnemers:', '  • Anna Bakker', '  • Bob Jansen']);
+		).toEqual(['Docent: Jan Docent', '2 leerlingen:', '  • Anna Bakker', '  • Bob Jansen']);
 	});
 });
 

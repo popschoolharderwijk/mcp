@@ -2,6 +2,7 @@ import type { CalendarEvent } from '@/components/agenda/types';
 import {
 	buildLessonAgreementStudentInfo,
 	buildLessonAgreementTeacherName,
+	buildLessonAgreementTitlePartyName,
 	type LessonAgreementStudentInfo,
 } from '@/lib/agenda/enrichLessonAgreementHelpers';
 import { getDisplayName } from '@/lib/display-name';
@@ -129,10 +130,16 @@ function enrichLessonAgreementAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEv
 	const studentInfo = buildLessonAgreementStudentInfo(agreement, ev.resource.eventId, agreement.teacherUserId, ctx);
 	const teacherName = buildLessonAgreementTeacherName(agreement.teacherProfile);
 	const isGroupLesson = agreement.lesson_types.is_group_lesson ?? false;
+	const title = buildLessonAgreementTitlePartyName({
+		studentInfo,
+		teacherName,
+		teacherUserId: agreement.teacherUserId,
+		viewerUserId: ctx.viewerUserId,
+	});
 
 	return {
 		...ev,
-		title: `${studentInfo.studentName} - ${agreement.lesson_types.name}`,
+		title,
 		resource: {
 			...ev.resource,
 			studentName: studentInfo.studentName,

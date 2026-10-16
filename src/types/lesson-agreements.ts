@@ -135,7 +135,7 @@ export interface WizardInitialAgreement {
  */
 export type LessonAgreementQuery = LessonAgreementBaseFields & {
 	lesson_types: LessonTypeJoined | LessonTypeJoined[] | null;
-	teachers: { user_id: string }[] | null;
+	teachers: { user_id: string } | { user_id: string }[] | null;
 };
 
 /**
