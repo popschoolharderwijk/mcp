@@ -18,7 +18,7 @@ import { normalizeDutchMobilePhone } from '../shared/phoneHelpers';
 import type { MappedTeacherRow, MongoTeacherDoc, TeacherMapResult } from './types';
 
 /** Mongo keys that `mapTeacherDoc` reads into the import. */
-export const MAPPED_KEYS = new Set([
+export const TEACHER_MAPPED_KEYS = new Set([
 	'_id',
 	'name',
 	'surname',
@@ -34,7 +34,7 @@ export const MAPPED_KEYS = new Set([
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
-export const IGNORED_KEYS = new Set(['assets', 'comments', 'instrument', 'note_to_teacher', 'user', 'vog']);
+export const TEACHER_IGNORED_KEYS = new Set(['assets', 'comments', 'instrument', 'note_to_teacher', 'user', 'vog']);
 
 export type TeacherKeyClassification = SourceKeyClassification;
 
@@ -48,7 +48,7 @@ export function resetTeacherEmailDedup(): void {
 
 /** Classify unmapped teacher keys into unexpected (skipped) vs intentionally ignored. */
 export function classifyTeacherKeys(doc: object): TeacherKeyClassification {
-	return classifySourceKeys(doc, MAPPED_KEYS, IGNORED_KEYS);
+	return classifySourceKeys(doc, TEACHER_MAPPED_KEYS, TEACHER_IGNORED_KEYS);
 }
 
 /** Convert mapped-row soft issues into import-report warning reasons. */

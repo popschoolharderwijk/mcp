@@ -1,19 +1,17 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import {
-	IMPORT_ID_MAP_PATH,
-	IMPORT_LOG_PATH,
-	IMPORT_OUT_DIR,
-	IMPORT_OUTPUTS,
-	IMPORT_SOURCE_DIR,
-	IMPORT_SOURCES,
-} from '../config';
+import { IMPORT_ID_MAP_FILE, IMPORT_LOG_FILE, IMPORT_OUTPUTS, IMPORT_SOURCES } from '../config';
 import { buildImportBatch } from './buildImportBatchHelpers';
 import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { loadIdMap, saveIdMap } from './idMapFile';
 import { appendImportLog } from './importLogHelpers';
 import { parseMongoExportText } from './parseMongoExportHelpers';
 import { formatImportReportIssues, formatImportReportSummary } from './reportHelpers';
+
+export type ImportConverterDirs = {
+	sourceDir: string;
+	outDir: string;
+};
 
 async function requireImportSourceFile(
 	relativePath: string,
@@ -31,16 +29,17 @@ async function requireImportSourceFile(
 /** Load source JSON/JSONL file(s), convert, write SQL + id-map, print report. */
 export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
 	converter: ImportConverter<TRow, TSqlRow>,
+	dirs: ImportConverterDirs,
 	resolvePath: (path: string) => string = resolve,
 ): Promise<void> {
 	const sourceFiles = IMPORT_SOURCES[converter.name];
-	const outPath = resolvePath(join(IMPORT_OUT_DIR, IMPORT_OUTPUTS[converter.name]));
-	const mapPath = resolvePath(IMPORT_ID_MAP_PATH);
-	const logPath = resolvePath(IMPORT_LOG_PATH);
+	const outPath = resolvePath(join(dirs.outDir, IMPORT_OUTPUTS[converter.name]));
+	const mapPath = resolvePath(join(dirs.outDir, IMPORT_ID_MAP_FILE));
+	const logPath = resolvePath(join(dirs.outDir, IMPORT_LOG_FILE));
 
 	const loaded = [];
 	for (const fileName of sourceFiles) {
-		loaded.push(await requireImportSourceFile(join(IMPORT_SOURCE_DIR, fileName), resolvePath));
+		loaded.push(await requireImportSourceFile(join(dirs.sourceDir, fileName), resolvePath));
 	}
 
 	const primary = loaded[0];

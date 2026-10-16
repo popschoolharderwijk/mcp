@@ -2,12 +2,12 @@
  * Legacy Mongo import (full pipeline).
  *
  * Usage:
- *   bun import
- *   bun import --upload
+ *   bun import <source> <out>
+ *   bun import <source> <out> --upload
  */
 
 import { resolve } from 'node:path';
-import { IMPORT_LOG_PATH, IMPORT_OUT_DIR, IMPORT_OUTPUTS } from './config';
+import { IMPORT_OUTPUTS } from './config';
 import { IMPORT_CONVERTER_NAMES, IMPORT_CONVERTERS } from './converters';
 import { runImportCli } from './shared/importCliHelpers';
 import { resetImportLog } from './shared/importLogHelpers';
@@ -17,8 +17,6 @@ import { uploadImportSqlFiles } from './shared/uploadImportSqlHelpers';
 const exitCode = await runImportCli(process.argv, {
 	converterNames: IMPORT_CONVERTER_NAMES,
 	converters: IMPORT_CONVERTERS,
-	logPath: IMPORT_LOG_PATH,
-	outDir: IMPORT_OUT_DIR,
 	preferredSqlOrder: Object.values(IMPORT_OUTPUTS),
 	resolvePath: resolve,
 	resetImportLog,

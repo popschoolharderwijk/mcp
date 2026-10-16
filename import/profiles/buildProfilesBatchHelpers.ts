@@ -3,29 +3,24 @@ import { classifySourceKeys } from '../shared/classifySourceKeysHelpers';
 import type { ImportBatch } from '../shared/converterTypes';
 import { getMappedId, type MongoIdMap, setMappedId } from '../shared/idMapHelpers';
 import { createImportEmailDedupState, type ImportEmailDedupState } from '../shared/importEmailHelpers';
+import { assignSortedReportKeys, recordKeys } from '../shared/importKeySetHelpers';
 import { asOptionalString } from '../shared/mapPersonFieldHelpers';
 import { createEmptyReport } from '../shared/reportHelpers';
 import {
 	mapStudentDoc,
-	IGNORED_KEYS as STUDENT_IGNORED,
-	MAPPED_KEYS as STUDENT_MAPPED,
+	STUDENT_IGNORED_KEYS,
+	STUDENT_MAPPED_KEYS,
 	studentRowWarningReasons,
 } from '../students/mapStudentHelpers';
 import type { MappedStudentRow } from '../students/types';
 import {
 	mapTeacherDoc,
-	IGNORED_KEYS as TEACHER_IGNORED,
-	MAPPED_KEYS as TEACHER_MAPPED,
+	TEACHER_IGNORED_KEYS,
+	TEACHER_MAPPED_KEYS,
 	teacherRowWarningReasons,
 } from '../teachers/mapTeacherHelpers';
 import type { MappedTeacherRow } from '../teachers/types';
 import type { ProfileSqlRow } from './types';
-
-function recordKeys(target: Set<string>, keys: string[]): void {
-	for (const key of keys) {
-		target.add(key);
-	}
-}
 
 /** Trim + lowercase compare key for first+last name. */
 function nameKey(firstName: string | null, lastName: string | null): string {
@@ -183,6 +178,133 @@ function registerIdentity(
 	identityIndex.set(identityKey(rawEmail, firstName, lastName), userId);
 }
 
+type ProfilesBatchState = {
+	idMap: MongoIdMap;
+	report: ReturnType<typeof createEmptyReport>;
+	people: Map<string, ProfileSqlRow>;
+	skippedKeySet: Set<string>;
+	ignoredKeySet: Set<string>;
+	identityIndex: Map<string, string>;
+	emailState: ImportEmailDedupState;
+	createId: () => string;
+};
+
+function classifyDocKeys(
+	doc: unknown,
+	mappedKeys: ReadonlySet<string>,
+	ignoredKeys: ReadonlySet<string>,
+	state: ProfilesBatchState,
+): void {
+	if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
+		return;
+	}
+	const classified = classifySourceKeys(doc, mappedKeys, ignoredKeys);
+	recordKeys(state.skippedKeySet, classified.skippedKeys);
+	recordKeys(state.ignoredKeySet, classified.ignoredKeys);
+}
+
+function bumpCreatedOrUpdated(state: ProfilesBatchState, created: boolean): void {
+	if (created) {
+		state.report.created += 1;
+	} else {
+		state.report.updated += 1;
+	}
+}
+
+function ingestTeacherDoc(state: ProfilesBatchState, doc: unknown): void {
+	classifyDocKeys(doc, TEACHER_MAPPED_KEYS, TEACHER_IGNORED_KEYS, state);
+
+	const peek = peekPersonFields(doc);
+	const identityUserId = findIdentityUserId(state.identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
+
+	const mapped = mapTeacherDoc(
+		doc,
+		state.emailState,
+		identityUserId != null ? { keepExistingEmail: true } : undefined,
+	);
+	if (!mapped.ok) {
+		state.report.failed += 1;
+		state.report.failures.push({ oid: mapped.oid, reason: mapped.reason });
+		return;
+	}
+
+	const resolved = resolveUserId({
+		idMap: state.idMap,
+		entityType: 'teacher',
+		mongoOid: mapped.row.mongoOid,
+		identityUserId,
+		createId: state.createId,
+	});
+	state.idMap = resolved.idMap;
+
+	const existing = state.people.get(resolved.userId);
+	if (existing) {
+		state.people.set(
+			resolved.userId,
+			mergeIntoPerson(existing, {
+				...mapped.row,
+				isTeacher: true,
+				cocIssuedOn: mapped.row.cocIssuedOn,
+			}),
+		);
+	} else {
+		state.people.set(resolved.userId, personFromTeacher(resolved.userId, mapped.row));
+	}
+
+	registerIdentity(state.identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
+	bumpCreatedOrUpdated(state, resolved.created);
+	for (const reason of teacherRowWarningReasons(mapped.row)) {
+		state.report.warnings.push({ oid: mapped.row.mongoOid, reason });
+	}
+}
+
+function ingestStudentDoc(state: ProfilesBatchState, doc: unknown): void {
+	classifyDocKeys(doc, STUDENT_MAPPED_KEYS, STUDENT_IGNORED_KEYS, state);
+
+	const peek = peekPersonFields(doc);
+	const identityUserId = findIdentityUserId(state.identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
+
+	const mapped = mapStudentDoc(
+		doc,
+		state.emailState,
+		identityUserId != null ? { keepExistingEmail: true } : undefined,
+	);
+	if (!mapped.ok) {
+		state.report.failed += 1;
+		state.report.failures.push({ oid: mapped.oid, reason: mapped.reason });
+		return;
+	}
+
+	const resolved = resolveUserId({
+		idMap: state.idMap,
+		entityType: 'student',
+		mongoOid: mapped.row.mongoOid,
+		identityUserId,
+		createId: state.createId,
+	});
+	state.idMap = resolved.idMap;
+
+	const existing = state.people.get(resolved.userId);
+	if (existing) {
+		state.people.set(
+			resolved.userId,
+			mergeIntoPerson(existing, {
+				...mapped.row,
+				isStudent: true,
+				dateOfBirth: mapped.row.dateOfBirth,
+			}),
+		);
+	} else {
+		state.people.set(resolved.userId, personFromStudent(resolved.userId, mapped.row));
+	}
+
+	registerIdentity(state.identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
+	bumpCreatedOrUpdated(state, resolved.created);
+	for (const reason of studentRowWarningReasons(mapped.row)) {
+		state.report.warnings.push({ oid: mapped.row.mongoOid, reason });
+	}
+}
+
 /**
  * Map teachers then students into profile rows.
  * Same email + same name (trim/lcase) → one user (null fields filled from either side).
@@ -194,122 +316,25 @@ export function buildProfilesBatch(
 	initialIdMap: MongoIdMap,
 	createId: () => string = () => crypto.randomUUID(),
 ): ImportBatch<ProfileSqlRow> {
-	const emailState: ImportEmailDedupState = createImportEmailDedupState();
-	const identityIndex = new Map<string, string>();
-
-	let idMap = initialIdMap;
-	const report = createEmptyReport();
-	const people = new Map<string, ProfileSqlRow>();
-	const skippedKeySet = new Set<string>();
-	const ignoredKeySet = new Set<string>();
+	const state: ProfilesBatchState = {
+		idMap: initialIdMap,
+		report: createEmptyReport(),
+		people: new Map(),
+		skippedKeySet: new Set(),
+		ignoredKeySet: new Set(),
+		identityIndex: new Map(),
+		emailState: createImportEmailDedupState(),
+		createId,
+	};
 
 	for (const doc of teacherDocs) {
-		if (doc !== null && typeof doc === 'object' && !Array.isArray(doc)) {
-			const classified = classifySourceKeys(doc, TEACHER_MAPPED, TEACHER_IGNORED);
-			recordKeys(skippedKeySet, classified.skippedKeys);
-			recordKeys(ignoredKeySet, classified.ignoredKeys);
-		}
-
-		const peek = peekPersonFields(doc);
-		const identityUserId = findIdentityUserId(identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
-
-		const mapped = mapTeacherDoc(doc, emailState, identityUserId != null ? { keepExistingEmail: true } : undefined);
-		if (!mapped.ok) {
-			report.failed += 1;
-			report.failures.push({ oid: mapped.oid, reason: mapped.reason });
-			continue;
-		}
-
-		const resolved = resolveUserId({
-			idMap,
-			entityType: 'teacher',
-			mongoOid: mapped.row.mongoOid,
-			identityUserId,
-			createId,
-		});
-		idMap = resolved.idMap;
-
-		const existing = people.get(resolved.userId);
-		if (existing) {
-			people.set(
-				resolved.userId,
-				mergeIntoPerson(existing, {
-					...mapped.row,
-					isTeacher: true,
-					cocIssuedOn: mapped.row.cocIssuedOn,
-				}),
-			);
-		} else {
-			people.set(resolved.userId, personFromTeacher(resolved.userId, mapped.row));
-		}
-
-		registerIdentity(identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
-
-		if (resolved.created) {
-			report.created += 1;
-		} else {
-			report.updated += 1;
-		}
-		for (const reason of teacherRowWarningReasons(mapped.row)) {
-			report.warnings.push({ oid: mapped.row.mongoOid, reason });
-		}
+		ingestTeacherDoc(state, doc);
 	}
-
 	for (const doc of studentDocs) {
-		if (doc !== null && typeof doc === 'object' && !Array.isArray(doc)) {
-			const classified = classifySourceKeys(doc, STUDENT_MAPPED, STUDENT_IGNORED);
-			recordKeys(skippedKeySet, classified.skippedKeys);
-			recordKeys(ignoredKeySet, classified.ignoredKeys);
-		}
-
-		const peek = peekPersonFields(doc);
-		const identityUserId = findIdentityUserId(identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
-
-		const mapped = mapStudentDoc(doc, emailState, identityUserId != null ? { keepExistingEmail: true } : undefined);
-		if (!mapped.ok) {
-			report.failed += 1;
-			report.failures.push({ oid: mapped.oid, reason: mapped.reason });
-			continue;
-		}
-
-		const resolved = resolveUserId({
-			idMap,
-			entityType: 'student',
-			mongoOid: mapped.row.mongoOid,
-			identityUserId,
-			createId,
-		});
-		idMap = resolved.idMap;
-
-		const existing = people.get(resolved.userId);
-		if (existing) {
-			people.set(
-				resolved.userId,
-				mergeIntoPerson(existing, {
-					...mapped.row,
-					isStudent: true,
-					dateOfBirth: mapped.row.dateOfBirth,
-				}),
-			);
-		} else {
-			people.set(resolved.userId, personFromStudent(resolved.userId, mapped.row));
-		}
-
-		registerIdentity(identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
-
-		if (resolved.created) {
-			report.created += 1;
-		} else {
-			report.updated += 1;
-		}
-		for (const reason of studentRowWarningReasons(mapped.row)) {
-			report.warnings.push({ oid: mapped.row.mongoOid, reason });
-		}
+		ingestStudentDoc(state, doc);
 	}
 
-	report.skippedKeys = [...skippedKeySet].sort((a, b) => a.localeCompare(b));
-	report.ignoredKeys = [...ignoredKeySet].sort((a, b) => a.localeCompare(b));
-
-	const sqlRows = [...people.values()].sort((a, b) => a.email.localeCompare(b.email));
-	return { idMap, sqlRows, report };
+	assignSortedReportKeys(state.report, state.skippedKeySet, state.ignoredKeySet);
+	const sqlRows = [...state.people.values()].sort((a, b) => a.email.localeCompare(b.email));
+	return { idMap: state.idMap, sqlRows, report: state.report };
 }

@@ -1,15 +1,10 @@
 import { classifySourceKeys } from './classifySourceKeysHelpers';
 import type { ImportBatch, ImportConverter, MappedImportRow } from './converterTypes';
 import { ensureMappedId, type MongoIdMap } from './idMapHelpers';
+import { assignSortedReportKeys, recordKeys } from './importKeySetHelpers';
 import { createEmptyReport } from './reportHelpers';
 
 export type { ImportBatch } from './converterTypes';
-
-function recordKeys(target: Set<string>, keys: string[]): void {
-	for (const key of keys) {
-		target.add(key);
-	}
-}
 
 /** Map docs into SQL rows + report; updates id-map in memory. */
 export function buildImportBatch<TRow extends MappedImportRow, TSqlRow>(
@@ -52,7 +47,6 @@ export function buildImportBatch<TRow extends MappedImportRow, TSqlRow>(
 		}
 	}
 
-	report.skippedKeys = [...skippedKeySet].sort((a, b) => a.localeCompare(b));
-	report.ignoredKeys = [...ignoredKeySet].sort((a, b) => a.localeCompare(b));
+	assignSortedReportKeys(report, skippedKeySet, ignoredKeySet);
 	return { idMap, sqlRows, report };
 }

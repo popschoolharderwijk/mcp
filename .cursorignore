@@ -1,5 +1,2 @@
 **/.env
 **/.env.*
-
-import/out/*
-import/source/*

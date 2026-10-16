@@ -1,10 +1,7 @@
-/** Fixed paths for legacy Mongo import converters. */
+/** Filenames and converter wiring for legacy Mongo import. */
 
-export const IMPORT_SOURCE_DIR = 'import/source';
-export const IMPORT_OUT_DIR = 'import/out';
-
-export const IMPORT_ID_MAP_PATH = `${IMPORT_OUT_DIR}/id-map.json`;
-export const IMPORT_LOG_PATH = `${IMPORT_OUT_DIR}/import.log`;
+export const IMPORT_ID_MAP_FILE = 'id-map.json';
+export const IMPORT_LOG_FILE = 'import.log';
 
 /**
  * Pipeline order (dependency order):
