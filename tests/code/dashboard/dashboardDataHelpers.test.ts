@@ -78,6 +78,7 @@ describe('parseRecentDashboardStudents', () => {
 						parent_name: null,
 						parent_phone_number: null,
 						active_agreements_count: 0,
+						agreements_count: 0,
 						profile: {
 							user_id: 'user-2',
 							email: '',
@@ -125,6 +126,7 @@ describe('parseRecentDashboardStudents', () => {
 						parent_name: null,
 						parent_phone_number: null,
 						active_agreements_count: 1,
+						agreements_count: 1,
 						profile: {
 							user_id: 'user-1',
 							email: 'anna@example.com',

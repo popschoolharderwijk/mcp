@@ -77,7 +77,7 @@ export function buildStudentColumns(
 					}}
 					className="text-sm"
 				>
-					{formatAgreementListCount(s.agreements.length)}
+					{formatAgreementListCount(s.agreements_count)}
 				</button>
 			),
 		},

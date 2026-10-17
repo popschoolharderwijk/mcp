@@ -123,6 +123,10 @@ CREATE INDEX IF NOT EXISTS idx_lesson_agreements_student_user_id ON public.lesso
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_teacher_user_id ON public.lesson_agreements(teacher_user_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_lesson_type_id ON public.lesson_agreements(lesson_type_id);
 CREATE INDEX IF NOT EXISTS idx_lesson_agreements_is_active ON public.lesson_agreements(is_active);
+CREATE INDEX IF NOT EXISTS idx_lesson_agreements_student_user_id_is_active
+  ON public.lesson_agreements (student_user_id, is_active);
+CREATE INDEX IF NOT EXISTS idx_lesson_agreements_created_at
+  ON public.lesson_agreements (created_at DESC);
 
 -- Table and column documentation
 COMMENT ON TABLE public.lesson_agreements IS 'Lesson agreements define scheduled recurring lessons between students and teachers. This table acts as the planning/contract layer for lessons.';

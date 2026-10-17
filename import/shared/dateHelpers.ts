@@ -1,5 +1,13 @@
 const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+/** Format a local `Date` as `YYYY-MM-DD`. */
+export function formatYmd(date: Date): string {
+	const year = date.getFullYear();
+	const month = String(date.getMonth() + 1).padStart(2, '0');
+	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
 /** Parse a date string to `YYYY-MM-DD`, or null if invalid / empty. */
 export function normalizeIsoDate(input: string | null | undefined): string | null {
 	if (input == null) return null;

@@ -1,10 +1,12 @@
 import { classifyCourseFlags } from '../courses/courseFlagsHelpers';
-import type { ScheduleFrequencyEntry } from '../courses/types';
+import type { LessonFrequency, ScheduleFrequencyEntry } from '../courses/types';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import { getMappedId, type MongoIdMap } from '../shared/idMapHelpers';
 import { asFiniteNumber } from '../shared/numberHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
 import { type CoursePriceIndex, resolveAgreementCoursePrice } from './coursePriceIndexHelpers';
+import { deriveEndDateFromLessonCount, eventsLessonCountMismatchWarning } from './deriveAgreementEndDateHelpers';
+import { computeGroupAgendaStartDate } from './groupLessonImportHelpers';
 import type { AgreementCourseMapResult, MappedAgreementCourseRow } from './types';
 
 /** Mongo keys that `mapAgreementCourseDoc` reads into the import. */
@@ -22,16 +24,16 @@ export const MAPPED_KEYS = new Set([
 	'enddate',
 	'comments',
 	'schedule',
+	'numberoflessons',
+	'autorenewal',
+	'events',
 ]);
 
 /** Known Mongo keys that we intentionally do not import. */
 export const IGNORED_KEYS = new Set([
-	'events',
 	'processed',
 	'extra_costs',
 	'debtor',
-	'numberoflessons',
-	'autorenewal',
 	'custom_monthly_price',
 	'funding',
 	'haltbilling',
@@ -306,6 +308,32 @@ function resolveScheduleAndStart(
 	};
 }
 
+/** Positive integer lesson count from Mongo `numberoflessons`, or null. */
+function readPositiveLessonCount(value: unknown): number | null {
+	const n = asFiniteNumber(value);
+	if (n == null || !Number.isInteger(n) || n < 1) return null;
+	return n;
+}
+
+/**
+ * Prefer explicit enddate; else for non-autorenewal packages derive from
+ * first weekday-aligned occurrence + (n - 1) frequency intervals.
+ */
+function resolveAgreementEndDate(
+	record: Record<string, unknown>,
+	explicitEndDate: string | null,
+	startDate: string,
+	dayOfWeek: number,
+	frequency: LessonFrequency,
+): string | null {
+	if (explicitEndDate != null) return explicitEndDate;
+	if (record.autorenewal !== false) return null;
+	const numberOfLessons = readPositiveLessonCount(record.numberoflessons);
+	if (numberOfLessons == null) return null;
+	const firstOccurrence = computeGroupAgendaStartDate(startDate, dayOfWeek);
+	return deriveEndDateFromLessonCount(firstOccurrence, frequency, numberOfLessons);
+}
+
 function resolvePaymentMethod(
 	record: Record<string, unknown>,
 	agreementOid: string,
@@ -351,6 +379,14 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 	const monthlyPrice = asFiniteNumber(record.monthlyprice);
 	const courseOid = parties.parties.courseOid;
 	const isGroupLesson = groupCourseOids.has(courseOid);
+	const numberOfLessons = readPositiveLessonCount(record.numberoflessons);
+	const endDate = resolveAgreementEndDate(
+		record,
+		scheduleStart.endDate,
+		scheduleStart.startDate,
+		scheduleStart.dayOfWeek,
+		durationPrice.value.frequency,
+	);
 	const row: MappedAgreementCourseRow = {
 		mongoOid,
 		studentUserId: parties.parties.studentUserId,
@@ -364,7 +400,7 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		dayOfWeek: scheduleStart.dayOfWeek,
 		startTime: scheduleStart.startTime,
 		startDate: scheduleStart.startDate,
-		endDate: scheduleStart.endDate,
+		endDate,
 		isActive: true,
 		notes: buildNotes(
 			asOptionalString(record.agreementnumber),
@@ -378,11 +414,15 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		isGroupLesson,
 		synthesizeLessonTypeOption: durationPrice.value.synthesizeLessonTypeOption,
 		optionWarning: durationPrice.value.optionWarning,
+		eventsMismatchWarning: eventsLessonCountMismatchWarning(record.events, numberOfLessons),
 	};
 
 	return { ok: true, row };
 }
 
 export function agreementCourseRowWarningReasons(row: MappedAgreementCourseRow): string[] {
-	return row.optionWarning != null ? [row.optionWarning] : [];
+	const warnings: string[] = [];
+	if (row.optionWarning != null) warnings.push(row.optionWarning);
+	if (row.eventsMismatchWarning != null) warnings.push(row.eventsMismatchWarning);
+	return warnings;
 }

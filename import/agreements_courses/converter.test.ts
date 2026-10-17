@@ -125,15 +125,12 @@ describe('agreementsCoursesConverter solo mapping', () => {
 
 		expect(batch?.report.skippedKeys).toEqual(['mystery_field']);
 		expect(batch?.report.ignoredKeys).toEqual([
-			'autorenewal',
 			'custom_monthly_price',
 			'debtor',
-			'events',
 			'extra_costs',
 			'funding',
 			'haltbilling',
 			'noscheduling',
-			'numberoflessons',
 			'processed',
 			'teacher_notes',
 		]);

@@ -32,6 +32,8 @@ export type MappedAgreementCourseRow = MappedImportRow & {
 	synthesizeLessonTypeOption: boolean;
 	/** Warning when a missing catalog durationfreq was synthesized from course fallback price. */
 	optionWarning: string | null;
+	/** Warning when Mongo events.length disagrees with numberoflessons. */
+	eventsMismatchWarning: string | null;
 };
 
 export type AgreementCourseSqlRow = MappedAgreementCourseRow & {

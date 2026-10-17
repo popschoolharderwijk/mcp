@@ -2,6 +2,7 @@ import { toast } from 'sonner';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchSignupRequestsByEmails } from '@/lib/signup-requests/signupRequestMappers';
+import { fetchStudentAgreementsWithRelations } from '@/lib/students/fetchStudentAgreements';
 import { deleteStudentAgreements, deleteStudentUser, getAgreementIds } from '@/lib/students/studentsPageHelpers';
 import { mapStudentSortColumn } from '@/lib/students/studentsTableColumns';
 import {
@@ -33,6 +34,7 @@ function buildStudentsPageLoadRpcParams(params: ExecuteStudentsPageLoadParams) {
 		p_lesson_type_id: params.lessonTypeId ?? undefined,
 		p_sort_column: mapStudentSortColumn(params.sortColumn),
 		p_sort_direction: params.sortDirection || 'asc',
+		p_include_agreements: false,
 	};
 }
 
@@ -165,7 +167,17 @@ export async function runStudentPageAction(
 ): Promise<void> {
 	const outcome = resolveStudentPageActionOutcome(action, deleteDialog);
 	if (outcome.kind === 'open-delete') {
-		setters.setDeleteDialog({ open: true, student: outcome.student, deleteUser: false });
+		try {
+			const agreements = await fetchStudentAgreementsWithRelations(outcome.student.user_id);
+			setters.setDeleteDialog({
+				open: true,
+				student: { ...outcome.student, agreements },
+				deleteUser: false,
+			});
+		} catch (error) {
+			console.error('Error loading student agreements for delete:', error);
+			toast.error('Fout bij laden lesovereenkomsten');
+		}
 		return;
 	}
 	if (outcome.kind === 'noop') {

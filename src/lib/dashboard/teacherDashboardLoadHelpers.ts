@@ -19,6 +19,7 @@ export async function fetchTeacherDashboardData(
 			p_offset: 0,
 			p_sort_column: 'created_at',
 			p_sort_direction: 'desc',
+			p_include_agreements: false,
 		}),
 		supabase
 			.from('teacher_availability')

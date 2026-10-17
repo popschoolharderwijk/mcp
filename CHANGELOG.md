@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2 — 2026-10-16
+
+- Tabbladen op leerling- en docentdetail deelbaar via de URL
+- **Adres**-tab bij leerlingen en docenten (land met zoeken en vlag)
+- Agenda: lessen op hetzelfde tijdstip samengevoegd tot één afspraak
+- Gebruikerskiezer zoekt over alle gebruikers (niet alleen leerlingen)
+- Zoeken in facturen, mandaten en incassobatches
+- Groepsafspraken bij import als één agenda-afspraak
+
 ## 1.1.1 — 2026-10-06
 
 - Leerlingdetail met tabbladen

@@ -129,6 +129,7 @@ describe('mapAgreementCourseDoc', () => {
 			isGroupLesson: false,
 			synthesizeLessonTypeOption: false,
 			optionWarning: null,
+			eventsMismatchWarning: null,
 		});
 	});
 
@@ -286,5 +287,86 @@ describe('mapAgreementCourseDoc', () => {
 		expect(result.ok).toBe(true);
 		if (!result.ok) return;
 		expect(result.row.paymentMethod).toBe('manual');
+	});
+
+	it('derives endDate from numberoflessons and weekly frequency when autorenewal is false', () => {
+		const result = mapAgreementCourseDoc(
+			validDoc({
+				autorenewal: false,
+				numberoflessons: 6,
+				startdate: '2026-01-01',
+				schedule: [{ startdatetime: '2026-01-13T19:30:00Z' }],
+				enddate: undefined,
+			}),
+			baseIdMap(),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		// startdate 2026-01-01 aligns to Tuesday 2026-01-06; +5 weekly intervals
+		expect(result.row.dayOfWeek).toBe(2);
+		expect(result.row.endDate).toBe('2026-02-10');
+	});
+
+	it('derives endDate from the schedule week when startdate already matches that weekday', () => {
+		const result = mapAgreementCourseDoc(
+			validDoc({
+				autorenewal: false,
+				numberoflessons: 6,
+				startdate: '2026-01-13',
+				schedule: [{ startdatetime: '2026-01-13T19:30:00Z' }],
+				enddate: undefined,
+			}),
+			baseIdMap(),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.endDate).toBe('2026-02-17');
+	});
+
+	it('does not derive endDate when autorenewal is true', () => {
+		const result = mapAgreementCourseDoc(
+			validDoc({
+				autorenewal: true,
+				numberoflessons: 6,
+				enddate: undefined,
+			}),
+			baseIdMap(),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.endDate).toBeNull();
+	});
+
+	it('prefers explicit enddate over numberoflessons derivation', () => {
+		const result = mapAgreementCourseDoc(
+			validDoc({
+				autorenewal: false,
+				numberoflessons: 6,
+				enddate: '2025-06-15',
+				startdate: '2025-01-01',
+			}),
+			baseIdMap(),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.endDate).toBe('2025-06-15');
+	});
+
+	it('warns when events count does not match numberoflessons', () => {
+		const result = mapAgreementCourseDoc(
+			validDoc({
+				autorenewal: false,
+				numberoflessons: 6,
+				events: ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8'],
+				enddate: undefined,
+				startdate: '2026-01-01',
+				schedule: [{ startdatetime: '2026-01-13T19:30:00Z' }],
+			}),
+			baseIdMap(),
+		);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect(result.row.endDate).toBe('2026-02-10');
+		expect(result.row.eventsMismatchWarning).toBe('events count 8 does not match numberoflessons 6');
 	});
 });
