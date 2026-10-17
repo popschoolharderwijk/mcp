@@ -26,6 +26,7 @@ const sampleRow: AgreementCourseSqlRow = {
 	isGroupLesson: false,
 	synthesizeLessonTypeOption: false,
 	optionWarning: null,
+	eventsMismatchWarning: null,
 	lessonGroupId: null,
 };
 

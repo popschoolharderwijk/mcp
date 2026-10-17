@@ -44,6 +44,7 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		isGroupLesson: true,
 		synthesizeLessonTypeOption: false,
 		optionWarning: null,
+		eventsMismatchWarning: null,
 		lessonGroupId: null,
 		...overrides,
 	};
