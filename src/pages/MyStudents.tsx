@@ -60,6 +60,7 @@ export default function MyStudents() {
 				p_lesson_type_id: null,
 				p_sort_column: 'name',
 				p_sort_direction: 'asc',
+				p_include_agreements: true,
 			})
 			.then(({ data, error }) => {
 				if (cancelled) return;

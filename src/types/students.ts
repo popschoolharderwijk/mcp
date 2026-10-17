@@ -15,6 +15,7 @@ export type Student = StudentRow & User;
 /** Student with agreements (for list views). */
 export type StudentWithAgreements = Student & {
 	active_agreements_count: number;
+	agreements_count: number;
 	agreements: LessonAgreementWithTeacher[];
 };
 
@@ -43,7 +44,8 @@ type StudentAgreementRaw = {
 export type StudentWithAgreementsRaw = StudentRow & {
 	profile: User;
 	active_agreements_count: number;
-	agreements: StudentAgreementRaw[];
+	agreements_count: number;
+	agreements?: StudentAgreementRaw[] | null;
 };
 
 /** Transform raw agreement to LessonAgreementWithTeacher (lift duration/frequency/price from lesson_type). */
@@ -69,7 +71,7 @@ export function flattenStudentWithAgreements(t: StudentWithAgreementsRaw): Stude
 	return {
 		...rest,
 		...profile,
-		agreements: agreements.map(transformAgreement),
+		agreements: (agreements ?? []).map(transformAgreement),
 	};
 }
 

@@ -29,6 +29,11 @@ COMMENT ON VIEW view_profiles_with_display_name IS 'Profile data with calculated
 -- =============================================================================
 -- get_students_paginated
 -- =============================================================================
+-- SECURITY DEFINER: list scans must not pay per-row RLS (FORCE RLS + is_privileged /
+-- get_teacher_user_id). Access is gated in the query body to match students_select:
+-- privileged → all; own row; teacher → students with a lesson_agreement for that teacher.
+-- current_user_id() is unaffected by the role switch. Tests:
+-- tests/rls/pagination/get_students_paginated.test.ts
 
 CREATE OR REPLACE FUNCTION get_students_paginated(
   p_limit INT DEFAULT 20,
@@ -37,11 +42,12 @@ CREATE OR REPLACE FUNCTION get_students_paginated(
   p_status TEXT DEFAULT 'all',
   p_lesson_type_id UUID DEFAULT NULL,
   p_sort_column TEXT DEFAULT 'name',
-  p_sort_direction TEXT DEFAULT 'asc'
+  p_sort_direction TEXT DEFAULT 'asc',
+  p_include_agreements BOOLEAN DEFAULT false
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
@@ -50,12 +56,16 @@ DECLARE
   v_sort_column TEXT;
   v_sort_direction TEXT;
   v_query TEXT;
+  v_needs_pre_counts BOOLEAN;
+  v_is_privileged BOOLEAN;
+  v_caller_id UUID;
+  v_teacher_id UUID;
 BEGIN
   v_sort_column := CASE p_sort_column
     WHEN 'name' THEN 'display_name'
     WHEN 'phone_number' THEN 'phone_number'
     WHEN 'status' THEN 'active_agreements_count'
-    WHEN 'agreements' THEN 'active_agreements_count'
+    WHEN 'agreements' THEN 'agreements_count'
     WHEN 'created_at' THEN 'created_at'
     ELSE 'display_name'
   END;
@@ -71,131 +81,334 @@ BEGIN
     ELSE NULL
   END;
 
-  v_query := format($q$
-    WITH student_base AS (
-      SELECT DISTINCT
-        s.user_id, s.parent_name, s.parent_email, s.parent_phone_number,
-        s.debtor_info_same_as_student, s.debtor_name, s.debtor_address,
-        s.debtor_postal_code, s.debtor_city, s.created_at, s.updated_at,
-        p.email, p.first_name, p.last_name, p.phone_number, p.avatar_url, p.display_name
-      FROM students s
-      INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
-      WHERE (
-        $1 IS NULL
-        OR LOWER(p.email) LIKE $1
-        OR LOWER(COALESCE(p.first_name, '')) LIKE $1
-        OR LOWER(COALESCE(p.last_name, '')) LIKE $1
-        OR LOWER(COALESCE(p.phone_number, '')) LIKE $1
-        OR LOWER(p.display_name) LIKE $1
+  v_is_privileged := public.is_privileged();
+  v_caller_id := public.current_user_id();
+  v_teacher_id := public.get_teacher_user_id(v_caller_id);
+
+  v_needs_pre_counts :=
+    COALESCE(p_status, 'all') IN ('active', 'inactive')
+    OR COALESCE(p_sort_column, 'name') IN ('status', 'agreements');
+
+  IF v_needs_pre_counts THEN
+    v_query := format($q$
+      WITH student_base AS (
+        SELECT
+          s.user_id, s.parent_name, s.parent_email, s.parent_phone_number,
+          s.debtor_info_same_as_student, s.debtor_name, s.debtor_address,
+          s.debtor_postal_code, s.debtor_city, s.created_at, s.updated_at,
+          p.email, p.first_name, p.last_name, p.phone_number, p.avatar_url, p.display_name
+        FROM students s
+        INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
+        WHERE (
+          $7 IS TRUE
+          OR s.user_id = $8
+          OR (
+            $9 IS NOT NULL
+            AND EXISTS (
+              SELECT 1
+              FROM lesson_agreements la_access
+              WHERE la_access.student_user_id = s.user_id
+                AND la_access.teacher_user_id = $9
+            )
+          )
+        )
+        AND (
+          $1 IS NULL
+          OR LOWER(p.email) LIKE $1
+          OR LOWER(COALESCE(p.first_name, '')) LIKE $1
+          OR LOWER(COALESCE(p.last_name, '')) LIKE $1
+          OR LOWER(COALESCE(p.phone_number, '')) LIKE $1
+          OR LOWER(p.display_name) LIKE $1
+        )
+      ),
+      student_counts AS (
+        SELECT
+          la.student_user_id,
+          COUNT(*) FILTER (WHERE la.is_active = TRUE)::INT AS active_count,
+          COUNT(*)::INT AS agreements_count
+        FROM lesson_agreements la
+        INNER JOIN student_base sb ON la.student_user_id = sb.user_id
+        WHERE (
+          $7 IS TRUE
+          OR la.student_user_id = $8
+          OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+        )
+        GROUP BY la.student_user_id
+      ),
+      filtered_students AS (
+        SELECT
+          sb.*,
+          COALESCE(sc.active_count, 0)::INT AS active_agreements_count,
+          COALESCE(sc.agreements_count, 0)::INT AS agreements_count
+        FROM student_base sb
+        LEFT JOIN student_counts sc ON sb.user_id = sc.student_user_id
+        WHERE (
+          $2 = 'all'
+          OR ($2 = 'active' AND COALESCE(sc.active_count, 0) > 0)
+          OR ($2 = 'inactive' AND COALESCE(sc.active_count, 0) = 0)
+        )
+        AND (
+          $3 IS NULL
+          OR EXISTS (
+            SELECT 1 FROM lesson_agreements la
+            WHERE la.student_user_id = sb.user_id
+              AND la.lesson_type_id = $3
+              AND (
+                $7 IS TRUE
+                OR la.student_user_id = $8
+                OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+              )
+          )
+        )
+      ),
+      filtered_total AS (
+        SELECT COUNT(*)::INT AS total_count FROM filtered_students
+      ),
+      paginated_students AS (
+        SELECT fs.*, (SELECT total_count FROM filtered_total) AS total_count
+        FROM filtered_students fs
+        ORDER BY %I %s NULLS LAST, display_name ASC, user_id ASC
+        LIMIT $4 OFFSET $5
+      ),
+      page_agreements AS (
+        SELECT
+          la.student_user_id, la.id AS agreement_id, la.day_of_week, la.start_time,
+          la.start_date, la.end_date, la.is_active, la.notes, la.duration_minutes,
+          la.frequency, la.price_per_lesson,
+          lt.id AS lesson_type_id, lt.name AS lesson_type_name,
+          lt.icon AS lesson_type_icon, lt.color AS lesson_type_color,
+          tp.first_name AS teacher_first_name, tp.last_name AS teacher_last_name,
+          tp.avatar_url AS teacher_avatar_url
+        FROM lesson_agreements la
+        INNER JOIN paginated_students ps ON la.student_user_id = ps.user_id
+        INNER JOIN teachers t ON la.teacher_user_id = t.user_id
+        INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
+        INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
+        WHERE $6 IS TRUE
+          AND (
+            $7 IS TRUE
+            OR la.student_user_id = $8
+            OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+          )
       )
-    ),
-    student_agreements AS (
-      SELECT
-        la.student_user_id, la.id AS agreement_id, la.teacher_user_id,
-        la.day_of_week, la.start_time, la.start_date, la.end_date,
-        la.is_active, la.notes, la.duration_minutes, la.frequency, la.price_per_lesson,
-        lt.id AS lesson_type_id, lt.name AS lesson_type_name,
-        lt.icon AS lesson_type_icon, lt.color AS lesson_type_color,
-        tp.first_name AS teacher_first_name, tp.last_name AS teacher_last_name,
-        tp.avatar_url AS teacher_avatar_url
-      FROM lesson_agreements la
-      INNER JOIN student_base sb ON la.student_user_id = sb.user_id
-      INNER JOIN teachers t ON la.teacher_user_id = t.user_id
-      INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
-      INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
-    ),
-    student_active_counts AS (
-      SELECT student_user_id, COUNT(*) FILTER (WHERE is_active = TRUE) AS active_count
-      FROM student_agreements GROUP BY student_user_id
-    ),
-    filtered_students AS (
-      SELECT sb.*, COALESCE(sac.active_count, 0)::INT AS active_agreements_count
-      FROM student_base sb
-      LEFT JOIN student_active_counts sac ON sb.user_id = sac.student_user_id
-      WHERE (
-        $2 = 'all'
-        OR ($2 = 'active' AND COALESCE(sac.active_count, 0) > 0)
-        OR ($2 = 'inactive' AND COALESCE(sac.active_count, 0) = 0)
-      )
-      AND (
-        $3 IS NULL
-        OR EXISTS (SELECT 1 FROM student_agreements sa WHERE sa.student_user_id = sb.user_id AND sa.lesson_type_id = $3)
-      )
-    ),
-    paginated_students AS (
-      SELECT fs.*, COUNT(*) OVER () AS total_count
-      FROM filtered_students fs
-      ORDER BY %I %s NULLS LAST, display_name ASC, user_id ASC
-      LIMIT $4 OFFSET $5
-    ),
-    students_with_agreements AS (
-      SELECT
-        ps.user_id, ps.parent_name, ps.parent_email, ps.parent_phone_number,
-        ps.debtor_info_same_as_student, ps.debtor_name, ps.debtor_address,
-        ps.debtor_postal_code, ps.debtor_city, ps.created_at, ps.updated_at,
-        ps.active_agreements_count, ps.total_count,
-        JSON_BUILD_OBJECT(
-          'email', ps.email, 'first_name', ps.first_name, 'last_name', ps.last_name,
-          'phone_number', ps.phone_number, 'avatar_url', ps.avatar_url
-        ) AS profile,
-        COALESCE(
+      SELECT JSON_BUILD_OBJECT(
+        'data', COALESCE(
           (SELECT JSON_AGG(
             JSON_BUILD_OBJECT(
-              'id', sa.agreement_id, 'day_of_week', sa.day_of_week,
-              'start_time', sa.start_time, 'start_date', sa.start_date,
-              'end_date', sa.end_date, 'is_active', sa.is_active, 'notes', sa.notes,
-              'teacher', JSON_BUILD_OBJECT(
-                'first_name', sa.teacher_first_name, 'last_name', sa.teacher_last_name,
-                'avatar_url', sa.teacher_avatar_url
+              'id', ps.user_id, 'user_id', ps.user_id,
+              'parent_name', ps.parent_name, 'parent_email', ps.parent_email,
+              'parent_phone_number', ps.parent_phone_number,
+              'debtor_info_same_as_student', ps.debtor_info_same_as_student,
+              'debtor_name', ps.debtor_name, 'debtor_address', ps.debtor_address,
+              'debtor_postal_code', ps.debtor_postal_code, 'debtor_city', ps.debtor_city,
+              'created_at', ps.created_at, 'updated_at', ps.updated_at,
+              'active_agreements_count', ps.active_agreements_count,
+              'agreements_count', ps.agreements_count,
+              'profile', JSON_BUILD_OBJECT(
+                'email', ps.email, 'first_name', ps.first_name, 'last_name', ps.last_name,
+                'phone_number', ps.phone_number, 'avatar_url', ps.avatar_url
               ),
-              'lesson_type', JSON_BUILD_OBJECT(
-                'id', sa.lesson_type_id, 'name', sa.lesson_type_name,
-                'icon', sa.lesson_type_icon, 'color', sa.lesson_type_color,
-                'duration_minutes', sa.duration_minutes, 'frequency', sa.frequency,
-                'price_per_lesson', sa.price_per_lesson
-              )
+              'agreements', CASE
+                WHEN $6 IS TRUE THEN COALESCE(
+                  (SELECT JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                      'id', pa.agreement_id, 'day_of_week', pa.day_of_week,
+                      'start_time', pa.start_time, 'start_date', pa.start_date,
+                      'end_date', pa.end_date, 'is_active', pa.is_active, 'notes', pa.notes,
+                      'teacher', JSON_BUILD_OBJECT(
+                        'first_name', pa.teacher_first_name, 'last_name', pa.teacher_last_name,
+                        'avatar_url', pa.teacher_avatar_url
+                      ),
+                      'lesson_type', JSON_BUILD_OBJECT(
+                        'id', pa.lesson_type_id, 'name', pa.lesson_type_name,
+                        'icon', pa.lesson_type_icon, 'color', pa.lesson_type_color,
+                        'duration_minutes', pa.duration_minutes, 'frequency', pa.frequency,
+                        'price_per_lesson', pa.price_per_lesson
+                      )
+                    )
+                    ORDER BY pa.day_of_week, pa.start_time
+                  ) FROM page_agreements pa WHERE pa.student_user_id = ps.user_id),
+                  '[]'::JSON
+                )
+                ELSE '[]'::JSON
+              END
             )
-            ORDER BY sa.day_of_week, sa.start_time
-          )
-          FROM student_agreements sa WHERE sa.student_user_id = ps.user_id),
+          ) FROM paginated_students ps),
           '[]'::JSON
-        ) AS agreements
-      FROM paginated_students ps
-    )
-    SELECT JSON_BUILD_OBJECT(
-      'data', COALESCE(
-        (SELECT JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'id', swa.user_id, 'user_id', swa.user_id,
-            'parent_name', swa.parent_name, 'parent_email', swa.parent_email,
-            'parent_phone_number', swa.parent_phone_number,
-            'debtor_info_same_as_student', swa.debtor_info_same_as_student,
-            'debtor_name', swa.debtor_name, 'debtor_address', swa.debtor_address,
-            'debtor_postal_code', swa.debtor_postal_code, 'debtor_city', swa.debtor_city,
-            'created_at', swa.created_at, 'updated_at', swa.updated_at,
-            'active_agreements_count', swa.active_agreements_count,
-            'profile', swa.profile, 'agreements', swa.agreements
+        ),
+        'total_count', COALESCE((SELECT total_count FROM filtered_total), 0),
+        'limit', $4, 'offset', $5
+      )
+    $q$, v_sort_column, v_sort_direction);
+  ELSE
+    v_query := format($q$
+      WITH student_base AS (
+        SELECT
+          s.user_id, s.parent_name, s.parent_email, s.parent_phone_number,
+          s.debtor_info_same_as_student, s.debtor_name, s.debtor_address,
+          s.debtor_postal_code, s.debtor_city, s.created_at, s.updated_at,
+          p.email, p.first_name, p.last_name, p.phone_number, p.avatar_url, p.display_name
+        FROM students s
+        INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
+        WHERE (
+          $7 IS TRUE
+          OR s.user_id = $8
+          OR (
+            $9 IS NOT NULL
+            AND EXISTS (
+              SELECT 1
+              FROM lesson_agreements la_access
+              WHERE la_access.student_user_id = s.user_id
+                AND la_access.teacher_user_id = $9
+            )
           )
-        ) FROM students_with_agreements swa),
-        '[]'::JSON
+        )
+        AND (
+          $1 IS NULL
+          OR LOWER(p.email) LIKE $1
+          OR LOWER(COALESCE(p.first_name, '')) LIKE $1
+          OR LOWER(COALESCE(p.last_name, '')) LIKE $1
+          OR LOWER(COALESCE(p.phone_number, '')) LIKE $1
+          OR LOWER(p.display_name) LIKE $1
+        )
+        AND (
+          $3 IS NULL
+          OR EXISTS (
+            SELECT 1 FROM lesson_agreements la
+            WHERE la.student_user_id = s.user_id
+              AND la.lesson_type_id = $3
+              AND (
+                $7 IS TRUE
+                OR la.student_user_id = $8
+                OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+              )
+          )
+        )
       ),
-      'total_count', COALESCE((SELECT total_count FROM students_with_agreements LIMIT 1), 0),
-      'limit', $4, 'offset', $5
-    )
-  $q$, v_sort_column, v_sort_direction);
+      filtered_total AS (
+        SELECT COUNT(*)::INT AS total_count FROM student_base
+      ),
+      paginated_students AS (
+        SELECT sb.*, (SELECT total_count FROM filtered_total) AS total_count
+        FROM student_base sb
+        ORDER BY %I %s NULLS LAST, display_name ASC, user_id ASC
+        LIMIT $4 OFFSET $5
+      ),
+      page_counts AS (
+        SELECT
+          la.student_user_id,
+          COUNT(*) FILTER (WHERE la.is_active = TRUE)::INT AS active_count,
+          COUNT(*)::INT AS agreements_count
+        FROM lesson_agreements la
+        INNER JOIN paginated_students ps ON la.student_user_id = ps.user_id
+        WHERE (
+          $7 IS TRUE
+          OR la.student_user_id = $8
+          OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+        )
+        GROUP BY la.student_user_id
+      ),
+      page_agreements AS (
+        SELECT
+          la.student_user_id, la.id AS agreement_id, la.day_of_week, la.start_time,
+          la.start_date, la.end_date, la.is_active, la.notes, la.duration_minutes,
+          la.frequency, la.price_per_lesson,
+          lt.id AS lesson_type_id, lt.name AS lesson_type_name,
+          lt.icon AS lesson_type_icon, lt.color AS lesson_type_color,
+          tp.first_name AS teacher_first_name, tp.last_name AS teacher_last_name,
+          tp.avatar_url AS teacher_avatar_url
+        FROM lesson_agreements la
+        INNER JOIN paginated_students ps ON la.student_user_id = ps.user_id
+        INNER JOIN teachers t ON la.teacher_user_id = t.user_id
+        INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
+        INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
+        WHERE $6 IS TRUE
+          AND (
+            $7 IS TRUE
+            OR la.student_user_id = $8
+            OR ($9 IS NOT NULL AND la.teacher_user_id = $9)
+          )
+      )
+      SELECT JSON_BUILD_OBJECT(
+        'data', COALESCE(
+          (SELECT JSON_AGG(
+            JSON_BUILD_OBJECT(
+              'id', ps.user_id, 'user_id', ps.user_id,
+              'parent_name', ps.parent_name, 'parent_email', ps.parent_email,
+              'parent_phone_number', ps.parent_phone_number,
+              'debtor_info_same_as_student', ps.debtor_info_same_as_student,
+              'debtor_name', ps.debtor_name, 'debtor_address', ps.debtor_address,
+              'debtor_postal_code', ps.debtor_postal_code, 'debtor_city', ps.debtor_city,
+              'created_at', ps.created_at, 'updated_at', ps.updated_at,
+              'active_agreements_count', COALESCE(pc.active_count, 0),
+              'agreements_count', COALESCE(pc.agreements_count, 0),
+              'profile', JSON_BUILD_OBJECT(
+                'email', ps.email, 'first_name', ps.first_name, 'last_name', ps.last_name,
+                'phone_number', ps.phone_number, 'avatar_url', ps.avatar_url
+              ),
+              'agreements', CASE
+                WHEN $6 IS TRUE THEN COALESCE(
+                  (SELECT JSON_AGG(
+                    JSON_BUILD_OBJECT(
+                      'id', pa.agreement_id, 'day_of_week', pa.day_of_week,
+                      'start_time', pa.start_time, 'start_date', pa.start_date,
+                      'end_date', pa.end_date, 'is_active', pa.is_active, 'notes', pa.notes,
+                      'teacher', JSON_BUILD_OBJECT(
+                        'first_name', pa.teacher_first_name, 'last_name', pa.teacher_last_name,
+                        'avatar_url', pa.teacher_avatar_url
+                      ),
+                      'lesson_type', JSON_BUILD_OBJECT(
+                        'id', pa.lesson_type_id, 'name', pa.lesson_type_name,
+                        'icon', pa.lesson_type_icon, 'color', pa.lesson_type_color,
+                        'duration_minutes', pa.duration_minutes, 'frequency', pa.frequency,
+                        'price_per_lesson', pa.price_per_lesson
+                      )
+                    )
+                    ORDER BY pa.day_of_week, pa.start_time
+                  ) FROM page_agreements pa WHERE pa.student_user_id = ps.user_id),
+                  '[]'::JSON
+                )
+                ELSE '[]'::JSON
+              END
+            )
+          ) FROM paginated_students ps
+          LEFT JOIN page_counts pc ON pc.student_user_id = ps.user_id),
+          '[]'::JSON
+        ),
+        'total_count', COALESCE((SELECT total_count FROM filtered_total), 0),
+        'limit', $4, 'offset', $5
+      )
+    $q$, v_sort_column, v_sort_direction);
+  END IF;
 
-  EXECUTE v_query INTO v_result USING v_search_pattern, p_status, p_lesson_type_id, p_limit, p_offset;
+  EXECUTE v_query
+  INTO v_result
+  USING
+    v_search_pattern,
+    p_status,
+    p_lesson_type_id,
+    p_limit,
+    p_offset,
+    p_include_agreements,
+    v_is_privileged,
+    v_caller_id,
+    v_teacher_id;
   RETURN v_result;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) FROM anon;
-GRANT EXECUTE ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text, boolean) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text, boolean) FROM anon;
+GRANT EXECUTE ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text, boolean) TO authenticated;
+
+COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with profile and optional agreements. SECURITY DEFINER so list scans skip FORCE RLS; access matches students_select via is_privileged()/current_user_id()/get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_students_paginated.test.ts.';
 
 -- =============================================================================
 -- get_teachers_paginated
 -- =============================================================================
+-- SECURITY DEFINER: same rationale as get_students_paginated. Access matches
+-- teachers_select: privileged → all; own row; student → teachers linked by
+-- lesson_agreement. Tests: tests/rls/pagination/get_teachers_paginated.test.ts
 
 CREATE OR REPLACE FUNCTION get_teachers_paginated(
   p_limit INT DEFAULT 20,
@@ -208,7 +421,7 @@ CREATE OR REPLACE FUNCTION get_teachers_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
@@ -217,6 +430,8 @@ DECLARE
   v_sort_column TEXT;
   v_sort_direction TEXT;
   v_query TEXT;
+  v_is_privileged BOOLEAN;
+  v_caller_id UUID;
 BEGIN
   v_sort_column := CASE p_sort_column
     WHEN 'name' THEN 'display_name'
@@ -237,8 +452,11 @@ BEGIN
     ELSE NULL
   END;
 
+  v_is_privileged := public.is_privileged();
+  v_caller_id := public.current_user_id();
+
   v_query := format($q$
-    WITH     teacher_base AS (
+    WITH teacher_base AS (
       SELECT
         t.user_id,
         t.bio,
@@ -255,6 +473,16 @@ BEGIN
       FROM teachers t
       INNER JOIN view_profiles_with_display_name p ON t.user_id = p.user_id
       WHERE (
+        $6 IS TRUE
+        OR t.user_id = $7
+        OR EXISTS (
+          SELECT 1
+          FROM lesson_agreements la_access
+          WHERE la_access.teacher_user_id = t.user_id
+            AND la_access.student_user_id = $7
+        )
+      )
+      AND (
         $1 IS NULL
         OR LOWER(p.email) LIKE $1
         OR LOWER(COALESCE(p.first_name, '')) LIKE $1
@@ -262,6 +490,31 @@ BEGIN
         OR LOWER(COALESCE(p.phone_number, '')) LIKE $1
         OR LOWER(p.display_name) LIKE $1
       )
+      AND (
+        $2 = 'all'
+        OR ($2 = 'active' AND t.is_active = TRUE)
+        OR ($2 = 'inactive' AND t.is_active = FALSE)
+      )
+      AND (
+        $3 IS NULL
+        OR EXISTS (
+          SELECT 1 FROM teacher_lesson_types tlt2
+          WHERE tlt2.teacher_user_id = t.user_id
+          AND tlt2.lesson_type_id = $3
+        )
+      )
+    ),
+    filtered_total AS (
+      SELECT COUNT(*)::INT AS total_count FROM teacher_base
+    ),
+    paginated_teachers AS (
+      SELECT
+        tb.*,
+        (SELECT total_count FROM filtered_total) AS total_count
+      FROM teacher_base tb
+      ORDER BY %I %s NULLS LAST, display_name ASC, user_id ASC
+      LIMIT $4
+      OFFSET $5
     ),
     teacher_lesson_types_data AS (
       SELECT
@@ -277,37 +530,8 @@ BEGIN
         ) AS lesson_types
       FROM teacher_lesson_types tlt
       INNER JOIN lesson_types lt ON tlt.lesson_type_id = lt.id
-      INNER JOIN teacher_base tb ON tlt.teacher_user_id = tb.user_id
+      INNER JOIN paginated_teachers pt ON tlt.teacher_user_id = pt.user_id
       GROUP BY tlt.teacher_user_id
-    ),
-    filtered_teachers AS (
-      SELECT
-        tb.*,
-        COALESCE(tlt.lesson_types, '[]'::JSON) AS lesson_types_json
-      FROM teacher_base tb
-      LEFT JOIN teacher_lesson_types_data tlt ON tb.user_id = tlt.teacher_user_id
-      WHERE (
-        $2 = 'all'
-        OR ($2 = 'active' AND tb.is_active = TRUE)
-        OR ($2 = 'inactive' AND tb.is_active = FALSE)
-      )
-      AND (
-        $3 IS NULL
-        OR EXISTS (
-          SELECT 1 FROM teacher_lesson_types tlt2
-          WHERE tlt2.teacher_user_id = tb.user_id
-          AND tlt2.lesson_type_id = $3
-        )
-      )
-    ),
-    paginated_teachers AS (
-      SELECT
-        ft.*,
-        COUNT(*) OVER () AS total_count
-      FROM filtered_teachers ft
-      ORDER BY %I %s NULLS LAST, display_name ASC, user_id ASC
-      LIMIT $4
-      OFFSET $5
     )
     SELECT JSON_BUILD_OBJECT(
       'data', COALESCE(
@@ -327,12 +551,13 @@ BEGIN
               'phone_number', pt.phone_number,
               'avatar_url', pt.avatar_url
             ),
-            'lesson_types', pt.lesson_types_json
+            'lesson_types', COALESCE(tlt.lesson_types, '[]'::JSON)
           )
-        ) FROM paginated_teachers pt),
+        ) FROM paginated_teachers pt
+        LEFT JOIN teacher_lesson_types_data tlt ON tlt.teacher_user_id = pt.user_id),
         '[]'::JSON
       ),
-      'total_count', COALESCE((SELECT total_count FROM paginated_teachers LIMIT 1), 0),
+      'total_count', COALESCE((SELECT total_count FROM filtered_total), 0),
       'limit', $4,
       'offset', $5
     )
@@ -340,7 +565,14 @@ BEGIN
 
   EXECUTE v_query
   INTO v_result
-  USING v_search_pattern, p_status, p_lesson_type_id, p_limit, p_offset;
+  USING
+    v_search_pattern,
+    p_status,
+    p_lesson_type_id,
+    p_limit,
+    p_offset,
+    v_is_privileged,
+    v_caller_id;
 
   RETURN v_result;
 END;
@@ -350,11 +582,14 @@ REVOKE ALL ON FUNCTION public.get_teachers_paginated(integer, integer, text, tex
 REVOKE ALL ON FUNCTION public.get_teachers_paginated(integer, integer, text, text, uuid, text, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_teachers_paginated(integer, integer, text, text, uuid, text, text) TO authenticated;
 
-COMMENT ON FUNCTION get_teachers_paginated IS 'Get paginated teachers with all related data (profile, lesson types) in a single efficient query. SECURITY INVOKER: access enforced by RLS on teachers. Supports search, status filter, lesson type filter, and sorting.';
+COMMENT ON FUNCTION get_teachers_paginated IS 'Get paginated teachers with profile and lesson types. SECURITY DEFINER so list scans skip FORCE RLS; access matches teachers_select via is_privileged()/current_user_id() in the query body. Verified by tests/rls/pagination/get_teachers_paginated.test.ts.';
 
 -- =============================================================================
 -- get_lesson_agreements_paginated
 -- =============================================================================
+-- SECURITY DEFINER: same rationale as get_students_paginated. Access matches
+-- lesson_agreements_select. Replaced again in duo_lessons with thin paginate-first
+-- + duo_pair_id. Tests: tests/rls/pagination/get_lesson_agreements_paginated.test.ts
 
 CREATE OR REPLACE FUNCTION get_lesson_agreements_paginated(
   p_limit INT DEFAULT 20,
@@ -369,7 +604,7 @@ CREATE OR REPLACE FUNCTION get_lesson_agreements_paginated(
 )
 RETURNS JSON
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
@@ -378,6 +613,9 @@ DECLARE
   v_sort_column TEXT;
   v_sort_direction TEXT;
   v_query TEXT;
+  v_is_privileged BOOLEAN;
+  v_caller_id UUID;
+  v_teacher_id UUID;
 BEGIN
   v_sort_column := CASE p_sort_column
     WHEN 'student' THEN 'student_display_name'
@@ -399,6 +637,10 @@ BEGIN
     THEN '%' || LOWER(p_search) || '%'
     ELSE NULL
   END;
+
+  v_is_privileged := public.is_privileged();
+  v_caller_id := public.current_user_id();
+  v_teacher_id := public.get_teacher_user_id(v_caller_id);
 
   v_query := format($q$
     WITH agreement_base AS (
@@ -439,6 +681,11 @@ BEGIN
       INNER JOIN view_profiles_with_display_name tp ON t.user_id = tp.user_id
       INNER JOIN lesson_types lt ON la.lesson_type_id = lt.id
       WHERE (
+        $8 IS TRUE
+        OR la.student_user_id = $9
+        OR ($10 IS NOT NULL AND la.teacher_user_id = $10)
+      )
+      AND (
         $1 IS NULL
         OR LOWER(sp.display_name) LIKE $1
         OR LOWER(sp.email) LIKE $1
@@ -525,7 +772,17 @@ BEGIN
 
   EXECUTE v_query
   INTO v_result
-  USING v_search_pattern, p_student_user_id, p_teacher_user_id, p_lesson_type_id, p_is_active, p_limit, p_offset;
+  USING
+    v_search_pattern,
+    p_student_user_id,
+    p_teacher_user_id,
+    p_lesson_type_id,
+    p_is_active,
+    p_limit,
+    p_offset,
+    v_is_privileged,
+    v_caller_id,
+    v_teacher_id;
 
   RETURN v_result;
 END;
@@ -535,7 +792,7 @@ REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, 
 REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) TO authenticated;
 
-COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type in one query (avoids large PostgREST in-filters). SECURITY INVOKER: access enforced by RLS on lesson_agreements. Supports search, filtering by student, teacher, lesson type, and active status, and sorting.';
+COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type. SECURITY DEFINER so list scans skip FORCE RLS; access matches lesson_agreements_select via is_privileged()/current_user_id()/get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_lesson_agreements_paginated.test.ts.';
 
 -- =============================================================================
 -- get_users_paginated

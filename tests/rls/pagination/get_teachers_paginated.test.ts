@@ -22,11 +22,11 @@ interface PaginatedTeachersResponse {
 }
 
 /**
- * RLS tests for get_teachers_paginated function
+ * Access tests for get_teachers_paginated (SECURITY DEFINER).
  *
- * This function uses SECURITY DEFINER but must respect the same RLS rules as
- * the teachers table. It should return only the teachers that the calling user
- * is allowed to see according to RLS policies.
+ * RLS on teachers does not apply inside the function; access is gated in the
+ * query body to match teachers_select (is_privileged / own row / student via
+ * lesson_agreement).
  *
  * Expected behavior:
  * - TEACHERS: Can see only their own teacher record

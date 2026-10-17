@@ -70,6 +70,7 @@ describe('mapMyStudentsPaginatedResponse', () => {
 					user_id: 'student-1',
 					email: 'student@example.com',
 					active_agreements_count: 1,
+					agreements_count: 1,
 					profile: {
 						first_name: 'Anna',
 						last_name: 'Jansen',
@@ -123,6 +124,7 @@ describe('myStudentDisplayName', () => {
 				avatar_url: null,
 				phone_number: null,
 				active_agreements_count: 0,
+				agreements_count: 0,
 				agreements: [],
 			} as never),
 		).toBe('Anna Jansen');
@@ -140,6 +142,7 @@ describe('myStudentInitials', () => {
 				avatar_url: null,
 				phone_number: null,
 				active_agreements_count: 0,
+				agreements_count: 0,
 				agreements: [],
 			} as never),
 		).toBe('AJ');
@@ -156,6 +159,7 @@ describe('collectMyStudentLessonTypes', () => {
 			avatar_url: null,
 			phone_number: null,
 			active_agreements_count: 2,
+			agreements_count: 2,
 			agreements: [
 				{
 					id: 'agreement-1',
@@ -203,6 +207,7 @@ describe('hasMyStudentLessonTypes', () => {
 				avatar_url: null,
 				phone_number: null,
 				active_agreements_count: 0,
+				agreements_count: 0,
 				agreements: [],
 			} as never),
 		).toBe(false);
@@ -220,6 +225,7 @@ describe('hasMyStudentAgreements', () => {
 				avatar_url: null,
 				phone_number: null,
 				active_agreements_count: 1,
+				agreements_count: 1,
 				agreements: [
 					{
 						id: 'agreement-1',

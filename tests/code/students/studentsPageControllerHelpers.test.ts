@@ -1,6 +1,5 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { SignupRequestDetail } from '../../../src/components/students/SignupRequestDialog';
-import * as signupRequestMappers from '../../../src/lib/signup-requests/signupRequestMappers';
 import type { StudentWithAgreementsRaw } from '../../../src/types/students';
 
 const studentRowFields = {
@@ -22,6 +21,7 @@ const studentRowFields = {
 const rawStudent: StudentWithAgreementsRaw = {
 	user_id: 'student-1',
 	active_agreements_count: 0,
+	agreements_count: 0,
 	...studentRowFields,
 	profile: {
 		user_id: 'student-1',
@@ -46,16 +46,44 @@ mock.module('sonner', () => ({
 	},
 }));
 
-mock.module('../../../src/integrations/supabase/client', () => ({
-	supabase: {
-		rpc: async () => rpcResult,
+const supabaseMock = {
+	rpc: async () => rpcResult,
+	from: () => ({
+		delete: () => ({
+			in: async () => ({ error: null }),
+		}),
+	}),
+	functions: {
+		invoke: async () => ({ error: null }),
 	},
+};
+
+mock.module('../../../src/integrations/supabase/client', () => ({
+	supabase: supabaseMock,
 }));
 
 mock.module('@/integrations/supabase/client', () => ({
-	supabase: {
-		rpc: async () => rpcResult,
-	},
+	supabase: supabaseMock,
+}));
+
+mock.module('../../../src/lib/signup-requests/signupRequestMappers', () => ({
+	fetchSignupRequestsByEmail: async () => [],
+	fetchSignupRequestsByEmails: async () => new Map<string, SignupRequestDetail[]>(),
+}));
+
+mock.module('@/lib/signup-requests/signupRequestMappers', () => ({
+	fetchSignupRequestsByEmail: async () => [],
+	fetchSignupRequestsByEmails: async () => new Map<string, SignupRequestDetail[]>(),
+}));
+
+mock.module('../../../src/lib/students/fetchStudentAgreements', () => ({
+	fetchStudentAgreementsWithRelations: async () => [{ id: 'agreement-1' }],
+	fetchStudentAgreementsForProfile: async () => [{ id: 'agreement-1' }],
+}));
+
+mock.module('@/lib/students/fetchStudentAgreements', () => ({
+	fetchStudentAgreementsWithRelations: async () => [{ id: 'agreement-1' }],
+	fetchStudentAgreementsForProfile: async () => [{ id: 'agreement-1' }],
 }));
 
 describe('studentsPageControllerHelpers', () => {
@@ -77,10 +105,6 @@ describe('studentsPageControllerHelpers', () => {
 			},
 			error: null,
 		};
-		spyOn(signupRequestMappers, 'fetchSignupRequestsByEmail').mockResolvedValue([]);
-		spyOn(signupRequestMappers, 'fetchSignupRequestsByEmails').mockResolvedValue(
-			new Map<string, SignupRequestDetail[]>(),
-		);
 	});
 
 	afterEach(() => {
@@ -132,15 +156,15 @@ describe('studentsPageControllerHelpers', () => {
 	describe('runStudentPageAction', () => {
 		const student = { user_id: 'student-1', agreements: [] } as never;
 
-		it('opens delete dialog for delete action', async () => {
-			let openedStudent: unknown = null;
+		it('opens delete dialog for delete action with fetched agreements', async () => {
+			const openedAgreements: Array<{ id: string }> = [];
 			await runStudentPageAction({ kind: 'delete', student }, null, {
 				setDeleteDialog: (value) => {
-					openedStudent = value?.student ?? null;
+					openedAgreements.push(...(value?.student.agreements ?? []));
 				},
 				loadStudents: () => {},
 			});
-			expect(openedStudent).toBe(student);
+			expect(openedAgreements).toEqual([{ id: 'agreement-1' }]);
 		});
 
 		it('executes delete and reloads students for confirm delete', async () => {
@@ -199,6 +223,7 @@ describe('studentsPageControllerHelpers', () => {
 						user_id: 'student-1',
 						email: 'student@example.com',
 						active_agreements_count: 0,
+						agreements_count: 0,
 						first_name: 'Anna',
 						last_name: 'Jansen',
 						avatar_url: null,

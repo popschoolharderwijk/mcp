@@ -24,11 +24,11 @@ const agreementStudent010TeacherAlice = fixtures.requireAgreementId(TestUsers.ST
 const agreementStudent026TeacherBob = fixtures.requireAgreementId(TestUsers.STUDENT_026, TestUsers.TEACHER_BOB);
 
 /**
- * RLS tests for get_lesson_agreements_paginated function
+ * Access tests for get_lesson_agreements_paginated (SECURITY DEFINER).
  *
- * This function uses SECURITY DEFINER but must respect the same RLS rules as
- * the lesson_agreements table. It should return only the agreements that the
- * calling user is allowed to see according to RLS policies.
+ * RLS on lesson_agreements does not apply inside the function; access is gated
+ * in the query body to match lesson_agreements_select (is_privileged / student
+ * row / teacher via get_teacher_user_id).
  *
  * Expected behavior:
  * - STUDENTS: Can only see their own lesson agreements

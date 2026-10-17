@@ -14,6 +14,8 @@ interface PaginatedStudentsResponse {
 			first_name: string | null;
 			last_name: string | null;
 		};
+		active_agreements_count: number;
+		agreements_count: number;
 		agreements: Array<{
 			id: string;
 			teacher: {
@@ -27,11 +29,11 @@ interface PaginatedStudentsResponse {
 }
 
 /**
- * RLS tests for get_students_paginated function
+ * Access tests for get_students_paginated (SECURITY DEFINER).
  *
- * This function uses SECURITY DEFINER but must respect the same RLS rules as
- * the students table. It should return only the students that the calling user
- * is allowed to see according to RLS policies.
+ * RLS on students does not apply inside the function; access is gated in the
+ * query body to match students_select (is_privileged / own row / teacher via
+ * get_teacher_user_id). Agreement counts and nested agreements use the same gate.
  *
  * Expected behavior:
  * - STUDENTS: Can see only their own record
@@ -121,6 +123,7 @@ describe('RLS: get_students_paginated', () => {
 		const { data, error } = await db.rpc('get_students_paginated', {
 			p_limit: 100,
 			p_offset: 0,
+			p_include_agreements: true,
 		});
 
 		expect(error).toBeNull();
@@ -133,8 +136,8 @@ describe('RLS: get_students_paginated', () => {
 		expect(result.data).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE);
 		// All returned students should have agreements with Teacher Alice
 		result.data.forEach((student) => {
-			const hasAgreementWithAlice = student.agreements?.some(
-				(agreement) => agreement.teacher?.first_name === 'Alice',
+			const hasAgreementWithAlice = student.agreements.some(
+				(agreement) => agreement.teacher.first_name === 'Alice',
 			);
 			expect(hasAgreementWithAlice).toBe(true);
 		});
@@ -146,6 +149,7 @@ describe('RLS: get_students_paginated', () => {
 		const { data, error } = await db.rpc('get_students_paginated', {
 			p_limit: 100,
 			p_offset: 0,
+			p_include_agreements: true,
 		});
 
 		expect(error).toBeNull();
@@ -155,8 +159,8 @@ describe('RLS: get_students_paginated', () => {
 		// Teacher Alice should only see her own students, not Teacher Bob's students
 		// Security: teacher_user_id is automatically determined from logged-in user, cannot be spoofed
 		result.data.forEach((student) => {
-			const hasAgreementWithAlice = student.agreements?.some(
-				(agreement) => agreement.teacher?.first_name === 'Alice',
+			const hasAgreementWithAlice = student.agreements.some(
+				(agreement) => agreement.teacher.first_name === 'Alice',
 			);
 			// All students returned must have at least one agreement with Teacher Alice
 			expect(hasAgreementWithAlice).toBe(true);
@@ -250,6 +254,25 @@ describe('RLS: get_students_paginated', () => {
 		expect(searchData.total_count).toBe(1);
 		expect(searchData.data).toHaveLength(1);
 		expect(searchData.data[0]?.profile.email).toBe(TestUsers.STUDENT_001);
+	});
+
+	it('omits agreement trees by default but still returns counts', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const { data, error } = await db.rpc('get_students_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+			p_search: 'student-001',
+			p_include_agreements: false,
+		});
+
+		expect(error).toBeNull();
+		const result = data as unknown as PaginatedStudentsResponse;
+		expect(result.total_count).toBe(1);
+		expect(result.data).toHaveLength(1);
+		expect(result.data[0]?.agreements).toEqual([]);
+		expect(result.data[0]?.agreements_count).toBe(LESSON_AGREEMENTS.STUDENT_001);
+		expect(result.data[0]?.active_agreements_count).toBe(LESSON_AGREEMENTS.STUDENT_001);
 	});
 
 	it('staff/admin can see all students (no teacher filter applied)', async () => {
