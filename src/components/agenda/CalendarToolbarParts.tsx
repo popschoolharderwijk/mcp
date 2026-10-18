@@ -1,19 +1,24 @@
 import type { ToolbarProps, View } from 'react-big-calendar';
-import { LuChevronLeft, LuChevronRight } from 'react-icons/lu';
+import { LuChevronLeft, LuChevronRight, LuMaximize2, LuMinimize2 } from 'react-icons/lu';
+import { useAgendaFullscreen } from '@/components/agenda/AgendaFullscreenContext';
+import { DatePicker } from '@/components/ui/date-picker';
 import { resolveCalendarViewLabel } from '@/lib/agenda/calendarToolbarHelpers';
 import {
 	CALENDAR_NAVIGATE,
 	resolveCalendarNavAriaLabel,
 	resolveCalendarTodayLabel,
 } from '@/lib/agenda/calendarToolbarNavigationHelpers';
+import { formatDateToDb } from '@/lib/date/date-format';
+import { parseDbDateValue } from '@/lib/date/datePickerHelpers';
 
 interface CalendarToolbarNavigationProps {
 	label: string;
+	date: Date;
 	messages: ToolbarProps['localizer']['messages'];
 	onNavigate: ToolbarProps['onNavigate'];
 }
 
-export function CalendarToolbarNavigation({ label, messages, onNavigate }: CalendarToolbarNavigationProps) {
+export function CalendarToolbarNavigation({ label, date, messages, onNavigate }: CalendarToolbarNavigationProps) {
 	const todayLabel = resolveCalendarTodayLabel(messages?.today);
 	const previousLabel = resolveCalendarNavAriaLabel(messages?.previous, 'Vorige');
 	const nextLabel = resolveCalendarNavAriaLabel(messages?.next, 'Volgende');
@@ -39,7 +44,24 @@ export function CalendarToolbarNavigation({ label, messages, onNavigate }: Calen
 			>
 				<LuChevronRight className="h-5 w-5" />
 			</button>
-			<span className="rbc-toolbar-label">{label}</span>
+			<DatePicker
+				value={formatDateToDb(date)}
+				onChange={(next) => {
+					const selected = parseDbDateValue(next);
+					if (selected) onNavigate(CALENDAR_NAVIGATE.DATE, selected);
+				}}
+				captionLayout="dropdown"
+				trigger={
+					<button
+						type="button"
+						className="rbc-toolbar-label"
+						aria-label="Ga naar datum"
+						title="Ga naar datum"
+					>
+						{label}
+					</button>
+				}
+			/>
 		</span>
 	);
 }
@@ -52,22 +74,43 @@ interface CalendarToolbarViewSelectProps {
 }
 
 export function CalendarToolbarViewSelect({ view, viewOptions, messages, onView }: CalendarToolbarViewSelectProps) {
-	if (viewOptions.length <= 1) return null;
+	const fullscreen = useAgendaFullscreen();
+	const showViewSelect = viewOptions.length > 1;
+	if (!showViewSelect && !fullscreen) return null;
+
+	const fullscreenLabel = fullscreen?.isFullscreen ? 'Agenda verkleinen (F)' : 'Agenda vergroten (F)';
 
 	return (
-		<span className="rbc-btn-group">
-			<select
-				value={view}
-				onChange={(event) => onView(event.target.value as View)}
-				className="h-8 min-w-[5rem] cursor-pointer rounded border border-input bg-background pl-2 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-				aria-label="Weergave"
-			>
-				{viewOptions.map((viewOption) => (
-					<option key={viewOption} value={viewOption}>
-						{resolveCalendarViewLabel(viewOption, messages)}
-					</option>
-				))}
-			</select>
+		<span className="rbc-btn-group flex items-center gap-1">
+			{showViewSelect && (
+				<select
+					value={view}
+					onChange={(event) => onView(event.target.value as View)}
+					className="h-8 min-w-[5rem] cursor-pointer rounded border border-input bg-background pl-2 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					aria-label="Weergave"
+				>
+					{viewOptions.map((viewOption) => (
+						<option key={viewOption} value={viewOption}>
+							{resolveCalendarViewLabel(viewOption, messages)}
+						</option>
+					))}
+				</select>
+			)}
+			{fullscreen && (
+				<button
+					type="button"
+					onClick={fullscreen.toggleFullscreen}
+					aria-label={fullscreenLabel}
+					title={fullscreenLabel}
+					className="rbc-toolbar-fullscreen"
+				>
+					{fullscreen.isFullscreen ? (
+						<LuMinimize2 className="h-4 w-4" />
+					) : (
+						<LuMaximize2 className="h-4 w-4" />
+					)}
+				</button>
+			)}
 		</span>
 	);
 }

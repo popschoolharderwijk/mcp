@@ -15,18 +15,6 @@ export interface AgendaEventTypeFlags {
 	hasMultipleParticipants: boolean;
 }
 
-export function getEventDurationMinutes(start: Date | undefined, end: Date | undefined): number {
-	if (!start || !end) return 30;
-	return Math.round((end.getTime() - start.getTime()) / 60000);
-}
-
-export function getLineClampClassForDuration(durationMinutes: number): string {
-	if (durationMinutes <= 30) return 'line-clamp-1';
-	if (durationMinutes <= 45) return 'line-clamp-2';
-	if (durationMinutes <= 60) return 'line-clamp-3';
-	return 'line-clamp-4';
-}
-
 export function getAgendaEventDisplayTitle(view: string, start: Date | undefined, title: ReactNode): ReactNode {
 	if (view === 'month' && start) {
 		return `${formatTimeFromDate(start)} ${title}`;

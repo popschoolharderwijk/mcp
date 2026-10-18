@@ -7,7 +7,6 @@ import type { CalendarEvent } from '@/components/agenda/types';
 import { dutchFormats } from '@/lib/agenda/calendarFormats';
 import { findNoLessonPeriod, type NoLessonPeriod } from '@/lib/agenda/noLessonPeriod';
 import { buildTooltipText } from '@/lib/agenda/tooltip';
-import { AVAILABILITY_CONFIG } from '@/lib/availability';
 import { calendarLocalizer } from '@/lib/calendar';
 
 export interface GetCalendarPropsParams {
@@ -16,6 +15,8 @@ export interface GetCalendarPropsParams {
 	currentDate: Date;
 	canEdit: boolean;
 	isOwnAgenda: boolean;
+	min: Date;
+	max: Date;
 	scrollToTime: Date;
 	onEventDrop: ((args: { event: CalendarEvent; start: Date; end: Date }) => void) | undefined;
 	onSelectEvent: ((event: CalendarEvent) => void) | undefined;
@@ -32,6 +33,8 @@ export function getCalendarProps(params: GetCalendarPropsParams) {
 		currentDate,
 		canEdit,
 		isOwnAgenda,
+		min,
+		max,
 		scrollToTime,
 		onEventDrop,
 		onSelectEvent,
@@ -77,8 +80,8 @@ export function getCalendarProps(params: GetCalendarPropsParams) {
 			// biome-ignore lint/suspicious/noExplicitAny: react-big-calendar event component typing
 			event: AgendaEvent as unknown as React.ComponentType<any>,
 		},
-		min: new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0),
-		max: new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0),
+		min,
+		max,
 		scrollToTime,
 		step: 30,
 		timeslots: 1,

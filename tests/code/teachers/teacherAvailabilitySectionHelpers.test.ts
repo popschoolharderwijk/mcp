@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { DEFAULT_START_TIME } from '../../../src/lib/availability';
 import {
 	buildAvailabilityBlocks,
 	buildAvailabilitySlotFormFromClick,
@@ -16,7 +17,7 @@ import {
 
 describe('generateAvailabilityTimeSlots', () => {
 	it('starts at the configured start hour', () => {
-		expect(generateAvailabilityTimeSlots()[0]).toBe('09:00');
+		expect(generateAvailabilityTimeSlots()[0]).toBe(DEFAULT_START_TIME);
 	});
 });
 

@@ -27,6 +27,8 @@ const baseParams = {
 	events: [mockCalendarEvent()],
 	currentView: 'week' as const,
 	currentDate: new Date('2026-02-17T12:00:00'),
+	min: new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0),
+	max: new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0),
 	scrollToTime: new Date('2026-02-17T09:00:00'),
 	onEventDrop: () => undefined,
 	onSelectEvent: () => undefined,
@@ -140,8 +142,8 @@ describe('getCalendarProps', () => {
 		expect(props.scrollToTime).toEqual(baseParams.scrollToTime);
 		expect(props.startAccessor(event)).toEqual(event.start);
 		expect(props.endAccessor(event)).toEqual(event.end);
-		expect(props.min).toEqual(new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0));
-		expect(props.max).toEqual(new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0));
+		expect(props.min).toEqual(baseParams.min);
+		expect(props.max).toEqual(baseParams.max);
 		expect(props.eventPropGetter(event).style?.backgroundColor).toBe('#ff0000');
 		expect(props.tooltipAccessor(event)).toBe('Piano\nDocent: Piet Docent\nLeerling: Anna Bakker');
 	});

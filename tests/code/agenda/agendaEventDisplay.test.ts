@@ -5,8 +5,6 @@ import {
 	getAgendaEventDisplayTitle,
 	getAgendaEventIconColorClass,
 	getCancellationBanTitle,
-	getEventDurationMinutes,
-	getLineClampClassForDuration,
 	resolveAgendaEventIconType,
 } from '../../../src/lib/agenda/agendaEventDisplay';
 
@@ -24,35 +22,6 @@ function baseResource(overrides: Partial<CalendarEventResource> = {}): CalendarE
 		...overrides,
 	};
 }
-
-describe('getEventDurationMinutes', () => {
-	it('returns 30 when start or end is missing', () => {
-		expect(getEventDurationMinutes(undefined, new Date('2026-09-07T15:00:00'))).toBe(30);
-		expect(getEventDurationMinutes(new Date('2026-09-07T14:00:00'), undefined)).toBe(30);
-	});
-
-	it('returns rounded duration in minutes', () => {
-		expect(getEventDurationMinutes(new Date('2026-09-07T14:00:00'), new Date('2026-09-07T14:45:00'))).toBe(45);
-	});
-});
-
-describe('getLineClampClassForDuration', () => {
-	it('returns line-clamp-1 for short events', () => {
-		expect(getLineClampClassForDuration(30)).toBe('line-clamp-1');
-	});
-
-	it('returns line-clamp-2 for 45 minute events', () => {
-		expect(getLineClampClassForDuration(45)).toBe('line-clamp-2');
-	});
-
-	it('returns line-clamp-3 for 60 minute events', () => {
-		expect(getLineClampClassForDuration(60)).toBe('line-clamp-3');
-	});
-
-	it('returns line-clamp-4 for longer events', () => {
-		expect(getLineClampClassForDuration(90)).toBe('line-clamp-4');
-	});
-});
 
 describe('getAgendaEventDisplayTitle', () => {
 	it('prefixes title with time in month view', () => {

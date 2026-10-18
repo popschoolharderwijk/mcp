@@ -27,6 +27,10 @@
 		@apply hover:bg-accent hover:text-accent-foreground;
 	}
 
+	& .rbc-btn-group button.rbc-toolbar-fullscreen {
+		@apply inline-flex h-8 w-8 items-center justify-center p-0;
+	}
+
 	/* Nav group: chevrons flank label (Google Calendar style) */
 	& .rbc-nav-group {
 		@apply flex items-center gap-1;
@@ -38,8 +42,9 @@
 		@apply hover:bg-accent hover:text-accent-foreground;
 	}
 
-	& .rbc-nav-group .rbc-toolbar-label {
-		@apply mx-2 min-w-[8rem] text-center;
+	& .rbc-nav-group button.rbc-toolbar-label {
+		@apply mx-2 min-w-[8rem] border-0 bg-transparent p-0 text-lg font-semibold capitalize text-foreground;
+		@apply hover:bg-transparent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm;
 	}
 
 	& .rbc-btn-group button.rbc-active {
@@ -175,14 +180,15 @@
 	/* Events */
 	& .rbc-event {
 		@apply rounded-md border-0 px-2 py-1 text-xs font-medium shadow-sm;
+		overflow: hidden;
 	}
 
 	& .rbc-event-label {
-		@apply text-[10px] opacity-90;
+		@apply block text-[10px] leading-tight opacity-90;
 	}
 
 	& .rbc-event-content {
-		@apply text-xs leading-tight;
+		@apply block text-xs leading-tight overflow-hidden;
 	}
 
 	& .rbc-event.rbc-selected {
