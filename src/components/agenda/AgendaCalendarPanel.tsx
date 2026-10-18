@@ -6,15 +6,9 @@ import { AgendaFullscreenProvider } from '@/components/agenda/AgendaFullscreenCo
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
 import { Legend } from '@/components/agenda/Legend';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { shouldToggleAgendaFullscreen } from '@/lib/agenda/agendaFullscreenKeyboard';
 import type { getCalendarProps } from '@/lib/agenda/calendarProps';
 import { cn } from '@/lib/utils';
-
-function isTypingTarget(target: EventTarget | null): boolean {
-	if (!(target instanceof HTMLElement)) return false;
-	const tag = target.tagName;
-	if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-	return target.isContentEditable;
-}
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
 
@@ -64,9 +58,7 @@ export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }:
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== 'f' && event.key !== 'F') return;
-			if (event.ctrlKey || event.metaKey || event.altKey) return;
-			if (isTypingTarget(event.target)) return;
+			if (!shouldToggleAgendaFullscreen(event)) return;
 			event.preventDefault();
 			setIsFullscreen((open) => !open);
 		};
