@@ -6,8 +6,9 @@ import { AgendaFullscreenProvider } from '@/components/agenda/AgendaFullscreenCo
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
 import { Legend } from '@/components/agenda/Legend';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { shouldToggleAgendaFullscreen } from '@/lib/agenda/agendaFullscreenKeyboard';
+import { resolveAgendaNavigateFromKeyboard, shouldToggleAgendaFullscreen } from '@/lib/agenda/agendaFullscreenKeyboard';
 import type { getCalendarProps } from '@/lib/agenda/calendarProps';
+import { resolveAgendaStepDate } from '@/lib/agenda/calendarToolbarNavigationHelpers';
 import { cn } from '@/lib/utils';
 
 const DragAndDropCalendar = withDragAndDrop(Calendar);
@@ -56,20 +57,31 @@ export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }:
 	const [isFullscreen, setIsFullscreen] = useState(false);
 	const dndProps = calendarProps as unknown as ComponentProps<typeof DragAndDropCalendar>;
 
+	const onNavigateDate = calendarProps.onNavigate;
+
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (!shouldToggleAgendaFullscreen(event)) return;
+			if (shouldToggleAgendaFullscreen(event)) {
+				event.preventDefault();
+				setIsFullscreen((open) => !open);
+				return;
+			}
+			const action = resolveAgendaNavigateFromKeyboard(event);
+			if (!action) return;
 			event.preventDefault();
-			setIsFullscreen((open) => !open);
+			onNavigateDate(action === 'TODAY' ? new Date() : resolveAgendaStepDate(currentDate, currentView, action));
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
-	}, []);
+	}, [onNavigateDate, currentDate, currentView]);
+
+	// Remount when view or time-grid scroll window changes (RBC applies scrollToTime on mount only).
+	// Do not key on currentDate — full remount each week makes the day header jump one frame.
+	const calendarMountKey = `${currentView}-${calendarProps.min.getTime()}-${calendarProps.scrollToTime.getTime()}`;
 
 	const calendar = (
 		<CalendarViewProvider value={currentView}>
-			{/* Remount on date/view so RBC TimeGrid re-applies scrollToTime (mount-only). */}
-			<DragAndDropCalendar key={`${currentView}-${currentDate.getTime()}`} {...dndProps} />
+			<DragAndDropCalendar key={calendarMountKey} {...dndProps} />
 		</CalendarViewProvider>
 	);
 

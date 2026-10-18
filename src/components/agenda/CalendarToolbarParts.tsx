@@ -6,6 +6,7 @@ import { resolveCalendarViewLabel } from '@/lib/agenda/calendarToolbarHelpers';
 import {
 	CALENDAR_NAVIGATE,
 	resolveCalendarNavAriaLabel,
+	resolveCalendarNavShortcutLabel,
 	resolveCalendarTodayLabel,
 } from '@/lib/agenda/calendarToolbarNavigationHelpers';
 import { formatDateToDb } from '@/lib/date/date-format';
@@ -20,12 +21,21 @@ interface CalendarToolbarNavigationProps {
 
 export function CalendarToolbarNavigation({ label, date, messages, onNavigate }: CalendarToolbarNavigationProps) {
 	const todayLabel = resolveCalendarTodayLabel(messages?.today);
-	const previousLabel = resolveCalendarNavAriaLabel(messages?.previous, 'Vorige');
-	const nextLabel = resolveCalendarNavAriaLabel(messages?.next, 'Volgende');
+	const todayShortcutLabel = resolveCalendarNavShortcutLabel(todayLabel, 'TODAY');
+	const previousLabel = resolveCalendarNavShortcutLabel(
+		resolveCalendarNavAriaLabel(messages?.previous, 'Vorige'),
+		'PREV',
+	);
+	const nextLabel = resolveCalendarNavShortcutLabel(resolveCalendarNavAriaLabel(messages?.next, 'Volgende'), 'NEXT');
 
 	return (
 		<span className="rbc-btn-group rbc-nav-group">
-			<button type="button" onClick={() => onNavigate(CALENDAR_NAVIGATE.TODAY)}>
+			<button
+				type="button"
+				onClick={() => onNavigate(CALENDAR_NAVIGATE.TODAY)}
+				aria-label={todayShortcutLabel}
+				title={todayShortcutLabel}
+			>
 				{todayLabel}
 			</button>
 			<button
@@ -33,6 +43,7 @@ export function CalendarToolbarNavigation({ label, date, messages, onNavigate }:
 				className="rbc-nav-prev"
 				onClick={() => onNavigate(CALENDAR_NAVIGATE.PREVIOUS)}
 				aria-label={previousLabel}
+				title={previousLabel}
 			>
 				<LuChevronLeft className="h-5 w-5" />
 			</button>
@@ -41,6 +52,7 @@ export function CalendarToolbarNavigation({ label, date, messages, onNavigate }:
 				className="rbc-nav-next"
 				onClick={() => onNavigate(CALENDAR_NAVIGATE.NEXT)}
 				aria-label={nextLabel}
+				title={nextLabel}
 			>
 				<LuChevronRight className="h-5 w-5" />
 			</button>

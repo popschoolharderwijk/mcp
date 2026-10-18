@@ -41,3 +41,26 @@ export function shouldToggleAgendaFullscreen(event: KeyboardEvent): boolean {
 		target: agendaKeyboardTargetFromEventTarget(event.target),
 	});
 }
+
+export type AgendaNavigateDirection = 'PREV' | 'NEXT';
+export type AgendaNavigateAction = AgendaNavigateDirection | 'TODAY';
+
+/** Arrow keys → PREV / NEXT / TODAY (no modifiers, not typing). */
+export function resolveAgendaNavigateKey(event: AgendaFullscreenKeyEvent): AgendaNavigateAction | null {
+	if (event.ctrlKey || event.metaKey || event.altKey) return null;
+	if (isTypingTarget(event.target)) return null;
+	if (event.key === 'ArrowLeft') return 'PREV';
+	if (event.key === 'ArrowRight') return 'NEXT';
+	if (event.key === 'ArrowUp') return 'TODAY';
+	return null;
+}
+
+export function resolveAgendaNavigateFromKeyboard(event: KeyboardEvent): AgendaNavigateAction | null {
+	return resolveAgendaNavigateKey({
+		key: event.key,
+		ctrlKey: event.ctrlKey,
+		metaKey: event.metaKey,
+		altKey: event.altKey,
+		target: agendaKeyboardTargetFromEventTarget(event.target),
+	});
+}
