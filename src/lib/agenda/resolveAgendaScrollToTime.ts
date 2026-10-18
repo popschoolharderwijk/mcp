@@ -1,6 +1,6 @@
 import { AVAILABILITY_CONFIG } from '@/lib/availability';
 
-/** Time-of-day Date for react-big-calendar scrollToTime (same shape as min/max). */
+/** Time-of-day Date for react-big-calendar min/max/scrollToTime. */
 function timeOfDay(hours: number, minutes = 0): Date {
 	return new Date(0, 0, 0, hours, minutes, 0);
 }
@@ -9,18 +9,30 @@ function minutesSinceMidnight(date: Date): number {
 	return date.getHours() * 60 + date.getMinutes();
 }
 
-function fallbackScrollToTime(now: Date): Date {
-	return now.getHours() >= AVAILABILITY_CONFIG.END_HOUR ? timeOfDay(AVAILABILITY_CONFIG.START_HOUR) : now;
+function clampMinutes(minutes: number, minMinutes: number, maxMinutes: number): number {
+	return Math.max(minMinutes, Math.min(maxMinutes, minutes));
+}
+
+function fallbackScrollMinutes(now: Date, minMinutes: number, maxMinutes: number): number {
+	if (now.getHours() >= AVAILABILITY_CONFIG.END_HOUR) return minMinutes;
+	return clampMinutes(minutesSinceMidnight(now), minMinutes, maxMinutes);
+}
+
+export interface AgendaTimeGrid {
+	min: Date;
+	max: Date;
+	scrollToTime: Date;
 }
 
 /**
- * Scroll target for the time grid: earliest clock time among events in the current view
- * (week/day share one vertical axis), or now / business-start when the view is empty.
+ * Time-grid window + scroll target for react-big-calendar.
+ * Extends min when events start before START_HOUR: RBC scroll math uses an absolute
+ * diff against min, so scrollToTime 07:00 with min 09:00 scrolls like 11:00.
  */
-export function resolveAgendaScrollToTime(
+export function resolveAgendaTimeGrid(
 	events: ReadonlyArray<{ start?: Date | null }>,
 	now: Date = new Date(),
-): Date {
+): AgendaTimeGrid {
 	let earliestMinutes: number | undefined;
 	for (const event of events) {
 		const start = event.start;
@@ -28,6 +40,22 @@ export function resolveAgendaScrollToTime(
 		const minutes = minutesSinceMidnight(start);
 		if (earliestMinutes === undefined || minutes < earliestMinutes) earliestMinutes = minutes;
 	}
-	if (earliestMinutes === undefined) return fallbackScrollToTime(now);
-	return timeOfDay(Math.floor(earliestMinutes / 60), earliestMinutes % 60);
+
+	const minHour =
+		earliestMinutes === undefined
+			? AVAILABILITY_CONFIG.START_HOUR
+			: Math.min(AVAILABILITY_CONFIG.START_HOUR, Math.floor(earliestMinutes / 60));
+	const minMinutes = minHour * 60;
+	const maxMinutes = AVAILABILITY_CONFIG.END_HOUR * 60;
+
+	const scrollMinutes =
+		earliestMinutes === undefined
+			? fallbackScrollMinutes(now, minMinutes, maxMinutes)
+			: clampMinutes(earliestMinutes, minMinutes, maxMinutes);
+
+	return {
+		min: timeOfDay(minHour),
+		max: timeOfDay(AVAILABILITY_CONFIG.END_HOUR),
+		scrollToTime: timeOfDay(Math.floor(scrollMinutes / 60), scrollMinutes % 60),
+	};
 }

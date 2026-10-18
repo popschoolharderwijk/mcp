@@ -6,7 +6,7 @@ import { useAgendaData } from '@/hooks/useAgendaData';
 import { useAgendaUI } from '@/hooks/useAgendaUI';
 import { buildCalendarEvents } from '@/lib/agenda/buildCalendarEvents';
 import { getCalendarProps } from '@/lib/agenda/calendarProps';
-import { resolveAgendaScrollToTime } from '@/lib/agenda/resolveAgendaScrollToTime';
+import { resolveAgendaTimeGrid } from '@/lib/agenda/resolveAgendaScrollToTime';
 
 interface UseAgendaViewModelParams {
 	effectiveUserId: string | undefined;
@@ -30,7 +30,7 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		[agendaData.getEnrichedEvents, ui.currentDate, effectiveUserId, ui.optimisticMove],
 	);
 
-	const scrollToTime = useMemo(() => resolveAgendaScrollToTime(events), [events]);
+	const timeGrid = useMemo(() => resolveAgendaTimeGrid(events), [events]);
 
 	const derived = useMemo(
 		() =>
@@ -60,7 +60,9 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		currentDate: ui.currentDate,
 		canEdit,
 		isOwnAgenda: canManageAgenda,
-		scrollToTime,
+		min: timeGrid.min,
+		max: timeGrid.max,
+		scrollToTime: timeGrid.scrollToTime,
 		onEventDrop: handlers.handleEventDrop,
 		onSelectEvent: handlers.handleSelectEvent,
 		onSelectSlot: handlers.handleSelectSlot,
