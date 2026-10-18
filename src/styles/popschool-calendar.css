@@ -175,14 +175,15 @@
 	/* Events */
 	& .rbc-event {
 		@apply rounded-md border-0 px-2 py-1 text-xs font-medium shadow-sm;
+		overflow: hidden;
 	}
 
 	& .rbc-event-label {
-		@apply text-[10px] opacity-90;
+		@apply block text-[10px] leading-tight opacity-90;
 	}
 
 	& .rbc-event-content {
-		@apply text-xs leading-tight;
+		@apply block text-xs leading-tight overflow-hidden;
 	}
 
 	& .rbc-event.rbc-selected {
