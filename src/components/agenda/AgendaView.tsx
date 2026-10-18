@@ -18,7 +18,11 @@ export function AgendaView(props: AgendaViewProps = {}) {
 
 	return (
 		<div className="flex flex-col gap-4 h-[calc(100vh-112px)] min-h-[640px]">
-			<AgendaCalendarPanel calendarProps={calendarProps} currentView={ui.currentView} />
+			<AgendaCalendarPanel
+				calendarProps={calendarProps}
+				currentView={ui.currentView}
+				currentDate={ui.currentDate}
+			/>
 			<AgendaViewDialogs
 				ui={ui}
 				derived={derived}

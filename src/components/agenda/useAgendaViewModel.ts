@@ -6,7 +6,7 @@ import { useAgendaData } from '@/hooks/useAgendaData';
 import { useAgendaUI } from '@/hooks/useAgendaUI';
 import { buildCalendarEvents } from '@/lib/agenda/buildCalendarEvents';
 import { getCalendarProps } from '@/lib/agenda/calendarProps';
-import { AVAILABILITY_CONFIG } from '@/lib/availability';
+import { resolveAgendaScrollToTime } from '@/lib/agenda/resolveAgendaScrollToTime';
 
 interface UseAgendaViewModelParams {
 	effectiveUserId: string | undefined;
@@ -25,17 +25,12 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		if (!ui.formDialogOpen) ui.openingForEditRef.current = false;
 	}, [ui.formDialogOpen, ui.openingForEditRef]);
 
-	const scrollToTime = useMemo(() => {
-		const nowDate = new Date();
-		return nowDate.getHours() >= AVAILABILITY_CONFIG.END_HOUR
-			? new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0)
-			: nowDate;
-	}, []);
-
 	const events = useMemo(
 		() => buildCalendarEvents(agendaData.getEnrichedEvents(ui.currentDate, effectiveUserId), ui.optimisticMove),
 		[agendaData.getEnrichedEvents, ui.currentDate, effectiveUserId, ui.optimisticMove],
 	);
+
+	const scrollToTime = useMemo(() => resolveAgendaScrollToTime(events), [events]);
 
 	const derived = useMemo(
 		() =>

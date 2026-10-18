@@ -11,16 +11,18 @@ const DragAndDropCalendar = withDragAndDrop(Calendar);
 interface AgendaCalendarPanelProps {
 	calendarProps: ReturnType<typeof getCalendarProps>;
 	currentView: View;
+	currentDate: Date;
 }
 
-export function AgendaCalendarPanel({ calendarProps, currentView }: AgendaCalendarPanelProps) {
+export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }: AgendaCalendarPanelProps) {
 	const dndProps = calendarProps as unknown as ComponentProps<typeof DragAndDropCalendar>;
 	return (
 		<>
 			{/* No ScrollArea: Radix viewport uses display:table and collapses RBC agenda-view height. */}
 			<div className="popschool-calendar rounded-lg border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
 				<CalendarViewProvider value={currentView}>
-					<DragAndDropCalendar {...dndProps} />
+					{/* Remount on date/view so RBC TimeGrid re-applies scrollToTime (mount-only). */}
+					<DragAndDropCalendar key={`${currentView}-${currentDate.getTime()}`} {...dndProps} />
 				</CalendarViewProvider>
 			</div>
 			<Legend show={currentView !== 'agenda'} />

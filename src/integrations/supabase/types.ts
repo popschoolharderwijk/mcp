@@ -2119,6 +2119,7 @@ export type Database = {
 			get_student_status: { Args: { _user_id: string }; Returns: string };
 			get_students_paginated: {
 				Args: {
+					p_include_agreements?: boolean;
 					p_lesson_type_id?: string;
 					p_limit?: number;
 					p_offset?: number;
