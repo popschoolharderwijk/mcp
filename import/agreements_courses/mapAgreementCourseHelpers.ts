@@ -1,6 +1,6 @@
 import { classifyCourseFlags } from '../courses/courseFlagsHelpers';
 import type { LessonFrequency, ScheduleFrequencyEntry } from '../courses/types';
-import { normalizeIsoDate } from '../shared/dateHelpers';
+import { normalizeIsoDate, toAmsterdamScheduleSlot } from '../shared/dateHelpers';
 import { getMappedId, type MongoIdMap } from '../shared/idMapHelpers';
 import { asFiniteNumber } from '../shared/numberHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
@@ -141,7 +141,7 @@ function parseScheduleInstant(value: unknown): Date | null {
 	return Number.isNaN(date.getTime()) ? null : date;
 }
 
-/** Latest usable schedule startdatetime → day_of_week (0=Sun UTC) + start_time HH:MM:SS UTC. */
+/** Latest usable schedule startdatetime → day_of_week + start_time in Europe/Amsterdam. */
 export function pickLatestScheduleSlot(schedule: unknown): { dayOfWeek: number; startTime: string } | null {
 	if (!Array.isArray(schedule)) return null;
 
@@ -156,13 +156,7 @@ export function pickLatestScheduleSlot(schedule: unknown): { dayOfWeek: number; 
 	}
 	if (!latest) return null;
 
-	const hours = String(latest.getUTCHours()).padStart(2, '0');
-	const minutes = String(latest.getUTCMinutes()).padStart(2, '0');
-	const seconds = String(latest.getUTCSeconds()).padStart(2, '0');
-	return {
-		dayOfWeek: latest.getUTCDay(),
-		startTime: `${hours}:${minutes}:${seconds}`,
-	};
+	return toAmsterdamScheduleSlot(latest);
 }
 
 function buildNotes(

@@ -27,7 +27,7 @@ export interface AgendaTimeGrid {
 /**
  * Time-grid window + scroll target for react-big-calendar.
  * Extends min when events start before START_HOUR: RBC scroll math uses an absolute
- * diff against min, so scrollToTime 07:00 with min 09:00 scrolls like 11:00.
+ * diff against min, so scrollToTime 08:00 with min 09:00 scrolls like 10:00.
  */
 export function resolveAgendaTimeGrid(
 	events: ReadonlyArray<{ start?: Date | null }>,

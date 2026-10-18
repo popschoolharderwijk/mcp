@@ -46,13 +46,20 @@ function validDoc(overrides: Record<string, unknown> = {}) {
 }
 
 describe('pickLatestScheduleSlot', () => {
-	it('picks the latest UTC day and time', () => {
+	it('picks the latest slot as Europe/Amsterdam wall clock', () => {
 		expect(
 			pickLatestScheduleSlot([
 				{ startdatetime: '2024-03-29T13:51:13Z' },
 				{ startdatetime: '2026-02-24T19:35:52Z' },
 			]),
-		).toEqual({ dayOfWeek: 2, startTime: '19:35:52' });
+		).toEqual({ dayOfWeek: 2, startTime: '20:35:52' });
+	});
+
+	it('applies CEST for a summer UTC instant', () => {
+		expect(pickLatestScheduleSlot([{ startdatetime: '2026-07-08T18:00:00Z' }])).toEqual({
+			dayOfWeek: 3,
+			startTime: '20:00:00',
+		});
 	});
 
 	it('returns null when no usable datetimes exist', () => {
@@ -117,7 +124,7 @@ describe('mapAgreementCourseDoc', () => {
 			frequency: 'weekly',
 			pricePerLesson: 73.38,
 			dayOfWeek: 2,
-			startTime: '19:35:52',
+			startTime: '20:35:52',
 			startDate: '2024-08-26',
 			endDate: null,
 			isActive: true,
