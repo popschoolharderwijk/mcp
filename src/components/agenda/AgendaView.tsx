@@ -22,6 +22,8 @@ export function AgendaView(props: AgendaViewProps = {}) {
 				calendarProps={calendarProps}
 				currentView={ui.currentView}
 				currentDate={ui.currentDate}
+				isFullscreen={ui.isFullscreen}
+				onFullscreenChange={ui.setIsFullscreen}
 			/>
 			<AgendaViewDialogs
 				ui={ui}

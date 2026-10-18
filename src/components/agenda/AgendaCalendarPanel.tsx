@@ -1,4 +1,4 @@
-import { type ComponentProps, useEffect, useState } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import type { View } from 'react-big-calendar';
 import { Calendar } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
@@ -51,10 +51,17 @@ interface AgendaCalendarPanelProps {
 	calendarProps: ReturnType<typeof getCalendarProps>;
 	currentView: View;
 	currentDate: Date;
+	isFullscreen: boolean;
+	onFullscreenChange: (fullscreen: boolean) => void;
 }
 
-export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }: AgendaCalendarPanelProps) {
-	const [isFullscreen, setIsFullscreen] = useState(false);
+export function AgendaCalendarPanel({
+	calendarProps,
+	currentView,
+	currentDate,
+	isFullscreen,
+	onFullscreenChange,
+}: AgendaCalendarPanelProps) {
 	const dndProps = calendarProps as unknown as ComponentProps<typeof DragAndDropCalendar>;
 
 	const onNavigateDate = calendarProps.onNavigate;
@@ -63,7 +70,7 @@ export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }:
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (shouldToggleAgendaFullscreen(event)) {
 				event.preventDefault();
-				setIsFullscreen((open) => !open);
+				onFullscreenChange(!isFullscreen);
 				return;
 			}
 			const action = resolveAgendaNavigateFromKeyboard(event);
@@ -73,7 +80,7 @@ export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }:
 		};
 		window.addEventListener('keydown', onKeyDown);
 		return () => window.removeEventListener('keydown', onKeyDown);
-	}, [onNavigateDate, currentDate, currentView]);
+	}, [onNavigateDate, currentDate, currentView, isFullscreen, onFullscreenChange]);
 
 	// Remount when view or time-grid scroll window changes (RBC applies scrollToTime on mount only).
 	// Do not key on currentDate — full remount each week makes the day header jump one frame.
@@ -104,13 +111,13 @@ export function AgendaCalendarPanel({ calendarProps, currentView, currentDate }:
 		<AgendaFullscreenProvider
 			value={{
 				isFullscreen,
-				toggleFullscreen: () => setIsFullscreen((open) => !open),
+				toggleFullscreen: () => onFullscreenChange(!isFullscreen),
 			}}
 		>
 			<div className="flex flex-col gap-4 flex-1 min-h-0">
 				<style>{AGENDA_EVENT_LAYOUT_STYLE}</style>
 				{!isFullscreen && panelBody}
-				<Dialog open={isFullscreen} onOpenChange={setIsFullscreen}>
+				<Dialog open={isFullscreen} onOpenChange={onFullscreenChange}>
 					<DialogContent
 						hideCloseButton
 						className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-4 rounded-none border-0 p-4 sm:rounded-none"
