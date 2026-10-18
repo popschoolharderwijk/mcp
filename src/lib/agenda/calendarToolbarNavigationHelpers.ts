@@ -1,4 +1,4 @@
-export const CALENDAR_NAVIGATE = { PREVIOUS: 'PREV', NEXT: 'NEXT', TODAY: 'TODAY' } as const;
+export const CALENDAR_NAVIGATE = { PREVIOUS: 'PREV', NEXT: 'NEXT', TODAY: 'TODAY', DATE: 'DATE' } as const;
 
 export function resolveCalendarTodayLabel(messagesToday: unknown): string {
 	return typeof messagesToday === 'string' ? messagesToday : 'Vandaag';

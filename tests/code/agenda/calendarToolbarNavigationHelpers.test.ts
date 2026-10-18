@@ -27,6 +27,6 @@ describe('resolveCalendarNavAriaLabel', () => {
 
 describe('CALENDAR_NAVIGATE', () => {
 	it('exposes stable navigation action constants', () => {
-		expect(CALENDAR_NAVIGATE).toEqual({ PREVIOUS: 'PREV', NEXT: 'NEXT', TODAY: 'TODAY' });
+		expect(CALENDAR_NAVIGATE).toEqual({ PREVIOUS: 'PREV', NEXT: 'NEXT', TODAY: 'TODAY', DATE: 'DATE' });
 	});
 });

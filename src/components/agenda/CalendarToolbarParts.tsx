@@ -1,20 +1,24 @@
 import type { ToolbarProps, View } from 'react-big-calendar';
 import { LuChevronLeft, LuChevronRight, LuMaximize2, LuMinimize2 } from 'react-icons/lu';
 import { useAgendaFullscreen } from '@/components/agenda/AgendaFullscreenContext';
+import { DatePicker } from '@/components/ui/date-picker';
 import { resolveCalendarViewLabel } from '@/lib/agenda/calendarToolbarHelpers';
 import {
 	CALENDAR_NAVIGATE,
 	resolveCalendarNavAriaLabel,
 	resolveCalendarTodayLabel,
 } from '@/lib/agenda/calendarToolbarNavigationHelpers';
+import { formatDateToDb } from '@/lib/date/date-format';
+import { parseDbDateValue } from '@/lib/date/datePickerHelpers';
 
 interface CalendarToolbarNavigationProps {
 	label: string;
+	date: Date;
 	messages: ToolbarProps['localizer']['messages'];
 	onNavigate: ToolbarProps['onNavigate'];
 }
 
-export function CalendarToolbarNavigation({ label, messages, onNavigate }: CalendarToolbarNavigationProps) {
+export function CalendarToolbarNavigation({ label, date, messages, onNavigate }: CalendarToolbarNavigationProps) {
 	const todayLabel = resolveCalendarTodayLabel(messages?.today);
 	const previousLabel = resolveCalendarNavAriaLabel(messages?.previous, 'Vorige');
 	const nextLabel = resolveCalendarNavAriaLabel(messages?.next, 'Volgende');
@@ -40,7 +44,24 @@ export function CalendarToolbarNavigation({ label, messages, onNavigate }: Calen
 			>
 				<LuChevronRight className="h-5 w-5" />
 			</button>
-			<span className="rbc-toolbar-label">{label}</span>
+			<DatePicker
+				value={formatDateToDb(date)}
+				onChange={(next) => {
+					const selected = parseDbDateValue(next);
+					if (selected) onNavigate(CALENDAR_NAVIGATE.DATE, selected);
+				}}
+				captionLayout="dropdown"
+				trigger={
+					<button
+						type="button"
+						className="rbc-toolbar-label"
+						aria-label="Ga naar datum"
+						title="Ga naar datum"
+					>
+						{label}
+					</button>
+				}
+			/>
 		</span>
 	);
 }

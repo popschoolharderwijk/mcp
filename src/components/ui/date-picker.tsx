@@ -40,6 +40,14 @@ interface DatePickerProps {
 	autoComplete?: string;
 	/** Ref for the trigger (button variant, e.g. autofocus). */
 	triggerRef?: React.RefObject<HTMLButtonElement | null>;
+	/** Month/year dropdowns on the calendar (button variant). */
+	captionLayout?: 'label' | 'dropdown';
+	/** First month in the year dropdown range (button variant + captionLayout dropdown). */
+	startMonth?: Date;
+	/** Last month in the year dropdown range (button variant + captionLayout dropdown). */
+	endMonth?: Date;
+	/** Custom popover trigger (button variant). Replaces the default outline button. */
+	trigger?: React.ReactElement;
 }
 
 function ButtonDatePicker({
@@ -50,9 +58,17 @@ function ButtonDatePicker({
 	id,
 	className,
 	triggerRef,
+	captionLayout = 'label',
+	startMonth,
+	endMonth,
+	trigger,
+	minDate,
+	maxDate,
 }: DatePickerProps) {
 	const [open, setOpen] = React.useState(false);
 	const selectedDate = parseDbDateValue(value);
+	const dropdownStartMonth = startMonth ?? minDate ?? new Date(2000, 0);
+	const dropdownEndMonth = endMonth ?? maxDate ?? new Date(new Date().getFullYear() + 5, 11);
 
 	const handleSelect = (date: Date | undefined) => {
 		if (!date) {
@@ -63,26 +79,37 @@ function ButtonDatePicker({
 		setOpen(false);
 	};
 
+	const defaultTrigger = (
+		<Button
+			ref={triggerRef as React.Ref<HTMLButtonElement> | undefined}
+			id={id}
+			variant="outline"
+			disabled={disabled}
+			data-empty={!value}
+			className={cn(
+				'w-full justify-between text-left font-normal data-[empty=true]:text-muted-foreground',
+				className,
+			)}
+		>
+			{value ? formatDbDateToUi(value) : <span>{placeholder}</span>}
+			<LuChevronDown data-icon="inline-end" className="h-4 w-4 opacity-50" />
+		</Button>
+	);
+
 	return (
 		<Popover open={open} onOpenChange={setOpen}>
-			<PopoverTrigger asChild>
-				<Button
-					ref={triggerRef as React.Ref<HTMLButtonElement> | undefined}
-					id={id}
-					variant="outline"
-					disabled={disabled}
-					data-empty={!value}
-					className={cn(
-						'w-full justify-between text-left font-normal data-[empty=true]:text-muted-foreground',
-						className,
-					)}
-				>
-					{value ? formatDbDateToUi(value) : <span>{placeholder}</span>}
-					<LuChevronDown data-icon="inline-end" className="h-4 w-4 opacity-50" />
-				</Button>
-			</PopoverTrigger>
+			<PopoverTrigger asChild>{trigger ?? defaultTrigger}</PopoverTrigger>
 			<PopoverContent className="w-auto p-0" align="start">
-				<Calendar mode="single" selected={selectedDate} onSelect={handleSelect} defaultMonth={selectedDate} />
+				<Calendar
+					mode="single"
+					selected={selectedDate}
+					onSelect={handleSelect}
+					defaultMonth={selectedDate}
+					captionLayout={captionLayout}
+					startMonth={captionLayout === 'dropdown' ? dropdownStartMonth : undefined}
+					endMonth={captionLayout === 'dropdown' ? dropdownEndMonth : undefined}
+					disabled={buildInputCalendarDisabled(minDate, maxDate)}
+				/>
 			</PopoverContent>
 		</Popover>
 	);
