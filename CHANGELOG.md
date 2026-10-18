@@ -5,6 +5,7 @@
 - Agenda op volledig scherm (knop of toets **F**)
 - Datum kiezen via de titel in de agendakop
 - Agenda scrollt naar de vroegste afspraak
+- Data-tabel: kruisje en Esc toets wissen de zoektermen
 - Import: lestijden van overeenkomsten in Nederlandse tijd
 
 ## 1.1.2 — 2026-10-16
