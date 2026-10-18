@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.3 — 2026-10-18
+
+- Agenda op volledig scherm (knop of toets **F**)
+- Datum kiezen via de titel in de agendakop
+- Agenda scrollt naar de vroegste afspraak; tijdvenster past mee
+- Import: lestijden van overeenkomsten in Nederlandse tijd
+
 ## 1.1.2 — 2026-10-16
 
 - Tabbladen op leerling- en docentdetail deelbaar via de URL
