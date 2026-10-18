@@ -27,6 +27,10 @@
 		@apply hover:bg-accent hover:text-accent-foreground;
 	}
 
+	& .rbc-btn-group button.rbc-toolbar-fullscreen {
+		@apply inline-flex h-8 w-8 items-center justify-center p-0;
+	}
+
 	/* Nav group: chevrons flank label (Google Calendar style) */
 	& .rbc-nav-group {
 		@apply flex items-center gap-1;
