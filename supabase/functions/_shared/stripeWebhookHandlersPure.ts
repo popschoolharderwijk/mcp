@@ -47,11 +47,9 @@ export function isScheduleSetupIntent(setupIntent: { metadata?: { flow?: string 
 	return setupIntent.metadata?.flow === 'schedule_setup';
 }
 
-export function hasScheduleSetupInput(input: {
-	lessonAgreementId: string | null;
-	customerId: string | null;
-	paymentMethodId: string | null;
-}): boolean {
+export function hasScheduleSetupInput<
+	T extends { lessonAgreementId: string | null; customerId: string | null; paymentMethodId: string | null },
+>(input: T): input is T & { lessonAgreementId: string; customerId: string; paymentMethodId: string } {
 	return Boolean(input.lessonAgreementId && input.customerId && input.paymentMethodId);
 }
 
