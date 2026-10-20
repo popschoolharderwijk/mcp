@@ -7,7 +7,8 @@ export interface DuoPairBasePayload {
 	start_time: string;
 	duration_minutes: number;
 	frequency: Body['frequency'];
-	price_per_lesson: number;
+	price_per_lesson: number | null;
+	lesson_type_option_id: string | null;
 	start_date: string;
 	end_date: string | null;
 	is_active: boolean;
@@ -24,6 +25,7 @@ export function buildDuoPairBasePayload(body: Body, duoPairId: string): DuoPairB
 		duration_minutes: body.duration_minutes,
 		frequency: body.frequency,
 		price_per_lesson: body.price_per_lesson,
+		lesson_type_option_id: body.lesson_type_option_id,
 		start_date: body.start_date,
 		end_date: body.end_date,
 		is_active: true,
