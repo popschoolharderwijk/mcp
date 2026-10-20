@@ -1,5 +1,5 @@
-import type { LessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import { formatAgeCategoryLabel, formatDateNl, formatLessonFeeAmount } from '@/lib/billing/lessonFeeFormat';
+import type { LessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import {
 	resolveFirstMonthLabel,
 	resolveLessonAgreementPreviewViewState,
@@ -24,7 +24,9 @@ function PreviewContent({ preview }: { preview: LessonFeePreview }) {
 			</div>
 			{regularMonth && (
 				<div>
-					<p className="text-xs font-medium text-muted-foreground">Maandbedrag (11× per jaar, niet in augustus)</p>
+					<p className="text-xs font-medium text-muted-foreground">
+						Maandbedrag (11× per jaar, niet in augustus)
+					</p>
 					<p className="font-semibold text-base">{formatLessonFeeAmount(regularMonth)}</p>
 				</div>
 			)}

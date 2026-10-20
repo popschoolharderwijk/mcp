@@ -17,9 +17,7 @@ function getTariffFieldsError(form: OptionTariffFields): string | null {
 	const under = inputToCentsOrNull(form.amount_under_21);
 	const adult = form.has_adult_tariff ? inputToCentsOrNull(form.amount_adult) : null;
 	if (under === null && adult === null) {
-		return form.has_adult_tariff
-			? 'vul een bedrag onder 21 of een 21+-bedrag in'
-			: 'vul een bedrag onder 21 in';
+		return form.has_adult_tariff ? 'vul een bedrag onder 21 of een 21+-bedrag in' : 'vul een bedrag onder 21 in';
 	}
 	return null;
 }

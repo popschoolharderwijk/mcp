@@ -1,12 +1,12 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { upsertOptionTariff } from '@/pages/lesson-type-info/lessonTypeOptionPersistence';
 import {
 	buildLessonTypeOptionRowPayload,
 	collectRemovedLessonTypeOptionIds,
 	resolveLessonTypeSaveMode,
 	shouldSaveOptionTariff,
 } from '@/pages/lesson-type-info/lessonTypeSubmitPureHelpers';
-import { upsertOptionTariff } from '@/pages/lesson-type-info/lessonTypeOptionPersistence';
 import type { OptionRowWithKey } from '@/pages/lesson-type-info/types';
 import { optionSort } from '@/pages/lesson-type-info/utils';
 import { buildLessonTypePayload } from '@/pages/lesson-type-info/validateLessonTypeForm';

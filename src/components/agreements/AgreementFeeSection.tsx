@@ -25,8 +25,8 @@ import {
 	resolveWizardFeePreviewKey,
 } from '@/lib/agreements/agreementFeeSectionHelpers';
 import { resolveEffectiveDateOfBirth } from '@/lib/agreements/wizardSaveHelpers';
-import { loadLessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import { formatDateNl } from '@/lib/billing/lessonFeeFormat';
+import { loadLessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
 interface Props {
@@ -115,9 +115,9 @@ function CancelAgreementButton({ agreement }: { agreement: AgreementTableRow }) 
 					<AlertDialogHeader>
 						<AlertDialogTitle>Overeenkomst opzeggen?</AlertDialogTitle>
 						<AlertDialogDescription>
-							De overeenkomst stopt per het einde van de lopende periode (eerst de minimale looptijd, daarna 31
-							juli), rekening houdend met de opzegtermijn uit de boekhoudinstellingen. Tot die datum blijft
-							het lesgeld verschuldigd.
+							De overeenkomst stopt per het einde van de lopende periode (eerst de minimale looptijd,
+							daarna 31 juli), rekening houdend met de opzegtermijn uit de boekhoudinstellingen. Tot die
+							datum blijft het lesgeld verschuldigd.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -126,7 +126,12 @@ function CancelAgreementButton({ agreement }: { agreement: AgreementTableRow }) 
 								Annuleren
 							</Button>
 						</AlertDialogCancel>
-						<SubmitButton variant="destructive" loading={loading} loadingLabel="Opzeggen..." onClick={confirm}>
+						<SubmitButton
+							variant="destructive"
+							loading={loading}
+							loadingLabel="Opzeggen..."
+							onClick={confirm}
+						>
 							Opzeggen
 						</SubmitButton>
 					</AlertDialogFooter>
@@ -142,8 +147,14 @@ export function AgreementFeeSection({ form, setForm, isDuo, agreement }: Props) 
 	useStoredDatesOfBirth(form, setForm);
 
 	const studentDob = resolveEffectiveDateOfBirth(form.studentDateOfBirth, form.studentDateOfBirthInput);
-	const studentRequirement = resolveDateOfBirthRequirement(form.paymentMethod, isDuo, Boolean(form.studentDateOfBirth));
-	const partnerRequirement = isDuo ? resolveDateOfBirthRequirement(form.paymentMethod, true, Boolean(form.partnerDateOfBirth)) : 'none';
+	const studentRequirement = resolveDateOfBirthRequirement(
+		form.paymentMethod,
+		isDuo,
+		Boolean(form.studentDateOfBirth),
+	);
+	const partnerRequirement = isDuo
+		? resolveDateOfBirthRequirement(form.paymentMethod, true, Boolean(form.partnerDateOfBirth))
+		: 'none';
 
 	const optionId = form.selectedOptionSnapshot?.id ?? agreement?.lesson_type_option_id ?? null;
 	const previewKey = resolveWizardFeePreviewKey({

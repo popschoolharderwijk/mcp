@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
+import type { LessonTypeOptionWithTariffs } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
 import {
 	mapLessonTypeOptionsToForm,
 	mapLessonTypeRowToForm,
 	resolveLessonTypeLoadFailure,
 	shouldSkipLessonTypeLoad,
 } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
-import type { LessonTypeOptionWithTariffs } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
 import type { LessonTypeRow } from '../../../src/types/lesson-agreements';
 
 const lessonType: LessonTypeRow = {

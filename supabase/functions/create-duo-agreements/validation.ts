@@ -67,7 +67,10 @@ function validateFrequencyAndPrice(b: Record<string, unknown>): { ok: false; err
 	if (b.price_per_lesson != null && (typeof b.price_per_lesson !== 'number' || b.price_per_lesson < 0)) {
 		return { ok: false, error: "'price_per_lesson' moet >= 0 zijn" };
 	}
-	if (b.lesson_type_option_id != null && (typeof b.lesson_type_option_id !== 'string' || !UUID_RE.test(b.lesson_type_option_id))) {
+	if (
+		b.lesson_type_option_id != null &&
+		(typeof b.lesson_type_option_id !== 'string' || !UUID_RE.test(b.lesson_type_option_id))
+	) {
 		return { ok: false, error: "'lesson_type_option_id' moet een UUID zijn" };
 	}
 	return null;

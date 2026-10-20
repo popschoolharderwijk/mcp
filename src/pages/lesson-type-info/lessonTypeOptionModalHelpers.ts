@@ -157,18 +157,9 @@ export interface RunSaveOptionInModalParams {
 	flow: SaveOptionInModalFlow;
 	editingOption: OptionRowWithKey;
 	optionModalForm: OptionModalFormState;
-	updateExistingOptionInForm: (
-		editing: OptionRowWithKey,
-		modalForm: OptionModalFormState,
-	) => boolean;
-	persistExistingOption: (
-		editing: OptionRowWithKey,
-		modalForm: OptionModalFormState,
-	) => Promise<boolean>;
-	persistNewOption: (
-		editing: OptionRowWithKey,
-		modalForm: OptionModalFormState,
-	) => Promise<boolean>;
+	updateExistingOptionInForm: (editing: OptionRowWithKey, modalForm: OptionModalFormState) => boolean;
+	persistExistingOption: (editing: OptionRowWithKey, modalForm: OptionModalFormState) => Promise<boolean>;
+	persistNewOption: (editing: OptionRowWithKey, modalForm: OptionModalFormState) => Promise<boolean>;
 	clearEditingOption: () => void;
 }
 
@@ -185,10 +176,7 @@ export async function runSaveOptionInModal(params: RunSaveOptionInModalParams): 
 		}
 		let persisted = true;
 		if (params.flow.persistToDatabase) {
-			persisted = await params.persistExistingOption(
-				params.editingOption,
-				params.optionModalForm,
-			);
+			persisted = await params.persistExistingOption(params.editingOption, params.optionModalForm);
 		} else if (shouldShowLocalUpdateSuccessToast(params.flow)) {
 			toast.success('Optie bijgewerkt');
 		}
@@ -199,10 +187,7 @@ export async function runSaveOptionInModal(params: RunSaveOptionInModalParams): 
 	}
 
 	if (params.flow.kind === 'create-new') {
-		const persisted = await params.persistNewOption(
-			params.editingOption,
-			params.optionModalForm,
-		);
+		const persisted = await params.persistNewOption(params.editingOption, params.optionModalForm);
 		if (shouldClearEditingOptionAfterSave(params.flow, persisted)) {
 			params.clearEditingOption();
 		}

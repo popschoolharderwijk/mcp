@@ -32,7 +32,12 @@ export function LessonTypeOptionSelect({ options, value, onChange, placeholder =
 				const opt = options.find((o) => o.id === e.target.value);
 				onChange(
 					opt
-						? { id: opt.id, duration_minutes: opt.duration_minutes, frequency: opt.frequency, label: opt.label }
+						? {
+								id: opt.id,
+								duration_minutes: opt.duration_minutes,
+								frequency: opt.frequency,
+								label: opt.label,
+							}
 						: null,
 				);
 			}}

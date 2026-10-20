@@ -1,11 +1,11 @@
 import { LessonAgreementDialogContent } from '@/components/students/LessonAgreementDialogContent';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getUserInitials } from '@/components/ui/user-display';
-import { useLessonFeePreview } from '@/hooks/useLessonFeePreview';
 import { useAuth } from '@/hooks/useAuth';
+import { useLessonFeePreview } from '@/hooks/useLessonFeePreview';
+import { loadAgreementFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import { DAY_NAMES } from '@/lib/date/day-index';
 import { getDisplayName } from '@/lib/display-name';
-import { loadAgreementFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import { resolveAgreementFeePreviewKey } from '@/lib/students/lessonAgreementDialogHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 
@@ -33,9 +33,7 @@ export function LessonAgreementDialog({
 		preview,
 		loading: previewLoading,
 		error: previewError,
-	} = useLessonFeePreview(previewKey, () =>
-		loadAgreementFeePreview(agreement?.id ?? '', studentUserId ?? ''),
-	);
+	} = useLessonFeePreview(previewKey, () => loadAgreementFeePreview(agreement?.id ?? '', studentUserId ?? ''));
 
 	if (!agreement) {
 		return null;

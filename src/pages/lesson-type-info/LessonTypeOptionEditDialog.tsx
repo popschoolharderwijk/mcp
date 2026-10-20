@@ -64,7 +64,10 @@ export function LessonTypeOptionEditDialog({
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<Label>Duur (min)</Label>
-							<Select value={optionModalForm.duration_minutes} onValueChange={(v) => set('duration_minutes', v)}>
+							<Select
+								value={optionModalForm.duration_minutes}
+								onValueChange={(v) => set('duration_minutes', v)}
+							>
 								<SelectTrigger>
 									<SelectValue />
 								</SelectTrigger>
@@ -139,10 +142,13 @@ export function LessonTypeOptionEditDialog({
 					</div>
 					<div className="space-y-2">
 						<Label>Tarief geldig vanaf</Label>
-						<DatePicker value={optionModalForm.effective_from || null} onChange={(v) => set('effective_from', v ?? '')} />
+						<DatePicker
+							value={optionModalForm.effective_from || null}
+							onChange={(v) => set('effective_from', v ?? '')}
+						/>
 						<p className="text-xs text-muted-foreground">
-							Kies een nieuwe datum om een tariefwijziging vast te leggen. Lopende overeenkomsten gaan vanaf die
-							datum automatisch over.
+							Kies een nieuwe datum om een tariefwijziging vast te leggen. Lopende overeenkomsten gaan
+							vanaf die datum automatisch over.
 						</p>
 					</div>
 					<div className="grid grid-cols-2 gap-4">
