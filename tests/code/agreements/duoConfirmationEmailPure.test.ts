@@ -24,7 +24,6 @@ const baseBody: Body = {
 	start_time: '14:30:00',
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 25,
 	lesson_type_option_id: null,
 	start_date: '2026-09-01',
 	end_date: null,

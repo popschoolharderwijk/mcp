@@ -54,7 +54,6 @@ const rawAgreement: RawAgreementRow = {
 	lesson_type_id: 'lesson-1',
 	duration_minutes: 60,
 	frequency: 'weekly',
-	price_per_lesson: 2500,
 	duo_pair_id: null,
 	lesson_types: { id: 'lesson-1', name: 'Piano', icon: 'piano', color: '#000000' },
 	teachers: { user_id: 'teacher-1' },

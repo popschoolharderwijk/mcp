@@ -58,7 +58,6 @@ function mockAgreement(overrides: Partial<LessonAgreementWithStudent> = {}): Les
 		lesson_type_id: 'lt-1',
 		duration_minutes: 30,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 		profiles: { first_name: 'Jan', last_name: 'Jansen', email: 'jan@example.com' },
 		lesson_types: { ...defaultLessonTypes, ...lt },
 		...rest,

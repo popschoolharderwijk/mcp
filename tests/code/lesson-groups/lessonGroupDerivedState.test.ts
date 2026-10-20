@@ -24,7 +24,6 @@ function baseInput(overrides: Partial<Parameters<typeof canProceedFromLessonGrou
 		name: 'Groep A',
 		lessonTypeId: 'lt-1',
 		durationMinutes: 45,
-		pricePerLesson: 25,
 		startDate: '2026-09-01',
 		endDate: '2027-07-31',
 		teacherUserId: 'teacher-1',

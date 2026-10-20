@@ -40,7 +40,6 @@ const completeForm = {
 	},
 	durationMinutes: 45,
 	frequency: 'weekly' as const,
-	pricePerLesson: 30,
 	startDate: '2026-09-01',
 	endDate: '',
 	memberIds: [],

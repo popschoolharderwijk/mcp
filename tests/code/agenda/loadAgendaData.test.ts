@@ -130,7 +130,6 @@ function mockAgreement(overrides: Partial<LessonAgreementQuery> = {}): LessonAgr
 		lesson_type_id: 'lt-1',
 		duration_minutes: 60,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 		lesson_types: { id: 'lt-1', name: 'Piano', icon: 'piano', color: '#000000', is_group_lesson: false },
 		teachers: [{ user_id: 'tea-1' }],
 		...overrides,

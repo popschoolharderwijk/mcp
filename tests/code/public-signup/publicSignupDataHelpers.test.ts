@@ -9,7 +9,6 @@ const lessonGroups = [
 		start_time: '16:00',
 		duration_minutes: 45,
 		frequency: 'weekly',
-		price_per_lesson: 2500,
 		teacher_user_id: 'teacher-1',
 	},
 ];
@@ -72,7 +71,6 @@ describe('fetchPublicSignupGroupOptions', () => {
 				start_time: '16:00',
 				duration_minutes: 45,
 				frequency: 'weekly',
-				price_per_lesson: 2500,
 				teacher_name: 'Tom Jansen',
 				members_count: 1,
 			},
@@ -118,7 +116,6 @@ describe('fetchPublicSignupGroupOptions', () => {
 				start_time: '16:00',
 				duration_minutes: 45,
 				frequency: 'weekly',
-				price_per_lesson: 2500,
 				teacher_name: null,
 				members_count: 0,
 			},

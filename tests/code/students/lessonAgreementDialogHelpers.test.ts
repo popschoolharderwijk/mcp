@@ -19,7 +19,6 @@ const agreement: LessonAgreementWithTeacher = {
 	notes: null,
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 25,
 	teacher: { first_name: 'Jan', last_name: 'Jansen', avatar_url: null },
 	lesson_type: { id: 'lt-1', name: 'Piano', icon: 'piano', color: '#ff0000' },
 };

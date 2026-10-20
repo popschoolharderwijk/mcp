@@ -138,7 +138,6 @@ function mockAgreementRow(overrides: Partial<AgreementTableRow> = {}): Agreement
 		lesson_type_id: 'lt-1',
 		duration_minutes: 60,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 		created_at: '2026-01-01T00:00:00Z',
 		notes: null,
 		payment_method: 'stripe',
