@@ -3,6 +3,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
 import { getStripeId } from './stripe.ts';
+import { writeSubscriptionState } from './subscription-storage.ts';
 import {
 	addMonths,
 	buildSubscriptionPlan,
@@ -15,7 +16,6 @@ import {
 	type PlannedPhase,
 	type TaxRateIds,
 } from './subscriptionPlanPure.ts';
-import { writeSubscriptionState } from './subscription-storage.ts';
 
 const OPEN_STATUSES = ['scheduled', 'trialing', 'active', 'past_due', 'unpaid', 'incomplete', 'paused'];
 
@@ -42,10 +42,15 @@ export interface SubscriptionRow {
 	first_invoice_month: string | null;
 }
 
-export async function findOpenSubscription(admin: SupabaseClient, agreementId: string): Promise<SubscriptionRow | null> {
+export async function findOpenSubscription(
+	admin: SupabaseClient,
+	agreementId: string,
+): Promise<SubscriptionRow | null> {
 	const { data } = await admin
 		.from('subscriptions')
-		.select('id, stripe_customer_id, stripe_subscription_id, stripe_schedule_id, first_invoice_status, first_invoice_month')
+		.select(
+			'id, stripe_customer_id, stripe_subscription_id, stripe_schedule_id, first_invoice_status, first_invoice_month',
+		)
 		.eq('lesson_agreement_id', agreementId)
 		.in('status', OPEN_STATUSES)
 		.order('created_at', { ascending: false })
@@ -65,7 +70,11 @@ async function loadPlanContext(admin: SupabaseClient, agreementId: string): Prom
 	if (!agreement.lesson_type_option_id) throw new Error('Overeenkomst heeft geen lesvorm');
 
 	const [{ data: option }, { data: product }, { data: settings }] = await Promise.all([
-		admin.from('lesson_type_options').select('billing_kind').eq('id', agreement.lesson_type_option_id).maybeSingle(),
+		admin
+			.from('lesson_type_options')
+			.select('billing_kind')
+			.eq('id', agreement.lesson_type_option_id)
+			.maybeSingle(),
 		admin
 			.from('stripe_catalog_products')
 			.select('id, stripe_product_id, stripe_catalog_prices(lookup_key, stripe_price_id, is_active_in_stripe)')
@@ -77,7 +86,8 @@ async function loadPlanContext(admin: SupabaseClient, agreementId: string): Prom
 			.eq('id', true)
 			.maybeSingle(),
 	]);
-	if (!product?.stripe_product_id) throw new Error('Lesvorm staat nog niet in Stripe: synchroniseer eerst met Stripe');
+	if (!product?.stripe_product_id)
+		throw new Error('Lesvorm staat nog niet in Stripe: synchroniseer eerst met Stripe');
 	if (!settings?.stripe_tax_rate_21_id || !settings?.stripe_tax_rate_exempt_id) {
 		throw new Error('Btw-tarieven ontbreken in Stripe: synchroniseer eerst met Stripe');
 	}
@@ -368,7 +378,10 @@ export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Strip
 			const ctx = await loadPlanContext(admin, row.lesson_agreement_id);
 			const [month] = await loadFeeMonths(admin, row.lesson_agreement_id, row.first_invoice_month, 1);
 			if (!month || month.amount_cents <= 0) {
-				await admin.from('subscriptions').update({ first_invoice_status: null }).eq('lesson_agreement_id', row.lesson_agreement_id);
+				await admin
+					.from('subscriptions')
+					.update({ first_invoice_status: null })
+					.eq('lesson_agreement_id', row.lesson_agreement_id);
 				continue;
 			}
 			const pm = await resolveDefaultPaymentMethod(stripe, row.stripe_customer_id);
@@ -410,12 +423,14 @@ export async function processPendingRebuilds(
 		.not('stripe_schedule_id', 'is', null)
 		.in('status', OPEN_STATUSES);
 	const horizonLimit = addMonths(monthStart(options.today), 12);
-	const due = ((rows ?? []) as Array<{
-		lesson_agreement_id: string;
-		needs_rebuild: boolean;
-		schedule_horizon_end: string | null;
-		lesson_agreements: { lesson_type_id: string } | null;
-	}>).filter(
+	const due = (
+		(rows ?? []) as Array<{
+			lesson_agreement_id: string;
+			needs_rebuild: boolean;
+			schedule_horizon_end: string | null;
+			lesson_agreements: { lesson_type_id: string } | null;
+		}>
+	).filter(
 		(r) =>
 			(!options.lessonTypeId || r.lesson_agreements?.lesson_type_id === options.lessonTypeId) &&
 			(r.needs_rebuild ||

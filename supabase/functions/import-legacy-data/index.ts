@@ -111,12 +111,7 @@ function buildTemplate(): Uint8Array {
 			'description',
 			'is_active',
 		],
-		lesson_type_options: [
-			'legacy_id',
-			'lesson_type_legacy_id',
-			'frequency',
-			'duration_minutes',
-		],
+		lesson_type_options: ['legacy_id', 'lesson_type_legacy_id', 'frequency', 'duration_minutes'],
 		teachers: [
 			'legacy_id',
 			'email',

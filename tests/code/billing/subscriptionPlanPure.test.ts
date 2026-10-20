@@ -28,7 +28,11 @@ const PRICES: Record<string, string> = {
 };
 
 /** Fee months like agreement_fee_months returns them (August = 0). */
-function months(from: string, count: number, fee: (month: string, i: number) => Partial<FeeMonth> = () => ({})): FeeMonth[] {
+function months(
+	from: string,
+	count: number,
+	fee: (month: string, i: number) => Partial<FeeMonth> = () => ({}),
+): FeeMonth[] {
 	return Array.from({ length: count }, (_, i) => {
 		const month = addMonths(from, i);
 		const aug = month.slice(5, 7) === '08';
@@ -69,7 +73,9 @@ describe('buildSubscriptionPlan', () => {
 				input({
 					today: '2026-10-10',
 					startDate: '2026-10-15',
-					months: months('2026-10-01', 12, (_m, i) => (i === 0 ? { amount_cents: prorated, is_prorated: true } : {})),
+					months: months('2026-10-01', 12, (_m, i) =>
+						i === 0 ? { amount_cents: prorated, is_prorated: true } : {},
+					),
 				}),
 			),
 		);
@@ -96,7 +102,13 @@ describe('buildSubscriptionPlan', () => {
 			['2027-08-01', '2027-09-01', 0],
 			['2028-08-01', '2028-09-01', 0],
 		]);
-		expect(plan.phases.map((p) => p.start)).toEqual(['2026-10-01', '2027-08-01', '2027-09-01', '2028-08-01', '2028-09-01']);
+		expect(plan.phases.map((p) => p.start)).toEqual([
+			'2026-10-01',
+			'2027-08-01',
+			'2027-09-01',
+			'2028-08-01',
+			'2028-09-01',
+		]);
 		expect(plan.endBehavior).toBe('release');
 	});
 
@@ -131,7 +143,9 @@ describe('buildSubscriptionPlan', () => {
 
 	it('opzegging per 30 april: laatste fase eindigt 1 mei, end_behavior cancel', () => {
 		const plan = ok(
-			buildSubscriptionPlan(input({ months: months('2026-10-01', 12, (m) => (m >= '2027-05-01' ? { amount_cents: 0 } : {})) })),
+			buildSubscriptionPlan(
+				input({ months: months('2026-10-01', 12, (m) => (m >= '2027-05-01' ? { amount_cents: 0 } : {})) }),
+			),
 		);
 		expect(plan.phases.at(-1)?.end).toBe('2027-05-01');
 		expect(plan.endBehavior).toBe('cancel');
@@ -139,7 +153,9 @@ describe('buildSubscriptionPlan', () => {
 
 	it('einde per 31 juli: geen augustus-fase, stopt op 1 augustus', () => {
 		const plan = ok(
-			buildSubscriptionPlan(input({ months: months('2026-10-01', 13, (m) => (m >= '2027-09-01' ? { amount_cents: 0 } : {})) })),
+			buildSubscriptionPlan(
+				input({ months: months('2026-10-01', 13, (m) => (m >= '2027-09-01' ? { amount_cents: 0 } : {})) }),
+			),
 		);
 		expect(plan.phases.at(-1)?.end).toBe('2027-08-01');
 		expect(plan.endBehavior).toBe('cancel');
@@ -157,18 +173,28 @@ describe('buildSubscriptionPlan', () => {
 	});
 
 	it('groepsles krijgt geen abonnement', () => {
-		expect(buildSubscriptionPlan(input({ billingKind: 'one_off' }))).toEqual({ ok: false, error: ONE_OFF_NOT_SUPPORTED });
+		expect(buildSubscriptionPlan(input({ billingKind: 'one_off' }))).toEqual({
+			ok: false,
+			error: ONE_OFF_NOT_SUPPORTED,
+		});
 	});
 
 	it('vervolg van een lopend schedule: geen eerste factuur', () => {
-		const plan = ok(buildSubscriptionPlan(input({ today: '2026-10-20', continuation: true, months: months('2026-11-01', 12) })));
+		const plan = ok(
+			buildSubscriptionPlan(input({ today: '2026-10-20', continuation: true, months: months('2026-11-01', 12) })),
+		);
 		expect(plan.firstInvoice).toBeNull();
 		expect(plan.phases[0].start).toBe('2026-11-01');
 	});
 
 	it('lopende maand bij late machtiging: lopende maand als losse factuur', () => {
 		const plan = ok(buildSubscriptionPlan(input({ today: '2026-10-20', startDate: '2026-09-01' })));
-		expect(plan.firstInvoice).toMatchObject({ month: '2026-10-01', dueOn: '2026-10-20', amountCents: U21, isProrated: false });
+		expect(plan.firstInvoice).toMatchObject({
+			month: '2026-10-01',
+			dueOn: '2026-10-20',
+			amountCents: U21,
+			isProrated: false,
+		});
 		expect(plan.phases[0].start).toBe('2026-11-01');
 	});
 });
@@ -187,10 +213,14 @@ describe('horizon', () => {
 
 describe('compareUpcomingAmount', () => {
 	const row = { lesson_agreement_id: 'a', month: '2026-11-01', expected_cents: U21 };
-	it('gelijk', () => expect(compareUpcomingAmount({ ...row, stripe_cents: U21 })).toEqual({ status: 'ok', diff_cents: 0 }));
+	it('gelijk', () =>
+		expect(compareUpcomingAmount({ ...row, stripe_cents: U21 })).toEqual({ status: 'ok', diff_cents: 0 }));
 	it('hoger', () => expect(compareUpcomingAmount({ ...row, stripe_cents: U21 + 5 }).status).toBe('mismatch'));
 	it('lager', () => expect(compareUpcomingAmount({ ...row, stripe_cents: U21 - 5 }).diff_cents).toBe(-5));
 	it('augustus verwacht € 0', () =>
-		expect(compareUpcomingAmount({ ...row, month: '2027-08-01', expected_cents: 0, stripe_cents: 0 }).status).toBe('ok'));
-	it('nog niet gestart', () => expect(compareUpcomingAmount({ ...row, stripe_cents: null }).status).toBe('not_started'));
+		expect(compareUpcomingAmount({ ...row, month: '2027-08-01', expected_cents: 0, stripe_cents: 0 }).status).toBe(
+			'ok',
+		));
+	it('nog niet gestart', () =>
+		expect(compareUpcomingAmount({ ...row, stripe_cents: null }).status).toBe('not_started'));
 });

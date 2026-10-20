@@ -28,10 +28,7 @@ export function LessonGroupMembersStep({ wizard }: LessonGroupMembersStepProps) 
 					includeUserIds={eligibleStudentIds}
 					placeholder={placeholder}
 				/>
-				<p className="mt-2 text-xs text-muted-foreground">
-					{memberCountLabel}
-					
-				</p>
+				<p className="mt-2 text-xs text-muted-foreground">{memberCountLabel}</p>
 				{form.memberIds.length === 0 ? (
 					<p className="mt-2 text-xs text-amber-600 flex items-center gap-1">
 						<LuTriangleAlert className="h-3 w-3" />

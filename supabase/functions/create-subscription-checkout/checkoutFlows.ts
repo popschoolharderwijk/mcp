@@ -7,6 +7,7 @@ import {
 	getSafeErrorMessage,
 	getStripeId,
 } from '../_shared/stripe.ts';
+import { findOpenSubscription, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
 import {
 	buildCheckoutSessionUrls,
 	buildCompleteModeSuccessResponse,
@@ -19,7 +20,6 @@ import {
 	validateCompleteCheckoutSessionMatch,
 	validateCompleteModePaymentReady,
 } from './checkoutFlowsPure.ts';
-import { findOpenSubscription, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
 export async function ensureStripeCustomer(

@@ -1,8 +1,8 @@
 import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
 import { getSafeErrorMessage, getStripe } from '../_shared/stripe.ts';
-import { createSupabaseClients, requireAdminUser } from '../_shared/supabase.ts';
 import { runCatalogSync } from '../_shared/stripeCatalog.ts';
 import { processPendingRebuilds, todayIso } from '../_shared/subscriptionSchedule.ts';
+import { createSupabaseClients, requireAdminUser } from '../_shared/supabase.ts';
 import { type SyncCatalogBody, stripeNotConfiguredResponse, validateSyncCatalogBody } from './validation.ts';
 
 export async function handleSyncStripeCatalogRequest(req: Request): Promise<Response> {

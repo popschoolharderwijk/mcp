@@ -6,16 +6,21 @@ import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-type Row = [type: string, duration: number, frequency: string, label: string | null, under: number | null, adult: number | null];
+type Row = [
+	type: string,
+	duration: number,
+	frequency: string,
+	label: string | null,
+	under: number | null,
+	adult: number | null,
+];
 
 /** Tarievenlijst per 1 september 2026 (cents). Durations: see docs/integrations/tariefmodel.md. */
 const TARIEVENLIJST: Row[] = [
-	...['Gitaarles', 'Drumles', 'Zangles', 'Basles', 'Keyboardles', 'Saxofoonles'].flatMap(
-		(type): Row[] => [
-			[type, 30, 'weekly', null, 7338, 8879],
-			[type, 30, 'biweekly', null, 3867, 4679],
-		],
-	),
+	...['Gitaarles', 'Drumles', 'Zangles', 'Basles', 'Keyboardles', 'Saxofoonles'].flatMap((type): Row[] => [
+		[type, 30, 'weekly', null, 7338, 8879],
+		[type, 30, 'biweekly', null, 3867, 4679],
+	]),
 	['Duoles', 30, 'weekly', null, 5156, 6239],
 	['Duoles', 30, 'biweekly', null, 2679, 3241],
 	['De Popkids', 60, 'weekly', null, 2455, null],

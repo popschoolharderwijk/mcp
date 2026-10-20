@@ -55,10 +55,13 @@ describe('buildSignupConfirmationOptionDetails', () => {
 
 	it('maps option frequency and price', () => {
 		expect(
-			buildSignupConfirmationOptionDetails({
-				frequency: 'weekly',
-				billing_kind: 'monthly',
-			}, { amount_under_21_cents: 2455, amount_adult_cents: null }),
+			buildSignupConfirmationOptionDetails(
+				{
+					frequency: 'weekly',
+					billing_kind: 'monthly',
+				},
+				{ amount_under_21_cents: 2455, amount_adult_cents: null },
+			),
 		).toEqual({
 			frequentie: 'weekly',
 			prijs: '€ 24,55 per maand',

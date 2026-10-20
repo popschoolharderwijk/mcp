@@ -99,7 +99,8 @@ function formatMonth(month: string): string {
 }
 
 function resolveCharge(input: PlanInput, m: FeeMonth): { lookupKey: string; priceId: string } | { error: string } {
-	if (!m.age_category || !m.tariff_effective_from) return { error: `Geen tarief bekend voor ${formatMonth(m.month)}` };
+	if (!m.age_category || !m.tariff_effective_from)
+		return { error: `Geen tarief bekend voor ${formatMonth(m.month)}` };
 	const lookupKey = buildLookupKey(
 		input.optionId,
 		m.tariff_effective_from,
@@ -133,9 +134,17 @@ function splitFirstInvoice(input: PlanInput, months: FeeMonth[]): { first: First
 	};
 }
 
-type Segment = { start: string; end: string; trial: boolean; charge?: { lookupKey: string; priceId: string; taxRateId: string; amountCents: number } };
+type Segment = {
+	start: string;
+	end: string;
+	trial: boolean;
+	charge?: { lookupKey: string; priceId: string; taxRateId: string; amountCents: number };
+};
 
-function buildSegments(input: PlanInput, months: FeeMonth[]): { segments: Segment[]; ended: boolean } | { error: string } {
+function buildSegments(
+	input: PlanInput,
+	months: FeeMonth[],
+): { segments: Segment[]; ended: boolean } | { error: string } {
 	const segments: Segment[] = [];
 	for (const m of months) {
 		const end = addMonths(m.month, 1);
@@ -155,7 +164,11 @@ function buildSegments(input: PlanInput, months: FeeMonth[]): { segments: Segmen
 				start: m.month,
 				end,
 				trial: false,
-				charge: { ...charge, taxRateId: taxRateFor(m.age_category, input.taxRates), amountCents: m.amount_cents },
+				charge: {
+					...charge,
+					taxRateId: taxRateFor(m.age_category, input.taxRates),
+					amountCents: m.amount_cents,
+				},
 			});
 		}
 	}
@@ -230,7 +243,10 @@ export interface SubscriptionCheckRow {
 export type SubscriptionCheckStatus = 'ok' | 'mismatch' | 'not_started';
 
 /** Compare Stripe's next invoice with the fee from the single source. */
-export function compareUpcomingAmount(row: SubscriptionCheckRow): { status: SubscriptionCheckStatus; diff_cents: number } {
+export function compareUpcomingAmount(row: SubscriptionCheckRow): {
+	status: SubscriptionCheckStatus;
+	diff_cents: number;
+} {
 	if (row.stripe_cents === null) return { status: 'not_started', diff_cents: 0 };
 	const diff = row.stripe_cents - row.expected_cents;
 	return { status: diff === 0 ? 'ok' : 'mismatch', diff_cents: diff };

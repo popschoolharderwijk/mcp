@@ -35,7 +35,9 @@ async function createCustomerPortalSession(
 		const session = await stripe.billingPortal.sessions.create({
 			customer: customerRow.stripe_customer_id,
 			return_url: resolvePortalReturnUrl(origin, body.return_url),
-			...(settings?.stripe_portal_configuration_id ? { configuration: settings.stripe_portal_configuration_id } : {}),
+			...(settings?.stripe_portal_configuration_id
+				? { configuration: settings.stripe_portal_configuration_id }
+				: {}),
 		});
 		return jsonResponse(200, buildCustomerPortalSuccessPayload(session.url));
 	} catch (err) {

@@ -28,7 +28,11 @@ export async function handleRebuildSubscriptionScheduleRequest(req: Request): Pr
 	}
 }
 
-async function rebuildAllSchedules(admin: SupabaseClient, stripe: ReturnType<typeof getStripe>, agreementIds: string[]) {
+async function rebuildAllSchedules(
+	admin: SupabaseClient,
+	stripe: ReturnType<typeof getStripe>,
+	agreementIds: string[],
+) {
 	const results: Array<{ lesson_agreement_id: string; ok: boolean; detail?: unknown; error?: string }> = [];
 	for (const id of agreementIds) {
 		results.push(await rebuildSingleSchedule(admin, stripe, id));
@@ -36,7 +40,11 @@ async function rebuildAllSchedules(admin: SupabaseClient, stripe: ReturnType<typ
 	return results;
 }
 
-async function rebuildSingleSchedule(admin: SupabaseClient, stripe: ReturnType<typeof getStripe>, lessonAgreementId: string) {
+async function rebuildSingleSchedule(
+	admin: SupabaseClient,
+	stripe: ReturnType<typeof getStripe>,
+	lessonAgreementId: string,
+) {
 	try {
 		const detail = await syncAgreementSchedule(admin, stripe, { agreementId: lessonAgreementId });
 		return buildRebuildScheduleSuccessResult(lessonAgreementId, detail);
