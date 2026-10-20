@@ -1,14 +1,33 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import * as lessonTypeOptionPersistence from '../../../src/pages/lesson-type-info/lessonTypeOptionPersistence';
-
-let insertResult: { data: unknown; error: unknown } = {
-	data: { id: 'option-new', duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
-	error: null,
-};
+import type { OptionModalFormState, OptionRowWithKey } from '../../../src/pages/lesson-type-info/types';
 
 mock.module('sonner', () => ({
 	toast: { error: () => {}, success: () => {} },
 }));
+
+const tariff = { id: 't-1', effective_from: '2026-09-01', amount_under_21_cents: 7338, amount_adult_cents: 8879 };
+
+const modalForm: OptionModalFormState = {
+	duration_minutes: '30',
+	frequency: 'weekly',
+	label: '',
+	billing_kind: 'monthly',
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '73.38',
+	amount_adult: '88.79',
+};
+
+const editingNew = { _newId: 'new-1', tariffs: [] } as unknown as OptionRowWithKey;
+const editingExisting = { id: 'option-1', tariffs: [] } as unknown as OptionRowWithKey;
+
+function applyState<T>(target: T[]) {
+	return (updater: T[] | ((prev: T[]) => T[])) => {
+		const next = typeof updater === 'function' ? updater(target) : updater;
+		target.splice(0, target.length, ...next);
+	};
+}
 
 describe('lessonTypeOptionModalPersistHelpers', () => {
 	let helpers: typeof import('../../../src/pages/lesson-type-info/lessonTypeOptionModalPersistHelpers');
@@ -18,113 +37,94 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 	});
 
 	beforeEach(() => {
-		insertResult = {
-			data: { id: 'option-new', duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
-			error: null,
-		};
-		spyOn(lessonTypeOptionPersistence, 'buildOptionFormRow').mockImplementation(
-			(editing, _modalForm, priceAdult) =>
-				({
-					_newId: editing._newId,
-					duration_minutes: '45',
-					frequency: 'weekly',
-					price_per_lesson: String(priceAdult),
-				}) as never,
-		);
-		spyOn(lessonTypeOptionPersistence, 'persistNewOptionInsert').mockImplementation(
-			async () => insertResult.data as never,
-		);
-		spyOn(lessonTypeOptionPersistence, 'persistExistingOptionUpdate').mockResolvedValue(true);
+		spyOn(lessonTypeOptionPersistence, 'persistNewOptionInsert').mockResolvedValue({
+			option: { id: 'option-new', duration_minutes: 30, frequency: 'weekly' } as never,
+			tariff,
+		});
+		spyOn(lessonTypeOptionPersistence, 'persistExistingOptionUpdate').mockResolvedValue(tariff);
 	});
 
 	afterEach(() => {
 		mock.restore();
 	});
 
-	const editing = { _newId: 'new-1' } as const;
-	const modalForm = {
-		duration_minutes: '45',
-		frequency: 'weekly' as const,
-		label: '',
-		billing_kind: 'monthly' as const,
-		has_adult_tariff: true,
-		effective_from: '2026-09-01',
-		amount_under_21: '20',
-		amount_adult: '25',
-	};
-
-	describe('runPersistNewOptionFlow', () => {
-		it('adds option locally when not in edit mode', async () => {
-			const optionsForm: unknown[] = [];
-			const ok = await helpers.runPersistNewOptionFlow({
-				editing: editing as never,
-				modalForm,
-				isEditMode: false,
-				lessonType: null,
-				setOptionsForm: (updater) => {
-					const next = typeof updater === 'function' ? updater(optionsForm as never) : updater;
-					optionsForm.splice(0, optionsForm.length, ...next);
-				},
-				setOptions: () => {},
-				setSaving: () => {},
-			});
-			expect(ok).toBe(true);
-			expect(optionsForm).toHaveLength(1);
+	it('adds a new option locally when not in edit mode', async () => {
+		const form: OptionRowWithKey[] = [];
+		const ok = await helpers.runPersistNewOptionFlow({
+			editing: editingNew,
+			modalForm,
+			isEditMode: false,
+			lessonType: null,
+			setOptionsForm: applyState(form),
+			setOptions: () => {},
+			setSaving: () => {},
 		});
-
-		it('persists option and updates ids in edit mode', async () => {
-			const optionsForm: unknown[] = [];
-			const options: unknown[] = [];
-			const ok = await helpers.runPersistNewOptionFlow({
-				editing: editing as never,
-				modalForm,
-				isEditMode: true,
-				lessonType: { id: 'lesson-type-1' } as never,
-				setOptionsForm: (updater) => {
-					const next = typeof updater === 'function' ? updater(optionsForm as never) : updater;
-					optionsForm.splice(0, optionsForm.length, ...next);
-				},
-				setOptions: (updater) => {
-					const next = typeof updater === 'function' ? updater(options as never) : updater;
-					options.splice(0, options.length, ...next);
-				},
-				setSaving: () => {},
-			});
-			expect(ok).toBe(true);
-			expect(options).toHaveLength(1);
-			expect((optionsForm[0] as { id?: string })?.id).toBe('option-new');
-		});
+		expect(ok).toBe(true);
+		expect(form).toHaveLength(1);
+		expect(form[0]?.tariffs).toEqual([]);
 	});
 
-	describe('runPersistExistingOptionFlow', () => {
-		it('returns true without persisting when not in edit mode', async () => {
-			const ok = await helpers.runPersistExistingOptionFlow({
-				editing: { id: 'option-1' } as never,
-				modalForm,
-				isEditMode: false,
-				lessonType: null,
-				setOptions: () => {},
-				setSaving: () => {},
-			});
-			expect(ok).toBe(true);
+	it('persists a new option with its tariff in edit mode', async () => {
+		const form: OptionRowWithKey[] = [];
+		const options: unknown[] = [];
+		const ok = await helpers.runPersistNewOptionFlow({
+			editing: editingNew,
+			modalForm,
+			isEditMode: true,
+			lessonType: { id: 'lesson-type-1' } as never,
+			setOptionsForm: applyState(form),
+			setOptions: applyState(options) as never,
+			setSaving: () => {},
 		});
+		expect(ok).toBe(true);
+		expect(form[0]?.id).toBe('option-new');
+		expect(form[0]?.tariffs).toEqual([tariff]);
+		expect(options).toHaveLength(1);
+	});
 
-		it('updates options after a successful persist in edit mode', async () => {
-			const options = [{ id: 'option-1', duration_minutes: 30, frequency: 'weekly', price_per_lesson: 20 }];
-			const ok = await helpers.runPersistExistingOptionFlow({
-				editing: { id: 'option-1' } as never,
-				modalForm,
-				isEditMode: true,
-				lessonType: { id: 'lesson-type-1' } as never,
-				setOptions: (updater) => {
-					const next = typeof updater === 'function' ? updater(options as never) : updater;
-					options.splice(0, options.length, ...next);
-				},
-				setSaving: () => {},
-			});
-			expect(ok).toBe(true);
-			expect(options[0]?.duration_minutes).toBe(45);
-			expect(options[0]?.price_per_lesson).toBe(25);
+	it('rolls back the new row when persisting fails', async () => {
+		spyOn(lessonTypeOptionPersistence, 'persistNewOptionInsert').mockResolvedValue(null);
+		const form: OptionRowWithKey[] = [];
+		const ok = await helpers.runPersistNewOptionFlow({
+			editing: editingNew,
+			modalForm,
+			isEditMode: true,
+			lessonType: { id: 'lesson-type-1' } as never,
+			setOptionsForm: applyState(form),
+			setOptions: () => {},
+			setSaving: () => {},
 		});
+		expect(ok).toBe(false);
+		expect(form).toHaveLength(0);
+	});
+
+	it('returns true without persisting an existing option outside edit mode', async () => {
+		const ok = await helpers.runPersistExistingOptionFlow({
+			editing: editingExisting,
+			modalForm,
+			isEditMode: false,
+			lessonType: null,
+			setOptions: () => {},
+			setOptionsForm: () => {},
+			setSaving: () => {},
+		});
+		expect(ok).toBe(true);
+	});
+
+	it('updates the existing option and its tariff history in edit mode', async () => {
+		const options = [{ id: 'option-1', duration_minutes: 45, frequency: 'weekly' }];
+		const form = [{ ...editingExisting, duration_minutes: '45' }] as OptionRowWithKey[];
+		const ok = await helpers.runPersistExistingOptionFlow({
+			editing: editingExisting,
+			modalForm,
+			isEditMode: true,
+			lessonType: { id: 'lesson-type-1' } as never,
+			setOptions: applyState(options) as never,
+			setOptionsForm: applyState(form),
+			setSaving: () => {},
+		});
+		expect(ok).toBe(true);
+		expect(options[0]?.duration_minutes).toBe(30);
+		expect(form[0]?.tariffs).toEqual([tariff]);
 	});
 });

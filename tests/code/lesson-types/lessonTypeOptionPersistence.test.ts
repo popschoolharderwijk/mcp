@@ -39,9 +39,10 @@ const modalForm: OptionModalFormState = {
 describe('isDuplicateOption', () => {
 	let isDuplicateOption: typeof import('../../../src/pages/lesson-type-info/lessonTypeOptionPersistence').isDuplicateOption;
 	let buildOptionFormRow: typeof import('../../../src/pages/lesson-type-info/lessonTypeOptionPersistence').buildOptionFormRow;
+	let mergeTariffIntoHistory: typeof import('../../../src/pages/lesson-type-info/lessonTypeOptionPersistence').mergeTariffIntoHistory;
 
 	beforeAll(async () => {
-		({ isDuplicateOption, buildOptionFormRow } = await import(
+		({ isDuplicateOption, buildOptionFormRow, mergeTariffIntoHistory } = await import(
 			'../../../src/pages/lesson-type-info/lessonTypeOptionPersistence'
 		));
 	});
@@ -66,19 +67,20 @@ describe('isDuplicateOption', () => {
 		);
 	});
 
-	it('builds updated option row from modal form', () => {
-		expect(buildOptionFormRow(optionsForm[0], modalForm, 30)).toEqual({
+	it('builds updated option row and merges the saved tariff newest first', () => {
+		const old = { id: 't-old', effective_from: '2025-09-01', amount_under_21_cents: 2400, amount_adult_cents: 2900 };
+		const saved = { id: 't-new', effective_from: '2026-09-01', amount_under_21_cents: 2500, amount_adult_cents: 3000 };
+		expect(buildOptionFormRow({ ...optionsForm[0], tariffs: [old] }, modalForm, saved)).toEqual({
+			...modalForm,
 			_newId: 'new-1',
 			id: 'opt-1',
-			duration_minutes: '45',
-			frequency: 'weekly',
-			label: '',
-			billing_kind: 'monthly' as const,
-			has_adult_tariff: true,
-			effective_from: '2026-09-01',
-			amount_under_21: '25.00',
-			amount_adult: '30.00',
-			tariffs: [],
+			tariffs: [saved, old],
 		});
+	});
+
+	it('replaces a tariff with the same effective date', () => {
+		const first = { id: 't-1', effective_from: '2026-09-01', amount_under_21_cents: 1, amount_adult_cents: 2 };
+		const second = { ...first, amount_under_21_cents: 7338 };
+		expect(mergeTariffIntoHistory([first], second)).toEqual([second]);
 	});
 });
