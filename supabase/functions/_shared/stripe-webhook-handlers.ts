@@ -1,6 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { createScheduleForAgreement } from './billing.ts';
 import { attachDefaultPaymentMethod, getReusablePaymentMethodIdFromSetupIntent, getStripeId } from './stripe.ts';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import {
@@ -8,6 +7,7 @@ import {
 	extractCheckoutSubscriptionId,
 	extractStripeSubscriptionId,
 	hasScheduleSetupInput,
+	resolveFirstInvoiceStatus,
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
@@ -17,14 +17,11 @@ import {
 	shouldProcessSetupCheckoutSession,
 } from './stripeWebhookHandlersPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
+import { findOpenSubscription, recordRebuildError, syncAgreementSchedule } from './subscriptionSchedule.ts';
 
 async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: string): Promise<boolean> {
-	const { data } = await admin
-		.from('lesson_agreements')
-		.select('stripe_schedule_id')
-		.eq('id', lessonAgreementId)
-		.maybeSingle();
-	return Boolean(data?.stripe_schedule_id);
+	const existing = await findOpenSubscription(admin, lessonAgreementId);
+	return Boolean(existing?.stripe_schedule_id);
 }
 
 async function createScheduleFromSetupPaymentMethod(
@@ -54,11 +51,16 @@ async function createScheduleFromSetupPaymentMethod(
 		return;
 	}
 
-	await createScheduleForAgreement(admin, stripe, {
-		lessonAgreementId: input.lessonAgreementId,
-		customerId: input.customerId,
-		defaultPaymentMethod: input.paymentMethodId,
-	});
+	try {
+		await syncAgreementSchedule(admin, stripe, {
+			agreementId: input.lessonAgreementId,
+			customerId: input.customerId,
+			defaultPaymentMethod: input.paymentMethodId,
+		});
+	} catch (e) {
+		console.error('creating catalog schedule failed', input.lessonAgreementId, e);
+		await recordRebuildError(admin, input.lessonAgreementId, e);
+	}
 }
 
 async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
@@ -70,19 +72,33 @@ async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscriptio
 	await writeSubscriptionState(admin, state);
 }
 
-async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
+async function findInvoiceSubscriptionRowId(admin: SupabaseClient, inv: Stripe.Invoice): Promise<string | null> {
 	const subId = extractStripeSubscriptionId(inv.subscription);
-	if (!subId) return;
+	if (subId) {
+		const { data } = await admin.from('subscriptions').select('id').eq('stripe_subscription_id', subId).maybeSingle();
+		if (data) return data.id;
+	}
+	// First-month invoice is not attached to the subscription; it carries the agreement id.
+	const agreementId = inv.metadata?.lesson_agreement_id;
+	if (!agreementId) return null;
+	const row = await findOpenSubscription(admin, agreementId);
+	return row?.id ?? null;
+}
 
-	const { data: subRow } = await admin
-		.from('subscriptions')
-		.select('id')
-		.eq('stripe_subscription_id', subId)
-		.maybeSingle();
-	if (!subRow) {
-		console.warn('invoice for unknown subscription', subId);
+async function updateFirstInvoiceStatus(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
+	const status = resolveFirstInvoiceStatus(inv);
+	if (!status) return;
+	await admin.from('subscriptions').update({ first_invoice_status: status }).eq('first_invoice_stripe_id', inv.id);
+}
+
+async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
+	await updateFirstInvoiceStatus(admin, inv);
+	const subRowId = await findInvoiceSubscriptionRowId(admin, inv);
+	if (!subRowId) {
+		console.warn('invoice for unknown subscription', inv.id);
 		return;
 	}
+	const subRow = { id: subRowId };
 
 	const { error } = await admin
 		.from('subscription_invoices')
@@ -166,6 +182,10 @@ export async function handleStripeWebhookEvent(
 ): Promise<void> {
 	const action = resolveStripeWebhookAction(event.type);
 	if (action === 'noop') return;
+	if (action === 'schedule_event') {
+		await handleScheduleEvent(admin, event);
+		return;
+	}
 	if (isStripeWebhookDataAction(action)) {
 		await dispatchStripeWebhookDataAction(admin, stripe, event, action);
 		return;
@@ -199,4 +219,12 @@ async function dispatchStripeWebhookCheckoutAction(
 		return;
 	}
 	await handleSetupIntentSucceeded(admin, stripe, event.data.object as Stripe.SetupIntent);
+}
+
+/** A released or cancelled schedule must be rebuilt by the daily task (never run on without a plan). */
+async function handleScheduleEvent(admin: SupabaseClient, event: Stripe.Event): Promise<void> {
+	const schedule = event.data.object as Stripe.SubscriptionSchedule;
+	if (event.type !== 'subscription_schedule.released') return;
+	console.warn('subscription schedule released', schedule.id);
+	await admin.from('subscriptions').update({ needs_rebuild: true }).eq('stripe_schedule_id', schedule.id);
 }
