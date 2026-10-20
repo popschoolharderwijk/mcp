@@ -228,13 +228,13 @@ async function syncOne(
 			.eq('is_active_in_stripe', true);
 		staleIds = staleCatalogPriceIds(
 			(dbPrices ?? []).map((p) => p.stripe_price_id as string),
-			[
-				...existingPrices.map((p) => p.stripe_price_id),
-				...priceRows.map((p) => p.stripe_price_id as string),
-			],
+			[...existingPrices.map((p) => p.stripe_price_id), ...priceRows.map((p) => p.stripe_price_id as string)],
 		);
 		if (staleIds.length > 0) {
-			await admin.from('stripe_catalog_prices').update({ is_active_in_stripe: false }).in('stripe_price_id', staleIds);
+			await admin
+				.from('stripe_catalog_prices')
+				.update({ is_active_in_stripe: false })
+				.in('stripe_price_id', staleIds);
 		}
 	}
 	if (plan.archivePriceIds.length > 0) {
