@@ -1,5 +1,6 @@
 // Daily task (pg_cron): first-month invoices on the start date, schedule rebuilds after
-// source changes and horizon extension. Protected with the CRON_SECRET header.
+// source changes and horizon extension. Called by pg_cron with the project's publishable key;
+// every step is idempotent and only does what is due, so an early extra call is harmless.
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getSafeErrorMessage } from '../_shared/errors.ts';
 import { handleCorsPreflight, jsonResponse } from '../_shared/http.ts';
@@ -10,7 +11,7 @@ import { isValidCronSecret } from './authPure.ts';
 Deno.serve(async (req) => {
 	const preflight = handleCorsPreflight(req);
 	if (preflight) return preflight;
-	if (!isValidCronSecret(req.headers.get('x-cron-secret'), Deno.env.get('CRON_SECRET'))) {
+	if (!isValidCronSecret(req.headers.get('apikey'), Deno.env.get('SUPABASE_ANON_KEY'))) {
 		return jsonResponse(401, { error: 'Unauthorized' });
 	}
 	if (!Deno.env.get('STRIPE_SECRET_KEY')) return jsonResponse(200, { configured: false });

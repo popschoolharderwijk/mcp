@@ -1,4 +1,4 @@
-/** Constant-time comparison of the cron secret header. */
+/** Constant-time comparison of the key header sent by the cron job. */
 export function isValidCronSecret(provided: string | null, expected: string | undefined): boolean {
 	if (!expected || !provided) return false;
 	if (provided.length !== expected.length) return false;
