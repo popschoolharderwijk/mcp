@@ -13,6 +13,7 @@ import {
 	TAX_RATE_PARAMS,
 	type TaxRateKey,
 } from './stripeCatalogPure.ts';
+import { isUsableTaxRate, retrieveIfExists, staleCatalogPriceIds } from './stripeRecoveryPure.ts';
 
 export interface CatalogResult {
 	lesson_type_option_id: string | null;
@@ -51,9 +52,18 @@ export async function ensureTaxRates(admin: SupabaseClient, stripe: Stripe): Pro
 		.select('stripe_tax_rate_21_id, stripe_tax_rate_exempt_id')
 		.eq('id', true)
 		.maybeSingle();
-	if (settings?.stripe_tax_rate_21_id && settings?.stripe_tax_rate_exempt_id) return;
-
+	// Verify stored ids in the current Stripe account (they may belong to another account).
+	const stored: Record<TaxRateKey, string | null> = {
+		nl_21_incl: settings?.stripe_tax_rate_21_id ?? null,
+		exempt: settings?.stripe_tax_rate_exempt_id ?? null,
+	};
 	const found: Partial<Record<TaxRateKey, string>> = {};
+	for (const key of ['nl_21_incl', 'exempt'] as const) {
+		const rate = await retrieveIfExists(stored[key], (id) => stripe.taxRates.retrieve(id));
+		if (rate && isUsableTaxRate(rate)) found[key] = rate.id;
+	}
+	if (found.nl_21_incl && found.exempt) return;
+
 	for await (const rate of stripe.taxRates.list({ active: true, limit: 100 })) {
 		const key = rate.metadata?.mcp_key as TaxRateKey | undefined;
 		if (key && !found[key]) found[key] = rate.id;
@@ -79,7 +89,20 @@ export async function ensurePortalConfiguration(admin: SupabaseClient, stripe: S
 		.select('stripe_portal_configuration_id')
 		.eq('id', true)
 		.maybeSingle();
-	if (settings?.stripe_portal_configuration_id) return;
+	const stored = await retrieveIfExists(settings?.stripe_portal_configuration_id, (id) =>
+		stripe.billingPortal.configurations.retrieve(id),
+	);
+	if (stored?.active) return;
+	// Stored id missing in this account: reuse our own configuration if it exists, else create it.
+	for await (const existing of stripe.billingPortal.configurations.list({ active: true, limit: 100 })) {
+		if (existing.metadata?.mcp_key === 'portal_v1') {
+			await admin
+				.from('accounting_settings')
+				.update({ stripe_portal_configuration_id: existing.id })
+				.eq('id', true);
+			return;
+		}
+	}
 	const config = await stripe.billingPortal.configurations.create(
 		{
 			business_profile: { headline: 'Mplifi – betaalgegevens en facturen' },
@@ -112,13 +135,9 @@ function toOptionInput(row: OptionDbRow): OptionInput {
 }
 
 async function findStripeProduct(stripe: Stripe, row: CatalogRow | undefined, optionId: string | null) {
-	if (row?.stripe_product_id) {
-		try {
-			return await stripe.products.retrieve(row.stripe_product_id);
-		} catch {
-			// fall through to search
-		}
-	}
+	// A stored id from another Stripe account is resource_missing: search/create again.
+	const stored = await retrieveIfExists(row?.stripe_product_id, (id) => stripe.products.retrieve(id));
+	if (stored && !('deleted' in stored && stored.deleted)) return stored;
 	if (!optionId) return null;
 	const found = await stripe.products.search({ query: `metadata['lesson_type_option_id']:'${optionId}'`, limit: 1 });
 	return found.data[0] ?? null;
@@ -199,6 +218,25 @@ async function syncOne(
 			{ onConflict: 'lookup_key' },
 		);
 	}
+	// Price rows that do not exist on the current Stripe product (e.g. from another account) are inactive.
+	let staleIds: string[] = [];
+	if (catalogId) {
+		const { data: dbPrices } = await admin
+			.from('stripe_catalog_prices')
+			.select('stripe_price_id')
+			.eq('catalog_product_id', catalogId)
+			.eq('is_active_in_stripe', true);
+		staleIds = staleCatalogPriceIds(
+			(dbPrices ?? []).map((p) => p.stripe_price_id as string),
+			[
+				...existingPrices.map((p) => p.stripe_price_id),
+				...priceRows.map((p) => p.stripe_price_id as string),
+			],
+		);
+		if (staleIds.length > 0) {
+			await admin.from('stripe_catalog_prices').update({ is_active_in_stripe: false }).in('stripe_price_id', staleIds);
+		}
+	}
 	if (plan.archivePriceIds.length > 0) {
 		await admin
 			.from('stripe_catalog_prices')
@@ -213,7 +251,7 @@ async function syncOne(
 	}
 
 	const status = resolveCatalogStatus(option, today);
-	return { lesson_type_option_id: optionId, name, status, changed: !isPlanEmpty(plan) };
+	return { lesson_type_option_id: optionId, name, status, changed: !isPlanEmpty(plan) || staleIds.length > 0 };
 }
 
 function pricePersist(price: ReturnType<typeof planCatalogSync>['createPrices'][number]) {
