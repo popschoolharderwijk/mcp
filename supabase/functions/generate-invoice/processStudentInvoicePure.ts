@@ -3,6 +3,7 @@ import {
 	buildStudentInfo,
 	computeTotals,
 	filterStudentItems,
+	hasVatBreakdown,
 	resolveAgeCategory,
 } from './invoicePure.ts';
 import type { BatchItem, InvoiceLine, InvoiceTotals, ProfileRow, StudentInvoiceResult, StudentRow } from './types.ts';

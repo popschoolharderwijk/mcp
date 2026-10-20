@@ -1,13 +1,3 @@
-export function ageAtDate(dob: string | null, date: string): 'under_21' | '21_plus' | 'unknown' {
-	if (!dob) return 'unknown';
-	const d = new Date(date);
-	const b = new Date(dob);
-	let age = d.getFullYear() - b.getFullYear();
-	const m = d.getMonth() - b.getMonth();
-	if (m < 0 || (m === 0 && d.getDate() < b.getDate())) age--;
-	return age >= 21 ? '21_plus' : 'under_21';
-}
-
 export function fmtEUR(cents: number): string {
 	return (cents / 100).toLocaleString('nl-NL', { style: 'currency', currency: 'EUR' });
 }
