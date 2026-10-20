@@ -5,7 +5,7 @@ interface LessonTypeOptionRow {
 	id: string;
 	duration_minutes: number;
 	frequency: WizardOptionSnapshot['frequency'];
-	price_per_lesson: number;
+	label: string | null;
 }
 
 export function useWizardOptionPrefill(
@@ -23,9 +23,10 @@ export function useWizardOptionPrefill(
 			return {
 				...f,
 				selectedOptionSnapshot: {
+					id: opt.id,
 					duration_minutes: opt.duration_minutes,
 					frequency: opt.frequency,
-					price_per_lesson: opt.price_per_lesson,
+					label: opt.label,
 				},
 			};
 		});

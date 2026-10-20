@@ -1,21 +1,12 @@
 import type { OptionModalFormState } from '@/pages/lesson-type-info/types';
-import type { LessonFrequency } from '@/types/lesson-agreements';
 
-export function updateOptionModalDuration(prev: OptionModalFormState, durationMinutes: string): OptionModalFormState {
-	return { ...prev, duration_minutes: durationMinutes };
-}
-
-export function updateOptionModalFrequency(
+export function updateOptionModalField<K extends keyof OptionModalFormState>(
 	prev: OptionModalFormState,
-	frequency: LessonFrequency,
+	key: K,
+	value: OptionModalFormState[K],
 ): OptionModalFormState {
-	return { ...prev, frequency };
-}
-
-export function updateOptionModalPriceUnder21(prev: OptionModalFormState, value: string): OptionModalFormState {
-	return { ...prev, price_per_lesson_under_21: value };
-}
-
-export function updateOptionModalPriceAdult(prev: OptionModalFormState, value: string): OptionModalFormState {
-	return { ...prev, price_per_lesson_adult: value };
+	const next = { ...prev, [key]: value };
+	// Without 21+ tariff there is no 21+ amount.
+	if (key === 'has_adult_tariff' && value === false) next.amount_adult = '';
+	return next;
 }

@@ -46,13 +46,7 @@ function resolveLessonTypeOptionId(
 	selectedOption: OptionSnapshot | null,
 ): string | null {
 	if (!selectedOption) return null;
-	const match = lessonTypeOptions.find(
-		(option) =>
-			option.duration_minutes === selectedOption.duration_minutes &&
-			option.frequency === selectedOption.frequency &&
-			option.price_per_lesson === selectedOption.price_per_lesson,
-	);
-	return match?.id ?? null;
+	return lessonTypeOptions.find((option) => option.id === selectedOption.id)?.id ?? null;
 }
 
 function resolveSignupGroupId(

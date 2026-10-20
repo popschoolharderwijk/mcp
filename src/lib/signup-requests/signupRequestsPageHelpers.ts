@@ -75,7 +75,7 @@ export async function enrichSignupRequestRows(baseRows: SignupRequestRowBase[]):
 	if (optionIds.length > 0) {
 		const { data: opts } = await supabase
 			.from('lesson_type_options')
-			.select('id, duration_minutes, frequency, price_per_lesson')
+			.select('id, duration_minutes, frequency, label')
 			.in('id', optionIds);
 		optionMap = buildOptionLabelMap(opts);
 	}

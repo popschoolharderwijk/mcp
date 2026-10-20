@@ -51,12 +51,8 @@ function shouldClearEditingOptionAfterSave(flow: SaveOptionInModalFlow, persiste
 }
 
 export function buildOptionModalFormFromEditing(editingOption: OptionRowWithKey): OptionModalFormState {
-	return {
-		duration_minutes: editingOption.duration_minutes,
-		frequency: editingOption.frequency,
-		price_per_lesson_under_21: editingOption.price_per_lesson_under_21,
-		price_per_lesson_adult: editingOption.price_per_lesson_adult,
-	};
+	const { id: _id, tariffs: _tariffs, _newId, ...form } = editingOption;
+	return form;
 }
 
 export function isEditingExistingOption(editingOption: OptionRowWithKey): boolean {
@@ -161,21 +157,17 @@ export interface RunSaveOptionInModalParams {
 	flow: SaveOptionInModalFlow;
 	editingOption: OptionRowWithKey;
 	optionModalForm: OptionModalFormState;
-	priceAdult: number;
 	updateExistingOptionInForm: (
 		editing: OptionRowWithKey,
 		modalForm: OptionModalFormState,
-		priceAdult: number,
 	) => boolean;
 	persistExistingOption: (
 		editing: OptionRowWithKey,
 		modalForm: OptionModalFormState,
-		priceAdult: number,
 	) => Promise<boolean>;
 	persistNewOption: (
 		editing: OptionRowWithKey,
 		modalForm: OptionModalFormState,
-		priceAdult: number,
 	) => Promise<boolean>;
 	clearEditingOption: () => void;
 }
@@ -188,7 +180,7 @@ export async function runSaveOptionInModal(params: RunSaveOptionInModalParams): 
 	}
 
 	if (params.flow.kind === 'update-existing') {
-		if (!params.updateExistingOptionInForm(params.editingOption, params.optionModalForm, params.priceAdult)) {
+		if (!params.updateExistingOptionInForm(params.editingOption, params.optionModalForm)) {
 			return;
 		}
 		let persisted = true;
@@ -196,7 +188,6 @@ export async function runSaveOptionInModal(params: RunSaveOptionInModalParams): 
 			persisted = await params.persistExistingOption(
 				params.editingOption,
 				params.optionModalForm,
-				params.priceAdult,
 			);
 		} else if (shouldShowLocalUpdateSuccessToast(params.flow)) {
 			toast.success('Optie bijgewerkt');
@@ -211,7 +202,6 @@ export async function runSaveOptionInModal(params: RunSaveOptionInModalParams): 
 		const persisted = await params.persistNewOption(
 			params.editingOption,
 			params.optionModalForm,
-			params.priceAdult,
 		);
 		if (shouldClearEditingOptionAfterSave(params.flow, persisted)) {
 			params.clearEditingOption();

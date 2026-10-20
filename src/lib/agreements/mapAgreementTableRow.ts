@@ -17,7 +17,10 @@ export type RawAgreementRow = {
 	lesson_type_id: string;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number;
+	price_per_lesson: number | null;
+	lesson_type_option_id?: string | null;
+	minimum_term_end?: string | null;
+	cancellation_effective_date?: string | null;
 	duo_pair_id: string | null;
 	payment_method?: string | null;
 	sepa_mandate_id?: string | null;
@@ -66,6 +69,9 @@ export function mapRawAgreementToTableRow(
 		duration_minutes: a.duration_minutes,
 		frequency: a.frequency,
 		price_per_lesson: a.price_per_lesson,
+		lesson_type_option_id: a.lesson_type_option_id ?? null,
+		minimum_term_end: a.minimum_term_end ?? null,
+		cancellation_effective_date: a.cancellation_effective_date ?? null,
 		duo_pair_id: a.duo_pair_id,
 		payment_method: a.payment_method ?? 'sepa',
 		sepa_mandate_id: a.sepa_mandate_id ?? null,

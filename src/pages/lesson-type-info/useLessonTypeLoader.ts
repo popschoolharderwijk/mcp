@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
 	mapLessonTypeOptionsToForm,
+	type LessonTypeOptionWithTariffs,
 	mapLessonTypeRowToForm,
 	resolveLessonTypeLoadFailure,
 	shouldSkipLessonTypeLoad,
@@ -45,12 +46,12 @@ export function useLessonTypeLoader({ id, isEditMode, authLoading }: UseLessonTy
 
 		const { data: optionsData } = await supabase
 			.from('lesson_type_options')
-			.select('*')
+			.select('*, lesson_type_option_tariffs(id, effective_from, amount_under_21_cents, amount_adult_cents)')
 			.eq('lesson_type_id', id as string)
 			.order('duration_minutes')
 			.order('frequency');
 
-		const typedOptions = (optionsData as LessonTypeOptionRow[]) ?? [];
+		const typedOptions = (optionsData as LessonTypeOptionWithTariffs[]) ?? [];
 
 		setLessonType(typeData as LessonTypeRow);
 		setForm(mapLessonTypeRowToForm(typeData as LessonTypeRow));

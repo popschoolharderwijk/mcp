@@ -20,6 +20,7 @@ export function buildSelectedLessonType(
 			duration_minutes: agreement.duration_minutes,
 			frequency: agreement.frequency,
 			price_per_lesson: agreement.price_per_lesson,
+			lesson_type_option_id: agreement.lesson_type_option_id ?? null,
 		};
 	}
 
@@ -32,7 +33,8 @@ export function buildSelectedLessonType(
 		color: matchedLessonType.color,
 		duration_minutes: selectedOptionSnapshot.duration_minutes,
 		frequency: selectedOptionSnapshot.frequency,
-		price_per_lesson: selectedOptionSnapshot.price_per_lesson,
+		price_per_lesson: null,
+		lesson_type_option_id: selectedOptionSnapshot.id,
 	};
 }
 
@@ -117,7 +119,7 @@ export function canProceedFromStep(
 					(!isDuoLesson || (form.partnerStudentUserId && form.partnerStudentUserId !== form.studentUserId)),
 			);
 		case WizardStep.Period:
-			return Boolean(form.startDate && form.endDate && new Date(form.endDate) >= new Date(form.startDate));
+			return Boolean(form.startDate && (!form.endDate || new Date(form.endDate) >= new Date(form.startDate)));
 		case WizardStep.TeacherSlot:
 			return Boolean(form.slot && form.slot.status !== 'occupied' && !isTeacherOwnStudent);
 		case WizardStep.Confirm:

@@ -18,13 +18,12 @@ export function resolveLessonTypeSaveMode(
 }
 
 export function buildLessonTypeOptionRowPayload(option: OptionRowWithKey) {
-	return buildOptionDbPayloadFromForm(
-		option.duration_minutes,
-		option.frequency,
-		option.price_per_lesson_under_21,
-		option.price_per_lesson_adult,
-		parseFloat(option.price_per_lesson_adult),
-	);
+	return buildOptionDbPayloadFromForm(option);
+}
+
+/** Only options whose tariff fields are filled get a tariff row on save. */
+export function shouldSaveOptionTariff(option: OptionRowWithKey): boolean {
+	return Boolean(option.effective_from) && (Boolean(option.amount_under_21) || Boolean(option.amount_adult));
 }
 
 export function collectRemovedLessonTypeOptionIds(

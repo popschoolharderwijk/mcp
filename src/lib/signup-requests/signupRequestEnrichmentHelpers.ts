@@ -39,7 +39,7 @@ export function buildOptionLabelMap(
 		id: string;
 		duration_minutes: number;
 		frequency: string;
-		price_per_lesson: number;
+		label?: string | null;
 	}> | null,
 ): Map<string, string> {
 	const optionMap = new Map<string, string>();

@@ -38,7 +38,7 @@ interface LessonGroupRow {
 	lesson_type_id: string;
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number | string;
+	price_per_lesson: number | string | null;
 	start_date: string;
 	end_date: string | null;
 	teacher_user_id: string;
@@ -56,7 +56,7 @@ function buildLessonGroupEditInitial(
 		lessonTypeId: data.lesson_type_id,
 		durationMinutes: data.duration_minutes,
 		frequency: data.frequency as LessonFrequency,
-		pricePerLesson: Number(data.price_per_lesson),
+		pricePerLesson: Number(data.price_per_lesson ?? 0),
 		startDate: data.start_date,
 		endDate: data.end_date ?? defaultEndDate,
 		teacherUserId: data.teacher_user_id,

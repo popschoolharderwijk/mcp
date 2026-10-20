@@ -1,15 +1,12 @@
-import { useMemo } from 'react';
 import { LessonAgreementDialogContent } from '@/components/students/LessonAgreementDialogContent';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getUserInitials } from '@/components/ui/user-display';
-import { useAgreementBillingPreview } from '@/hooks/useAgreementBillingPreview';
+import { useLessonFeePreview } from '@/hooks/useLessonFeePreview';
 import { useAuth } from '@/hooks/useAuth';
 import { DAY_NAMES } from '@/lib/date/day-index';
 import { getDisplayName } from '@/lib/display-name';
-import {
-	buildAgreementBillingPreviewInput,
-	shouldShowAgreementPreviewBlock,
-} from '@/lib/students/lessonAgreementDialogHelpers';
+import { loadAgreementFeePreview } from '@/lib/billing/loadLessonFeePreview';
+import { resolveAgreementFeePreviewKey } from '@/lib/students/lessonAgreementDialogHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 
 interface LessonAgreementDialogProps {
@@ -17,9 +14,7 @@ interface LessonAgreementDialogProps {
 	onOpenChange: (open: boolean) => void;
 	agreement: LessonAgreementWithTeacher | null;
 	/**
-	 * Optional: IDs needed to show a live direct-debit preview.
-	 * When provided, the "Incasso-preview" block appears with
-	 * yearly/monthly amount based on price per lesson × frequency.
+	 * Optional: student id needed to show the fee preview (privileged users only).
 	 */
 	studentUserId?: string;
 	lessonTypeId?: string;
@@ -33,11 +28,14 @@ export function LessonAgreementDialog({
 	lessonTypeId,
 }: LessonAgreementDialogProps) {
 	const { isPrivileged } = useAuth();
-	const previewInput = useMemo(
-		() => buildAgreementBillingPreviewInput(agreement, studentUserId, lessonTypeId, isPrivileged),
-		[agreement, studentUserId, lessonTypeId, isPrivileged],
+	const previewKey = resolveAgreementFeePreviewKey(agreement, studentUserId, lessonTypeId, isPrivileged);
+	const {
+		preview,
+		loading: previewLoading,
+		error: previewError,
+	} = useLessonFeePreview(previewKey, () =>
+		loadAgreementFeePreview(agreement?.id ?? '', studentUserId ?? ''),
 	);
-	const { preview, loading: previewLoading, error: previewError } = useAgreementBillingPreview(previewInput);
 
 	if (!agreement) {
 		return null;
@@ -56,7 +54,7 @@ export function LessonAgreementDialog({
 					teacherName={getDisplayName(agreement.teacher)}
 					teacherInitials={getUserInitials(agreement.teacher)}
 					dayNames={DAY_NAMES}
-					showPreviewBlock={shouldShowAgreementPreviewBlock(previewInput)}
+					showPreviewBlock={previewKey !== null}
 					previewLoading={previewLoading}
 					previewError={previewError}
 					preview={preview}
