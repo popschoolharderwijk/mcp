@@ -56,6 +56,9 @@ export type Database = {
           sepa_mandate_next_seq: number
           sepa_mandate_prefix: string
           sepa_remittance_template: string
+          stripe_catalog_last_full_sync_at: string | null
+          stripe_tax_rate_21_id: string | null
+          stripe_tax_rate_exempt_id: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -100,6 +103,9 @@ export type Database = {
           sepa_mandate_next_seq?: number
           sepa_mandate_prefix?: string
           sepa_remittance_template?: string
+          stripe_catalog_last_full_sync_at?: string | null
+          stripe_tax_rate_21_id?: string | null
+          stripe_tax_rate_exempt_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -144,6 +150,9 @@ export type Database = {
           sepa_mandate_next_seq?: number
           sepa_mandate_prefix?: string
           sepa_remittance_template?: string
+          stripe_catalog_last_full_sync_at?: string | null
+          stripe_tax_rate_21_id?: string | null
+          stripe_tax_rate_exempt_id?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1608,6 +1617,122 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "view_profiles_with_display_name"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      stripe_catalog_prices: {
+        Row: {
+          age_category: string
+          amount_cents: number
+          catalog_product_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active_in_stripe: boolean
+          lookup_key: string
+          recurring: boolean
+          stripe_price_id: string
+          tariff_id: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          age_category: string
+          amount_cents: number
+          catalog_product_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active_in_stripe?: boolean
+          lookup_key: string
+          recurring: boolean
+          stripe_price_id: string
+          tariff_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          age_category?: string
+          amount_cents?: number
+          catalog_product_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active_in_stripe?: boolean
+          lookup_key?: string
+          recurring?: boolean
+          stripe_price_id?: string
+          tariff_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_catalog_prices_catalog_product_id_fkey"
+            columns: ["catalog_product_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_catalog_prices_tariff_id_fkey"
+            columns: ["tariff_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_type_option_tariffs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_catalog_products: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active_in_stripe: boolean
+          last_error: string | null
+          last_synced_at: string | null
+          lesson_type_option_id: string | null
+          product_name: string | null
+          stripe_product_id: string | null
+          sync_status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active_in_stripe?: boolean
+          last_error?: string | null
+          last_synced_at?: string | null
+          lesson_type_option_id?: string | null
+          product_name?: string | null
+          stripe_product_id?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active_in_stripe?: boolean
+          last_error?: string | null
+          last_synced_at?: string | null
+          lesson_type_option_id?: string | null
+          product_name?: string | null
+          stripe_product_id?: string | null
+          sync_status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_catalog_products_lesson_type_option_id_fkey"
+            columns: ["lesson_type_option_id"]
+            isOneToOne: true
+            referencedRelation: "lesson_type_options"
+            referencedColumns: ["id"]
           },
         ]
       }
