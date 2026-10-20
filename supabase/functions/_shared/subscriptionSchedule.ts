@@ -322,7 +322,6 @@ export async function syncAgreementSchedule(
 		stripe_price_id: plan.phases[0]?.priceId ?? '',
 		stripe_schedule_id: schedule?.id ?? null,
 		status: subscriptionId ? (running ? 'active' : 'scheduled') : plan.phases.length > 0 ? 'scheduled' : 'canceled',
-		...(pm ? { default_payment_method_brand: 'sepa_debit' } : {}),
 	});
 	await admin
 		.from('subscriptions')
