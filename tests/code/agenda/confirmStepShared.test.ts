@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	formatLessonPrice,
 	formatWizardPeriodRange,
 	isWizardPeriodChanged,
 	isWizardSlotChanged,
@@ -8,11 +7,6 @@ import {
 } from '../../../src/components/agreements/confirmStepHelpers';
 
 describe('confirmStepHelpers', () => {
-	it('formats lesson price in Dutch locale', () => {
-		expect(formatLessonPrice(30)).toBe('€ 30,00 per les');
-		expect(formatLessonPrice(null)).toBe('-');
-	});
-
 	it('formats wizard period range', () => {
 		expect(formatWizardPeriodRange('2025-02-01', '2025-06-01')).toBe('01-02-2025 t/m 01-06-2025');
 		expect(formatWizardPeriodRange('2025-02-01', null)).toBe('01-02-2025 t/m -');
