@@ -38,6 +38,8 @@ export interface AccountingSettings {
 	invoice_number_next: number;
 	invoice_payment_term_days: number;
 	invoice_footer_text: string | null;
+	/** Days of notice before the end of the running period when cancelling. */
+	cancellation_notice_days: number;
 }
 
 export type AgeCategory = 'under_21' | '21_plus' | 'unknown' | 'mixed';

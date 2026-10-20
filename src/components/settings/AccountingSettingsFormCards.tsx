@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { AccountingSettings } from '@/lib/accounting/types';
 import {
+	clampCancellationNoticeDays,
 	clampInvoicePaymentTermDays,
 	clampSchoolYearStartMonth,
 	clampSepaCollectionDay,
@@ -341,6 +342,23 @@ export function AccountingSettingsCompanyCard({ form, canEdit, update }: Account
 							update('invoice_payment_term_days', clampInvoicePaymentTermDays(Number(e.target.value)))
 						}
 					/>
+				</div>
+				<div className="space-y-1.5">
+					<Label htmlFor="acc-notice">Opzegtermijn overeenkomsten (dagen)</Label>
+					<Input
+						id="acc-notice"
+						type="number"
+						min={0}
+						max={365}
+						disabled={!canEdit}
+						value={form.cancellation_notice_days}
+						onChange={(e) =>
+							update('cancellation_notice_days', clampCancellationNoticeDays(Number(e.target.value)))
+						}
+					/>
+					<p className="text-xs text-muted-foreground">
+						Zoveel dagen vóór het einde van de lopende periode moet een opzegging binnen zijn.
+					</p>
 				</div>
 				<div className="space-y-1.5 sm:col-span-2">
 					<Label htmlFor="acc-footer">Footer-tekst (optioneel)</Label>
