@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.1 — 2026-10-20
+
+- **Eigen betaaluitnodiging (Stripe)**: nieuwe e-mailtemplate "Betaaluitnodiging (Stripe)" (`direct_debit_invite`) met uitleg over de machtiging, het maandbedrag, de eerste maand naar rato, de startdatum en de minimale looptijd; beheerbaar onder Instellingen → E-mailtemplates
+- De inloglink wordt op de server gemaakt (token_hash-formaat), zodat mailscanners hem niet vooraf verbruiken; geen algemene Supabase-inlogmail meer voor de uitnodiging
+
 ## 1.5.0 — 2026-10-20
 
 - **Tarieven exact volgens de tarievenlijst** per 1 september 2026; verzonnen tarieven opgeruimd (instrumentlessen alleen 30 min wekelijks/tweewekelijks, Bandcoaching op 60 min tweewekelijks)
