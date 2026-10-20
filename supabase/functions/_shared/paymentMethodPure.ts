@@ -47,5 +47,7 @@ export function resolveOneOffAgreementFailure(
 
 export function readBillingKind(option: unknown): string | null {
 	const row = Array.isArray(option) ? option[0] : option;
-	return row && typeof row === 'object' && 'billing_kind' in row ? String((row as { billing_kind: unknown }).billing_kind) : null;
+	return row && typeof row === 'object' && 'billing_kind' in row
+		? String((row as { billing_kind: unknown }).billing_kind)
+		: null;
 }

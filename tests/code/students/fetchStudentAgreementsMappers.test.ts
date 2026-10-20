@@ -11,7 +11,6 @@ const baseRow: AgreementRow = {
 	notes: 'Focus op techniek',
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 25,
 	teacher_user_id: 'teacher-1',
 	lesson_type_id: 'lesson-type-1',
 };
@@ -35,7 +34,6 @@ describe('mapAgreementRow', () => {
 			notes: 'Focus op techniek',
 			duration_minutes: 45,
 			frequency: 'weekly',
-			price_per_lesson: 25,
 			teacher: {
 				first_name: 'Jan',
 				last_name: 'Jansen',

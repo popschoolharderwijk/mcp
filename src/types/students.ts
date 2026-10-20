@@ -35,7 +35,6 @@ type StudentAgreementRaw = {
 		color: string | null;
 		duration_minutes: number;
 		frequency: LessonAgreementWithTeacher['frequency'];
-		price_per_lesson: number;
 	};
 };
 
@@ -53,7 +52,6 @@ function transformAgreement(a: StudentAgreementRaw): LessonAgreementWithTeacher 
 		...rest,
 		duration_minutes: lesson_type.duration_minutes,
 		frequency: lesson_type.frequency,
-		price_per_lesson: lesson_type.price_per_lesson,
 		lesson_type: {
 			id: lesson_type.id,
 			name: lesson_type.name,

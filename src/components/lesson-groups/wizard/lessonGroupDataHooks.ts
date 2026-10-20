@@ -39,7 +39,6 @@ export function useLessonGroupEditLoad(id: string | undefined, isEditMode: boole
 		lessonTypeId: string;
 		durationMinutes: number;
 		frequency: LessonFrequency;
-		pricePerLesson: number;
 		startDate: string;
 		endDate: string;
 		teacherUserId: string;

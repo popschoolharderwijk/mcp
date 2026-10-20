@@ -33,7 +33,6 @@ type LessonAgreementBaseFields = Pick<
 	| 'lesson_type_id'
 	| 'duration_minutes'
 	| 'frequency'
-	| 'price_per_lesson'
 >;
 
 /** Agreement fields for table display (base + created_at, notes, teacher_user_id) */
@@ -104,7 +103,6 @@ export interface WizardLessonTypeInfo {
 	color: string | null;
 	frequency: LessonFrequency;
 	duration_minutes: number;
-	price_per_lesson: number | null;
 	/** Lesson form whose tariff list determines the fee. */
 	lesson_type_option_id: string | null;
 }
@@ -122,7 +120,6 @@ export interface WizardAgreementLessonType {
 	name: string | null;
 	frequency?: LessonFrequency;
 	duration_minutes?: number;
-	price_per_lesson?: number | null;
 }
 
 /** Initial agreement data for editing in wizard (snapshot fields from agreement) */
@@ -133,7 +130,6 @@ export interface WizardInitialAgreement {
 	lesson_type_id: string;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number | null;
 	start_date: string;
 	end_date: string | null;
 	day_of_week: number;
@@ -183,7 +179,6 @@ export type LessonAgreementWithTeacher = Pick<
 	| 'notes'
 	| 'duration_minutes'
 	| 'frequency'
-	| 'price_per_lesson'
 > & {
 	teacher: Pick<User, 'first_name' | 'last_name' | 'avatar_url'>;
 	lesson_type: LessonTypeDisplayFields;

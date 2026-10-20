@@ -1,4 +1,4 @@
-import { formatDate, formatPrice } from './formatPure.ts';
+import { formatDate } from './formatPure.ts';
 import { type Body, DAY_NAMES_NL, FREQUENCY_LABELS, PAYMENT_METHOD_LABELS } from './types.ts';
 
 export interface DuoProfileRow {
@@ -26,7 +26,6 @@ export function buildDuoConfirmationBaseVars(
 		docent_naam: teacherName,
 		les_type: lessonTypeName,
 		frequentie: FREQUENCY_LABELS[body.frequency] ?? body.frequency,
-		prijs_per_les: formatPrice(body.price_per_lesson),
 		dag: DAY_NAMES_NL[body.day_of_week] ?? '',
 		tijd: body.start_time.slice(0, 5),
 		startdatum: formatDate(body.start_date),
@@ -38,12 +37,13 @@ export function buildDuoStudentEmailJobs(
 	body: Body,
 	profMap: Map<string, DuoProfileRow>,
 	teacher: DuoProfileRow | undefined,
-): Array<{ studentEmail: string; studentName: string; teacherEmail: string | null }> {
-	const jobs: Array<{ studentEmail: string; studentName: string; teacherEmail: string | null }> = [];
+): DuoConfirmationEmailJob[] {
+	const jobs: DuoConfirmationEmailJob[] = [];
 	for (const studentId of [body.student_user_id_a, body.student_user_id_b]) {
 		const student = profMap.get(studentId);
 		if (!student?.email) continue;
 		jobs.push({
+			studentUserId: studentId,
 			studentEmail: student.email.toLowerCase(),
 			studentName: formatPersonDisplayName(student.first_name, student.last_name, 'leerling'),
 			teacherEmail: teacher?.email ? teacher.email.toLowerCase() : null,
@@ -55,8 +55,9 @@ export function buildDuoStudentEmailJobs(
 export function buildDuoTemplateEmailVars(
 	baseVars: Record<string, string>,
 	studentName: string,
+	amountLabel = 'volgens de tarievenlijst',
 ): Record<string, string> {
-	return { ...baseVars, leerling_naam: studentName };
+	return { ...baseVars, leerling_naam: studentName, bedrag: amountLabel };
 }
 
 export function buildDuoProfileMap(profiles: DuoProfileRow[] | null | undefined): Map<string, DuoProfileRow> {
@@ -84,6 +85,8 @@ export function buildDuoConfirmationEmailPlan(
 }
 
 export interface DuoConfirmationEmailJob {
+	studentUserId?: string;
+	amountLabel?: string;
 	studentEmail: string;
 	studentName: string;
 	teacherEmail: string | null;
@@ -106,14 +109,14 @@ export async function dispatchDuoConfirmationEmailJobs(
 		await sendEmail({
 			event_key: 'agreement_created',
 			to: job.studentEmail,
-			vars: buildDuoTemplateEmailVars(baseVars, job.studentName),
+			vars: buildDuoTemplateEmailVars(baseVars, job.studentName, job.amountLabel),
 			origin,
 		});
 		if (job.teacherEmail) {
 			await sendEmail({
 				event_key: 'agreement_created_teacher',
 				to: job.teacherEmail,
-				vars: buildDuoTemplateEmailVars(baseVars, job.studentName),
+				vars: buildDuoTemplateEmailVars(baseVars, job.studentName, job.amountLabel),
 				origin,
 			});
 		}

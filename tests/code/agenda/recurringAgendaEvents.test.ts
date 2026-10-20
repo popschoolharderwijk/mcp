@@ -162,7 +162,6 @@ describe('appendRecurringAgendaEvents', () => {
 			lesson_type_id: 'lt-1',
 			duration_minutes: 45,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 			profiles: { first_name: 'Jan', last_name: 'Jansen', email: 'jan@example.com' },
 			lesson_types: {
 				id: 'lt-1',

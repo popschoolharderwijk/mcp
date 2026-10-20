@@ -3,7 +3,7 @@ import {
 	buildSignupConfirmationEmailVars,
 	buildSignupConfirmationFullName,
 	buildSignupConfirmationOptionDetails,
-	formatSignupOptionPrice,
+	formatSignupOptionAmount,
 	resolveSignupConfirmationRecipientEmail,
 } from '../../../supabase/functions/submit-signup-request/sendConfirmationEmailPure';
 
@@ -31,13 +31,20 @@ describe('resolveSignupConfirmationRecipientEmail', () => {
 	});
 });
 
-describe('formatSignupOptionPrice', () => {
-	it('returns empty string when price is missing', () => {
-		expect(formatSignupOptionPrice(null)).toBe('');
+describe('formatSignupOptionAmount', () => {
+	it('shows both tariffs per month', () => {
+		expect(formatSignupOptionAmount('monthly', { amount_under_21_cents: 7338, amount_adult_cents: 8879 })).toBe(
+			'€ 73,38 per maand (21+: € 88,79)',
+		);
 	});
-
-	it('formats euro amount with comma decimal separator', () => {
-		expect(formatSignupOptionPrice(25.5)).toBe('€ 25,50');
+	it('shows one-off and adult-only tariffs', () => {
+		expect(formatSignupOptionAmount('one_off', { amount_under_21_cents: 6600, amount_adult_cents: null })).toBe(
+			'€ 66,00 eenmalig',
+		);
+		expect(formatSignupOptionAmount('one_off', { amount_under_21_cents: null, amount_adult_cents: 8250 })).toBe(
+			'€ 82,50 eenmalig (21+-tarief)',
+		);
+		expect(formatSignupOptionAmount('monthly', null)).toBe('');
 	});
 });
 
@@ -48,13 +55,16 @@ describe('buildSignupConfirmationOptionDetails', () => {
 
 	it('maps option frequency and price', () => {
 		expect(
-			buildSignupConfirmationOptionDetails({
-				frequency: 'weekly',
-				price_per_lesson: 20,
-			}),
+			buildSignupConfirmationOptionDetails(
+				{
+					frequency: 'weekly',
+					billing_kind: 'monthly',
+				},
+				{ amount_under_21_cents: 2455, amount_adult_cents: null },
+			),
 		).toEqual({
 			frequentie: 'weekly',
-			prijs: '€ 20,00',
+			prijs: '€ 24,55 per maand',
 		});
 	});
 });
@@ -71,7 +81,7 @@ describe('buildSignupConfirmationEmailVars', () => {
 			leerling_naam: 'Anna Jansen',
 			les_type: 'Piano',
 			frequentie: 'weekly',
-			prijs_per_les: '€ 20,00',
+			bedrag: '€ 20,00',
 		});
 	});
 });

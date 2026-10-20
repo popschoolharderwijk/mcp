@@ -6,7 +6,6 @@ interface StepProceedInput {
 	name: string;
 	lessonTypeId: string | null;
 	durationMinutes: number;
-	pricePerLesson: number;
 	startDate: string;
 	endDate: string;
 	teacherUserId: string | null;
@@ -19,7 +18,6 @@ export function canProceedFromLessonGroupStep(input: StepProceedInput): boolean 
 			input.name.trim() &&
 				input.lessonTypeId &&
 				input.durationMinutes > 0 &&
-				input.pricePerLesson >= 0 &&
 				input.startDate &&
 				input.endDate &&
 				new Date(input.endDate) >= new Date(input.startDate),

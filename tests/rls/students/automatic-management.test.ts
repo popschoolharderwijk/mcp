@@ -50,7 +50,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(newAgreement).select();
@@ -98,7 +97,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted1, error: error1 } = await db.from('lesson_agreements').insert(agreement1).select();
@@ -124,7 +122,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted2, error: error2 } = await db.from('lesson_agreements').insert(agreement2).select();
@@ -197,7 +194,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: false,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted } = await db.from('lesson_agreements').insert(expiredAgreement).select();
@@ -239,7 +235,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const agreement2: LessonAgreementInsert = {
@@ -252,7 +247,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted1 } = await db.from('lesson_agreements').insert(agreement1).select();
@@ -297,7 +291,6 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(agreement).select();

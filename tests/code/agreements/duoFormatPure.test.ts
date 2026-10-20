@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'bun:test';
-import { formatDate, formatPrice } from '../../../supabase/functions/create-duo-agreements/formatPure';
+import { formatDate, formatMonthlyAmount } from '../../../supabase/functions/create-duo-agreements/formatPure';
 
-describe('formatPrice', () => {
-	it('formats euro amounts for nl-NL', () => {
-		expect(formatPrice(25)).toBe('€ 25,00');
+describe('formatMonthlyAmount', () => {
+	it('formats the monthly duo amount', () => {
+		expect(formatMonthlyAmount(5156).replace(/\s/g, ' ')).toBe('€ 51,56 per maand');
+		expect(formatMonthlyAmount(null)).toBe('volgens de tarievenlijst');
 	});
 });
 

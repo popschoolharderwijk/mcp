@@ -20,21 +20,6 @@ export function PaymentMethodOptions({
 			className="grid gap-2"
 		>
 			<label
-				htmlFor="pm-sepa"
-				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
-			>
-				<RadioGroupItem value="sepa" id="pm-sepa" className="mt-1" />
-				<div className="flex-1">
-					<div className="flex items-center gap-2 font-medium">
-						<LuSignature className="h-4 w-4" /> SEPA-incasso
-					</div>
-					<p className="text-xs text-muted-foreground">
-						Maandelijks automatisch incasseren via een SEPA-mandaat.
-					</p>
-				</div>
-			</label>
-
-			<label
 				htmlFor="pm-stripe"
 				className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
 			>
@@ -61,6 +46,23 @@ export function PaymentMethodOptions({
 					<p className="text-xs text-muted-foreground">Geen automatische betaling; je factureert zelf.</p>
 				</div>
 			</label>
+			{/* SEPA is no longer offered for new agreements; it stays visible for existing SEPA agreements until phase 5. */}
+			{paymentMethod === 'sepa' ? (
+				<label
+					htmlFor="pm-sepa"
+					className="flex items-start gap-3 rounded-md border bg-background p-3 cursor-pointer hover:bg-accent"
+				>
+					<RadioGroupItem value="sepa" id="pm-sepa" className="mt-1" />
+					<div className="flex-1">
+						<div className="flex items-center gap-2 font-medium">
+							<LuSignature className="h-4 w-4" /> SEPA-incasso
+						</div>
+						<p className="text-xs text-muted-foreground">
+							Maandelijks automatisch incasseren via een SEPA-mandaat.
+						</p>
+					</div>
+				</label>
+			) : null}
 		</RadioGroup>
 	);
 }

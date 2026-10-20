@@ -17,7 +17,6 @@ export type RawAgreementRow = {
 	lesson_type_id: string;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number | null;
 	lesson_type_option_id?: string | null;
 	minimum_term_end?: string | null;
 	cancellation_effective_date?: string | null;
@@ -68,7 +67,6 @@ export function mapRawAgreementToTableRow(
 		lesson_type_id: a.lesson_type_id,
 		duration_minutes: a.duration_minutes,
 		frequency: a.frequency,
-		price_per_lesson: a.price_per_lesson,
 		lesson_type_option_id: a.lesson_type_option_id ?? null,
 		minimum_term_end: a.minimum_term_end ?? null,
 		cancellation_effective_date: a.cancellation_effective_date ?? null,

@@ -75,7 +75,6 @@ describe('RLS: lesson_type_options INSERT - blocked for non-admin roles', () => 
 		lesson_type_id: lessonTypeId,
 		duration_minutes: 30,
 		frequency: 'weekly',
-		price_per_lesson: 25,
 	};
 
 	it('user without role cannot insert lesson_type_option', async () => {
@@ -96,7 +95,6 @@ describe('RLS: lesson_type_options INSERT - admin permissions', () => {
 		lesson_type_id: lessonTypeId,
 		duration_minutes: 45,
 		frequency: 'biweekly',
-		price_per_lesson: 30,
 	};
 
 	it('admin can insert lesson_type_option', async () => {
@@ -133,7 +131,6 @@ describe('RLS: lesson_type_options UPDATE - admin permissions', () => {
 			lesson_type_id: lessonTypeId,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 20,
 		});
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 		const updated = unwrap(
@@ -149,14 +146,13 @@ describe('RLS: lesson_type_options UPDATE - admin permissions', () => {
 			lesson_type_id: lessonTypeId,
 			duration_minutes: 30,
 			frequency: 'monthly',
-			price_per_lesson: 22,
 		});
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const updated = unwrap(
-			await db.from('lesson_type_options').update({ price_per_lesson: 28 }).eq('id', data.id).select(),
+			await db.from('lesson_type_options').update({ label: 'gewijzigd' }).eq('id', data.id).select(),
 		);
 		expect(updated).toHaveLength(1);
-		expect(updated[0].price_per_lesson).toBe(28);
+		expect(updated[0].label).toBe('gewijzigd');
 		await cleanup();
 	});
 });
@@ -184,7 +180,6 @@ describe('RLS: lesson_type_options DELETE - admin permissions', () => {
 			lesson_type_id: lessonTypeId,
 			duration_minutes: 90,
 			frequency: 'weekly',
-			price_per_lesson: 35,
 		});
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 		const deleted = unwrap(await db.from('lesson_type_options').delete().eq('id', data.id).select());
@@ -197,7 +192,6 @@ describe('RLS: lesson_type_options DELETE - admin permissions', () => {
 			lesson_type_id: lessonTypeId,
 			duration_minutes: 120,
 			frequency: 'daily',
-			price_per_lesson: 40,
 		});
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const deleted = unwrap(await db.from('lesson_type_options').delete().eq('id', data.id).select());

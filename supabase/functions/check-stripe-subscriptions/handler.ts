@@ -41,7 +41,13 @@ async function checkOne(admin: SupabaseClient, stripe: Stripe, row: Row) {
 			last_check_stripe_cents: upcoming.total,
 		})
 		.eq('stripe_subscription_id', row.stripe_subscription_id);
-	return { lesson_agreement_id: row.lesson_agreement_id, month, expected_cents: expected, stripe_cents: upcoming.total, ...result };
+	return {
+		lesson_agreement_id: row.lesson_agreement_id,
+		month,
+		expected_cents: expected,
+		stripe_cents: upcoming.total,
+		...result,
+	};
 }
 
 export async function handleCheckStripeSubscriptionsRequest(req: Request): Promise<Response> {
@@ -57,7 +63,9 @@ export async function handleCheckStripeSubscriptionsRequest(req: Request): Promi
 	const stripe = getStripe();
 	const { data: rows, error } = await admin
 		.from('subscriptions')
-		.select('lesson_agreement_id, stripe_customer_id, stripe_subscription_id, status, lesson_agreements!inner(payment_method, is_active)')
+		.select(
+			'lesson_agreement_id, stripe_customer_id, stripe_subscription_id, status, lesson_agreements!inner(payment_method, is_active)',
+		)
 		.eq('lesson_agreements.payment_method', 'stripe')
 		.eq('lesson_agreements.is_active', true)
 		.in('status', ['scheduled', 'trialing', 'active', 'past_due', 'unpaid']);

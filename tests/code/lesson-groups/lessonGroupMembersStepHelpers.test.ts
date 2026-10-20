@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	formatIndicativeLessonRevenue,
 	formatLessonGroupMemberCount,
 	getLessonGroupMembersPlaceholder,
 	toggleSelectedRequestId,
@@ -23,20 +22,6 @@ describe('formatLessonGroupMemberCount', () => {
 
 	it('uses plural label for multiple students', () => {
 		expect(formatLessonGroupMemberCount(4)).toBe('Geselecteerd: 4 leerlingen');
-	});
-});
-
-describe('formatIndicativeLessonRevenue', () => {
-	it('returns null when there are no members', () => {
-		expect(formatIndicativeLessonRevenue(0, 25)).toBeNull();
-	});
-
-	it('returns null when price per lesson is zero', () => {
-		expect(formatIndicativeLessonRevenue(2, 0)).toBeNull();
-	});
-
-	it('formats revenue for nl-NL locale', () => {
-		expect(formatIndicativeLessonRevenue(2, 12.5)).toBe('25,00');
 	});
 });
 

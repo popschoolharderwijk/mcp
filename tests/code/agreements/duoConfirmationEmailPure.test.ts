@@ -24,7 +24,6 @@ const baseBody: Body = {
 	start_time: '14:30:00',
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 25,
 	lesson_type_option_id: null,
 	start_date: '2026-09-01',
 	end_date: null,
@@ -50,7 +49,6 @@ describe('buildDuoConfirmationBaseVars', () => {
 			docent_naam: 'Jan Jansen',
 			les_type: 'Piano',
 			frequentie: 'wekelijks',
-			prijs_per_les: '€ 25,00',
 			dag: 'maandag',
 			tijd: '14:30',
 			startdatum: '01-09-2026',
@@ -68,6 +66,7 @@ describe('buildDuoStudentEmailJobs', () => {
 		]);
 		expect(buildDuoStudentEmailJobs(baseBody, profMap, profMap.get(TEACHER))).toEqual([
 			{
+				studentUserId: STUDENT_A,
 				studentEmail: 'anna@example.com',
 				studentName: 'Anna A',
 				teacherEmail: 'teacher@example.com',
@@ -81,6 +80,7 @@ describe('buildDuoTemplateEmailVars', () => {
 		expect(buildDuoTemplateEmailVars({ docent_naam: 'Jan' }, 'Anna')).toEqual({
 			docent_naam: 'Jan',
 			leerling_naam: 'Anna',
+			bedrag: 'volgens de tarievenlijst',
 		});
 	});
 });
@@ -101,6 +101,7 @@ describe('buildDuoConfirmationEmailPlan', () => {
 		expect(buildDuoConfirmationEmailPlan(baseBody, 'Piano', profMap, 'https://app.example.com')).toEqual({
 			jobs: [
 				{
+					studentUserId: STUDENT_A,
 					studentEmail: 'anna@example.com',
 					studentName: 'Anna A',
 					teacherEmail: 'teacher@example.com',

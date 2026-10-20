@@ -7,14 +7,6 @@ export function formatLessonGroupMemberCount(count: number): string {
 	return `Geselecteerd: ${count} ${noun}`;
 }
 
-export function formatIndicativeLessonRevenue(memberCount: number, pricePerLesson: number): string | null {
-	if (memberCount === 0 || pricePerLesson <= 0) return null;
-	return (memberCount * pricePerLesson).toLocaleString('nl-NL', {
-		minimumFractionDigits: 2,
-		maximumFractionDigits: 2,
-	});
-}
-
 export function toggleSelectedRequestId(selectedIds: string[], requestId: string, checked: boolean): string[] {
 	if (checked) return [...selectedIds, requestId];
 	return selectedIds.filter((id) => id !== requestId);

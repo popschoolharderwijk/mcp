@@ -241,7 +241,6 @@ describe('enrichAgendaEvent', () => {
 			lesson_type_id: 'lt-1',
 			duration_minutes: 60,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 			profiles: studentProfile,
 			lesson_types: {
 				id: 'lt-1',
@@ -291,7 +290,6 @@ describe('enrichAgendaEvent', () => {
 			lesson_type_id: 'lt-1',
 			duration_minutes: 60,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 			profiles: studentProfile,
 			lesson_types: {
 				id: 'lt-1',

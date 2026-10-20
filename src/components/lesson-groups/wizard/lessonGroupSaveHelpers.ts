@@ -29,7 +29,6 @@ export function buildLessonGroupDbPayload(form: LessonGroupFormState, slot: Slot
 		teacher_user_id: form.teacherUserId,
 		duration_minutes: form.durationMinutes,
 		frequency: form.frequency,
-		price_per_lesson: form.pricePerLesson,
 		day_of_week: slot.day_of_week,
 		start_time: startTime,
 		start_date: form.startDate,

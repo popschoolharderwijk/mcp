@@ -19,7 +19,6 @@ export function buildSelectedLessonType(
 			color: agreement.lesson_type.color,
 			duration_minutes: agreement.duration_minutes,
 			frequency: agreement.frequency,
-			price_per_lesson: agreement.price_per_lesson,
 			lesson_type_option_id: agreement.lesson_type_option_id ?? null,
 		};
 	}
@@ -33,7 +32,6 @@ export function buildSelectedLessonType(
 		color: matchedLessonType.color,
 		duration_minutes: selectedOptionSnapshot.duration_minutes,
 		frequency: selectedOptionSnapshot.frequency,
-		price_per_lesson: null,
 		lesson_type_option_id: selectedOptionSnapshot.id,
 	};
 }

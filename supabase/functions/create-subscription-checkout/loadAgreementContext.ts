@@ -31,7 +31,9 @@ export async function loadAgreementContext(
 
 	const notStripe = resolveNotStripeAgreementFailure((agreement as AgreementRow).payment_method);
 	if (notStripe) return { ok: false, response: jsonResponse(notStripe.status, { error: notStripe.error }) };
-	const oneOff = resolveOneOffAgreementFailure(readBillingKind((agreement as { lesson_type_options?: unknown }).lesson_type_options));
+	const oneOff = resolveOneOffAgreementFailure(
+		readBillingKind((agreement as { lesson_type_options?: unknown }).lesson_type_options),
+	);
 	if (oneOff) return { ok: false, response: jsonResponse(oneOff.status, { error: oneOff.error }) };
 
 	const billingUserId = (agreement as AgreementRow).student_user_id;

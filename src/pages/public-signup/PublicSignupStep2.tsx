@@ -94,8 +94,7 @@ function GroupLessonSelection({ groups, selectedGroupId, onSelectGroupId }: Grou
 						{frequencyLabels[group.frequency as keyof typeof frequencyLabels] ?? group.frequency}
 					</div>
 					<div className="text-sm text-muted-foreground">
-						{group.teacher_name ? `Docent: ${group.teacher_name}` : ''} · {group.members_count} deelnemers ·
-						€{Number(group.price_per_lesson).toFixed(2)} per les
+						{group.teacher_name ? `Docent: ${group.teacher_name}` : ''} · {group.members_count} deelnemers
 					</div>
 				</button>
 			))}

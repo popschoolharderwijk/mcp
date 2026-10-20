@@ -24,7 +24,6 @@ function mockAgreementRow(overrides: Partial<AgreementTableRow> = {}): Agreement
 		lesson_type_id: 'lt-1',
 		duration_minutes: 60,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 		created_at: '2026-01-01T00:00:00Z',
 		notes: null,
 		payment_method: 'stripe',
@@ -100,7 +99,6 @@ describe('buildSelectedLessonType', () => {
 			color: '#000000',
 			duration_minutes: 60,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 			lesson_type_option_id: null,
 		});
 	});
@@ -115,7 +113,6 @@ describe('buildSelectedLessonType', () => {
 			color: '#ff0000',
 			duration_minutes: 45,
 			frequency: 'biweekly',
-			price_per_lesson: null,
 			lesson_type_option_id: 'opt-2',
 		});
 	});

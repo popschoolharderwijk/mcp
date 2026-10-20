@@ -102,6 +102,13 @@ function CancelAgreementButton({ agreement }: { agreement: AgreementTableRow }) 
 		setCancelledPer(data);
 		setOpen(false);
 		toast.success(`Overeenkomst opgezegd per ${formatDateNl(data)}`);
+		if (agreement.payment_method === 'stripe') {
+			// Set the end date in Stripe right away; the daily task retries when this fails.
+			const { error: rebuildError } = await supabase.functions.invoke('rebuild-subscription-schedule', {
+				body: { lesson_agreement_id: agreement.id },
+			});
+			if (rebuildError) toast.info('Het Stripe-abonnement wordt vannacht bijgewerkt');
+		}
 	};
 
 	return (

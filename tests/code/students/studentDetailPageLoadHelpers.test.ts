@@ -33,7 +33,6 @@ const mockAgreement: LessonAgreementWithTeacher = {
 	notes: null,
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 30,
 	teacher: { first_name: 'Piet', last_name: 'Docent', avatar_url: null },
 	lesson_type: { id: 'lt-1', name: 'Piano', icon: 'piano', color: '#000000' },
 };

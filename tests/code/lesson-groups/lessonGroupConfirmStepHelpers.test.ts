@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	formatLessonGroupPeriodText,
-	formatLessonGroupPriceText,
 	formatLessonGroupScheduleText,
 	resolveLessonGroupMembersDisplay,
 	resolveLessonGroupNameDisplay,
@@ -31,12 +30,6 @@ describe('formatLessonGroupPeriodText', () => {
 		expect(formatLessonGroupPeriodText('2026-09-01', '2026-12-01', (value) => `ui-${value}`)).toBe(
 			'ui-2026-09-01 t/m ui-2026-12-01',
 		);
-	});
-});
-
-describe('formatLessonGroupPriceText', () => {
-	it('formats euro prices in nl locale', () => {
-		expect(formatLessonGroupPriceText(25)).toBe('€ 25,00');
 	});
 });
 

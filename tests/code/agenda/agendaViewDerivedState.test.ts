@@ -43,7 +43,6 @@ function mockAgreement(overrides: Partial<AgendaLessonAgreement> = {}): AgendaLe
 		lesson_type_id: 'lt-1',
 		duration_minutes: 60,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 		teacherUserId: 'tea-1',
 		profiles: null,
 		teacherProfile: null,

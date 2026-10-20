@@ -10,7 +10,7 @@ import type { ProjectInfo } from '@/types/projects';
 import type { User } from '@/types/users';
 
 const LESSON_AGREEMENT_SELECT =
-	'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, lesson_types(id, name, icon, color, is_group_lesson), teachers(user_id)';
+	'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, lesson_types(id, name, icon, color, is_group_lesson), teachers(user_id)';
 
 const PROFILE_SELECT = 'user_id, first_name, last_name, email, avatar_url, phone_number';
 

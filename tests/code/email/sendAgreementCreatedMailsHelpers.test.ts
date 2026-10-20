@@ -13,7 +13,6 @@ describe('buildAgreementMailContext', () => {
 				start_time: '14:30:00',
 				start_date: '2026-09-07',
 				frequency: 'weekly',
-				price_per_lesson: 45,
 				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},
@@ -32,7 +31,6 @@ describe('buildAgreementMailContext', () => {
 				start_time: '14:30:00',
 				start_date: '2026-09-07',
 				frequency: 'weekly',
-				price_per_lesson: 45,
 				payment_method: 'stripe',
 				lesson_types: [{ name: 'Gitaar' }],
 			},
@@ -49,18 +47,18 @@ describe('buildAgreementMailContext', () => {
 				start_time: '14:30:00',
 				start_date: '2026-09-07',
 				frequency: 'weekly',
-				price_per_lesson: 45,
 				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},
 			{ first_name: 'Jan', last_name: 'Leerling' },
 			{ first_name: 'Piet', last_name: 'Docent' },
+			'€ 73,38 per maand',
 		);
 		expect(context.sharedVars.leerling_naam).toBe('Jan Leerling');
 		expect(context.sharedVars.docent_naam).toBe('Piet Docent');
 		expect(context.sharedVars.les_type).toBe('Piano');
 		expect(context.sharedVars.frequentie).toBe('wekelijks');
-		expect(context.sharedVars.prijs_per_les).toContain('45');
+		expect(context.sharedVars.bedrag).toBe('€ 73,38 per maand');
 		expect(context.sharedVars.dag).toBe('maandag');
 		expect(context.sharedVars.tijd).toBe('14:30');
 		expect(context.sharedVars.startdatum).toBe('07-09-2026');
@@ -74,14 +72,13 @@ describe('buildAgreementMailContext', () => {
 				start_time: '',
 				start_date: '',
 				frequency: 'custom',
-				price_per_lesson: null,
 				payment_method: 'manual',
 				lesson_types: null,
 			},
 			{ first_name: 'S', last_name: '' },
 			{ first_name: 'T', last_name: '' },
 		);
-		expect(context.sharedVars.prijs_per_les).toBe('');
+		expect(context.sharedVars.bedrag).toBe('');
 		expect(context.sharedVars.tijd).toBe('');
 		expect(context.sharedVars.startdatum).toBe('');
 		expect(context.sharedVars.frequentie).toBe('custom');
@@ -97,7 +94,6 @@ describe('buildAgreementMailInvokeBody', () => {
 				start_time: '14:30:00',
 				start_date: '2026-09-07',
 				frequency: 'weekly',
-				price_per_lesson: 45,
 				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},

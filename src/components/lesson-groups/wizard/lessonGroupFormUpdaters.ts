@@ -7,7 +7,6 @@ export type LessonGroupFormUpdaters = {
 	setLessonTypeId: (lessonTypeId: string | null) => void;
 	setDurationMinutes: (durationMinutes: number) => void;
 	setFrequency: (frequency: LessonFrequency) => void;
-	setPricePerLesson: (pricePerLesson: number) => void;
 	setStartDate: (startDate: string | null) => void;
 	setEndDate: (endDate: string | null) => void;
 	setTeacherUserId: (teacherUserId: string | null) => void;
@@ -25,7 +24,6 @@ export function createLessonGroupFormUpdaters(
 			setForm((f) => ({ ...f, lessonTypeId, teacherUserId: null, slot: null, selectedRequestIds: [] })),
 		setDurationMinutes: (durationMinutes) => setForm((f) => ({ ...f, durationMinutes, slot: null })),
 		setFrequency: (frequency) => setForm((f) => ({ ...f, frequency, slot: null })),
-		setPricePerLesson: (pricePerLesson) => setForm((f) => ({ ...f, pricePerLesson })),
 		setStartDate: (startDate) => setForm((f) => ({ ...f, startDate: startDate ?? '', slot: null })),
 		setEndDate: (endDate) => setForm((f) => ({ ...f, endDate: endDate ?? '', slot: null })),
 		setTeacherUserId: (teacherUserId) => setForm((f) => ({ ...f, teacherUserId, slot: null })),

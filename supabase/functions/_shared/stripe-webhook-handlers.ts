@@ -7,10 +7,10 @@ import {
 	extractCheckoutSubscriptionId,
 	extractStripeSubscriptionId,
 	hasScheduleSetupInput,
-	resolveFirstInvoiceStatus,
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
+	resolveFirstInvoiceStatus,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
 	shouldHandleSubscriptionCheckout,
@@ -75,7 +75,11 @@ async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscriptio
 async function findInvoiceSubscriptionRowId(admin: SupabaseClient, inv: Stripe.Invoice): Promise<string | null> {
 	const subId = extractStripeSubscriptionId(inv.subscription);
 	if (subId) {
-		const { data } = await admin.from('subscriptions').select('id').eq('stripe_subscription_id', subId).maybeSingle();
+		const { data } = await admin
+			.from('subscriptions')
+			.select('id')
+			.eq('stripe_subscription_id', subId)
+			.maybeSingle();
 		if (data) return data.id;
 	}
 	// First-month invoice is not attached to the subscription; it carries the agreement id.

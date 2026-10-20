@@ -13,7 +13,9 @@ export async function loadForceStartAgreement(
 		.eq('id', lessonAgreementId)
 		.maybeSingle();
 	const subscription = row ? await findOpenSubscription(admin, lessonAgreementId) : null;
-	const agreement = row ? { id: row.id as string, stripe_schedule_id: subscription?.stripe_schedule_id ?? null } : null;
+	const agreement = row
+		? { id: row.id as string, stripe_schedule_id: subscription?.stripe_schedule_id ?? null }
+		: null;
 
 	const gateError = resolveForceStartAgreementGate(agreement, agErr?.message);
 	if (gateError) return { ok: false, response: jsonResponse(gateError.status, { error: gateError.error }) };

@@ -14,7 +14,7 @@ describe('createInitialWizardForm', () => {
 			slot: null,
 			partnerStudentUserId: null,
 			partnerUser: null,
-			paymentMethod: 'sepa',
+			paymentMethod: 'stripe',
 			sepaMandateId: null,
 			studentDateOfBirth: null,
 			partnerDateOfBirth: null,

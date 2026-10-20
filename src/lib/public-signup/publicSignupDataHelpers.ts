@@ -8,7 +8,6 @@ interface LessonGroupRow {
 	start_time: string;
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number;
 	teacher_user_id: string;
 }
 
@@ -43,7 +42,6 @@ function mapPublicSignupGroupOptions(
 			start_time: group.start_time,
 			duration_minutes: group.duration_minutes,
 			frequency: group.frequency,
-			price_per_lesson: group.price_per_lesson,
 			teacher_name: profile ? [profile.first_name, profile.last_name].filter(Boolean).join(' ') : null,
 			members_count: memberCounts.get(group.id) ?? 0,
 		};
@@ -64,7 +62,7 @@ export async function fetchPublicSignupGroupOptions(
 ): Promise<GroupOption[]> {
 	const { data: lessonGroups } = await supabase
 		.from('lesson_groups')
-		.select('id, name, day_of_week, start_time, duration_minutes, frequency, price_per_lesson, teacher_user_id')
+		.select('id, name, day_of_week, start_time, duration_minutes, frequency, teacher_user_id')
 		.eq('lesson_type_id', lessonTypeId)
 		.eq('is_active', true);
 

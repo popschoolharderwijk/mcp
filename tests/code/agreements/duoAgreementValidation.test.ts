@@ -15,7 +15,6 @@ const validBody = {
 	start_time: '14:00',
 	duration_minutes: 45,
 	frequency: 'weekly' as const,
-	price_per_lesson: null,
 	lesson_type_option_id: '55555555-5555-5555-5555-555555555555',
 	start_date: '2026-09-01',
 	end_date: null,

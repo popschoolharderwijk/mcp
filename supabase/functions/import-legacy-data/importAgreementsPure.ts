@@ -5,7 +5,6 @@ export interface LegacyAgreementImportRow {
 	lesson_type_legacy_id: string;
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number;
 	day_of_week: number;
 	start_time: string;
 	start_date: string;
@@ -49,7 +48,6 @@ export function buildLegacyAgreementUpsertPayload(row: LegacyAgreementImportRow,
 		lesson_type_id: refs.lessonTypeId,
 		duration_minutes: row.duration_minutes,
 		frequency: row.frequency,
-		price_per_lesson: row.price_per_lesson,
 		day_of_week: row.day_of_week,
 		start_time: normalizeLegacyAgreementStartTime(row.start_time),
 		start_date: row.start_date,

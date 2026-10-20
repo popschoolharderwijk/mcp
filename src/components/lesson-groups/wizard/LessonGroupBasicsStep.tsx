@@ -65,16 +65,6 @@ export function LessonGroupBasicsStep({ wizard }: LessonGroupBasicsStepProps) {
 						</SelectContent>
 					</Select>
 				</div>
-				<div>
-					<Label>Prijs per deelnemer (€)</Label>
-					<Input
-						type="number"
-						step="0.01"
-						min={0}
-						value={form.pricePerLesson}
-						onChange={(e) => formUpdaters.setPricePerLesson(Number(e.target.value) || 0)}
-					/>
-				</div>
 			</div>
 			<div className="grid grid-cols-2 gap-4">
 				<div>

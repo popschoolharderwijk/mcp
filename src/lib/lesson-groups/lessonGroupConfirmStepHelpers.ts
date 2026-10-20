@@ -40,10 +40,6 @@ export function formatLessonGroupPeriodText(
 	return `${formatDate(startDate)} t/m ${endLabel}`;
 }
 
-export function formatLessonGroupPriceText(pricePerLesson: number): string {
-	return `€ ${pricePerLesson.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 export type LessonGroupMembersDisplayKind = 'empty' | 'single' | 'multiple';
 
 export function resolveLessonGroupMembersDisplay(memberCount: number): {
