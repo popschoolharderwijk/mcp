@@ -11,13 +11,12 @@ describe('mapConfirmSelectedLessonTypeValues', () => {
 				color: null,
 				frequency: 'weekly',
 				duration_minutes: 45,
-				price_per_lesson: 2500,
+				lesson_type_option_id: 'opt-1',
 			}),
 		).toEqual({
 			lessonTypeName: 'Piano',
 			frequency: 'weekly',
 			durationMinutes: 45,
-			pricePerLesson: 2500,
 		});
 	});
 
@@ -26,7 +25,6 @@ describe('mapConfirmSelectedLessonTypeValues', () => {
 			lessonTypeName: undefined,
 			frequency: undefined,
 			durationMinutes: undefined,
-			pricePerLesson: undefined,
 		});
 	});
 });

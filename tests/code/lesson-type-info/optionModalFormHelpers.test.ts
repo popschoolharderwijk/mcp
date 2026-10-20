@@ -1,44 +1,27 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	updateOptionModalDuration,
-	updateOptionModalFrequency,
-	updateOptionModalPriceAdult,
-	updateOptionModalPriceUnder21,
-} from '../../../src/pages/lesson-type-info/optionModalFormHelpers';
+import { updateOptionModalField } from '../../../src/pages/lesson-type-info/optionModalFormHelpers';
 
 const baseForm = {
-	duration_minutes: '45',
+	duration_minutes: '30',
 	frequency: 'weekly' as const,
-	price_per_lesson_under_21: '20',
-	price_per_lesson_adult: '25',
+	label: '',
+	billing_kind: 'monthly' as const,
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '73.38',
+	amount_adult: '88.79',
 };
 
-describe('updateOptionModalDuration', () => {
-	it('updates duration minutes', () => {
-		expect(updateOptionModalDuration(baseForm, '60')).toEqual({ ...baseForm, duration_minutes: '60' });
+describe('updateOptionModalField', () => {
+	it('updates a single field', () => {
+		expect(updateOptionModalField(baseForm, 'duration_minutes', '45')).toEqual({ ...baseForm, duration_minutes: '45' });
 	});
-});
 
-describe('updateOptionModalFrequency', () => {
-	it('updates frequency', () => {
-		expect(updateOptionModalFrequency(baseForm, 'biweekly')).toEqual({ ...baseForm, frequency: 'biweekly' });
-	});
-});
-
-describe('updateOptionModalPriceUnder21', () => {
-	it('updates under-21 price', () => {
-		expect(updateOptionModalPriceUnder21(baseForm, '22')).toEqual({
+	it('clears the 21+ amount when the 21+ tariff is switched off', () => {
+		expect(updateOptionModalField(baseForm, 'has_adult_tariff', false)).toEqual({
 			...baseForm,
-			price_per_lesson_under_21: '22',
-		});
-	});
-});
-
-describe('updateOptionModalPriceAdult', () => {
-	it('updates adult price', () => {
-		expect(updateOptionModalPriceAdult(baseForm, '30')).toEqual({
-			...baseForm,
-			price_per_lesson_adult: '30',
+			has_adult_tariff: false,
+			amount_adult: '',
 		});
 	});
 });

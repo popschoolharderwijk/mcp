@@ -15,7 +15,8 @@ const validBody = {
 	start_time: '14:00',
 	duration_minutes: 45,
 	frequency: 'weekly' as const,
-	price_per_lesson: 25,
+	price_per_lesson: null,
+	lesson_type_option_id: '55555555-5555-5555-5555-555555555555',
 	start_date: '2026-09-01',
 	end_date: null,
 };
@@ -28,6 +29,13 @@ describe('validateDuoBody', () => {
 				...validBody,
 				signup_source: 'staff_duo',
 			},
+		});
+	});
+
+	it('rejects a lesson form id that is not a UUID', () => {
+		expect(validateDuoBody({ ...validBody, lesson_type_option_id: 'nope' })).toEqual({
+			ok: false,
+			error: "'lesson_type_option_id' moet een UUID zijn",
 		});
 	});
 

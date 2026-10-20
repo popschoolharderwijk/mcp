@@ -1,4 +1,5 @@
-export function formatPrice(value: number): string {
+export function formatPrice(value: number | null): string {
+	if (value == null) return 'volgens de tarievenlijst';
 	return new Intl.NumberFormat('nl-NL', {
 		style: 'currency',
 		currency: 'EUR',

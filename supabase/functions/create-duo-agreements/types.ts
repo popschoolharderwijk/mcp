@@ -7,7 +7,9 @@ export interface Body {
 	start_time: string;
 	duration_minutes: number;
 	frequency: 'weekly' | 'biweekly' | 'monthly';
-	price_per_lesson: number;
+	/** Legacy; fees come from the tariff list of the lesson form. */
+	price_per_lesson: number | null;
+	lesson_type_option_id: string | null;
 	start_date: string;
 	end_date: string | null;
 	signup_source?: string | null;

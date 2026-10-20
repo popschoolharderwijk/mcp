@@ -114,6 +114,10 @@ describe('resolveStudentMandateRef', () => {
 				remittance_info: 'Les september',
 				lesson_agreement_id: 'agr-1',
 				mandate_id: MANDATE_ID,
+				age_category: 'under_21',
+				btw_rate: 0,
+				amount_excl_btw_cents: 1210,
+				btw_amount_cents: 0,
 			},
 		];
 		const mandateMap = new Map([[MANDATE_ID, 'MND-001']]);
@@ -161,6 +165,10 @@ const batchItem: BatchItem = {
 	remittance_info: 'Les september',
 	lesson_agreement_id: 'agr-1',
 	mandate_id: MANDATE_ID,
+	age_category: 'under_21',
+	btw_rate: 0,
+	amount_excl_btw_cents: 1210,
+	btw_amount_cents: 0,
 };
 
 describe('buildInvoiceNumberFailureResult', () => {
@@ -256,15 +264,18 @@ describe('prepareStudentInvoiceData', () => {
 		expect(success.totals.total).toBe(1210);
 	});
 
-	it('stores unknown when the student has no date of birth', () => {
+	it('refuses items without VAT breakdown instead of computing VAT itself', () => {
 		const prepared = prepareStudentInvoiceData({
 			studentUserId: STUDENT_ID,
 			profile,
 			studentRow: { ...studentRow, date_of_birth: null },
-			items: [batchItem],
+			items: [{ ...batchItem, btw_rate: null }],
 			collectionDate: '2026-09-01',
 		});
-		expect(prepared).toMatchObject({ ok: true, ageCategory: 'unknown' });
+		expect(prepared).toMatchObject({
+			ok: false,
+			result: { student_user_id: STUDENT_ID, error: 'Incassoregel mist btw-gegevens. Stel de batch opnieuw samen.' },
+		});
 	});
 });
 

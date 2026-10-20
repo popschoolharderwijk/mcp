@@ -39,8 +39,19 @@ const WEEKLY_PRIVATE: Tariff[] = [{ effective_from: '2026-09-01', amount_under_2
 let db: PGlite;
 
 beforeAll(async () => {
-	db = new PGlite();
-	await db.exec(loadPureSql());
+	// Other tests may define a fake `window`; PGlite would then boot in browser mode.
+	const g = globalThis as { window?: unknown };
+	const savedWindow = g.window;
+	if (savedWindow !== undefined) Object.defineProperty(globalThis, 'window', { value: undefined, configurable: true });
+	try {
+		db = new PGlite();
+		await db.waitReady;
+		await db.exec(loadPureSql());
+	} finally {
+		if (savedWindow !== undefined) {
+			Object.defineProperty(globalThis, 'window', { value: savedWindow, configurable: true });
+		}
+	}
 });
 
 afterAll(async () => {

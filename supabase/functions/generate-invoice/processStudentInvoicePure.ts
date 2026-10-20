@@ -3,6 +3,7 @@ import {
 	buildStudentInfo,
 	computeTotals,
 	filterStudentItems,
+	hasVatBreakdown,
 	resolveAgeCategory,
 } from './invoicePure.ts';
 import type { BatchItem, InvoiceLine, InvoiceTotals, ProfileRow, StudentInvoiceResult, StudentRow } from './types.ts';
@@ -105,14 +106,23 @@ export function prepareStudentInvoiceData(args: {
 
 	const student = buildStudentInfo(args.studentUserId, profile, args.studentRow);
 	const studentItems = filterStudentItems(args.items, args.studentUserId);
-	const lines = buildInvoiceLines(studentItems, student, args.collectionDate);
+	if (!hasVatBreakdown(studentItems)) {
+		return {
+			ok: false as const,
+			result: {
+				student_user_id: args.studentUserId,
+				error: 'Incassoregel mist btw-gegevens. Stel de batch opnieuw samen.',
+			} satisfies StudentInvoiceResult,
+		};
+	}
+	const lines = buildInvoiceLines(studentItems, args.collectionDate);
 	return {
 		ok: true as const,
 		student,
 		studentItems,
 		lines,
 		totals: computeTotals(lines),
-		ageCategory: resolveAgeCategory(lines, student.date_of_birth, args.collectionDate),
+		ageCategory: resolveAgeCategory(studentItems),
 	};
 }
 

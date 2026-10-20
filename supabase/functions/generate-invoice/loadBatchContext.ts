@@ -45,7 +45,9 @@ async function loadBatchItems(
 ): Promise<{ ok: true; items: BatchItem[] } | { ok: false; response: Response }> {
 	const { data, error } = await admin
 		.from('direct_debit_batch_items')
-		.select('id, student_user_id, amount_cents, remittance_info, lesson_agreement_id, mandate_id')
+		.select(
+			'id, student_user_id, amount_cents, remittance_info, lesson_agreement_id, mandate_id, age_category, btw_rate, amount_excl_btw_cents, btw_amount_cents',
+		)
 		.eq('batch_id', batchId);
 	if (error || !hasBatchItems(data)) {
 		return { ok: false, response: jsonResponse(400, { error: 'Geen regels in deze batch' }) };

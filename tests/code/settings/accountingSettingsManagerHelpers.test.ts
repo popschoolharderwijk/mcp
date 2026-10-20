@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { AccountingSettings } from '../../../src/lib/accounting/types';
 import {
 	buildAccountingSettingsUpdatePayload,
+	clampCancellationNoticeDays,
 	clampInvoicePaymentTermDays,
 	clampSchoolYearStartMonth,
 	clampSepaCollectionDay,
@@ -44,6 +45,7 @@ const sampleSettings = {
 	invoice_number_prefix: 'INV-',
 	invoice_payment_term_days: 14,
 	invoice_footer_text: 'Bedankt',
+	cancellation_notice_days: 30,
 } as AccountingSettings;
 
 describe('buildAccountingSettingsUpdatePayload', () => {
@@ -83,6 +85,7 @@ describe('buildAccountingSettingsUpdatePayload', () => {
 			invoice_number_prefix: 'INV-',
 			invoice_payment_term_days: 14,
 			invoice_footer_text: 'Bedankt',
+			cancellation_notice_days: 30,
 		});
 	});
 });
@@ -122,5 +125,14 @@ describe('resolveAccountingSettingsSaveErrorMessage', () => {
 		expect(resolveAccountingSettingsSaveErrorMessage('permission denied')).toBe(
 			'Opslaan mislukt: permission denied',
 		);
+	});
+});
+
+describe('clampCancellationNoticeDays', () => {
+	it('keeps the notice period between 0 and 365 days', () => {
+		expect(clampCancellationNoticeDays(-5)).toBe(0);
+		expect(clampCancellationNoticeDays(400)).toBe(365);
+		expect(clampCancellationNoticeDays(Number.NaN)).toBe(30);
+		expect(clampCancellationNoticeDays(28)).toBe(28);
 	});
 });

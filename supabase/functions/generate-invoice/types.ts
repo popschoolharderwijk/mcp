@@ -10,6 +10,11 @@ export interface BatchItem {
 	remittance_info: string;
 	lesson_agreement_id: string | null;
 	mandate_id: string;
+	/** VAT breakdown stored by the database fee rules when the batch was built. */
+	age_category: 'under_21' | '21_plus' | null;
+	btw_rate: number | null;
+	amount_excl_btw_cents: number | null;
+	btw_amount_cents: number | null;
 }
 
 export interface StudentInfo {

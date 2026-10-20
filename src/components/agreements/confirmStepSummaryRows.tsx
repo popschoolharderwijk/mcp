@@ -14,7 +14,6 @@ import type {
 	WizardTeacherInfo,
 } from '@/types/lesson-agreements';
 import { ConfirmStepRow } from './ConfirmStepRow';
-import { formatLessonPrice } from './confirmStepShared';
 
 function ConfirmLessonTypeRow({
 	lessonTypeName,
@@ -39,19 +38,11 @@ function ConfirmDurationRow({ minutes }: { minutes: number | null | undefined })
 	);
 }
 
-function ConfirmPriceRow({ price }: { price: number | null | undefined }) {
-	return (
-		<ConfirmStepRow label="Prijs" alwaysSame>
-			<span>{formatLessonPrice(price)}</span>
-		</ConfirmStepRow>
-	);
-}
-
 export function ConfirmPeriodDisplayRow({ startDate, endDate }: { startDate: string; endDate: string }) {
 	return (
 		<ConfirmStepRow label="Periode">
 			<p className="font-medium">
-				{startDate ? formatDbDateToUi(startDate) : '-'} t/m {endDate ? formatDbDateToUi(endDate) : 'Geen'}
+				{startDate ? formatDbDateToUi(startDate) : '-'} t/m {endDate ? formatDbDateToUi(endDate) : 'doorlopend'}
 			</p>
 		</ConfirmStepRow>
 	);
@@ -109,7 +100,6 @@ export function ConfirmSelectedLessonTypeRows({ lessonType }: { lessonType: Wiza
 		<>
 			<ConfirmLessonTypeRow lessonTypeName={values.lessonTypeName} frequency={values.frequency} />
 			<ConfirmDurationRow minutes={values.durationMinutes} />
-			<ConfirmPriceRow price={values.pricePerLesson} />
 		</>
 	);
 }
@@ -120,7 +110,6 @@ export function ConfirmInitialAgreementRows({ agreement }: { agreement: WizardIn
 		<>
 			<ConfirmLessonTypeRow lessonTypeName={agreement.lesson_type?.name} frequency={frequency} />
 			<ConfirmDurationRow minutes={agreement.duration_minutes} />
-			<ConfirmPriceRow price={agreement.price_per_lesson} />
 		</>
 	);
 }

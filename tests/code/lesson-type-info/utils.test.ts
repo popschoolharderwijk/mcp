@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildOptionDbPayloadFromForm,
+	buildTariffPayloadFromForm,
+	inputToCentsOrNull,
 	centsToInput,
 	formatOptionPrice,
 	optionSort,
@@ -11,9 +13,13 @@ function makeOptionRow(overrides: Partial<LessonTypeOptionFormRow> = {}): Lesson
 	return {
 		duration_minutes: '45',
 		frequency: 'weekly',
-		price_per_lesson: '25.00',
-		price_per_lesson_under_21: '20.00',
-		price_per_lesson_adult: '25.00',
+		label: '',
+		billing_kind: 'monthly' as const,
+		has_adult_tariff: true,
+		effective_from: '2026-09-01',
+		amount_under_21: '20.00',
+		amount_adult: '25.00',
+		tariffs: [],
 		...overrides,
 	};
 }
@@ -45,25 +51,48 @@ describe('optionSort', () => {
 	});
 });
 
+const modalForm = {
+	duration_minutes: '30',
+	frequency: 'weekly' as const,
+	label: ' Popkoor (18+) ',
+	billing_kind: 'monthly' as const,
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '30,00',
+	amount_adult: '36.31',
+};
+
 describe('buildOptionDbPayloadFromForm', () => {
-	it('builds the database payload from form values', () => {
-		expect(buildOptionDbPayloadFromForm('45', 'weekly', '20.00', '25.50', 2500)).toEqual({
-			duration_minutes: 45,
+	it('builds the lesson form payload without prices', () => {
+		expect(buildOptionDbPayloadFromForm(modalForm)).toEqual({
+			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 2500,
-			price_per_lesson_under_21_cents: 2000,
-			price_per_lesson_adult_cents: 2550,
+			label: 'Popkoor (18+)',
+			billing_kind: 'monthly',
+			has_adult_tariff: true,
+		});
+	});
+});
+
+describe('buildTariffPayloadFromForm', () => {
+	it('stores monthly amounts in cents with the effective date', () => {
+		expect(buildTariffPayloadFromForm(modalForm)).toEqual({
+			effective_from: '2026-09-01',
+			amount_under_21_cents: 3000,
+			amount_adult_cents: 3631,
 		});
 	});
 
-	it('converts invalid price input to zero cents', () => {
-		expect(buildOptionDbPayloadFromForm('45', 'weekly', '', 'abc', 0)).toEqual({
-			duration_minutes: 45,
-			frequency: 'weekly',
-			price_per_lesson: 0,
-			price_per_lesson_under_21_cents: 0,
-			price_per_lesson_adult_cents: 0,
+	it('drops the 21+ amount when the form has no 21+ tariff', () => {
+		expect(buildTariffPayloadFromForm({ ...modalForm, has_adult_tariff: false })).toMatchObject({
+			amount_adult_cents: null,
 		});
+	});
+
+	it('turns empty or invalid input into null', () => {
+		expect(inputToCentsOrNull('')).toBeNull();
+		expect(inputToCentsOrNull('abc')).toBeNull();
+		expect(inputToCentsOrNull('73,38')).toBe(7338);
 	});
 });
 

@@ -13,7 +13,6 @@ export function validateDuoBody(body: unknown): { ok: true; value: Body } | { ok
 		'start_time',
 		'duration_minutes',
 		'frequency',
-		'price_per_lesson',
 		'start_date',
 	];
 	for (const k of required) {
@@ -65,8 +64,11 @@ function validateFrequencyAndPrice(b: Record<string, unknown>): { ok: false; err
 	if (typeof b.frequency !== 'string' || !VALID_FREQUENCIES.has(b.frequency)) {
 		return { ok: false, error: "'frequency' moet weekly, biweekly of monthly zijn" };
 	}
-	if (typeof b.price_per_lesson !== 'number' || b.price_per_lesson < 0) {
+	if (b.price_per_lesson != null && (typeof b.price_per_lesson !== 'number' || b.price_per_lesson < 0)) {
 		return { ok: false, error: "'price_per_lesson' moet >= 0 zijn" };
+	}
+	if (b.lesson_type_option_id != null && (typeof b.lesson_type_option_id !== 'string' || !UUID_RE.test(b.lesson_type_option_id))) {
+		return { ok: false, error: "'lesson_type_option_id' moet een UUID zijn" };
 	}
 	return null;
 }
@@ -97,7 +99,8 @@ function buildValidatedBody(b: Record<string, unknown>): { ok: true; value: Body
 			start_time: b.start_time as string,
 			duration_minutes: b.duration_minutes as number,
 			frequency: b.frequency as Body['frequency'],
-			price_per_lesson: b.price_per_lesson as number,
+			price_per_lesson: typeof b.price_per_lesson === 'number' ? b.price_per_lesson : null,
+			lesson_type_option_id: typeof b.lesson_type_option_id === 'string' ? b.lesson_type_option_id : null,
 			start_date: b.start_date as string,
 			end_date: (b.end_date as string | null | undefined) ?? null,
 			signup_source: typeof b.signup_source === 'string' ? (b.signup_source as string) : 'staff_duo',

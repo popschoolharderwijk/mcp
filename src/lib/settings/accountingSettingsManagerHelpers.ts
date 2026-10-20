@@ -36,6 +36,7 @@ export function buildAccountingSettingsUpdatePayload(form: AccountingSettings) {
 		invoice_number_prefix: form.invoice_number_prefix,
 		invoice_payment_term_days: form.invoice_payment_term_days,
 		invoice_footer_text: form.invoice_footer_text,
+		cancellation_notice_days: form.cancellation_notice_days,
 	};
 }
 
@@ -49,6 +50,12 @@ export function clampSchoolYearStartMonth(value: number): number {
 
 export function clampInvoicePaymentTermDays(value: number): number {
 	return Math.min(90, Math.max(1, value || 14));
+}
+
+/** Notice period for cancelling an agreement: 0–365 days (default 30). */
+export function clampCancellationNoticeDays(value: number): number {
+	if (!Number.isFinite(value)) return 30;
+	return Math.min(365, Math.max(0, Math.round(value)));
 }
 
 export function resolveAccountingSettingsSaveSuccessMessage(): string {

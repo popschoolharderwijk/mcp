@@ -43,6 +43,7 @@ const SETTINGS: AccountingSettings = {
 	invoice_number_next: 1,
 	invoice_payment_term_days: 14,
 	invoice_footer_text: null,
+	cancellation_notice_days: 30,
 };
 
 function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {}): AccountingReport {
