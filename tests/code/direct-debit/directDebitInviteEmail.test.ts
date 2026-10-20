@@ -71,9 +71,9 @@ describe('formatting', () => {
 		expect(formatInviteDate(null)).toBe('');
 	});
 	it('shows the VAT text per tariff', () => {
-		expect(formatInviteFeeAmount({ amount_cents: 8879, btw_rate: 21, btw_amount_cents: 1541, is_prorated: false })).toBe(
-			'€ 88,79 (incl. € 15,41 btw)',
-		);
+		expect(
+			formatInviteFeeAmount({ amount_cents: 8879, btw_rate: 21, btw_amount_cents: 1541, is_prorated: false }),
+		).toBe('€ 88,79 (incl. € 15,41 btw)');
 		expect(formatInviteFeeAmount(exempt(7338))).toBe('€ 73,38 (vrijgesteld van btw)');
 	});
 	it('describes the lesson form', () => {
@@ -119,7 +119,8 @@ describe('buildDirectDebitInviteVars', () => {
 			les_type: 'Gitaarles (30 min, wekelijks)',
 			bedrag: '€ 73,38 (vrijgesteld van btw)',
 			eerste_maand_bedrag: '€ 26,04',
-			eerste_maand_regel: '<li>Start je halverwege de maand, dan betaal je de eerste maand naar rato: € 26,04.</li>',
+			eerste_maand_regel:
+				'<li>Start je halverwege de maand, dan betaal je de eerste maand naar rato: € 26,04.</li>',
 			startdatum: '21-10-2026',
 			minimale_looptijd_tot: '30-04-2027',
 			link: 'https://x/#token_hash=a&type=email',
