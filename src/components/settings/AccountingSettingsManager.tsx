@@ -9,6 +9,7 @@ import {
 	AccountingSettingsTaxCard,
 } from '@/components/settings/AccountingSettingsFormCards';
 import { StripeCatalogCard } from '@/components/settings/StripeCatalogCard';
+import { StripeSubscriptionsCheckCard } from '@/components/settings/StripeSubscriptionsCheckCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { useAuth } from '@/hooks/useAuth';
@@ -70,6 +71,7 @@ export function AccountingSettingsManager() {
 			<AccountingSettingsCompanyCard {...fieldProps} />
 			<AccountingSettingsSaveButton canEdit={canEdit} saving={saving} onSave={handleSave} />
 			{canEdit && <StripeCatalogCard />}
+			{canEdit && <StripeSubscriptionsCheckCard />}
 		</div>
 	);
 }
