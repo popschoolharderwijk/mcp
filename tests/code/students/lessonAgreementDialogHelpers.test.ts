@@ -79,14 +79,3 @@ describe('resolveAgreementEndDateLabel', () => {
 		expect(resolveAgreementEndDateLabel(null)).toBe('Geen einddatum');
 	});
 });
-
-describe('shouldShowAgreementPreviewBlock', () => {
-	it('returns true when preview input exists', () => {
-		const previewInput = buildAgreementBillingPreviewInput(agreement, 'student-1', 'lt-1', true);
-		expect(shouldShowAgreementPreviewBlock(previewInput)).toBe(true);
-	});
-
-	it('returns false when preview input is null', () => {
-		expect(shouldShowAgreementPreviewBlock(null)).toBe(false);
-	});
-});

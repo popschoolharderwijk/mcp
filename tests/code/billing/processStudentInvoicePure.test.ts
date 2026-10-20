@@ -114,6 +114,10 @@ describe('resolveStudentMandateRef', () => {
 				remittance_info: 'Les september',
 				lesson_agreement_id: 'agr-1',
 				mandate_id: MANDATE_ID,
+				age_category: 'under_21',
+				btw_rate: 0,
+				amount_excl_btw_cents: 1210,
+				btw_amount_cents: 0,
 			},
 		];
 		const mandateMap = new Map([[MANDATE_ID, 'MND-001']]);
