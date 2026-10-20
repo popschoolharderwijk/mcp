@@ -21,12 +21,18 @@ export async function sendSignupConfirmationEmail(
 
 	let optionDetails = buildSignupConfirmationOptionDetails(null);
 	if (optionId) {
-		const { data: opt } = await supabase
-			.from('lesson_type_options')
-			.select('frequency, price_per_lesson')
-			.eq('id', optionId)
-			.maybeSingle();
-		optionDetails = buildSignupConfirmationOptionDetails(opt);
+		const [{ data: opt }, { data: tariff }] = await Promise.all([
+			supabase.from('lesson_type_options').select('frequency, billing_kind').eq('id', optionId).maybeSingle(),
+			supabase
+				.from('lesson_type_option_tariffs')
+				.select('amount_under_21_cents, amount_adult_cents')
+				.eq('lesson_type_option_id', optionId)
+				.lte('effective_from', new Date().toISOString().slice(0, 10))
+				.order('effective_from', { ascending: false })
+				.limit(1)
+				.maybeSingle(),
+		]);
+		optionDetails = buildSignupConfirmationOptionDetails(opt, tariff);
 	}
 
 	await sendTemplateEmail({

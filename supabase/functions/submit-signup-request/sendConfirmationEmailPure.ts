@@ -15,23 +15,38 @@ export function resolveSignupConfirmationRecipientEmail(body: SignupRequest): st
 	return recipient.toLowerCase();
 }
 
-export function formatSignupOptionPrice(pricePerLesson: number | null | undefined): string {
-	if (pricePerLesson == null) return '';
-	return `€ ${Number(pricePerLesson).toFixed(2).replace('.', ',')}`;
+function formatEuroCents(cents: number): string {
+	return `€ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+}
+
+/** "€ 73,38 per maand (21+: € 88,79)" or "€ 66,00 eenmalig" from the tariff in force. */
+export function formatSignupOptionAmount(
+	billingKind: string | null | undefined,
+	tariff: { amount_under_21_cents: number | null; amount_adult_cents: number | null } | null,
+): string {
+	if (!tariff) return '';
+	const suffix = billingKind === 'one_off' ? 'eenmalig' : 'per maand';
+	const under = tariff.amount_under_21_cents;
+	const adult = tariff.amount_adult_cents;
+	if (under != null && adult != null) return `${formatEuroCents(under)} ${suffix} (21+: ${formatEuroCents(adult)})`;
+	if (under != null) return `${formatEuroCents(under)} ${suffix}`;
+	if (adult != null) return `${formatEuroCents(adult)} ${suffix} (21+-tarief)`;
+	return '';
 }
 
 export function buildSignupConfirmationOptionDetails(
 	option: {
 		frequency: string | null;
-		price_per_lesson: number | null;
+		billing_kind?: string | null;
 	} | null,
+	tariff: { amount_under_21_cents: number | null; amount_adult_cents: number | null } | null = null,
 ): SignupConfirmationOptionDetails {
 	if (!option) {
 		return { frequentie: '', prijs: '' };
 	}
 	return {
 		frequentie: String(option.frequency ?? ''),
-		prijs: formatSignupOptionPrice(option.price_per_lesson),
+		prijs: formatSignupOptionAmount(option.billing_kind, tariff),
 	};
 }
 
@@ -44,6 +59,6 @@ export function buildSignupConfirmationEmailVars(params: {
 		leerling_naam: buildSignupConfirmationFullName(params.body),
 		les_type: params.lessonTypeName ?? '',
 		frequentie: params.optionDetails.frequentie,
-		prijs_per_les: params.optionDetails.prijs,
+		bedrag: params.optionDetails.prijs,
 	};
 }
