@@ -49,7 +49,6 @@ describe('buildDuoConfirmationBaseVars', () => {
 			docent_naam: 'Jan Jansen',
 			les_type: 'Piano',
 			frequentie: 'wekelijks',
-			prijs_per_les: '€ 25,00',
 			dag: 'maandag',
 			tijd: '14:30',
 			startdatum: '01-09-2026',
