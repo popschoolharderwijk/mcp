@@ -243,14 +243,12 @@ export async function runCatalogSync(
 					.update({ sync_status: 'error', last_error: message })
 					.eq('id', row.id);
 			} else if (option) {
-				await admin
-					.from('stripe_catalog_products')
-					.insert({
-						lesson_type_option_id: option.id,
-						product_name: buildProductName(option),
-						sync_status: 'error',
-						last_error: message,
-					});
+				await admin.from('stripe_catalog_products').insert({
+					lesson_type_option_id: option.id,
+					product_name: buildProductName(option),
+					sync_status: 'error',
+					last_error: message,
+				});
 			}
 			results.push({
 				lesson_type_option_id: option?.id ?? row?.lesson_type_option_id ?? null,
