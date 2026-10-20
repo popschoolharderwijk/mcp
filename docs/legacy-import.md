@@ -39,10 +39,10 @@ For each imported row a mapping `legacy_id → new uuid` is stored in `public.le
 | Sheet | Columns |
 |---|---|
 | `lesson_types` | `legacy_id, name, icon, color, is_group_lesson, cost_center, description, is_active` |
-| `lesson_type_options` | `legacy_id, lesson_type_legacy_id, frequency, duration_minutes, price_per_lesson, price_per_lesson_adult_cents, price_per_lesson_under_21_cents` |
+| `lesson_type_options` | `legacy_id, lesson_type_legacy_id, frequency, duration_minutes` |
 | `teachers` | `legacy_id, email, first_name, last_name, phone_number, bio, is_active, lesson_type_legacy_ids` (pipe-separated) |
 | `students` | `legacy_id, email, first_name, last_name, phone_number, date_of_birth, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city` |
-| `lesson_agreements` | `legacy_id, student_legacy_id, teacher_legacy_id, lesson_type_legacy_id, duration_minutes, frequency, price_per_lesson, day_of_week, start_time, start_date, end_date, notes, signup_source` |
+| `lesson_agreements` | `legacy_id, student_legacy_id, teacher_legacy_id, lesson_type_legacy_id, duration_minutes, frequency, day_of_week, start_time, start_date, end_date, notes, signup_source` |
 
 Allowed values:
 

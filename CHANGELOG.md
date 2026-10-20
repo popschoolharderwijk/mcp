@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0 — 2026-10-20
+
+- **Tarieven exact volgens de tarievenlijst** per 1 september 2026; verzonnen tarieven opgeruimd (instrumentlessen alleen 30 min wekelijks/tweewekelijks, Bandcoaching op 60 min tweewekelijks)
+- **Stripe-abonnementen op de catalogus**: bedragen exact gelijk aan het tarief, btw per regel (vrijgesteld of 21% inclusief)
+- Eerste maand naar rato als losse factuur op de startdatum; afschrijving daarna op de 1e van de maand
+- Nooit afschrijven in augustus (factuur van € 0); 21+-tarief en tariefwijzigingen gaan automatisch in
+- Opzeggen zet het einde direct in Stripe; opzeggen in het klantportaal staat uit
+- Knop "Controleer abonnementen" onder Boekhouding-instellingen
+- Dagelijkse taak houdt abonnementen bij
+- Wizard: Stripe is de standaard; SEPA is niet meer kiesbaar voor nieuwe overeenkomsten
+- E-mails tonen het maandbedrag (of eenmalig bedrag) in plaats van de prijs per les
+- Prijs per les en prijs per deelnemer verwijderd (ook uit de import van oude gegevens)
+
 ## 1.4.0 — 2026-10-20
 
 - **Stripe-catalogus**: lesvormen en tarieven staan automatisch in Stripe (product per lesvorm, prijzen onder 21 en 21+ per ingangsdatum, groepslessen eenmalig)

@@ -6,7 +6,8 @@ Leesbare uitleg van hoe Stripe in de app zit. Technische details: `stripe-direct
 
 - Eindsituatie: **alleen Stripe of op factuur**; de eigen SEPA-incasso verdwijnt in fase 5.
 - Fase 2 klaar: lesvormen en tarieven gaan automatisch naar Stripe (`sync-stripe-catalog`), zie `stripe-catalogus.md`.
-  Punt 4 hieronder (prijzen per les) is vervangen door de catalogus. Abonnementen gebruiken de catalogus pas vanaf fase 3.
+  Punt 4 hieronder (prijzen per les) is vervangen door de catalogus.
+- Fase 3a klaar: abonnementen draaien op de catalogusprijzen met een schedule per overeenkomst, eerste maand als losse factuur, augustus € 0, dagelijkse taak. Stripe is de standaard in de wizard; SEPA is niet meer kiesbaar voor nieuwe overeenkomsten. Zie `stripe-abonnementen.md`.
 
 ## 1. Status 13 oktober 2026
 

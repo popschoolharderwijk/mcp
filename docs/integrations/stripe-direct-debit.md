@@ -3,6 +3,8 @@
 One document for the full Stripe flow: from the invitation email to monthly SEPA collection, including schedule phases, webhooks, and admin.
 
 > Replaces the older document `stripe-subscriptions.md` (removed 13 May 2026).
+>
+> **Update fase 3a (20 Oct 2026):** per-agreement products, 11 prices, `buildPhases` and `end_behavior: release` are gone. Schedules now use catalog prices, the first month is a separate invoice and a daily task keeps schedules current. The schedule/phase sections below are outdated where they conflict; the source of truth is `stripe-abonnementen.md`.
 
 ## 1. What we do
 
@@ -161,5 +163,5 @@ Stripe test cards / iDEAL simulator: see [Stripe testing docs](https://stripe.co
 
 ## 12. Known limitations / TODO
 
-- **Price changes Stripe → DB** are not written back to `lesson_agreements.price_per_lesson`; admin changes the rate in the app and clicks "Pas nieuwe tarieven toe".
+- **Prices** are managed only in the app (tariffs with effective date); changes reach running subscriptions automatically (see `stripe-abonnementen.md`).
 - **`force-start-subscription`** is dev/test only (UI button behind `import.meta.env.DEV`).
