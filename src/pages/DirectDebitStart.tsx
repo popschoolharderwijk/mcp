@@ -55,7 +55,7 @@ export default function DirectDebitStart() {
 	if (error) {
 		return (
 			<StandaloneErrorPage
-				title="Incasso starten mislukt"
+				title="Machtiging afronden is niet gelukt"
 				message={error}
 				actionLabel="Naar inloggen"
 				actionHref="/login"
