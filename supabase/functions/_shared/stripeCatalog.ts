@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { getSafeErrorMessage } from '../_shared/errors.ts';
+import { getSafeErrorMessage } from './errors.ts';
 import {
 	buildPriceCreateParams,
 	buildProductName,
@@ -12,7 +12,7 @@ import {
 	resolveCatalogStatus,
 	TAX_RATE_PARAMS,
 	type TaxRateKey,
-} from './catalogPure.ts';
+} from './stripeCatalogPure.ts';
 
 export interface CatalogResult {
 	lesson_type_option_id: string | null;
