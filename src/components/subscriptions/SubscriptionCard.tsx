@@ -85,6 +85,9 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 								Uitnodiging laatst verstuurd op {formatDbDateToUi(lastInviteAt.slice(0, 10))}
 							</p>
 						)}
+						{subscription?.last_rebuild_error && (
+							<p className="text-destructive">Laatste fout: {subscription.last_rebuild_error}</p>
+						)}
 					</div>
 				)}
 
