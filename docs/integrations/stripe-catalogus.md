@@ -49,6 +49,10 @@ Alle prijzen hebben `currency: eur` en `tax_behavior: inclusive`. Het bedrag is 
 - Een fout bij één lesvorm stopt de rest niet. De fout wordt veilig ingekort (`getSafeErrorMessage`) en opgeslagen in `last_error`.
 - Bestanden: `catalogPure.ts` (naam, gewenste prijzen, vergelijking, status; pure functies), `runCatalogSync.ts` (Stripe- en databaseaanroepen), `handler.ts`, `validation.ts`.
 
+## Gebruik door abonnementen
+
+Sinds fase 3a verwijzen abonnementsfasen naar deze prijzen (opgezocht via `lookup_key`), met het btw-tarief per regel. Een sync markeert en herbouwt daarna de lopende abonnementen van de lessoort. De sync maakt ook de klantportaalconfiguratie (opzeggen uit). Zie `stripe-abonnementen.md`.
+
 ## In de app
 
 - **Lessoorten:** na opslaan (lessoort, nieuwe/gewijzigde lesvorm, verwijderde lesvorm) loopt de sync op de achtergrond voor die lessoort. Je krijgt een melding. Opslaan mislukt nooit door Stripe.

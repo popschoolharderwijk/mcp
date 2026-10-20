@@ -53,7 +53,7 @@ Er is dus geen TypeScript-kopie van de regels en geen pariteitstest nodig.
 
 ## Stripe
 
-De Stripe-catalogus (fase 2) wordt afgeleid van deze tabellen: zie `stripe-catalogus.md`.
+De Stripe-catalogus (fase 2) wordt afgeleid van deze tabellen: zie `stripe-catalogus.md`. Abonnementen (fase 3a) volgen per maand `compute_agreement_month_fee` via `agreement_fee_months`: zie `stripe-abonnementen.md`. `price_per_lesson` is overal verwijderd; e-mails tonen `{{bedrag}}` (maandbedrag of eenmalig bedrag).
 
 ## Toegang
 
@@ -64,7 +64,12 @@ De Stripe-catalogus (fase 2) wordt afgeleid van deze tabellen: zie `stripe-catal
 ## Testdata
 
 `supabase/seeds/bootstrap.sql` bevat de tarievenlijst per 1 september 2026 (privé, duo, Popkids, Popkoor, Bandcoaching en de groepslessen).
-Instrumentlessen van 30 minuten gebruiken de privétarieven; andere duur is fictief (naar rato van de duur).
+Sinds fase 3a staat er **exact** de gepubliceerde lijst in, zonder verzonnen bedragen (gecontroleerd door `tests/code/billing/bootstrapTariffs.test.ts`):
+- Instrumentlessen (Gitaar, Drum, Zang, Bas, Keyboard, Saxofoon): alleen 30 min wekelijks en tweewekelijks. Andere duren/maandelijks bestaan nog als lesvorm zonder tarief (Stripe-status "ontbreekt: geen tarief").
+- Bandcoaching: alleen **60 min tweewekelijks** (de vorm die de testdata gebruikt).
+- DJ / Beats: geen tarief; testovereenkomsten staan op "op factuur".
+- **Aangenomen duren** (de lijst noemt geen duur; administratie past zo nodig aan in beheer): Popkids en Popkoor 60 min; Klank en Kriebels, Notenkrakers, Mini Maestro's, De Muziekclub 45 min; DJ-School en Laatbloeiers 60 min.
+- Eerder verzonnen tariefrijen worden door de seed opgeruimd.
 `supabase/seeds/test.sql` geeft leerlingen met SEPA/Stripe een geboortedatum.
 
 ## Zelf doen
