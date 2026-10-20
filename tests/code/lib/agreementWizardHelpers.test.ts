@@ -76,11 +76,7 @@ describe('wizardInitFromAgreement', () => {
 				phone_number: null,
 			},
 			lessonTypeId: 'lt-1',
-			selectedOptionSnapshot: {
-				duration_minutes: 60,
-				frequency: 'weekly',
-				price_per_lesson: 30,
-			},
+			selectedOptionSnapshot: null,
 			startDate: '2026-09-01',
 			endDate: '2027-06-30',
 			teacherUserId: 'tea-1',

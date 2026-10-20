@@ -183,14 +183,12 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: {
 				duration_minutes: 45,
 				frequency: 'weekly',
-				price_per_lesson: 25,
 			},
 			lessonTypeOptions: [
 				{
 					id: 'opt-1',
 					duration_minutes: 45,
 					frequency: 'weekly',
-					price_per_lesson: 25,
 				},
 			],
 			form: baseForm,

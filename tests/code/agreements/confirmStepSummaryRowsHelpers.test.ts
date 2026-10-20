@@ -11,6 +11,7 @@ describe('mapConfirmSelectedLessonTypeValues', () => {
 				color: null,
 				frequency: 'weekly',
 				duration_minutes: 45,
+				price_per_lesson: null,
 				lesson_type_option_id: 'opt-1',
 			}),
 		).toEqual({

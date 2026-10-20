@@ -110,6 +110,10 @@ function baseForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 		endDate: '2027-07-31',
 		paymentMethod: 'stripe',
 		sepaMandateId: null,
+		studentDateOfBirth: '2010-05-01',
+		partnerDateOfBirth: '2011-03-02',
+		studentDateOfBirthInput: '',
+		partnerDateOfBirthInput: '',
 		...overrides,
 	};
 }
@@ -117,7 +121,7 @@ function baseForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 function duoForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 	return baseForm({
 		partnerStudentUserId: 'stu-2',
-		selectedOptionSnapshot: { duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
+		selectedOptionSnapshot: { id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
 		...overrides,
 	});
 }

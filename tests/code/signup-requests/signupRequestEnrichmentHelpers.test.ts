@@ -53,7 +53,7 @@ describe('collectUniqueOptionIds', () => {
 describe('buildOptionLabelMap', () => {
 	it('maps option ids to formatted labels', () => {
 		const optionMap = buildOptionLabelMap([
-			{ id: 'opt-1', duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
+			{ id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
 		]);
 		expect(optionMap.get('opt-1')).toBe('45 min · weekly · €25');
 	});
