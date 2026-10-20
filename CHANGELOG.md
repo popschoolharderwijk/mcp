@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.4.0 — 2026-10-20
+
+- **Stripe-catalogus**: lesvormen en tarieven staan automatisch in Stripe (product per lesvorm, prijzen onder 21 en 21+ per ingangsdatum, groepslessen eenmalig)
+- Synchronisatie na opslaan in Lessoorten; opslaan mislukt nooit door Stripe
+- Overzicht en knop "Synchroniseer met Stripe" onder Boekhouding-instellingen
+- Btw-tarieven "Btw 21%" (inclusief) en "Btw vrijgesteld" worden eenmalig automatisch in Stripe aangemaakt
+- Boekhouding-instellingen staan nu in het menu
+- Minimale looptijd loopt tot het einde van de maand (start 15 oktober → 30 april)
+
 ## 1.3.0 — 2026-10-20
 
 - **Tariefmodel**: lesgeld is een vast maandbedrag per lesvorm (11x per schooljaar, nooit in augustus), voor SEPA, Stripe en handmatig

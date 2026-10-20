@@ -1,15 +1,16 @@
 # Roadmap
 
 ## Fase 1 — tariefmodel (klaar)
-- [x] Migratie tarieven, looptijd, opzegtermijn, btw per incassoregel, rekenregels in SQL
-- [x] Tests rekenregels (PGlite) — 14 gevallen
-- [x] Beheer lesvormen: maandbedrag, eenmalig, 21+-vlag, ingangsdatum
-- [x] Wizard: lesvorm-id, geen prijs per les, geboortedatum verplicht bij SEPA/Stripe, voorvertoning via RPC
-- [x] Overeenkomst opzeggen (knop) + opzegtermijn in Boekhouding-instellingen
-- [x] generate-invoice neemt btw over van incassoregel
-- [x] Seeds met tarievenlijst
-- [x] Docs (docs/integrations/tariefmodel.md), handleiding, CHANGELOG, AGENTS.md
-- [x] bun run check / check:ci groen
+
+## Fase 2 — Stripe-catalogus
+- [x] Migratie catalogustabellen + btw-id's + pending-triggers + looptijd tot einde maand
+- [x] Edge function sync-stripe-catalog (pure helpers + tests)
+- [x] Sync na opslaan lessoort (nooit blokkerend)
+- [x] Overzicht + knop onder Instellingen → Boekhouding
+- [x] Boekhouding-instellingen in zijmenu (admin/site_admin)
+- [x] Tests looptijd (PGlite)
+- [x] Docs, handleiding, CHANGELOG 1.4.0, AGENTS.md
+- [x] bun run check / check:ci
 
 ## Later
-- Fase 2–5 (Stripe-catalogus, abonnementen, groepslessen via Stripe, migratie mandaten)
+- Fase 3–5 (abonnementen, groepslessen via Stripe, migratie mandaten)

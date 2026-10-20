@@ -23,6 +23,7 @@ export const adminNavItems = [
 	{ href: '/no-lesson-periods', label: NAV_LABELS.noLessonPeriods, icon: NAV_ICONS.noLessonPeriods },
 	{ href: '/email-templates', label: NAV_LABELS.emailTemplates, icon: NAV_ICONS.emailTemplates },
 	{ href: '/announcements', label: NAV_LABELS.announcements, icon: NAV_ICONS.announcements },
+	{ href: '/accounting/settings', label: NAV_LABELS.accountingSettings, icon: NAV_ICONS.accountingSettings },
 	{ href: '/manual', label: NAV_LABELS.manual, icon: NAV_ICONS.manual },
 ];
 
@@ -44,6 +45,9 @@ export function isSidebarParentActive(
 ): boolean {
 	if (!href || isPathInGroup(pathname, childHrefs)) return false;
 	if (href === '/') return pathname === '/';
+	// A more specific nav item (e.g. /accounting/settings) wins over its prefix (/accounting).
+	const moreSpecific = adminHrefs.some((h) => h.startsWith(`${href}/`) && isPathInGroup(pathname, [h]));
+	if (moreSpecific) return false;
 	return isPathInGroup(pathname, [href]);
 }
 
