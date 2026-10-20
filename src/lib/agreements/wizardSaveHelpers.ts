@@ -12,14 +12,18 @@ export type WizardSaveForm = {
 	slot: SlotWithStatus | null;
 	partnerStudentUserId: string | null;
 	selectedOptionSnapshot: {
+		id: string;
 		duration_minutes: number;
 		frequency: LessonFrequency;
-		price_per_lesson: number;
 	} | null;
 	startDate: string;
 	endDate: string;
 	paymentMethod: 'stripe' | 'sepa' | 'manual';
 	sepaMandateId: string | null;
+	studentDateOfBirth: string | null;
+	partnerDateOfBirth: string | null;
+	studentDateOfBirthInput: string;
+	partnerDateOfBirthInput: string;
 };
 
 type ValidatedWizardSaveForm = WizardSaveForm & {
@@ -42,6 +46,7 @@ type AgreementUpsertPayload = {
 	end_date: string | null;
 	payment_method: WizardSaveForm['paymentMethod'];
 	sepa_mandate_id: string | null;
+	lesson_type_option_id: string | null;
 };
 
 type AgreementUpsertResult = {
@@ -87,6 +92,39 @@ function validateSepaMandate(form: WizardSaveForm): boolean {
 	return true;
 }
 
+/** Date of birth to use: the stored one, else the one entered in the wizard. */
+export function resolveEffectiveDateOfBirth(stored: string | null, input: string): string | null {
+	return stored ?? (input.trim() || null);
+}
+
+/**
+ * SEPA and Stripe need a date of birth (under 21 is VAT exempt, 21+ is not); without it the
+ * fee cannot be determined. Duo agreements default to Stripe, so both students need one.
+ */
+export function resolveMissingDateOfBirthMessage(form: WizardSaveForm, isDuo: boolean): string | null {
+	const needsDob = isDuo || form.paymentMethod === 'sepa' || form.paymentMethod === 'stripe';
+	if (!needsDob) return null;
+	if (!resolveEffectiveDateOfBirth(form.studentDateOfBirth, form.studentDateOfBirthInput)) {
+		return 'Vul de geboortedatum van de leerling in. Die is nodig om het juiste tarief en de btw te bepalen.';
+	}
+	if (isDuo && !resolveEffectiveDateOfBirth(form.partnerDateOfBirth, form.partnerDateOfBirthInput)) {
+		return 'Vul de geboortedatum van de duo-partner in. Die is nodig om het juiste tarief en de btw te bepalen.';
+	}
+	return null;
+}
+
+/** Store dates of birth entered in the wizard (the student row exists once an agreement exists). */
+async function saveEnteredDatesOfBirth(entries: { userId: string | null; stored: string | null; input: string }[]) {
+	for (const entry of entries) {
+		if (!entry.userId || entry.stored || !entry.input.trim()) continue;
+		const { error } = await supabase
+			.from('students')
+			.update({ date_of_birth: entry.input.trim() })
+			.eq('user_id', entry.userId);
+		if (error) toast.warning('Geboortedatum kon niet worden opgeslagen', { description: error.message });
+	}
+}
+
 function buildAgreementUpsertPayload(form: ValidatedWizardSaveForm, timeValue: string): AgreementUpsertPayload {
 	return {
 		teacher_user_id: form.teacherUserId,
@@ -96,6 +134,7 @@ function buildAgreementUpsertPayload(form: ValidatedWizardSaveForm, timeValue: s
 		end_date: form.endDate || null,
 		payment_method: form.paymentMethod,
 		sepa_mandate_id: form.paymentMethod === 'sepa' ? form.sepaMandateId : null,
+		lesson_type_option_id: form.selectedOptionSnapshot?.id ?? null,
 	};
 }
 
@@ -117,6 +156,11 @@ async function createAndNotifyDuoAgreements(params: {
 		toast.error(duoErr?.message ?? 'Fout bij aanmaken duo-overeenkomsten');
 		return false;
 	}
+
+	await saveEnteredDatesOfBirth([
+		{ userId: form.studentUserId, stored: form.studentDateOfBirth, input: form.studentDateOfBirthInput },
+		{ userId: form.partnerStudentUserId, stored: form.partnerDateOfBirth, input: form.partnerDateOfBirthInput },
+	]);
 
 	const inviteResults = await Promise.all(
 		duoData.agreement_ids.map((aid) =>
@@ -152,7 +196,6 @@ async function upsertWizardAgreement(
 			lesson_type_id: form.lessonTypeId,
 			duration_minutes: form.selectedOptionSnapshot?.duration_minutes ?? 30,
 			frequency: form.selectedOptionSnapshot?.frequency ?? 'weekly',
-			price_per_lesson: form.selectedOptionSnapshot?.price_per_lesson ?? 30,
 			is_active: true,
 			signup_source: fromRequestId ? 'public_form' : 'staff',
 		})
@@ -237,6 +280,12 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 
 	const timeValue = normalizeSlotStartTime(form.slot.start_time);
 
+	const dobMessage = resolveMissingDateOfBirthMessage(form, !agreement && isDuoLesson);
+	if (dobMessage) {
+		toast.error(dobMessage);
+		return false;
+	}
+
 	if (!agreement && isDuoLesson) {
 		if (!validateDuoSaveForm(form)) return false;
 		return createAndNotifyDuoAgreements({ form, fromRequestId, navigate });
@@ -254,6 +303,9 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 
 	const isNew = !agreement;
 	const agreementId = insertResult.data?.id;
+	await saveEnteredDatesOfBirth([
+		{ userId: form.studentUserId, stored: form.studentDateOfBirth, input: form.studentDateOfBirthInput },
+	]);
 	if (isNew && agreementId) {
 		await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId });
 	}
@@ -279,7 +331,7 @@ function buildCreateDuoAgreementsBody(form: ValidatedDuoSaveForm, fromRequestId:
 		start_time: timeValue,
 		duration_minutes: snapshot.duration_minutes,
 		frequency: snapshot.frequency,
-		price_per_lesson: snapshot.price_per_lesson,
+		lesson_type_option_id: snapshot.id,
 		start_date: form.startDate,
 		end_date: form.endDate || null,
 		signup_source: resolveDuoSignupSource(fromRequestId),
