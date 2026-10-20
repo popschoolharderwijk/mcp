@@ -7,7 +7,8 @@ import {
 	getSafeErrorMessage,
 	getStripeId,
 } from '../_shared/stripe.ts';
-import { findOpenSubscription, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
+import { CUSTOMER_DIRECT_DEBIT_ERROR, retrieveIfExists } from '../_shared/stripeRecoveryPure.ts';
+import { findOpenSubscription, recordRebuildError, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
 import {
 	buildCheckoutSessionUrls,
 	buildCompleteModeSuccessResponse,
@@ -35,7 +36,11 @@ export async function ensureStripeCustomer(
 		.maybeSingle();
 
 	let customerId = existingCustomer?.stripe_customer_id ?? null;
-	if (customerId) return customerId;
+	if (customerId) {
+		// A stored customer from another Stripe account does not exist here: create a new one.
+		const found = await retrieveIfExists(customerId, (id) => stripe.customers.retrieve(id));
+		if (found && !found.deleted) return customerId;
+	}
 
 	const customer = await stripe.customers.create({
 		email: profile.email,
@@ -43,7 +48,9 @@ export async function ensureStripeCustomer(
 		metadata: { user_id: billingUserId },
 	});
 	customerId = customer.id;
-	await admin.from('stripe_customers').insert({ user_id: billingUserId, stripe_customer_id: customerId });
+	await admin
+		.from('stripe_customers')
+		.upsert({ user_id: billingUserId, stripe_customer_id: customerId }, { onConflict: 'user_id' });
 	return customerId;
 }
 
@@ -79,17 +86,23 @@ async function finalizeCompleteModeSchedule(
 		await attachDefaultPaymentMethod(stripe, customerId, paymentMethodId);
 	} catch (e) {
 		console.error('attach payment method failed', e);
-		return jsonResponse(409, {
-			error: getSafeErrorMessage(e, 'Kon betaalmethode niet koppelen aan klant'),
-		});
+		await recordRebuildError(admin, agreement.id, e, customerId);
+		return jsonResponse(409, { error: CUSTOMER_DIRECT_DEBIT_ERROR });
 	}
 
-	const built = await syncAgreementSchedule(admin, stripe, {
-		agreementId: agreement.id,
-		customerId: customerId as string,
-		defaultPaymentMethod: paymentMethodId as string,
-	});
-	return buildCompleteModeSuccessResponse(built);
+	try {
+		const built = await syncAgreementSchedule(admin, stripe, {
+			agreementId: agreement.id,
+			customerId: customerId as string,
+			defaultPaymentMethod: paymentMethodId as string,
+		});
+		return buildCompleteModeSuccessResponse(built);
+	} catch (err) {
+		// The mandate is attached to the customer; Synchroniseer or the daily task rebuilds later.
+		console.error('complete mode schedule failed', err);
+		await recordRebuildError(admin, agreement.id, err, customerId);
+		return jsonResponse(502, { error: CUSTOMER_DIRECT_DEBIT_ERROR });
+	}
 }
 
 export async function handleCompleteMode(

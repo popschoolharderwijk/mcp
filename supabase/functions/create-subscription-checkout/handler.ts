@@ -1,5 +1,6 @@
 import { jsonResponse } from '../_shared/http.ts';
-import { getSafeErrorMessage, getStripe } from '../_shared/stripe.ts';
+import { getStripe } from '../_shared/stripe.ts';
+import { CUSTOMER_DIRECT_DEBIT_ERROR } from '../_shared/stripeRecoveryPure.ts';
 import { authenticateCheckoutRequest } from './authenticateCheckoutRequest.ts';
 import { ensureStripeCustomer, handleCheckoutMode, handleCompleteMode, handleDirectMode } from './checkoutFlows.ts';
 import { resolveCheckoutFlowMode } from './createSubscriptionCheckoutHandlerPure.ts';
@@ -34,6 +35,7 @@ export async function handleCreateSubscriptionCheckoutRequest(req: Request): Pro
 		});
 	} catch (err) {
 		console.error('checkout/schedule error', err);
-		return jsonResponse(500, { error: getSafeErrorMessage(err, 'Kon Stripe flow niet starten') });
+		// Never show raw Stripe text to the customer; the technical error is in the logs.
+		return jsonResponse(500, { error: CUSTOMER_DIRECT_DEBIT_ERROR });
 	}
 }
