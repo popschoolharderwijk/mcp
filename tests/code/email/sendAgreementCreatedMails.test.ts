@@ -67,7 +67,6 @@ describe('sendAgreementCreatedMails', () => {
 				start_time: '14:30:00',
 				start_date: '2026-09-07',
 				frequency: 'weekly',
-				price_per_lesson: 45,
 				payment_method: 'stripe',
 				student_user_id: 'stu-1',
 				teacher_user_id: 'tea-1',
