@@ -257,7 +257,7 @@ export async function syncAgreementSchedule(
 	if (!customerId) throw new Error('Nog geen Stripe-klant: stuur eerst een betaaluitnodiging');
 	const pm = input.defaultPaymentMethod ?? (await resolveDefaultPaymentMethod(stripe, customerId));
 
-	let schedule = existing?.stripe_schedule_id
+	let schedule: Stripe.SubscriptionSchedule | null = existing?.stripe_schedule_id
 		? await stripe.subscriptionSchedules.retrieve(existing.stripe_schedule_id)
 		: null;
 	if (schedule && ['canceled', 'completed'].includes(schedule.status)) schedule = null;
