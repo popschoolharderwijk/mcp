@@ -142,7 +142,6 @@ export function AgreementFeeSection({ form, setForm, isDuo, agreement }: Props) 
 	useStoredDatesOfBirth(form, setForm);
 
 	const studentDob = resolveEffectiveDateOfBirth(form.studentDateOfBirth, form.studentDateOfBirthInput);
-	const partnerDob = resolveEffectiveDateOfBirth(form.partnerDateOfBirth, form.partnerDateOfBirthInput);
 	const studentRequirement = resolveDateOfBirthRequirement(form.paymentMethod, isDuo, Boolean(form.studentDateOfBirth));
 	const partnerRequirement = isDuo ? resolveDateOfBirthRequirement(form.paymentMethod, true, Boolean(form.partnerDateOfBirth)) : 'none';
 
@@ -190,7 +189,6 @@ export function AgreementFeeSection({ form, setForm, isDuo, agreement }: Props) 
 					cancellationEffectiveDate: agreement?.cancellation_effective_date,
 				})}
 			/>
-			{isDuo && partnerDob === null && null}
 			{agreement && isPrivileged && <CancelAgreementButton agreement={agreement} />}
 		</div>
 	);

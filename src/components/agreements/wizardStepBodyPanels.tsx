@@ -1,3 +1,4 @@
+import { AgreementFeeSection } from '@/components/agreements/AgreementFeeSection';
 import { ConfirmStepPanel } from '@/components/agreements/ConfirmStepPanel';
 import { PeriodStepContent } from '@/components/agreements/PeriodStepContent';
 import { TeacherSlotStepContent } from '@/components/agreements/TeacherSlotStepContent';
@@ -76,6 +77,7 @@ function WizardTeacherSlotStepPanel({ wizard, updaters, currentAgreementSlot }: 
 
 function WizardConfirmStepPanel({ wizard, updaters }: WizardStepPanelProps) {
 	return (
+		<div className="space-y-6">
 		<ConfirmStepPanel
 			isEditMode={wizard.isEditMode}
 			hasChanges={wizard.hasChanges}
@@ -94,6 +96,13 @@ function WizardConfirmStepPanel({ wizard, updaters }: WizardStepPanelProps) {
 			onPaymentMethodChange={updaters.onPaymentMethodChange}
 			onSepaMandateIdChange={updaters.onSepaMandateIdChange}
 		/>
+		<AgreementFeeSection
+			form={wizard.form}
+			setForm={wizard.setForm}
+			isDuo={wizard.isDuoLesson}
+			agreement={wizard.agreement}
+		/>
+		</div>
 	);
 }
 
