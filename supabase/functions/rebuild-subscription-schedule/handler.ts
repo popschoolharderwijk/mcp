@@ -43,7 +43,7 @@ async function rebuildSingleSchedule(admin: SupabaseClient, stripe: ReturnType<t
 	} catch (err) {
 		return buildRebuildScheduleFailureResult(
 			lessonAgreementId,
-			await recordRebuildError(admin, lessonAgreementId, err ?? getSafeErrorMessage(err)),
+			await recordRebuildError(admin, lessonAgreementId, err),
 		);
 	}
 }
