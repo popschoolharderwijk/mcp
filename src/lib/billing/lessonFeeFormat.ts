@@ -56,3 +56,19 @@ export function nextBillableMonth(date: string): string {
 	if (month === 8) month = 9;
 	return `${year}-${String(month).padStart(2, '0')}-01`;
 }
+
+/** Short amount label for e-mails: "€ 73,38 per maand", optionally with the pro-rata first month. */
+export function formatFeePreviewLabel(
+	preview: {
+		firstMonth: Pick<LessonFee, 'amount_cents' | 'is_prorated'>;
+		regularMonth: Pick<LessonFee, 'amount_cents'> | null;
+	} | null,
+): string {
+	if (!preview) return '';
+	if (!preview.regularMonth) return `${formatCentsNl(preview.firstMonth.amount_cents)} eenmalig`;
+	const monthly = `${formatCentsNl(preview.regularMonth.amount_cents)} per maand`;
+	if (preview.firstMonth.is_prorated && preview.firstMonth.amount_cents !== preview.regularMonth.amount_cents) {
+		return `${monthly} (eerste maand naar rato: ${formatCentsNl(preview.firstMonth.amount_cents)})`;
+	}
+	return monthly;
+}
