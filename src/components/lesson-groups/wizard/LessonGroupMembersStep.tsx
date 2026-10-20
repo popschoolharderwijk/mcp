@@ -17,7 +17,6 @@ export function LessonGroupMembersStep({ wizard }: LessonGroupMembersStepProps) 
 	const { form, formUpdaters, eligibleStudentIds, pendingRequests } = wizard;
 	const placeholder = getLessonGroupMembersPlaceholder(eligibleStudentIds.length);
 	const memberCountLabel = formatLessonGroupMemberCount(form.memberIds.length);
-	const indicativeRevenue = formatIndicativeLessonRevenue(form.memberIds.length, form.pricePerLesson);
 
 	return (
 		<div className="space-y-4 py-2">
@@ -32,7 +31,7 @@ export function LessonGroupMembersStep({ wizard }: LessonGroupMembersStepProps) 
 				/>
 				<p className="mt-2 text-xs text-muted-foreground">
 					{memberCountLabel}
-					{indicativeRevenue ? <> · indicatieve omzet per les: € {indicativeRevenue}</> : null}
+					
 				</p>
 				{form.memberIds.length === 0 ? (
 					<p className="mt-2 text-xs text-amber-600 flex items-center gap-1">

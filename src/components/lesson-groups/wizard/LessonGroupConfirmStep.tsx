@@ -6,7 +6,6 @@ import { UserDisplay } from '@/components/ui/user-display';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 import {
 	formatLessonGroupPeriodText,
-	formatLessonGroupPriceText,
 	formatLessonGroupScheduleText,
 	resolveLessonGroupMembersDisplay,
 	resolveLessonGroupNameDisplay,
@@ -44,7 +43,6 @@ export function LessonGroupConfirmStep({ wizard }: LessonGroupConfirmStepProps) 
 	const { form, formUpdaters, isEditMode, selectedLessonType } = wizard;
 	const scheduleText = formatLessonGroupScheduleText(form.slot, form.durationMinutes, form.frequency);
 	const periodText = formatLessonGroupPeriodText(form.startDate, form.endDate, formatDbDateToUi);
-	const priceText = formatLessonGroupPriceText(form.pricePerLesson);
 
 	return (
 		<div className="space-y-4">
@@ -61,7 +59,6 @@ export function LessonGroupConfirmStep({ wizard }: LessonGroupConfirmStepProps) 
 					<ConfirmRow label="Schema" value={<span>{scheduleText}</span>} />
 					<ConfirmRow label="Periode" value={periodText} />
 					<ConfirmRow label="Docent" value={<LessonGroupTeacherSummary wizard={wizard} />} />
-					<ConfirmRow label="Prijs per deelnemer" value={priceText} />
 					<ConfirmRow
 						label={`Leerlingen (${form.memberIds.length})`}
 						value={<LessonGroupMembersSummary memberCount={form.memberIds.length} />}
