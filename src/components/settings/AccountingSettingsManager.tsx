@@ -8,8 +8,8 @@ import {
 	AccountingSettingsSepaCard,
 	AccountingSettingsTaxCard,
 } from '@/components/settings/AccountingSettingsFormCards';
-import { Card, CardContent } from '@/components/ui/card';
 import { StripeCatalogCard } from '@/components/settings/StripeCatalogCard';
+import { Card, CardContent } from '@/components/ui/card';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';

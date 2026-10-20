@@ -45,6 +45,9 @@ export function isSidebarParentActive(
 ): boolean {
 	if (!href || isPathInGroup(pathname, childHrefs)) return false;
 	if (href === '/') return pathname === '/';
+	// A more specific nav item (e.g. /accounting/settings) wins over its prefix (/accounting).
+	const moreSpecific = adminHrefs.some((h) => h.startsWith(`${href}/`) && isPathInGroup(pathname, [h]));
+	if (moreSpecific) return false;
 	return isPathInGroup(pathname, [href]);
 }
 

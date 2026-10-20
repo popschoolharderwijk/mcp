@@ -6,7 +6,10 @@ export interface SyncCatalogBody {
 
 export function validateSyncCatalogBody(body: SyncCatalogBody | null): Response | null {
 	if (body === null || typeof body !== 'object') return jsonResponse(400, { error: 'Ongeldige aanvraag' });
-	if (body.lesson_type_id !== undefined && (typeof body.lesson_type_id !== 'string' || !UUID_RE.test(body.lesson_type_id))) {
+	if (
+		body.lesson_type_id !== undefined &&
+		(typeof body.lesson_type_id !== 'string' || !UUID_RE.test(body.lesson_type_id))
+	) {
 		return jsonResponse(400, { error: 'Ongeldig lessoort-id' });
 	}
 	return null;

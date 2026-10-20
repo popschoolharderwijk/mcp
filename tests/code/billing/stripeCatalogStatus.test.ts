@@ -14,8 +14,20 @@ describe('resolveStripeCatalogStatus', () => {
 		expect(resolveStripeCatalogStatus({ hasTariff: true, lessonTypeActive: true, row: null })).toBe('missing');
 	});
 	it('pending and error win', () => {
-		expect(resolveStripeCatalogStatus({ hasTariff: true, lessonTypeActive: true, row: { ...row, sync_status: 'pending' } })).toBe('pending');
-		expect(resolveStripeCatalogStatus({ hasTariff: true, lessonTypeActive: true, row: { ...row, sync_status: 'error' } })).toBe('error');
+		expect(
+			resolveStripeCatalogStatus({
+				hasTariff: true,
+				lessonTypeActive: true,
+				row: { ...row, sync_status: 'pending' },
+			}),
+		).toBe('pending');
+		expect(
+			resolveStripeCatalogStatus({
+				hasTariff: true,
+				lessonTypeActive: true,
+				row: { ...row, sync_status: 'error' },
+			}),
+		).toBe('error');
 	});
 	it('archived when lesson type inactive', () => {
 		expect(resolveStripeCatalogStatus({ hasTariff: true, lessonTypeActive: false, row })).toBe('archived');

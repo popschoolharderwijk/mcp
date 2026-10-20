@@ -169,18 +169,22 @@ async function syncOne(
 		catalogId = data.id;
 	}
 	if (catalogId && priceRows.length > 0) {
-		await admin
-			.from('stripe_catalog_prices')
-			.upsert(
-				priceRows.map((p) => ({ ...p, catalog_product_id: catalogId })),
-				{ onConflict: 'lookup_key' },
-			);
+		await admin.from('stripe_catalog_prices').upsert(
+			priceRows.map((p) => ({ ...p, catalog_product_id: catalogId })),
+			{ onConflict: 'lookup_key' },
+		);
 	}
 	if (plan.archivePriceIds.length > 0) {
-		await admin.from('stripe_catalog_prices').update({ is_active_in_stripe: false }).in('stripe_price_id', plan.archivePriceIds);
+		await admin
+			.from('stripe_catalog_prices')
+			.update({ is_active_in_stripe: false })
+			.in('stripe_price_id', plan.archivePriceIds);
 	}
 	if (plan.reactivatePriceIds.length > 0) {
-		await admin.from('stripe_catalog_prices').update({ is_active_in_stripe: true }).in('stripe_price_id', plan.reactivatePriceIds);
+		await admin
+			.from('stripe_catalog_prices')
+			.update({ is_active_in_stripe: true })
+			.in('stripe_price_id', plan.reactivatePriceIds);
 	}
 
 	const status = resolveCatalogStatus(option, today);
@@ -234,11 +238,19 @@ export async function runCatalogSync(
 			const message = getSafeErrorMessage(err, 'Synchronisatie mislukt');
 			console.error('sync-stripe-catalog item error', option?.id ?? row?.id, err);
 			if (row) {
-				await admin.from('stripe_catalog_products').update({ sync_status: 'error', last_error: message }).eq('id', row.id);
+				await admin
+					.from('stripe_catalog_products')
+					.update({ sync_status: 'error', last_error: message })
+					.eq('id', row.id);
 			} else if (option) {
 				await admin
 					.from('stripe_catalog_products')
-					.insert({ lesson_type_option_id: option.id, product_name: buildProductName(option), sync_status: 'error', last_error: message });
+					.insert({
+						lesson_type_option_id: option.id,
+						product_name: buildProductName(option),
+						sync_status: 'error',
+						last_error: message,
+					});
 			}
 			results.push({
 				lesson_type_option_id: option?.id ?? row?.lesson_type_option_id ?? null,
@@ -251,7 +263,10 @@ export async function runCatalogSync(
 	}
 
 	if (!lessonTypeId) {
-		await admin.from('accounting_settings').update({ stripe_catalog_last_full_sync_at: new Date().toISOString() }).eq('id', true);
+		await admin
+			.from('accounting_settings')
+			.update({ stripe_catalog_last_full_sync_at: new Date().toISOString() })
+			.eq('id', true);
 	}
 	return results;
 }

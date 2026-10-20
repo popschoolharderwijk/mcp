@@ -39,10 +39,14 @@ async function loadOverview(): Promise<OverviewRow[]> {
 	const [{ data: options }, { data: catalog }] = await Promise.all([
 		supabase
 			.from('lesson_type_options')
-			.select('id, duration_minutes, frequency, label, billing_kind, lesson_types(name, is_active), lesson_type_option_tariffs(id)'),
+			.select(
+				'id, duration_minutes, frequency, label, billing_kind, lesson_types(name, is_active), lesson_type_option_tariffs(id)',
+			),
 		supabase
 			.from('stripe_catalog_products')
-			.select('lesson_type_option_id, stripe_product_id, is_active_in_stripe, sync_status, last_synced_at, last_error, stripe_catalog_prices(is_active_in_stripe)'),
+			.select(
+				'lesson_type_option_id, stripe_product_id, is_active_in_stripe, sync_status, last_synced_at, last_error, stripe_catalog_prices(is_active_in_stripe)',
+			),
 	]);
 	const byOption = new Map((catalog ?? []).map((c) => [c.lesson_type_option_id, c]));
 	return (options ?? []).map((o) => {

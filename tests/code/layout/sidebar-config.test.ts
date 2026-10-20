@@ -115,3 +115,12 @@ describe('nextSidebarGroupOpen', () => {
 		expect(nextSidebarGroupOpen('/teachers/availability', '/teachers', false)).toBe(true);
 	});
 });
+
+describe('accounting settings nav item', () => {
+	it('is in the admin menu and only it is active on its own page', () => {
+		expect(adminNavItems.map((item) => item.href)).toContain('/accounting/settings');
+		expect(isSidebarParentActive('/accounting/settings', '/accounting/settings')).toBe(true);
+		expect(isSidebarParentActive('/accounting/settings', '/accounting')).toBe(false);
+		expect(isSidebarParentActive('/accounting', '/accounting')).toBe(true);
+	});
+});

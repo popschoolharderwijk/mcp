@@ -21,6 +21,10 @@ describe('stripeNotConfiguredResponse', () => {
 	it('answers 200 with configured false instead of crashing', async () => {
 		const response = stripeNotConfiguredResponse();
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ configured: false, message: STRIPE_NOT_CONFIGURED_MESSAGE, results: [] });
+		expect(await response.json()).toEqual({
+			configured: false,
+			message: STRIPE_NOT_CONFIGURED_MESSAGE,
+			results: [],
+		});
 	});
 });

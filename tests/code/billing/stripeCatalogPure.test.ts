@@ -65,7 +65,9 @@ describe('desired prices', () => {
 		const prices = buildDesiredPrices(
 			option({
 				has_adult_tariff: false,
-				tariffs: [{ id: 't', effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null }],
+				tariffs: [
+					{ id: 't', effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null },
+				],
 			}),
 			TODAY,
 		);
@@ -75,7 +77,9 @@ describe('desired prices', () => {
 		const prices = buildDesiredPrices(
 			option({
 				billing_kind: 'one_off',
-				tariffs: [{ id: 't', effective_from: '2026-09-01', amount_under_21_cents: null, amount_adult_cents: 8250 }],
+				tariffs: [
+					{ id: 't', effective_from: '2026-09-01', amount_under_21_cents: null, amount_adult_cents: 8250 },
+				],
 			}),
 			TODAY,
 		);
