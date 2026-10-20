@@ -4,7 +4,6 @@ import { jsonResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
 	attachDefaultPaymentMethod,
 	getReusablePaymentMethodIdFromSetupIntent,
-	getSafeErrorMessage,
 	getStripeId,
 } from '../_shared/stripe.ts';
 import { CUSTOMER_DIRECT_DEBIT_ERROR, retrieveIfExists } from '../_shared/stripeRecoveryPure.ts';
