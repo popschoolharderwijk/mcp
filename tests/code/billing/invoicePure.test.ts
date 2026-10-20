@@ -14,6 +14,7 @@ import {
 	filterStudentItems,
 	getCollectionDate,
 	hasAdminRole,
+	hasVatBreakdown,
 	INVOICE_MAIL_PRIMARY_HEX,
 	isServiceRoleToken,
 	readInvoiceMailEnv,
@@ -56,6 +57,19 @@ const batchItem: BatchItem = {
 	remittance_info: 'Lesgeld september',
 	lesson_agreement_id: 'agr-1',
 	mandate_id: 'mandate-1',
+	age_category: '21_plus',
+	btw_rate: 21,
+	amount_excl_btw_cents: 2000,
+	btw_amount_cents: 420,
+};
+
+const exemptItem: BatchItem = {
+	...batchItem,
+	id: 'item-2',
+	age_category: 'under_21',
+	btw_rate: 0,
+	amount_excl_btw_cents: 2420,
+	btw_amount_cents: 0,
 };
 
 describe('buildStudentInfo', () => {
@@ -95,40 +109,35 @@ describe('buildStudentInfo', () => {
 });
 
 describe('buildInvoiceLines', () => {
-	it('applies 21% VAT for adult students', () => {
-		const adultStudent = buildStudentInfo('student-2', profile, {
-			...studentRow,
-			date_of_birth: '1990-01-01',
-		});
-		const lines = buildInvoiceLines([batchItem], adultStudent, '2026-09-01');
-		expect(lines).toHaveLength(1);
-		expect(lines[0]).toEqual({
-			batch_item_id: 'item-1',
-			description: 'Lesgeld september',
-			lesson_date: '2026-09-01',
-			quantity: 1,
-			unit_price_cents: 2420,
-			btw_rate: 21,
-			amount_excl_btw_cents: 2000,
-			btw_amount_cents: 420,
-			amount_total_cents: 2420,
-		});
+	it('copies the 21% VAT breakdown of the batch item', () => {
+		expect(buildInvoiceLines([batchItem], '2026-09-01')).toEqual([
+			{
+				batch_item_id: 'item-1',
+				description: 'Lesgeld september',
+				lesson_date: '2026-09-01',
+				quantity: 1,
+				unit_price_cents: 2420,
+				btw_rate: 21,
+				amount_excl_btw_cents: 2000,
+				btw_amount_cents: 420,
+				amount_total_cents: 2420,
+			},
+		]);
 	});
 
-	it('applies 0% VAT for under-21 students', () => {
-		const minorStudent = buildStudentInfo('student-1', profile, studentRow);
-		const lines = buildInvoiceLines([batchItem], minorStudent, '2026-09-01');
-		expect(lines[0]).toEqual({
-			batch_item_id: 'item-1',
-			description: 'Lesgeld september',
-			lesson_date: '2026-09-01',
-			quantity: 1,
-			unit_price_cents: 2420,
+	it('copies the exempt breakdown of the batch item', () => {
+		expect(buildInvoiceLines([exemptItem], '2026-09-01')[0]).toMatchObject({
 			btw_rate: 0,
 			amount_excl_btw_cents: 2420,
 			btw_amount_cents: 0,
-			amount_total_cents: 2420,
 		});
+	});
+});
+
+describe('hasVatBreakdown', () => {
+	it('is false when an item misses the breakdown', () => {
+		expect(hasVatBreakdown([batchItem, exemptItem])).toBe(true);
+		expect(hasVatBreakdown([{ ...batchItem, btw_rate: null }])).toBe(false);
 	});
 });
 
@@ -163,87 +172,11 @@ describe('computeTotals', () => {
 });
 
 describe('resolveAgeCategory', () => {
-	it('returns mixed when both VAT rates are present', () => {
-		const lines: InvoiceLine[] = [
-			{
-				batch_item_id: '1',
-				description: '',
-				lesson_date: null,
-				quantity: 1,
-				unit_price_cents: 1,
-				btw_rate: 21,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 1,
-				amount_total_cents: 1,
-			},
-			{
-				batch_item_id: '2',
-				description: '',
-				lesson_date: null,
-				quantity: 1,
-				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
-				amount_total_cents: 1,
-			},
-		];
-		expect(resolveAgeCategory(lines, '1990-01-01', '2026-09-01')).toBe('mixed');
-	});
-
-	it('returns 21_plus when only 21% lines exist', () => {
-		const lines: InvoiceLine[] = [
-			{
-				batch_item_id: '1',
-				description: '',
-				lesson_date: null,
-				quantity: 1,
-				unit_price_cents: 1,
-				btw_rate: 21,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 1,
-				amount_total_cents: 1,
-			},
-		];
-		expect(resolveAgeCategory(lines, '1990-01-01', '2026-09-01')).toBe('21_plus');
-	});
-
-	it('returns under_21 when only 0% lines exist for a student under 21', () => {
-		const lines: InvoiceLine[] = [
-			{
-				batch_item_id: '1',
-				description: '',
-				lesson_date: null,
-				quantity: 1,
-				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
-				amount_total_cents: 1,
-			},
-		];
-		expect(resolveAgeCategory(lines, '2010-05-01', '2026-09-01')).toBe('under_21');
-	});
-
-	it('returns unknown when every line comes from a missing date of birth', () => {
-		const lines: InvoiceLine[] = [
-			{
-				batch_item_id: '1',
-				description: '',
-				lesson_date: null,
-				quantity: 1,
-				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
-				amount_total_cents: 1,
-			},
-		];
-		expect(resolveAgeCategory(lines, null, '2026-09-01')).toBe('unknown');
-	});
-
-	it('returns unknown for an empty line list', () => {
-		expect(resolveAgeCategory([], null, '2026-09-01')).toBe('unknown');
+	it('returns the shared category or mixed', () => {
+		expect(resolveAgeCategory([batchItem])).toBe('21_plus');
+		expect(resolveAgeCategory([exemptItem])).toBe('under_21');
+		expect(resolveAgeCategory([batchItem, exemptItem])).toBe('mixed');
+		expect(resolveAgeCategory([{ ...batchItem, age_category: null }])).toBe('unknown');
 	});
 });
 
