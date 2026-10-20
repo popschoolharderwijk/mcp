@@ -20,7 +20,7 @@ const validOption: LessonTypeOptionFormRow = {
 	duration_minutes: '45',
 	frequency: 'weekly',
 	label: '',
-	billing_kind: 'monthly',
+	billing_kind: 'monthly' as const,
 	has_adult_tariff: true,
 	effective_from: '2026-09-01',
 	amount_under_21: '20.00',
