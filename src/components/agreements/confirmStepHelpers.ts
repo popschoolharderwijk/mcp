@@ -3,11 +3,6 @@ import { formatDbDateToUi } from '@/lib/date/date-format';
 import { formatTime } from '@/lib/time/time-format';
 import type { WizardInitialAgreement } from '@/types/lesson-agreements';
 
-export function formatLessonPrice(price: number | null | undefined): string {
-	if (price == null) return '-';
-	return `€ ${Number(price).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} per les`;
-}
-
 export function formatWizardPeriodRange(start: string, end: string | null | undefined): string {
 	return `${formatDbDateToUi(start)} t/m ${end?.trim() ? formatDbDateToUi(end) : '-'}`;
 }

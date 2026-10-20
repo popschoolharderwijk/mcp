@@ -3,7 +3,6 @@ import type { UserOptional } from '@/types/users';
 import { ConfirmStepRow } from './ConfirmStepRow';
 
 export {
-	formatLessonPrice,
 	formatWizardPeriodRange,
 	isWizardPeriodChanged,
 	isWizardSlotChanged,
