@@ -15,17 +15,25 @@ const optionsForm: OptionRowWithKey[] = [
 		id: 'opt-1',
 		duration_minutes: '45',
 		frequency: 'weekly',
-		price_per_lesson: '30.00',
-		price_per_lesson_under_21: '25.00',
-		price_per_lesson_adult: '30.00',
+		label: '',
+		billing_kind: 'monthly',
+		has_adult_tariff: true,
+		effective_from: '2026-09-01',
+		amount_under_21: '25.00',
+		amount_adult: '30.00',
+		tariffs: [],
 	},
 ];
 
 const modalForm: OptionModalFormState = {
 	duration_minutes: '45',
 	frequency: 'weekly',
-	price_per_lesson_under_21: '25.00',
-	price_per_lesson_adult: '30.00',
+	label: '',
+	billing_kind: 'monthly',
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '25.00',
+	amount_adult: '30.00',
 };
 
 describe('isDuplicateOption', () => {
@@ -64,9 +72,13 @@ describe('isDuplicateOption', () => {
 			id: 'opt-1',
 			duration_minutes: '45',
 			frequency: 'weekly',
-			price_per_lesson: '30',
-			price_per_lesson_under_21: '25.00',
-			price_per_lesson_adult: '30.00',
+			label: '',
+			billing_kind: 'monthly',
+			has_adult_tariff: true,
+			effective_from: '2026-09-01',
+			amount_under_21: '25.00',
+			amount_adult: '30.00',
+			tariffs: [],
 		});
 	});
 });

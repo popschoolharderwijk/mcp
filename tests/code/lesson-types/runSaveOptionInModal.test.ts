@@ -17,9 +17,13 @@ const editingOption = {
 	id: 'option-1',
 	duration_minutes: '45',
 	frequency: 'weekly' as const,
-	price_per_lesson: '25',
-	price_per_lesson_under_21: '20',
-	price_per_lesson_adult: '25',
+	label: '',
+	billing_kind: 'monthly',
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '20',
+	amount_adult: '25',
+	tariffs: [],
 };
 
 describe('runSaveOptionInModal', () => {
@@ -38,10 +42,13 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
-				price_per_lesson_adult: '25',
+				label: '',
+				billing_kind: 'monthly',
+				has_adult_tariff: true,
+				effective_from: '2026-09-01',
+				amount_under_21: '20',
+				amount_adult: '25',
 			},
-			priceAdult: 25,
 			updateExistingOptionInForm: () => {
 				updated = true;
 				return true;
@@ -63,10 +70,13 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
-				price_per_lesson_adult: '25',
+				label: '',
+				billing_kind: 'monthly',
+				has_adult_tariff: true,
+				effective_from: '2026-09-01',
+				amount_under_21: '20',
+				amount_adult: '25',
 			},
-			priceAdult: 25,
 			updateExistingOptionInForm: () => true,
 			persistExistingOption: async () => true,
 			persistNewOption: async () => true,
@@ -87,10 +97,13 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
-				price_per_lesson_adult: '25',
+				label: '',
+				billing_kind: 'monthly',
+				has_adult_tariff: true,
+				effective_from: '2026-09-01',
+				amount_under_21: '20',
+				amount_adult: '25',
 			},
-			priceAdult: 25,
 			updateExistingOptionInForm: () => true,
 			persistExistingOption: async () => true,
 			persistNewOption: async () => true,

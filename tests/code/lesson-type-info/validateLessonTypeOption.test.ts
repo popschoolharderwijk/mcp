@@ -8,8 +8,12 @@ import {
 const validOptionForm = {
 	duration_minutes: '45',
 	frequency: 'weekly' as const,
-	price_per_lesson_under_21: '20.00',
-	price_per_lesson_adult: '25.00',
+	label: '',
+	billing_kind: 'monthly',
+	has_adult_tariff: true,
+	effective_from: '2026-09-01',
+	amount_under_21: '20.00',
+	amount_adult: '25.00',
 };
 
 describe('getOptionModalValidationError', () => {
@@ -50,7 +54,6 @@ describe('parseOptionModalValues', () => {
 		expect(parseOptionModalValues(validOptionForm)).toEqual({
 			durationMinutes: 45,
 			priceUnder21: 20,
-			priceAdult: 25,
 		});
 	});
 });
@@ -61,8 +64,12 @@ describe('getOptionRowValidationError', () => {
 			getOptionRowValidationError(
 				{
 					duration_minutes: '45',
-					price_per_lesson_under_21: '20.00',
-					price_per_lesson_adult: '25.00',
+					label: '',
+					billing_kind: 'monthly',
+					has_adult_tariff: true,
+					effective_from: '2026-09-01',
+					amount_under_21: '20.00',
+					amount_adult: '25.00',
 				},
 				0,
 			),
@@ -74,8 +81,12 @@ describe('getOptionRowValidationError', () => {
 			getOptionRowValidationError(
 				{
 					duration_minutes: 'abc',
-					price_per_lesson_under_21: '20.00',
-					price_per_lesson_adult: '25.00',
+					label: '',
+					billing_kind: 'monthly',
+					has_adult_tariff: true,
+					effective_from: '2026-09-01',
+					amount_under_21: '20.00',
+					amount_adult: '25.00',
 				},
 				1,
 			),
@@ -87,8 +98,12 @@ describe('getOptionRowValidationError', () => {
 			getOptionRowValidationError(
 				{
 					duration_minutes: '45',
-					price_per_lesson_under_21: '0',
-					price_per_lesson_adult: '25.00',
+					label: '',
+					billing_kind: 'monthly',
+					has_adult_tariff: true,
+					effective_from: '2026-09-01',
+					amount_under_21: '0',
+					amount_adult: '25.00',
 				},
 				2,
 			),
@@ -100,8 +115,12 @@ describe('getOptionRowValidationError', () => {
 			getOptionRowValidationError(
 				{
 					duration_minutes: '45',
-					price_per_lesson_under_21: '20.00',
-					price_per_lesson_adult: '0',
+					label: '',
+					billing_kind: 'monthly',
+					has_adult_tariff: true,
+					effective_from: '2026-09-01',
+					amount_under_21: '20.00',
+					amount_adult: '0',
 				},
 				0,
 			),

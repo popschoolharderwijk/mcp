@@ -45,8 +45,12 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 	const modalForm = {
 		duration_minutes: '45',
 		frequency: 'weekly' as const,
-		price_per_lesson_under_21: '20',
-		price_per_lesson_adult: '25',
+		label: '',
+		billing_kind: 'monthly',
+		has_adult_tariff: true,
+		effective_from: '2026-09-01',
+		amount_under_21: '20',
+		amount_adult: '25',
 	};
 
 	describe('runPersistNewOptionFlow', () => {
@@ -55,7 +59,6 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 			const ok = await helpers.runPersistNewOptionFlow({
 				editing: editing as never,
 				modalForm,
-				priceAdult: 25,
 				isEditMode: false,
 				lessonType: null,
 				setOptionsForm: (updater) => {
@@ -75,7 +78,6 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 			const ok = await helpers.runPersistNewOptionFlow({
 				editing: editing as never,
 				modalForm,
-				priceAdult: 25,
 				isEditMode: true,
 				lessonType: { id: 'lesson-type-1' } as never,
 				setOptionsForm: (updater) => {
@@ -99,7 +101,6 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 			const ok = await helpers.runPersistExistingOptionFlow({
 				editing: { id: 'option-1' } as never,
 				modalForm,
-				priceAdult: 25,
 				isEditMode: false,
 				lessonType: null,
 				setOptions: () => {},
@@ -113,7 +114,6 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 			const ok = await helpers.runPersistExistingOptionFlow({
 				editing: { id: 'option-1' } as never,
 				modalForm,
-				priceAdult: 25,
 				isEditMode: true,
 				lessonType: { id: 'lesson-type-1' } as never,
 				setOptions: (updater) => {
