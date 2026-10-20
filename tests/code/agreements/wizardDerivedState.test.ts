@@ -64,7 +64,7 @@ function baseForm(overrides: Partial<WizardFormState> = {}): WizardFormState {
 		studentUserId: 'stu-1',
 		user: null,
 		lessonTypeId: 'lt-1',
-		selectedOptionSnapshot: { duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
+		selectedOptionSnapshot: { id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
 		startDate: '2026-09-01',
 		endDate: '2027-07-31',
 		teacherUserId: 'tea-1',
@@ -73,6 +73,10 @@ function baseForm(overrides: Partial<WizardFormState> = {}): WizardFormState {
 		partnerUser: null,
 		paymentMethod: 'stripe',
 		sepaMandateId: null,
+		studentDateOfBirth: null,
+		partnerDateOfBirth: null,
+		studentDateOfBirthInput: '',
+		partnerDateOfBirthInput: '',
 		...overrides,
 	};
 }
@@ -97,12 +101,13 @@ describe('buildSelectedLessonType', () => {
 			duration_minutes: 60,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			lesson_type_option_id: null,
 		});
 	});
 
 	it('returns lesson type from matched type and option snapshot when creating', () => {
 		const matched = { id: 'lt-2', name: 'Gitaar', icon: 'guitar', color: '#ff0000' };
-		const snapshot = { duration_minutes: 45, frequency: 'biweekly' as const, price_per_lesson: 28 };
+		const snapshot = { id: 'opt-2', duration_minutes: 45, frequency: 'biweekly' as const };
 		expect(buildSelectedLessonType(null, matched, snapshot)).toEqual({
 			id: 'lt-2',
 			name: 'Gitaar',
@@ -110,7 +115,8 @@ describe('buildSelectedLessonType', () => {
 			color: '#ff0000',
 			duration_minutes: 45,
 			frequency: 'biweekly',
-			price_per_lesson: 28,
+			price_per_lesson: null,
+			lesson_type_option_id: 'opt-2',
 		});
 	});
 

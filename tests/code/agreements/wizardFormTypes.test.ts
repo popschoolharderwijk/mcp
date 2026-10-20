@@ -16,6 +16,10 @@ describe('createInitialWizardForm', () => {
 			partnerUser: null,
 			paymentMethod: 'sepa',
 			sepaMandateId: null,
+			studentDateOfBirth: null,
+			partnerDateOfBirth: null,
+			studentDateOfBirthInput: '',
+			partnerDateOfBirthInput: '',
 		});
 	});
 });
