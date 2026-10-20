@@ -23,14 +23,21 @@ const lessonType: LessonTypeRow = {
 	updated_by: null,
 };
 
-const option: LessonTypeOptionRow = {
+const option: LessonTypeOptionWithTariffs = {
 	id: 'opt-1',
 	lesson_type_id: 'lt-1',
 	duration_minutes: 45,
 	frequency: 'weekly',
-	price_per_lesson: 25,
-	price_per_lesson_under_21_cents: 2000,
-	price_per_lesson_adult_cents: 2500,
+	price_per_lesson: null,
+	price_per_lesson_under_21_cents: null,
+	price_per_lesson_adult_cents: null,
+	label: null,
+	billing_kind: 'monthly',
+	has_adult_tariff: true,
+	lesson_type_option_tariffs: [
+		{ id: 't-old', effective_from: '2025-09-01', amount_under_21_cents: 1900, amount_adult_cents: 2400 },
+		{ id: 't-new', effective_from: '2026-09-01', amount_under_21_cents: 2000, amount_adult_cents: 2500 },
+	],
 	created_at: '2026-01-01T00:00:00Z',
 	updated_at: '2026-01-01T00:00:00Z',
 	created_by: null,
@@ -64,7 +71,7 @@ describe('mapLessonTypeRowToForm', () => {
 });
 
 describe('mapLessonTypeOptionsToForm', () => {
-	it('maps option rows to form rows with price inputs', () => {
+	it('prefills the newest tariff and keeps the history newest first', () => {
 		expect(mapLessonTypeOptionsToForm([option])).toEqual([
 			{
 				id: 'opt-1',
@@ -76,7 +83,10 @@ describe('mapLessonTypeOptionsToForm', () => {
 				effective_from: '2026-09-01',
 				amount_under_21: '20.00',
 				amount_adult: '25.00',
-				tariffs: [],
+				tariffs: [
+					{ id: 't-new', effective_from: '2026-09-01', amount_under_21_cents: 2000, amount_adult_cents: 2500 },
+					{ id: 't-old', effective_from: '2025-09-01', amount_under_21_cents: 1900, amount_adult_cents: 2400 },
+				],
 			},
 		]);
 	});

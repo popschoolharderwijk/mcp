@@ -54,9 +54,9 @@ describe('buildLessonTypeOptionRowPayload', () => {
 		expect(buildLessonTypeOptionRowPayload(optionRow)).toEqual({
 			duration_minutes: 45,
 			frequency: 'weekly',
-			price_per_lesson: 25,
-			price_per_lesson_under_21_cents: 2000,
-			price_per_lesson_adult_cents: 2500,
+			label: null,
+			billing_kind: 'monthly',
+			has_adult_tariff: true,
 		});
 	});
 });
