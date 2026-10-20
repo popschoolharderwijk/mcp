@@ -1,6 +1,5 @@
 import { LuTriangleAlert } from 'react-icons/lu';
 import {
-	formatIndicativeLessonRevenue,
 	formatLessonGroupMemberCount,
 	getLessonGroupMembersPlaceholder,
 	toggleSelectedRequestId,
