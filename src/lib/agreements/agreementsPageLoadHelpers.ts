@@ -144,7 +144,10 @@ export async function executeAgreementsPageLoad(
 		}
 		const results = await Promise.all(
 			chunks.map((ids) =>
-				supabase.from('profiles').select('user_id, first_name, last_name, avatar_url, email').in('user_id', ids),
+				supabase
+					.from('profiles')
+					.select('user_id, first_name, last_name, avatar_url, email')
+					.in('user_id', ids),
 			),
 		);
 		const profilesError = results.find((r) => r.error)?.error;
