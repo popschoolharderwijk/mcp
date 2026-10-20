@@ -30,9 +30,7 @@ export function brokeredPreviewStorage() {
 	const EDITOR = dev
 		? /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$|^http:\/\/localhost:3000$/
 		: /^https:\/\/([a-z0-9-]+\.)*(lovable\.dev|gptengineer\.app)$/;
-	const ancestor =
-		(location.ancestorOrigins && location.ancestorOrigins[0]) ||
-		(document.referrer ? new URL(document.referrer).origin : '');
+	const ancestor = location.ancestorOrigins?.[0] || (document.referrer ? new URL(document.referrer).origin : '');
 	const editorOrigins =
 		ancestor && EDITOR.test(ancestor)
 			? [ancestor]
@@ -66,7 +64,7 @@ export function brokeredPreviewStorage() {
 			};
 			window.addEventListener('message', onMessage);
 			const msg: Record<string, unknown> = { type, requestId, projectId, key };
-			if (value !== undefined) msg['value'] = value;
+			if (value !== undefined) msg.value = value;
 			// targetOrigin per trusted editor origin, so a session token never reaches an arbitrary embedder.
 			for (const origin of editorOrigins) window.parent.postMessage(msg, origin);
 			timer = setTimeout(() => finish(null), TIMEOUT);
@@ -96,7 +94,7 @@ export function brokeredPreviewStorage() {
 			firstGet = false;
 			// '' is the logout tombstone: clear the local copy too so it can't resurrect if
 			// the broker later goes silent. A null reply means never-synced -> keep local.
-			if (res && res.ok && typeof res.value === 'string') {
+			if (res?.ok && typeof res.value === 'string') {
 				if (res.value === '') {
 					if (local !== undefined && readLocal(key) === local) localStorage.removeItem(key);
 					return null;
@@ -116,7 +114,7 @@ export function brokeredPreviewStorage() {
 		setItem: (key: string, value: string) => {
 			localStorage.setItem(key, value);
 			return request('lovable-preview-auth:set', key, value).then((res) => {
-				if (res && res.ok && typeof res.value === 'string' && localStorage.getItem(key) === value) {
+				if (res?.ok && typeof res.value === 'string' && localStorage.getItem(key) === value) {
 					if (res.value === '') localStorage.removeItem(key);
 					else localStorage.setItem(key, res.value);
 				}
