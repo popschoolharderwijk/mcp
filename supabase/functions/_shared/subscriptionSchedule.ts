@@ -424,7 +424,7 @@ export async function processPendingRebuilds(
 		.in('status', OPEN_STATUSES);
 	const horizonLimit = addMonths(monthStart(options.today), 12);
 	const due = (
-		(rows ?? []) as Array<{
+		(rows ?? []) as unknown as Array<{
 			lesson_agreement_id: string;
 			needs_rebuild: boolean;
 			schedule_horizon_end: string | null;
