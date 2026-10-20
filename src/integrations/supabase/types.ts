@@ -2332,6 +2332,10 @@ export type Database = {
         Args: { p_batch_id: string }
         Returns: undefined
       }
+      set_student_date_of_birth_if_missing: {
+        Args: { p_date_of_birth: string; p_student_user_id: string }
+        Returns: boolean
+      }
       shift_recurring_deviation_to_next_week: {
         Args: { p_deviation_id: string }
         Returns: string
