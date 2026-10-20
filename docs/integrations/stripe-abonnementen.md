@@ -43,7 +43,7 @@ Daarna:
 
 | Functie | Wat |
 |---|---|
-| `send-direct-debit-invite` | Betaaluitnodiging (weigert niet-Stripe en groepslessen) |
+| `send-direct-debit-invite` | Betaaluitnodiging: eigen mail `direct_debit_invite` met server-side inloglink (weigert niet-Stripe en groepslessen) |
 | `create-subscription-checkout` | iDEAL-machtiging → schedule via `syncAgreementSchedule` |
 | `stripe-webhook` | Upsert abonnementen/facturen; status eerste factuur; `subscription_schedule.released` → opnieuw opbouwen |
 | `rebuild-subscription-schedule` | "Pas nieuwe tarieven toe" / na opzeggen; per overeenkomst of lessoort |
@@ -95,3 +95,12 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 - Stripe-limiet van 10 fasen: bij veel tariefwissels binnen één horizon wordt de planning korter; de dagelijkse taak verlengt.
 - Als de dagelijkse taak een paar dagen niet draait, blijven eerste facturen en wijzigingen liggen tot de volgende run (geen dubbele facturen dankzij idempotency keys).
 - `agreement_fee_months` heeft (nog) geen eigen SQL-test; hij is een dunne lus om `compute_agreement_month_fee`, dat wel getest is.
+
+## Betaaluitnodiging (mail)
+
+- De knop **Stuur betaaluitnodiging** roept `send-direct-debit-invite` aan. Die stuurt de eigen template `direct_debit_invite` via `send-template-email` (Resend), niet de algemene Supabase-inlogmail.
+- De inloglink komt uit `auth.admin.generateLink` (type `magiclink`, alleen voor een bestaand account) en heeft de vorm `/direct-debit/start?agreement=<id>#token_hash=…&type=email`. Mailscanners openen alleen de pagina; het token zit in de hash en wordt pas in de browser verbruikt (`src/lib/auth/magicLink.ts`).
+- Variabelen: `leerling_naam`, `ontvanger_naam` (ouder, anders aparte debiteur, anders leerling), `les_type` (lesvorm), `bedrag` (maandbedrag met btw-tekst via `preview_lesson_fee`), `eerste_maand_bedrag` en `eerste_maand_regel` (leeg als de eerste maand niet naar rato is), `startdatum`, `minimale_looptijd_tot`, `link`.
+- Geldigheid van de link = de OTP-verlooptijd van Supabase Auth (standaard 1 uur). Aan te passen in het Supabase-dashboard van mcp-dev: Authentication → Sign In / Providers → Email → **Email OTP Expiration** (maximaal 86400 seconden = 24 uur). Dit geldt ook voor de gewone inlogmail.
+- Pure logica en tests: `send-direct-debit-invite/sendDirectDebitInvitePure.ts`, `tests/code/direct-debit/directDebitInviteEmail.test.ts`.
+

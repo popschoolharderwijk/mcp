@@ -12,7 +12,8 @@ export interface SendTemplateEmailOptions {
 	origin?: string | null;
 }
 
-export async function sendTemplateEmail(opts: SendTemplateEmailOptions): Promise<void> {
+/** Returns true when send-template-email answered 2xx (a disabled template also counts as sent). */
+export async function sendTemplateEmail(opts: SendTemplateEmailOptions): Promise<boolean> {
 	const site_url = resolveAllowedSiteUrl(opts.origin) ?? undefined;
 	const requestBody = buildSendTemplateEmailRequestBody({ ...opts, site_url });
 	try {
@@ -23,8 +24,11 @@ export async function sendTemplateEmail(opts: SendTemplateEmailOptions): Promise
 		if (!resp.ok) {
 			const text = await resp.text().catch(() => '');
 			console.error(`${opts.event_key} mail non-2xx`, resp.status, text);
+			return false;
 		}
+		return true;
 	} catch (mailErr) {
 		console.error(`${opts.event_key} mail`, mailErr);
+		return false;
 	}
 }

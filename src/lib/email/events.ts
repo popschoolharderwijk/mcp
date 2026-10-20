@@ -106,6 +106,35 @@ const EMAIL_EVENTS = {
 			betaalmethode: 'Automatische incasso (SEPA)',
 		},
 	},
+	direct_debit_invite: {
+		key: 'direct_debit_invite',
+		label: 'Betaaluitnodiging (Stripe)',
+		description:
+			'Verstuurd met de knop "Stuur betaaluitnodiging": uitleg over de machtiging en een inloglink naar Stripe. eerste_maand_regel is een kant-en-klare regel die leeg blijft als de eerste maand niet naar rato is.',
+		variables: [
+			'leerling_naam',
+			'ontvanger_naam',
+			'les_type',
+			'bedrag',
+			'eerste_maand_bedrag',
+			'eerste_maand_regel',
+			'startdatum',
+			'minimale_looptijd_tot',
+			'link',
+		],
+		previewData: {
+			leerling_naam: 'Sanne de Vries',
+			ontvanger_naam: 'Ingrid de Vries',
+			les_type: 'Gitaarles (30 min, wekelijks)',
+			bedrag: '€ 73,38 (vrijgesteld van btw)',
+			eerste_maand_bedrag: '€ 26,04',
+			eerste_maand_regel:
+				'<li>Start je halverwege de maand, dan betaal je de eerste maand naar rato: € 26,04.</li>',
+			startdatum: '21-10-2026',
+			minimale_looptijd_tot: '30-04-2027',
+			link: 'https://mcp.mplifi.nl/direct-debit/start',
+		},
+	},
 } as const satisfies Record<string, EmailEventDefinition>;
 
 export function listEmailEvents(): EmailEventDefinition[] {

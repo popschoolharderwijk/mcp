@@ -1,10 +1,10 @@
-// Sends a Magic Link to the student (or their representative)
+// Sends the own "direct_debit_invite" template e-mail (with a server-generated login link)
 // with a redirect to /direct-debit/start?agreement=<id>. After logging in,
 // the user can proceed directly to Stripe checkout.
 //
 // Auth required. Allowed: privileged staff (admin/teacher) or the student themselves.
-// For a minor student (date_of_birth -> <18 now), the email is sent to
-// `parent_email` if present, otherwise to the student account.
+// The e-mail goes to the e-mail address of the student account (the login account);
+// the greeting uses the parent or debtor name when known.
 import { serveLessonAgreementPost } from '../_shared/http-serve.ts';
 import { handleSendDirectDebitInvite } from './handler.ts';
 
