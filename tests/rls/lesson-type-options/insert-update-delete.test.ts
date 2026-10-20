@@ -149,10 +149,10 @@ describe('RLS: lesson_type_options UPDATE - admin permissions', () => {
 		});
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const updated = unwrap(
-			await db.from('lesson_type_options').update({ price_per_lesson: 28 }).eq('id', data.id).select(),
+			await db.from('lesson_type_options').update({ label: 'gewijzigd' }).eq('id', data.id).select(),
 		);
 		expect(updated).toHaveLength(1);
-		expect(updated[0].price_per_lesson).toBe(28);
+		expect(updated[0].label).toBe('gewijzigd');
 		await cleanup();
 	});
 });

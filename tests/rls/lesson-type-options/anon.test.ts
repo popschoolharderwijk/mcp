@@ -41,9 +41,7 @@ describe('RLS: anonymous user – lesson_type_options', () => {
 
 	it('anon update affects no lesson_type_options rows', async () => {
 		const db = createClientAnon();
-		const data = unwrap(
-			await db.from('lesson_type_options').update({ price_per_lesson: 99 }).neq('id', fakeId).select(),
-		);
+		const data = unwrap(await db.from('lesson_type_options').update({ label: 'x' }).neq('id', fakeId).select());
 		expect(data).toHaveLength(0);
 	});
 
