@@ -36,3 +36,16 @@ export function collectAgreementIds(items: Array<{ lesson_agreement_id?: string 
 export function buildPaymentMethodMap(rows: Array<{ id: string; payment_method: string }>): Map<string, string> {
 	return new Map(rows.map((row) => [row.id, row.payment_method]));
 }
+
+/** Group lessons (one-off) get no Stripe subscription; one-off payment via Stripe follows later. */
+export function resolveOneOffAgreementFailure(
+	billingKind: string | null | undefined,
+): { status: 409; error: string } | null {
+	if (billingKind !== 'one_off') return null;
+	return { status: 409, error: 'Groepslessen worden eenmalig betaald; eenmalig betalen via Stripe volgt later' };
+}
+
+export function readBillingKind(option: unknown): string | null {
+	const row = Array.isArray(option) ? option[0] : option;
+	return row && typeof row === 'object' && 'billing_kind' in row ? String((row as { billing_kind: unknown }).billing_kind) : null;
+}

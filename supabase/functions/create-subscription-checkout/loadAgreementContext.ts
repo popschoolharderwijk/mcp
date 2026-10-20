@@ -1,6 +1,10 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { resolveNotStripeAgreementFailure } from '../_shared/paymentMethodPure.ts';
+import {
+	readBillingKind,
+	resolveNotStripeAgreementFailure,
+	resolveOneOffAgreementFailure,
+} from '../_shared/paymentMethodPure.ts';
 import { resolveAgreementPreProfileFailure, resolveAgreementProfileFailure } from './loadAgreementContextPure.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
@@ -14,7 +18,7 @@ export async function loadAgreementContext(
 > {
 	const { data: agreement, error: agreementErr } = await userClient
 		.from('lesson_agreements')
-		.select('id, student_user_id, is_active, payment_method')
+		.select('id, student_user_id, is_active, payment_method, lesson_type_options(billing_kind)')
 		.eq('id', lessonAgreementId)
 		.maybeSingle();
 
@@ -27,6 +31,8 @@ export async function loadAgreementContext(
 
 	const notStripe = resolveNotStripeAgreementFailure((agreement as AgreementRow).payment_method);
 	if (notStripe) return { ok: false, response: jsonResponse(notStripe.status, { error: notStripe.error }) };
+	const oneOff = resolveOneOffAgreementFailure(readBillingKind((agreement as { lesson_type_options?: unknown }).lesson_type_options));
+	if (oneOff) return { ok: false, response: jsonResponse(oneOff.status, { error: oneOff.error }) };
 
 	const billingUserId = (agreement as AgreementRow).student_user_id;
 	const { data: profile } = await admin
