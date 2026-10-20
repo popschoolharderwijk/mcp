@@ -5,7 +5,8 @@ import {
 	resolveLessonTypeLoadFailure,
 	shouldSkipLessonTypeLoad,
 } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
-import type { LessonTypeOptionRow, LessonTypeRow } from '../../../src/types/lesson-agreements';
+import type { LessonTypeOptionWithTariffs } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
+import type { LessonTypeRow } from '../../../src/types/lesson-agreements';
 
 const lessonType: LessonTypeRow = {
 	id: 'lt-1',
