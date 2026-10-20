@@ -1,4 +1,4 @@
-// Sends a Magic Link to the student (or their representative)
+// Sends the own "direct_debit_invite" template e-mail (with a server-generated login link)
 // with a redirect to /direct-debit/start?agreement=<id>. After logging in,
 // the user can proceed directly to Stripe checkout.
 //

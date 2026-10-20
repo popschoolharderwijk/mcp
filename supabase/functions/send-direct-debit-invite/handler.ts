@@ -76,9 +76,14 @@ async function prepareDirectDebitInvite(ctx: LessonAgreementPostContext): Promis
 		)
 		.eq('id', ctx.lessonAgreementId)
 		.maybeSingle();
-	const agreement = data as InviteAgreement | null;
-	const access = resolveDirectDebitAgreementAccessError(agreement, agErr, isPrivileged, auth.user.id);
-	if (!access.ok || !agreement) return fail(access.ok ? 404 : access.status, access.ok ? '' : access.error);
+	const access = resolveDirectDebitAgreementAccessError(
+		data as InviteAgreement | null,
+		agErr,
+		isPrivileged,
+		auth.user.id,
+	);
+	if (!access.ok) return fail(access.status, access.error);
+	const agreement = data as InviteAgreement;
 
 	const notStripe = resolveNotStripeAgreementFailure(agreement.payment_method);
 	if (notStripe) return fail(notStripe.status, notStripe.error);
