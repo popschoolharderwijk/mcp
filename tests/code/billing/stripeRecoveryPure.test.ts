@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { toCustomerDirectDebitMessage } from '../../../src/lib/direct-debit/directDebitStartHelpers';
 import {
 	CUSTOMER_DIRECT_DEBIT_ERROR,
 	isStripeResourceMissing,
@@ -9,7 +10,6 @@ import {
 	staleCatalogPriceIds,
 	toScheduleError,
 } from '../../../supabase/functions/_shared/stripeRecoveryPure';
-import { toCustomerDirectDebitMessage } from '../../../src/lib/direct-debit/directDebitStartHelpers';
 
 const missing = (message: string, param?: string) =>
 	Object.assign(new Error(message), { code: 'resource_missing', ...(param ? { param } : {}) });
