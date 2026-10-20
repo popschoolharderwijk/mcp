@@ -2398,3 +2398,17 @@ WHERE user_id = '50000000-0003-0000-0000-000000000000';
 -- =============================================================================
 -- END SEED
 -- =============================================================================
+
+-- Tariff model: SEPA and Stripe agreements need a date of birth (under 21 vs 21+).
+-- Give seeded students on SEPA/Stripe a date of birth: most under 21, every 5th one 21+.
+UPDATE public.students s
+SET date_of_birth = CASE
+  WHEN abs(hashtext(s.user_id::text)) % 5 = 0 THEN DATE '1995-06-15'
+  ELSE DATE '2011-03-10'
+END
+WHERE s.date_of_birth IS NULL
+  AND EXISTS (
+    SELECT 1 FROM public.lesson_agreements la
+    WHERE la.student_user_id = s.user_id
+      AND la.payment_method IN ('sepa', 'stripe')
+  );
