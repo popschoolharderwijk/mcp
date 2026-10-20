@@ -104,3 +104,10 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 - Geldigheid van de link = de OTP-verlooptijd van Supabase Auth (standaard 1 uur). Aan te passen in het Supabase-dashboard van mcp-dev: Authentication → Sign In / Providers → Email → **Email OTP Expiration** (maximaal 86400 seconden = 24 uur). Dit geldt ook voor de gewone inlogmail.
 - Pure logica en tests: `send-direct-debit-invite/sendDirectDebitInvitePure.ts`, `tests/code/direct-debit/directDebitInviteEmail.test.ts`.
 
+## Fouten en herstel
+
+- Ontbreekt bij het opbouwen van een schedule of de eerste factuur een btw-tarief, prijs of product in het huidige Stripe-account, dan is de fout: "… bestaat niet in het huidige Stripe-account: synchroniseer eerst met Stripe".
+- Klanten op `/direct-debit/start` zien nooit de ruwe Stripe-tekst, maar: "Er ging iets mis bij het afronden van je machtiging. Je hoeft niets opnieuw te doen; Popschool neemt contact met je op." De technische fout staat in de logs en als `last_rebuild_error` bij het abonnement (zichtbaar als "Laatste fout" op de overeenkomst).
+- Mislukt het opbouwen nadat de machtiging is afgegeven, dan staat de betaalmethode al als standaard op de Stripe-klant. Er komt dan een abonnementsrij met status `incomplete` en `needs_rebuild`. **Synchroniseer** op de overeenkomst of de dagelijkse taak bouwt het schedule later op, met de klant uit `stripe_customers` en diens standaard betaalmethode. Een nieuwe machtiging is niet nodig.
+- Zonder standaard betaalmethode op de klant wordt geen schedule gemaakt ("Nog geen machtiging gekoppeld").
+- Een opgeslagen Stripe-klant die niet in het huidige account bestaat, wordt bij een nieuwe betaaluitnodiging vervangen.

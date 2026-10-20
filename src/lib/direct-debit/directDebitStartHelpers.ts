@@ -66,6 +66,18 @@ function hasInvokeResponseError(data: unknown, error: unknown): boolean {
 	return Boolean(error) || typeof dataError === 'string';
 }
 
+/** Mirror of CUSTOMER_DIRECT_DEBIT_ERROR in supabase/functions/_shared/stripeRecoveryPure.ts. */
+export const CUSTOMER_DIRECT_DEBIT_ERROR =
+	'Er ging iets mis bij het afronden van je machtiging. Je hoeft niets opnieuw te doen; Popschool neemt contact met je op.';
+
+/** Never show raw Stripe texts or ids to the customer. */
+export function toCustomerDirectDebitMessage(message: string): string {
+	const raw =
+		/^No such /i.test(message) ||
+		/\b(txr|price|prod|cus|pm|seti|sub|sub_sched|cs|in|bpc|pi|src)_[A-Za-z0-9]{6,}/.test(message);
+	return raw ? CUSTOMER_DIRECT_DEBIT_ERROR : message;
+}
+
 function resolveDirectDebitCompleteFallbackError(): string {
 	return 'Kon incasso niet afronden.';
 }
@@ -106,7 +118,7 @@ export async function runDirectDebitStartFlow(
 		const fallback =
 			mode === 'complete' ? resolveDirectDebitCompleteFallbackError() : resolveDirectDebitCheckoutFallbackError();
 		const message = await deps.getFunctionErrorMessage(data, invokeErr, fallback);
-		return { status: 'error', message };
+		return { status: 'error', message: toCustomerDirectDebitMessage(message) };
 	}
 
 	if (mode === 'complete') {

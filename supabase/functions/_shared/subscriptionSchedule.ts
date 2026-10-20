@@ -3,6 +3,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
 import { getStripeId } from './stripe.ts';
+import { toScheduleError } from './stripeRecoveryPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 import {
 	addMonths,
@@ -25,6 +26,7 @@ export function todayIso(): string {
 
 interface PlanContext {
 	agreementId: string;
+	studentUserId: string;
 	optionId: string;
 	billingKind: 'monthly' | 'one_off';
 	startDate: string;
@@ -62,7 +64,7 @@ export async function findOpenSubscription(
 async function loadPlanContext(admin: SupabaseClient, agreementId: string): Promise<PlanContext> {
 	const { data: agreement } = await admin
 		.from('lesson_agreements')
-		.select('id, start_date, payment_method, lesson_type_option_id')
+		.select('id, student_user_id, start_date, payment_method, lesson_type_option_id')
 		.eq('id', agreementId)
 		.maybeSingle();
 	if (!agreement) throw new Error('Lesovereenkomst niet gevonden');
@@ -98,6 +100,7 @@ async function loadPlanContext(admin: SupabaseClient, agreementId: string): Prom
 	}>;
 	return {
 		agreementId,
+		studentUserId: agreement.student_user_id,
 		optionId: agreement.lesson_type_option_id,
 		billingKind: (option?.billing_kind ?? 'monthly') as 'monthly' | 'one_off',
 		startDate: agreement.start_date,
@@ -245,17 +248,46 @@ async function updateRunningSchedule(
  * Create or rebuild the catalog-based schedule for one Stripe agreement.
  * Idempotent: a second call with unchanged data produces the same phases.
  */
+type SyncInput = { agreementId: string; customerId?: string; defaultPaymentMethod?: string; today?: string };
+
+/** Stripe customer of the student (stored when the payment invitation was opened). */
+async function findStudentCustomerId(admin: SupabaseClient, studentUserId: string): Promise<string | null> {
+	const { data } = await admin
+		.from('stripe_customers')
+		.select('stripe_customer_id')
+		.eq('user_id', studentUserId)
+		.maybeSingle();
+	return data?.stripe_customer_id ?? null;
+}
+
 export async function syncAgreementSchedule(
 	admin: SupabaseClient,
 	stripe: Stripe,
-	input: { agreementId: string; customerId?: string; defaultPaymentMethod?: string; today?: string },
+	input: SyncInput,
+): Promise<ScheduleResult> {
+	try {
+		return await syncAgreementScheduleInner(admin, stripe, input);
+	} catch (err) {
+		// Missing tax rate / price / product in the current Stripe account → clear admin message.
+		throw toScheduleError(err);
+	}
+}
+
+async function syncAgreementScheduleInner(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	input: SyncInput,
 ): Promise<ScheduleResult> {
 	const today = input.today ?? todayIso();
 	const ctx = await loadPlanContext(admin, input.agreementId);
 	const existing = await findOpenSubscription(admin, input.agreementId);
-	const customerId = input.customerId ?? existing?.stripe_customer_id;
+	// Fallback to the student's Stripe customer: recovers a mandate that was given while the
+	// schedule could not be built (no subscription row yet).
+	const customerId =
+		input.customerId ?? existing?.stripe_customer_id ?? (await findStudentCustomerId(admin, ctx.studentUserId));
 	if (!customerId) throw new Error('Nog geen Stripe-klant: stuur eerst een betaaluitnodiging');
 	const pm = input.defaultPaymentMethod ?? (await resolveDefaultPaymentMethod(stripe, customerId));
+	if (!pm) throw new Error('Nog geen machtiging gekoppeld: de klant moet de betaaluitnodiging eerst afronden');
 
 	let schedule: Stripe.SubscriptionSchedule | null = existing?.stripe_schedule_id
 		? await stripe.subscriptionSchedules.retrieve(existing.stripe_schedule_id)
@@ -354,14 +386,45 @@ export async function syncAgreementSchedule(
 	};
 }
 
-/** Record a rebuild failure without leaking internals. */
-export async function recordRebuildError(admin: SupabaseClient, agreementId: string, err: unknown): Promise<string> {
-	const message = getSafeErrorMessage(err, 'Opbouwen abonnement mislukt');
-	await admin
+/**
+ * Record a rebuild failure so admins see it on the agreement. Without a subscription row yet
+ * (the first build failed) an `incomplete` row is created when the Stripe customer is known,
+ * flagged needs_rebuild so the daily task and the Synchroniseer button retry it.
+ */
+export async function recordRebuildError(
+	admin: SupabaseClient,
+	agreementId: string,
+	err: unknown,
+	customerId?: string | null,
+): Promise<string> {
+	const message = getSafeErrorMessage(toScheduleError(err), 'Opbouwen abonnement mislukt');
+	const { data: updated } = await admin
 		.from('subscriptions')
-		.update({ last_rebuild_error: message })
+		.update({ last_rebuild_error: message, needs_rebuild: true })
 		.eq('lesson_agreement_id', agreementId)
-		.in('status', OPEN_STATUSES);
+		.in('status', OPEN_STATUSES)
+		.select('id');
+	if ((updated ?? []).length > 0) return message;
+
+	let customer = customerId ?? null;
+	if (!customer) {
+		const { data: agreement } = await admin
+			.from('lesson_agreements')
+			.select('student_user_id')
+			.eq('id', agreementId)
+			.maybeSingle();
+		if (agreement) customer = await findStudentCustomerId(admin, agreement.student_user_id);
+	}
+	if (customer) {
+		await admin.from('subscriptions').insert({
+			lesson_agreement_id: agreementId,
+			stripe_customer_id: customer,
+			stripe_price_id: '',
+			status: 'incomplete',
+			needs_rebuild: true,
+			last_rebuild_error: message,
+		});
+	}
 	return message;
 }
 
@@ -405,7 +468,11 @@ export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Strip
 				.eq('first_invoice_status', 'pending');
 			results.push({ lesson_agreement_id: row.lesson_agreement_id, ok: true });
 		} catch (err) {
-			results.push({ lesson_agreement_id: row.lesson_agreement_id, ok: false, error: getSafeErrorMessage(err) });
+			results.push({
+				lesson_agreement_id: row.lesson_agreement_id,
+				ok: false,
+				error: getSafeErrorMessage(toScheduleError(err)),
+			});
 		}
 	}
 	return results;
@@ -420,7 +487,8 @@ export async function processPendingRebuilds(
 	const { data: rows } = await admin
 		.from('subscriptions')
 		.select('lesson_agreement_id, needs_rebuild, schedule_horizon_end, lesson_agreements!inner(lesson_type_id)')
-		.not('stripe_schedule_id', 'is', null)
+		// Rows without a schedule are only retried when flagged (first build failed).
+		.or('stripe_schedule_id.not.is.null,needs_rebuild.eq.true')
 		.in('status', OPEN_STATUSES);
 	const horizonLimit = addMonths(monthStart(options.today), 12);
 	const due = (

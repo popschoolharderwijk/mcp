@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.2 — 2026-10-20
+
+- **Zelfherstel na een andere Stripe-sleutel**: "Synchroniseer met Stripe" controleert opgeslagen btw-tarieven, klantportaalconfiguratie, producten en prijzen in het huidige Stripe-account en maakt ontbrekende opnieuw aan; een tweede sync verandert niets
+- Ontbreekt een btw-tarief, prijs of product bij het opbouwen van een abonnement of de eerste factuur, dan krijg je de melding "synchroniseer eerst met Stripe" in plaats van een Stripe-fout
+- Klanten zien op de machtigingspagina nooit meer een ruwe Stripe-melding; de technische fout staat bij het abonnement op de overeenkomst ("Laatste fout")
+- Mislukt het opbouwen na een afgegeven machtiging, dan herstelt "Synchroniseer" op de overeenkomst (of de dagelijkse taak) het abonnement zonder nieuwe machtiging
+
 ## 1.5.1 — 2026-10-20
 
 - **Eigen betaaluitnodiging (Stripe)**: nieuwe e-mailtemplate "Betaaluitnodiging (Stripe)" (`direct_debit_invite`) met uitleg over de machtiging, het maandbedrag, de eerste maand naar rato, de startdatum en de minimale looptijd; beheerbaar onder Instellingen → E-mailtemplates
