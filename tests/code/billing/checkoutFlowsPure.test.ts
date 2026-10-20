@@ -148,12 +148,19 @@ describe('buildStripeCustomerDisplayName', () => {
 
 describe('buildCompleteModeSuccessResponse', () => {
 	it('builds the complete mode success payload', async () => {
-		const response = buildCompleteModeSuccessResponse({ scheduleId: 'sched_1', subscriptionId: 'sub_1' });
+		const response = buildCompleteModeSuccessResponse({
+			scheduleId: 'sched_1',
+			subscriptionId: 'sub_1',
+			phases: 3,
+			firstInvoice: 'sent',
+		});
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
 			mode: 'complete',
 			schedule_id: 'sched_1',
 			subscription_id: 'sub_1',
+			phases: 3,
+			first_invoice: 'sent',
 		});
 	});
 });
@@ -162,22 +169,16 @@ describe('buildDirectModeSuccessResponse', () => {
 	it('builds the direct mode success payload', async () => {
 		const response = buildDirectModeSuccessResponse({
 			scheduleId: 'sched_1',
-			subscriptionId: 'sub_1',
-			yearly: { yearlyCents: 120000, monthlyCents: 10000, lessonsCount: 36 },
-			periodStart: '2026-09-01',
-			periodEnd: '2027-08-31',
-			tariff: 'standard',
+			subscriptionId: null,
+			phases: 2,
+			firstInvoice: null,
 		});
-		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
 			mode: 'direct',
 			schedule_id: 'sched_1',
-			subscription_id: 'sub_1',
-			yearly_cents: 120000,
-			monthly_cents: 10000,
-			lessons_count: 36,
-			period: { start: '2026-09-01', end: '2027-08-31' },
-			tariff: 'standard',
+			subscription_id: null,
+			phases: 2,
+			first_invoice: null,
 		});
 	});
 });
