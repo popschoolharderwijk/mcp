@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+import { formatFeePreviewLabel } from '../../../src/lib/billing/lessonFeeFormat';
 
 describe('formatFeePreviewLabel', () => {
 	it('shows the monthly amount', () => {
