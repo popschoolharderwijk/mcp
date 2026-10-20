@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	buildAgreementBillingPreviewInput,
-	formatAgreementCents,
 	formatAgreementDate,
 	resolveAgreementDayLabel,
 	resolveAgreementEndDateLabel,
 	resolveAgreementStatusLabel,
 	resolveAgreementStatusVariant,
-	shouldShowAgreementPreviewBlock,
+	resolveAgreementFeePreviewKey,
 } from '../../../src/lib/students/lessonAgreementDialogHelpers';
 import type { LessonAgreementWithTeacher } from '../../../src/types/lesson-agreements';
 
@@ -26,37 +24,22 @@ const agreement: LessonAgreementWithTeacher = {
 	lesson_type: { id: 'lt-1', name: 'Piano', icon: 'piano', color: '#ff0000' },
 };
 
-describe('buildAgreementBillingPreviewInput', () => {
+describe('resolveAgreementFeePreviewKey', () => {
 	it('returns null when required context is missing', () => {
-		expect(buildAgreementBillingPreviewInput(null, 'student-1', 'lt-1', true)).toBeNull();
-		expect(buildAgreementBillingPreviewInput(agreement, undefined, 'lt-1', true)).toBeNull();
-		expect(buildAgreementBillingPreviewInput(agreement, 'student-1', undefined, true)).toBeNull();
-		expect(buildAgreementBillingPreviewInput(agreement, 'student-1', 'lt-1', false)).toBeNull();
+		expect(resolveAgreementFeePreviewKey(null, 'student-1', 'lt-1', true)).toBeNull();
+		expect(resolveAgreementFeePreviewKey(agreement, undefined, 'lt-1', true)).toBeNull();
+		expect(resolveAgreementFeePreviewKey(agreement, 'student-1', undefined, true)).toBeNull();
+		expect(resolveAgreementFeePreviewKey(agreement, 'student-1', 'lt-1', false)).toBeNull();
 	});
 
-	it('builds billing preview input for privileged users', () => {
-		expect(buildAgreementBillingPreviewInput(agreement, 'student-1', 'lt-1', true)).toEqual({
-			id: 'agr-1',
-			student_user_id: 'student-1',
-			lesson_type_id: 'lt-1',
-			frequency: 'weekly',
-			duration_minutes: 45,
-			day_of_week: 1,
-			start_date: '2026-09-01',
-			end_date: null,
-		});
+	it('changes when the period changes', () => {
+		expect(resolveAgreementFeePreviewKey(agreement, 'student-1', 'lt-1', true)).toBe('agr-1:2026-09-01:');
 	});
 });
 
 describe('formatAgreementDate', () => {
 	it('formats dates in Dutch long form', () => {
 		expect(formatAgreementDate('2026-09-01')).toBe('1 september 2026');
-	});
-});
-
-describe('formatAgreementCents', () => {
-	it('formats cents as Dutch euros', () => {
-		expect(formatAgreementCents(1950)).toBe('€\u00a019,50');
 	});
 });
 

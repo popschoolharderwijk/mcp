@@ -164,7 +164,7 @@ export function UserStepCreateContent({
 			</div>
 			{selectedLessonTypeId && lessonTypeOptions.length > 0 && (
 				<div className="space-y-3">
-					<Label className="text-base">Optie (duur, frequentie, prijs)</Label>
+					<Label className="text-base">Lesvorm</Label>
 					<LessonTypeOptionSelect
 						options={lessonTypeOptions}
 						value={selectedOptionSnapshot}

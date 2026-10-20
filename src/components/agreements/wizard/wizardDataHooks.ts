@@ -60,11 +60,15 @@ export function useWizardLessonTypeOptions(lessonTypeId: string | null) {
 		}
 		void supabase
 			.from('lesson_type_options')
-			.select('id, duration_minutes, frequency, price_per_lesson')
+			.select('id, duration_minutes, frequency, label, billing_kind')
 			.eq('lesson_type_id', lessonTypeId)
 			.order('duration_minutes')
 			.order('frequency')
-			.then(({ data }) => setOptions(data ?? []));
+			.then(({ data }) =>
+				setOptions(
+					(data ?? []).map((o) => ({ ...o, billing_kind: o.billing_kind as LessonTypeOptionSnapshot['billing_kind'] })),
+				),
+			);
 	}, [lessonTypeId]);
 
 	return options;

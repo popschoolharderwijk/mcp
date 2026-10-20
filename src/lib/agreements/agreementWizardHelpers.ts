@@ -13,11 +13,13 @@ function formPatchFromAgreement(agreement: AgreementTableRow, defaultEndDate: st
 			phone_number: null,
 		},
 		lessonTypeId: agreement.lesson_type_id,
-		selectedOptionSnapshot: {
-			duration_minutes: agreement.duration_minutes,
-			frequency: agreement.frequency,
-			price_per_lesson: agreement.price_per_lesson,
-		},
+		selectedOptionSnapshot: agreement.lesson_type_option_id
+			? {
+					id: agreement.lesson_type_option_id,
+					duration_minutes: agreement.duration_minutes,
+					frequency: agreement.frequency,
+				}
+			: null,
 		startDate: agreement.start_date,
 		endDate: agreement.end_date?.trim() ? agreement.end_date : defaultEndDate,
 		teacherUserId: agreement.teacher_user_id,

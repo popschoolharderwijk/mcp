@@ -2,7 +2,7 @@ import { LessonAgreementPreviewBlock } from '@/components/students/LessonAgreeme
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
-import type { AgreementBillingPreview } from '@/hooks/useAgreementBillingPreview';
+import type { LessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import { frequencyLabels } from '@/lib/frequencies';
 import {
 	formatAgreementDate,
@@ -22,7 +22,7 @@ interface LessonAgreementDialogContentProps {
 	showPreviewBlock: boolean;
 	previewLoading: boolean;
 	previewError: string | null;
-	preview: AgreementBillingPreview | null;
+	preview: LessonFeePreview | null;
 }
 
 export function LessonAgreementDialogContent({

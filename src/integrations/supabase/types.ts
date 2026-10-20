@@ -24,6 +24,7 @@ export type Database = {
           account_omzet_under_21: string
           btw_code_21: string
           btw_code_exempt: string
+          cancellation_notice_days: number
           company_address: string | null
           company_btw_nummer: string | null
           company_city: string | null
@@ -67,6 +68,7 @@ export type Database = {
           account_omzet_under_21?: string
           btw_code_21?: string
           btw_code_exempt?: string
+          cancellation_notice_days?: number
           company_address?: string | null
           company_btw_nummer?: string | null
           company_city?: string | null
@@ -110,6 +112,7 @@ export type Database = {
           account_omzet_under_21?: string
           btw_code_21?: string
           btw_code_exempt?: string
+          cancellation_notice_days?: number
           company_address?: string | null
           company_btw_nummer?: string | null
           company_city?: string | null
@@ -374,8 +377,12 @@ export type Database = {
       }
       direct_debit_batch_items: {
         Row: {
+          age_category: string | null
           amount_cents: number
+          amount_excl_btw_cents: number | null
           batch_id: string
+          btw_amount_cents: number | null
+          btw_rate: number | null
           created_at: string
           created_by: string | null
           currency: string
@@ -394,8 +401,12 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          age_category?: string | null
           amount_cents: number
+          amount_excl_btw_cents?: number | null
           batch_id: string
+          btw_amount_cents?: number | null
+          btw_rate?: number | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -414,8 +425,12 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          age_category?: string | null
           amount_cents?: number
+          amount_excl_btw_cents?: number | null
           batch_id?: string
+          btw_amount_cents?: number | null
+          btw_rate?: number | null
           created_at?: string
           created_by?: string | null
           currency?: string
@@ -806,6 +821,8 @@ export type Database = {
       }
       lesson_agreements: {
         Row: {
+          cancellation_effective_date: string | null
+          cancellation_requested_at: string | null
           created_at: string
           created_by: string | null
           day_of_week: number
@@ -817,10 +834,11 @@ export type Database = {
           is_active: boolean
           lesson_group_id: string | null
           lesson_type_id: string
-          monthly_amount_cents: number | null
+          lesson_type_option_id: string | null
+          minimum_term_end: string | null
           notes: string | null
           payment_method: string
-          price_per_lesson: number
+          price_per_lesson: number | null
           sepa_mandate_id: string | null
           signup_source: string | null
           start_date: string
@@ -833,6 +851,8 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          cancellation_effective_date?: string | null
+          cancellation_requested_at?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week: number
@@ -844,10 +864,11 @@ export type Database = {
           is_active?: boolean
           lesson_group_id?: string | null
           lesson_type_id: string
-          monthly_amount_cents?: number | null
+          lesson_type_option_id?: string | null
+          minimum_term_end?: string | null
           notes?: string | null
           payment_method?: string
-          price_per_lesson: number
+          price_per_lesson?: number | null
           sepa_mandate_id?: string | null
           signup_source?: string | null
           start_date: string
@@ -860,6 +881,8 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          cancellation_effective_date?: string | null
+          cancellation_requested_at?: string | null
           created_at?: string
           created_by?: string | null
           day_of_week?: number
@@ -871,10 +894,11 @@ export type Database = {
           is_active?: boolean
           lesson_group_id?: string | null
           lesson_type_id?: string
-          monthly_amount_cents?: number | null
+          lesson_type_option_id?: string | null
+          minimum_term_end?: string | null
           notes?: string | null
           payment_method?: string
-          price_per_lesson?: number
+          price_per_lesson?: number | null
           sepa_mandate_id?: string | null
           signup_source?: string | null
           start_date?: string
@@ -899,6 +923,13 @@ export type Database = {
             columns: ["lesson_type_id"]
             isOneToOne: false
             referencedRelation: "lesson_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_agreements_lesson_type_option_id_fkey"
+            columns: ["lesson_type_option_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_type_options"
             referencedColumns: ["id"]
           },
           {
@@ -973,7 +1004,7 @@ export type Database = {
           is_active: boolean
           lesson_type_id: string
           name: string
-          price_per_lesson: number
+          price_per_lesson: number | null
           start_date: string
           start_time: string
           teacher_user_id: string
@@ -991,7 +1022,7 @@ export type Database = {
           is_active?: boolean
           lesson_type_id: string
           name: string
-          price_per_lesson?: number
+          price_per_lesson?: number | null
           start_date: string
           start_time: string
           teacher_user_id: string
@@ -1009,7 +1040,7 @@ export type Database = {
           is_active?: boolean
           lesson_type_id?: string
           name?: string
-          price_per_lesson?: number
+          price_per_lesson?: number | null
           start_date?: string
           start_time?: string
           teacher_user_id?: string
@@ -1143,41 +1174,94 @@ export type Database = {
           },
         ]
       }
+      lesson_type_option_tariffs: {
+        Row: {
+          amount_adult_cents: number | null
+          amount_under_21_cents: number | null
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          id: string
+          lesson_type_option_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          amount_adult_cents?: number | null
+          amount_under_21_cents?: number | null
+          created_at?: string
+          created_by?: string | null
+          effective_from: string
+          id?: string
+          lesson_type_option_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          amount_adult_cents?: number | null
+          amount_under_21_cents?: number | null
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          id?: string
+          lesson_type_option_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_type_option_tariffs_lesson_type_option_id_fkey"
+            columns: ["lesson_type_option_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_type_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_type_options: {
         Row: {
+          billing_kind: string
           created_at: string
           created_by: string | null
           duration_minutes: number
           frequency: Database["public"]["Enums"]["lesson_frequency"]
+          has_adult_tariff: boolean
           id: string
+          label: string | null
           lesson_type_id: string
-          price_per_lesson: number
+          price_per_lesson: number | null
           price_per_lesson_adult_cents: number | null
           price_per_lesson_under_21_cents: number | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          billing_kind?: string
           created_at?: string
           created_by?: string | null
           duration_minutes: number
           frequency: Database["public"]["Enums"]["lesson_frequency"]
+          has_adult_tariff?: boolean
           id?: string
+          label?: string | null
           lesson_type_id: string
-          price_per_lesson: number
+          price_per_lesson?: number | null
           price_per_lesson_adult_cents?: number | null
           price_per_lesson_under_21_cents?: number | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          billing_kind?: string
           created_at?: string
           created_by?: string | null
           duration_minutes?: number
           frequency?: Database["public"]["Enums"]["lesson_frequency"]
+          has_adult_tariff?: boolean
           id?: string
+          label?: string | null
           lesson_type_id?: string
-          price_per_lesson?: number
+          price_per_lesson?: number | null
           price_per_lesson_adult_cents?: number | null
           price_per_lesson_under_21_cents?: number | null
           updated_at?: string
@@ -2042,11 +2126,59 @@ export type Database = {
       }
       can_delete_user: { Args: { _target_id: string }; Returns: boolean }
       can_manage_agenda_event: { Args: { ev_id: string }; Returns: boolean }
+      cancel_lesson_agreement: {
+        Args: { p_agreement_id: string; p_requested_on?: string }
+        Returns: string
+      }
       check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean }
       check_rls_forced: { Args: { p_table_name: string }; Returns: boolean }
       cleanup_student_if_no_agreements: {
         Args: { _user_id: string }
         Returns: undefined
+      }
+      compute_agreement_month_fee: {
+        Args: { p_agreement_id: string; p_month: string }
+        Returns: {
+          age_category: string
+          amount_cents: number
+          amount_excl_btw_cents: number
+          btw_amount_cents: number
+          btw_rate: number
+          is_prorated: boolean
+          tariff_effective_from: string
+        }[]
+      }
+      compute_cancellation_effective_date: {
+        Args: {
+          p_minimum_term_end: string
+          p_notice_days: number
+          p_requested_on: string
+        }
+        Returns: string
+      }
+      compute_lesson_fee: {
+        Args: {
+          p_billing_kind: string
+          p_date_of_birth: string
+          p_end_date: string
+          p_has_adult_tariff: boolean
+          p_month: string
+          p_start_date: string
+          p_tariffs: Json
+        }
+        Returns: {
+          age_category: string
+          amount_cents: number
+          amount_excl_btw_cents: number
+          btw_amount_cents: number
+          btw_rate: number
+          is_prorated: boolean
+          tariff_effective_from: string
+        }[]
+      }
+      compute_minimum_term_end: {
+        Args: { p_start_date: string }
+        Returns: string
       }
       current_user_id: { Args: never; Returns: string }
       end_recurring_deviation_from_week: {
@@ -2173,9 +2305,28 @@ export type Database = {
       next_mandate_reference: { Args: never; Returns: string }
       normalize_compact_text: { Args: { p_value: string }; Returns: string }
       normalize_trim_text: { Args: { p_value: string }; Returns: string }
+      option_tariffs_json: { Args: { p_option_id: string }; Returns: Json }
       policy_exists: {
         Args: { p_policy_name: string; p_table_name: string }
         Returns: boolean
+      }
+      preview_lesson_fee: {
+        Args: {
+          p_date_of_birth: string
+          p_end_date: string
+          p_lesson_type_option_id: string
+          p_month: string
+          p_start_date: string
+        }
+        Returns: {
+          age_category: string
+          amount_cents: number
+          amount_excl_btw_cents: number
+          btw_amount_cents: number
+          btw_rate: number
+          is_prorated: boolean
+          tariff_effective_from: string
+        }[]
       }
       recalc_direct_debit_batch: {
         Args: { p_batch_id: string }

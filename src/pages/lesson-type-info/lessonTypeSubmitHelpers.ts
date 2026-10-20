@@ -4,7 +4,9 @@ import {
 	buildLessonTypeOptionRowPayload,
 	collectRemovedLessonTypeOptionIds,
 	resolveLessonTypeSaveMode,
+	shouldSaveOptionTariff,
 } from '@/pages/lesson-type-info/lessonTypeSubmitPureHelpers';
+import { upsertOptionTariff } from '@/pages/lesson-type-info/lessonTypeOptionPersistence';
 import type { OptionRowWithKey } from '@/pages/lesson-type-info/types';
 import { optionSort } from '@/pages/lesson-type-info/utils';
 import { buildLessonTypePayload } from '@/pages/lesson-type-info/validateLessonTypeForm';
@@ -15,12 +17,21 @@ async function syncLessonTypeOptions(lessonTypeId: string, optionsForm: OptionRo
 	for (const option of sorted) {
 		const payload = buildLessonTypeOptionRowPayload(option);
 
-		if (option.id) {
-			await supabase.from('lesson_type_options').update(payload).eq('id', option.id);
-			continue;
+		let optionId = option.id;
+		if (optionId) {
+			await supabase.from('lesson_type_options').update(payload).eq('id', optionId);
+		} else {
+			const { data } = await supabase
+				.from('lesson_type_options')
+				.insert({ lesson_type_id: lessonTypeId, ...payload })
+				.select('id')
+				.single();
+			optionId = data?.id;
 		}
 
-		await supabase.from('lesson_type_options').insert({ lesson_type_id: lessonTypeId, ...payload });
+		if (optionId && shouldSaveOptionTariff(option)) {
+			await upsertOptionTariff(optionId, option);
+		}
 	}
 }
 

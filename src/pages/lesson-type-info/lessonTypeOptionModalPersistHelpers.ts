@@ -6,15 +6,16 @@ import {
 	persistNewOptionInsert,
 } from '@/pages/lesson-type-info/lessonTypeOptionPersistence';
 import type { OptionModalFormState, OptionRowWithKey } from '@/pages/lesson-type-info/types';
+import { buildOptionDbPayloadFromForm } from '@/pages/lesson-type-info/utils';
 import type { LessonTypeOptionRow, LessonTypeRow } from '@/types/lesson-agreements';
 
 export interface RunPersistExistingOptionFlowParams {
 	editing: OptionRowWithKey;
 	modalForm: OptionModalFormState;
-	priceAdult: number;
 	isEditMode: boolean;
 	lessonType: LessonTypeRow | null;
 	setOptions: Dispatch<SetStateAction<LessonTypeOptionRow[]>>;
+	setOptionsForm: Dispatch<SetStateAction<OptionRowWithKey[]>>;
 	setSaving: (saving: boolean) => void;
 }
 
@@ -23,16 +24,17 @@ export async function runPersistExistingOptionFlow(params: RunPersistExistingOpt
 
 	params.setSaving(true);
 	try {
-		const ok = await persistExistingOptionUpdate(params.editing, params.modalForm, params.priceAdult);
-		if (!ok) return false;
+		const tariff = await persistExistingOptionUpdate(params.editing, params.modalForm);
+		if (!tariff) return false;
 
-		const dbPayload = {
-			duration_minutes: parseInt(params.modalForm.duration_minutes, 10),
-			frequency: params.modalForm.frequency,
-			price_per_lesson: params.priceAdult,
-		};
+		const dbPayload = buildOptionDbPayloadFromForm(params.modalForm);
 		params.setOptions((prev) =>
 			prev.map((option) => (option.id === params.editing.id ? { ...option, ...dbPayload } : option)),
+		);
+		params.setOptionsForm((prev) =>
+			prev.map((row) =>
+				row.id === params.editing.id ? buildOptionFormRow(params.editing, params.modalForm, tariff) : row,
+			),
 		);
 		toast.success('Optie bijgewerkt');
 		return true;
@@ -48,7 +50,6 @@ export async function runPersistExistingOptionFlow(params: RunPersistExistingOpt
 export interface RunPersistNewOptionFlowParams {
 	editing: OptionRowWithKey;
 	modalForm: OptionModalFormState;
-	priceAdult: number;
 	isEditMode: boolean;
 	lessonType: LessonTypeRow | null;
 	setOptionsForm: Dispatch<SetStateAction<OptionRowWithKey[]>>;
@@ -57,7 +58,7 @@ export interface RunPersistNewOptionFlowParams {
 }
 
 export async function runPersistNewOptionFlow(params: RunPersistNewOptionFlowParams): Promise<boolean> {
-	params.setOptionsForm((prev) => [...prev, buildOptionFormRow(params.editing, params.modalForm, params.priceAdult)]);
+	params.setOptionsForm((prev) => [...prev, buildOptionFormRow(params.editing, params.modalForm)]);
 
 	if (!params.isEditMode || !params.lessonType) {
 		toast.success('Optie toegevoegd');
@@ -66,19 +67,23 @@ export async function runPersistNewOptionFlow(params: RunPersistNewOptionFlowPar
 
 	params.setSaving(true);
 	try {
-		const inserted = await persistNewOptionInsert(params.lessonType, params.modalForm, params.priceAdult);
+		const inserted = await persistNewOptionInsert(params.lessonType, params.modalForm);
 		if (!inserted) {
 			params.setOptionsForm((prev) => prev.filter((row) => row._newId !== params.editing._newId));
 			return false;
 		}
 
-		params.setOptions((prev) => [...prev, inserted]);
-		params.setOptionsForm((prev) => {
-			const next = [...prev];
-			const lastIndex = next.length - 1;
-			next[lastIndex] = { ...next[lastIndex], id: inserted.id };
-			return next;
-		});
+		params.setOptions((prev) => [...prev, inserted.option]);
+		params.setOptionsForm((prev) =>
+			prev.map((row) =>
+				row._newId === params.editing._newId
+					? {
+							...buildOptionFormRow(params.editing, params.modalForm, inserted.tariff),
+							id: inserted.option.id,
+						}
+					: row,
+			),
+		);
 		toast.success('Optie toegevoegd');
 		return true;
 	} catch (error) {

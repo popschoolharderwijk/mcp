@@ -1,78 +1,63 @@
-import type { AgreementBillingPreview } from '@/hooks/useAgreementBillingPreview';
-import { formatAgreementCents } from '@/lib/students/lessonAgreementDialogHelpers';
+import type { LessonFeePreview } from '@/lib/billing/loadLessonFeePreview';
+import { formatAgeCategoryLabel, formatDateNl, formatLessonFeeAmount } from '@/lib/billing/lessonFeeFormat';
 import {
-	formatAgreementTariffLabel,
-	resolveLessonAgreementPreviewRenderKind,
+	resolveFirstMonthLabel,
 	resolveLessonAgreementPreviewViewState,
-	shouldShowAgreementLeftoverNote,
 } from '@/lib/students/lessonAgreementPreviewHelpers';
 
 interface LessonAgreementPreviewBlockProps {
 	loading: boolean;
 	error: string | null;
-	preview: AgreementBillingPreview | null;
+	preview: LessonFeePreview | null;
+	/** Shown under the amounts, e.g. the minimum term. */
+	termNote?: string | null;
+	title?: string;
 }
 
-function LessonAgreementPreviewContent({ preview }: { preview: AgreementBillingPreview }) {
+function PreviewContent({ preview }: { preview: LessonFeePreview }) {
+	const { firstMonth, regularMonth } = preview;
 	return (
 		<div className="grid gap-3 sm:grid-cols-2">
 			<div>
-				<p className="text-xs font-medium text-muted-foreground">Schooljaar</p>
-				<p className="font-medium">{preview.schoolYearLabel}</p>
+				<p className="text-xs font-medium text-muted-foreground">{resolveFirstMonthLabel(preview)}</p>
+				<p className="font-medium">{formatLessonFeeAmount(firstMonth)}</p>
 			</div>
+			{regularMonth && (
+				<div>
+					<p className="text-xs font-medium text-muted-foreground">Maandbedrag (11× per jaar, niet in augustus)</p>
+					<p className="font-semibold text-base">{formatLessonFeeAmount(regularMonth)}</p>
+				</div>
+			)}
 			<div>
 				<p className="text-xs font-medium text-muted-foreground">Tarief</p>
-				<p className="font-medium">
-					{formatAgreementTariffLabel(preview.tariff)} — {formatAgreementCents(preview.pricePerLessonCents)}{' '}
-					per les
-				</p>
+				<p className="font-medium">{formatAgeCategoryLabel((regularMonth ?? firstMonth).age_category)}</p>
 			</div>
-			<div>
-				<p className="text-xs font-medium text-muted-foreground">Lessen dit jaar</p>
-				<p className="font-medium">{preview.lessonsCount}</p>
-			</div>
-			<div>
-				<p className="text-xs font-medium text-muted-foreground">Jaarbedrag</p>
-				<p className="font-medium">{formatAgreementCents(preview.yearlyCents)}</p>
-			</div>
-			<div className="sm:col-span-2">
-				<p className="text-xs font-medium text-muted-foreground">Maandbedrag (× 11, augustus geen incasso)</p>
-				<p className="font-semibold text-base">
-					{formatAgreementCents(preview.monthlyCents)}
-					{shouldShowAgreementLeftoverNote(preview.leftoverCents) && (
-						<span className="text-xs font-normal text-muted-foreground ml-2">
-							(laatste maand +{formatAgreementCents(preview.leftoverCents)})
-						</span>
-					)}
-				</p>
-			</div>
+			{firstMonth.tariff_effective_from && (
+				<div>
+					<p className="text-xs font-medium text-muted-foreground">Tarievenlijst</p>
+					<p className="font-medium">per {formatDateNl(firstMonth.tariff_effective_from)}</p>
+				</div>
+			)}
 		</div>
 	);
 }
 
-function LessonAgreementPreviewState({
-	viewState,
+export function LessonAgreementPreviewBlock({
+	loading,
 	error,
 	preview,
-}: {
-	viewState: ReturnType<typeof resolveLessonAgreementPreviewViewState>;
-	error: string | null;
-	preview: AgreementBillingPreview | null;
-}) {
-	const renderKind = resolveLessonAgreementPreviewRenderKind(viewState, preview);
-	if (renderKind === 'loading') return <p className="text-sm text-muted-foreground">Berekenen…</p>;
-	if (renderKind === 'error') return <p className="text-sm text-destructive">{error}</p>;
-	if (renderKind === 'content') return <LessonAgreementPreviewContent preview={preview as AgreementBillingPreview} />;
-	return null;
-}
-
-export function LessonAgreementPreviewBlock({ loading, error, preview }: LessonAgreementPreviewBlockProps) {
+	termNote,
+	title = 'Lesgeld',
+}: LessonAgreementPreviewBlockProps) {
 	const viewState = resolveLessonAgreementPreviewViewState(loading, error, preview);
 
 	return (
-		<div className="rounded-md border bg-muted/30 p-4">
-			<p className="text-sm font-medium text-muted-foreground mb-3">Incasso-preview</p>
-			<LessonAgreementPreviewState viewState={viewState} error={error} preview={preview} />
+		<div className="rounded-md border bg-muted/30 p-4 space-y-3">
+			<p className="text-sm font-medium text-muted-foreground">{title}</p>
+			{viewState === 'loading' && <p className="text-sm text-muted-foreground">Berekenen…</p>}
+			{viewState === 'error' && <p className="text-sm text-destructive">{error}</p>}
+			{viewState === 'content' && preview && <PreviewContent preview={preview} />}
+			{termNote && <p className="text-xs text-muted-foreground">{termNote}</p>}
 		</div>
 	);
 }

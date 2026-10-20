@@ -38,7 +38,8 @@ type LessonAgreementBaseFields = Pick<
 
 /** Agreement fields for table display (base + created_at, notes, teacher_user_id) */
 type LessonAgreementTableFields = LessonAgreementBaseFields &
-	Pick<LessonAgreementRow, 'created_at' | 'notes' | 'payment_method' | 'sepa_mandate_id'> & {
+	Pick<LessonAgreementRow, 'created_at' | 'notes' | 'payment_method' | 'sepa_mandate_id'> &
+	Partial<Pick<LessonAgreementRow, 'lesson_type_option_id' | 'minimum_term_end' | 'cancellation_effective_date'>> & {
 		teacher_user_id: string;
 		duo_pair_id?: string | null;
 	};
@@ -52,24 +53,36 @@ export type LessonTypeFormState = Pick<
 	cost_center: string;
 };
 
-/** Form row for editing one lesson_type_option (id optional for new; numeric fields as string for inputs) */
+/** How a lesson form is billed: fixed monthly amount or one-off (group courses). */
+export type LessonBillingKind = 'monthly' | 'one_off';
+
+/** One stored tariff of a lesson form (amounts in cents, adult incl. 21% VAT). */
+export type LessonTypeOptionTariff = Pick<
+	Tables<'lesson_type_option_tariffs'>,
+	'id' | 'effective_from' | 'amount_under_21_cents' | 'amount_adult_cents'
+>;
+
+/**
+ * Form row for one lesson form (lesson_type_options) plus the tariff being entered.
+ * Amounts in euros as string; saving a new effective date adds a tariff, the history stays.
+ */
 export type LessonTypeOptionFormRow = {
 	id?: string;
 	duration_minutes: string;
 	frequency: LessonFrequency;
-	/** Snapshot price (legacy column, kept for backwards compat). */
-	price_per_lesson: string;
-	/** Per-lesson price for students under 21 (in euros, as string for input). */
-	price_per_lesson_under_21: string;
-	/** Per-lesson price for students aged 21 and over (in euros, as string for input). */
-	price_per_lesson_adult: string;
+	label: string;
+	billing_kind: LessonBillingKind;
+	has_adult_tariff: boolean;
+	effective_from: string;
+	amount_under_21: string;
+	amount_adult: string;
+	tariffs: LessonTypeOptionTariff[];
 };
 
-/** Lesson type option row (duration/frequency/price) for selects; from Supabase lesson_type_options */
-export type LessonTypeOptionSnapshot = Pick<
-	LessonTypeOptionRow,
-	'id' | 'duration_minutes' | 'frequency' | 'price_per_lesson'
->;
+/** Lesson form for selects (wizard, signup). */
+export type LessonTypeOptionSnapshot = Pick<LessonTypeOptionRow, 'id' | 'duration_minutes' | 'frequency' | 'label'> & {
+	billing_kind: LessonBillingKind;
+};
 
 // ======== Wizard Step Types ========
 
@@ -91,7 +104,9 @@ export interface WizardLessonTypeInfo {
 	color: string | null;
 	frequency: LessonFrequency;
 	duration_minutes: number;
-	price_per_lesson: number;
+	price_per_lesson: number | null;
+	/** Lesson form whose tariff list determines the fee. */
+	lesson_type_option_id: string | null;
 }
 
 /** Simplified teacher for wizard confirmation step */
@@ -107,7 +122,7 @@ export interface WizardAgreementLessonType {
 	name: string | null;
 	frequency?: LessonFrequency;
 	duration_minutes?: number;
-	price_per_lesson?: number;
+	price_per_lesson?: number | null;
 }
 
 /** Initial agreement data for editing in wizard (snapshot fields from agreement) */
@@ -118,7 +133,7 @@ export interface WizardInitialAgreement {
 	lesson_type_id: string;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number;
+	price_per_lesson: number | null;
 	start_date: string;
 	end_date: string | null;
 	day_of_week: number;

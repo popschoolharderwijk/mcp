@@ -22,10 +22,7 @@ import {
 	type OptionModalFormState,
 	type OptionRowWithKey,
 } from '@/pages/lesson-type-info/types';
-import {
-	getOptionModalValidationError,
-	parseOptionModalValues,
-} from '@/pages/lesson-type-info/validateLessonTypeOption';
+import { getOptionModalValidationError } from '@/pages/lesson-type-info/validateLessonTypeOption';
 import type { LessonTypeOptionRow, LessonTypeRow } from '@/types/lesson-agreements';
 
 interface UseLessonTypeOptionModalParams {
@@ -64,7 +61,7 @@ export function useLessonTypeOptionModal({
 	}, []);
 
 	const updateExistingOptionInForm = useCallback(
-		(editing: OptionRowWithKey, modalForm: OptionModalFormState, priceAdult: number) => {
+		(editing: OptionRowWithKey, modalForm: OptionModalFormState) => {
 			const index = findOptionIndex(editing);
 			if (index < 0) {
 				toast.error('Optie niet gevonden');
@@ -73,7 +70,7 @@ export function useLessonTypeOptionModal({
 
 			setOptionsForm((prev) => {
 				const next = [...prev];
-				next[index] = buildOptionFormRow(editing, modalForm, priceAdult);
+				next[index] = buildOptionFormRow(editing, modalForm);
 				return next;
 			});
 			return true;
@@ -82,25 +79,24 @@ export function useLessonTypeOptionModal({
 	);
 
 	const persistExistingOption = useCallback(
-		async (editing: OptionRowWithKey, modalForm: OptionModalFormState, priceAdult: number) =>
+		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) =>
 			runPersistExistingOptionFlow({
 				editing,
 				modalForm,
-				priceAdult,
 				isEditMode,
 				lessonType,
 				setOptions,
+				setOptionsForm,
 				setSaving,
 			}),
-		[isEditMode, lessonType, setOptions, setSaving],
+		[isEditMode, lessonType, setOptions, setOptionsForm, setSaving],
 	);
 
 	const persistNewOption = useCallback(
-		async (editing: OptionRowWithKey, modalForm: OptionModalFormState, priceAdult: number) =>
+		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) =>
 			runPersistNewOptionFlow({
 				editing,
 				modalForm,
-				priceAdult,
 				isEditMode,
 				lessonType,
 				setOptionsForm,
@@ -126,13 +122,11 @@ export function useLessonTypeOptionModal({
 			isEditMode,
 			hasLessonType: Boolean(lessonType),
 		});
-		const { priceAdult } = parseOptionModalValues(optionModalForm);
 
 		await runSaveOptionInModal({
 			flow,
 			editingOption,
 			optionModalForm,
-			priceAdult,
 			updateExistingOptionInForm,
 			persistExistingOption,
 			persistNewOption,

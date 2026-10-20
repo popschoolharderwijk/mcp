@@ -3,9 +3,10 @@ import type { LessonFrequency } from '@/types/lesson-agreements';
 import type { User } from '@/types/users';
 
 export type WizardOptionSnapshot = {
+	id: string;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number;
+	label?: string | null;
 };
 
 export type WizardFormState = {
@@ -21,6 +22,12 @@ export type WizardFormState = {
 	partnerUser: User | null;
 	paymentMethod: 'stripe' | 'sepa' | 'manual';
 	sepaMandateId: string | null;
+	/** Date of birth as stored (null = unknown); the input below fills it in. */
+	studentDateOfBirth: string | null;
+	partnerDateOfBirth: string | null;
+	/** Entered in the wizard when the stored date is missing; saved on the student after creation. */
+	studentDateOfBirthInput: string;
+	partnerDateOfBirthInput: string;
 };
 
 export function createInitialWizardForm(defaultStartDate: string, defaultEndDate: string): WizardFormState {
@@ -37,5 +44,9 @@ export function createInitialWizardForm(defaultStartDate: string, defaultEndDate
 		partnerUser: null,
 		paymentMethod: 'sepa',
 		sepaMandateId: null,
+		studentDateOfBirth: null,
+		partnerDateOfBirth: null,
+		studentDateOfBirthInput: '',
+		partnerDateOfBirthInput: '',
 	};
 }
