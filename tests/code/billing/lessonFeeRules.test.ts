@@ -11,17 +11,19 @@ const BEGIN = '-- BEGIN PURE TARIFF FUNCTIONS';
 const END = '-- END PURE TARIFF FUNCTIONS';
 
 function loadPureSql(): string {
+	// Concatenate every pure block in migration order, so later migrations override earlier definitions.
 	const dir = join(import.meta.dir, '../../../supabase/migrations');
 	const files = readdirSync(dir)
 		.filter((f) => f.endsWith('.sql'))
-		.sort()
-		.reverse();
+		.sort();
+	const blocks: string[] = [];
 	for (const file of files) {
 		const sql = readFileSync(join(dir, file), 'utf8');
 		const start = sql.indexOf(BEGIN);
-		if (start >= 0) return sql.slice(start, sql.indexOf(END));
+		if (start >= 0) blocks.push(sql.slice(start, sql.indexOf(END)));
 	}
-	throw new Error('Pure tariff functions not found in migrations');
+	if (blocks.length === 0) throw new Error('Pure tariff functions not found in migrations');
+	return blocks.join('\n');
 }
 
 type Tariff = { effective_from: string; amount_under_21_cents: number | null; amount_adult_cents: number | null };
@@ -204,12 +206,15 @@ describe('compute_lesson_fee', () => {
 });
 
 describe('agreement term', () => {
-	it('minimum term is 6 calendar months minus one day', async () => {
+	it('minimum term runs to the end of the month of start + 6 months - 1 day', async () => {
 		expect(await scalar('SELECT public.compute_minimum_term_end($1::date)::text AS v', ['2026-09-01'])).toBe(
 			'2027-02-28',
 		);
 		expect(await scalar('SELECT public.compute_minimum_term_end($1::date)::text AS v', ['2026-10-15'])).toBe(
-			'2027-04-14',
+			'2027-04-30',
+		);
+		expect(await scalar('SELECT public.compute_minimum_term_end($1::date)::text AS v', ['2026-08-31'])).toBe(
+			'2027-02-28',
 		);
 	});
 
