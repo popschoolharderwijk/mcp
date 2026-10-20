@@ -67,6 +67,7 @@ describe('buildDuoStudentEmailJobs', () => {
 		]);
 		expect(buildDuoStudentEmailJobs(baseBody, profMap, profMap.get(TEACHER))).toEqual([
 			{
+				studentUserId: STUDENT_A,
 				studentEmail: 'anna@example.com',
 				studentName: 'Anna A',
 				teacherEmail: 'teacher@example.com',
@@ -80,6 +81,7 @@ describe('buildDuoTemplateEmailVars', () => {
 		expect(buildDuoTemplateEmailVars({ docent_naam: 'Jan' }, 'Anna')).toEqual({
 			docent_naam: 'Jan',
 			leerling_naam: 'Anna',
+			bedrag: 'volgens de tarievenlijst',
 		});
 	});
 });
@@ -100,6 +102,7 @@ describe('buildDuoConfirmationEmailPlan', () => {
 		expect(buildDuoConfirmationEmailPlan(baseBody, 'Piano', profMap, 'https://app.example.com')).toEqual({
 			jobs: [
 				{
+					studentUserId: STUDENT_A,
 					studentEmail: 'anna@example.com',
 					studentName: 'Anna A',
 					teacherEmail: 'teacher@example.com',
