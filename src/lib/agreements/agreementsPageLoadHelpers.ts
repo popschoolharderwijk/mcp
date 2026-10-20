@@ -5,7 +5,7 @@ import { mapRawAgreementToTableRow, type RawAgreementRow } from '@/lib/agreement
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
 const AGREEMENTS_LIST_SELECT =
-	'id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, duo_pair_id, lesson_types(id, name, icon, color), teachers(user_id)';
+	'id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, duo_pair_id, lesson_types(id, name, icon, color), teachers(user_id)';
 
 const EMPTY_AGREEMENT_PROFILE = {
 	first_name: null,

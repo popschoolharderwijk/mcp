@@ -50,7 +50,7 @@ async function loadAgreement(params: AgreementLoadParams): Promise<AgreementLoad
 		.from('lesson_agreements')
 		.select(
 			`id, created_at, day_of_week, start_time, start_date, end_date, is_active, notes, duo_pair_id,
-			student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson,
+			student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency,
 			payment_method, sepa_mandate_id, lesson_type_option_id, minimum_term_end, cancellation_effective_date,
 			lesson_types(id, name, icon, color), 
 			teachers(user_id)`,

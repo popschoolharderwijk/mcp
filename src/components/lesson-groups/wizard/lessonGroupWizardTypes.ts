@@ -47,7 +47,6 @@ export interface LessonGroupFormState {
 	lessonTypeId: string | null;
 	durationMinutes: number;
 	frequency: LessonFrequency;
-	pricePerLesson: number;
 	startDate: string;
 	endDate: string;
 	teacherUserId: string | null;

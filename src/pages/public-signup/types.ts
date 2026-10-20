@@ -13,7 +13,6 @@ export interface GroupOption {
 	start_time: string;
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number;
 	teacher_name: string | null;
 	members_count: number;
 }

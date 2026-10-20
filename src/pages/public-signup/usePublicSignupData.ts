@@ -45,7 +45,7 @@ export function usePublicSignupLessonTypeOptions(selectedType: LessonType | null
 
 		supabase
 			.from('lesson_type_options')
-			.select('id, duration_minutes, frequency, price_per_lesson')
+			.select('id, duration_minutes, frequency')
 			.eq('lesson_type_id', selectedType.id)
 			.order('duration_minutes')
 			.order('frequency')

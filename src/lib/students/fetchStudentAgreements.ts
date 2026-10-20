@@ -11,7 +11,7 @@ export async function fetchStudentAgreementsWithRelations(
 	const { data, error } = await supabase
 		.from('lesson_agreements')
 		.select(
-			'id, day_of_week, start_time, start_date, end_date, is_active, notes, duration_minutes, frequency, price_per_lesson, teacher_user_id, lesson_type_id',
+			'id, day_of_week, start_time, start_date, end_date, is_active, notes, duration_minutes, frequency, teacher_user_id, lesson_type_id',
 		)
 		.eq('student_user_id', studentUserId)
 		.order('day_of_week', { ascending: true })

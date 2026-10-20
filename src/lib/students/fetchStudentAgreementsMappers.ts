@@ -10,7 +10,6 @@ export type AgreementRow = {
 	notes: string | null;
 	duration_minutes: number;
 	frequency: LessonFrequency;
-	price_per_lesson: number;
 	teacher_user_id: string;
 	lesson_type_id: string;
 };
@@ -35,7 +34,6 @@ export function mapAgreementRow(
 		notes: row.notes,
 		duration_minutes: row.duration_minutes,
 		frequency: row.frequency,
-		price_per_lesson: row.price_per_lesson,
 		teacher: {
 			first_name: teacher?.first_name ?? null,
 			last_name: teacher?.last_name ?? null,

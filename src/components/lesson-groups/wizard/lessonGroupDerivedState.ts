@@ -6,7 +6,6 @@ interface StepProceedInput {
 	name: string;
 	lessonTypeId: string | null;
 	durationMinutes: number;
-	pricePerLesson: number;
 	startDate: string;
 	endDate: string;
 	teacherUserId: string | null;
