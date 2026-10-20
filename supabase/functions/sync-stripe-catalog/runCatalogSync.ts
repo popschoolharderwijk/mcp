@@ -9,6 +9,7 @@ import {
 	isPlanEmpty,
 	type OptionInput,
 	planCatalogSync,
+	resolveCatalogStatus,
 	TAX_RATE_PARAMS,
 	type TaxRateKey,
 } from './catalogPure.ts';
@@ -126,7 +127,7 @@ async function syncOne(
 	let productId = stripeProduct?.id ?? null;
 	if (plan.createProduct && option) {
 		const created = await stripe.products.create(
-			{ name, metadata: { lesson_type_option_id: option.id }, tax_code: undefined },
+			{ name, metadata: { lesson_type_option_id: option.id } },
 			{ idempotencyKey: `mcp_product_${option.id}` },
 		);
 		productId = created.id;
@@ -147,7 +148,6 @@ async function syncOne(
 	for (const id of plan.archivePriceIds) await stripe.prices.update(id, { active: false });
 
 	const productActive = productId ? (plan.productUpdate?.active ?? existingProduct?.active ?? true) : false;
-	const hasPrices = option !== null && productId !== null && productActive;
 
 	// Persist catalog row.
 	let catalogId = row?.id ?? null;
@@ -183,19 +183,7 @@ async function syncOne(
 		await admin.from('stripe_catalog_prices').update({ is_active_in_stripe: true }).in('stripe_price_id', plan.reactivatePriceIds);
 	}
 
-	const status: CatalogResult['status'] = !option
-		? 'archived'
-		: !productId
-			? 'no_tariff'
-			: hasPrices
-				? 'in_sync'
-				: productActive
-					? 'in_sync'
-					: plan.createPrices.length === 0 && existingPrices.length === 0 && !option.lesson_type_active
-						? 'archived'
-						: option.lesson_type_active
-							? 'no_tariff'
-							: 'archived';
+	const status = resolveCatalogStatus(option, today);
 	return { lesson_type_option_id: optionId, name, status, changed: !isPlanEmpty(plan) };
 }
 

@@ -225,3 +225,12 @@ export function isPlanEmpty(plan: CatalogPlan): boolean {
 		plan.archivePriceIds.length === 0
 	);
 }
+
+export type CatalogStatus = 'in_sync' | 'no_tariff' | 'archived';
+
+/** Outcome status after a successful sync of one lesson form. */
+export function resolveCatalogStatus(option: OptionInput | null, today: string): CatalogStatus {
+	if (!option) return 'archived';
+	if (buildDesiredPrices(option, today).length === 0) return 'no_tariff';
+	return option.lesson_type_active ? 'in_sync' : 'archived';
+}
