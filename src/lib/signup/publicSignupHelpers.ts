@@ -5,7 +5,6 @@ export interface LessonTypeOptionMatch {
 	id: string;
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number;
 }
 
 export interface SignupFormFields {

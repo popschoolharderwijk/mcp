@@ -3,9 +3,10 @@ import type { SignupRequestRowBase } from '@/lib/signup-requests/signupRequestsP
 function formatLessonTypeOptionLabel(option: {
 	duration_minutes: number;
 	frequency: string;
-	price_per_lesson: number;
+	label?: string | null;
 }): string {
-	return `${option.duration_minutes} min · ${option.frequency} · €${option.price_per_lesson}`;
+	const base = `${option.duration_minutes} min · ${option.frequency}`;
+	return option.label ? `${option.label} · ${base}` : base;
 }
 
 function formatTeacherDisplayName(firstName: string | null, lastName: string | null): string {
