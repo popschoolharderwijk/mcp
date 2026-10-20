@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { syncStripeCatalog } from '@/lib/billing/syncStripeCatalog';
 import {
 	buildOptionModalFormFromEditing,
 	isEditingExistingOption,
@@ -79,8 +80,8 @@ export function useLessonTypeOptionModal({
 	);
 
 	const persistExistingOption = useCallback(
-		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) =>
-			runPersistExistingOptionFlow({
+		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) => {
+			const ok = await runPersistExistingOptionFlow({
 				editing,
 				modalForm,
 				isEditMode,
@@ -88,13 +89,16 @@ export function useLessonTypeOptionModal({
 				setOptions,
 				setOptionsForm,
 				setSaving,
-			}),
+			});
+			if (ok && isEditMode && lessonType) void syncStripeCatalog(lessonType.id);
+			return ok;
+		},
 		[isEditMode, lessonType, setOptions, setOptionsForm, setSaving],
 	);
 
 	const persistNewOption = useCallback(
-		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) =>
-			runPersistNewOptionFlow({
+		async (editing: OptionRowWithKey, modalForm: OptionModalFormState) => {
+			const ok = await runPersistNewOptionFlow({
 				editing,
 				modalForm,
 				isEditMode,
@@ -102,7 +106,10 @@ export function useLessonTypeOptionModal({
 				setOptionsForm,
 				setOptions,
 				setSaving,
-			}),
+			});
+			if (ok && isEditMode && lessonType) void syncStripeCatalog(lessonType.id);
+			return ok;
+		},
 		[isEditMode, lessonType, setOptions, setOptionsForm, setSaving],
 	);
 
@@ -149,7 +156,12 @@ export function useLessonTypeOptionModal({
 			findOptionIndex,
 			isEditMode,
 			hasLessonType: Boolean(lessonType),
-			deletePersistedOption,
+			deletePersistedOption: async (optionId) => {
+				const ok = await deletePersistedOption(optionId);
+				// Deleted form becomes an orphan catalog row; the sync archives its Stripe product.
+				if (ok && lessonType) void syncStripeCatalog(lessonType.id);
+				return ok;
+			},
 			removeOption,
 			removePersistedOptionFromState: (optionId) =>
 				setOptions((prev) => prev.filter((option) => option.id !== optionId)),

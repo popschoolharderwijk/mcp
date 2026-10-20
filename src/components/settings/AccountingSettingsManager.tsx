@@ -9,6 +9,7 @@ import {
 	AccountingSettingsTaxCard,
 } from '@/components/settings/AccountingSettingsFormCards';
 import { Card, CardContent } from '@/components/ui/card';
+import { StripeCatalogCard } from '@/components/settings/StripeCatalogCard';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,6 +69,7 @@ export function AccountingSettingsManager() {
 			<AccountingSettingsTaxCard {...fieldProps} />
 			<AccountingSettingsCompanyCard {...fieldProps} />
 			<AccountingSettingsSaveButton canEdit={canEdit} saving={saving} onSave={handleSave} />
+			{canEdit && <StripeCatalogCard />}
 		</div>
 	);
 }

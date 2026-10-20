@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { syncStripeCatalog } from '@/lib/billing/syncStripeCatalog';
 import { persistLessonTypeWithOptions } from '@/pages/lesson-type-info/lessonTypeSubmitHelpers';
 import {
 	resolveLessonTypeCanSubmit,
@@ -51,6 +52,8 @@ export function useLessonTypeSubmit({
 			if (!saveResult.ok) return;
 
 			toast.success(labels.successMessage);
+			// Background sync; saving never fails because of Stripe.
+			void syncStripeCatalog(saveResult.lessonTypeId);
 			navigate('/lesson-types');
 		} catch (error) {
 			console.error('Error saving lesson type:', error);
