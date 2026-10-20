@@ -59,6 +59,23 @@ const EMAIL_EVENTS: Record<string, EmailEventDefinition> = {
 			'betaalmethode',
 		],
 	},
+	direct_debit_invite: {
+		key: 'direct_debit_invite',
+		label: 'Betaaluitnodiging (Stripe)',
+		description:
+			'Verstuurd met de knop "Stuur betaaluitnodiging": uitleg over de machtiging en een inloglink naar Stripe.',
+		variables: [
+			'leerling_naam',
+			'ontvanger_naam',
+			'les_type',
+			'bedrag',
+			'eerste_maand_bedrag',
+			'eerste_maand_regel',
+			'startdatum',
+			'minimale_looptijd_tot',
+			'link',
+		],
+	},
 };
 
 export function getEmailEvent(key: string): EmailEventDefinition | null {
