@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import type { AccountingSettings } from '../../../src/lib/accounting/types';
 import {
 	buildAccountingSettingsUpdatePayload,
+	clampCancellationNoticeDays,
 	clampInvoicePaymentTermDays,
 	clampSchoolYearStartMonth,
 	clampSepaCollectionDay,
