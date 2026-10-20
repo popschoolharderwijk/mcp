@@ -19,15 +19,16 @@ export async function resolveRebuildAgreementIds(
 	}
 
 	const { data, error } = await admin
-		.from('lesson_agreements')
-		.select('id')
-		.eq('lesson_type_id', body.lesson_type_id as string)
-		.eq('is_active', true)
-		.not('stripe_schedule_id', 'is', null);
+		.from('subscriptions')
+		.select('lesson_agreement_id, lesson_agreements!inner(lesson_type_id, is_active)')
+		.eq('lesson_agreements.lesson_type_id', body.lesson_type_id as string)
+		.eq('lesson_agreements.is_active', true)
+		.not('stripe_schedule_id', 'is', null)
+		.not('status', 'in', '(canceled,incomplete_expired)');
 
 	if (error) {
-		return { agreementIds: [], error: jsonResponse(500, { error: error.message }) };
+		return { agreementIds: [], error: jsonResponse(500, { error: 'Kon abonnementen niet laden' }) };
 	}
 
-	return { agreementIds: (data ?? []).map((row) => row.id), error: null };
+	return { agreementIds: [...new Set((data ?? []).map((row) => row.lesson_agreement_id as string))], error: null };
 }

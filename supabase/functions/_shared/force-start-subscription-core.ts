@@ -58,5 +58,4 @@ export async function persistForcedSubscription(
 		stripe_price_id: priceId,
 		stripe_schedule_id: null,
 	});
-	await admin.from('lesson_agreements').update({ stripe_schedule_id: null }).eq('id', lessonAgreementId);
 }

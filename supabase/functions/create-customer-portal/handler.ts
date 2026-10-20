@@ -26,9 +26,16 @@ async function createCustomerPortalSession(
 
 	try {
 		const stripe = getStripe();
+		// Portal configuration without cancelling (created by sync-stripe-catalog).
+		const { data: settings } = await admin
+			.from('accounting_settings')
+			.select('stripe_portal_configuration_id')
+			.eq('id', true)
+			.maybeSingle();
 		const session = await stripe.billingPortal.sessions.create({
 			customer: customerRow.stripe_customer_id,
 			return_url: resolvePortalReturnUrl(origin, body.return_url),
+			...(settings?.stripe_portal_configuration_id ? { configuration: settings.stripe_portal_configuration_id } : {}),
 		});
 		return jsonResponse(200, buildCustomerPortalSuccessPayload(session.url));
 	} catch (err) {
