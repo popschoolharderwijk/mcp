@@ -2,7 +2,13 @@
 
 Leesbare uitleg van hoe Stripe in de app zit. Technische details: `stripe-direct-debit.md`.
 
-## 1. Huidige status (13 oktober 2026)
+## 0. Update 20 oktober 2026
+
+- Eindsituatie: **alleen Stripe of op factuur**; de eigen SEPA-incasso verdwijnt in fase 5.
+- Fase 2 klaar: lesvormen en tarieven gaan automatisch naar Stripe (`sync-stripe-catalog`), zie `stripe-catalogus.md`.
+  Punt 4 hieronder (prijzen per les) is vervangen door de catalogus. Abonnementen gebruiken de catalogus pas vanaf fase 3.
+
+## 1. Status 13 oktober 2026
 
 **Besluit:** Stripe staat **naast** de eigen SEPA-incasso. De betaalmethode wordt per overeenkomst gekozen:
 

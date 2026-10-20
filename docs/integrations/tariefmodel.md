@@ -18,14 +18,15 @@ Stripe-catalogus en -abonnementen volgen in fase 2 en 3; die gebruiken dezelfde 
 | Tariefwijziging | Nieuw tarief met ingangsdatum; geldt automatisch voor lopende overeenkomsten vanaf die maand |
 | Groepslessen | `billing_kind = 'one_off'`: eenmalig bedrag in de maand van de startdatum (SEPA: batch van de startmaand) |
 | Duo | Tarief per persoon; elke duo-leerling een eigen overeenkomst en eigen leeftijdscategorie |
-| Looptijd | Eerste verbintenis 6 kalendermaanden (`minimum_term_end` = start + 6 maanden − 1 dag); daarna per schooljaar tot 31 juli, stilzwijgend verlengd |
+| Looptijd | Eerste verbintenis 6 kalendermaanden, afgerond op einde maand (`minimum_term_end` = laatste dag van de maand waarin start + 6 maanden − 1 dag valt; 15-10-2026 → 30-04-2027, 01-09-2026 → 28-02-2027); daarna per schooljaar tot 31 juli, stilzwijgend verlengd |
 | Opzeggen | Niet maandelijks. Gaat in per einde van de lopende periode; opzegtermijn (dagen) in Boekhouding-instellingen |
 | Btw-uitsplitsing | 21+: excl. = round(bedrag / 1,21), btw = bedrag − excl.; onder 21: btw 0 |
 
 ## Eén bron: de database
 
 De rekenregels staan **alleen** in SQL (migratie `20261020145053_tariefmodel_maandbedragen_per_lesvorm.sql`,
-blok tussen `-- BEGIN PURE TARIFF FUNCTIONS` en `-- END PURE TARIFF FUNCTIONS`):
+blok tussen `-- BEGIN PURE TARIFF FUNCTIONS` en `-- END PURE TARIFF FUNCTIONS`; latere migraties met zo'n blok
+overschrijven functies, zoals `20261020152359_stripe_catalogus_lesvormen.sql` voor `compute_minimum_term_end`):
 
 - `compute_lesson_fee(billing_kind, has_adult_tariff, tariffs jsonb, date_of_birth, start_date, end_date, month)` — pure functie, alle regels.
 - `compute_minimum_term_end(start_date)` en `compute_cancellation_effective_date(minimum_term_end, requested_on, notice_days)`.
@@ -38,7 +39,7 @@ blok tussen `-- BEGIN PURE TARIFF FUNCTIONS` en `-- END PURE TARIFF FUNCTIONS`):
 `generate-invoice` rekent niet zelf: het neemt de btw-uitsplitsing van elke incassoregel over en weigert regels zonder die gegevens.
 Er is dus geen TypeScript-kopie van de regels en geen pariteitstest nodig.
 
-**Tests:** `tests/code/billing/lessonFeeRules.test.ts` laadt het pure SQL-blok uit de migratie in PGlite
+**Tests:** `tests/code/billing/lessonFeeRules.test.ts` laadt alle pure SQL-blokken (in migratievolgorde) in PGlite
 (Postgres in het testproces) en test de regels rechtstreeks; draait mee met `bun test code`.
 
 ## Datamodel
@@ -49,6 +50,10 @@ Er is dus geen TypeScript-kopie van de regels en geen pariteitstest nodig.
 - `direct_debit_batch_items`: `age_category`, `btw_rate`, `amount_excl_btw_cents`, `btw_amount_cents`.
 - `accounting_settings.cancellation_notice_days` (standaard 30).
 - De urenrapportage gebruikt geen prijzen en blijft werken.
+
+## Stripe
+
+De Stripe-catalogus (fase 2) wordt afgeleid van deze tabellen: zie `stripe-catalogus.md`.
 
 ## Toegang
 

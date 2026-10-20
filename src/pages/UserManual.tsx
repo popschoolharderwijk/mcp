@@ -119,7 +119,7 @@ const sections: ManualSection[] = [
 			'Stap 3 – Docent & planning: selecteer een beschikbare docent, kies dag, starttijd en startdatum.',
 			'Stap 4 – Bevestiging: controleer en bevestig. Je ziet hier het maandbedrag dat de leerling betaalt, met btw en de eerste maand naar rato.',
 			'Geboortedatum: bij SEPA-incasso en Stripe is een geboortedatum verplicht (onder 21 is btw-vrij, 21+ niet). Ontbreekt die, dan vul je hem in de wizard in. Bij Handmatig / op factuur mag het zonder; je krijgt dan een waarschuwing. Het 21+-tarief gaat in op de 1e van de maand na de 21e verjaardag.',
-			'Looptijd: de eerste verbintenis is 6 kalendermaanden vanaf de startdatum; daarna loopt de overeenkomst per schooljaar (tot 31 juli) door en wordt stilzwijgend verlengd. Instromers betalen de eerste maand naar rato op kalenderdagen.',
+			'Looptijd: de eerste verbintenis loopt 6 kalendermaanden vanaf de startdatum, tot en met het einde van die maand (start 15 oktober → t/m 30 april); daarna loopt de overeenkomst per schooljaar (tot 31 juli) door en wordt stilzwijgend verlengd. Instromers betalen de eerste maand naar rato op kalenderdagen.',
 			'Opzeggen: met de knop "Opzeggen" op de overeenkomst gaat de opzegging in per einde van de lopende periode, rekening houdend met de opzegtermijn uit Instellingen → Boekhouding. Maandelijks opzeggen kan niet.',
 			'Duo-flow: bij een duo-lessoort maakt de wizard automatisch twee gekoppelde overeenkomsten via een edge function. In de agenda zien beide leerlingen hetzelfde slot met een duo-badge.',
 			'Doorklikken: leerling- en docentnamen zijn klikbaar vanuit de wizard, de bevestigingspagina en het overzicht.',
@@ -248,7 +248,8 @@ const sections: ManualSection[] = [
 			'Bedrijfsgegevens & factuur: bedrijfsnaam, adres, KvK, BTW-nummer, IBAN, contactgegevens, factuurnummer-prefix, startnummer, betalingstermijn en footertekst — vereist voor factuurgeneratie.',
 			'Grootboekrekeningen: standaard-rekeningen per lessoort/BTW-categorie voor de Exact Online-export.',
 			'BTW-codes: koppel per categorie (vrijgesteld <21, belast 21+) een BTW-code die in het boekhoudrapport terugkomt.',
-			'Toegang: alleen admin/site_admin via Instellingen → Boekhouding-instellingen.',
+			'Stripe-catalogus: lesvormen en tarieven gaan automatisch naar Stripe na opslaan in Lessoorten (één product per lesvorm, prijzen onder 21 en 21+ per ingangsdatum; 21+ inclusief 21% btw). Prijzen wijzig je nooit in Stripe zelf. Met "Synchroniseer met Stripe" vergelijk en herstel je alles; per lesvorm zie je In sync, Wacht op synchronisatie, Ontbreekt, Ontbreekt: geen tarief, Gearchiveerd of Fout. Zonder Stripe-sleutel krijg je een melding en gebeurt er niets.',
+			'Toegang: alleen admin/site_admin via het menu Instellingen → Boekhouding-instellingen.',
 		],
 	},
 	{
