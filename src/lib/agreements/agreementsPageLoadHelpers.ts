@@ -136,16 +136,24 @@ export async function executeAgreementsPageLoad(
 			};
 		}
 
-		const { data: profilesData, error: profilesError } = await supabase
-			.from('profiles')
-			.select('user_id, first_name, last_name, avatar_url, email')
-			.in('user_id', profileUserIds);
-
+		// Chunk the id list: one `.in()` with ~1000 UUIDs exceeds the URL length limit (400 Bad Request).
+		const PROFILE_CHUNK_SIZE = 150;
+		const chunks: string[][] = [];
+		for (let i = 0; i < profileUserIds.length; i += PROFILE_CHUNK_SIZE) {
+			chunks.push(profileUserIds.slice(i, i + PROFILE_CHUNK_SIZE));
+		}
+		const results = await Promise.all(
+			chunks.map((ids) =>
+				supabase.from('profiles').select('user_id, first_name, last_name, avatar_url, email').in('user_id', ids),
+			),
+		);
+		const profilesError = results.find((r) => r.error)?.error;
 		if (profilesError) {
 			console.error('Error loading profiles:', profilesError);
 			toast.error('Fout bij laden profielen');
 			return { kind: 'error' };
 		}
+		const profilesData = results.flatMap((r) => r.data ?? []);
 
 		const profileMap = new Map(
 			(profilesData ?? []).map((profile) => [
