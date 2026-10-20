@@ -157,7 +157,6 @@ describe('RLS: anonymous user – lesson_agreements', () => {
 			start_date: '2026-01-01',
 			duration_minutes: 60,
 			frequency: 'weekly',
-			price_per_lesson: 0,
 		};
 		expectInsufficientPrivilege(unwrapError(await db.from('lesson_agreements').insert(row).select()));
 	});

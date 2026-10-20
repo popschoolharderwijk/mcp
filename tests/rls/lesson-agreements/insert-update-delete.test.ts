@@ -45,7 +45,6 @@ describe('RLS: lesson_agreements INSERT - blocked for students and teachers', ()
 		is_active: true,
 		duration_minutes: 30,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 	};
 
 	it('student cannot insert lesson agreement', async () => {
@@ -70,7 +69,6 @@ describe('RLS: lesson_agreements INSERT - staff permissions', () => {
 		is_active: true,
 		duration_minutes: 30,
 		frequency: 'weekly',
-		price_per_lesson: 30,
 	};
 
 	async function insert(user: TestUser) {
@@ -194,7 +192,6 @@ describe('RLS: lesson_agreements DELETE - staff permissions', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const { data: inserted, error: insertError } = await db
@@ -242,7 +239,6 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const error = unwrapError(await db.from('lesson_agreements').insert(selfAgreement).select());
@@ -265,7 +261,6 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 			is_active: true,
 			duration_minutes: 30,
 			frequency: 'weekly',
-			price_per_lesson: 30,
 		};
 
 		const result = await db.from('lesson_agreements').insert(validAgreement).select().single();

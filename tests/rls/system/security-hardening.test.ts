@@ -209,7 +209,6 @@ async function createDuoFixture(): Promise<DuoFixture> {
 					start_date: '2030-01-06',
 					duration_minutes: 30,
 					frequency: 'weekly',
-					price_per_lesson: 25,
 					is_active: true,
 					duo_pair_id: duoPairId,
 				})
@@ -230,7 +229,6 @@ async function createDuoFixture(): Promise<DuoFixture> {
 				start_date: '2030-01-06',
 				duration_minutes: 30,
 				frequency: 'weekly',
-				price_per_lesson: 25,
 				is_active: true,
 				duo_pair_id: duoPairId,
 			})

@@ -35,7 +35,6 @@ describe('RLS: anonymous user – lesson_type_options', () => {
 			lesson_type_id: fakeId,
 			duration_minutes: 60,
 			frequency: 'weekly',
-			price_per_lesson: 10,
 		};
 		expectInsufficientPrivilege(unwrapError(await db.from('lesson_type_options').insert(row).select()));
 	});

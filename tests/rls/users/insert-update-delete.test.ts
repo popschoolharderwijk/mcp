@@ -143,7 +143,6 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 					is_active: true,
 					duration_minutes: 30,
 					frequency: 'weekly',
-					price_per_lesson: 30,
 				})
 				.select();
 
