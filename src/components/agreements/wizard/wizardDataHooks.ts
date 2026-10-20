@@ -66,7 +66,10 @@ export function useWizardLessonTypeOptions(lessonTypeId: string | null) {
 			.order('frequency')
 			.then(({ data }) =>
 				setOptions(
-					(data ?? []).map((o) => ({ ...o, billing_kind: o.billing_kind as LessonTypeOptionSnapshot['billing_kind'] })),
+					(data ?? []).map((o) => ({
+						...o,
+						billing_kind: o.billing_kind as LessonTypeOptionSnapshot['billing_kind'],
+					})),
 				),
 			);
 	}, [lessonTypeId]);

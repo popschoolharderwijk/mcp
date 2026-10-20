@@ -23,6 +23,10 @@ const batchItems: BatchItem[] = [
 		remittance_info: 'Les 1',
 		lesson_agreement_id: 'agr-1',
 		mandate_id: MANDATE_ONE,
+		age_category: 'under_21',
+		btw_rate: 0,
+		amount_excl_btw_cents: 1000,
+		btw_amount_cents: 0,
 	},
 	{
 		id: 'item-2',
@@ -31,6 +35,10 @@ const batchItems: BatchItem[] = [
 		remittance_info: 'Les 2',
 		lesson_agreement_id: 'agr-2',
 		mandate_id: MANDATE_ONE,
+		age_category: 'under_21',
+		btw_rate: 0,
+		amount_excl_btw_cents: 1000,
+		btw_amount_cents: 0,
 	},
 	{
 		id: 'item-3',
@@ -39,6 +47,10 @@ const batchItems: BatchItem[] = [
 		remittance_info: 'Les 3',
 		lesson_agreement_id: 'agr-3',
 		mandate_id: MANDATE_TWO,
+		age_category: 'under_21',
+		btw_rate: 0,
+		amount_excl_btw_cents: 1000,
+		btw_amount_cents: 0,
 	},
 ];
 

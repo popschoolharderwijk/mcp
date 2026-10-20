@@ -117,10 +117,11 @@ export function resolveMissingDateOfBirthMessage(form: WizardSaveForm, isDuo: bo
 async function saveEnteredDatesOfBirth(entries: { userId: string | null; stored: string | null; input: string }[]) {
 	for (const entry of entries) {
 		if (!entry.userId || entry.stored || !entry.input.trim()) continue;
-		const { error } = await supabase
-			.from('students')
-			.update({ date_of_birth: entry.input.trim() })
-			.eq('user_id', entry.userId);
+		// RPC: staff may create agreements but not edit students; it only fills an empty date.
+		const { error } = await supabase.rpc('set_student_date_of_birth_if_missing', {
+			p_student_user_id: entry.userId,
+			p_date_of_birth: entry.input.trim(),
+		});
 		if (error) toast.warning('Geboortedatum kon niet worden opgeslagen', { description: error.message });
 	}
 }

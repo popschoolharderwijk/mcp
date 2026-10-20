@@ -1701,8 +1701,7 @@ VALUES
 UPDATE public.lesson_agreements la
 SET
   payment_method = 'sepa',
-  sepa_mandate_id = '78000000-0002-0000-0000-000000000000',
-  monthly_amount_cents = 4500
+  sepa_mandate_id = '78000000-0002-0000-0000-000000000000'
 FROM public.profiles sp, public.lesson_types lt
 WHERE la.student_user_id = sp.user_id
   AND la.lesson_type_id = lt.id
@@ -2051,8 +2050,7 @@ END $$;
 UPDATE public.lesson_agreements la
 SET
   payment_method = 'sepa',
-  sepa_mandate_id = m.id,
-  monthly_amount_cents = (la.price_per_lesson * 400)::bigint
+  sepa_mandate_id = m.id
 FROM public.sepa_mandates m
 WHERE m.student_user_id = la.student_user_id
   AND m.status = 'active'
@@ -2112,7 +2110,8 @@ FROM (VALUES
 INSERT INTO public.direct_debit_batch_items (
   id, batch_id, lesson_agreement_id, mandate_id, student_user_id,
   end_to_end_id, amount_cents, remittance_info, kind, sequence_type,
-  status, reason_code, status_updated_at, created_by
+  status, reason_code, status_updated_at, created_by,
+  age_category, btw_rate, amount_excl_btw_cents, btw_amount_cents
 )
 SELECT
   ('7a000000-' || lpad((src.item_n + 3)::text, 4, '0') || '-0000-0000-000000000000')::uuid,
@@ -2135,7 +2134,11 @@ SELECT
     WHEN src.item_status IN ('accepted', 'rejected', 'reversed', 'submitted') THEN src.collection_date::timestamptz
     ELSE NULL
   END,
-  '10000000-0001-0000-0000-000000000000'
+  '10000000-0001-0000-0000-000000000000',
+  'under_21',
+  0,
+  src.amount_cents,
+  0
 FROM (
   SELECT
     b.id AS batch_id,
@@ -2145,7 +2148,8 @@ FROM (
     la.id AS agreement_id,
     la.sepa_mandate_id AS mandate_id,
     la.student_user_id,
-    la.monthly_amount_cents AS amount_cents,
+    -- Historic seed items: fixed monthly fee (weekly private, under 21, VAT exempt).
+    7338::bigint AS amount_cents,
     trim(both ' ' FROM coalesce(p.first_name, '') || ' ' || coalesce(p.last_name, '')) AS student_name,
     row_number() OVER (ORDER BY b.collection_date, la.id) AS item_n,
     row_number() OVER (PARTITION BY b.id ORDER BY la.id) AS line_n,
@@ -2161,7 +2165,6 @@ FROM (
   JOIN public.lesson_agreements la
     ON la.payment_method = 'sepa'
    AND la.is_active = true
-   AND la.monthly_amount_cents > 0
    AND la.sepa_mandate_id IS NOT NULL
   JOIN public.sepa_mandates m
     ON m.id = la.sepa_mandate_id
@@ -2395,3 +2398,17 @@ WHERE user_id = '50000000-0003-0000-0000-000000000000';
 -- =============================================================================
 -- END SEED
 -- =============================================================================
+
+-- Tariff model: SEPA and Stripe agreements need a date of birth (under 21 vs 21+).
+-- Give seeded students on SEPA/Stripe a date of birth: most under 21, every 5th one 21+.
+UPDATE public.students s
+SET date_of_birth = CASE
+  WHEN abs(hashtext(s.user_id::text)) % 5 = 0 THEN DATE '1995-06-15'
+  ELSE DATE '2011-03-10'
+END
+WHERE s.date_of_birth IS NULL
+  AND EXISTS (
+    SELECT 1 FROM public.lesson_agreements la
+    WHERE la.student_user_id = s.user_id
+      AND la.payment_method IN ('sepa', 'stripe')
+  );

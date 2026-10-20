@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
+import type { LessonTypeOptionWithTariffs } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
 import {
 	mapLessonTypeOptionsToForm,
 	mapLessonTypeRowToForm,
 	resolveLessonTypeLoadFailure,
 	shouldSkipLessonTypeLoad,
 } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
-import type { LessonTypeOptionWithTariffs } from '../../../src/lib/lesson-types/lessonTypeLoaderHelpers';
 import type { LessonTypeRow } from '../../../src/types/lesson-agreements';
 
 const lessonType: LessonTypeRow = {
@@ -85,8 +85,18 @@ describe('mapLessonTypeOptionsToForm', () => {
 				amount_under_21: '20.00',
 				amount_adult: '25.00',
 				tariffs: [
-					{ id: 't-new', effective_from: '2026-09-01', amount_under_21_cents: 2000, amount_adult_cents: 2500 },
-					{ id: 't-old', effective_from: '2025-09-01', amount_under_21_cents: 1900, amount_adult_cents: 2400 },
+					{
+						id: 't-new',
+						effective_from: '2026-09-01',
+						amount_under_21_cents: 2000,
+						amount_adult_cents: 2500,
+					},
+					{
+						id: 't-old',
+						effective_from: '2025-09-01',
+						amount_under_21_cents: 1900,
+						amount_adult_cents: 2400,
+					},
 				],
 			},
 		]);

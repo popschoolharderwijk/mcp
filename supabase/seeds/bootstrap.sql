@@ -116,18 +116,96 @@ WHERE lt.name = 'DJ / Beats'
       AND lto.price_per_lesson = opt.price_per_lesson
   );
 
--- Default rates for weekly/biweekly lesson_type_options (from stripe_billing migration).
-UPDATE public.lesson_type_options
-SET price_per_lesson_under_21_cents = 1950,
-    price_per_lesson_adult_cents = 2360
-WHERE frequency = 'weekly'
-  AND price_per_lesson_under_21_cents IS NULL;
+-- -----------------------------------------------------------------------------
+-- TARIFFS (tarievenlijst per 1 september 2026; monthly amounts, 11x per school year)
+-- Amounts in cents: < 21 (VAT exempt) and 21+ (incl. 21% VAT), exactly as published.
+-- Instrument lessons: 30 min weekly/biweekly use the private-lesson tariffs; other
+-- durations scale with the duration (fictional test data); monthly = half of biweekly.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
+SELECT
+  lto.id,
+  DATE '2026-09-01',
+  round(base.under_cents * lto.duration_minutes / 30.0)::bigint,
+  round(base.adult_cents * lto.duration_minutes / 30.0)::bigint
+FROM public.lesson_type_options lto
+JOIN public.lesson_types lt ON lt.id = lto.lesson_type_id
+JOIN (VALUES
+  ('weekly'::public.lesson_frequency, 7338, 8879),
+  ('biweekly'::public.lesson_frequency, 3867, 4679),
+  ('monthly'::public.lesson_frequency, 1934, 2340)
+) AS base(frequency, under_cents, adult_cents) ON base.frequency = lto.frequency
+WHERE lt.name <> 'Bandcoaching'
+ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
 
-UPDATE public.lesson_type_options
-SET price_per_lesson_under_21_cents = 2055,
-    price_per_lesson_adult_cents = 2498
-WHERE frequency = 'biweekly'
-  AND price_per_lesson_under_21_cents IS NULL;
+-- Bandcoaching: one tariff for every option.
+INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
+SELECT lto.id, DATE '2026-09-01', 1691, 2046
+FROM public.lesson_type_options lto
+JOIN public.lesson_types lt ON lt.id = lto.lesson_type_id
+WHERE lt.name = 'Bandcoaching'
+ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
+
+-- Lesson forms from the tarievenlijst that are not an instrument lesson.
+INSERT INTO public.lesson_types (name, description, icon, color, cost_center, is_group_lesson, is_duo_lesson, is_active)
+SELECT * FROM (VALUES
+  ('Duoles', 'Les met z''n tweeën; tarief per persoon', 'HiUserGroup', '#0EA5E9', NULL, false, true, true),
+  ('De Popkids', '8-12 jaar', 'LuMusic', '#22C55E', NULL, true, false, true),
+  ('Popkoor', 'Zingen in een koor', 'LuMic', '#E11D48', NULL, true, false, true),
+  ('Klank en Kriebels', 'Groepsles, 8 lessen', 'LuMusic', '#F97316', NULL, true, false, true),
+  ('Notenkrakers', 'Groepsles, 8 lessen', 'LuMusic2', '#A16207', NULL, true, false, true),
+  ('Mini Maestro''s', 'Groepsles, 8 lessen', 'LuMusic3', '#0D9488', NULL, true, false, true),
+  ('De Muziekclub', 'Groepsles, 8 lessen', 'LuMusic4', '#7C3AED', NULL, true, false, true),
+  ('DJ-School', 'Groepsles, 8 lessen', 'LuHeadphones', '#334155', NULL, true, false, true),
+  ('Laatbloeiers', 'Groepsles voor volwassenen, 8 lessen', 'LuAudioWaveform', '#65A30D', NULL, true, false, true)
+) AS v(name, description, icon, color, cost_center, is_group_lesson, is_duo_lesson, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.name);
+
+INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, label, billing_kind, has_adult_tariff)
+SELECT lt.id, v.duration_minutes, v.frequency, v.label, v.billing_kind, v.has_adult_tariff
+FROM (VALUES
+  ('Duoles', 30, 'weekly'::public.lesson_frequency, NULL::text, 'monthly', true),
+  ('Duoles', 30, 'biweekly'::public.lesson_frequency, NULL, 'monthly', true),
+  ('De Popkids', 60, 'weekly'::public.lesson_frequency, NULL, 'monthly', false),
+  ('Popkoor', 60, 'weekly'::public.lesson_frequency, '12-18 jaar', 'monthly', false),
+  ('Popkoor', 60, 'weekly'::public.lesson_frequency, '18+', 'monthly', true),
+  ('Klank en Kriebels', 45, 'weekly'::public.lesson_frequency, NULL, 'one_off', false),
+  ('Notenkrakers', 45, 'weekly'::public.lesson_frequency, NULL, 'one_off', false),
+  ('Mini Maestro''s', 45, 'weekly'::public.lesson_frequency, NULL, 'one_off', false),
+  ('De Muziekclub', 45, 'weekly'::public.lesson_frequency, NULL, 'one_off', false),
+  ('DJ-School', 60, 'weekly'::public.lesson_frequency, NULL, 'one_off', true),
+  ('Laatbloeiers', 60, 'weekly'::public.lesson_frequency, NULL, 'one_off', true)
+) AS v(type_name, duration_minutes, frequency, label, billing_kind, has_adult_tariff)
+JOIN public.lesson_types lt ON lt.name = v.type_name
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.lesson_type_options lto
+  WHERE lto.lesson_type_id = lt.id
+    AND lto.duration_minutes = v.duration_minutes
+    AND lto.frequency = v.frequency
+    AND COALESCE(lto.label, '') = COALESCE(v.label, '')
+);
+
+INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
+SELECT lto.id, DATE '2026-09-01', v.under_cents, v.adult_cents
+FROM (VALUES
+  ('Duoles', 'weekly'::public.lesson_frequency, NULL::text, 5156, 6239),
+  ('Duoles', 'biweekly'::public.lesson_frequency, NULL, 2679, 3241),
+  ('De Popkids', 'weekly'::public.lesson_frequency, NULL, 2455, NULL),
+  ('Popkoor', 'weekly'::public.lesson_frequency, '12-18 jaar', 3000, NULL),
+  ('Popkoor', 'weekly'::public.lesson_frequency, '18+', 3000, 3631),
+  ('Klank en Kriebels', 'weekly'::public.lesson_frequency, NULL, 6600, NULL),
+  ('Notenkrakers', 'weekly'::public.lesson_frequency, NULL, 6600, NULL),
+  ('Mini Maestro''s', 'weekly'::public.lesson_frequency, NULL, 7650, NULL),
+  ('De Muziekclub', 'weekly'::public.lesson_frequency, NULL, 7650, NULL),
+  ('DJ-School', 'weekly'::public.lesson_frequency, NULL, 10996, 13305),
+  ('Laatbloeiers', 'weekly'::public.lesson_frequency, NULL, NULL, 8250)
+) AS v(type_name, frequency, label, under_cents, adult_cents)
+JOIN public.lesson_types lt ON lt.name = v.type_name
+JOIN public.lesson_type_options lto
+  ON lto.lesson_type_id = lt.id
+ AND lto.frequency = v.frequency
+ AND COALESCE(lto.label, '') = COALESCE(v.label, '')
+ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
 
 -- Singleton accounting settings (from accounting_settings migration).
 INSERT INTO public.accounting_settings (id) VALUES (true) ON CONFLICT DO NOTHING;

@@ -110,6 +110,10 @@ function baseForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 		endDate: '2027-07-31',
 		paymentMethod: 'stripe',
 		sepaMandateId: null,
+		studentDateOfBirth: '2010-05-01',
+		partnerDateOfBirth: '2011-03-02',
+		studentDateOfBirthInput: '',
+		partnerDateOfBirthInput: '',
 		...overrides,
 	};
 }
@@ -117,7 +121,7 @@ function baseForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 function duoForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 	return baseForm({
 		partnerStudentUserId: 'stu-2',
-		selectedOptionSnapshot: { duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
+		selectedOptionSnapshot: { id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
 		...overrides,
 	});
 }
@@ -369,7 +373,7 @@ describe('saveWizardAgreement', () => {
 			start_time: '09:00',
 			duration_minutes: 45,
 			frequency: 'weekly',
-			price_per_lesson: 25,
+			lesson_type_option_id: 'opt-1',
 			start_date: '2026-09-01',
 			end_date: '2027-07-31',
 			signup_source: 'public_form',
@@ -397,5 +401,47 @@ describe('saveWizardAgreement', () => {
 				message: 'Duo-overeenkomsten opgeslagen, maar 2 betaaluitnodiging(en) konden niet worden verstuurd',
 			},
 		]);
+	});
+});
+
+describe('resolveMissingDateOfBirthMessage', () => {
+	let resolveMissingDateOfBirthMessage: typeof import('../../../src/lib/agreements/wizardSaveHelpers').resolveMissingDateOfBirthMessage;
+
+	beforeAll(async () => {
+		({ resolveMissingDateOfBirthMessage } = await import('../../../src/lib/agreements/wizardSaveHelpers'));
+	});
+
+	const noDob = { studentDateOfBirth: null, studentDateOfBirthInput: '' };
+
+	it('requires a date of birth for SEPA', () => {
+		expect(resolveMissingDateOfBirthMessage(baseForm({ ...noDob, paymentMethod: 'sepa' }), false)).toContain(
+			'geboortedatum van de leerling',
+		);
+	});
+
+	it('requires a date of birth for Stripe', () => {
+		expect(resolveMissingDateOfBirthMessage(baseForm({ ...noDob, paymentMethod: 'stripe' }), false)).not.toBeNull();
+	});
+
+	it('allows manual / invoice without a date of birth', () => {
+		expect(resolveMissingDateOfBirthMessage(baseForm({ ...noDob, paymentMethod: 'manual' }), false)).toBeNull();
+	});
+
+	it('accepts a date entered in the wizard', () => {
+		expect(
+			resolveMissingDateOfBirthMessage(
+				baseForm({ ...noDob, studentDateOfBirthInput: '2010-01-01', paymentMethod: 'sepa' }),
+				false,
+			),
+		).toBeNull();
+	});
+
+	it('requires the partner date of birth for duo', () => {
+		expect(
+			resolveMissingDateOfBirthMessage(
+				baseForm({ paymentMethod: 'manual', partnerDateOfBirth: null, partnerDateOfBirthInput: '' }),
+				true,
+			),
+		).toContain('duo-partner');
 	});
 });

@@ -78,30 +78,30 @@ function WizardTeacherSlotStepPanel({ wizard, updaters, currentAgreementSlot }: 
 function WizardConfirmStepPanel({ wizard, updaters }: WizardStepPanelProps) {
 	return (
 		<div className="space-y-6">
-		<ConfirmStepPanel
-			isEditMode={wizard.isEditMode}
-			hasChanges={wizard.hasChanges}
-			agreement={wizard.agreement}
-			loadedPeriod={wizard.loadedPeriod.current}
-			selectedUser={wizard.form.user}
-			selectedLessonType={wizard.selectedLessonType}
-			startDate={wizard.form.startDate}
-			endDate={wizard.form.endDate}
-			selectedTeacherUserId={wizard.form.teacherUserId}
-			selectedTeacher={wizard.selectedTeacher}
-			effectiveSlot={wizard.effectiveSlot}
-			paymentMethod={wizard.form.paymentMethod}
-			sepaMandateId={wizard.form.sepaMandateId}
-			studentUserId={wizard.form.studentUserId}
-			onPaymentMethodChange={updaters.onPaymentMethodChange}
-			onSepaMandateIdChange={updaters.onSepaMandateIdChange}
-		/>
-		<AgreementFeeSection
-			form={wizard.form}
-			setForm={wizard.setForm}
-			isDuo={wizard.isDuoLesson}
-			agreement={wizard.agreement}
-		/>
+			<ConfirmStepPanel
+				isEditMode={wizard.isEditMode}
+				hasChanges={wizard.hasChanges}
+				agreement={wizard.agreement}
+				loadedPeriod={wizard.loadedPeriod.current}
+				selectedUser={wizard.form.user}
+				selectedLessonType={wizard.selectedLessonType}
+				startDate={wizard.form.startDate}
+				endDate={wizard.form.endDate}
+				selectedTeacherUserId={wizard.form.teacherUserId}
+				selectedTeacher={wizard.selectedTeacher}
+				effectiveSlot={wizard.effectiveSlot}
+				paymentMethod={wizard.form.paymentMethod}
+				sepaMandateId={wizard.form.sepaMandateId}
+				studentUserId={wizard.form.studentUserId}
+				onPaymentMethodChange={updaters.onPaymentMethodChange}
+				onSepaMandateIdChange={updaters.onSepaMandateIdChange}
+			/>
+			<AgreementFeeSection
+				form={wizard.form}
+				setForm={wizard.setForm}
+				isDuo={wizard.isDuoLesson}
+				agreement={wizard.agreement}
+			/>
 		</div>
 	);
 }

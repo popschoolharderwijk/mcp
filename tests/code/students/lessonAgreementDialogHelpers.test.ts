@@ -3,9 +3,9 @@ import {
 	formatAgreementDate,
 	resolveAgreementDayLabel,
 	resolveAgreementEndDateLabel,
+	resolveAgreementFeePreviewKey,
 	resolveAgreementStatusLabel,
 	resolveAgreementStatusVariant,
-	resolveAgreementFeePreviewKey,
 } from '../../../src/lib/students/lessonAgreementDialogHelpers';
 import type { LessonAgreementWithTeacher } from '../../../src/types/lesson-agreements';
 

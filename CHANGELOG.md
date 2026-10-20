@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.0 — 2026-10-20
+
+- **Tariefmodel**: lesgeld is een vast maandbedrag per lesvorm (11x per schooljaar, nooit in augustus), voor SEPA, Stripe en handmatig
+- Per lesvorm een bedrag onder 21 en 21+ (incl. btw), met ingangsdatum; tariefwijzigingen gaan automatisch in
+- 21+-tarief vanaf de maand na de 21e verjaardag; eerste maand naar rato
+- Geboortedatum verplicht bij SEPA en Stripe; in de wizard in te vullen
+- Looptijd: eerste 6 maanden, daarna per schooljaar; knop "Opzeggen" met instelbare opzegtermijn
+- Incassoregels en facturen bevatten de btw-uitsplitsing uit het tariefmodel
+- Groepslessen (8 lessen) eenmalig, in de incasso van de startmaand
+
 ## 1.2.0 — 2026-10-13
 
 - **Stripe** weer beschikbaar als betaalmethode, naast SEPA-incasso en handmatig
