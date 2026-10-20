@@ -149,15 +149,15 @@ ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
 -- Lesson forms from the tarievenlijst that are not an instrument lesson.
 INSERT INTO public.lesson_types (name, description, icon, color, cost_center, is_group_lesson, is_duo_lesson, is_active)
 SELECT * FROM (VALUES
-  ('Duoles', 'Les met z''n tweeën; tarief per persoon', 'LuUsers', '#0EA5E9', NULL, false, true, true),
+  ('Duoles', 'Les met z''n tweeën; tarief per persoon', 'HiUserGroup', '#0EA5E9', NULL, false, true, true),
   ('De Popkids', '8-12 jaar', 'LuMusic', '#22C55E', NULL, true, false, true),
-  ('Popkoor', 'Zingen in een koor', 'LuMicVocal', '#E11D48', NULL, true, false, true),
-  ('Klank en Kriebels', 'Groepsles, 8 lessen', 'LuBaby', '#F97316', NULL, true, false, true),
+  ('Popkoor', 'Zingen in een koor', 'LuMic', '#E11D48', NULL, true, false, true),
+  ('Klank en Kriebels', 'Groepsles, 8 lessen', 'LuMusic', '#F97316', NULL, true, false, true),
   ('Notenkrakers', 'Groepsles, 8 lessen', 'LuMusic2', '#A16207', NULL, true, false, true),
   ('Mini Maestro''s', 'Groepsles, 8 lessen', 'LuMusic3', '#0D9488', NULL, true, false, true),
   ('De Muziekclub', 'Groepsles, 8 lessen', 'LuMusic4', '#7C3AED', NULL, true, false, true),
-  ('DJ-School', 'Groepsles, 8 lessen', 'LuDisc3', '#334155', NULL, true, false, true),
-  ('Laatbloeiers', 'Groepsles voor volwassenen, 8 lessen', 'LuSprout', '#65A30D', NULL, true, false, true)
+  ('DJ-School', 'Groepsles, 8 lessen', 'LuHeadphones', '#334155', NULL, true, false, true),
+  ('Laatbloeiers', 'Groepsles voor volwassenen, 8 lessen', 'LuAudioWaveform', '#65A30D', NULL, true, false, true)
 ) AS v(name, description, icon, color, cost_center, is_group_lesson, is_duo_lesson, is_active)
 WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.name);
 
