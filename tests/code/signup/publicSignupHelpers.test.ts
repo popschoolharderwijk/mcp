@@ -180,10 +180,7 @@ describe('executePublicSignupSubmit', () => {
 		await executePublicSignupSubmit({
 			selectedType: { id: 'lt-1', is_group_lesson: false },
 			selectedGroupId: null,
-			selectedOption: { id: 'opt-1', 
-				duration_minutes: 45,
-				frequency: 'weekly',
-			},
+			selectedOption: { id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
 			lessonTypeOptions: [
 				{
 					id: 'opt-1',

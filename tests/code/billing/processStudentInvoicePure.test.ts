@@ -274,7 +274,10 @@ describe('prepareStudentInvoiceData', () => {
 		});
 		expect(prepared).toMatchObject({
 			ok: false,
-			result: { student_user_id: STUDENT_ID, error: 'Incassoregel mist btw-gegevens. Stel de batch opnieuw samen.' },
+			result: {
+				student_user_id: STUDENT_ID,
+				error: 'Incassoregel mist btw-gegevens. Stel de batch opnieuw samen.',
+			},
 		});
 	});
 });

@@ -14,7 +14,10 @@ const baseForm = {
 
 describe('updateOptionModalField', () => {
 	it('updates a single field', () => {
-		expect(updateOptionModalField(baseForm, 'duration_minutes', '45')).toEqual({ ...baseForm, duration_minutes: '45' });
+		expect(updateOptionModalField(baseForm, 'duration_minutes', '45')).toEqual({
+			...baseForm,
+			duration_minutes: '45',
+		});
 	});
 
 	it('clears the 21+ amount when the 21+ tariff is switched off', () => {

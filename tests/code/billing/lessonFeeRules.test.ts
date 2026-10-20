@@ -34,7 +34,9 @@ type Fee = {
 	is_prorated: boolean;
 };
 
-const WEEKLY_PRIVATE: Tariff[] = [{ effective_from: '2026-09-01', amount_under_21_cents: 7338, amount_adult_cents: 8879 }];
+const WEEKLY_PRIVATE: Tariff[] = [
+	{ effective_from: '2026-09-01', amount_under_21_cents: 7338, amount_adult_cents: 8879 },
+];
 
 let db: PGlite;
 
@@ -42,7 +44,8 @@ beforeAll(async () => {
 	// Other tests may define a fake `window`; PGlite would then boot in browser mode.
 	const g = globalThis as { window?: unknown };
 	const savedWindow = g.window;
-	if (savedWindow !== undefined) Object.defineProperty(globalThis, 'window', { value: undefined, configurable: true });
+	if (savedWindow !== undefined)
+		Object.defineProperty(globalThis, 'window', { value: undefined, configurable: true });
 	try {
 		db = new PGlite();
 		await db.waitReady;
@@ -145,14 +148,18 @@ describe('compute_lesson_fee', () => {
 	});
 
 	it('8. lesson form without 21+ tariff (Popkids): student of 25 pays 2455 without VAT', async () => {
-		const tariffs: Tariff[] = [{ effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null }];
+		const tariffs: Tariff[] = [
+			{ effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null },
+		];
 		expect(
 			await fee({ tariffs, hasAdult: false, dob: '2001-01-01', start: '2026-09-01', month: '2026-10-01' }),
 		).toMatchObject({ amount_cents: 2455, btw_rate: 0, age_category: 'under_21' });
 	});
 
 	it('9. only a 21+ tariff (Laatbloeiers): student of 19 pays the 21+ amount', async () => {
-		const tariffs: Tariff[] = [{ effective_from: '2026-09-01', amount_under_21_cents: null, amount_adult_cents: 8250 }];
+		const tariffs: Tariff[] = [
+			{ effective_from: '2026-09-01', amount_under_21_cents: null, amount_adult_cents: 8250 },
+		];
 		expect(
 			await fee({ tariffs, kind: 'one_off', dob: '2007-06-01', start: '2026-09-07', month: '2026-09-01' }),
 		).toMatchObject({ amount_cents: 8250, btw_rate: 21, amount_excl_btw_cents: 6818, btw_amount_cents: 1432 });
@@ -166,7 +173,9 @@ describe('compute_lesson_fee', () => {
 	});
 
 	it('11. group lesson (one-off): 6600 in the start month, 0 the month after', async () => {
-		const tariffs: Tariff[] = [{ effective_from: '2026-09-01', amount_under_21_cents: 6600, amount_adult_cents: null }];
+		const tariffs: Tariff[] = [
+			{ effective_from: '2026-09-01', amount_under_21_cents: 6600, amount_adult_cents: null },
+		];
 		const base = { tariffs, kind: 'one_off' as const, hasAdult: false, dob: null, start: '2026-09-14' };
 		expect(await fee({ ...base, month: '2026-09-01' })).toMatchObject({ amount_cents: 6600, is_prorated: false });
 		expect((await fee({ ...base, month: '2026-10-01' })).amount_cents).toBe(0);
@@ -185,7 +194,9 @@ describe('compute_lesson_fee', () => {
 	});
 
 	it('14b. unknown date of birth is fine when only one tariff exists', async () => {
-		const tariffs: Tariff[] = [{ effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null }];
+		const tariffs: Tariff[] = [
+			{ effective_from: '2026-09-01', amount_under_21_cents: 2455, amount_adult_cents: null },
+		];
 		expect(
 			(await fee({ tariffs, hasAdult: false, dob: null, start: '2026-09-01', month: '2026-10-01' })).amount_cents,
 		).toBe(2455);

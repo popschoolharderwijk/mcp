@@ -373,7 +373,7 @@ describe('saveWizardAgreement', () => {
 			start_time: '09:00',
 			duration_minutes: 45,
 			frequency: 'weekly',
-			price_per_lesson: 25,
+			lesson_type_option_id: 'opt-1',
 			start_date: '2026-09-01',
 			end_date: '2027-07-31',
 			signup_source: 'public_form',

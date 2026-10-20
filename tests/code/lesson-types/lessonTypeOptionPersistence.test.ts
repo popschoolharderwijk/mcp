@@ -68,8 +68,18 @@ describe('isDuplicateOption', () => {
 	});
 
 	it('builds updated option row and merges the saved tariff newest first', () => {
-		const old = { id: 't-old', effective_from: '2025-09-01', amount_under_21_cents: 2400, amount_adult_cents: 2900 };
-		const saved = { id: 't-new', effective_from: '2026-09-01', amount_under_21_cents: 2500, amount_adult_cents: 3000 };
+		const old = {
+			id: 't-old',
+			effective_from: '2025-09-01',
+			amount_under_21_cents: 2400,
+			amount_adult_cents: 2900,
+		};
+		const saved = {
+			id: 't-new',
+			effective_from: '2026-09-01',
+			amount_under_21_cents: 2500,
+			amount_adult_cents: 3000,
+		};
 		expect(buildOptionFormRow({ ...optionsForm[0], tariffs: [old] }, modalForm, saved)).toEqual({
 			...modalForm,
 			_newId: 'new-1',

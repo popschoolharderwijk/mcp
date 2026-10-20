@@ -52,10 +52,8 @@ describe('collectUniqueOptionIds', () => {
 
 describe('buildOptionLabelMap', () => {
 	it('maps option ids to formatted labels', () => {
-		const optionMap = buildOptionLabelMap([
-			{ id: 'opt-1', duration_minutes: 45, frequency: 'weekly' },
-		]);
-		expect(optionMap.get('opt-1')).toBe('45 min · weekly · €25');
+		const optionMap = buildOptionLabelMap([{ id: 'opt-1', duration_minutes: 45, frequency: 'weekly' }]);
+		expect(optionMap.get('opt-1')).toBe('45 min · weekly');
 	});
 });
 
@@ -118,13 +116,13 @@ describe('collectTeacherUserIds', () => {
 
 describe('enrichSignupRequestRow', () => {
 	it('adds option label and trial teacher details', () => {
-		const optionMap = new Map([['opt-1', '45 min · weekly · €25']]);
+		const optionMap = new Map([['opt-1', '45 min · weekly']]);
 		const trialMap = new Map([['req-1', { date: '2026-09-15', time: '14:00', teacher_user_id: 'tea-1' }]]);
 		const teacherNames = new Map([['tea-1', 'Piet Docent']]);
 
 		expect(enrichSignupRequestRow(baseRow, optionMap, trialMap, teacherNames)).toEqual({
 			...baseRow,
-			option_label: '45 min · weekly · €25',
+			option_label: '45 min · weekly',
 			trial_scheduled_date: '2026-09-15',
 			trial_scheduled_time: '14:00',
 			trial_teacher_name: 'Piet Docent',
