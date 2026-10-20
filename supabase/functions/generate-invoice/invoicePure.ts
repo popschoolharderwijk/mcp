@@ -1,6 +1,5 @@
 // Edge mirror of PRIMARY_HEX in src/lib/color/brand-hex.ts — keep mail header in sync; see invoicePure.test.ts
 
-import { ageAtDate } from './format.ts';
 import type {
 	BatchItem,
 	DirectDebitBatch,
@@ -31,31 +30,26 @@ export function buildStudentInfo(sid: string, profile: ProfileRow, stRow: Studen
 	};
 }
 
-export function buildInvoiceLines(
-	studentItems: BatchItem[],
-	student: StudentInfo,
-	collectionDate: string,
-): InvoiceLine[] {
-	return studentItems.map((item) => {
-		const cat = ageAtDate(student.date_of_birth, collectionDate);
-		const total = item.amount_cents;
-		const isAdult = cat === '21_plus';
-		const rate = isAdult ? 21 : 0;
-		const excl = isAdult ? Math.round(total / 1.21) : total;
-		const btwAmt = isAdult ? total - excl : 0;
+/** True when every item carries the VAT breakdown from the fee rules. */
+export function hasVatBreakdown(items: BatchItem[]): boolean {
+	return items.every(
+		(item) => item.btw_rate != null && item.amount_excl_btw_cents != null && item.btw_amount_cents != null,
+	);
+}
 
-		return {
-			batch_item_id: item.id,
-			description: item.remittance_info,
-			lesson_date: collectionDate,
-			quantity: 1,
-			unit_price_cents: total,
-			btw_rate: rate,
-			amount_excl_btw_cents: excl,
-			btw_amount_cents: btwAmt,
-			amount_total_cents: total,
-		};
-	});
+/** Invoice lines copy the VAT breakdown of the batch items; no fee or VAT is computed here. */
+export function buildInvoiceLines(studentItems: BatchItem[], collectionDate: string): InvoiceLine[] {
+	return studentItems.map((item) => ({
+		batch_item_id: item.id,
+		description: item.remittance_info,
+		lesson_date: collectionDate,
+		quantity: 1,
+		unit_price_cents: item.amount_cents,
+		btw_rate: item.btw_rate ?? 0,
+		amount_excl_btw_cents: item.amount_excl_btw_cents ?? item.amount_cents,
+		btw_amount_cents: item.btw_amount_cents ?? 0,
+		amount_total_cents: item.amount_cents,
+	}));
 }
 
 export function computeTotals(lines: InvoiceLine[]): InvoiceTotals {
@@ -71,18 +65,11 @@ export function computeTotals(lines: InvoiceLine[]): InvoiceTotals {
 	);
 }
 
-export function resolveAgeCategory(lines: InvoiceLine[], dateOfBirth: string | null, collectionDate: string): string {
-	// Missing date of birth is billed at 0%. ageAtDate still returns unknown, and that category
-	// is what the report uses to keep this revenue in its own total.
-	const lineAges = lines.map(() => ageAtDate(dateOfBirth, collectionDate));
-	if (lineAges.length > 0 && lineAges.every((age) => age === 'unknown')) return 'unknown';
-
-	const hasBtw = lines.some((l) => l.btw_rate === 21);
-	const hasExempt = lines.some((l) => l.btw_rate === 0);
-	if (hasBtw && hasExempt) return 'mixed';
-	if (hasBtw) return '21_plus';
-	if (hasExempt) return 'under_21';
-	return 'unknown';
+export function resolveAgeCategory(items: BatchItem[]): string {
+	const categories = new Set(items.map((item) => item.age_category ?? 'unknown'));
+	if (categories.size === 1) return [...categories][0];
+	if (categories.has('unknown')) return 'unknown';
+	return 'mixed';
 }
 
 export function filterStudentItems(items: BatchItem[], studentUserId: string): BatchItem[] {
