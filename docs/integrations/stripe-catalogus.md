@@ -71,3 +71,14 @@ Sinds fase 3a verwijzen abonnementsfasen naar deze prijzen (opgezocht via `looku
 3. In de app: Instellingen → Boekhouding-instellingen → **Synchroniseer met Stripe**.
 4. Stripe Dashboard (testmodus) → Product catalog: controleer producten en prijzen. Onder Settings → Tax → Tax rates staan "Btw 21%" en "Btw vrijgesteld".
 5. Pas in Stripe geen prijzen aan en maak er geen aan. Wijzig tarieven alleen in de app.
+
+## Zelfherstel bij een andere Stripe-sleutel
+
+Wordt `STRIPE_SECRET_KEY` vervangen door die van een ander Stripe-account, dan horen opgeslagen id's niet meer bij het account (Stripe: `resource_missing`). De sync controleert daarom elk opgeslagen id:
+
+- **Btw-tarieven:** opgehaald en alleen hergebruikt als ze bestaan en actief zijn; anders zoeken op `metadata.mcp_key`, anders aanmaken. Nieuwe id's worden opgeslagen.
+- **Klantportaal:** bestaat de opgeslagen configuratie niet, dan wordt de eigen configuratie (`metadata.mcp_key = portal_v1`) gezocht of aangemaakt.
+- **Product:** opgeslagen id ontbreekt → zoeken op `metadata.lesson_type_option_id` → aanmaken.
+- **Prijzen:** worden per `lookup_key` aangemaakt op het actuele product; catalogusrijen met een prijs-id die niet op het actuele product bestaat, worden inactief.
+- Andere Stripe-fouten (netwerk, rechten) worden niet als "ontbreekt" behandeld.
+- Een tweede sync verandert niets. Pure logica: `_shared/stripeRecoveryPure.ts`, tests: `tests/code/billing/stripeRecoveryPure.test.ts`.
