@@ -37,114 +37,40 @@ SELECT * FROM (VALUES
 WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.name);
 
 -- -----------------------------------------------------------------------------
--- LESSON TYPE OPTIONS
--- Not all lesson types have all 15 options (30/45/60/90/120 x weekly/biweekly/monthly).
--- - Gitaarles, Drumles, Zangles, Basles, Keyboardles, Bandcoaching: all 15 options (price = duration).
--- - Saxofoonles: 6 options (30 and 45 min only) — agreements use 30 min weekly.
--- - DJ / Beats: 3 options (45 min only, all frequencies) — agreements use 45 min monthly.
+-- LESSON TYPE OPTIONS (instrument lessons)
+-- Only the forms on the tarievenlijst get a tariff. Instrument lessons: 30 min weekly and
+-- 30 min biweekly (private-lesson tariffs). Bandcoaching: one form, 60 min biweekly (used by
+-- the test agreements and the group "Bandcoaching maandag"). DJ / Beats is not on the list:
+-- its forms exist without tariff (Stripe status "Ontbreekt: geen tarief").
 -- -----------------------------------------------------------------------------
-
--- Full 15 options for: Gitaarles, Drumles, Zangles, Basles, Keyboardles, Bandcoaching
-INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
-SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
+INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency)
+SELECT lt.id, opt.duration_minutes, opt.frequency
 FROM public.lesson_types lt
-CROSS JOIN (
-  VALUES
-    (30, 'weekly'::public.lesson_frequency, 30.00),
-    (30, 'biweekly'::public.lesson_frequency, 30.00),
-    (30, 'monthly'::public.lesson_frequency, 30.00),
-    (45, 'weekly'::public.lesson_frequency, 45.00),
-    (45, 'biweekly'::public.lesson_frequency, 45.00),
-    (45, 'monthly'::public.lesson_frequency, 45.00),
-    (60, 'weekly'::public.lesson_frequency, 60.00),
-    (60, 'biweekly'::public.lesson_frequency, 60.00),
-    (60, 'monthly'::public.lesson_frequency, 60.00),
-    (90, 'weekly'::public.lesson_frequency, 90.00),
-    (90, 'biweekly'::public.lesson_frequency, 90.00),
-    (90, 'monthly'::public.lesson_frequency, 90.00),
-    (120, 'weekly'::public.lesson_frequency, 120.00),
-    (120, 'biweekly'::public.lesson_frequency, 120.00),
-    (120, 'monthly'::public.lesson_frequency, 120.00)
-) AS opt(duration_minutes, frequency, price_per_lesson)
-WHERE lt.name IN ('Gitaarles', 'Drumles', 'Zangles', 'Basles', 'Keyboardles', 'Bandcoaching')
-  AND NOT EXISTS (
-    SELECT 1 FROM public.lesson_type_options lto
-    WHERE lto.lesson_type_id = lt.id
-      AND lto.duration_minutes = opt.duration_minutes
-      AND lto.frequency = opt.frequency
-      AND lto.price_per_lesson = opt.price_per_lesson
-  );
-
--- Saxofoonles: only 30 and 45 min (6 options) — agreements use 30 min weekly
-INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
-SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
-FROM public.lesson_types lt
-CROSS JOIN (
-  VALUES
-    (30, 'weekly'::public.lesson_frequency, 30.00),
-    (30, 'biweekly'::public.lesson_frequency, 30.00),
-    (30, 'monthly'::public.lesson_frequency, 30.00),
-    (45, 'weekly'::public.lesson_frequency, 45.00),
-    (45, 'biweekly'::public.lesson_frequency, 45.00),
-    (45, 'monthly'::public.lesson_frequency, 45.00)
-) AS opt(duration_minutes, frequency, price_per_lesson)
-WHERE lt.name = 'Saxofoonles'
-  AND NOT EXISTS (
-    SELECT 1 FROM public.lesson_type_options lto
-    WHERE lto.lesson_type_id = lt.id
-      AND lto.duration_minutes = opt.duration_minutes
-      AND lto.frequency = opt.frequency
-      AND lto.price_per_lesson = opt.price_per_lesson
-  );
-
--- DJ / Beats: only 45 min, all 3 frequencies (3 options) — agreements use 45 min monthly
-INSERT INTO public.lesson_type_options (lesson_type_id, duration_minutes, frequency, price_per_lesson)
-SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson
-FROM public.lesson_types lt
-CROSS JOIN (
-  VALUES
-    (45, 'weekly'::public.lesson_frequency, 45.00),
-    (45, 'biweekly'::public.lesson_frequency, 45.00),
-    (45, 'monthly'::public.lesson_frequency, 45.00)
-) AS opt(duration_minutes, frequency, price_per_lesson)
-WHERE lt.name = 'DJ / Beats'
-  AND NOT EXISTS (
-    SELECT 1 FROM public.lesson_type_options lto
-    WHERE lto.lesson_type_id = lt.id
-      AND lto.duration_minutes = opt.duration_minutes
-      AND lto.frequency = opt.frequency
-      AND lto.price_per_lesson = opt.price_per_lesson
-  );
-
--- -----------------------------------------------------------------------------
--- TARIFFS (tarievenlijst per 1 september 2026; monthly amounts, 11x per school year)
--- Amounts in cents: < 21 (VAT exempt) and 21+ (incl. 21% VAT), exactly as published.
--- Instrument lessons: 30 min weekly/biweekly use the private-lesson tariffs; other
--- durations scale with the duration (fictional test data); monthly = half of biweekly.
--- -----------------------------------------------------------------------------
-INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
-SELECT
-  lto.id,
-  DATE '2026-09-01',
-  round(base.under_cents * lto.duration_minutes / 30.0)::bigint,
-  round(base.adult_cents * lto.duration_minutes / 30.0)::bigint
-FROM public.lesson_type_options lto
-JOIN public.lesson_types lt ON lt.id = lto.lesson_type_id
 JOIN (VALUES
-  ('weekly'::public.lesson_frequency, 7338, 8879),
-  ('biweekly'::public.lesson_frequency, 3867, 4679),
-  ('monthly'::public.lesson_frequency, 1934, 2340)
-) AS base(frequency, under_cents, adult_cents) ON base.frequency = lto.frequency
-WHERE lt.name <> 'Bandcoaching'
-ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
-
--- Bandcoaching: one tariff for every option.
-INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
-SELECT lto.id, DATE '2026-09-01', 1691, 2046
-FROM public.lesson_type_options lto
-JOIN public.lesson_types lt ON lt.id = lto.lesson_type_id
-WHERE lt.name = 'Bandcoaching'
-ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
+  ('Gitaarles', 30, 'weekly'::public.lesson_frequency),
+  ('Gitaarles', 30, 'biweekly'::public.lesson_frequency),
+  ('Drumles', 30, 'weekly'::public.lesson_frequency),
+  ('Drumles', 30, 'biweekly'::public.lesson_frequency),
+  ('Zangles', 30, 'weekly'::public.lesson_frequency),
+  ('Zangles', 30, 'biweekly'::public.lesson_frequency),
+  ('Basles', 30, 'weekly'::public.lesson_frequency),
+  ('Basles', 30, 'biweekly'::public.lesson_frequency),
+  ('Keyboardles', 30, 'weekly'::public.lesson_frequency),
+  ('Keyboardles', 30, 'biweekly'::public.lesson_frequency),
+  ('Saxofoonles', 30, 'weekly'::public.lesson_frequency),
+  ('Saxofoonles', 30, 'biweekly'::public.lesson_frequency),
+  ('Bandcoaching', 60, 'biweekly'::public.lesson_frequency),
+  ('DJ / Beats', 45, 'weekly'::public.lesson_frequency),
+  ('DJ / Beats', 45, 'biweekly'::public.lesson_frequency),
+  ('DJ / Beats', 45, 'monthly'::public.lesson_frequency)
+) AS opt(type_name, duration_minutes, frequency) ON opt.type_name = lt.name
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.lesson_type_options lto
+  WHERE lto.lesson_type_id = lt.id
+    AND lto.duration_minutes = opt.duration_minutes
+    AND lto.frequency = opt.frequency
+    AND lto.label IS NULL
+);
 
 -- Lesson forms from the tarievenlijst that are not an instrument lesson.
 INSERT INTO public.lesson_types (name, description, icon, color, cost_center, is_group_lesson, is_duo_lesson, is_active)
@@ -184,28 +110,74 @@ WHERE NOT EXISTS (
     AND lto.frequency = v.frequency
     AND COALESCE(lto.label, '') = COALESCE(v.label, '')
 );
+-- -----------------------------------------------------------------------------
+-- TARIFFS — exactly the tarievenlijst per 1 september 2026 (cents; monthly amounts,
+-- 11x per school year; group lessons one-off). < 21 VAT exempt, 21+ incl. 21% VAT.
+-- tests/code/billing/bootstrapTariffs.test.ts checks the marked block against the list.
+-- Afterwards every other 1-9-2026 tariff is removed (earlier fictional test data).
+-- -----------------------------------------------------------------------------
+DROP TABLE IF EXISTS tmp_tarievenlijst;
+CREATE TEMP TABLE tmp_tarievenlijst (
+  type_name text, duration_minutes integer, frequency public.lesson_frequency,
+  label text, under_cents bigint, adult_cents bigint
+);
+INSERT INTO tmp_tarievenlijst VALUES
+-- BEGIN TARIEVENLIJST
+  ('Gitaarles', 30, 'weekly', NULL, 7338, 8879),
+  ('Gitaarles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Drumles', 30, 'weekly', NULL, 7338, 8879),
+  ('Drumles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Zangles', 30, 'weekly', NULL, 7338, 8879),
+  ('Zangles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Basles', 30, 'weekly', NULL, 7338, 8879),
+  ('Basles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Keyboardles', 30, 'weekly', NULL, 7338, 8879),
+  ('Keyboardles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Saxofoonles', 30, 'weekly', NULL, 7338, 8879),
+  ('Saxofoonles', 30, 'biweekly', NULL, 3867, 4679),
+  ('Duoles', 30, 'weekly', NULL, 5156, 6239),
+  ('Duoles', 30, 'biweekly', NULL, 2679, 3241),
+  ('De Popkids', 60, 'weekly', NULL, 2455, NULL),
+  ('Popkoor', 60, 'weekly', '12-18 jaar', 3000, NULL),
+  ('Popkoor', 60, 'weekly', '18+', 3000, 3631),
+  ('Bandcoaching', 60, 'biweekly', NULL, 1691, 2046),
+  ('Klank en Kriebels', 45, 'weekly', NULL, 6600, NULL),
+  ('Notenkrakers', 45, 'weekly', NULL, 6600, NULL),
+  ('Mini Maestro''s', 45, 'weekly', NULL, 7650, NULL),
+  ('De Muziekclub', 45, 'weekly', NULL, 7650, NULL),
+  ('DJ-School', 60, 'weekly', NULL, 10996, 13305),
+  ('Laatbloeiers', 60, 'weekly', NULL, NULL, 8250)
+-- END TARIEVENLIJST
+;
 
 INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
 SELECT lto.id, DATE '2026-09-01', v.under_cents, v.adult_cents
-FROM (VALUES
-  ('Duoles', 'weekly'::public.lesson_frequency, NULL::text, 5156, 6239),
-  ('Duoles', 'biweekly'::public.lesson_frequency, NULL, 2679, 3241),
-  ('De Popkids', 'weekly'::public.lesson_frequency, NULL, 2455, NULL),
-  ('Popkoor', 'weekly'::public.lesson_frequency, '12-18 jaar', 3000, NULL),
-  ('Popkoor', 'weekly'::public.lesson_frequency, '18+', 3000, 3631),
-  ('Klank en Kriebels', 'weekly'::public.lesson_frequency, NULL, 6600, NULL),
-  ('Notenkrakers', 'weekly'::public.lesson_frequency, NULL, 6600, NULL),
-  ('Mini Maestro''s', 'weekly'::public.lesson_frequency, NULL, 7650, NULL),
-  ('De Muziekclub', 'weekly'::public.lesson_frequency, NULL, 7650, NULL),
-  ('DJ-School', 'weekly'::public.lesson_frequency, NULL, 10996, 13305),
-  ('Laatbloeiers', 'weekly'::public.lesson_frequency, NULL, NULL, 8250)
-) AS v(type_name, frequency, label, under_cents, adult_cents)
+FROM tmp_tarievenlijst v
 JOIN public.lesson_types lt ON lt.name = v.type_name
 JOIN public.lesson_type_options lto
   ON lto.lesson_type_id = lt.id
+ AND lto.duration_minutes = v.duration_minutes
  AND lto.frequency = v.frequency
  AND COALESCE(lto.label, '') = COALESCE(v.label, '')
-ON CONFLICT (lesson_type_option_id, effective_from) DO NOTHING;
+ON CONFLICT (lesson_type_option_id, effective_from) DO UPDATE
+  SET amount_under_21_cents = EXCLUDED.amount_under_21_cents,
+      amount_adult_cents = EXCLUDED.amount_adult_cents;
+
+-- Cleanup: remove every other 1-9-2026 tariff (fictional amounts from earlier test data).
+DELETE FROM public.lesson_type_option_tariffs t
+WHERE t.effective_from = DATE '2026-09-01'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM tmp_tarievenlijst v
+    JOIN public.lesson_types lt ON lt.name = v.type_name
+    JOIN public.lesson_type_options lto
+      ON lto.lesson_type_id = lt.id
+     AND lto.duration_minutes = v.duration_minutes
+     AND lto.frequency = v.frequency
+     AND COALESCE(lto.label, '') = COALESCE(v.label, '')
+    WHERE lto.id = t.lesson_type_option_id
+  );
+DROP TABLE tmp_tarievenlijst;
 
 -- Singleton accounting settings (from accounting_settings migration).
 INSERT INTO public.accounting_settings (id) VALUES (true) ON CONFLICT DO NOTHING;
@@ -216,7 +188,7 @@ INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) V
 	'Bevestiging van je aanmelding bij Popschool Harderwijk',
 	'<p>Hoi {{leerling_naam}},</p>
 <p>Bedankt voor je aanmelding bij Popschool Harderwijk!</p>
-<p>We hebben je aanvraag voor <strong>{{les_type}}</strong> ({{frequentie}}) ontvangen voor <strong>{{prijs_per_les}}</strong> per les.</p>
+<p>We hebben je aanvraag voor <strong>{{les_type}}</strong> ({{frequentie}}) ontvangen voor <strong>{{bedrag}}</strong>.</p>
 <p>We nemen zo snel mogelijk contact met je op om je inschrijving te verwerken.</p>
 <p>Met muzikale groet,<br/>Popschool Harderwijk</p>',
 	true
@@ -259,7 +231,7 @@ INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) V
   <li><strong>Frequentie:</strong> {{frequentie}}</li>
   <li><strong>Dag &amp; tijd:</strong> {{dag}} om {{tijd}}</li>
   <li><strong>Startdatum:</strong> {{startdatum}}</li>
-  <li><strong>Prijs per les:</strong> {{prijs_per_les}}</li>
+  <li><strong>Lesgeld:</strong> {{bedrag}}</li>
   <li><strong>Betaalmethode:</strong> {{betaalmethode}}</li>
 </ul>
 <p>In het leerlingportaal vind je je agenda, facturen en overige informatie over je lessen.</p>
@@ -278,7 +250,7 @@ INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) V
   <li><strong>Frequentie:</strong> {{frequentie}}</li>
   <li><strong>Dag &amp; tijd:</strong> {{dag}} om {{tijd}}</li>
   <li><strong>Startdatum:</strong> {{startdatum}}</li>
-  <li><strong>Prijs per les:</strong> {{prijs_per_les}}</li>
+  <li><strong>Lesgeld:</strong> {{bedrag}}</li>
   <li><strong>Betaalmethode:</strong> {{betaalmethode}}</li>
 </ul>
 <p>De lessen verschijnen automatisch in je agenda.</p>

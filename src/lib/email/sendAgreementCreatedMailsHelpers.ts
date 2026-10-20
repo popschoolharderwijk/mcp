@@ -12,15 +12,6 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 	manual: 'Handmatige facturatie',
 };
 
-function formatAgreementMailPrice(value: number | null | undefined): string {
-	if (value === null || value === undefined) return '';
-	return new Intl.NumberFormat('nl-NL', {
-		style: 'currency',
-		currency: 'EUR',
-		minimumFractionDigits: 2,
-	}).format(value);
-}
-
 function formatAgreementMailDate(iso: string | null | undefined): string {
 	if (!iso) return '';
 	const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -51,7 +42,6 @@ export interface AgreementMailAgreement {
 	start_time: string;
 	start_date: string;
 	frequency: string;
-	price_per_lesson: number | null;
 	payment_method: string;
 }
 
@@ -60,7 +50,7 @@ export interface AgreementMailSharedVars {
 	docent_naam: string;
 	les_type: string;
 	frequentie: string;
-	prijs_per_les: string;
+	bedrag: string;
 	dag: string;
 	tijd: string;
 	startdatum: string;
@@ -72,13 +62,14 @@ function buildAgreementMailSharedVars(
 	studentName: string,
 	teacherName: string,
 	lessonTypeName: string,
+	amountLabel: string,
 ): AgreementMailSharedVars {
 	return {
 		leerling_naam: studentName,
 		docent_naam: teacherName,
 		les_type: lessonTypeName,
 		frequentie: FREQUENCY_LABELS[agreement.frequency] ?? agreement.frequency,
-		prijs_per_les: formatAgreementMailPrice(agreement.price_per_lesson),
+		bedrag: amountLabel,
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementMailTime(agreement.start_time),
 		startdatum: formatAgreementMailDate(agreement.start_date),
@@ -128,6 +119,7 @@ export function buildAgreementMailContext(
 	},
 	studentProfile: AgreementMailProfile | null | undefined,
 	teacherProfile: AgreementMailProfile | null | undefined,
+	amountLabel = '',
 ): AgreementMailContext {
 	const studentName = buildProfileDisplayName(studentProfile?.first_name, studentProfile?.last_name, 'leerling');
 	const teacherName = buildProfileDisplayName(teacherProfile?.first_name, teacherProfile?.last_name, 'docent');
@@ -136,7 +128,7 @@ export function buildAgreementMailContext(
 		studentName,
 		teacherName,
 		lessonType,
-		sharedVars: buildAgreementMailSharedVars(agreement, studentName, teacherName, lessonType),
+		sharedVars: buildAgreementMailSharedVars(agreement, studentName, teacherName, lessonType, amountLabel),
 	};
 }
 

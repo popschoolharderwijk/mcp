@@ -57,6 +57,7 @@ export type Database = {
           sepa_mandate_prefix: string
           sepa_remittance_template: string
           stripe_catalog_last_full_sync_at: string | null
+          stripe_portal_configuration_id: string | null
           stripe_tax_rate_21_id: string | null
           stripe_tax_rate_exempt_id: string | null
           updated_at: string
@@ -104,6 +105,7 @@ export type Database = {
           sepa_mandate_prefix?: string
           sepa_remittance_template?: string
           stripe_catalog_last_full_sync_at?: string | null
+          stripe_portal_configuration_id?: string | null
           stripe_tax_rate_21_id?: string | null
           stripe_tax_rate_exempt_id?: string | null
           updated_at?: string
@@ -151,6 +153,7 @@ export type Database = {
           sepa_mandate_prefix?: string
           sepa_remittance_template?: string
           stripe_catalog_last_full_sync_at?: string | null
+          stripe_portal_configuration_id?: string | null
           stripe_tax_rate_21_id?: string | null
           stripe_tax_rate_exempt_id?: string | null
           updated_at?: string
@@ -847,13 +850,10 @@ export type Database = {
           minimum_term_end: string | null
           notes: string | null
           payment_method: string
-          price_per_lesson: number | null
           sepa_mandate_id: string | null
           signup_source: string | null
           start_date: string
           start_time: string
-          stripe_price_id: string | null
-          stripe_schedule_id: string | null
           student_user_id: string
           teacher_user_id: string
           updated_at: string
@@ -877,13 +877,10 @@ export type Database = {
           minimum_term_end?: string | null
           notes?: string | null
           payment_method?: string
-          price_per_lesson?: number | null
           sepa_mandate_id?: string | null
           signup_source?: string | null
           start_date: string
           start_time: string
-          stripe_price_id?: string | null
-          stripe_schedule_id?: string | null
           student_user_id: string
           teacher_user_id: string
           updated_at?: string
@@ -907,13 +904,10 @@ export type Database = {
           minimum_term_end?: string | null
           notes?: string | null
           payment_method?: string
-          price_per_lesson?: number | null
           sepa_mandate_id?: string | null
           signup_source?: string | null
           start_date?: string
           start_time?: string
-          stripe_price_id?: string | null
-          stripe_schedule_id?: string | null
           student_user_id?: string
           teacher_user_id?: string
           updated_at?: string
@@ -1013,7 +1007,6 @@ export type Database = {
           is_active: boolean
           lesson_type_id: string
           name: string
-          price_per_lesson: number | null
           start_date: string
           start_time: string
           teacher_user_id: string
@@ -1031,7 +1024,6 @@ export type Database = {
           is_active?: boolean
           lesson_type_id: string
           name: string
-          price_per_lesson?: number | null
           start_date: string
           start_time: string
           teacher_user_id: string
@@ -1049,7 +1041,6 @@ export type Database = {
           is_active?: boolean
           lesson_type_id?: string
           name?: string
-          price_per_lesson?: number | null
           start_date?: string
           start_time?: string
           teacher_user_id?: string
@@ -1238,9 +1229,6 @@ export type Database = {
           id: string
           label: string | null
           lesson_type_id: string
-          price_per_lesson: number | null
-          price_per_lesson_adult_cents: number | null
-          price_per_lesson_under_21_cents: number | null
           updated_at: string
           updated_by: string | null
         }
@@ -1254,9 +1242,6 @@ export type Database = {
           id?: string
           label?: string | null
           lesson_type_id: string
-          price_per_lesson?: number | null
-          price_per_lesson_adult_cents?: number | null
-          price_per_lesson_under_21_cents?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1270,9 +1255,6 @@ export type Database = {
           id?: string
           label?: string | null
           lesson_type_id?: string
-          price_per_lesson?: number | null
-          price_per_lesson_adult_cents?: number | null
-          price_per_lesson_under_21_cents?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1888,9 +1870,21 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string | null
           default_payment_method_brand: string | null
+          first_invoice_due_on: string | null
+          first_invoice_month: string | null
+          first_invoice_status: string | null
+          first_invoice_stripe_id: string | null
           id: string
+          last_check_at: string | null
+          last_check_expected_cents: number | null
+          last_check_month: string | null
+          last_check_stripe_cents: number | null
+          last_rebuild_error: string | null
+          last_rebuilt_at: string | null
           latest_invoice_id: string | null
           lesson_agreement_id: string
+          needs_rebuild: boolean
+          schedule_horizon_end: string | null
           status: string
           stripe_customer_id: string
           stripe_price_id: string
@@ -1907,9 +1901,21 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           default_payment_method_brand?: string | null
+          first_invoice_due_on?: string | null
+          first_invoice_month?: string | null
+          first_invoice_status?: string | null
+          first_invoice_stripe_id?: string | null
           id?: string
+          last_check_at?: string | null
+          last_check_expected_cents?: number | null
+          last_check_month?: string | null
+          last_check_stripe_cents?: number | null
+          last_rebuild_error?: string | null
+          last_rebuilt_at?: string | null
           latest_invoice_id?: string | null
           lesson_agreement_id: string
+          needs_rebuild?: boolean
+          schedule_horizon_end?: string | null
           status: string
           stripe_customer_id: string
           stripe_price_id: string
@@ -1926,9 +1932,21 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string | null
           default_payment_method_brand?: string | null
+          first_invoice_due_on?: string | null
+          first_invoice_month?: string | null
+          first_invoice_status?: string | null
+          first_invoice_stripe_id?: string | null
           id?: string
+          last_check_at?: string | null
+          last_check_expected_cents?: number | null
+          last_check_month?: string | null
+          last_check_stripe_cents?: number | null
+          last_rebuild_error?: string | null
+          last_rebuilt_at?: string | null
           latest_invoice_id?: string | null
           lesson_agreement_id?: string
+          needs_rebuild?: boolean
+          schedule_horizon_end?: string | null
           status?: string
           stripe_customer_id?: string
           stripe_price_id?: string
@@ -2239,6 +2257,17 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      agreement_fee_months: {
+        Args: { p_agreement_id: string; p_from_month: string; p_months: number }
+        Returns: {
+          age_category: string
+          amount_cents: number
+          btw_rate: number
+          is_prorated: boolean
+          month: string
+          tariff_effective_from: string
+        }[]
       }
       apply_audit_trail: { Args: { p_table: unknown }; Returns: undefined }
       authenticated_has_execute_on: {

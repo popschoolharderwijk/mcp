@@ -4,6 +4,8 @@
 // agreement is already saved; the UI may show a warning at most.
 
 import { supabase } from '@/integrations/supabase/client';
+import { formatFeePreviewLabel } from '@/lib/billing/lessonFeeFormat';
+import { loadAgreementFeePreview } from '@/lib/billing/loadLessonFeePreview';
 import {
 	type AgreementMailSharedVars,
 	buildAgreementMailContext,
@@ -37,7 +39,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 	const { data: agreement, error } = await supabase
 		.from('lesson_agreements')
 		.select(
-			`id, day_of_week, start_time, start_date, frequency, price_per_lesson, payment_method,
+			`id, day_of_week, start_time, start_date, frequency, payment_method,
 			 student_user_id, teacher_user_id,
 			 lesson_types(name)`,
 		)
@@ -49,7 +51,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		return result;
 	}
 
-	const [studentProfile, teacherProfile] = await Promise.all([
+	const [studentProfile, teacherProfile, fee] = await Promise.all([
 		supabase
 			.from('profiles')
 			.select('email, first_name, last_name')
@@ -60,9 +62,15 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 			.select('email, first_name, last_name')
 			.eq('user_id', agreement.teacher_user_id)
 			.maybeSingle(),
+		loadAgreementFeePreview(agreement.id, agreement.student_user_id),
 	]);
 
-	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data);
+	const { sharedVars } = buildAgreementMailContext(
+		agreement,
+		studentProfile.data,
+		teacherProfile.data,
+		formatFeePreviewLabel(fee.preview),
+	);
 	const targets = buildAgreementMailTargets(studentProfile.data?.email, teacherProfile.data?.email);
 
 	for (const target of targets) {

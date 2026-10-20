@@ -72,34 +72,30 @@ export function buildStripeCustomerDisplayName(firstName: string | null, lastNam
 	return name || undefined;
 }
 
-export function buildCompleteModeSuccessResponse(built: {
-	scheduleId: string;
+export interface ScheduleBuiltLike {
+	scheduleId: string | null;
 	subscriptionId?: string | null;
-}): Response {
+	phases: number;
+	firstInvoice: 'sent' | 'pending' | null;
+}
+
+export function buildCompleteModeSuccessResponse(built: ScheduleBuiltLike): Response {
 	return jsonResponse(200, {
 		mode: 'complete',
 		schedule_id: built.scheduleId,
 		subscription_id: built.subscriptionId,
+		phases: built.phases,
+		first_invoice: built.firstInvoice,
 	});
 }
 
-export function buildDirectModeSuccessResponse(built: {
-	scheduleId: string;
-	subscriptionId?: string | null;
-	yearly: { yearlyCents: number; monthlyCents: number; lessonsCount: number };
-	periodStart: string;
-	periodEnd: string;
-	tariff: unknown;
-}): Response {
+export function buildDirectModeSuccessResponse(built: ScheduleBuiltLike): Response {
 	return jsonResponse(200, {
 		mode: 'direct',
 		schedule_id: built.scheduleId,
 		subscription_id: built.subscriptionId,
-		yearly_cents: built.yearly.yearlyCents,
-		monthly_cents: built.yearly.monthlyCents,
-		lessons_count: built.yearly.lessonsCount,
-		period: { start: built.periodStart, end: built.periodEnd },
-		tariff: built.tariff,
+		phases: built.phases,
+		first_invoice: built.firstInvoice,
 	});
 }
 

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { getSafeErrorMessage } from '../_shared/errors.ts';
+import { getSafeErrorMessage } from './errors.ts';
 import {
 	buildPriceCreateParams,
 	buildProductName,
@@ -12,7 +12,7 @@ import {
 	resolveCatalogStatus,
 	TAX_RATE_PARAMS,
 	type TaxRateKey,
-} from './catalogPure.ts';
+} from './stripeCatalogPure.ts';
 
 export interface CatalogResult {
 	lesson_type_option_id: string | null;
@@ -70,6 +70,31 @@ export async function ensureTaxRates(admin: SupabaseClient, stripe: Stripe): Pro
 		.from('accounting_settings')
 		.update({ stripe_tax_rate_21_id: found.nl_21_incl, stripe_tax_rate_exempt_id: found.exempt })
 		.eq('id', true);
+}
+
+/** Customer portal: change payment method and see invoices; cancelling/updating is off. */
+export async function ensurePortalConfiguration(admin: SupabaseClient, stripe: Stripe): Promise<void> {
+	const { data: settings } = await admin
+		.from('accounting_settings')
+		.select('stripe_portal_configuration_id')
+		.eq('id', true)
+		.maybeSingle();
+	if (settings?.stripe_portal_configuration_id) return;
+	const config = await stripe.billingPortal.configurations.create(
+		{
+			business_profile: { headline: 'Mplifi – betaalgegevens en facturen' },
+			features: {
+				payment_method_update: { enabled: true },
+				invoice_history: { enabled: true },
+				customer_update: { enabled: true, allowed_updates: ['email', 'address'] },
+				subscription_cancel: { enabled: false },
+				subscription_update: { enabled: false },
+			},
+			metadata: { mcp_key: 'portal_v1' },
+		},
+		{ idempotencyKey: 'mcp_portal_configuration_v1' },
+	);
+	await admin.from('accounting_settings').update({ stripe_portal_configuration_id: config.id }).eq('id', true);
 }
 
 function toOptionInput(row: OptionDbRow): OptionInput {
@@ -207,6 +232,7 @@ export async function runCatalogSync(
 	lessonTypeId: string | undefined,
 ): Promise<CatalogResult[]> {
 	await ensureTaxRates(admin, stripe);
+	await ensurePortalConfiguration(admin, stripe);
 
 	let optionQuery = admin
 		.from('lesson_type_options')

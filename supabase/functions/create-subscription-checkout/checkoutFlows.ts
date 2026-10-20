@@ -1,6 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { createScheduleForAgreement } from '../_shared/billing.ts';
 import { jsonResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
 	attachDefaultPaymentMethod,
@@ -20,6 +19,7 @@ import {
 	validateCompleteCheckoutSessionMatch,
 	validateCompleteModePaymentReady,
 } from './checkoutFlowsPure.ts';
+import { findOpenSubscription, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
 export async function ensureStripeCustomer(
@@ -51,12 +51,8 @@ async function loadExistingCompleteScheduleResponse(
 	admin: SupabaseClient,
 	agreementId: string,
 ): Promise<Response | null> {
-	const { data: existingAgreement } = await admin
-		.from('lesson_agreements')
-		.select('stripe_schedule_id')
-		.eq('id', agreementId)
-		.maybeSingle();
-	return resolveExistingScheduleResponse(existingAgreement?.stripe_schedule_id);
+	const existing = await findOpenSubscription(admin, agreementId);
+	return resolveExistingScheduleResponse(existing?.stripe_schedule_id);
 }
 
 async function finalizeCompleteModeSchedule(
@@ -88,10 +84,10 @@ async function finalizeCompleteModeSchedule(
 		});
 	}
 
-	const built = await createScheduleForAgreement(admin, stripe, {
-		lessonAgreementId: agreement.id,
-		customerId,
-		defaultPaymentMethod: paymentMethodId,
+	const built = await syncAgreementSchedule(admin, stripe, {
+		agreementId: agreement.id,
+		customerId: customerId as string,
+		defaultPaymentMethod: paymentMethodId as string,
 	});
 	return buildCompleteModeSuccessResponse(built);
 }
@@ -126,8 +122,8 @@ export async function handleDirectMode(
 		});
 	}
 
-	const built = await createScheduleForAgreement(admin, stripe, {
-		lessonAgreementId: agreement.id,
+	const built = await syncAgreementSchedule(admin, stripe, {
+		agreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: defaultPmId,
 	});

@@ -561,17 +561,16 @@ WHERE NOT EXISTS (
 -- -----------------------------------------------------------------------------
 -- LESSON AGREEMENTS (for RLS testing)
 -- -----------------------------------------------------------------------------
--- Snapshot (duration_minutes, frequency, price_per_lesson) per agreement:
---   Bandcoaching: 60 min, biweekly, 60; DJ / Beats: 45 min, monthly, 45; others: 30 min, weekly, 30.
+-- Snapshot (duration_minutes, frequency) per agreement:
+--   Bandcoaching: 60 min, biweekly; DJ / Beats: 45 min, monthly (no tariff -> manual); others: 30 min, weekly.
 -- -----------------------------------------------------------------------------
-INSERT INTO public.lesson_agreements (student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, day_of_week, start_time, start_date, end_date, is_active)
+INSERT INTO public.lesson_agreements (student_user_id, teacher_user_id, lesson_type_id, duration_minutes, frequency, day_of_week, start_time, start_date, end_date, is_active)
 SELECT
   student_profile.user_id AS student_user_id,
   t.user_id AS teacher_user_id,
   lt.id AS lesson_type_id,
   snap.duration_minutes,
   snap.frequency,
-  snap.price_per_lesson,
   agreement_data.day_of_week,
   agreement_data.start_time::TIME,
   agreement_data.start_date,
@@ -738,15 +737,15 @@ FROM (VALUES
 ) AS agreement_data(student_email, teacher_email, lesson_type_name, day_of_week, start_time, start_date, end_date, is_active)
 INNER JOIN (
   VALUES
-    ('Bandcoaching', 60, 'biweekly'::public.lesson_frequency, 60.00),
-    ('DJ / Beats', 45, 'monthly'::public.lesson_frequency, 45.00),
-    ('Gitaarles', 30, 'weekly'::public.lesson_frequency, 30.00),
-    ('Drumles', 30, 'weekly'::public.lesson_frequency, 30.00),
-    ('Zangles', 30, 'weekly'::public.lesson_frequency, 30.00),
-    ('Basles', 30, 'weekly'::public.lesson_frequency, 30.00),
-    ('Keyboardles', 30, 'weekly'::public.lesson_frequency, 30.00),
-    ('Saxofoonles', 30, 'weekly'::public.lesson_frequency, 30.00)
-) AS snap(lesson_type_name, duration_minutes, frequency, price_per_lesson)
+    ('Bandcoaching', 60, 'biweekly'::public.lesson_frequency),
+    ('DJ / Beats', 45, 'monthly'::public.lesson_frequency),
+    ('Gitaarles', 30, 'weekly'::public.lesson_frequency),
+    ('Drumles', 30, 'weekly'::public.lesson_frequency),
+    ('Zangles', 30, 'weekly'::public.lesson_frequency),
+    ('Basles', 30, 'weekly'::public.lesson_frequency),
+    ('Keyboardles', 30, 'weekly'::public.lesson_frequency),
+    ('Saxofoonles', 30, 'weekly'::public.lesson_frequency)
+) AS snap(lesson_type_name, duration_minutes, frequency)
   ON snap.lesson_type_name = agreement_data.lesson_type_name
 INNER JOIN public.profiles student_profile ON student_profile.email = agreement_data.student_email
 INNER JOIN public.profiles teacher_profile ON teacher_profile.email = agreement_data.teacher_email
@@ -1386,11 +1385,11 @@ BEGIN
 
   INSERT INTO public.lesson_groups (
     id, name, lesson_type_id, teacher_user_id,
-    duration_minutes, frequency, price_per_lesson,
+    duration_minutes, frequency,
     day_of_week, start_time, start_date, is_active, created_by
   ) VALUES (
     v_group_id, 'Bandcoaching maandag', v_lt, v_eve,
-    60, 'biweekly'::public.lesson_frequency, 60,
+    60, 'biweekly'::public.lesson_frequency,
     1, '14:00'::time, CURRENT_DATE - 45, true, v_site_admin
   );
 
@@ -2412,3 +2411,9 @@ WHERE s.date_of_birth IS NULL
     WHERE la.student_user_id = s.user_id
       AND la.payment_method IN ('sepa', 'stripe')
   );
+
+-- DJ / Beats is not on the tarievenlijst (no tariff): those agreements are "op factuur".
+UPDATE public.lesson_agreements la
+SET payment_method = 'manual', sepa_mandate_id = NULL
+FROM public.lesson_types lt
+WHERE la.lesson_type_id = lt.id AND lt.name = 'DJ / Beats';

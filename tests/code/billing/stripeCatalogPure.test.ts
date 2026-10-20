@@ -9,7 +9,7 @@ import {
 	planCatalogSync,
 	resolveCatalogStatus,
 	selectActiveTariffs,
-} from '../../../supabase/functions/sync-stripe-catalog/catalogPure';
+} from '../../../supabase/functions/_shared/stripeCatalogPure';
 
 const TODAY = '2026-10-20';
 

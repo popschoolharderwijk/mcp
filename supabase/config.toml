@@ -158,3 +158,9 @@ verify_jwt = false
 
 [functions.sync-stripe-catalog]
 verify_jwt = false
+
+[functions.check-stripe-subscriptions]
+verify_jwt = false
+
+[functions.stripe-billing-daily]
+verify_jwt = false

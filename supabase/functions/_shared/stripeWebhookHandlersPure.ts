@@ -60,6 +60,7 @@ export type StripeWebhookAction =
 	| 'checkout_session_completed'
 	| 'setup_intent_succeeded'
 	| 'upsert_invoice'
+	| 'schedule_event'
 	| 'noop';
 
 export function resolveStripeWebhookAction(eventType: string): StripeWebhookAction {
@@ -79,6 +80,10 @@ export function resolveStripeWebhookAction(eventType: string): StripeWebhookActi
 		case 'invoice.payment_failed':
 		case 'invoice.payment_succeeded':
 			return 'upsert_invoice';
+		case 'subscription_schedule.released':
+		case 'subscription_schedule.canceled':
+		case 'subscription_schedule.completed':
+			return 'schedule_event';
 		default:
 			return 'noop';
 	}
@@ -118,4 +123,18 @@ export function isStripeWebhookCheckoutAction(
 	action: StripeWebhookAction,
 ): action is 'checkout_session_completed' | 'setup_intent_succeeded' {
 	return action === 'checkout_session_completed' || action === 'setup_intent_succeeded';
+}
+
+/** Status of the separate first-month invoice, derived from the Stripe invoice. */
+export function resolveFirstInvoiceStatus(invoice: {
+	status?: string | null;
+	metadata?: { kind?: string } | null;
+	amount_remaining?: number | null;
+	attempted?: boolean | null;
+}): 'sent' | 'paid' | 'failed' | null {
+	if (invoice.metadata?.kind !== 'first_month') return null;
+	if (invoice.status === 'paid') return 'paid';
+	if (invoice.status === 'uncollectible' || invoice.status === 'void') return 'failed';
+	if (invoice.attempted && (invoice.amount_remaining ?? 0) > 0) return 'failed';
+	return 'sent';
 }
