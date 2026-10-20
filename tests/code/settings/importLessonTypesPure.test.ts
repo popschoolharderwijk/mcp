@@ -36,9 +36,6 @@ describe('buildLegacyLessonTypeOptionPayload', () => {
 					lesson_type_legacy_id: 'lt-1',
 					frequency: 'weekly',
 					duration_minutes: 45,
-					price_per_lesson: 25,
-					price_per_lesson_adult_cents: 3000,
-					price_per_lesson_under_21_cents: 2500,
 				},
 				'lesson-type-uuid',
 			),
@@ -46,9 +43,6 @@ describe('buildLegacyLessonTypeOptionPayload', () => {
 			lesson_type_id: 'lesson-type-uuid',
 			frequency: 'weekly',
 			duration_minutes: 45,
-			price_per_lesson: 25,
-			price_per_lesson_adult_cents: 3000,
-			price_per_lesson_under_21_cents: 2500,
 		});
 	});
 });

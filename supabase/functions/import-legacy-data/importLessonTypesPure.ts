@@ -29,9 +29,6 @@ export interface LegacyLessonTypeOptionImportRow {
 	lesson_type_legacy_id: string;
 	frequency: string;
 	duration_minutes: number;
-	price_per_lesson: number;
-	price_per_lesson_adult_cents?: number | null;
-	price_per_lesson_under_21_cents?: number | null;
 }
 
 export function resolveLessonTypeOptionLessonTypeId(typeMap: Map<string, string>, lessonTypeLegacyId: string): string {
@@ -45,9 +42,6 @@ export function buildLegacyLessonTypeOptionPayload(row: LegacyLessonTypeOptionIm
 		lesson_type_id: lessonTypeId,
 		frequency: row.frequency,
 		duration_minutes: row.duration_minutes,
-		price_per_lesson: row.price_per_lesson,
-		price_per_lesson_adult_cents: row.price_per_lesson_adult_cents ?? null,
-		price_per_lesson_under_21_cents: row.price_per_lesson_under_21_cents ?? null,
 	};
 }
 

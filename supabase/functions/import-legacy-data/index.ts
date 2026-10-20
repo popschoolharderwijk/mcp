@@ -44,9 +44,6 @@ const lessonTypeOptionSchema = z.object({
 	lesson_type_legacy_id: z.string().min(1),
 	frequency: FREQ,
 	duration_minutes: z.coerce.number().int().positive(),
-	price_per_lesson: z.coerce.number().nonnegative(),
-	price_per_lesson_adult_cents: z.coerce.number().int().nonnegative().optional().nullable(),
-	price_per_lesson_under_21_cents: z.coerce.number().int().nonnegative().optional().nullable(),
 });
 
 const personLegacySchema = z.object({
@@ -82,7 +79,6 @@ const agreementSchema = z.object({
 	lesson_type_legacy_id: z.string().min(1),
 	duration_minutes: z.coerce.number().int().positive(),
 	frequency: FREQ,
-	price_per_lesson: z.coerce.number().nonnegative(),
 	day_of_week: z.coerce.number().int().min(0).max(6),
 	start_time: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/),
 	start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -120,9 +116,6 @@ function buildTemplate(): Uint8Array {
 			'lesson_type_legacy_id',
 			'frequency',
 			'duration_minutes',
-			'price_per_lesson',
-			'price_per_lesson_adult_cents',
-			'price_per_lesson_under_21_cents',
 		],
 		teachers: [
 			'legacy_id',
@@ -157,7 +150,6 @@ function buildTemplate(): Uint8Array {
 			'lesson_type_legacy_id',
 			'duration_minutes',
 			'frequency',
-			'price_per_lesson',
 			'day_of_week',
 			'start_time',
 			'start_date',
