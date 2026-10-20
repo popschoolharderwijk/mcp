@@ -3,8 +3,8 @@
 // the user can proceed directly to Stripe checkout.
 //
 // Auth required. Allowed: privileged staff (admin/teacher) or the student themselves.
-// For a minor student (date_of_birth -> <18 now), the email is sent to
-// `parent_email` if present, otherwise to the student account.
+// The e-mail goes to the e-mail address of the student account (the login account);
+// the greeting uses the parent or debtor name when known.
 import { serveLessonAgreementPost } from '../_shared/http-serve.ts';
 import { handleSendDirectDebitInvite } from './handler.ts';
 
