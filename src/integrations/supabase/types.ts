@@ -372,6 +372,13 @@ export type Database = {
             foreignKeyName: "agreement_payment_links_lesson_agreement_id_fkey"
             columns: ["lesson_agreement_id"]
             isOneToOne: true
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
+          {
+            foreignKeyName: "agreement_payment_links_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: true
             referencedRelation: "lesson_agreements"
             referencedColumns: ["id"]
           },
@@ -501,6 +508,13 @@ export type Database = {
             foreignKeyName: "direct_debit_batch_items_lesson_agreement_id_fkey"
             columns: ["lesson_agreement_id"]
             isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
+          {
+            foreignKeyName: "direct_debit_batch_items_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: false
             referencedRelation: "lesson_agreements"
             referencedColumns: ["id"]
           },
@@ -616,6 +630,13 @@ export type Database = {
           sent_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "direct_debit_invitations_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
           {
             foreignKeyName: "direct_debit_invitations_lesson_agreement_id_fkey"
             columns: ["lesson_agreement_id"]
@@ -1180,6 +1201,13 @@ export type Database = {
             foreignKeyName: "lesson_signup_requests_created_agreement_id_fkey"
             columns: ["created_agreement_id"]
             isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
+          {
+            foreignKeyName: "lesson_signup_requests_created_agreement_id_fkey"
+            columns: ["created_agreement_id"]
+            isOneToOne: false
             referencedRelation: "lesson_agreements"
             referencedColumns: ["id"]
           },
@@ -1401,6 +1429,13 @@ export type Database = {
           lesson_agreement_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_link_requests_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
           {
             foreignKeyName: "payment_link_requests_lesson_agreement_id_fkey"
             columns: ["lesson_agreement_id"]
@@ -2021,6 +2056,13 @@ export type Database = {
             foreignKeyName: "subscriptions_lesson_agreement_id_fkey"
             columns: ["lesson_agreement_id"]
             isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
+          {
+            foreignKeyName: "subscriptions_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: false
             referencedRelation: "lesson_agreements"
             referencedColumns: ["id"]
           },
@@ -2215,6 +2257,13 @@ export type Database = {
             foreignKeyName: "trial_lessons_created_agreement_id_fkey"
             columns: ["created_agreement_id"]
             isOneToOne: false
+            referencedRelation: "agreements_awaiting_mandate"
+            referencedColumns: ["lesson_agreement_id"]
+          },
+          {
+            foreignKeyName: "trial_lessons_created_agreement_id_fkey"
+            columns: ["created_agreement_id"]
+            isOneToOne: false
             referencedRelation: "lesson_agreements"
             referencedColumns: ["id"]
           },
@@ -2277,6 +2326,21 @@ export type Database = {
       }
     }
     Views: {
+      agreements_awaiting_mandate: {
+        Row: {
+          created_at: string | null
+          days_waiting: number | null
+          first_sent_at: string | null
+          last_sent_at: string | null
+          lesson_agreement_id: string | null
+          lesson_type_name: string | null
+          recipient_email: string | null
+          start_date: string | null
+          student_name: string | null
+          student_user_id: string | null
+        }
+        Relationships: []
+      }
       view_profiles_with_display_name: {
         Row: {
           avatar_url: string | null
