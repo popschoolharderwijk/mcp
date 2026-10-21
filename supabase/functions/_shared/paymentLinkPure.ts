@@ -4,7 +4,7 @@
  * replaces the old one on every (re)send. No Deno/DB IO here (Bun-testable).
  */
 import { needsCatchUp } from './catchUpInvoicePure.ts';
-import { addMonths, monthStart } from './subscriptionPlanPure.ts';
+import { monthStart } from './subscriptionPlanPure.ts';
 
 export const PAYMENT_LINK_TOKEN_BYTES = 32;
 export const PAYMENT_LINK_REQUESTS_PER_HOUR = 3;
@@ -186,5 +186,3 @@ export function buildPaymentPreview(input: {
 	};
 }
 
-/** For tests/callers that need the month after a given month. */
-export const nextMonth = (month: string) => addMonths(monthStart(month), 1);
