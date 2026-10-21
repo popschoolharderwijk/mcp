@@ -57,7 +57,7 @@ export async function enrollGroupSignup(
 	if (createdAgreementId && !priorId) {
 		const { error } = await admin
 			.from('lesson_agreements')
-			.update({ payment_method: args.reqRow.payment_method ?? 'stripe', sepa_mandate_id: null })
+			.update({ payment_method: args.reqRow.payment_method ?? 'stripe' })
 			.eq('id', createdAgreementId);
 		if (error) return { ok: false, response: jsonResponse(500, { error: 'Kon de betaalmethode niet opslaan' }) };
 	}
