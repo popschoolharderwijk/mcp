@@ -7,6 +7,7 @@ import {
 	buildScheduleIdempotencyKey,
 	findDuplicateScheduleGroups,
 	OPEN_SUBSCRIPTION_STATUSES,
+	pickScheduleToKeep,
 	selectAdoptableSchedule,
 } from './scheduleClaimPure.ts';
 import { getStripeId } from './stripe.ts';
@@ -545,6 +546,34 @@ export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Strip
 		}
 	}
 	return results;
+}
+
+export interface DuplicateSchedulesInfo {
+	lesson_agreement_id: string;
+	schedule_ids: string[];
+	stored_schedule_id: string | null;
+	keep_schedule_id: string;
+}
+
+/** Agreements with more than one open schedule in Stripe (would debit twice). */
+export async function detectDuplicateSchedules(
+	admin: SupabaseClient,
+	stripe: Stripe,
+): Promise<DuplicateSchedulesInfo[]> {
+	const listed = await stripe.subscriptionSchedules.list({ limit: 100 });
+	const groups = findDuplicateScheduleGroups(listed.data);
+	const result: DuplicateSchedulesInfo[] = [];
+	for (const group of groups) {
+		const existing = await findOpenSubscription(admin, group.agreementId);
+		const stored = existing?.stripe_schedule_id ?? null;
+		result.push({
+			lesson_agreement_id: group.agreementId,
+			schedule_ids: group.scheduleIds,
+			stored_schedule_id: stored,
+			keep_schedule_id: pickScheduleToKeep(group.scheduleIds, stored),
+		});
+	}
+	return result;
 }
 
 /** Rebuild every subscription flagged needs_rebuild or with a short horizon. */
