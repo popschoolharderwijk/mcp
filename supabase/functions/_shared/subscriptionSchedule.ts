@@ -10,6 +10,15 @@ import {
 	pickScheduleToKeep,
 	selectAdoptableSchedule,
 } from './scheduleClaimPure.ts';
+import {
+	buildCatchUpInvoiceIdempotencyKey,
+	buildCatchUpLineIdempotencyKey,
+	catchUpInvoiceDescription,
+	catchUpLineDescription,
+	needsCatchUp,
+	resolvePlanFromMonth,
+	splitCatchUpMonths,
+} from './catchUpInvoicePure.ts';
 import { getStripeId } from './stripe.ts';
 import { toScheduleError } from './stripeRecoveryPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
@@ -152,6 +161,7 @@ export async function issueFirstInvoice(
 	stripe: Stripe,
 	input: { agreementId: string; customerId: string; productId: string; first: FirstInvoice; pm?: string },
 ): Promise<string> {
+	if (input.first.lines && input.first.toMonth) return issueCatchUpInvoice(stripe, input);
 	const description = firstInvoiceDescription(input.first);
 	const metadata = { lesson_agreement_id: input.agreementId, kind: 'first_month', month: input.first.month };
 	const invoice = await stripe.invoices.create(
@@ -182,6 +192,48 @@ export async function issueFirstInvoice(
 		},
 		{ idempotencyKey: `mcp_first_invoice_item_${input.agreementId}_${input.first.month}` },
 	);
+	await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true });
+	return invoice.id;
+}
+
+async function issueCatchUpInvoice(
+	stripe: Stripe,
+	input: { agreementId: string; customerId: string; productId: string; first: FirstInvoice; pm?: string },
+): Promise<string> {
+	const from = input.first.month;
+	const to = input.first.toMonth ?? from;
+	const lines = input.first.lines ?? [];
+	const metadata = { lesson_agreement_id: input.agreementId, kind: 'catch_up', month: from, to_month: to };
+	const invoice = await stripe.invoices.create(
+		{
+			customer: input.customerId,
+			collection_method: 'charge_automatically',
+			auto_advance: true,
+			pending_invoice_items_behavior: 'exclude',
+			description: catchUpInvoiceDescription(from, to),
+			metadata,
+			...(input.pm ? { default_payment_method: input.pm } : {}),
+		},
+		{ idempotencyKey: buildCatchUpInvoiceIdempotencyKey(input.agreementId, from, to) },
+	);
+	for (const line of lines) {
+		await stripe.invoiceItems.create(
+			{
+				customer: input.customerId,
+				invoice: invoice.id,
+				description: catchUpLineDescription(line),
+				price_data: {
+					currency: 'eur',
+					product: input.productId,
+					unit_amount: line.amountCents,
+					tax_behavior: 'inclusive',
+				},
+				tax_rates: [line.taxRateId],
+				metadata: { ...metadata, line_month: line.month },
+			},
+			{ idempotencyKey: buildCatchUpLineIdempotencyKey(input.agreementId, from, to, line.month) },
+		);
+	}
 	await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true });
 	return invoice.id;
 }
@@ -368,20 +420,34 @@ async function buildAgreementSchedule(
 	}
 	const running = schedule?.status === 'active';
 
-	const currentMonth = monthStart(today > ctx.startDate ? today : ctx.startDate);
-	const fromMonth = running ? addMonths(monthStart(today), 1) : currentMonth;
-	const months = await loadFeeMonths(admin, ctx.agreementId, fromMonth, horizonMonthCount(fromMonth));
+	// Mandate after the start month (no schedule, no first invoice yet) → one catch-up invoice
+	// for all missed months; the schedule then starts next month.
+	const catchUp = !schedule && !existing?.first_invoice_status && needsCatchUp(ctx.startDate, today);
+	const fromMonth = resolvePlanFromMonth({ startDate: ctx.startDate, today, running, catchUp });
+	const allMonths = await loadFeeMonths(admin, ctx.agreementId, fromMonth, horizonMonthCount(fromMonth));
+	const split = catchUp ? splitCatchUpMonths(allMonths, today, ctx.taxRates) : null;
 	const plan = buildSubscriptionPlan({
 		optionId: ctx.optionId,
 		billingKind: ctx.billingKind,
 		today,
 		startDate: ctx.startDate,
-		months,
+		months: split ? split.rest : allMonths,
 		priceIdByLookupKey: ctx.priceIdByLookupKey,
 		taxRates: ctx.taxRates,
-		continuation: running,
+		continuation: running || Boolean(split),
 	});
 	if (!plan.ok) throw new Error(plan.error);
+	if (split) {
+		plan.firstInvoice = {
+			month: split.fromMonth,
+			toMonth: split.toMonth,
+			dueOn: today,
+			amountCents: split.amountCents,
+			taxRateId: split.lines[0].taxRateId,
+			isProrated: split.lines[0].isProrated,
+			lines: split.lines,
+		};
+	}
 
 	if (schedule && running) {
 		await updateRunningSchedule(stripe, schedule, ctx, pm, plan.phases, plan.endBehavior, fromMonth);
