@@ -30,6 +30,6 @@
 ## Overeenkomst en betaalverzoek in één stap (plan 21-10-2026)
 - [x] Stap 1: inhaalfactuur (catchUpInvoicePure + subscriptionSchedule) met tests
 - [x] Stap 2: agreement_payment_links + vaste link, preview via serverfunctie, token-route naar iDEAL, "nieuwe link aanvragen" (view wacht op machtiging volgt in stap 4)
-- [ ] Stap 3: één mail bij opslaan (betaalblok in agreement_created, ontvanger ouder/account), ook duo en aanmelding; "Opnieuw versturen"
+- [ ] Stap 3: één mail bij opslaan (betaalblok in agreement_created, ontvanger ouder/account), ook duo en aanmelding; "Opnieuw versturen"; aanmeldformulier zonder SEPA met fonds → op factuur
 - [ ] Stap 4: status "Wacht op machtiging", beheeroverzicht, melding leerlingportaal
 - [ ] Docs, handleiding; check + check:ci
