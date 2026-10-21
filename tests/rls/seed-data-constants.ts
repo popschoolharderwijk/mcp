@@ -118,6 +118,19 @@ export const TEACHERS = {
 	WITH_COC: 7,
 	/** Teachers without VOG (Henry, Iris, Jack) */
 	WITHOUT_COC: 3,
+	/** first_name order for display_name ASC (first + last from seeds/test.sql) */
+	SORTED_FIRST_NAMES_ASC: [
+		'Alice',
+		'Bob',
+		'Charlotte',
+		'Diana',
+		'Eva',
+		'Frank',
+		'Grace',
+		'Hendrik',
+		'Iris',
+		'Jacques',
+	] as const,
 } as const;
 
 /**

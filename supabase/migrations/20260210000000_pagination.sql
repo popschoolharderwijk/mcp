@@ -553,6 +553,7 @@ BEGIN
             ),
             'lesson_types', COALESCE(tlt.lesson_types, '[]'::JSON)
           )
+          ORDER BY %I %s NULLS LAST, pt.display_name ASC, pt.user_id ASC
         ) FROM paginated_teachers pt
         LEFT JOIN teacher_lesson_types_data tlt ON tlt.teacher_user_id = pt.user_id),
         '[]'::JSON
@@ -561,7 +562,7 @@ BEGIN
       'limit', $4,
       'offset', $5
     )
-  $q$, v_sort_column, v_sort_direction);
+  $q$, v_sort_column, v_sort_direction, v_sort_column, v_sort_direction);
 
   EXECUTE v_query
   INTO v_result
