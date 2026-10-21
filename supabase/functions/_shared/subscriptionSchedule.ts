@@ -1,15 +1,6 @@
 // Catalog-based Stripe subscription schedules (fase 3a). Pure planning: subscriptionPlanPure.ts.
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { getSafeErrorMessage } from './errors.ts';
-import {
-	buildScheduleFromSubscriptionIdempotencyKey,
-	buildScheduleIdempotencyKey,
-	findDuplicateScheduleGroups,
-	OPEN_SUBSCRIPTION_STATUSES,
-	pickScheduleToKeep,
-	selectAdoptableSchedule,
-} from './scheduleClaimPure.ts';
 import {
 	buildCatchUpInvoiceIdempotencyKey,
 	buildCatchUpLineIdempotencyKey,
@@ -19,6 +10,15 @@ import {
 	resolvePlanFromMonth,
 	splitCatchUpMonths,
 } from './catchUpInvoicePure.ts';
+import { getSafeErrorMessage } from './errors.ts';
+import {
+	buildScheduleFromSubscriptionIdempotencyKey,
+	buildScheduleIdempotencyKey,
+	findDuplicateScheduleGroups,
+	OPEN_SUBSCRIPTION_STATUSES,
+	pickScheduleToKeep,
+	selectAdoptableSchedule,
+} from './scheduleClaimPure.ts';
 import { getStripeId } from './stripe.ts';
 import { toScheduleError } from './stripeRecoveryPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
