@@ -70,7 +70,7 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 3. Fills variables (`{{name}}` → value).
 4. Sends via Resend with `RESEND_API_KEY`.
 
-The payment invitation (`direct_debit_invite`, Stripe mandate) is sent by `send-direct-debit-invite` with a server-generated login link in the `link` variable (token_hash format); see `docs/integrations/stripe-abonnementen.md`. Optional list items such as `eerste_maand_regel` are passed as ready-made HTML and are empty when not applicable.
+The payment invitation (`direct_debit_invite`, Stripe mandate) is sent by `send-direct-debit-invite` (and by `request-payment-link` when the customer asks for a new link) to the parent e-mail when known, otherwise the account e-mail. The `link` variable is the fixed payment link `/direct-debit/start?agreement=<id>&t=<token>`; it does not expire, and every send rotates the token so the previous link stops working; see `docs/integrations/stripe-abonnementen.md`. Optional list items such as `eerste_maand_regel` are passed as ready-made HTML and are empty when not applicable.
 
 Other edge functions (`send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
 
