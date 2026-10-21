@@ -37,22 +37,20 @@ export type Database = {
 				Row: {
 					account_bank_sepa: string;
 					account_bank_stripe: string;
-					account_btw_21: string;
-					account_debiteuren: string;
-					account_omzet_21_plus: string;
-					account_omzet_under_21: string;
-					btw_code_21: string;
-					btw_code_exempt: string;
+					account_debtors: string;
+					account_revenue_21_plus: string;
+					account_revenue_under_21: string;
+					account_vat_21: string;
 					company_address: string | null;
-					company_btw_nummer: string | null;
 					company_city: string | null;
 					company_email: string | null;
 					company_iban: string | null;
-					company_kvk: string | null;
+					company_kvk_number: string | null;
 					company_logo_url: string | null;
 					company_name: string | null;
 					company_phone: string | null;
 					company_postcode: string | null;
+					company_vat_number: string | null;
 					created_at: string;
 					created_by: string | null;
 					currency: string;
@@ -63,7 +61,7 @@ export type Database = {
 					invoice_number_prefix: string;
 					invoice_payment_term_days: number;
 					journal_code_bank: string;
-					journal_code_memoriaal: string;
+					journal_code_memorial: string;
 					payment_provider: string;
 					school_year_start_month: number;
 					sepa_collection_day: number;
@@ -76,26 +74,26 @@ export type Database = {
 					sepa_remittance_template: string;
 					updated_at: string;
 					updated_by: string | null;
+					vat_code_21: string;
+					vat_code_exempt: string;
 				};
 				Insert: {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
-					account_btw_21?: string;
-					account_debiteuren?: string;
-					account_omzet_21_plus?: string;
-					account_omzet_under_21?: string;
-					btw_code_21?: string;
-					btw_code_exempt?: string;
+					account_debtors?: string;
+					account_revenue_21_plus?: string;
+					account_revenue_under_21?: string;
+					account_vat_21?: string;
 					company_address?: string | null;
-					company_btw_nummer?: string | null;
 					company_city?: string | null;
 					company_email?: string | null;
 					company_iban?: string | null;
-					company_kvk?: string | null;
+					company_kvk_number?: string | null;
 					company_logo_url?: string | null;
 					company_name?: string | null;
 					company_phone?: string | null;
 					company_postcode?: string | null;
+					company_vat_number?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -106,7 +104,7 @@ export type Database = {
 					invoice_number_prefix?: string;
 					invoice_payment_term_days?: number;
 					journal_code_bank?: string;
-					journal_code_memoriaal?: string;
+					journal_code_memorial?: string;
 					payment_provider?: string;
 					school_year_start_month?: number;
 					sepa_collection_day?: number;
@@ -119,26 +117,26 @@ export type Database = {
 					sepa_remittance_template?: string;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_code_21?: string;
+					vat_code_exempt?: string;
 				};
 				Update: {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
-					account_btw_21?: string;
-					account_debiteuren?: string;
-					account_omzet_21_plus?: string;
-					account_omzet_under_21?: string;
-					btw_code_21?: string;
-					btw_code_exempt?: string;
+					account_debtors?: string;
+					account_revenue_21_plus?: string;
+					account_revenue_under_21?: string;
+					account_vat_21?: string;
 					company_address?: string | null;
-					company_btw_nummer?: string | null;
 					company_city?: string | null;
 					company_email?: string | null;
 					company_iban?: string | null;
-					company_kvk?: string | null;
+					company_kvk_number?: string | null;
 					company_logo_url?: string | null;
 					company_name?: string | null;
 					company_phone?: string | null;
 					company_postcode?: string | null;
+					company_vat_number?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -149,7 +147,7 @@ export type Database = {
 					invoice_number_prefix?: string;
 					invoice_payment_term_days?: number;
 					journal_code_bank?: string;
-					journal_code_memoriaal?: string;
+					journal_code_memorial?: string;
 					payment_provider?: string;
 					school_year_start_month?: number;
 					sepa_collection_day?: number;
@@ -162,6 +160,8 @@ export type Database = {
 					sepa_remittance_template?: string;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_code_21?: string;
+					vat_code_exempt?: string;
 				};
 				Relationships: [];
 			};
@@ -611,11 +611,9 @@ export type Database = {
 			};
 			invoice_lines: {
 				Row: {
-					amount_excl_btw_cents: number;
+					amount_excl_vat_cents: number;
 					amount_total_cents: number;
 					batch_item_id: string | null;
-					btw_amount_cents: number;
-					btw_rate: number;
 					created_at: string;
 					created_by: string | null;
 					description: string;
@@ -627,13 +625,13 @@ export type Database = {
 					unit_price_cents: number;
 					updated_at: string;
 					updated_by: string | null;
+					vat_amount_cents: number;
+					vat_rate: number;
 				};
 				Insert: {
-					amount_excl_btw_cents?: number;
+					amount_excl_vat_cents?: number;
 					amount_total_cents?: number;
 					batch_item_id?: string | null;
-					btw_amount_cents?: number;
-					btw_rate?: number;
 					created_at?: string;
 					created_by?: string | null;
 					description: string;
@@ -645,13 +643,13 @@ export type Database = {
 					unit_price_cents?: number;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_amount_cents?: number;
+					vat_rate?: number;
 				};
 				Update: {
-					amount_excl_btw_cents?: number;
+					amount_excl_vat_cents?: number;
 					amount_total_cents?: number;
 					batch_item_id?: string | null;
-					btw_amount_cents?: number;
-					btw_rate?: number;
 					created_at?: string;
 					created_by?: string | null;
 					description?: string;
@@ -663,6 +661,8 @@ export type Database = {
 					unit_price_cents?: number;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_amount_cents?: number;
+					vat_rate?: number;
 				};
 				Relationships: [
 					{
@@ -684,10 +684,9 @@ export type Database = {
 			invoices: {
 				Row: {
 					age_category: string;
-					amount_excl_btw_cents: number;
+					amount_excl_vat_cents: number;
 					amount_total_cents: number;
 					batch_id: string | null;
-					btw_amount_cents: number;
 					created_at: string;
 					created_by: string | null;
 					due_date: string;
@@ -705,13 +704,13 @@ export type Database = {
 					student_user_id: string;
 					updated_at: string;
 					updated_by: string | null;
+					vat_amount_cents: number;
 				};
 				Insert: {
 					age_category?: string;
-					amount_excl_btw_cents?: number;
+					amount_excl_vat_cents?: number;
 					amount_total_cents?: number;
 					batch_id?: string | null;
-					btw_amount_cents?: number;
 					created_at?: string;
 					created_by?: string | null;
 					due_date: string;
@@ -729,13 +728,13 @@ export type Database = {
 					student_user_id: string;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_amount_cents?: number;
 				};
 				Update: {
 					age_category?: string;
-					amount_excl_btw_cents?: number;
+					amount_excl_vat_cents?: number;
 					amount_total_cents?: number;
 					batch_id?: string | null;
-					btw_amount_cents?: number;
 					created_at?: string;
 					created_by?: string | null;
 					due_date?: string;
@@ -753,6 +752,7 @@ export type Database = {
 					student_user_id?: string;
 					updated_at?: string;
 					updated_by?: string | null;
+					vat_amount_cents?: number;
 				};
 				Relationships: [
 					{
@@ -777,39 +777,6 @@ export type Database = {
 						referencedColumns: ['user_id'];
 					},
 				];
-			};
-			legacy_ids: {
-				Row: {
-					created_at: string;
-					entity_type: string;
-					id: string;
-					imported_at: string;
-					imported_by: string | null;
-					legacy_id: string;
-					new_id: string;
-					updated_at: string;
-				};
-				Insert: {
-					created_at?: string;
-					entity_type: string;
-					id?: string;
-					imported_at?: string;
-					imported_by?: string | null;
-					legacy_id: string;
-					new_id: string;
-					updated_at?: string;
-				};
-				Update: {
-					created_at?: string;
-					entity_type?: string;
-					id?: string;
-					imported_at?: string;
-					imported_by?: string | null;
-					legacy_id?: string;
-					new_id?: string;
-					updated_at?: string;
-				};
-				Relationships: [];
 			};
 			lesson_agreements: {
 				Row: {

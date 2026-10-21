@@ -2,10 +2,10 @@
 
 ## How it works
 
-Tests run against a **remote Supabase project** (no local instance). Two projects are in use:
+Tests usually run against a **remote** Supabase project; you can also point env at the **local** Docker stack (`http://127.0.0.1:54421`).
 
-- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun dev:test` / `bun test tests/rls` (credentials in `.env.test` or env).
-- **mcp-dev** (`zdvscmogkfyddnnxzkdu`): development; you can also test locally against mcp-dev if your env points there.
+- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun run dev:test` / `bun test tests/rls` (credentials in `.env.test` or env).
+- **mcp-dev** (`zdvscmogkfyddnnxzkdu`): shared remote; you can also test against mcp-dev or local if your env points there.
 
 **In CI** (`pull-request-supabase.yml`):
 - Runs only when `supabase/**` or `tests/**` changes, excluding `tests/code/**`

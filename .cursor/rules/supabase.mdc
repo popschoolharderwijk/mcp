@@ -4,19 +4,19 @@ alwaysApply: true
 
 ## Database reset — NEVER run yourself
 
-**NEVER run a database reset yourself** — not `bun run db:reset`, not `supabase db reset --linked`, not any variant. The user always runs these commands themselves.
+**NEVER run a database reset yourself** — not `supabase db reset`, not `supabase db reset --linked`, not any variant. The user always runs these commands themselves.
 
-After migration or schema changes: **tell the user** to run `bun run db:reset` (or the relevant reset command). Do not execute it.
+After migration or schema changes: **tell the user** to reset and regenerate types. Do not execute it.
 
-* **Never hand-edit `src/integrations/supabase/types.ts`.** After schema/migration changes the user must run `bun run db:reset` (or `supabase gen types typescript --linked` as in that script) so types stay codegen-only.
-* **ALWAYS use `--linked` flag for Supabase commands, NEVER the local database**
-* When documenting or planning Supabase DB commands for the user, ALWAYS use:
-  - `supabase db reset --linked` (not `supabase db reset`)
-  - `supabase gen types typescript --linked > src/integrations/supabase/types.ts` (not without --linked)
-  - `supabase db push --linked` (not without --linked)
-  - All other Supabase commands that work with the database must also use `--linked`
-* Local Supabase (`supabase start`) is NOT used as of now.
-* Development workflow always works with the remote dev instance (mcp-dev) via `--linked`
+* **Never hand-edit `src/integrations/supabase/types.ts`.** After schema/migration changes the user regenerates types (see below) so types stay codegen-only.
+* **Local stack** (`supabase start`, default `bun dev`): user runs `supabase db reset` (no `--linked`), then optionally `supabase gen types typescript --local > src/integrations/supabase/types.ts`.
+* **Remote** (mcp-dev / mcp-test): use the `--linked` flag:
+  - `supabase db reset --linked`
+  - `supabase gen types typescript --linked > src/integrations/supabase/types.ts` (or `bun run supabase:types`)
+  - `supabase db push --linked`
+  - All other Supabase commands that work with a remote database must also use `--linked`
+* When documenting or planning Supabase DB commands for the user, match the target: local CLI without `--linked`, remote with `--linked`.
+* Default / Lovable UI uses remote mcp-dev via `bun dev`. Local Docker is opt-in: `supabase start` + `bun run dev:local`. CI uses mcp-test via `--linked`.
 
 ## Edge function module naming (`supabase/functions/`)
 

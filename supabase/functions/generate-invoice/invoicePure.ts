@@ -42,7 +42,7 @@ export function buildInvoiceLines(
 		const isAdult = cat === '21_plus';
 		const rate = isAdult ? 21 : 0;
 		const excl = isAdult ? Math.round(total / 1.21) : total;
-		const btwAmt = isAdult ? total - excl : 0;
+		const vatAmt = isAdult ? total - excl : 0;
 
 		return {
 			batch_item_id: item.id,
@@ -50,9 +50,9 @@ export function buildInvoiceLines(
 			lesson_date: collectionDate,
 			quantity: 1,
 			unit_price_cents: total,
-			btw_rate: rate,
-			amount_excl_btw_cents: excl,
-			btw_amount_cents: btwAmt,
+			vat_rate: rate,
+			amount_excl_vat_cents: excl,
+			vat_amount_cents: vatAmt,
 			amount_total_cents: total,
 		};
 	});
@@ -61,13 +61,13 @@ export function buildInvoiceLines(
 export function computeTotals(lines: InvoiceLine[]): InvoiceTotals {
 	return lines.reduce(
 		(acc, line) => {
-			acc.excl += line.amount_excl_btw_cents;
-			if (line.btw_rate === 21) acc.btw21 += line.btw_amount_cents;
-			if (line.btw_rate === 0) acc.btw0 += line.amount_excl_btw_cents;
+			acc.excl += line.amount_excl_vat_cents;
+			if (line.vat_rate === 21) acc.vat21 += line.vat_amount_cents;
+			if (line.vat_rate === 0) acc.vat0 += line.amount_excl_vat_cents;
 			acc.total += line.amount_total_cents;
 			return acc;
 		},
-		{ excl: 0, btw21: 0, btw0: 0, total: 0 },
+		{ excl: 0, vat21: 0, vat0: 0, total: 0 },
 	);
 }
 
@@ -77,10 +77,10 @@ export function resolveAgeCategory(lines: InvoiceLine[], dateOfBirth: string | n
 	const lineAges = lines.map(() => ageAtDate(dateOfBirth, collectionDate));
 	if (lineAges.length > 0 && lineAges.every((age) => age === 'unknown')) return 'unknown';
 
-	const hasBtw = lines.some((l) => l.btw_rate === 21);
-	const hasExempt = lines.some((l) => l.btw_rate === 0);
-	if (hasBtw && hasExempt) return 'mixed';
-	if (hasBtw) return '21_plus';
+	const hasVat = lines.some((l) => l.vat_rate === 21);
+	const hasExempt = lines.some((l) => l.vat_rate === 0);
+	if (hasVat && hasExempt) return 'mixed';
+	if (hasVat) return '21_plus';
 	if (hasExempt) return 'under_21';
 	return 'unknown';
 }

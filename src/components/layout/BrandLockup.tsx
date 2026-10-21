@@ -12,7 +12,7 @@ export function BrandLockup({ compact = false, className }: BrandLockupProps) {
 	if (compact) {
 		return (
 			<img
-				src={resolveFaviconSrc(import.meta.env.DEV)}
+				src={resolveFaviconSrc(import.meta.env.MODE)}
 				alt="Mplifi"
 				className={cn('h-8 w-8 shrink-0', className)}
 			/>

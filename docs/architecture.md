@@ -52,7 +52,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `subscriptions` | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`). |
 | `subscription_invoices` | Mirror of Stripe Invoices (amount, status, hosted URL, period). |
 | `direct_debit_invitations` | Audit of sent SEPA-onboarding magic links. |
-| `accounting_settings` | Per-organisation VAT/ledger settings (`account_btw_21`, `btw_code_21`, `btw_code_exempt`, …). |
+| `accounting_settings` | Per-organisation VAT/ledger settings (`account_vat_21`, `vat_code_21`, `vat_code_exempt`, …). |
 | `announcements` | Dashboard news (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publicly readable once active and published; only staff/admin/site_admin can manage. Optional images in the `announcement-images` storage bucket (public, max 5 MB; only privileged users can upload). |
 
 ### Views
@@ -221,17 +221,17 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 
 ## Supabase Environments
 
-This project uses three separate Supabase environments:
-
-| Environment | Project ID | Use |
-|-------------|------------|-----|
-| **mcp-test** | `jserlqacarlgtdzrblic` | Test project: `bun dev:test` and **CI/PR checks** (workflow links via `SUPABASE_PROJECT_REF`) |
-| **mcp-dev** | `zdvscmogkfyddnnxzkdu` | Development: Lovable / `bun dev`, and local `db:reset` |
+| Environment | Project ID / host | Use |
+|-------------|-------------------|-----|
+| **Local** | Docker `127.0.0.1:54421` (non-default ports; see `config.toml`) | `supabase start` + `bun run dev:local` |
+| **mcp-test** | `jserlqacarlgtdzrblic` | **CI/PR checks** + optional `bun run dev:test` |
+| **mcp-dev** | `zdvscmogkfyddnnxzkdu` | Default / Lovable: `bun dev` |
 | **Production** | `bnagepkxryauifzyoxgo` | Production deployment (`bun prod`) |
 
 ### How this works
 
-1. **Lovable** is connected to **mcp-dev** — development database.
-2. **Local testing** (`bun dev:test` or `bun test --bail tests/rls`): use **mcp-test** or mcp-dev via `.env.test` (`SUPABASE_URL`, etc.).
-3. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
-4. On **merge to main**, migrations are applied to production via `supabase db push`.
+1. **Lovable** and default `bun dev` use **mcp-dev** (`.env.development`, Vite mode `development` so `lovable-tagger` loads).
+2. **Local Docker** is opt-in: `bun run dev:local` (Vite mode `localdev` + keys in `.env.local`). Mode name `local` is forbidden by Vite; the file `.env.local` is fine.
+3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test` / shell (`SUPABASE_URL`, etc.).
+4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
+5. On **merge to main**, migrations are applied to production via `supabase db push`.

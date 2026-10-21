@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
 	type AgendaKeyboardTarget,
 	isTypingTarget,
+	resolveAgendaNavigateKey,
 	shouldHandleAgendaFullscreenKey,
 } from '../../../src/lib/agenda/agendaFullscreenKeyboard';
 
@@ -57,5 +58,22 @@ describe('shouldHandleAgendaFullscreenKey', () => {
 
 	it('ignores key presses while typing in a field', () => {
 		expect(shouldHandleAgendaFullscreenKey(keyEvent({ target: { tagName: 'INPUT' } }))).toBe(false);
+	});
+});
+
+describe('resolveAgendaNavigateKey', () => {
+	it('maps arrow keys to PREV, NEXT, and TODAY', () => {
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowLeft' }))).toBe('PREV');
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowRight' }))).toBe('NEXT');
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowUp' }))).toBe('TODAY');
+	});
+
+	it('ignores other keys, modifiers, and typing targets', () => {
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'f' }))).toBeNull();
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowDown' }))).toBeNull();
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowLeft', ctrlKey: true }))).toBeNull();
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowRight', metaKey: true }))).toBeNull();
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowUp', altKey: true }))).toBeNull();
+		expect(resolveAgendaNavigateKey(keyEvent({ key: 'ArrowLeft', target: { tagName: 'INPUT' } }))).toBeNull();
 	});
 });

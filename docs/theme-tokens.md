@@ -15,11 +15,13 @@ Some channels cannot use `hsl(var(--primary))` (mail HTML, PDF). For those:
 | File | Role |
 |------|------|
 | [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts) | `PRIMARY_HEX` (web + HexColorPicker fallback) |
-| [`public/favicon.svg`](../public/favicon.svg), [`public/favicon-local.svg`](../public/favicon-local.svg) | Tab icon (hex in SVG) |
+| [`public/favicon.svg`](../public/favicon.svg) | Production tab icon (gold / white) |
+| [`public/favicon-local.svg`](../public/favicon-local.svg) | `bun dev` tab icon (white / gold) |
+| [`public/favicon-localdev.svg`](../public/favicon-localdev.svg) | `bun run dev:local` tab icon (white / black) |
 | [`supabase/functions/generate-invoice/invoicePure.ts`](../supabase/functions/generate-invoice/invoicePure.ts) | Mirror for mail header |
 | [`supabase/functions/generate-invoice/buildPdfPure.ts`](../supabase/functions/generate-invoice/buildPdfPure.ts) | Mirror for PDF header (`PDF_RGB`) |
 
-When changing `--primary` / brand colour: update **all three** mirrors plus mirror comments. Drift tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
+When changing `--primary` / brand colour: update `favicon.svg`, invoice mail, and PDF mirrors plus mirror comments. Drift tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoicePure.test.ts`, `tests/code/billing/buildPdfPure.test.ts`.
 
 ## Agenda
 

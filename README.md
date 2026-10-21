@@ -28,8 +28,11 @@ Web app for running a music school: students and teachers, lesson agreements, a 
 # Install dependencies
 bun install
 
-# Run development server (against the mcp-dev Supabase project)
+# Shared remote mcp-dev / Lovable (default)
 bun dev
+
+# Local Docker Supabase (optional; see docs/commands.md)
+# supabase start && bun run dev:local
 
 # Run tests
 bun test --bail

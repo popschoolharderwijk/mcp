@@ -7,11 +7,15 @@ import {
 
 describe('resolveStoredDevLoginValue', () => {
 	it('returns stored dev user email', () => {
-		expect(resolveStoredDevLoginValue('dev', 'teacher-alice@test.nl')).toBe('teacher-alice@test.nl');
+		expect(resolveStoredDevLoginValue('teacher-alice@test.nl')).toBe('teacher-alice@test.nl');
 	});
 
-	it('converts legacy site_admin role', () => {
-		expect(resolveStoredDevLoginValue('site_admin', null)).toBe('site-admin@test.nl');
+	it('returns default site admin when stored value is missing', () => {
+		expect(resolveStoredDevLoginValue(null)).toBe('site-admin@test.nl');
+	});
+
+	it('returns default site admin when stored value is unknown', () => {
+		expect(resolveStoredDevLoginValue('site_admin')).toBe('site-admin@test.nl');
 	});
 });
 
@@ -22,6 +26,10 @@ describe('resolveDevLoginEmail', () => {
 
 	it('returns null for unknown value', () => {
 		expect(resolveDevLoginEmail('unknown')).toBeNull();
+	});
+
+	it('returns null for old role keys', () => {
+		expect(resolveDevLoginEmail('site_admin')).toBeNull();
 	});
 });
 

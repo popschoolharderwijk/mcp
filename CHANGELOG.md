@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.4 — 2026-10-21
+
+- Menu-item **Data-import** verwijderd (Excel-import van historische gegevens)
+
+## 1.1.3 — 2026-10-18
+
+- Agenda: volledig scherm supoprt (knop of toets **F**)
+- Agenda: datum kiezen via de titel in de agendakop
+- Agenda: scrollt automatisch naar de vroegste afspraak
+- Agenda: pijltjestoetsen voor snel wisselen tussen weken
+- Agenda: huidige view deelbaar via url
+- Data-tabel: kruisje en Esc toets wissen de zoektermen
+- Import: lestijden van overeenkomsten in Nederlandse tijd
+
 ## 1.1.2 — 2026-10-16
 
 - Tabbladen op leerling- en docentdetail deelbaar via de URL

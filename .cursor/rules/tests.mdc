@@ -12,13 +12,14 @@ Tests exist to lock **behavior**. Coverage, CRAP, or Fallow scores are not a rea
 
 A reader must learn something the type signature does not already say: inputs → expected outputs/side-effects for real branches (edges, errors, invariants). Prefer fewer strong tests over many trivial files that restate the implementation.
 
-### NEVER (coverage theater)
+### NEVER (coverage / test theater)
 
 * ❌ Tests written only to satisfy Fallow (coverage, CRAP, complexity) without asserting non-trivial behavior
 * ❌ Tests that only prove a function exists, returns the input unchanged, or returns a hardcoded constant with no branch under test
 * ❌ Tests of identity / passthrough helpers (`return params`, `return loading`, `return isEditing`, `return hasAccess`)
 * ❌ Tests of single-property getters / constant returners (`return row.published_at`, `return 'avatar-upload'`)
 * ❌ Tests of boolean renames like `shouldShowX(flag)` that only check `true→true` / `false→false`
+* ❌ Tests whose only assertion is a Tailwind/CSS class string (`toContain('orange')`, `toContain('border-green-500')`, `toBe('flex …')` when that is pure presentation)
 * ❌ One shallow happy-path test on a complex helper just to paint coverage while real branches stay unasserted
 * ❌ Extracting a tiny helper plus a trivial test instead of splitting a complex function when **complexity** (not coverage) is the problem
 
@@ -27,10 +28,11 @@ A reader must learn something the type signature does not already say: inputs �
 * ✅ Test logic that already has branches, mapping, validation, or domain rules — or test at the caller if the helper is trivial
 * ✅ If Fallow/CRAP needs coverage, assert outcomes of existing (or meaningfully extracted) logic — not `f(x) === x`
 * ✅ Smell check: if you inlined the helper back into the caller, would the test still be worth keeping? If no → do not extract; refactor or test at the right layer
+* ✅ Prefer deleting a trivial helper over adding a theater test to keep Fallow green
 
 * **Use English for test names**: All `describe()` and `it()` strings must be in English. Do not use Dutch or other languages for suite and test names.
 * When writing tests, never start a test by deleting data to get rid of potential dirty database states. A dirty database state means some other test didn't properly clean up. THAT needs to be fixed instead.
-* **When tests fail due to dirty database state**: If a test fails because of leftover data from a previous test run (e.g., duplicate key violations, unexpected data), ALWAYS suggest running `supabase db reset --linked` to restore the database to a clean state. NEVER try to work around dirty state by adding cleanup code at the start of tests or checking for existing data before creating test data.
+* **When tests fail due to dirty database state**: If a test fails because of leftover data from a previous test run (e.g., duplicate key violations, unexpected data), ALWAYS suggest running `supabase db reset` (local) or `supabase db reset --linked` (remote) to restore a clean state. NEVER try to work around dirty state by adding cleanup code at the start of tests or checking for existing data before creating test data.
 * **Seed data is authoritative**: All tests must rely on data from `supabase/seeds/bootstrap.sql` (production-safe reference data), `supabase/seeds/lesson-types.sql` (default lesson types; dev/test only), and `supabase/seeds/test.sql` (RLS test users and fixtures). Every test can assume that seed data is available and consistent after `db reset`. Add new **test** data to `supabase/seeds/test.sql`; add new **lesson types** to `supabase/seeds/lesson-types.sql`; add other **reference/bootstrap** data (email templates, etc.) to `supabase/seeds/bootstrap.sql` instead of creating it in tests.
 * **Use seed-data-constants.ts for all seed-based values**: All constants that come from seed data (counts, totals, specific IDs, etc.) MUST be imported from `tests/rls/seed-data-constants.ts`. Never hardcode values like `88`, `60`, `10` etc. in tests. If a constant doesn't exist, add it to `seed-data-constants.ts` first.
 * **Tests may modify the database**: Tests are allowed to create, modify, or delete data during execution (e.g., for INSERT/UPDATE/DELETE permission tests). However, tests MUST restore the database to its original state after completion. Use the `setupDatabaseStateVerification()` helper from `tests/rls/db-state.ts` to automatically verify that the database state is unchanged after tests run.

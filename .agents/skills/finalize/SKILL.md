@@ -4,15 +4,17 @@ description: >
   Continuous quality fix loop in caveman mode. Regenerates Supabase types once, then
   runs check → CI → Fallow until all three pass. Fallow failures retry fallow only,
   then one verification pass from check. Complexity/CRAP: real fixes and
-  behavior-asserting tests only — never coverage theater. Use only when the user
-  explicitly asks to finalize, run the quality gates, clean up before a commit/PR,
-  or get the repo green.
+  behavior-asserting tests only — never coverage theater. Before DONE, extra review
+  for diff-narration comments and test theater. Use only when the user explicitly
+  asks to finalize, run the quality gates, clean up before a commit/PR, or get the
+  repo green.
 ---
 
 # Finalize
 
 Get the repo green. Done only when `bun run check`, `bun run check:ci`, and
-`bun run check:fallow` all exit 0 in one consecutive outer pass.
+`bun run check:fallow` all exit 0 in one consecutive outer pass, **and** the
+diff-narration / test-theater review in [`review.md`](review.md) is clean.
 
 ## Load once
 
@@ -20,6 +22,7 @@ Get the repo green. Done only when `bun run check`, `bun run check:ci`, and
 2. **Fallow / CRAP** — read [`fallow.md`](fallow.md) before fixing any Fallow finding.
 3. **Language** — read [`language.md`](language.md); enforce before declaring success.
 4. **Quality loop details** — read [`quality-loop.md`](quality-loop.md) for fix priority, escalation, and scope.
+5. **Diff review** — read [`review.md`](review.md) (diff-narration comments + test theater). Apply on every edit that adds comments or tests; full pass before DONE.
 
 ## When to use
 
@@ -32,12 +35,12 @@ Do not start this workflow merely because the user asks to commit or create a PR
 
 | Step | Command | Role |
 |------|---------|------|
-| types | `bun run supabase:types` | Once at start (linked types regen — **not** `db:reset`) |
+| types | `bun run supabase:types` | Once at start (linked types regen — **not** a DB reset) |
 | check | `bun run check` | Biome verify (no write) |
 | ci | `bun run check:ci` | Biome CI + `tsc` + code tests |
 | fallow | `bun run check:fallow` | Dead code, duplication, complexity/CRAP |
 
-Use these `package.json` scripts. `bun run fix` is the Biome write command; it is not a gate — only run it when `check` fails on auto-fixable issues. Never run `bun run db:reset`. Do not run `tests/auth`, `tests/rls`, or `tests/e2e` (need Supabase; out of scope).
+Use these `package.json` scripts. `bun run fix` is the Biome write command; it is not a gate — only run it when `check` fails on auto-fixable issues. Never run `supabase db reset` (any variant). Do not run `tests/auth`, `tests/rls`, or `tests/e2e` (need Supabase; out of scope).
 
 ## State machine
 
@@ -49,8 +52,10 @@ Use these `package.json` scripts. `bun run fix` is the Biome write command; it i
 5. If fallow fails, fix and retry fallow only until it passes.
 6. After a repaired fallow pass first becomes green, run exactly one verification
    pass: **check → ci → fallow**.
-7. If all three verification commands pass consecutively, stop: **DONE**. Handle
-   any verification failure using steps 3–6.
+7. If all three verification commands pass consecutively, run the
+   [`review.md`](review.md) pass on the session diff (comments + tests). Fix any
+   hits, then re-verify from **check** if code/tests changed.
+8. Only then stop: **DONE**. Handle any verification failure using steps 3–6.
 
 **Restart points (single table):**
 
@@ -79,6 +84,7 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 
 1. Follow the state machine; do not skip check → ci → fallow in an outer pass.
 2. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
-3. No Fallow suppressions / threshold hacks; no CRAP theater — [`fallow.md`](fallow.md).
-4. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
-5. Never `git add` or `git commit`. The user always stages and commits.
+3. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
+4. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
+5. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
+6. Never `git add` or `git commit`. The user always stages and commits.

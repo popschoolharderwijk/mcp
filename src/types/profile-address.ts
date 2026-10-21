@@ -1,6 +1,6 @@
 /**
  * Residential address on public.profiles.
- * Prefer Pick<Tables<'profiles'>, …> after `bun run db:reset` regenerates types.
+ * Prefer Pick<Tables<'profiles'>, …> after regenerating Supabase types.
  */
 export type ProfileAddressFields = {
 	street_name: string | null;

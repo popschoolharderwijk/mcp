@@ -21,4 +21,4 @@ jobs:
         run: bun install
 
       - name: Run unit tests
-        run: bun test code
+        run: bun run test:code

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	resolveDevLoginButtonClass,
-	resolveDevLoginButtonLabel,
-	resolveDevLoginCredentials,
-} from '../../../src/lib/auth/devLoginHookHelpers';
+import { resolveDevLoginCredentials } from '../../../src/lib/auth/devLoginHookHelpers';
 
 describe('resolveDevLoginCredentials', () => {
 	it('returns selection error when email is missing', () => {
@@ -23,24 +19,14 @@ describe('resolveDevLoginCredentials', () => {
 		});
 		import.meta.env.VITE_DEV_LOGIN_PASSWORD = previous;
 	});
-});
 
-describe('resolveDevLoginButtonLabel', () => {
-	it('returns loading label while busy', () => {
-		expect(resolveDevLoginButtonLabel(true)).toBe('Inloggen...');
-	});
-
-	it('returns idle label when not busy', () => {
-		expect(resolveDevLoginButtonLabel(false)).toBe('Dev Login');
-	});
-});
-
-describe('resolveDevLoginButtonClass', () => {
-	it('returns green button class for local dev', () => {
-		expect(resolveDevLoginButtonClass(true)).toContain('green');
-	});
-
-	it('returns orange button class for non-local dev', () => {
-		expect(resolveDevLoginButtonClass(false)).toContain('orange');
+	it('returns error when VITE_DEV_LOGIN_PASSWORD is missing', () => {
+		const previous = import.meta.env.VITE_DEV_LOGIN_PASSWORD;
+		import.meta.env.VITE_DEV_LOGIN_PASSWORD = '';
+		expect(resolveDevLoginCredentials('teacher-alice@test.nl')).toEqual({
+			ok: false,
+			error: 'VITE_DEV_LOGIN_PASSWORD niet geconfigureerd in environment',
+		});
+		import.meta.env.VITE_DEV_LOGIN_PASSWORD = previous;
 	});
 });

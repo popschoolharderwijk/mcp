@@ -10,6 +10,7 @@ import {
 	LuFilter,
 	LuSearch,
 	LuTrash2,
+	LuX,
 } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -175,6 +176,11 @@ export function DataTable<T>({
 		} else if (onSearchChange) {
 			onSearchChange(value);
 		}
+	};
+
+	const clearSearch = () => {
+		handleSearchChange('');
+		searchInputRef.current?.focus();
 	};
 
 	// Cleanup timeout on unmount
@@ -372,8 +378,23 @@ export function DataTable<T>({
 									placeholder={searchPlaceholder}
 									value={localSearchQuery}
 									onChange={(e) => handleSearchChange(e.target.value)}
-									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+									onKeyDown={(e) => {
+										if (e.key !== 'Escape' || localSearchQuery.length === 0) return;
+										e.preventDefault();
+										clearSearch();
+									}}
+									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
 								/>
+								{localSearchQuery.length > 0 && (
+									<button
+										type="button"
+										onClick={clearSearch}
+										className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-0.5 text-muted-foreground transition-colors hover:text-foreground"
+										aria-label="Zoekopdracht wissen"
+									>
+										<LuX className="h-4 w-4" />
+									</button>
+								)}
 							</div>
 							{quickFilter && (
 								<TooltipProvider>

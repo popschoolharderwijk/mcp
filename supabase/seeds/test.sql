@@ -1874,7 +1874,7 @@ END $$;
 INSERT INTO public.invoices (
   id, invoice_number, student_user_id, batch_id,
   issue_date, due_date, period_start, period_end,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   age_category, status, sent_at, paid_at, email_sent_to, created_by
 )
 VALUES
@@ -1923,8 +1923,8 @@ VALUES
 
 INSERT INTO public.invoice_lines (
   id, invoice_id, batch_item_id, description, lesson_date,
-  quantity, unit_price_cents, btw_rate,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  quantity, unit_price_cents, vat_rate,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   sort_order, created_by
 )
 VALUES
@@ -2184,7 +2184,7 @@ END $$;
 INSERT INTO public.invoices (
   id, invoice_number, student_user_id, batch_id,
   issue_date, due_date, period_start, period_end,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   age_category, status, sent_at, paid_at, email_sent_to, created_by
 )
 SELECT
@@ -2235,8 +2235,8 @@ FROM (
 
 INSERT INTO public.invoice_lines (
   id, invoice_id, batch_item_id, description, lesson_date,
-  quantity, unit_price_cents, btw_rate,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  quantity, unit_price_cents, vat_rate,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   sort_order, created_by
 )
 SELECT
@@ -2266,7 +2266,7 @@ WHERE inv.invoice_number >= 'INV-2026-00004';
 INSERT INTO public.invoices (
   id, invoice_number, student_user_id, batch_id,
   issue_date, due_date, period_start, period_end,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   age_category, status, sent_at, paid_at, email_sent_to, created_by
 )
 SELECT
@@ -2301,8 +2301,8 @@ JOIN public.profiles p ON p.user_id = x.student_user_id;
 
 INSERT INTO public.invoice_lines (
   id, invoice_id, description, lesson_date,
-  quantity, unit_price_cents, btw_rate,
-  amount_excl_btw_cents, btw_amount_cents, amount_total_cents,
+  quantity, unit_price_cents, vat_rate,
+  amount_excl_vat_cents, vat_amount_cents, amount_total_cents,
   sort_order, created_by
 )
 SELECT
