@@ -41,6 +41,7 @@ function mockSignupRequestRow(overrides: Partial<SignupRequestRowBase> = {}): Si
 		date_of_birth: '2010-05-01',
 		notes: null,
 		status: 'pending',
+		payment_method: 'stripe',
 		created_at: '2026-01-01T00:00:00Z',
 		updated_at: '2026-01-01T00:00:00Z',
 		processed_at: null,

@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import { SignupFormField } from './SignupFormField';
 

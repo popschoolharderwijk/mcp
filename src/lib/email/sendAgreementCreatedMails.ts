@@ -33,7 +33,7 @@ async function sendAgreementMail(
 	return (data as { ok?: boolean; skipped?: boolean } | null)?.ok === true && !data?.skipped;
 }
 
-export async function sendAgreementCreatedMails(agreementId: string): Promise<SendAgreementCreatedMailsResult> {
+async function executeAgreementCreatedMails(agreementId: string): Promise<SendAgreementCreatedMailsResult> {
 	const result: SendAgreementCreatedMailsResult = { studentSent: false, teacherSent: false };
 
 	const { data: agreement, error } = await supabase
@@ -88,4 +88,13 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 	}
 
 	return result;
+}
+
+export async function sendAgreementCreatedMails(agreementId: string): Promise<SendAgreementCreatedMailsResult> {
+	try {
+		return await executeAgreementCreatedMails(agreementId);
+	} catch (error) {
+		console.error('Agreement mail failed', error);
+		return { studentSent: false, teacherSent: false };
+	}
 }

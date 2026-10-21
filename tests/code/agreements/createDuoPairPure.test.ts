@@ -33,6 +33,7 @@ describe('buildDuoPairBasePayload', () => {
 			lesson_type_option_id: 'opt-1',
 			start_date: '2026-09-01',
 			end_date: null,
+			payment_method: 'stripe',
 			is_active: true,
 			duo_pair_id: 'duo-pair-1',
 			signup_source: 'staff_duo',

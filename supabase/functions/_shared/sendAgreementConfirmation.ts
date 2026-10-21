@@ -42,7 +42,10 @@ export async function sendAgreementConfirmation(
 				.maybeSingle(),
 			admin.from('profiles').select('first_name, last_name').eq('user_id', details.teacher_user_id).maybeSingle(),
 		]);
-		const preview = await loadPaymentPreview(admin, agreement);
+		const preview =
+			agreement.payment_method === 'stripe'
+				? await loadPaymentPreview(admin, agreement)
+				: { monthly: null, firstMonth: null, catchUp: null };
 		if (agreement.payment_method === 'stripe' && !preview.monthly) return false;
 		const token = agreement.payment_method === 'stripe' ? await rotatePaymentLinkToken(admin, agreementId) : null;
 		const vars = {
