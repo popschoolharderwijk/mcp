@@ -27,6 +27,9 @@ describe('validateDuoBody', () => {
 			value: {
 				...validBody,
 				signup_source: 'staff_duo',
+				payment_method: 'stripe',
+				date_of_birth_a: null,
+				date_of_birth_b: null,
 			},
 		});
 	});
