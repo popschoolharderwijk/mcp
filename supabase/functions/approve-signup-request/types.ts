@@ -7,6 +7,7 @@ export interface Body {
 export interface SignupRequestRow {
 	id: string;
 	status: string;
+	payment_method?: 'stripe' | 'manual';
 	email: string;
 	first_name: string;
 	last_name: string;

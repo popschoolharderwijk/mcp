@@ -15,6 +15,7 @@ import {
 	resolveSubscriptionStatusBadge,
 	SUBSCRIPTION_ACTION_FUNCTIONS,
 	type SubscriptionAction,
+	shouldShowResendInvitation,
 } from '@/lib/subscriptions/subscriptionCardHelpers';
 
 interface SubscriptionCardProps {
@@ -92,10 +93,11 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 				)}
 
 				<div className="flex flex-wrap gap-2">
-					<Button onClick={() => runAction('send-invite')} disabled={busy !== null}>
-						<LuMail className="mr-1.5 h-4 w-4" />
-						{lastInviteAt ? 'Stuur uitnodiging opnieuw' : 'Stuur betaaluitnodiging'}
-					</Button>
+					{!loading && shouldShowResendInvitation(subscription) && (
+						<Button onClick={() => runAction('send-invite')} disabled={busy !== null}>
+							<LuMail className="mr-1.5 h-4 w-4" /> Opnieuw versturen
+						</Button>
+					)}
 					<Button
 						variant="outline"
 						onClick={() => runAction('open-portal')}

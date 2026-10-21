@@ -1,6 +1,8 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getSiteBaseUrl } from '../_shared/http-serve.ts';
+import { sendAgreementConfirmation } from '../_shared/sendAgreementConfirmation.ts';
 import { sendTemplateEmail } from '../_shared/sendTemplateEmail.ts';
-import { buildDuoConfirmationEmailPlan, dispatchDuoConfirmationEmailJobs } from './duoConfirmationEmailPure.ts';
+import { buildDuoConfirmationEmailPlan, buildDuoTemplateEmailVars } from './duoConfirmationEmailPure.ts';
 import { formatMonthlyAmount } from './formatPure.ts';
 import type { Body } from './types.ts';
 
@@ -22,7 +24,7 @@ export async function sendDuoConfirmationEmails(
 	req: Request,
 	body: Body,
 	agreementIdByStudent: Map<string, string> = new Map(),
-): Promise<void> {
+): Promise<boolean> {
 	try {
 		const { data: lt } = await admin
 			.from('lesson_types')
@@ -38,8 +40,28 @@ export async function sendDuoConfirmationEmails(
 			const agreementId = job.studentUserId ? agreementIdByStudent.get(job.studentUserId) : undefined;
 			if (agreementId) job.amountLabel = await loadAmountLabel(admin, agreementId);
 		}
-		await dispatchDuoConfirmationEmailJobs(plan.jobs, plan.baseVars, plan.origin, sendTemplateEmail);
+		const results = await Promise.all(
+			[...agreementIdByStudent.values()].map((agreementId) =>
+				sendAgreementConfirmation(agreementId, {
+					admin,
+					siteUrl: getSiteBaseUrl(req),
+					origin: plan.origin,
+					sentBy: null,
+				}),
+			),
+		);
+		for (const job of plan.jobs) {
+			if (job.teacherEmail)
+				await sendTemplateEmail({
+					event_key: 'agreement_created_teacher',
+					to: job.teacherEmail,
+					vars: buildDuoTemplateEmailVars(plan.baseVars, job.studentName, job.amountLabel),
+					origin: plan.origin,
+				});
+		}
+		return results.length === 2 && results.every(Boolean);
 	} catch (mailErr) {
 		console.error('duo agreement mail block', mailErr);
+		return false;
 	}
 }

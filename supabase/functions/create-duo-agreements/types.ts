@@ -11,6 +11,9 @@ export interface Body {
 	start_date: string;
 	end_date: string | null;
 	signup_source?: string | null;
+	date_of_birth_a?: string | null;
+	date_of_birth_b?: string | null;
+	payment_method?: 'stripe' | 'manual';
 }
 
 export interface LessonTypeRow {

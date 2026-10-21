@@ -14,10 +14,6 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 	},
 }));
 
-mock.module('../../../src/lib/auth/invokeError', () => ({
-	getInvokeErrorMessage: async () => 'invoke failed',
-}));
-
 const { createStudentRecord } = await import('../../../src/components/students/studentFormPersistence');
 
 describe('createStudentRecord', () => {
@@ -50,7 +46,7 @@ describe('createStudentRecord', () => {
 		expect(await createStudentRecord(emptyStudentForm, 'new-user', null)).toEqual({
 			ok: false,
 			title: 'Fout bij aanmaken leerling',
-			description: 'invoke failed',
+			description: 'Er is een onbekende fout opgetreden.',
 		});
 	});
 

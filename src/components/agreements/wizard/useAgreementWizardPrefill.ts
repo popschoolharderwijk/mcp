@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from 'react';
+import { type Dispatch, type SetStateAction, useEffect } from 'react';
 import type { WizardStep } from '@/components/agreements/WizardStepIndicator';
 import type { AgreementWizardUrlParams } from '@/components/agreements/wizard/useAgreementWizardSetup';
 import { useWizardBreadcrumb, useWizardEditInitialization } from '@/components/agreements/wizard/useWizardEditEffects';
@@ -6,6 +6,7 @@ import { useWizardOptionPrefill } from '@/components/agreements/wizard/useWizard
 import { useWizardStudentPrefill } from '@/components/agreements/wizard/useWizardStudentPrefill';
 import { useWizardLessonTypeOptions, useWizardTeachers } from '@/components/agreements/wizard/wizardDataHooks';
 import type { WizardFormState } from '@/components/agreements/wizard/wizardFormTypes';
+import { supabase } from '@/integrations/supabase/client';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
 interface UseAgreementWizardPrefillParams {
@@ -22,6 +23,30 @@ interface UseAgreementWizardPrefillParams {
 }
 
 export function useAgreementWizardPrefill(params: UseAgreementWizardPrefillParams) {
+	const {
+		isEditMode,
+		urlParams: { fromRequestId },
+		setForm,
+	} = params;
+	useEffect(() => {
+		if (isEditMode || !fromRequestId) return;
+		let cancelled = false;
+		void supabase
+			.from('lesson_signup_requests')
+			.select('payment_method')
+			.eq('id', fromRequestId)
+			.maybeSingle()
+			.then(({ data }) => {
+				if (!cancelled && data)
+					setForm((current) => ({
+						...current,
+						paymentMethod: data.payment_method === 'manual' ? 'manual' : 'stripe',
+					}));
+			});
+		return () => {
+			cancelled = true;
+		};
+	}, [isEditMode, fromRequestId, setForm]);
 	useWizardStudentPrefill(
 		params.isEditMode,
 		params.urlParams.prefillStudentUserId,

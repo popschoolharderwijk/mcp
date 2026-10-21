@@ -1,3 +1,4 @@
+import { wasTemplateEmailDelivered } from './agreementConfirmationPure.ts';
 import { resolveAllowedSiteUrl } from './http.ts';
 import { buildSendTemplateEmailFetchInit, buildSendTemplateEmailRequestBody } from './sendTemplateEmailPure.ts';
 
@@ -12,7 +13,7 @@ export interface SendTemplateEmailOptions {
 	origin?: string | null;
 }
 
-/** Returns true when send-template-email answered 2xx (a disabled template also counts as sent). */
+/** True only for an actual successful delivery, never a skipped/disabled template. */
 export async function sendTemplateEmail(opts: SendTemplateEmailOptions): Promise<boolean> {
 	const site_url = resolveAllowedSiteUrl(opts.origin) ?? undefined;
 	const requestBody = buildSendTemplateEmailRequestBody({ ...opts, site_url });
@@ -26,7 +27,7 @@ export async function sendTemplateEmail(opts: SendTemplateEmailOptions): Promise
 			console.error(`${opts.event_key} mail non-2xx`, resp.status, text);
 			return false;
 		}
-		return true;
+		return wasTemplateEmailDelivered(await resp.json());
 	} catch (mailErr) {
 		console.error(`${opts.event_key} mail`, mailErr);
 		return false;

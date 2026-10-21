@@ -47,12 +47,20 @@ export async function enrollGroupSignup(
 		targetGroupId: string;
 		processedBy: string;
 	},
-): Promise<{ ok: true; createdAgreementId: string | null } | { ok: false; response: Response }> {
+): Promise<{ ok: true; createdAgreementId: string | null; isNew: boolean } | { ok: false; response: Response }> {
+	const priorId = await loadActiveAgreementId(admin, args.targetGroupId, args.studentUserId);
 	const memberResult = await insertGroupMember(admin, args.targetGroupId, args.studentUserId);
 	if (!memberResult.ok) return memberResult;
 
 	const createdAgreementId = await loadActiveAgreementId(admin, args.targetGroupId, args.studentUserId);
 
+	if (createdAgreementId && !priorId) {
+		const { error } = await admin
+			.from('lesson_agreements')
+			.update({ payment_method: args.reqRow.payment_method ?? 'stripe' })
+			.eq('id', createdAgreementId);
+		if (error) return { ok: false, response: jsonResponse(500, { error: 'Kon de betaalmethode niet opslaan' }) };
+	}
 	await admin
 		.from('lesson_signup_requests')
 		.update(
@@ -65,5 +73,5 @@ export async function enrollGroupSignup(
 		)
 		.eq('id', args.reqRow.id);
 
-	return { ok: true, createdAgreementId };
+	return { ok: true, createdAgreementId, isNew: !priorId };
 }

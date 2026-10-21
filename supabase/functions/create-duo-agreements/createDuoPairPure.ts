@@ -13,6 +13,7 @@ export interface DuoPairBasePayload {
 	is_active: boolean;
 	duo_pair_id: string;
 	signup_source: string;
+	payment_method: 'stripe' | 'manual';
 }
 
 export function buildDuoPairBasePayload(body: Body, duoPairId: string): DuoPairBasePayload {
@@ -26,6 +27,7 @@ export function buildDuoPairBasePayload(body: Body, duoPairId: string): DuoPairB
 		lesson_type_option_id: body.lesson_type_option_id,
 		start_date: body.start_date,
 		end_date: body.end_date,
+		payment_method: body.payment_method ?? 'stripe',
 		is_active: true,
 		duo_pair_id: duoPairId,
 		signup_source: body.signup_source ?? 'staff_duo',

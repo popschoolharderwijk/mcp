@@ -222,20 +222,19 @@ INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) V
 
 INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
 	'agreement_created',
-	'Je lesovereenkomst bij Popschool Harderwijk is aangemaakt',
+	'Je lesovereenkomst bij Mplifi',
 	'<p>Hoi {{leerling_naam}},</p>
-<p>Fijn dat je bij ons komt lessen! Je lesovereenkomst is aangemaakt met de volgende gegevens:</p>
+<p>Fijn dat je bij ons komt lessen! Je lesovereenkomst is bevestigd:</p>
 <ul>
   <li><strong>Docent:</strong> {{docent_naam}}</li>
   <li><strong>Lessoort:</strong> {{les_type}}</li>
   <li><strong>Frequentie:</strong> {{frequentie}}</li>
   <li><strong>Dag &amp; tijd:</strong> {{dag}} om {{tijd}}</li>
   <li><strong>Startdatum:</strong> {{startdatum}}</li>
-  <li><strong>Lesgeld:</strong> {{bedrag}}</li>
-  <li><strong>Betaalmethode:</strong> {{betaalmethode}}</li>
 </ul>
-<p>In het leerlingportaal vind je je agenda, facturen en overige informatie over je lessen.</p>
-<p>Veel muziekplezier!<br/>Popschool Harderwijk</p>',
+{{betaalblok}}
+<p>In het leerlingportaal vind je je agenda en facturen.</p>
+<p>Veel muziekplezier!<br/>Mplifi</p>',
 	true
 ) ON CONFLICT (event_key) DO NOTHING;
 

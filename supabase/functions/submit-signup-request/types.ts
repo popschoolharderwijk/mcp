@@ -11,6 +11,7 @@ export interface SignupRequest {
 	parent_email?: string | null;
 	parent_phone_number?: string | null;
 	notes?: string | null;
+	payment_method?: 'stripe' | 'manual';
 	sepa_iban?: string | null;
 	sepa_account_holder?: string | null;
 	sepa_bic?: string | null;

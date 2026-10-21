@@ -41,7 +41,7 @@ const supabaseMock = {
 	functions: {
 		invoke: (fn: string, opts: { body: unknown }) => {
 			recordedInvokes.push({ fn, body: opts.body });
-			return Promise.resolve(invokeResults[fn] ?? { data: null, error: null });
+			return Promise.resolve(invokeResults[fn] ?? { data: { ok: true }, error: null });
 		},
 	},
 };
@@ -96,16 +96,8 @@ describe('sendAgreementCreatedMails', () => {
 		expect(result).toEqual({ studentSent: true, teacherSent: true });
 		expect(recordedInvokes).toHaveLength(2);
 		expect(recordedInvokes[0]).toEqual({
-			fn: 'send-template-email',
-			body: {
-				event_key: 'agreement_created',
-				to: 'student@example.com',
-				vars: expect.objectContaining({
-					leerling_naam: 'Jan Leerling',
-					docent_naam: 'Piet Docent',
-					les_type: 'Piano',
-				}),
-			},
+			fn: 'send-agreement-confirmation',
+			body: { lesson_agreement_id: 'agr-1' },
 		});
 		expect(recordedInvokes[1]?.body).toEqual(
 			expect.objectContaining({
@@ -116,6 +108,7 @@ describe('sendAgreementCreatedMails', () => {
 	});
 
 	it('marks student mail as failed when invoke returns an error', async () => {
+		invokeResults['send-agreement-confirmation'] = { data: null, error: { message: 'mail failed' } };
 		invokeResults['send-template-email'] = { data: null, error: { message: 'mail failed' } };
 		const result = await sendAgreementCreatedMails('agr-1');
 		expect(result).toEqual({ studentSent: false, teacherSent: false });
@@ -125,7 +118,7 @@ describe('sendAgreementCreatedMails', () => {
 		studentProfileResult = { data: { email: null, first_name: 'Jan', last_name: 'Leerling' }, error: null };
 		teacherProfileResult = { data: { email: null, first_name: 'Piet', last_name: 'Docent' }, error: null };
 		const result = await sendAgreementCreatedMails('agr-1');
-		expect(result).toEqual({ studentSent: false, teacherSent: false });
-		expect(recordedInvokes).toHaveLength(0);
+		expect(result).toEqual({ studentSent: true, teacherSent: false });
+		expect(recordedInvokes).toHaveLength(1);
 	});
 });

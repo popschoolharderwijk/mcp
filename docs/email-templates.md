@@ -115,3 +115,15 @@ supabase config push  # review diff, type Y
 | Development | `zdvscmogkfyddnnxzkdu` |
 | Test (CI) | `jserlqacarlgtdzrblic` |
 | Production | `bnagepkxryauifzyoxgo` |
+
+## Stap 3 — één bevestiging en aanmelden zonder bankgegevens (21 oktober 2026)
+
+- Bij een nieuwe overeenkomst verstuurt `sendAgreementConfirmation` één klantmail `agreement_created` (wizard via `send-agreement-confirmation`, duo en groepsaanmelding rechtstreeks). Bij bewerken gaat geen klantmail uit; de docentbevestiging blijft apart.
+- Ontvanger: `students.parent_email`, anders account. Het `betaalblok` bevat maandbedrag met btw, eerste maand naar rato óf inhaalbedrag (direct afgeschreven), looptijd en **Machtiging afgeven**. Bedragen via `loadPaymentPreview` / `agreement_fee_months`, dezelfde bron als de vaste pagina.
+- Losse variabelen: `bedrag`, `eerste_maand_bedrag`, `inhaal_bedrag`, `minimale_looptijd_tot`, `link`. Op factuur: “Je ontvangt maandelijks een factuur van ons.” Geen link.
+- Elke verzending maakt een nieuwe vaste token en registreert `direct_debit_invitations`. **Opnieuw versturen** stuurt alleen `direct_debit_invite`, zichtbaar zolang geen schedule/abonnement gekoppeld is. Uitgeschakelde templates tellen niet als verstuurd; de wizard toont een waarschuwing.
+- Publieke aanmelding vraagt geen IBAN/tenaamstelling/machtiging. Standaard `payment_method=stripe`; fonds aangevinkt → `manual` (op factuur). Goedkeuring/wizard neemt dit over. Oude SEPA-kolommen blijven ongemoeid; nieuwe aanmeldingen schrijven ze niet.
+- Migratie vervangt alleen de exacte oude standaardbevestiging; aangepaste templates blijven behouden. Voeg daarin zelf `{{betaalblok}}` toe via Instellingen → E-mailtemplates.
+- Stap 4 (wachtstatus, beheeroverzicht en portaalmelding) is niet uitgevoerd. Groepsbetaling via iDEAL blijft fase 4; geen nieuwe checkout hiervoor.
+- Previewcontrole: nieuwe overeenkomst → één klantmail met juiste ontvanger/bedragen; bewerken → geen mail; opnieuw versturen → oude link ongeldig; template uit → waarschuwing; aanmelden met/zonder fonds → overeenkomst op factuur/automatisch.
+- Na migratie: gebruiker draait `bun run db:reset` (of alleen types `bun run supabase:types`).

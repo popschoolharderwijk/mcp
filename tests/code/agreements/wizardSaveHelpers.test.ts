@@ -50,7 +50,21 @@ function buildUpdateChain(table: string, payload: unknown) {
 const emptyReadChain = {
 	select: () => ({
 		eq: () => ({
-			maybeSingle: () => Promise.resolve({ data: null, error: null }),
+			maybeSingle: () =>
+				Promise.resolve({
+					data: {
+						id: 'agr-new',
+						student_user_id: 'stu-1',
+						teacher_user_id: 'tea-1',
+						start_time: '09:00',
+						start_date: '2026-09-01',
+						frequency: 'weekly',
+						day_of_week: 1,
+						payment_method: 'stripe',
+						lesson_types: { name: 'Piano' },
+					},
+					error: null,
+				}),
 		}),
 	}),
 };
@@ -70,10 +84,9 @@ const supabaseMock = {
 	}),
 	functions: {
 		invoke: (fn: string, body?: { body?: unknown }) => {
-			if (fn === 'send-template-email') return Promise.resolve({ data: null, error: null });
+			if (fn === 'send-template-email') return Promise.resolve({ data: { ok: true }, error: null });
 			recordedCalls.push({ table: fn, op: 'insert', payload: body?.body ?? null, filters: {} });
-			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-direct-debit-invite';
-			return Promise.resolve(tableResults[key] ?? { data: null, error: null });
+			return Promise.resolve(tableResults[fn] ?? { data: { ok: true }, error: null });
 		},
 	},
 };
@@ -257,9 +270,25 @@ describe('saveWizardAgreement', () => {
 		});
 		expect(result).toBe(true);
 		expect(navigateCalls).toEqual(['/agreements']);
+		expect(recordedCalls.filter((call) => call.table === 'send-agreement-confirmation')).toHaveLength(1);
+		expect(recordedCalls.filter((call) => call.table === 'send-direct-debit-invite')).toHaveLength(0);
 		expect(toastMessages).toEqual([{ type: 'success', message: 'Overeenkomst toegevoegd' }]);
 	});
 
+	it('reports failed confirmation without undoing a saved agreement', async () => {
+		tableResults['send-agreement-confirmation'] = { data: { error: 'template disabled' }, error: null };
+		const saved = await saveWizardAgreement({
+			form: baseForm(),
+			agreement: null,
+			isDuoLesson: false,
+			fromRequestId: null,
+			fromTrialId: null,
+			navigate: recordNavigate,
+		});
+		expect(saved).toBe(true);
+		expect(toastMessages.some((message) => message.type === 'warning')).toBe(true);
+		expect(toastMessages.some((message) => message.type === 'success')).toBe(false);
+	});
 	it('updates an existing agreement', async () => {
 		const result = await saveWizardAgreement({
 			form: baseForm(),
@@ -271,6 +300,7 @@ describe('saveWizardAgreement', () => {
 		});
 		expect(result).toBe(true);
 		expect(recordedCalls[0]?.op).toBe('update');
+		expect(recordedCalls.filter((call) => call.table === 'send-agreement-confirmation')).toHaveLength(0);
 		expect(toastMessages).toEqual([{ type: 'success', message: 'Overeenkomst bijgewerkt' }]);
 	});
 
@@ -346,7 +376,7 @@ describe('saveWizardAgreement', () => {
 
 	it('routes duo saves through createAndNotifyDuoAgreements', async () => {
 		tableResults['create-duo-agreements'] = {
-			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
+			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1', confirmation_sent: true },
 			error: null,
 		};
 		tableResults['send-direct-debit-invite'] = { data: null, error: null };
@@ -360,9 +390,7 @@ describe('saveWizardAgreement', () => {
 		});
 		expect(result).toBe(true);
 		expect(navigateCalls).toEqual(['/agreements']);
-		expect(toastMessages).toEqual([
-			{ type: 'success', message: 'Duo-overeenkomsten toegevoegd — betaaluitnodigingen verstuurd' },
-		]);
+		expect(toastMessages).toEqual([{ type: 'success', message: 'Duo-overeenkomsten toegevoegd' }]);
 		expect(recordedCalls[0]?.payload).toEqual({
 			student_user_id_a: 'stu-1',
 			student_user_id_b: 'stu-2',
@@ -376,12 +404,15 @@ describe('saveWizardAgreement', () => {
 			start_date: '2026-09-01',
 			end_date: '2027-07-31',
 			signup_source: 'public_form',
+			payment_method: 'stripe',
+			date_of_birth_a: '2010-05-01',
+			date_of_birth_b: '2011-03-02',
 		});
 	});
 
 	it('shows warning toast when duo invites fail', async () => {
 		tableResults['create-duo-agreements'] = {
-			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
+			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1', confirmation_sent: false },
 			error: null,
 		};
 		tableResults['send-direct-debit-invite'] = { data: null, error: { message: 'invite failed' } };
@@ -397,7 +428,7 @@ describe('saveWizardAgreement', () => {
 		expect(toastMessages).toEqual([
 			{
 				type: 'warning',
-				message: 'Duo-overeenkomsten opgeslagen, maar 2 betaaluitnodiging(en) konden niet worden verstuurd',
+				message: 'Overeenkomsten opgeslagen, maar de mail is niet verstuurd',
 			},
 		]);
 	});

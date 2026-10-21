@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.7 — 2026-10-21
+
+- Stap 3: één klantbevestiging bij nieuwe overeenkomst (wizard, duo, groepsaanmelding), met betaalblok en vaste link; docentmail apart, geen mail bij bewerken.
+- Opnieuw versturen alleen zolang machtiging ontbreekt; uitgeschakelde/mislukte mail geeft een waarschuwing.
+- Aanmelden zonder SEPA-bankvelden; fonds-vinkje bewaart op factuur, standaard machtiging via iDEAL. Oude bankgegevens blijven staan.
+- Template alleen bijgewerkt wanneer nog de standaardtekst; documentatie, handleiding en pure tests bijgewerkt. Stap 4 niet uitgevoerd.
+
 ## 1.5.6 — 2026-10-21
 
 - **Vaste betaallink**: de betaaluitnodiging bevat nu een vaste link per overeenkomst (`/direct-debit/start?agreement=…&t=…`) in plaats van een inloglink van 1 uur. Alleen de hash van de token wordt opgeslagen; elke nieuwe verzending maakt een nieuwe token en de oude vervalt.

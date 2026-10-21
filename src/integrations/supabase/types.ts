@@ -1092,6 +1092,7 @@ export type Database = {
 					parent_email: string | null;
 					parent_name: string | null;
 					parent_phone_number: string | null;
+					payment_method: string;
 					phone_number: string | null;
 					processed_at: string | null;
 					processed_by: string | null;
@@ -1118,6 +1119,7 @@ export type Database = {
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
+					payment_method?: string;
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;
@@ -1144,6 +1146,7 @@ export type Database = {
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
+					payment_method?: string;
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;

@@ -149,6 +149,7 @@ async function createAndNotifyDuoAgreements(params: {
 	const { data: duoData, error: duoErr } = await supabase.functions.invoke<{
 		agreement_ids: string[];
 		duo_pair_id: string;
+		confirmation_sent: boolean;
 	}>('create-duo-agreements', {
 		body: buildCreateDuoAgreementsBody(form, fromRequestId),
 	});
@@ -163,18 +164,8 @@ async function createAndNotifyDuoAgreements(params: {
 		{ userId: form.partnerStudentUserId, stored: form.partnerDateOfBirth, input: form.partnerDateOfBirthInput },
 	]);
 
-	const inviteResults = await Promise.all(
-		duoData.agreement_ids.map((aid) =>
-			supabase.functions.invoke('send-direct-debit-invite', { body: { lesson_agreement_id: aid } }),
-		),
-	);
-	const failedInvites = countFailedFunctionInvokes(inviteResults);
-	const notifyMessage = resolveDuoAgreementsNotifyMessage(failedInvites);
-	if (notifyMessage.type === 'warning') {
-		toast.warning(notifyMessage.message);
-	} else {
-		toast.success(notifyMessage.message);
-	}
+	if (duoData.confirmation_sent) toast.success('Duo-overeenkomsten toegevoegd');
+	else toast.warning('Overeenkomsten opgeslagen, maar de mail is niet verstuurd');
 	navigate('/agreements');
 	return true;
 }
@@ -208,7 +199,7 @@ async function handleNewAgreementSideEffects(params: {
 	agreementId: string;
 	fromRequestId: string | null;
 	fromTrialId: string | null;
-}): Promise<void> {
+}): Promise<boolean> {
 	const { agreementId, fromRequestId, fromTrialId } = params;
 
 	if (fromRequestId) {
@@ -234,7 +225,8 @@ async function handleNewAgreementSideEffects(params: {
 	}
 
 	// Confirmation emails to student and teacher (best-effort; does not block the flow).
-	await sendAgreementCreatedMails(agreementId);
+	const mail = await sendAgreementCreatedMails(agreementId);
+	return mail.studentSent;
 }
 
 function showAgreementSavedToast(params: {
@@ -275,7 +267,20 @@ export type WizardAgreementSaveParams = {
 };
 
 export async function saveWizardAgreement(params: WizardAgreementSaveParams): Promise<boolean> {
-	const { form, agreement, isDuoLesson, fromRequestId, fromTrialId, navigate } = params;
+	const { agreement, isDuoLesson, fromRequestId, fromTrialId, navigate } = params;
+	let form = params.form;
+	if (!agreement && fromRequestId) {
+		const { data, error } = await supabase
+			.from('lesson_signup_requests')
+			.select('payment_method')
+			.eq('id', fromRequestId)
+			.maybeSingle();
+		if (error || !data) {
+			toast.error('Kon de betaalmethode van de aanmelding niet laden');
+			return false;
+		}
+		form = { ...form, paymentMethod: data.payment_method === 'manual' ? 'manual' : 'stripe' };
+	}
 
 	if (!validateRequiredSaveFields(form)) return false;
 
@@ -307,11 +312,10 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 	await saveEnteredDatesOfBirth([
 		{ userId: form.studentUserId, stored: form.studentDateOfBirth, input: form.studentDateOfBirthInput },
 	]);
-	if (isNew && agreementId) {
-		await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId });
-	}
-
-	showAgreementSavedToast({ isEdit: !isNew, isNew, paymentMethod: form.paymentMethod });
+	const mailSent =
+		isNew && agreementId ? await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId }) : true;
+	if (!mailSent) toast.warning('Overeenkomst opgeslagen, maar de mail is niet verstuurd');
+	else showAgreementSavedToast({ isEdit: !isNew, isNew, paymentMethod: form.paymentMethod });
 	navigate(getAgreementSavedNavigatePath(fromRequestId, fromTrialId));
 	return true;
 }
@@ -336,22 +340,8 @@ function buildCreateDuoAgreementsBody(form: ValidatedDuoSaveForm, fromRequestId:
 		start_date: form.startDate,
 		end_date: form.endDate || null,
 		signup_source: resolveDuoSignupSource(fromRequestId),
-	};
-}
-
-function countFailedFunctionInvokes(results: { error: unknown }[]): number {
-	return results.filter((result) => result.error).length;
-}
-
-function resolveDuoAgreementsNotifyMessage(failedInvites: number): { type: 'success' | 'warning'; message: string } {
-	if (failedInvites > 0) {
-		return {
-			type: 'warning',
-			message: `Duo-overeenkomsten opgeslagen, maar ${failedInvites} betaaluitnodiging(en) konden niet worden verstuurd`,
-		};
-	}
-	return {
-		type: 'success',
-		message: 'Duo-overeenkomsten toegevoegd — betaaluitnodigingen verstuurd',
+		payment_method: form.paymentMethod === 'manual' ? 'manual' : 'stripe',
+		date_of_birth_a: resolveEffectiveDateOfBirth(form.studentDateOfBirth, form.studentDateOfBirthInput),
+		date_of_birth_b: resolveEffectiveDateOfBirth(form.partnerDateOfBirth, form.partnerDateOfBirthInput),
 	};
 }

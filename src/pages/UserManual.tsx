@@ -113,6 +113,10 @@ const sections: ManualSection[] = [
 		title: NAV_LABELS.agreements,
 		description: 'Lesovereenkomsten vastleggen en beheren via de overeenkomsten-wizard.',
 		details: [
+			'Bij een nieuwe overeenkomst ontvangt de ouder (anders leerling) één bevestigingsmail met lesgegevens en Machtiging afgeven. Op factuur bevat geen betaallink. Bij bewerken gaat geen nieuwe mail uit.',
+			'Opnieuw versturen maakt een nieuwe betaallink; de vorige vervalt. De knop verdwijnt zodra de machtiging gekoppeld is. Bij een uitgeschakelde of mislukte mail zie je een waarschuwing.',
+			'Aanmelden vraagt geen bankgegevens. Na bevestiging volgt de mail voor betaling via iDEAL. Vink je een fonds aan, dan wordt de overeenkomst op factuur gezet.',
+
 			'Nieuwe overeenkomst: doorloop vier stappen — leerling, lessoort + optie, docent + planning, bevestiging.',
 			'Stap 1 – Leerling: kies een bestaande gebruiker of voeg een nieuwe toe. Bij een duo-lessoort kies je hier twee leerlingen.',
 			'Stap 2 – Lessoort & lesvorm: kies een lessoort en een lesvorm (duur, frequentie). Bij verwerking van een aanmelding voorgevuld.',
