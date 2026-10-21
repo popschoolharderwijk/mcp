@@ -2,6 +2,13 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
+import {
+	buildScheduleFromSubscriptionIdempotencyKey,
+	buildScheduleIdempotencyKey,
+	findDuplicateScheduleGroups,
+	OPEN_SUBSCRIPTION_STATUSES,
+	selectAdoptableSchedule,
+} from './scheduleClaimPure.ts';
 import { getStripeId } from './stripe.ts';
 import { toScheduleError } from './stripeRecoveryPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
@@ -18,7 +25,7 @@ import {
 	type TaxRateIds,
 } from './subscriptionPlanPure.ts';
 
-const OPEN_STATUSES = ['scheduled', 'trialing', 'active', 'past_due', 'unpaid', 'incomplete', 'paused'];
+const OPEN_STATUSES: string[] = [...OPEN_SUBSCRIPTION_STATUSES];
 
 export function todayIso(): string {
 	return new Date().toISOString().slice(0, 10);
@@ -184,6 +191,8 @@ export interface ScheduleResult {
 	phases: number;
 	firstInvoice: 'sent' | 'pending' | null;
 	endBehavior: 'cancel' | 'release';
+	/** Set when another path is already building this agreement's schedule (claim not acquired). */
+	skipped?: 'in_progress';
 }
 
 async function createNewSchedule(
@@ -197,13 +206,34 @@ async function createNewSchedule(
 ): Promise<Stripe.SubscriptionSchedule> {
 	const first = phases[0];
 	const startUnix = monthStartUnix(first.start);
-	return stripe.subscriptionSchedules.create({
-		customer: customerId,
-		start_date: first.start <= today ? 'now' : startUnix,
-		end_behavior: endBehavior,
-		phases: phases.map((p) => phasePayload(p, ctx.agreementId, pm)),
-		metadata: { lesson_agreement_id: ctx.agreementId },
-	} as Stripe.SubscriptionScheduleCreateParams);
+	return stripe.subscriptionSchedules.create(
+		{
+			customer: customerId,
+			start_date: first.start <= today ? 'now' : startUnix,
+			end_behavior: endBehavior,
+			phases: phases.map((p) => phasePayload(p, ctx.agreementId, pm)),
+			metadata: { lesson_agreement_id: ctx.agreementId },
+		} as Stripe.SubscriptionScheduleCreateParams,
+		{ idempotencyKey: buildScheduleIdempotencyKey(ctx.agreementId, first.start) },
+	);
+}
+
+/**
+ * Atomic claim so webhooks, complete-mode, Synchroniseer and the daily task can never build
+ * a schedule for the same agreement at the same time. Whoever loses the claim does nothing.
+ */
+async function claimScheduleBuild(admin: SupabaseClient, agreementId: string, customerId: string): Promise<boolean> {
+	const { data, error } = await admin.rpc('claim_schedule_build', {
+		p_agreement_id: agreementId,
+		p_customer_id: customerId,
+	});
+	if (error) throw new Error(error.message);
+	return data === true;
+}
+
+async function releaseScheduleBuild(admin: SupabaseClient, agreementId: string): Promise<void> {
+	const { error } = await admin.rpc('release_schedule_build', { p_agreement_id: agreementId });
+	if (error) console.error('release_schedule_build failed', agreementId, error.message);
 }
 
 /** Keep the running phase (already invoiced) up to next month; replace everything after it. */
