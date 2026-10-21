@@ -24,3 +24,11 @@ export async function countAwaitingMandates(): Promise<number> {
 	if (error) return 0;
 	return count ?? 0;
 }
+
+export async function fetchIsAwaitingMandate(agreementId: string): Promise<boolean> {
+	const { count, error } = await supabase
+		.from(AWAITING_VIEW)
+		.select('*', { count: 'exact', head: true })
+		.eq('lesson_agreement_id', agreementId);
+	return !error && (count ?? 0) > 0;
+}

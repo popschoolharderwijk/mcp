@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchAwaitingMandates } from '@/lib/subscriptions/awaitingMandateLoad';
+import { fetchIsAwaitingMandate } from '@/lib/subscriptions/awaitingMandateLoad';
 import type { SubscriptionRow } from '@/types/subscriptions';
 
 /** Latest Stripe subscription + last invitation date for one lesson agreement (RLS-scoped). */
@@ -25,10 +25,7 @@ export function useSubscription(lessonAgreementId: string) {
 				.eq('lesson_agreement_id', lessonAgreementId)
 				.order('sent_at', { ascending: false })
 				.limit(1),
-			fetchAwaitingMandates().then(
-				(rows) => rows.some((r) => r.lesson_agreement_id === lessonAgreementId),
-				() => false,
-			),
+			fetchIsAwaitingMandate(lessonAgreementId),
 		]);
 		setSubscription(subs.data?.[0] ?? null);
 		setLastInviteAt(invites.data?.[0]?.sent_at ?? null);

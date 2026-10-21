@@ -87,10 +87,7 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
 	{
 		pattern: '/awaiting-mandate',
-		items: [
-			{ label: NAV_LABELS.finance },
-			{ label: NAV_LABELS.awaitingMandate, href: '/awaiting-mandate' },
-		],
+		items: [{ label: NAV_LABELS.finance }, { label: NAV_LABELS.awaitingMandate, href: '/awaiting-mandate' }],
 	},
 	{ pattern: '/data-import', items: [{ label: NAV_LABELS.dataImport, href: '/data-import' }] },
 	{
