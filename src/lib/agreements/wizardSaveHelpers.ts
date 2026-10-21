@@ -267,7 +267,20 @@ export type WizardAgreementSaveParams = {
 };
 
 export async function saveWizardAgreement(params: WizardAgreementSaveParams): Promise<boolean> {
-	const { form, agreement, isDuoLesson, fromRequestId, fromTrialId, navigate } = params;
+	const { agreement, isDuoLesson, fromRequestId, fromTrialId, navigate } = params;
+	let form = params.form;
+	if (!agreement && fromRequestId) {
+		const { data, error } = await supabase
+			.from('lesson_signup_requests')
+			.select('payment_method')
+			.eq('id', fromRequestId)
+			.maybeSingle();
+		if (error || !data) {
+			toast.error('Kon de betaalmethode van de aanmelding niet laden');
+			return false;
+		}
+		form = { ...form, paymentMethod: data.payment_method === 'manual' ? 'manual' : 'stripe' };
+	}
 
 	if (!validateRequiredSaveFields(form)) return false;
 
@@ -327,5 +340,8 @@ function buildCreateDuoAgreementsBody(form: ValidatedDuoSaveForm, fromRequestId:
 		start_date: form.startDate,
 		end_date: form.endDate || null,
 		signup_source: resolveDuoSignupSource(fromRequestId),
+		payment_method: form.paymentMethod === 'manual' ? 'manual' : 'stripe',
+		date_of_birth_a: resolveEffectiveDateOfBirth(form.studentDateOfBirth, form.studentDateOfBirthInput),
+		date_of_birth_b: resolveEffectiveDateOfBirth(form.partnerDateOfBirth, form.partnerDateOfBirthInput),
 	};
 }

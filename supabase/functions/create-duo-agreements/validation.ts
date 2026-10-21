@@ -29,6 +29,12 @@ export function validateDuoBody(body: unknown): { ok: true; value: Body } | { ok
 	if (timeError) return timeError;
 	const freqError = validateFrequencyAndPrice(b);
 	if (freqError) return freqError;
+	for (const key of ['date_of_birth_a', 'date_of_birth_b']) {
+		if (b[key] != null && (typeof b[key] !== 'string' || !DATE_RE.test(b[key] as string)))
+			return { ok: false, error: 'Ongeldige geboortedatum' };
+	}
+	if (b.payment_method != null && b.payment_method !== 'stripe' && b.payment_method !== 'manual')
+		return { ok: false, error: 'Ongeldige betaalmethode' };
 	const dateError = validateDates(b);
 	if (dateError) return dateError;
 	return buildValidatedBody(b);
@@ -102,6 +108,9 @@ function buildValidatedBody(b: Record<string, unknown>): { ok: true; value: Body
 			lesson_type_option_id: typeof b.lesson_type_option_id === 'string' ? b.lesson_type_option_id : null,
 			start_date: b.start_date as string,
 			end_date: (b.end_date as string | null | undefined) ?? null,
+			date_of_birth_a: typeof b.date_of_birth_a === 'string' ? b.date_of_birth_a : null,
+			date_of_birth_b: typeof b.date_of_birth_b === 'string' ? b.date_of_birth_b : null,
+			payment_method: b.payment_method === 'manual' ? 'manual' : 'stripe',
 			signup_source: typeof b.signup_source === 'string' ? (b.signup_source as string) : 'staff_duo',
 		},
 	};

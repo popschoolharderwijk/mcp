@@ -124,9 +124,7 @@ describe('buildInsertPayload', () => {
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,
 			notes: 'Voorkeur maandag',
-			sepa_iban: 'NL91ABNA0417164300',
-			sepa_account_holder: 'Anna Bakker',
-			sepa_bic: null,
+			payment_method: 'stripe',
 			status: 'pending',
 		});
 	});

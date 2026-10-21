@@ -9,6 +9,7 @@ import {
 
 interface ApproveSignupInvokeResult {
 	student_user_id?: string;
+	confirmation_sent?: boolean;
 	error?: string;
 }
 
@@ -43,7 +44,9 @@ export async function processSignupRequest(params: ProcessSignupRequestParams): 
 	}
 
 	if (shouldSkipAgreementWizard(params.row.is_group_lesson, params.row.lesson_group_id)) {
-		toast.success('Aanmelding verwerkt');
+		if ((data as ApproveSignupInvokeResult)?.confirmation_sent === false)
+			toast.warning('Overeenkomst opgeslagen, maar de mail is niet verstuurd');
+		else toast.success('Aanmelding verwerkt');
 		params.reload();
 		return;
 	}

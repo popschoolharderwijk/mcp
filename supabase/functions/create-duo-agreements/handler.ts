@@ -10,7 +10,18 @@ export async function handleCreateDuoAgreementsRequest(req: Request): Promise<Re
 	const created = await createDuoPair(auth.admin, auth.body);
 	if (!created.ok) return created.response;
 
-	await sendDuoConfirmationEmails(
+	for (const [userId, dateOfBirth] of [
+		[auth.body.student_user_id_a, auth.body.date_of_birth_a],
+		[auth.body.student_user_id_b, auth.body.date_of_birth_b],
+	]) {
+		if (userId && dateOfBirth)
+			await auth.admin
+				.from('students')
+				.update({ date_of_birth: dateOfBirth })
+				.eq('user_id', userId)
+				.is('date_of_birth', null);
+	}
+	const confirmationSent = await sendDuoConfirmationEmails(
 		auth.admin,
 		req,
 		auth.body,
@@ -24,5 +35,6 @@ export async function handleCreateDuoAgreementsRequest(req: Request): Promise<Re
 		ok: true,
 		duo_pair_id: created.duoPairId,
 		agreement_ids: created.agreementIds,
+		confirmation_sent: confirmationSent,
 	});
 }

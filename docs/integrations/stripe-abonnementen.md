@@ -113,7 +113,7 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 
 ## Betaaluitnodiging (mail)
 
-- De knop **Stuur betaaluitnodiging** roept `send-direct-debit-invite` aan. Die stuurt de eigen template `direct_debit_invite` via `send-template-email` (Resend), niet de algemene Supabase-inlogmail.
+- De knop **Opnieuw versturen** roept `send-direct-debit-invite` aan. Die stuurt de eigen template `direct_debit_invite` via `send-template-email` (Resend), niet de algemene Supabase-inlogmail.
 - **Ontvanger** (`resolveBillingRecipient`): `students.parent_email` als die bekend is, anders het account-e-mailadres van de leerling.
 - **Vaste link** (stap 2, 21-10-2026): `/direct-debit/start?agreement=<id>&t=<token>`. De token is 32 willekeurige bytes (base64url); alleen de SHA-256-hash staat in `agreement_payment_links` (één rij per overeenkomst, alleen service_role). De link verloopt niet; bij elke nieuwe verzending komt er een nieuwe token en werkt de oude niet meer.
 - **Pagina met geldige token** (`payment-link-info`, zonder inloggen): lesvorm, maandbedrag met btw-tekst, eerste maand naar rato óf inhaalbedrag met regels per maand, en looptijd. Geen andere persoonsgegevens. "Ga naar iDEAL" roept `create-subscription-checkout` aan met `payment_token` (token-route, geen sessie); na iDEAL komt de klant terug op dezelfde link met `session_id` (mode `complete`). Is de machtiging al afgegeven, dan staat er "Je machtiging is al geregeld".
@@ -140,3 +140,15 @@ Bestaat er nog geen schema en is er nog geen eerste factuur, en ligt de startmaa
 - start het schema op de 1e van de volgende maand.
 
 Idempotentie: factuur `mcp_catchup_invoice_<overeenkomst>_<van>_<tot>`, regels `..._item_<maand>`; de status staat in `subscriptions.first_invoice_*`, zodat een tweede opbouw nooit opnieuw factureert. Logica: `supabase/functions/_shared/catchUpInvoicePure.ts`.
+
+## Stap 3 — één bevestiging en aanmelden zonder bankgegevens (21 oktober 2026)
+
+- Bij een nieuwe overeenkomst verstuurt `sendAgreementConfirmation` één klantmail `agreement_created` (wizard via `send-agreement-confirmation`, duo en groepsaanmelding rechtstreeks). Bij bewerken gaat geen klantmail uit; de docentbevestiging blijft apart.
+- Ontvanger: `students.parent_email`, anders account. Het `betaalblok` bevat maandbedrag met btw, eerste maand naar rato óf inhaalbedrag (direct afgeschreven), looptijd en **Machtiging afgeven**. Bedragen via `loadPaymentPreview` / `agreement_fee_months`, dezelfde bron als de vaste pagina.
+- Losse variabelen: `bedrag`, `eerste_maand_bedrag`, `inhaal_bedrag`, `minimale_looptijd_tot`, `link`. Op factuur: “Je ontvangt maandelijks een factuur van ons.” Geen link.
+- Elke verzending maakt een nieuwe vaste token en registreert `direct_debit_invitations`. **Opnieuw versturen** stuurt alleen `direct_debit_invite`, zichtbaar zolang geen schedule/abonnement gekoppeld is. Uitgeschakelde templates tellen niet als verstuurd; de wizard toont een waarschuwing.
+- Publieke aanmelding vraagt geen IBAN/tenaamstelling/machtiging. Standaard `payment_method=stripe`; fonds aangevinkt → `manual` (op factuur). Goedkeuring/wizard neemt dit over. Oude SEPA-kolommen blijven ongemoeid; nieuwe aanmeldingen schrijven ze niet.
+- Migratie vervangt alleen de exacte oude standaardbevestiging; aangepaste templates blijven behouden. Voeg daarin zelf `{{betaalblok}}` toe via Instellingen → E-mailtemplates.
+- Stap 4 (wachtstatus, beheeroverzicht en portaalmelding) is niet uitgevoerd. Groepsbetaling via iDEAL blijft fase 4; geen nieuwe checkout hiervoor.
+- Previewcontrole: nieuwe overeenkomst → één klantmail met juiste ontvanger/bedragen; bewerken → geen mail; opnieuw versturen → oude link ongeldig; template uit → waarschuwing; aanmelden met/zonder fonds → overeenkomst op factuur/automatisch.
+- Na migratie: gebruiker draait `bun run db:reset` (of alleen types `bun run supabase:types`).
