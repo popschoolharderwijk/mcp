@@ -37,15 +37,12 @@ describe('runDirectDebitStartFlow', () => {
 		expect(result).toEqual({ status: 'error', message: 'Link expired' });
 	});
 
-	it('returns error when session is missing', async () => {
+	it('returns no_session when session is missing (new-link form)', async () => {
 		const result = await runDirectDebitStartFlow(new URLSearchParams('agreement=agr-1'), {
 			...baseDeps,
 			getSession: async () => ({ session: null }),
 		});
-		expect(result).toEqual({
-			status: 'error',
-			message: 'Geen actieve sessie. Open de link uit de mail opnieuw.',
-		});
+		expect(result).toEqual({ status: 'no_session' });
 	});
 
 	it('returns redirect url for checkout mode', async () => {
