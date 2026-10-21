@@ -55,6 +55,12 @@ Code: `_shared/subscriptionPlanPure.ts` (pure planning) en `_shared/subscription
 
 ## Klantportaal
 
+### Mijn facturen
+
+`/my-invoices` combineert eigen facturen uit `invoices` met Stripe-facturen uit `subscription_invoices` in één overzicht (datum, bron, status en oorspronkelijk factuurbedrag). Ook de losse eerste-maandfactuur en €0-facturen worden getoond. Stripe-facturen openen via `hosted_invoice_url` of downloaden via `invoice_pdf`; ontbrekende links zijn uitgeschakeld. Het opgeslagen Stripe-invoice-id dient als referentie, omdat deze tabel geen Stripe-factuurnummer of vervaldatum bewaart. De datum is de aanmaakdatum van de opgeslagen factuurrij; er wordt geen vervaldatum verzonnen.
+
+Beide queries gebruiken de ingelogde Supabase-client en bestaande RLS; er is geen schemawijziging of extra factuurgeneratie. Stripe-facturen verschijnen na opslag door de webhook. Laadfouten worden expliciet gemeld met een herkansingsknop. Gerichte tests: `tests/code/invoices/myInvoiceHelpers.test.ts`.
+
 `sync-stripe-catalog` maakt eenmalig een portaalconfiguratie (betaalmethode wijzigen, facturen zien, e-mail/adres; **opzeggen en wijzigen uit**) en bewaart het id in `accounting_settings.stripe_portal_configuration_id`. `create-customer-portal` gebruikt die configuratie.
 
 ## Datamodel

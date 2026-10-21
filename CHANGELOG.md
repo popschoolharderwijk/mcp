@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.5.3 — 2026-10-21
+
+- Mijn facturen toont Stripe-facturen naast eigen Mplifi-facturen, met status, datum, bedrag en knoppen voor openen of PDF downloaden; ook de losse eerste maand is zichtbaar.
+- Bestaande toegangsregels blijven gelden; laadfouten krijgen een melding en een knop om opnieuw te proberen.
+
 ## 1.5.2 — 2026-10-20
 
 - **Zelfherstel na een andere Stripe-sleutel**: "Synchroniseer met Stripe" controleert opgeslagen btw-tarieven, klantportaalconfiguratie, producten en prijzen in het huidige Stripe-account en maakt ontbrekende opnieuw aan; een tweede sync verandert niets
