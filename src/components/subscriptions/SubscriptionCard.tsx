@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDbDateToUi } from '@/lib/date/date-format';
+import { awaitingSentLabel } from '@/lib/subscriptions/awaitingMandate';
 import {
 	buildSubscriptionActionBody,
 	extractPortalUrl,
@@ -28,7 +29,7 @@ const FORCE_START_CONFIRM =
 
 /** Stripe subscription status and actions for one agreement with payment method Stripe. */
 export function SubscriptionCard({ lessonAgreementId, studentUserId }: SubscriptionCardProps) {
-	const { subscription, lastInviteAt, loading, refresh } = useSubscription(lessonAgreementId);
+	const { subscription, lastInviteAt, awaitingMandate, loading, refresh } = useSubscription(lessonAgreementId);
 	const [busy, setBusy] = useState<SubscriptionAction | null>(null);
 	const badge = resolveSubscriptionStatusBadge(subscription?.status);
 
@@ -70,7 +71,12 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 					<div className="space-y-1 text-sm">
 						<div className="flex items-center gap-2">
 							<span className="text-muted-foreground">Status:</span>
-							{badge ? (
+							{awaitingMandate ? (
+								<>
+									<Badge variant="secondary">Wacht op machtiging</Badge>
+									<span className="text-muted-foreground">{awaitingSentLabel(lastInviteAt)}</span>
+								</>
+							) : badge ? (
 								<Badge variant={badge.variant}>{badge.label}</Badge>
 							) : (
 								<span>Nog geen abonnement</span>
@@ -81,7 +87,7 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 								Huidige periode tot {formatDbDateToUi(subscription.current_period_end.slice(0, 10))}
 							</p>
 						)}
-						{lastInviteAt && (
+						{lastInviteAt && !awaitingMandate && (
 							<p className="text-muted-foreground">
 								Uitnodiging laatst verstuurd op {formatDbDateToUi(lastInviteAt.slice(0, 10))}
 							</p>
