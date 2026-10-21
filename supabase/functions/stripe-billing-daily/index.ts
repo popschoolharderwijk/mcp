@@ -29,7 +29,10 @@ Deno.serve(async (req) => {
 		const today = todayIso();
 		const firstInvoices = await issueDueFirstInvoices(admin, stripe, today);
 		const rebuilds = await processPendingRebuilds(admin, stripe, { today, includeHorizon: true });
-		return jsonResponse(200, { configured: true, today, firstInvoices, rebuilds });
+		// Duplicate schedules for one agreement would debit twice: report them in the daily run.
+		const duplicates = await detectDuplicateSchedules(admin, stripe);
+		if (duplicates.length > 0) console.warn('duplicate schedules detected', JSON.stringify(duplicates));
+		return jsonResponse(200, { configured: true, today, firstInvoices, rebuilds, duplicates });
 	} catch (err) {
 		console.error('stripe-billing-daily error', err);
 		return jsonResponse(500, { error: getSafeErrorMessage(err, 'Dagelijkse taak mislukt') });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuListChecks } from 'react-icons/lu';
+import { LuListChecks, LuWrench } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,12 @@ import {
 	checkStripeSubscriptions,
 	SUBSCRIPTION_CHECK_LABELS,
 	type SubscriptionCheckResult,
+	summarizeDuplicateFix,
 	summarizeSubscriptionCheck,
 } from '@/lib/billing/stripeSubscriptionCheck';
 
 function variant(status: SubscriptionCheckResult['status']) {
-	if (status === 'mismatch' || status === 'error') return 'destructive' as const;
+	if (status === 'mismatch' || status === 'error' || status === 'duplicate') return 'destructive' as const;
 	if (status === 'ok') return 'default' as const;
 	return 'outline' as const;
 }
