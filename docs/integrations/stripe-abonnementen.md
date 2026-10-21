@@ -52,7 +52,7 @@ Na de iDEAL-machtiging kunnen drie paden tegelijk het schema opbouwen (webhook `
 
 | Functie | Wat |
 |---|---|
-| `send-direct-debit-invite` | Betaaluitnodiging: eigen mail `direct_debit_invite` met server-side inloglink (weigert niet-Stripe en groepslessen) |
+| `send-direct-debit-invite` | Betaaluitnodiging: eigen mail `direct_debit_invite` met vaste betaallink (nieuwe token per verzending) (weigert niet-Stripe en groepslessen) |
 | `create-subscription-checkout` | iDEAL-machtiging → schedule via `syncAgreementSchedule` |
 | `stripe-webhook` | Upsert abonnementen/facturen; status eerste factuur; `subscription_schedule.released` → opnieuw opbouwen |
 | `rebuild-subscription-schedule` | "Pas nieuwe tarieven toe" / na opzeggen; per overeenkomst of lessoort |
@@ -114,10 +114,14 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 ## Betaaluitnodiging (mail)
 
 - De knop **Stuur betaaluitnodiging** roept `send-direct-debit-invite` aan. Die stuurt de eigen template `direct_debit_invite` via `send-template-email` (Resend), niet de algemene Supabase-inlogmail.
-- De inloglink komt uit `auth.admin.generateLink` (type `magiclink`, alleen voor een bestaand account) en heeft de vorm `/direct-debit/start?agreement=<id>#token_hash=…&type=email`. Mailscanners openen alleen de pagina; het token zit in de hash en wordt pas in de browser verbruikt (`src/lib/auth/magicLink.ts`).
-- Variabelen: `leerling_naam`, `ontvanger_naam` (ouder, anders aparte debiteur, anders leerling), `les_type` (lesvorm), `bedrag` (maandbedrag met btw-tekst via `preview_lesson_fee`), `eerste_maand_bedrag` en `eerste_maand_regel` (leeg als de eerste maand niet naar rato is), `startdatum`, `minimale_looptijd_tot`, `link`.
-- Geldigheid van de link = de OTP-verlooptijd van Supabase Auth (standaard 1 uur). Aan te passen in het Supabase-dashboard van mcp-dev: Authentication → Sign In / Providers → Email → **Email OTP Expiration** (maximaal 86400 seconden = 24 uur). Dit geldt ook voor de gewone inlogmail.
-- Pure logica en tests: `send-direct-debit-invite/sendDirectDebitInvitePure.ts`, `tests/code/direct-debit/directDebitInviteEmail.test.ts`.
+- **Ontvanger** (`resolveBillingRecipient`): `students.parent_email` als die bekend is, anders het account-e-mailadres van de leerling.
+- **Vaste link** (stap 2, 21-10-2026): `/direct-debit/start?agreement=<id>&t=<token>`. De token is 32 willekeurige bytes (base64url); alleen de SHA-256-hash staat in `agreement_payment_links` (één rij per overeenkomst, alleen service_role). De link verloopt niet; bij elke nieuwe verzending komt er een nieuwe token en werkt de oude niet meer.
+- **Pagina met geldige token** (`payment-link-info`, zonder inloggen): lesvorm, maandbedrag met btw-tekst, eerste maand naar rato óf inhaalbedrag met regels per maand, en looptijd. Geen andere persoonsgegevens. "Ga naar iDEAL" roept `create-subscription-checkout` aan met `payment_token` (token-route, geen sessie); na iDEAL komt de klant terug op dezelfde link met `session_id` (mode `complete`). Is de machtiging al afgegeven, dan staat er "Je machtiging is al geregeld".
+- **Bedragen vooraf**: `_shared/paymentLink.ts` → `loadPaymentPreview` haalt de maanden uit `agreement_fee_months` (dezelfde SQL-bron als het schema) en `buildPaymentPreview` (`paymentLinkPure.ts`) verdeelt ze volgens dezelfde inhaalregel als stap 1.
+- **Zonder geldige token of sessie**: formulier "Stuur me een nieuwe link" (`request-payment-link`). Altijd dezelfde melding; maakt nooit accounts aan; mailt alleen als het adres de ontvanger of het account-adres is van een Stripe-overeenkomst die op machtiging wacht; max. 3 aanvragen per uur per overeenkomst (`payment_link_requests`).
+- Oude inloglinks (`#token_hash=…`) en ingelogde klanten blijven via de sessie-route werken.
+- Variabelen: `leerling_naam`, `ontvanger_naam` (ouder, anders aparte debiteur, anders leerling), `les_type` (lesvorm), `bedrag` (maandbedrag met btw-tekst via `preview_lesson_fee`), `eerste_maand_bedrag` en `eerste_maand_regel` (leeg als de eerste maand niet naar rato is), `startdatum`, `minimale_looptijd_tot`, `link` (vaste link).
+- Pure logica en tests: `_shared/paymentLinkPure.ts`, `_shared/directDebitInvitePure.ts`, `tests/code/direct-debit/paymentLinkPure.test.ts`, `directDebitInviteEmail.test.ts`.
 
 ## Fouten en herstel
 

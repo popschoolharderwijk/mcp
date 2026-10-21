@@ -149,9 +149,10 @@ export async function handleCheckoutMode(
 	agreement: AgreementRow,
 	customerId: string,
 	body: { success_url?: string; cancel_url?: string },
+	fixedUrls?: { successUrl: string; cancelUrl: string },
 ): Promise<Response> {
 	const origin = resolveSiteBaseUrl(req, Deno.env.get('SITE_URL'));
-	const urls = buildCheckoutSessionUrls(origin, agreement.id, body);
+	const urls = fixedUrls ? { ok: true as const, ...fixedUrls } : buildCheckoutSessionUrls(origin, agreement.id, body);
 	if (!urls.ok) return jsonResponse(400, { error: urls.error });
 	const { successUrl, cancelUrl } = urls;
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.6 — 2026-10-21
+
+- **Vaste betaallink**: de betaaluitnodiging bevat nu een vaste link per overeenkomst (`/direct-debit/start?agreement=…&t=…`) in plaats van een inloglink van 1 uur. Alleen de hash van de token wordt opgeslagen; elke nieuwe verzending maakt een nieuwe token en de oude vervalt.
+- De pagina toont zonder inloggen lesvorm, maandbedrag met btw, eerste maand of inhaalbedrag (per maand) en looptijd, met de knop "Ga naar iDEAL". Is de machtiging al geregeld, dan staat dat er.
+- "Stuur me een nieuwe link": altijd dezelfde melding, maakt nooit accounts aan, max. 3 aanvragen per uur per overeenkomst.
+- Ontvanger van de uitnodiging: e-mailadres van de ouder als dat bekend is, anders van de leerling.
+- Nieuwe tabellen `agreement_payment_links` en `payment_link_requests` (alleen server), nieuwe functies `payment-link-info` en `request-payment-link`.
+
 ## 1.5.5 — 2026-10-21
 
 - **Inhaalfactuur**: wordt de machtiging pas na de startmaand afgegeven, dan komen alle gemiste maanden (vanaf de start, eerste maand naar rato, augustus € 0) op één losse Stripe-factuur met een regel en btw per maand; het abonnement loopt daarna vanaf de volgende maand. Idempotent via een vaste sleutel per periode.

@@ -8,6 +8,7 @@ type DirectDebitCheckoutMode = 'complete' | 'checkout';
 export type DirectDebitStartFlowResult =
 	| { status: 'error'; message: string }
 	| { status: 'success' }
+	| { status: 'no_session' }
 	| { status: 'redirect'; url: string };
 
 export type DirectDebitStartFlowDeps = {
@@ -27,10 +28,6 @@ function parseDirectDebitStartParams(params: URLSearchParams): DirectDebitStartP
 
 function resolveMissingAgreementError(): string {
 	return 'Ongeldige uitnodigingslink (overeenkomst ontbreekt).';
-}
-
-function resolveMissingSessionError(): string {
-	return 'Geen actieve sessie. Open de link uit de mail opnieuw.';
 }
 
 function resolveMissingCheckoutUrlError(): string {
@@ -107,7 +104,8 @@ export async function runDirectDebitStartFlow(
 
 	const sessionResult = await deps.getSession();
 	if (!sessionResult.session) {
-		return { status: 'error', message: resolveMissingSessionError() };
+		// No valid link or session: the page shows "Stuur me een nieuwe link".
+		return { status: 'no_session' };
 	}
 
 	const mode = resolveDirectDebitCheckoutMode(checkoutSessionId);
