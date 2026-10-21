@@ -274,8 +274,6 @@ describe('RLS: get_teachers_paginated', () => {
 
 		expect(error).toBeNull();
 		const result = data as unknown as PaginatedTeachersResponse;
-		expect(result.data.map((t) => t.profile.first_name)).toEqual(
-			[...TEACHERS.SORTED_FIRST_NAMES_ASC].reverse(),
-		);
+		expect(result.data.map((t) => t.profile.first_name)).toEqual([...TEACHERS.SORTED_FIRST_NAMES_ASC].reverse());
 	});
 });
