@@ -4,7 +4,7 @@ import { getSafeErrorMessage } from '../_shared/errors.ts';
 import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
 import { getStripe } from '../_shared/stripe.ts';
 import { compareUpcomingAmount, monthStart } from '../_shared/subscriptionPlanPure.ts';
-import { loadFeeMonths } from '../_shared/subscriptionSchedule.ts';
+import { detectDuplicateSchedules, loadFeeMonths } from '../_shared/subscriptionSchedule.ts';
 import { createSupabaseClients, requireAdminUser } from '../_shared/supabase.ts';
 
 interface Row {
@@ -50,8 +50,31 @@ async function checkOne(admin: SupabaseClient, stripe: Stripe, row: Row) {
 	};
 }
 
+/** Cancel every duplicate schedule except the one to keep (stored in the app, else the oldest). */
+async function fixDuplicateSchedules(
+	admin: SupabaseClient,
+	stripe: Stripe,
+): Promise<Array<{ lesson_agreement_id: string; kept: string; cancelled: string[] }>> {
+	const duplicates = await detectDuplicateSchedules(admin, stripe);
+	const fixed = [];
+	for (const dup of duplicates) {
+		const cancelled: string[] = [];
+		for (const scheduleId of dup.schedule_ids) {
+			if (scheduleId === dup.keep_schedule_id) continue;
+			try {
+				await stripe.subscriptionSchedules.cancel(scheduleId);
+				cancelled.push(scheduleId);
+			} catch (err) {
+				console.error('cancel duplicate schedule failed', scheduleId, err);
+			}
+		}
+		fixed.push({ lesson_agreement_id: dup.lesson_agreement_id, kept: dup.keep_schedule_id, cancelled });
+	}
+	return fixed;
+}
+
 export async function handleCheckStripeSubscriptionsRequest(req: Request): Promise<Response> {
-	const begun = await beginAuthenticatedPostRequest<Record<string, never>>(req);
+	const begun = await beginAuthenticatedPostRequest<{ fix_duplicates?: boolean }>(req);
 	if (!begun.ok) return begun.response;
 	const { userClient, admin } = createSupabaseClients(begun.authHeader);
 	const authn = await requireAdminUser(userClient);
@@ -84,5 +107,25 @@ export async function handleCheckStripeSubscriptionsRequest(req: Request): Promi
 			});
 		}
 	}
-	return jsonResponse(200, { configured: true, results });
+
+	// Duplicate schedules for the same agreement would debit twice: report, optionally cancel.
+	const duplicates = await detectDuplicateSchedules(admin, stripe);
+	const duplicateAgreementIds = new Set(duplicates.map((d) => d.lesson_agreement_id));
+	for (const result of results) {
+		if (duplicateAgreementIds.has(result.lesson_agreement_id)) {
+			result.status = 'duplicate';
+		}
+	}
+	const fixed = begun.body.fix_duplicates ? await fixDuplicateSchedules(admin, stripe) : [];
+
+	return jsonResponse(200, {
+		configured: true,
+		results,
+		duplicates: duplicates.map((d) => ({
+			lesson_agreement_id: d.lesson_agreement_id,
+			schedule_ids: d.schedule_ids,
+			keep_schedule_id: d.keep_schedule_id,
+		})),
+		fixed,
+	});
 }
