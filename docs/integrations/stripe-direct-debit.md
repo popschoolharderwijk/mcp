@@ -140,11 +140,14 @@ Available only in edge functions via `Deno.env.get(...)` — **never** with a `V
 
 ## 10. Local testing
 
+`stripe listen` runs on your machine only (Stripe CLI). It is **not** used in production. Production and hosted projects register a real HTTPS endpoint in the Stripe Dashboard (§8): `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`.
+
 ```bash
-# Forward webhooks to your local Supabase functions runtime
-stripe listen --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook
-# (or to a remote preview branch)
-stripe listen --forward-to https://<preview-ref>.supabase.co/functions/v1/stripe-webhook
+# Local Docker stack only — API port from supabase/config.toml (this project: 54421)
+stripe listen --forward-to http://127.0.0.1:54421/functions/v1/stripe-webhook
+
+# Optional: forward to a hosted project (mcp-dev / mcp-test) while developing locally
+stripe listen --forward-to https://<project-ref>.supabase.co/functions/v1/stripe-webhook
 
 # Billing unit tests (Bun, app-side — source of truth)
 bun test tests/code/billing/calculateYearlyAmount.test.ts

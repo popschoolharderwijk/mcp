@@ -24,7 +24,7 @@ git rebase origin/main
 # Repeat if multiple commits conflict
 
 # Regenerate types after other changes (never skip)
-bun run db:reset
+bun run supabase:types
 
 # Run Biome fix for the rest of the code (format + lint autofix)
 bun run fix

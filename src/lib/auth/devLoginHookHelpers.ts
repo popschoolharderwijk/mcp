@@ -28,16 +28,3 @@ export function resolveDevLoginCredentials(
 
 	return { ok: true, email, password };
 }
-export function resolveDevLoginButtonClass(isLocalDev: boolean): string {
-	if (isLocalDev) {
-		return 'bg-green-500/20 text-green-600 hover:bg-green-500/30 dark:text-green-400';
-	}
-	return 'bg-orange-500/20 text-orange-600 hover:bg-orange-500/30 dark:text-orange-400';
-}
-
-export function resolveDevLoginButtonLabel(isLoading: boolean): string {
-	if (isLoading) {
-		return 'Inloggen...';
-	}
-	return 'Dev Login';
-}

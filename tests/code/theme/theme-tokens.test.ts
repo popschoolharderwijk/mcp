@@ -78,12 +78,17 @@ describe('theme-tokens.css', () => {
 		expect(hslChannelsToHex(39.2, 37.9, 62.7)).toBe(PRIMARY_HEX);
 	});
 
-	it('uses PRIMARY_HEX in production and local favicons', () => {
+	it('keeps distinct favicons for production, development, and localdev', () => {
 		const publicDir = join(import.meta.dir, '../../../public');
 		const production = readFileSync(join(publicDir, 'favicon.svg'), 'utf8');
-		const local = readFileSync(join(publicDir, 'favicon-local.svg'), 'utf8');
+		const development = readFileSync(join(publicDir, 'favicon-local.svg'), 'utf8');
+		const localdev = readFileSync(join(publicDir, 'favicon-localdev.svg'), 'utf8');
 		expect(production).toContain(`fill="${PRIMARY_HEX}"`);
-		expect(local).toContain(`fill="${PRIMARY_HEX}"`);
+		expect(production).toContain('fill="#ffffff"');
+		expect(development).toContain('fill="white"');
+		expect(development).toContain(`fill="${PRIMARY_HEX}"`);
+		expect(localdev).toContain('fill="white"');
+		expect(localdev).toContain('fill="#000000"');
 	});
 
 	it('requires a .dark counterpart for each HSL literal in :root (scoped exclusions)', () => {

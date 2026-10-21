@@ -6,6 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite --mode development",
+		"dev:local": "vite --mode localdev",
 		"dev:test": "vite --mode test",
 		"prod": "vite --mode production",
 		"build": "vite build",
@@ -19,7 +20,6 @@
 		"supabase:types": "bun run scripts/gen-supabase-types.ts",
 		"lint:sql": "squawk supabase/migrations/*.sql",
 		"lint:db": "supabase db lint --linked --level warning --fail-on warning",
-		"db:reset": "bun run scripts/reset-db.ts",
 		"reset-branch:lovable": "bun run scripts/reset-branch-lovable.ts",
 		"preview": "vite preview"
 	},

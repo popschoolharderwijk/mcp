@@ -28,3 +28,13 @@ CRAP = complexity × low coverage. Lowering CRAP is allowed **only** via a genui
 When cyclomatic/cognitive complexity is high: split real responsibilities; extract helpers that encode non-trivial rules (validation, branched mapping, domain logic) — not wrappers around one expression.
 
 **Smell check:** *If I inlined this helper back into the caller, would the test still be worth keeping?* If no → do not extract; refactor or test at the right layer.
+
+## Test theater (extra scrutiny)
+
+Do **not** silence Fallow with weak tests. Forbidden examples (also in [`review.md`](review.md)):
+
+* Asserting only Tailwind/CSS class strings
+* Identity / passthrough / constant-return / boolean-rename tests
+* New tiny helper + trivial test instead of a real split
+
+Prefer: delete theater, inline trivial helpers, or assert real domain branches. If the only way to green Fallow is theater → escalate.

@@ -19,8 +19,8 @@
 
 ## Tests fail locally (RLS/Auth)
 
-1. Put credentials for the project you test against in your environment (or `.env.test`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed users: password `password`). Use **mcp-test** credentials to match CI, or **mcp-dev** if you develop against that.
-2. Optional: for mcp-dev you can run `bun run db:reset` for a clean database with `seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql`.
+1. Put credentials for the project you test against in your environment (or `.env.test`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed users: password `password`). Use **mcp-test** credentials to match CI, **mcp-dev**, or local `http://127.0.0.1:54421`.
+2. Optional: reset for a clean database with seeds — local: `supabase db reset`; remote: `supabase db reset --linked`.
 
 ---
 

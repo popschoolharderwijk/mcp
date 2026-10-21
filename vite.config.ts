@@ -13,6 +13,7 @@ const { version: appVersion } = JSON.parse(readFileSync(packageJsonPath, 'utf-8'
 const changelogMarkdown = readFileSync(changelogPath, 'utf-8');
 
 // https://vitejs.dev/config/
+// localdev uses 8081 so `bun run dev:local` can run beside `bun dev` (8080).
 export default defineConfig(({ mode }) => ({
 	define: {
 		'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion ?? ''),
@@ -20,7 +21,8 @@ export default defineConfig(({ mode }) => ({
 	},
 	server: {
 		host: '::',
-		port: 8080,
+		port: mode === 'localdev' ? 8081 : 8080,
+		strictPort: true,
 	},
 	plugins: [react(), mode === 'development' && componentTagger()].filter(Boolean),
 	resolve: {

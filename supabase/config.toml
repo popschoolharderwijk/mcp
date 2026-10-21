@@ -1,5 +1,34 @@
 project_id = "mcp"
 
+# Non-default ports so this stack can run beside other `supabase start` instances
+# (defaults 54320–54329). Offset +100 → 5442x.
+[api]
+port = 54421
+
+[db]
+port = 54422
+shadow_port = 54420
+
+[db.pooler]
+port = 54429
+
+[studio]
+port = 54423
+
+[local_smtp]
+port = 54424
+
+[analytics]
+port = 54427
+vector_port = 54428
+
+[edge_runtime]
+inspector_port = 8183
+
+[db.seed]
+enabled = true
+sql_paths = ["./seeds/bootstrap.sql", "./seeds/lesson-types.sql", "./seeds/test.sql"]
+
 [remotes.test]
 project_id = "jserlqacarlgtdzrblic"
 
@@ -26,19 +55,19 @@ enabled = true
 file_size_limit = "50MiB"
 
 # -------------
-# Auth defaults (mcp-dev / mcp-test). Production overrides: [remotes.prod.auth]
+# Base config (local `supabase start` + merge source for remotes).
+# Remotes deep-merge over this block: nested objects merge, arrays/scalars replace
+# wholesale. Each [remotes.*.auth] that sets additional_redirect_urls must list
+# every allowed URL for that project (no inherit/append from here).
 
 [auth]
 enabled = true
-site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+site_url = "http://127.0.0.1:8081"
 additional_redirect_urls = [
-  "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com/**",
-  "https://instant-setup-kit.lovable.app/**",
-  "https://preview--instant-setup-kit.lovable.app/**",
-  "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
-  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
-  "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
-  "http://localhost:5173/**",
+  "http://127.0.0.1:8081/**",
+  "http://localhost:8081/**",
+  "http://127.0.0.1:8080/**",
+  "http://localhost:8080/**",
 ]
 minimum_password_length = 32
 password_requirements= "lower_upper_letters_digits_symbols"
@@ -84,8 +113,7 @@ token_verifications = 30
 web3 = 30
 
 # -------------
-# Remote Auth Overrides
-# mcp-dev and mcp-test keep the [auth] URLs and magic-link subject (keep those two blocks in sync).
+# Remote auth overrides (merged over root [auth]; redirect arrays replace in full).
 
 [remotes.test.auth]
 site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
@@ -96,7 +124,6 @@ additional_redirect_urls = [
   "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
-  "http://localhost:5173/**",
 ]
 
 [remotes.dev.auth]
@@ -108,7 +135,6 @@ additional_redirect_urls = [
   "https://id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
-  "http://localhost:5173/**",
 ]
 
 [remotes.prod.auth]

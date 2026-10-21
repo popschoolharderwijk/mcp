@@ -7,27 +7,21 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-	type DevToolsRenderMode,
-	resolveDevToolsEnvironmentBadgeClass,
-	resolveDevToolsHeaderClass,
-	resolveDevToolsRenderMode,
-	resolveDevToolsTriggerClass,
-} from '@/lib/dev/devToolsHelpers';
+import { type DevToolsRenderMode, resolveDevToolsRenderMode } from '@/lib/dev/devToolsHelpers';
 import { cn } from '@/lib/utils';
 
-const isLocalDev = () => import.meta.env.MODE === 'localdev';
+const DEV_TOOLS_ACCENT = 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20';
+const DEV_TOOLS_BADGE = 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/20';
+const DEV_TOOLS_TRIGGER = 'text-orange-600 dark:text-orange-400 hover:bg-orange-500/10';
 
 function DevToolsContent({ showHeader = true }: { showHeader?: boolean }) {
-	const localDev = isLocalDev();
-
 	return (
 		<>
 			{showHeader && (
 				<div
 					className={cn(
 						'flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-semibold uppercase tracking-wider w-full h-[28px]',
-						resolveDevToolsHeaderClass(localDev),
+						DEV_TOOLS_ACCENT,
 					)}
 				>
 					<LuBug className="h-3 w-3" />
@@ -37,7 +31,7 @@ function DevToolsContent({ showHeader = true }: { showHeader?: boolean }) {
 			<div
 				className={cn(
 					'flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium w-full h-[28px] border',
-					resolveDevToolsEnvironmentBadgeClass(localDev),
+					DEV_TOOLS_BADGE,
 				)}
 			>
 				<EnvironmentBadge className="flex items-center gap-1 text-inherit" />
@@ -104,7 +98,7 @@ function DevToolsExpandedView({
 					variant="ghost"
 					className={cn(
 						'w-full justify-between h-[28px] px-2 rounded text-[10px] font-semibold uppercase tracking-wider',
-						resolveDevToolsTriggerClass(isLocalDev()),
+						DEV_TOOLS_TRIGGER,
 					)}
 					aria-label={devMenuOpen ? 'Dev menu sluiten' : 'Dev menu openen'}
 				>

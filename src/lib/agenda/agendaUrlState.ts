@@ -2,9 +2,9 @@ import type { View } from 'react-big-calendar';
 import { formatDateToDb, now } from '@/lib/date/date-format';
 import { parseDbDateValue } from '@/lib/date/datePickerHelpers';
 
-export const AGENDA_URL_VIEW_KEY = 'view';
-export const AGENDA_URL_DATE_KEY = 'date';
-export const AGENDA_URL_FULLSCREEN_KEY = 'fullscreen';
+const AGENDA_URL_VIEW_KEY = 'view';
+const AGENDA_URL_DATE_KEY = 'date';
+const AGENDA_URL_FULLSCREEN_KEY = 'fullscreen';
 
 export const AGENDA_DEFAULT_VIEW: View = 'week';
 
