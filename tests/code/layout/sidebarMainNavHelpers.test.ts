@@ -75,6 +75,12 @@ describe('buildFinanceNavGroup', () => {
 				},
 				{ key: '/mandates', href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates },
 				{ key: '/invoices', href: '/invoices', label: NAV_LABELS.invoices, icon: NAV_ICONS.invoices },
+				{
+					key: '/awaiting-mandate',
+					href: '/awaiting-mandate',
+					label: NAV_LABELS.awaitingMandate,
+					icon: NAV_ICONS.awaitingMandate,
+				},
 				{ key: '/accounting', href: '/accounting', label: NAV_LABELS.accounting, icon: NAV_ICONS.accounting },
 			],
 		});
