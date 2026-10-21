@@ -245,17 +245,6 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.dataImport,
-		title: NAV_LABELS.dataImport,
-		description: 'Eenmalige import van historische gegevens uit een Excel-bestand.',
-		details: [
-			'Template downloaden: gebruik het meegeleverde XLSX-sjabloon met tabbladen voor gebruikers, leerlingen, docenten en overeenkomsten.',
-			'Upload: kies een ingevuld bestand en start de import vanuit Instellingen → Data-import. De verwerking loopt via de edge function import-legacy-data.',
-			"Idempotent: de import gebruikt een aparte legacy_ids-tabel om externe id's te mappen op interne UUID's; opnieuw uploaden van hetzelfde bestand maakt geen duplicaten.",
-			'Foutmeldingen: per rij wordt teruggegeven of de import is geslaagd — corrigeer in Excel en upload opnieuw.',
-		],
-	},
-	{
 		icon: NAV_ICONS.announcements,
 		title: NAV_LABELS.announcements,
 		description: 'Beheer korte nieuwsberichten voor docenten en/of leerlingen.',
