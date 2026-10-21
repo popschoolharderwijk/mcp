@@ -26,3 +26,10 @@
 - [x] Idempotency keys op subscriptionSchedules.create; adoptie van bestaand open schema
 - [x] Dubbel-detectie in "Controleer abonnementen" en dagelijkse taak; knop "Herstel dubbele abonnementen"
 - Klantcontrole met echte sessie niet beschikbaar: externe Supabase zonder beheerde browsersessie; controleer de testfactuur na inloggen.
+
+## Overeenkomst en betaalverzoek in één stap (plan 21-10-2026)
+- [x] Stap 1: inhaalfactuur (catchUpInvoicePure + subscriptionSchedule) met tests
+- [ ] Stap 2: datamodel (agreement_payment_links, view wacht op machtiging, preview-RPC) + vaste link en "nieuwe link aanvragen"
+- [ ] Stap 3: één mail bij opslaan (betaalblok in agreement_created, ontvanger ouder/account), ook duo en aanmelding; "Opnieuw versturen"
+- [ ] Stap 4: status "Wacht op machtiging", beheeroverzicht, melding leerlingportaal
+- [ ] Docs, handleiding; check + check:ci

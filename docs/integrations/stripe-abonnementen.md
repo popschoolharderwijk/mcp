@@ -126,3 +126,13 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 - Mislukt het opbouwen nadat de machtiging is afgegeven, dan staat de betaalmethode al als standaard op de Stripe-klant. Er komt dan een abonnementsrij met status `incomplete` en `needs_rebuild`. **Synchroniseer** op de overeenkomst of de dagelijkse taak bouwt het schedule later op, met de klant uit `stripe_customers` en diens standaard betaalmethode. Een nieuwe machtiging is niet nodig.
 - Zonder standaard betaalmethode op de klant wordt geen schedule gemaakt ("Nog geen machtiging gekoppeld").
 - Een opgeslagen Stripe-klant die niet in het huidige account bestaat, wordt bij een nieuwe betaaluitnodiging vervangen.
+
+## Inhaalfactuur (machtiging na de startmaand)
+
+Bestaat er nog geen schema en is er nog geen eerste factuur, en ligt de startmaand vóór de lopende maand, dan:
+
+- worden de maanden vanaf de startmaand t/m de lopende maand uit `agreement_fee_months` gehaald;
+- gaan die op **één** losse factuur, één regel per maand (eerste maand naar rato, augustus € 0), met het btw-tarief per regel;
+- start het schema op de 1e van de volgende maand.
+
+Idempotentie: factuur `mcp_catchup_invoice_<overeenkomst>_<van>_<tot>`, regels `..._item_<maand>`; de status staat in `subscriptions.first_invoice_*`, zodat een tweede opbouw nooit opnieuw factureert. Logica: `supabase/functions/_shared/catchUpInvoicePure.ts`.
