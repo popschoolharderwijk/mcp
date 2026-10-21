@@ -29,6 +29,6 @@ export async function fetchIsAwaitingMandate(agreementId: string): Promise<boole
 	const { count, error } = await supabase
 		.from(AWAITING_VIEW)
 		.select('*', { count: 'exact', head: true })
-		.eq('lesson_agreement_id', agreementId);
+		.eq('lesson_agreement_id' as string as 'id', agreementId);
 	return !error && (count ?? 0) > 0;
 }
