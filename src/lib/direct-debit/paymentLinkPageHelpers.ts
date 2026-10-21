@@ -46,7 +46,3 @@ export function formatTermText(minimumTermEnd: string | null | undefined): strin
 	return `Eerste periode tot en met ${formatDateNl(minimumTermEnd)}; ${base}`;
 }
 
-/** Edge-function error body → whether the customer should get the "new link" form. */
-export function isInvalidLinkResponse(data: unknown): boolean {
-	return typeof data === 'object' && data !== null && (data as { invalid_link?: unknown }).invalid_link === true;
-}
