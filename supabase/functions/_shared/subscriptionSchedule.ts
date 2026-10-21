@@ -316,6 +316,35 @@ async function syncAgreementScheduleInner(
 	const customerId =
 		input.customerId ?? existing?.stripe_customer_id ?? (await findStudentCustomerId(admin, ctx.studentUserId));
 	if (!customerId) throw new Error('Nog geen Stripe-klant: stuur eerst een betaaluitnodiging');
+
+	// Atomic claim: only one path builds this agreement's schedule at a time.
+	const claimed = await claimScheduleBuild(admin, ctx.agreementId, customerId);
+	if (!claimed) {
+		return {
+			scheduleId: existing?.stripe_schedule_id ?? null,
+			subscriptionId: existing?.stripe_subscription_id ?? null,
+			phases: 0,
+			firstInvoice: null,
+			endBehavior: 'cancel',
+			skipped: 'in_progress',
+		};
+	}
+	try {
+		return await buildAgreementSchedule(admin, stripe, input, ctx, existing, customerId, today);
+	} finally {
+		await releaseScheduleBuild(admin, ctx.agreementId);
+	}
+}
+
+async function buildAgreementSchedule(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	input: SyncInput,
+	ctx: PlanContext,
+	existing: SubscriptionRow | null,
+	customerId: string,
+	today: string,
+): Promise<ScheduleResult> {
 	const pm = input.defaultPaymentMethod ?? (await resolveDefaultPaymentMethod(stripe, customerId));
 	if (!pm) throw new Error('Nog geen machtiging gekoppeld: de klant moet de betaaluitnodiging eerst afronden');
 
@@ -324,7 +353,17 @@ async function syncAgreementScheduleInner(
 		: null;
 	if (schedule && ['canceled', 'completed'].includes(schedule.status)) schedule = null;
 	if (schedule?.status === 'released' && existing?.stripe_subscription_id) {
-		schedule = await stripe.subscriptionSchedules.create({ from_subscription: existing.stripe_subscription_id });
+		schedule = await stripe.subscriptionSchedules.create(
+			{ from_subscription: existing.stripe_subscription_id },
+			{ idempotencyKey: buildScheduleFromSubscriptionIdempotencyKey(existing.stripe_subscription_id) },
+		);
+	}
+	if (!schedule) {
+		// Adopt an open schedule that already exists in Stripe for this agreement (e.g. created by a
+		// concurrent webhook before the claim existed) instead of creating a duplicate.
+		const listed = await stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 });
+		const adoptable = selectAdoptableSchedule(listed.data, ctx.agreementId);
+		if (adoptable) schedule = await stripe.subscriptionSchedules.retrieve(adoptable.id);
 	}
 	const running = schedule?.status === 'active';
 
