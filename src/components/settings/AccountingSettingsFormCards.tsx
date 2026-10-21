@@ -53,7 +53,7 @@ export function AccountingSettingsJournalsCard(props: AccountingSettingsFieldPro
 				<AccountingSettingsField
 					{...props}
 					label="Memoriaal-dagboek"
-					fieldKey="journal_code_memoriaal"
+					fieldKey="journal_code_memorial"
 					placeholder="bv. 90"
 				/>
 				<AccountingSettingsField
@@ -78,7 +78,7 @@ export function AccountingSettingsLedgerAccountsCard(props: AccountingSettingsFi
 				<AccountingSettingsField
 					{...props}
 					label="Debiteuren"
-					fieldKey="account_debiteuren"
+					fieldKey="account_debtors"
 					placeholder="bv. 1300"
 				/>
 				<AccountingSettingsField
@@ -90,19 +90,19 @@ export function AccountingSettingsLedgerAccountsCard(props: AccountingSettingsFi
 				<AccountingSettingsField
 					{...props}
 					label="Omzet <21 (vrijgesteld)"
-					fieldKey="account_omzet_under_21"
+					fieldKey="account_revenue_under_21"
 					placeholder="bv. 8000"
 				/>
 				<AccountingSettingsField
 					{...props}
 					label="Omzet 21+ (excl. BTW)"
-					fieldKey="account_omzet_21_plus"
+					fieldKey="account_revenue_21_plus"
 					placeholder="bv. 8010"
 				/>
 				<AccountingSettingsField
 					{...props}
 					label="BTW af te dragen 21%"
-					fieldKey="account_btw_21"
+					fieldKey="account_vat_21"
 					placeholder="bv. 1500"
 				/>
 			</CardContent>
@@ -195,7 +195,7 @@ export function AccountingSettingsTaxCard({ form, canEdit, update }: AccountingS
 					canEdit={canEdit}
 					update={update}
 					label="BTW-code 21%"
-					fieldKey="btw_code_21"
+					fieldKey="vat_code_21"
 					placeholder="bv. VH"
 				/>
 				<AccountingSettingsField
@@ -203,7 +203,7 @@ export function AccountingSettingsTaxCard({ form, canEdit, update }: AccountingS
 					canEdit={canEdit}
 					update={update}
 					label="BTW-code vrijgesteld"
-					fieldKey="btw_code_exempt"
+					fieldKey="vat_code_exempt"
 					placeholder="bv. 0"
 				/>
 				<AccountingSettingsField
@@ -294,7 +294,7 @@ export function AccountingSettingsCompanyCard({ form, canEdit, update }: Account
 					canEdit={canEdit}
 					update={update}
 					label="KvK-nummer"
-					fieldKey="company_kvk"
+					fieldKey="company_kvk_number"
 					placeholder="12345678"
 				/>
 				<AccountingSettingsField
@@ -302,7 +302,7 @@ export function AccountingSettingsCompanyCard({ form, canEdit, update }: Account
 					canEdit={canEdit}
 					update={update}
 					label="BTW-nummer"
-					fieldKey="company_btw_nummer"
+					fieldKey="company_vat_number"
 					placeholder="NL123456789B01"
 				/>
 				<AccountingSettingsField

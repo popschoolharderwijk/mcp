@@ -122,7 +122,7 @@ function drawLinesTable(layout: PdfLayout, lines: InvoiceLine[]): number {
 			color: GRAY_TEXT,
 		});
 		page.drawText(String(line.quantity), { x: margin + 350, y: ty, size: 9, font: fonts.font, color: BLACK });
-		page.drawText(line.btw_rate > 0 ? `${line.btw_rate}%` : 'vrij', {
+		page.drawText(line.vat_rate > 0 ? `${line.vat_rate}%` : 'vrij', {
 			x: margin + 400,
 			y: ty,
 			size: 9,
@@ -155,9 +155,9 @@ function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number)
 	page.drawText(fmtEUR(totals.excl), { x: width - margin - 60, y: ty, size: 9, font: fonts.font, color: BLACK });
 	ty -= 14;
 
-	if (totals.btw0 > 0) {
+	if (totals.vat0 > 0) {
 		page.drawText('Vrijgesteld (onderwijs)', { x: totalsX, y: ty, size: 9, font: fonts.font, color: GRAY_TEXT });
-		page.drawText(fmtEUR(totals.btw0), {
+		page.drawText(fmtEUR(totals.vat0), {
 			x: width - margin - 60,
 			y: ty,
 			size: 9,
@@ -166,9 +166,9 @@ function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number)
 		});
 		ty -= 14;
 	}
-	if (totals.btw21 > 0) {
+	if (totals.vat21 > 0) {
 		page.drawText('BTW 21%', { x: totalsX, y: ty, size: 9, font: fonts.font, color: BLACK });
-		page.drawText(fmtEUR(totals.btw21), { x: width - margin - 60, y: ty, size: 9, font: fonts.font, color: BLACK });
+		page.drawText(fmtEUR(totals.vat21), { x: width - margin - 60, y: ty, size: 9, font: fonts.font, color: BLACK });
 		ty -= 14;
 	}
 

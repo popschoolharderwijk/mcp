@@ -2,16 +2,16 @@ export type PaymentProvider = 'stripe' | 'sepa';
 
 export interface AccountingSettings {
 	id: boolean;
-	journal_code_memoriaal: string;
+	journal_code_memorial: string;
 	journal_code_bank: string;
-	account_debiteuren: string;
-	account_omzet_under_21: string;
-	account_omzet_21_plus: string;
-	account_btw_21: string;
+	account_debtors: string;
+	account_revenue_under_21: string;
+	account_revenue_21_plus: string;
+	account_vat_21: string;
 	account_bank_stripe: string;
 	account_bank_sepa: string;
-	btw_code_21: string;
-	btw_code_exempt: string;
+	vat_code_21: string;
+	vat_code_exempt: string;
 	currency: string;
 	school_year_start_month: number;
 	description_template: string;
@@ -28,8 +28,8 @@ export interface AccountingSettings {
 	company_address: string | null;
 	company_postcode: string | null;
 	company_city: string | null;
-	company_kvk: string | null;
-	company_btw_nummer: string | null;
+	company_kvk_number: string | null;
+	company_vat_number: string | null;
 	company_iban: string | null;
 	company_email: string | null;
 	company_phone: string | null;
@@ -54,8 +54,8 @@ export interface AccountingInvoice {
 	status: string;
 	amount_due_cents: number;
 	amount_paid_cents: number;
-	amount_excl_btw_cents: number;
-	btw_amount_cents: number;
+	amount_excl_vat_cents: number;
+	vat_amount_cents: number;
 	currency: string;
 	period_start: string;
 	paid_at: string | null;

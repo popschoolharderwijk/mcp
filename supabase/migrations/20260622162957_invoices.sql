@@ -1,12 +1,12 @@
 
--- 1. accounting_settings uitbreiden met bedrijfs- en factuurgegevens
+-- 1. Extend accounting_settings with company and invoice fields
 ALTER TABLE public.accounting_settings
   ADD COLUMN IF NOT EXISTS company_name text,
   ADD COLUMN IF NOT EXISTS company_address text,
   ADD COLUMN IF NOT EXISTS company_postcode text,
   ADD COLUMN IF NOT EXISTS company_city text,
-  ADD COLUMN IF NOT EXISTS company_kvk text,
-  ADD COLUMN IF NOT EXISTS company_btw_nummer text,
+  ADD COLUMN IF NOT EXISTS company_kvk_number text,
+  ADD COLUMN IF NOT EXISTS company_vat_number text,
   ADD COLUMN IF NOT EXISTS company_iban text,
   ADD COLUMN IF NOT EXISTS company_email text DEFAULT 'info@popschoolharderwijk.nl',
   ADD COLUMN IF NOT EXISTS company_phone text,
@@ -45,8 +45,8 @@ CREATE TABLE public.invoices (
   due_date date NOT NULL,
   period_start date,
   period_end date,
-  amount_excl_btw_cents bigint NOT NULL DEFAULT 0,
-  btw_amount_cents bigint NOT NULL DEFAULT 0,
+  amount_excl_vat_cents bigint NOT NULL DEFAULT 0,
+  vat_amount_cents bigint NOT NULL DEFAULT 0,
   amount_total_cents bigint NOT NULL DEFAULT 0,
   age_category text NOT NULL DEFAULT 'unknown'
     CHECK (age_category IN ('under_21','21_plus','unknown','mixed')),
@@ -99,9 +99,9 @@ CREATE TABLE public.invoice_lines (
   lesson_date date,
   quantity numeric(10,2) NOT NULL DEFAULT 1,
   unit_price_cents bigint NOT NULL DEFAULT 0,
-  btw_rate integer NOT NULL DEFAULT 0 CHECK (btw_rate IN (0, 9, 21)),
-  amount_excl_btw_cents bigint NOT NULL DEFAULT 0,
-  btw_amount_cents bigint NOT NULL DEFAULT 0,
+  vat_rate integer NOT NULL DEFAULT 0 CHECK (vat_rate IN (0, 9, 21)),
+  amount_excl_vat_cents bigint NOT NULL DEFAULT 0,
+  vat_amount_cents bigint NOT NULL DEFAULT 0,
   amount_total_cents bigint NOT NULL DEFAULT 0,
   sort_order integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now(),
@@ -251,21 +251,21 @@ BEGIN
       i.paid_at,
       NULL::text AS hosted_invoice_url,
       CASE
-        WHEN il.btw_rate > 0 THEN '21_plus'
+        WHEN il.vat_rate > 0 THEN '21_plus'
         WHEN i.age_category = 'unknown' THEN 'unknown'
         ELSE 'under_21'
       END AS age_category,
-      il.amount_excl_btw_cents,
-      il.btw_amount_cents,
+      il.amount_excl_vat_cents,
+      il.vat_amount_cents,
       CASE
-        WHEN il.btw_rate = 0 AND i.age_category IS DISTINCT FROM 'unknown' THEN il.amount_excl_btw_cents
+        WHEN il.vat_rate = 0 AND i.age_category IS DISTINCT FROM 'unknown' THEN il.amount_excl_vat_cents
         ELSE 0
       END AS excl_under_21_cents,
       CASE
-        WHEN il.btw_rate = 0 AND i.age_category = 'unknown' THEN il.amount_excl_btw_cents
+        WHEN il.vat_rate = 0 AND i.age_category = 'unknown' THEN il.amount_excl_vat_cents
         ELSE 0
       END AS excl_unknown_cents,
-      CASE WHEN il.btw_rate > 0 THEN il.amount_excl_btw_cents ELSE 0 END AS excl_21_plus_cents,
+      CASE WHEN il.vat_rate > 0 THEN il.amount_excl_vat_cents ELSE 0 END AS excl_21_plus_cents,
       i.student_user_id,
       by_agreement.id AS lesson_type_id,
       by_agreement.name AS lesson_type_name,
@@ -296,8 +296,8 @@ BEGIN
         'status', ib.status,
         'amount_due_cents', ib.amount_due,
         'amount_paid_cents', ib.amount_paid,
-        'amount_excl_btw_cents', ib.amount_excl_btw_cents,
-        'btw_amount_cents', ib.btw_amount_cents,
+        'amount_excl_vat_cents', ib.amount_excl_vat_cents,
+        'vat_amount_cents', ib.vat_amount_cents,
         'currency', ib.currency,
         'period_start', ib.period_start,
         'paid_at', ib.paid_at,
@@ -324,7 +324,7 @@ BEGIN
       COALESCE(SUM(excl_under_21_cents), 0)::int AS total_revenue_under_21_cents,
       COALESCE(SUM(excl_unknown_cents), 0)::int AS total_revenue_unknown_age_cents,
       COALESCE(SUM(excl_21_plus_cents), 0)::int AS total_revenue_21_plus_excl_cents,
-      COALESCE(SUM(btw_amount_cents), 0)::int AS total_vat_cents,
+      COALESCE(SUM(vat_amount_cents), 0)::int AS total_vat_cents,
       COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents,
       COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_paid ELSE 0 END), 0)::int AS total_paid_cents,
       COALESCE(SUM(CASE WHEN status <> 'paid' THEN amount_due ELSE 0 END), 0)::int AS total_open_cents
@@ -350,7 +350,7 @@ BEGIN
         COALESCE(SUM(excl_under_21_cents), 0)::int AS revenue_under_21_cents,
         COALESCE(SUM(excl_unknown_cents), 0)::int AS revenue_unknown_age_cents,
         COALESCE(SUM(excl_21_plus_cents), 0)::int AS revenue_21_plus_excl_cents,
-        COALESCE(SUM(btw_amount_cents), 0)::int AS vat_cents,
+        COALESCE(SUM(vat_amount_cents), 0)::int AS vat_cents,
         COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents
       FROM invoice_base
       GROUP BY cost_center

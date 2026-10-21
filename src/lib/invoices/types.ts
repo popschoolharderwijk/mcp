@@ -10,8 +10,8 @@ export interface Invoice {
 	due_date: string;
 	period_start: string | null;
 	period_end: string | null;
-	amount_excl_btw_cents: number;
-	btw_amount_cents: number;
+	amount_excl_vat_cents: number;
+	vat_amount_cents: number;
 	amount_total_cents: number;
 	age_category: InvoiceAgeCategory;
 	status: InvoiceStatus;

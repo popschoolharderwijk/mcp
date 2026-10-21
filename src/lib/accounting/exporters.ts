@@ -37,14 +37,14 @@ function journalRevenueParts(inv: AccountingReport['invoices'][number]): {
 	vat: number;
 } {
 	if (inv.age_category === '21_plus') {
-		return { exempt: 0, taxable: inv.amount_excl_btw_cents, vat: inv.btw_amount_cents };
+		return { exempt: 0, taxable: inv.amount_excl_vat_cents, vat: inv.vat_amount_cents };
 	}
 	if (inv.age_category === 'mixed') {
 		const taxable = inv.amount_excl_21_plus_cents ?? 0;
-		const exempt = inv.amount_excl_under_21_cents ?? inv.amount_excl_btw_cents - taxable;
-		return { exempt, taxable, vat: inv.btw_amount_cents };
+		const exempt = inv.amount_excl_under_21_cents ?? inv.amount_excl_vat_cents - taxable;
+		return { exempt, taxable, vat: inv.vat_amount_cents };
 	}
-	return { exempt: inv.amount_excl_btw_cents, taxable: 0, vat: 0 };
+	return { exempt: inv.amount_excl_vat_cents, taxable: 0, vat: 0 };
 }
 
 export function generateJournalLines(report: AccountingReport, settings: AccountingSettings): JournalLine[] {
@@ -59,8 +59,8 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 		lines.push({
 			entryId: invoiceEntryId,
 			date: invoiceDate,
-			journalCode: settings.journal_code_memoriaal,
-			account: settings.account_debiteuren,
+			journalCode: settings.journal_code_memorial,
+			account: settings.account_debtors,
 			debit: inv.amount_due_cents,
 			credit: 0,
 			description: desc,
@@ -75,12 +75,12 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 			lines.push({
 				entryId: invoiceEntryId,
 				date: invoiceDate,
-				journalCode: settings.journal_code_memoriaal,
-				account: settings.account_omzet_under_21,
+				journalCode: settings.journal_code_memorial,
+				account: settings.account_revenue_under_21,
 				debit: 0,
 				credit: revenue.exempt,
 				description: desc,
-				btwCode: settings.btw_code_exempt,
+				btwCode: settings.vat_code_exempt,
 				costCenter: inv.cost_center,
 				invoiceReference: inv.stripe_invoice_id,
 				studentName: inv.student_name,
@@ -90,12 +90,12 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 			lines.push({
 				entryId: invoiceEntryId,
 				date: invoiceDate,
-				journalCode: settings.journal_code_memoriaal,
-				account: settings.account_omzet_21_plus,
+				journalCode: settings.journal_code_memorial,
+				account: settings.account_revenue_21_plus,
 				debit: 0,
 				credit: revenue.taxable,
 				description: desc,
-				btwCode: settings.btw_code_21,
+				btwCode: settings.vat_code_21,
 				costCenter: inv.cost_center,
 				invoiceReference: inv.stripe_invoice_id,
 				studentName: inv.student_name,
@@ -105,12 +105,12 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 			lines.push({
 				entryId: invoiceEntryId,
 				date: invoiceDate,
-				journalCode: settings.journal_code_memoriaal,
-				account: settings.account_btw_21,
+				journalCode: settings.journal_code_memorial,
+				account: settings.account_vat_21,
 				debit: 0,
 				credit: revenue.vat,
 				description: `BTW ${desc}`,
-				btwCode: settings.btw_code_21,
+				btwCode: settings.vat_code_21,
 				costCenter: inv.cost_center,
 				invoiceReference: inv.stripe_invoice_id,
 				studentName: inv.student_name,
@@ -138,7 +138,7 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 				entryId: bankEntryId,
 				date: bankDatum,
 				journalCode: settings.journal_code_bank,
-				account: settings.account_debiteuren,
+				account: settings.account_debtors,
 				debit: 0,
 				credit: inv.amount_paid_cents,
 				description: `Betaling ${desc}`,

@@ -7,15 +7,15 @@ import type { AccountingReport, AccountingSettings } from '../../../src/lib/acco
 
 const SETTINGS: AccountingSettings = {
 	id: true,
-	journal_code_memoriaal: '90',
+	journal_code_memorial: '90',
 	journal_code_bank: '20',
-	account_debiteuren: '1300',
-	account_omzet_under_21: '8000',
-	account_omzet_21_plus: '8010',
-	account_btw_21: '1500',
+	account_debtors: '1300',
+	account_revenue_under_21: '8000',
+	account_revenue_21_plus: '8010',
+	account_vat_21: '1500',
 	account_bank_stripe: '1100',
-	btw_code_21: 'VH',
-	btw_code_exempt: '0',
+	vat_code_21: 'VH',
+	vat_code_exempt: '0',
 	currency: 'EUR',
 	school_year_start_month: 8,
 	description_template: 'x',
@@ -33,8 +33,8 @@ const SETTINGS: AccountingSettings = {
 	company_address: null,
 	company_postcode: null,
 	company_city: null,
-	company_kvk: null,
-	company_btw_nummer: null,
+	company_kvk_number: null,
+	company_vat_number: null,
 	company_iban: null,
 	company_email: null,
 	company_phone: null,
@@ -66,8 +66,8 @@ function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {
 				status: 'paid',
 				amount_due_cents: 12100,
 				amount_paid_cents: 12100,
-				amount_excl_btw_cents: 10000,
-				btw_amount_cents: 2100,
+				amount_excl_vat_cents: 10000,
+				vat_amount_cents: 2100,
 				currency: 'eur',
 				period_start: '2026-06-01T00:00:00Z',
 				paid_at: '2026-06-03T10:00:00Z',
@@ -105,8 +105,8 @@ describe('generateJournalLines', () => {
 				paid_at: null,
 				amount_paid_cents: 0,
 				age_category: 'under_21',
-				amount_excl_btw_cents: 5000,
-				btw_amount_cents: 0,
+				amount_excl_vat_cents: 5000,
+				vat_amount_cents: 0,
 				amount_due_cents: 5000,
 			}),
 			SETTINGS,
@@ -123,8 +123,8 @@ describe('generateJournalLines', () => {
 		const lines = generateJournalLines(
 			makeReport({
 				age_category: 'unknown',
-				amount_excl_btw_cents: 7500,
-				btw_amount_cents: 0,
+				amount_excl_vat_cents: 7500,
+				vat_amount_cents: 0,
 				amount_due_cents: 7500,
 				status: 'open',
 				paid_at: null,
@@ -140,8 +140,8 @@ describe('generateJournalLines', () => {
 		const lines = generateJournalLines(
 			makeReport({
 				age_category: '21_plus',
-				amount_excl_btw_cents: 10000,
-				btw_amount_cents: 0,
+				amount_excl_vat_cents: 10000,
+				vat_amount_cents: 0,
 				amount_due_cents: 10000,
 				status: 'open',
 				paid_at: null,
@@ -149,7 +149,7 @@ describe('generateJournalLines', () => {
 			}),
 			SETTINGS,
 		);
-		expect(lines.filter((l) => l.account === SETTINGS.account_btw_21)).toHaveLength(0);
+		expect(lines.filter((l) => l.account === SETTINGS.account_vat_21)).toHaveLength(0);
 		expect(lines).toHaveLength(2);
 	});
 
@@ -161,10 +161,10 @@ describe('generateJournalLines', () => {
 				paid_at: null,
 				amount_paid_cents: 0,
 				amount_due_cents: 16100,
-				amount_excl_btw_cents: 14000,
+				amount_excl_vat_cents: 14000,
 				amount_excl_under_21_cents: 4000,
 				amount_excl_21_plus_cents: 10000,
-				btw_amount_cents: 2100,
+				vat_amount_cents: 2100,
 			}),
 			SETTINGS,
 		);

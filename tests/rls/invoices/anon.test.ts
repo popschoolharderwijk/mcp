@@ -52,8 +52,8 @@ describe('RLS: anonymous – invoices / invoice_lines', () => {
 					.insert({
 						invoice_id: fakeUuid,
 						description: 'x',
-						amount_excl_btw_cents: 100,
-						btw_amount_cents: 0,
+						amount_excl_vat_cents: 100,
+						vat_amount_cents: 0,
 						amount_total_cents: 100,
 					})
 					.select(),

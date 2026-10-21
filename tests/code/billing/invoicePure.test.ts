@@ -108,9 +108,9 @@ describe('buildInvoiceLines', () => {
 			lesson_date: '2026-09-01',
 			quantity: 1,
 			unit_price_cents: 2420,
-			btw_rate: 21,
-			amount_excl_btw_cents: 2000,
-			btw_amount_cents: 420,
+			vat_rate: 21,
+			amount_excl_vat_cents: 2000,
+			vat_amount_cents: 420,
 			amount_total_cents: 2420,
 		});
 	});
@@ -124,9 +124,9 @@ describe('buildInvoiceLines', () => {
 			lesson_date: '2026-09-01',
 			quantity: 1,
 			unit_price_cents: 2420,
-			btw_rate: 0,
-			amount_excl_btw_cents: 2420,
-			btw_amount_cents: 0,
+			vat_rate: 0,
+			amount_excl_vat_cents: 2420,
+			vat_amount_cents: 0,
 			amount_total_cents: 2420,
 		});
 	});
@@ -141,9 +141,9 @@ describe('computeTotals', () => {
 				lesson_date: '2026-09-01',
 				quantity: 1,
 				unit_price_cents: 2420,
-				btw_rate: 21,
-				amount_excl_btw_cents: 2000,
-				btw_amount_cents: 420,
+				vat_rate: 21,
+				amount_excl_vat_cents: 2000,
+				vat_amount_cents: 420,
 				amount_total_cents: 2420,
 			},
 			{
@@ -152,13 +152,13 @@ describe('computeTotals', () => {
 				lesson_date: '2026-09-01',
 				quantity: 1,
 				unit_price_cents: 1950,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1950,
-				btw_amount_cents: 0,
+				vat_rate: 0,
+				amount_excl_vat_cents: 1950,
+				vat_amount_cents: 0,
 				amount_total_cents: 1950,
 			},
 		];
-		expect(computeTotals(lines)).toEqual({ excl: 3950, btw21: 420, btw0: 1950, total: 4370 });
+		expect(computeTotals(lines)).toEqual({ excl: 3950, vat21: 420, vat0: 1950, total: 4370 });
 	});
 });
 
@@ -171,9 +171,9 @@ describe('resolveAgeCategory', () => {
 				lesson_date: null,
 				quantity: 1,
 				unit_price_cents: 1,
-				btw_rate: 21,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 1,
+				vat_rate: 21,
+				amount_excl_vat_cents: 1,
+				vat_amount_cents: 1,
 				amount_total_cents: 1,
 			},
 			{
@@ -182,9 +182,9 @@ describe('resolveAgeCategory', () => {
 				lesson_date: null,
 				quantity: 1,
 				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
+				vat_rate: 0,
+				amount_excl_vat_cents: 1,
+				vat_amount_cents: 0,
 				amount_total_cents: 1,
 			},
 		];
@@ -199,9 +199,9 @@ describe('resolveAgeCategory', () => {
 				lesson_date: null,
 				quantity: 1,
 				unit_price_cents: 1,
-				btw_rate: 21,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 1,
+				vat_rate: 21,
+				amount_excl_vat_cents: 1,
+				vat_amount_cents: 1,
 				amount_total_cents: 1,
 			},
 		];
@@ -216,9 +216,9 @@ describe('resolveAgeCategory', () => {
 				lesson_date: null,
 				quantity: 1,
 				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
+				vat_rate: 0,
+				amount_excl_vat_cents: 1,
+				vat_amount_cents: 0,
 				amount_total_cents: 1,
 			},
 		];
@@ -233,9 +233,9 @@ describe('resolveAgeCategory', () => {
 				lesson_date: null,
 				quantity: 1,
 				unit_price_cents: 1,
-				btw_rate: 0,
-				amount_excl_btw_cents: 1,
-				btw_amount_cents: 0,
+				vat_rate: 0,
+				amount_excl_vat_cents: 1,
+				vat_amount_cents: 0,
 				amount_total_cents: 1,
 			},
 		];
