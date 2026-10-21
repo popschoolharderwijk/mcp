@@ -103,6 +103,8 @@ export const TEACHER_VIEWED_BY_STUDENT = {
 export const STUDENTS = {
 	// Total number of students in seed data
 	TOTAL: 60, // students 001-060
+	/** First email when sorted by display_name ASC (Adam van der Wal) */
+	FIRST_EMAIL_BY_DISPLAY_NAME_ASC: 'student-017@test.nl',
 } as const;
 
 /**
@@ -184,4 +186,6 @@ export const USERS = {
 	WITHOUT_ROLE: 80,
 	/** Profiles matching user-*.test.nl (no teacher/student row, no user_roles) */
 	PLAIN_USERS: 10,
+	/** First email when sorted by display_name ASC (Adam van der Wal) */
+	FIRST_EMAIL_BY_DISPLAY_NAME_ASC: 'student-017@test.nl',
 } as const;

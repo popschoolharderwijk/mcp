@@ -308,4 +308,32 @@ describe('RLS: get_users_paginated', () => {
 		expect(siteAdmin).toHaveProperty('created_at');
 		expect(siteAdmin).toHaveProperty('last_sign_in_at');
 	});
+
+	it('returns users sorted by display name ascending', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const { data, error } = await db.rpc('get_users_paginated', {
+			p_limit: 1000,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'asc',
+		});
+
+		expect(error).toBeNull();
+		const result = data as unknown as PaginatedUsersResponse;
+		const emails = result.data.map((u) => u.email);
+		expect(emails).toHaveLength(USERS.TOTAL);
+		expect(emails[0]).toBe(USERS.FIRST_EMAIL_BY_DISPLAY_NAME_ASC);
+
+		const { data: descData, error: descError } = await db.rpc('get_users_paginated', {
+			p_limit: 1000,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'desc',
+		});
+
+		expect(descError).toBeNull();
+		const descResult = descData as unknown as PaginatedUsersResponse;
+		expect(descResult.data.map((u) => u.email)).toEqual([...emails].reverse());
+	});
 });

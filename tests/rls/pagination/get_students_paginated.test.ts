@@ -290,4 +290,32 @@ describe('RLS: get_students_paginated', () => {
 		expect(result.total_count).toBe(STUDENTS.TOTAL);
 		expect(result.data.length).toBe(STUDENTS.TOTAL);
 	});
+
+	it('returns students sorted by display name ascending', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const { data, error } = await db.rpc('get_students_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'asc',
+		});
+
+		expect(error).toBeNull();
+		const result = data as unknown as PaginatedStudentsResponse;
+		const emails = result.data.map((s) => s.profile.email);
+		expect(emails).toHaveLength(STUDENTS.TOTAL);
+		expect(emails[0]).toBe(STUDENTS.FIRST_EMAIL_BY_DISPLAY_NAME_ASC);
+
+		const { data: descData, error: descError } = await db.rpc('get_students_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'desc',
+		});
+
+		expect(descError).toBeNull();
+		const descResult = descData as unknown as PaginatedStudentsResponse;
+		expect(descResult.data.map((s) => s.profile.email)).toEqual([...emails].reverse());
+	});
 });
