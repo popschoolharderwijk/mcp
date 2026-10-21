@@ -12,9 +12,26 @@ if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
 	);
 }
 
+/** Browser `localStorage`, or in-memory for Bun/Node tests without a DOM. */
+function resolveAuthStorage(): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
+	if (typeof localStorage !== 'undefined') {
+		return localStorage;
+	}
+	const memory = new Map<string, string>();
+	return {
+		getItem: (key) => memory.get(key) ?? null,
+		setItem: (key, value) => {
+			memory.set(key, value);
+		},
+		removeItem: (key) => {
+			memory.delete(key);
+		},
+	};
+}
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 	auth: {
-		storage: localStorage,
+		storage: resolveAuthStorage(),
 		persistSession: true,
 		autoRefreshToken: true,
 		detectSessionInUrl: true,

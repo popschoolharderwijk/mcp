@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4 — 2026-10-21
+
+- Menu-item **Data-import** verwijderd (Excel-import van historische gegevens)
+
 ## 1.1.3 — 2026-10-18
 
 - Agenda: volledig scherm supoprt (knop of toets **F**)
