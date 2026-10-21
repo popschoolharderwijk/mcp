@@ -4,6 +4,8 @@ export interface Body {
 	checkout_session_id?: string;
 	success_url?: string;
 	cancel_url?: string;
+	/** Fixed payment link token (token route, no login). */
+	payment_token?: string;
 }
 
 export interface AgreementRow {

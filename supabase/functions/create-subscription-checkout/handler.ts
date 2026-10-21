@@ -4,8 +4,10 @@ import { CUSTOMER_DIRECT_DEBIT_ERROR } from '../_shared/stripeRecoveryPure.ts';
 import { authenticateCheckoutRequest } from './authenticateCheckoutRequest.ts';
 import { ensureStripeCustomer, handleCheckoutMode, handleCompleteMode, handleDirectMode } from './checkoutFlows.ts';
 import { resolveCheckoutFlowMode } from './createSubscriptionCheckoutHandlerPure.ts';
+import { handleTokenCheckout, readPaymentToken } from './tokenRoute.ts';
 
 export async function handleCreateSubscriptionCheckoutRequest(req: Request): Promise<Response> {
+	if (await readPaymentToken(req)) return handleTokenCheckout(req);
 	const auth = await authenticateCheckoutRequest(req);
 	if (!auth.ok) return auth.response;
 
