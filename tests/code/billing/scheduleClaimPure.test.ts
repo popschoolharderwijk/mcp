@@ -11,7 +11,9 @@ import {
 describe('buildScheduleIdempotencyKey', () => {
 	it('is deterministic per agreement and first phase start', () => {
 		expect(buildScheduleIdempotencyKey('agr-1', '2026-11-01')).toBe('mcp_schedule_agr-1_2026-11-01');
-		expect(buildScheduleIdempotencyKey('agr-1', '2026-11-01')).toBe(buildScheduleIdempotencyKey('agr-1', '2026-11-01'));
+		expect(buildScheduleIdempotencyKey('agr-1', '2026-11-01')).toBe(
+			buildScheduleIdempotencyKey('agr-1', '2026-11-01'),
+		);
 	});
 
 	it('differs per agreement and per first phase start', () => {

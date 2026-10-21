@@ -81,8 +81,8 @@ export function StripeSubscriptionsCheckCard() {
 				<div className="space-y-1.5">
 					<CardTitle>Stripe-abonnementen</CardTitle>
 					<CardDescription>
-						Vergelijkt per abonnement het bedrag van de volgende afschrijving met het tarief in de app en meldt
-						dubbele schema's in Stripe.
+						Vergelijkt per abonnement het bedrag van de volgende afschrijving met het tarief in de app en
+						meldt dubbele schema's in Stripe.
 					</CardDescription>
 				</div>
 				<div className="flex gap-2">

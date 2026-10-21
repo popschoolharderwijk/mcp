@@ -62,7 +62,7 @@ export function summarizeSubscriptionCheck(response: SubscriptionCheckResponse):
 /** Summary after "Herstel dubbele abonnementen". */
 export function summarizeDuplicateFix(fixed: SubscriptionCheckFixed[]): string {
 	const cancelled = fixed.reduce((sum, f) => sum + f.cancelled.length, 0);
-	if (cancelled === 0) return 'Geen dubbele schema\'s gevonden';
+	if (cancelled === 0) return "Geen dubbele schema's gevonden";
 	return `${cancelled} dubbel${cancelled === 1 ? '' : 'e'} schema${cancelled === 1 ? '' : "'s"} geannuleerd in Stripe`;
 }
 
