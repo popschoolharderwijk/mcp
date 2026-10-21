@@ -20,7 +20,9 @@ export function PaymentLinkArrangedPanel() {
 	return (
 		<StandaloneCenteredPage narrow>
 			<h1 className="font-bold text-2xl">Je machtiging is al geregeld</h1>
-			<p className="text-muted-foreground">Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.</p>
+			<p className="text-muted-foreground">
+				Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.
+			</p>
 		</StandaloneCenteredPage>
 	);
 }
@@ -70,8 +72,8 @@ export function PaymentLinkDetailsPanel({ info, loading, error, onStart }: Props
 					)}
 
 					<p className="text-muted-foreground">
-						Je geeft de machtiging met iDEAL via je eigen bank. Daarna schrijven we het lesgeld maandelijks af
-						(niet in augustus).
+						Je geeft de machtiging met iDEAL via je eigen bank. Daarna schrijven we het lesgeld maandelijks
+						af (niet in augustus).
 					</p>
 					{error && <p className="text-destructive">{error}</p>}
 					<SubmitButton loading={loading} loadingLabel="Even geduld..." onClick={onStart} className="w-full">

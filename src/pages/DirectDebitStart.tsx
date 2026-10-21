@@ -134,7 +134,12 @@ export default function DirectDebitStart() {
 			return <PaymentLinkArrangedPanel />;
 		case 'details':
 			return (
-				<PaymentLinkDetailsPanel info={state.info} loading={starting} error={startError} onStart={startCheckout} />
+				<PaymentLinkDetailsPanel
+					info={state.info}
+					loading={starting}
+					error={startError}
+					onStart={startCheckout}
+				/>
 			);
 		case 'request':
 			return <PaymentLinkRequestForm intro={state.intro} onSubmit={requestNewLink} />;

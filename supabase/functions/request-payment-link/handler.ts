@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getSiteBaseUrl } from '../_shared/http-serve.ts';
 import { jsonResponse, UUID_RE } from '../_shared/http.ts';
+import { getSiteBaseUrl } from '../_shared/http-serve.ts';
 import {
 	isMandateArranged,
 	isPaymentLinkAgreement,
@@ -32,9 +32,7 @@ async function findCandidateAgreements(admin: SupabaseClient, email: string): Pr
 		admin.from('profiles').select('user_id').ilike('email', pattern).limit(20),
 		admin.from('students').select('user_id').ilike('parent_email', pattern).limit(20),
 	]);
-	const ids = [
-		...new Set([...(profiles ?? []), ...(students ?? [])].map((r) => (r as { user_id: string }).user_id)),
-	];
+	const ids = [...new Set([...(profiles ?? []), ...(students ?? [])].map((r) => (r as { user_id: string }).user_id))];
 	if (ids.length === 0) return [];
 	const { data } = await admin
 		.from('lesson_agreements')

@@ -111,7 +111,12 @@ describe('buildPaymentPreview', () => {
 		const p = buildPaymentPreview({
 			startDate: '2026-07-01',
 			today: '2026-09-10',
-			months: [m('2026-07-01', 8879, false, 21), m('2026-08-01', 0), m('2026-09-01', 8879, false, 21), m('2026-10-01', 8879, false, 21)],
+			months: [
+				m('2026-07-01', 8879, false, 21),
+				m('2026-08-01', 0),
+				m('2026-09-01', 8879, false, 21),
+				m('2026-10-01', 8879, false, 21),
+			],
 		});
 		expect(p.catchUp?.lines.map((l) => [l.month, l.amountCents])).toEqual([
 			['2026-07-01', 8879],

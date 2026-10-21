@@ -177,7 +177,8 @@ export function buildPaymentPreview(input: {
 
 	const startMonth = monthStart(input.startDate);
 	const first = sorted.find((m) => m.month === startMonth) ?? null;
-	const monthly = sorted.find((m) => m.month > startMonth && isRegular(m)) ?? (first && isRegular(first) ? first : null);
+	const monthly =
+		sorted.find((m) => m.month > startMonth && isRegular(m)) ?? (first && isRegular(first) ? first : null);
 	const showFirst = Boolean(first?.is_prorated && first.amount_cents !== monthly?.amount_cents);
 	return {
 		monthly: monthly ? toLine(monthly) : null,
@@ -185,4 +186,3 @@ export function buildPaymentPreview(input: {
 		catchUp: null,
 	};
 }
-

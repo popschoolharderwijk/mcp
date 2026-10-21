@@ -63,10 +63,17 @@ export async function handleTokenCheckout(req: Request): Promise<Response> {
 			agreementId,
 			body.payment_token as string,
 		);
-		return await handleCheckoutMode(stripe, req, agreement, customerId, {}, {
-			successUrl: `${pageUrl}&session_id={CHECKOUT_SESSION_ID}`,
-			cancelUrl: pageUrl,
-		});
+		return await handleCheckoutMode(
+			stripe,
+			req,
+			agreement,
+			customerId,
+			{},
+			{
+				successUrl: `${pageUrl}&session_id={CHECKOUT_SESSION_ID}`,
+				cancelUrl: pageUrl,
+			},
+		);
 	} catch (err) {
 		console.error('token checkout error', err);
 		return jsonResponse(500, { error: CUSTOMER_DIRECT_DEBIT_ERROR });

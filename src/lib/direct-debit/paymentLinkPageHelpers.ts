@@ -45,4 +45,3 @@ export function formatTermText(minimumTermEnd: string | null | undefined): strin
 	if (!minimumTermEnd) return `Eerste periode van 6 maanden; ${base}`;
 	return `Eerste periode tot en met ${formatDateNl(minimumTermEnd)}; ${base}`;
 }
-
