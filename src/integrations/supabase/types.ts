@@ -1884,6 +1884,7 @@ export type Database = {
           latest_invoice_id: string | null
           lesson_agreement_id: string
           needs_rebuild: boolean
+          schedule_build_started_at: string | null
           schedule_horizon_end: string | null
           status: string
           stripe_customer_id: string
@@ -1915,6 +1916,7 @@ export type Database = {
           latest_invoice_id?: string | null
           lesson_agreement_id: string
           needs_rebuild?: boolean
+          schedule_build_started_at?: string | null
           schedule_horizon_end?: string | null
           status: string
           stripe_customer_id: string
@@ -1946,6 +1948,7 @@ export type Database = {
           latest_invoice_id?: string | null
           lesson_agreement_id?: string
           needs_rebuild?: boolean
+          schedule_build_started_at?: string | null
           schedule_horizon_end?: string | null
           status?: string
           stripe_customer_id?: string
@@ -2286,6 +2289,10 @@ export type Database = {
       }
       check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean }
       check_rls_forced: { Args: { p_table_name: string }; Returns: boolean }
+      claim_schedule_build: {
+        Args: { p_agreement_id: string; p_customer_id: string }
+        Returns: boolean
+      }
       cleanup_student_if_no_agreements: {
         Args: { _user_id: string }
         Returns: undefined
@@ -2484,6 +2491,10 @@ export type Database = {
       }
       recalc_direct_debit_batch: {
         Args: { p_batch_id: string }
+        Returns: undefined
+      }
+      release_schedule_build: {
+        Args: { p_agreement_id: string }
         Returns: undefined
       }
       set_student_date_of_birth_if_missing: {
