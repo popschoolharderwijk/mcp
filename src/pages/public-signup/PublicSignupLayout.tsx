@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import { BrandLockup } from '@/components/layout/BrandLockup';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 import { PublicSignupStepSwitch } from './PublicSignupStepSwitch';
 import type { GroupOption, LessonType, SignupStep } from './types';
@@ -15,14 +15,14 @@ interface PublicSignupLayoutProps {
 	lessonTypeOptions: LessonTypeOptionRow[];
 	selectedOption: OptionSnapshot | null;
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
+	paysViaFund: boolean;
 	error: string | null;
 	submitting: boolean;
 	onSelectType: (lessonType: LessonType) => void;
 	onSelectGroupId: (groupId: string | 'waitlist') => void;
 	onSelectOption: (option: OptionSnapshot | null) => void;
 	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
+	onFundChange: (paysViaFund: boolean) => void;
 	onStepChange: (step: SignupStep) => void;
 	onSubmit: (event: FormEvent) => void;
 }

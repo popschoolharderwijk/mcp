@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import {
 	type PublicSignupRenderStep,
 	resolvePublicSignupRenderStep,
@@ -20,14 +20,14 @@ interface PublicSignupStepSwitchProps {
 	lessonTypeOptions: LessonTypeOptionRow[];
 	selectedOption: OptionSnapshot | null;
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
+	paysViaFund: boolean;
 	error: string | null;
 	submitting: boolean;
 	onSelectType: (lessonType: LessonType) => void;
 	onSelectGroupId: (groupId: string | 'waitlist') => void;
 	onSelectOption: (option: OptionSnapshot | null) => void;
 	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
+	onFundChange: (paysViaFund: boolean) => void;
 	onStepChange: (step: SignupStep) => void;
 	onSubmit: (event: FormEvent) => void;
 }
@@ -64,11 +64,11 @@ function renderPublicSignupStep3(props: PublicSignupStepSwitchProps) {
 	return (
 		<PublicSignupStep3
 			form={props.form}
-			sepa={props.sepa}
+			paysViaFund={props.paysViaFund}
 			error={props.error}
 			submitting={props.submitting}
 			onFormChange={props.onFormChange}
-			onSepaChange={props.onSepaChange}
+			onFundChange={props.onFundChange}
 			onPrevious={() => props.onStepChange(2)}
 			onSubmit={props.onSubmit}
 		/>

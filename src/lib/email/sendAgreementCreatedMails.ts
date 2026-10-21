@@ -23,14 +23,14 @@ async function sendAgreementMail(
 	email: string,
 	vars: AgreementMailSharedVars,
 ): Promise<boolean> {
-	const { error: mailErr } = await supabase.functions.invoke('send-template-email', {
+	const { data, error: mailErr } = await supabase.functions.invoke('send-template-email', {
 		body: buildAgreementMailInvokeBody(eventKey, email, vars),
 	});
 	if (mailErr) {
 		console.error(`${eventKey} mail`, mailErr);
 		return false;
 	}
-	return true;
+	return (data as { ok?: boolean; skipped?: boolean } | null)?.ok === true && !data?.skipped;
 }
 
 export async function sendAgreementCreatedMails(agreementId: string): Promise<SendAgreementCreatedMailsResult> {
@@ -71,7 +71,9 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		teacherProfile.data,
 		formatFeePreviewLabel(fee.preview),
 	);
-	const targets = buildAgreementMailTargets(studentProfile.data?.email, teacherProfile.data?.email);
+	const confirmation = await supabase.functions.invoke('send-agreement-confirmation', { body: { lesson_agreement_id: agreementId } });
+	result.studentSent = !confirmation.error && (confirmation.data as { ok?: boolean } | null)?.ok === true;
+	const targets = buildAgreementMailTargets(null, teacherProfile.data?.email);
 
 	for (const target of targets) {
 		const sent = await sendAgreementMail(target.eventKey, target.email, sharedVars);
