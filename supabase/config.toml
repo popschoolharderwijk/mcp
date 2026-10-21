@@ -164,3 +164,9 @@ verify_jwt = false
 
 [functions.stripe-billing-daily]
 verify_jwt = false
+
+[functions.payment-link-info]
+verify_jwt = false
+
+[functions.request-payment-link]
+verify_jwt = false

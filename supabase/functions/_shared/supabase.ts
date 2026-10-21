@@ -85,3 +85,10 @@ export async function requirePrivilegedUser(userClient: SupabaseClient): Promise
 
 	return authn;
 }
+
+/** Service-role client for public endpoints that authorise via their own token check. */
+export function createAdminClient(): SupabaseClient {
+	return createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '', {
+		auth: { autoRefreshToken: false, persistSession: false },
+	});
+}
