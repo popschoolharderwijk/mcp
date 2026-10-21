@@ -2,6 +2,14 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
+import {
+	buildScheduleFromSubscriptionIdempotencyKey,
+	buildScheduleIdempotencyKey,
+	findDuplicateScheduleGroups,
+	OPEN_SUBSCRIPTION_STATUSES,
+	pickScheduleToKeep,
+	selectAdoptableSchedule,
+} from './scheduleClaimPure.ts';
 import { getStripeId } from './stripe.ts';
 import { toScheduleError } from './stripeRecoveryPure.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
@@ -18,7 +26,7 @@ import {
 	type TaxRateIds,
 } from './subscriptionPlanPure.ts';
 
-const OPEN_STATUSES = ['scheduled', 'trialing', 'active', 'past_due', 'unpaid', 'incomplete', 'paused'];
+const OPEN_STATUSES: string[] = [...OPEN_SUBSCRIPTION_STATUSES];
 
 export function todayIso(): string {
 	return new Date().toISOString().slice(0, 10);
@@ -184,6 +192,8 @@ export interface ScheduleResult {
 	phases: number;
 	firstInvoice: 'sent' | 'pending' | null;
 	endBehavior: 'cancel' | 'release';
+	/** Set when another path is already building this agreement's schedule (claim not acquired). */
+	skipped?: 'in_progress';
 }
 
 async function createNewSchedule(
@@ -197,13 +207,34 @@ async function createNewSchedule(
 ): Promise<Stripe.SubscriptionSchedule> {
 	const first = phases[0];
 	const startUnix = monthStartUnix(first.start);
-	return stripe.subscriptionSchedules.create({
-		customer: customerId,
-		start_date: first.start <= today ? 'now' : startUnix,
-		end_behavior: endBehavior,
-		phases: phases.map((p) => phasePayload(p, ctx.agreementId, pm)),
-		metadata: { lesson_agreement_id: ctx.agreementId },
-	} as Stripe.SubscriptionScheduleCreateParams);
+	return stripe.subscriptionSchedules.create(
+		{
+			customer: customerId,
+			start_date: first.start <= today ? 'now' : startUnix,
+			end_behavior: endBehavior,
+			phases: phases.map((p) => phasePayload(p, ctx.agreementId, pm)),
+			metadata: { lesson_agreement_id: ctx.agreementId },
+		} as Stripe.SubscriptionScheduleCreateParams,
+		{ idempotencyKey: buildScheduleIdempotencyKey(ctx.agreementId, first.start) },
+	);
+}
+
+/**
+ * Atomic claim so webhooks, complete-mode, Synchroniseer and the daily task can never build
+ * a schedule for the same agreement at the same time. Whoever loses the claim does nothing.
+ */
+async function claimScheduleBuild(admin: SupabaseClient, agreementId: string, customerId: string): Promise<boolean> {
+	const { data, error } = await admin.rpc('claim_schedule_build', {
+		p_agreement_id: agreementId,
+		p_customer_id: customerId,
+	});
+	if (error) throw new Error(error.message);
+	return data === true;
+}
+
+async function releaseScheduleBuild(admin: SupabaseClient, agreementId: string): Promise<void> {
+	const { error } = await admin.rpc('release_schedule_build', { p_agreement_id: agreementId });
+	if (error) console.error('release_schedule_build failed', agreementId, error.message);
 }
 
 /** Keep the running phase (already invoiced) up to next month; replace everything after it. */
@@ -286,6 +317,35 @@ async function syncAgreementScheduleInner(
 	const customerId =
 		input.customerId ?? existing?.stripe_customer_id ?? (await findStudentCustomerId(admin, ctx.studentUserId));
 	if (!customerId) throw new Error('Nog geen Stripe-klant: stuur eerst een betaaluitnodiging');
+
+	// Atomic claim: only one path builds this agreement's schedule at a time.
+	const claimed = await claimScheduleBuild(admin, ctx.agreementId, customerId);
+	if (!claimed) {
+		return {
+			scheduleId: existing?.stripe_schedule_id ?? null,
+			subscriptionId: existing?.stripe_subscription_id ?? null,
+			phases: 0,
+			firstInvoice: null,
+			endBehavior: 'cancel',
+			skipped: 'in_progress',
+		};
+	}
+	try {
+		return await buildAgreementSchedule(admin, stripe, input, ctx, existing, customerId, today);
+	} finally {
+		await releaseScheduleBuild(admin, ctx.agreementId);
+	}
+}
+
+async function buildAgreementSchedule(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	input: SyncInput,
+	ctx: PlanContext,
+	existing: SubscriptionRow | null,
+	customerId: string,
+	today: string,
+): Promise<ScheduleResult> {
 	const pm = input.defaultPaymentMethod ?? (await resolveDefaultPaymentMethod(stripe, customerId));
 	if (!pm) throw new Error('Nog geen machtiging gekoppeld: de klant moet de betaaluitnodiging eerst afronden');
 
@@ -294,7 +354,17 @@ async function syncAgreementScheduleInner(
 		: null;
 	if (schedule && ['canceled', 'completed'].includes(schedule.status)) schedule = null;
 	if (schedule?.status === 'released' && existing?.stripe_subscription_id) {
-		schedule = await stripe.subscriptionSchedules.create({ from_subscription: existing.stripe_subscription_id });
+		schedule = await stripe.subscriptionSchedules.create(
+			{ from_subscription: existing.stripe_subscription_id },
+			{ idempotencyKey: buildScheduleFromSubscriptionIdempotencyKey(existing.stripe_subscription_id) },
+		);
+	}
+	if (!schedule) {
+		// Adopt an open schedule that already exists in Stripe for this agreement (e.g. created by a
+		// concurrent webhook before the claim existed) instead of creating a duplicate.
+		const listed = await stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 });
+		const adoptable = selectAdoptableSchedule(listed.data, ctx.agreementId);
+		if (adoptable) schedule = await stripe.subscriptionSchedules.retrieve(adoptable.id);
 	}
 	const running = schedule?.status === 'active';
 
@@ -476,6 +546,34 @@ export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Strip
 		}
 	}
 	return results;
+}
+
+export interface DuplicateSchedulesInfo {
+	lesson_agreement_id: string;
+	schedule_ids: string[];
+	stored_schedule_id: string | null;
+	keep_schedule_id: string;
+}
+
+/** Agreements with more than one open schedule in Stripe (would debit twice). */
+export async function detectDuplicateSchedules(
+	admin: SupabaseClient,
+	stripe: Stripe,
+): Promise<DuplicateSchedulesInfo[]> {
+	const listed = await stripe.subscriptionSchedules.list({ limit: 100 });
+	const groups = findDuplicateScheduleGroups(listed.data);
+	const result: DuplicateSchedulesInfo[] = [];
+	for (const group of groups) {
+		const existing = await findOpenSubscription(admin, group.agreementId);
+		const stored = existing?.stripe_schedule_id ?? null;
+		result.push({
+			lesson_agreement_id: group.agreementId,
+			schedule_ids: group.scheduleIds,
+			stored_schedule_id: stored,
+			keep_schedule_id: pickScheduleToKeep(group.scheduleIds, stored),
+		});
+	}
+	return result;
 }
 
 /** Rebuild every subscription flagged needs_rebuild or with a short horizon. */

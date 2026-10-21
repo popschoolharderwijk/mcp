@@ -5,7 +5,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getSafeErrorMessage } from '../_shared/errors.ts';
 import { handleCorsPreflight, jsonResponse } from '../_shared/http.ts';
 import { getStripe } from '../_shared/stripe.ts';
-import { issueDueFirstInvoices, processPendingRebuilds, todayIso } from '../_shared/subscriptionSchedule.ts';
+import {
+	detectDuplicateSchedules,
+	issueDueFirstInvoices,
+	processPendingRebuilds,
+	todayIso,
+} from '../_shared/subscriptionSchedule.ts';
 import { isValidCronSecret } from './authPure.ts';
 
 Deno.serve(async (req) => {
@@ -24,7 +29,10 @@ Deno.serve(async (req) => {
 		const today = todayIso();
 		const firstInvoices = await issueDueFirstInvoices(admin, stripe, today);
 		const rebuilds = await processPendingRebuilds(admin, stripe, { today, includeHorizon: true });
-		return jsonResponse(200, { configured: true, today, firstInvoices, rebuilds });
+		// Duplicate schedules for one agreement would debit twice: report them in the daily run.
+		const duplicates = await detectDuplicateSchedules(admin, stripe);
+		if (duplicates.length > 0) console.warn('duplicate schedules detected', JSON.stringify(duplicates));
+		return jsonResponse(200, { configured: true, today, firstInvoices, rebuilds, duplicates });
 	} catch (err) {
 		console.error('stripe-billing-daily error', err);
 		return jsonResponse(500, { error: getSafeErrorMessage(err, 'Dagelijkse taak mislukt') });

@@ -20,4 +20,9 @@
 
 ## Mijn facturen — Stripe
 - [x] Stripe-facturen naast eigen facturen, met openen/downloaden; gerichte tests en documentatie
+
+## Dubbele Stripe-schema's (klaar)
+- [x] Atomaire claim per overeenkomst (claim_schedule_build) + unieke index op open abonnementen
+- [x] Idempotency keys op subscriptionSchedules.create; adoptie van bestaand open schema
+- [x] Dubbel-detectie in "Controleer abonnementen" en dagelijkse taak; knop "Herstel dubbele abonnementen"
 - Klantcontrole met echte sessie niet beschikbaar: externe Supabase zonder beheerde browsersessie; controleer de testfactuur na inloggen.

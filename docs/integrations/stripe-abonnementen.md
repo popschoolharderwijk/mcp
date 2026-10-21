@@ -39,6 +39,15 @@ Daarna:
 - **direct** na "Opzeggen" bij een Stripe-overeenkomst;
 - anders **'s nachts** door `stripe-billing-daily`.
 
+## Dubbele schema's voorkomen en herstellen
+
+Na de iDEAL-machtiging kunnen drie paden tegelijk het schema opbouwen (webhook `checkout.session.completed`, webhook `setup_intent.succeeded` en de terugkeerpagina `/direct-debit/start`). Bescherming tegen dubbele schema's:
+
+1. **Atomaire claim in de database** (`claim_schedule_build`): per overeenkomst kan maar één pad tegelijk opbouwen; wie de claim niet krijgt, stopt met "wordt al verwerkt". De claim verloopt na 5 minuten, zodat een mislukte poging opnieuw geprobeerd kan worden. Een unieke index garandeert maximaal één open abonnement per overeenkomst.
+2. **Idempotency key** op `subscriptionSchedules.create`: deterministisch per overeenkomst en eerste fase (`mcp_schedule_<overeenkomst>_<eerste-fase-start>`), dus een herhaalde aanroep levert hetzelfde schema op.
+3. **Adoptie vóór aanmaken**: bestaat er in Stripe al een open schema met `metadata.lesson_agreement_id` van deze overeenkomst, dan wordt dat overgenomen en bijgewerkt in plaats van een nieuw aangemaakt.
+4. **Bewaking**: "Controleer abonnementen" en de dagelijkse taak melden overeenkomsten met meer dan één open schema in Stripe (status "Dubbel"). De knop **Herstel dubbele abonnementen** (Boekhouding-instellingen, alleen beheer) annuleert de overtollige schema's; het schema dat in de app is opgeslagen (anders het oudste) blijft bestaan.
+
 ## Edge functions
 
 | Functie | Wat |
@@ -47,8 +56,8 @@ Daarna:
 | `create-subscription-checkout` | iDEAL-machtiging → schedule via `syncAgreementSchedule` |
 | `stripe-webhook` | Upsert abonnementen/facturen; status eerste factuur; `subscription_schedule.released` → opnieuw opbouwen |
 | `rebuild-subscription-schedule` | "Pas nieuwe tarieven toe" / na opzeggen; per overeenkomst of lessoort |
-| `check-stripe-subscriptions` | "Controleer abonnementen": volgende Stripe-factuur vs. `agreement_fee_months` |
-| `stripe-billing-daily` | Dagelijks: eerste facturen die vandaag ingaan, gemarkeerde rebuilds, horizon verlengen |
+| `check-stripe-subscriptions` | "Controleer abonnementen": volgende Stripe-factuur vs. `agreement_fee_months`, dubbel-detectie; met `fix_duplicates` annuleert het overtollige schema's |
+| `stripe-billing-daily` | Dagelijks: eerste facturen die vandaag ingaan, gemarkeerde rebuilds, horizon verlengen, dubbele schema's melden |
 | `sync-stripe-catalog` | Catalogus + klantportaalconfiguratie (opzeggen uit) + rebuilds van de lessoort |
 
 Code: `_shared/subscriptionPlanPure.ts` (pure planning) en `_shared/subscriptionSchedule.ts` (Stripe/DB).

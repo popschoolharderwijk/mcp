@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.4 — 2026-10-21
+
+- **Geen dubbele Stripe-abonnementen meer**: het opbouwen van het betaalschema wordt per overeenkomst atomair geclaimd in de database, zodat webhook, terugkeerpagina en dagelijkse taak nooit tegelijk een schema aanmaken
+- `subscriptionSchedules.create` krijgt een deterministische idempotency key; een bestaand open schema in Stripe wordt overgenomen in plaats van gedupliceerd
+- "Controleer abonnementen" en de dagelijkse taak melden dubbele schema's; nieuwe knop "Herstel dubbele abonnementen" annuleert de overtollige (alleen beheer)
+
 ## 1.5.3 — 2026-10-21
 
 - Mijn facturen toont Stripe-facturen naast eigen Mplifi-facturen, met status, datum, bedrag en knoppen voor openen of PDF downloaden; ook de losse eerste maand is zichtbaar.

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuListChecks } from 'react-icons/lu';
+import { LuListChecks, LuWrench } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,12 @@ import {
 	checkStripeSubscriptions,
 	SUBSCRIPTION_CHECK_LABELS,
 	type SubscriptionCheckResult,
+	summarizeDuplicateFix,
 	summarizeSubscriptionCheck,
 } from '@/lib/billing/stripeSubscriptionCheck';
 
 function variant(status: SubscriptionCheckResult['status']) {
-	if (status === 'mismatch' || status === 'error') return 'destructive' as const;
+	if (status === 'mismatch' || status === 'error' || status === 'duplicate') return 'destructive' as const;
 	if (status === 'ok') return 'default' as const;
 	return 'outline' as const;
 }
@@ -46,6 +47,7 @@ const columns: DataTableColumn<SubscriptionCheckResult>[] = [
 export function StripeSubscriptionsCheckCard() {
 	const [rows, setRows] = useState<SubscriptionCheckResult[]>([]);
 	const [checking, setChecking] = useState(false);
+	const [fixing, setFixing] = useState(false);
 	const [notice, setNotice] = useState<string | null>(null);
 
 	const handleCheck = async () => {
@@ -60,19 +62,39 @@ export function StripeSubscriptionsCheckCard() {
 		setNotice(summarizeSubscriptionCheck(result));
 	};
 
+	const handleFixDuplicates = async () => {
+		setFixing(true);
+		const result = await checkStripeSubscriptions({ fixDuplicates: true });
+		setFixing(false);
+		if (!result) {
+			toast.error('Herstel van dubbele abonnementen mislukt');
+			return;
+		}
+		setRows(result.results);
+		setNotice(summarizeSubscriptionCheck(result));
+		toast.success(summarizeDuplicateFix(result.fixed ?? []));
+	};
+
 	return (
 		<Card>
 			<CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
 				<div className="space-y-1.5">
 					<CardTitle>Stripe-abonnementen</CardTitle>
 					<CardDescription>
-						Vergelijkt per abonnement het bedrag van de volgende afschrijving met het tarief in de app.
+						Vergelijkt per abonnement het bedrag van de volgende afschrijving met het tarief in de app en
+						meldt dubbele schema's in Stripe.
 					</CardDescription>
 				</div>
-				<Button onClick={handleCheck} disabled={checking} variant="outline">
-					<LuListChecks className="mr-2 h-4 w-4" />
-					{checking ? 'Bezig…' : 'Controleer abonnementen'}
-				</Button>
+				<div className="flex gap-2">
+					<Button onClick={handleFixDuplicates} disabled={checking || fixing} variant="outline">
+						<LuWrench className="mr-2 h-4 w-4" />
+						{fixing ? 'Bezig…' : 'Herstel dubbele abonnementen'}
+					</Button>
+					<Button onClick={handleCheck} disabled={checking || fixing} variant="outline">
+						<LuListChecks className="mr-2 h-4 w-4" />
+						{checking ? 'Bezig…' : 'Controleer abonnementen'}
+					</Button>
+				</div>
 			</CardHeader>
 			<CardContent className="space-y-3">
 				{notice && <p className="text-sm text-muted-foreground">{notice}</p>}
