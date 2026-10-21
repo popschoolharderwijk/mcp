@@ -152,3 +152,11 @@ Idempotentie: factuur `mcp_catchup_invoice_<overeenkomst>_<van>_<tot>`, regels `
 - Stap 4 (wachtstatus, beheeroverzicht en portaalmelding) is niet uitgevoerd. Groepsbetaling via iDEAL blijft fase 4; geen nieuwe checkout hiervoor.
 - Previewcontrole: nieuwe overeenkomst → één klantmail met juiste ontvanger/bedragen; bewerken → geen mail; opnieuw versturen → oude link ongeldig; template uit → waarschuwing; aanmelden met/zonder fonds → overeenkomst op factuur/automatisch.
 - Na migratie: gebruiker draait `bun run db:reset` (of alleen types `bun run supabase:types`).
+
+## Stap 4 — Wacht op machtiging (21 oktober 2026)
+
+- **Afleiding, niet opgeslagen:** betaalmethode Stripe, overeenkomst actief en niet beëindigd, lesvorm niet `one_off` (groepslessen tot fase 4), en geen open abonnement met `stripe_schedule_id` of `stripe_subscription_id`. Op factuur komt er nooit in.
+- **View `agreements_awaiting_mandate`** (`security_invoker = on`): `lesson_agreement_id`, `student_user_id`, `student_name`, `recipient_email` (ouder-e-mail, anders account), `lesson_type_name`, `start_date`, `first_sent_at`, `last_sent_at` (uit `direct_debit_invitations`), `days_waiting` (sinds eerste verzending, anders aanmaakdatum). Beheer ziet alles, een leerling alleen de eigen rijen, docenten niets.
+- Frontend-spiegel en tests: `src/lib/subscriptions/awaitingMandate.ts`.
+- **Schermen:** badge op de overeenkomst (`SubscriptionCard`), pagina Financiën → Wacht op machtiging (`/awaiting-mandate`), teller op het beheerdashboard (verborgen bij 0), melding "Rond je betaling af" op het leerlingdashboard met link naar `/direct-debit/start?agreement=…` (ingelogd).
+- Geen automatische herinneringen; lessen worden niet geblokkeerd.

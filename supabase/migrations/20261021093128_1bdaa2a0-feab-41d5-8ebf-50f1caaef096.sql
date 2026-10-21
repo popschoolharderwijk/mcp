@@ -1,0 +1,1 @@
+REVOKE ALL ON public.agreements_awaiting_mandate FROM anon;

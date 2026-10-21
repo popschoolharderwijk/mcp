@@ -23,6 +23,7 @@ describe('sidebar nav item constants', () => {
 			'/direct-debit',
 			'/mandates',
 			'/invoices',
+			'/awaiting-mandate',
 			'/accounting',
 		]);
 	});

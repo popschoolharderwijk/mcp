@@ -13,6 +13,7 @@ import AgreementWizard from './pages/AgreementWizard';
 import Announcements from './pages/Announcements';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
+import AwaitingMandate from './pages/AwaitingMandate';
 import Dashboard from './pages/Dashboard';
 import DirectDebit from './pages/DirectDebit';
 import DirectDebitBatchDetail from './pages/DirectDebitBatchDetail';
@@ -112,6 +113,7 @@ const App = () => (
 						<Route path="/direct-debit/batches/:id" element={<DirectDebitBatchDetail />} />
 						<Route path="/mandates" element={<Mandates />} />
 						<Route path="/invoices" element={<Invoices />} />
+						<Route path="/awaiting-mandate" element={<AwaitingMandate />} />
 						<Route path="/my-invoices" element={<MyInvoices />} />
 						<Route path="/data-import" element={<LegacyImport />} />
 						<Route path="/announcements" element={<Announcements />} />
