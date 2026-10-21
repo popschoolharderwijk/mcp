@@ -85,6 +85,13 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/direct-debit', items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }] },
 	{ pattern: '/mandates', items: [{ label: NAV_LABELS.mandates, href: '/mandates' }] },
 	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
+	{
+		pattern: '/awaiting-mandate',
+		items: [
+			{ label: NAV_LABELS.finance },
+			{ label: NAV_LABELS.awaitingMandate, href: '/awaiting-mandate' },
+		],
+	},
 	{ pattern: '/data-import', items: [{ label: NAV_LABELS.dataImport, href: '/data-import' }] },
 	{
 		pattern: '/email-templates',

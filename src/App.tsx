@@ -18,6 +18,7 @@ import DirectDebit from './pages/DirectDebit';
 import DirectDebitBatchDetail from './pages/DirectDebitBatchDetail';
 import DirectDebitStart from './pages/DirectDebitStart';
 import EmailTemplates from './pages/EmailTemplates';
+import AwaitingMandate from './pages/AwaitingMandate';
 import Invoices from './pages/Invoices';
 import LegacyImport from './pages/LegacyImport';
 import LessonGroups from './pages/LessonGroups';
@@ -112,6 +113,7 @@ const App = () => (
 						<Route path="/direct-debit/batches/:id" element={<DirectDebitBatchDetail />} />
 						<Route path="/mandates" element={<Mandates />} />
 						<Route path="/invoices" element={<Invoices />} />
+						<Route path="/awaiting-mandate" element={<AwaitingMandate />} />
 						<Route path="/my-invoices" element={<MyInvoices />} />
 						<Route path="/data-import" element={<LegacyImport />} />
 						<Route path="/announcements" element={<Announcements />} />

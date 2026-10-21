@@ -13,6 +13,7 @@ export const financeNavItems = [
 	{ href: '/direct-debit', label: NAV_LABELS.directDebit, icon: NAV_ICONS.directDebit },
 	{ href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates },
 	{ href: '/invoices', label: NAV_LABELS.invoices, icon: NAV_ICONS.invoices },
+	{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
 	{ href: '/accounting', label: NAV_LABELS.accounting, icon: NAV_ICONS.accounting },
 ];
 

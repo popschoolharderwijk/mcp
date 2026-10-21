@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnnouncementsSection } from '@/components/dashboard/AnnouncementsSection';
+import { AwaitingMandateCounter, StudentPaymentNotices } from '@/components/dashboard/AwaitingMandateNotices';
 import { DashboardInvoiceList } from '@/components/dashboard/DashboardInvoiceList';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
@@ -77,6 +78,7 @@ function PrivilegedDashboardPanels({
 }: Pick<DashboardAudiencePanelsProps, 'stats' | 'recentStudents' | 'teachers' | 'isLoading'>) {
 	return (
 		<>
+			<AwaitingMandateCounter />
 			<StatsGrid
 				items={stats ? buildDashboardStatItems(stats) : []}
 				isLoading={isLoading}
@@ -144,6 +146,7 @@ function StudentDashboardPanels({
 	const model = studentDashboardPanelModel(studentDashboard);
 	return (
 		<>
+			<StudentPaymentNotices userId={userId} />
 			<StatsGrid items={model.items} isLoading={isLoading} skeletonCount={STUDENT_DASHBOARD_STAT_COUNT} />
 			<div className="grid gap-6 md:grid-cols-2">
 				<StudentAgreementsPanel
