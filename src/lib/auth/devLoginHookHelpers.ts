@@ -4,10 +4,7 @@ export function resolveDevLoginInitialValue(): string {
 	if (typeof window === 'undefined') {
 		return DEV_ROLES[0]?.email ?? 'site-admin@test.nl';
 	}
-	return resolveStoredDevLoginValue(
-		localStorage.getItem('dev-login-selected-role'),
-		localStorage.getItem('dev-login-selected-dev-user'),
-	);
+	return resolveStoredDevLoginValue(localStorage.getItem('dev-login-selected-dev-user'));
 }
 
 export function shouldBlockDevLoginInProduction(): boolean {
