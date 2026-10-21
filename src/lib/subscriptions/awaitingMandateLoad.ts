@@ -1,11 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import type { AwaitingMandateRow } from '@/lib/subscriptions/awaitingMandate';
 
-/**
- * The view is newer than the generated types until the user regenerates them;
- * the name cast keeps the query builder typed without `any`.
- */
-const AWAITING_VIEW = 'agreements_awaiting_mandate' as string as 'invoices';
+const AWAITING_VIEW = 'agreements_awaiting_mandate';
 
 /** Rows of `agreements_awaiting_mandate`; RLS limits students to their own agreements. */
 export async function fetchAwaitingMandates(studentUserId?: string): Promise<AwaitingMandateRow[]> {
@@ -29,6 +25,6 @@ export async function fetchIsAwaitingMandate(agreementId: string): Promise<boole
 	const { count, error } = await supabase
 		.from(AWAITING_VIEW)
 		.select('*', { count: 'exact', head: true })
-		.eq('lesson_agreement_id' as string as 'id', agreementId);
+		.eq('lesson_agreement_id', agreementId);
 	return !error && (count ?? 0) > 0;
 }
