@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { downloadInvoicePdf } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { InvoicePdfDownloadButton } from '@/lib/invoices/invoiceTableColumns';
 import { MY_INVOICE_COLUMNS } from '@/lib/invoices/myInvoiceColumns';
-import { mergeMyInvoices, type MyInvoiceRow } from '@/lib/invoices/myInvoiceHelpers';
+import { type MyInvoiceRow, mergeMyInvoices } from '@/lib/invoices/myInvoiceHelpers';
 import type { Invoice } from '@/lib/invoices/types';
 
 export default function MyInvoices() {
@@ -76,7 +76,11 @@ export default function MyInvoices() {
 				searchQuery={search}
 				onSearchChange={setSearch}
 				searchPlaceholder="Zoek op factuurnummer..."
-				searchFields={[(invoice) => invoice.invoice_number, (invoice) => invoice.status_label, (invoice) => invoice.source]}
+				searchFields={[
+					(invoice) => invoice.invoice_number,
+					(invoice) => invoice.status_label,
+					(invoice) => invoice.source,
+				]}
 				loading={loading}
 				getRowKey={(invoice) => invoice.id}
 				emptyMessage={loadError ? 'Facturen niet beschikbaar.' : 'Je hebt nog geen facturen.'}
@@ -95,14 +99,31 @@ export default function MyInvoices() {
 						}
 						return (
 							<div className="flex items-center gap-1">
-								<Button variant="ghost" size="icon" className="h-8 w-8" disabled={!row.hosted_url}
-									aria-label="Factuur openen in Stripe" title="Factuur openen in Stripe"
-									onClick={() => { if (row.hosted_url) window.open(row.hosted_url, '_blank', 'noopener,noreferrer'); }}>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8"
+									disabled={!row.hosted_url}
+									aria-label="Factuur openen in Stripe"
+									title="Factuur openen in Stripe"
+									onClick={() => {
+										if (row.hosted_url)
+											window.open(row.hosted_url, '_blank', 'noopener,noreferrer');
+									}}
+								>
 									<LuExternalLink className="h-4 w-4" />
 								</Button>
-								<Button variant="ghost" size="icon" className="h-8 w-8" disabled={!row.pdf_url}
-									aria-label="Stripe-PDF downloaden" title="Stripe-PDF downloaden"
-									onClick={() => { if (row.pdf_url) window.open(row.pdf_url, '_blank', 'noopener,noreferrer'); }}>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-8 w-8"
+									disabled={!row.pdf_url}
+									aria-label="Stripe-PDF downloaden"
+									title="Stripe-PDF downloaden"
+									onClick={() => {
+										if (row.pdf_url) window.open(row.pdf_url, '_blank', 'noopener,noreferrer');
+									}}
+								>
 									<LuFileDown className="h-4 w-4" />
 								</Button>
 							</div>

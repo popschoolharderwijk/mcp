@@ -38,32 +38,36 @@ export function safeStripeInvoiceUrl(value: string | null): string | null {
 
 export function mergeMyInvoices(own: Invoice[], stripe: Tables<'subscription_invoices'>[]): MyInvoiceRow[] {
 	return [
-		...own.map((invoice): MyInvoiceRow => ({
-			id: `mplifi:${invoice.id}`,
-			invoice_number: invoice.invoice_number,
-			issue_date: invoice.issue_date,
-			due_date: invoice.due_date,
-			status_label: INVOICE_STATUS_LABELS[invoice.status],
-			amount_total_cents: invoice.amount_total_cents,
-			currency: 'EUR',
-			source: 'Mplifi',
-			hosted_url: null,
-			pdf_url: null,
-			invoice,
-		})),
-		...stripe.map((invoice): MyInvoiceRow => ({
-			id: `stripe:${invoice.id}`,
-			invoice_number: invoice.stripe_invoice_id,
-			issue_date: invoice.created_at.slice(0, 10),
-			due_date: null,
-			status_label: STRIPE_INVOICE_STATUS_LABELS[invoice.status] ?? 'Onbekend',
-			amount_total_cents: invoice.amount_due,
-			currency: invoice.currency.toUpperCase(),
-			source: 'Stripe',
-			hosted_url: safeStripeInvoiceUrl(invoice.hosted_invoice_url),
-			pdf_url: safeStripeInvoiceUrl(invoice.invoice_pdf),
-			invoice: null,
-		})),
+		...own.map(
+			(invoice): MyInvoiceRow => ({
+				id: `mplifi:${invoice.id}`,
+				invoice_number: invoice.invoice_number,
+				issue_date: invoice.issue_date,
+				due_date: invoice.due_date,
+				status_label: INVOICE_STATUS_LABELS[invoice.status],
+				amount_total_cents: invoice.amount_total_cents,
+				currency: 'EUR',
+				source: 'Mplifi',
+				hosted_url: null,
+				pdf_url: null,
+				invoice,
+			}),
+		),
+		...stripe.map(
+			(invoice): MyInvoiceRow => ({
+				id: `stripe:${invoice.id}`,
+				invoice_number: invoice.stripe_invoice_id,
+				issue_date: invoice.created_at.slice(0, 10),
+				due_date: null,
+				status_label: STRIPE_INVOICE_STATUS_LABELS[invoice.status] ?? 'Onbekend',
+				amount_total_cents: invoice.amount_due,
+				currency: invoice.currency.toUpperCase(),
+				source: 'Stripe',
+				hosted_url: safeStripeInvoiceUrl(invoice.hosted_invoice_url),
+				pdf_url: safeStripeInvoiceUrl(invoice.invoice_pdf),
+				invoice: null,
+			}),
+		),
 	].sort((a, b) => b.issue_date.localeCompare(a.issue_date));
 }
 
