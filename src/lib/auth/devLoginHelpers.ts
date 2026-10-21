@@ -42,7 +42,6 @@ export function resolveStoredDevLoginValue(storedDevUser: string | null): string
 
 export function persistDevLoginSelection(selectedValue: string): void {
 	localStorage.setItem('dev-login-selected-dev-user', selectedValue);
-	localStorage.removeItem('dev-login-selected-role');
 }
 
 export function resolveDevLoginEmail(value: string): string | null {
