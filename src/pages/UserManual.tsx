@@ -147,7 +147,7 @@ const sections: ManualSection[] = [
 			'Stap 8 – Versturen: indien een Resend-API-key is geconfigureerd, wordt de PDF als bijlage gemaild naar ouder/verzorger of anders de leerling zelf. Bij succes worden sent_at en email_sent_to bijgewerkt.',
 			'Stap 9 – Idempotent opnieuw draaien: een tweede call op dezelfde batch slaat bestaande facturen over (skipped: true). Veilig bij retries of bij toevoegen van nieuwe leerlingen aan een batch.',
 			'Stap 10 – Inzage door admins: ga naar Facturen voor een doorzoekbaar overzicht van alle facturen (nummer, leerling, datum, bedrag, status). Klik op een rij om de PDF te downloaden via een tijdelijke signed URL (60 sec.).',
-			'Stap 11 – Inzage door leerling: leerlingen openen "Mijn facturen" in het portal en zien uitsluitend hun eigen facturen (RLS afgedwongen op invoices en op de storage-bucket). Downloaden gebeurt via dezelfde signed URL-functie.',
+			'Stap 11 – Inzage door leerling: in "Mijn facturen" staan je eigen Mplifi- en Stripe-facturen samen, met datum, status en bedrag. Mplifi-PDF’s download je via een tijdelijke link; Stripe-facturen kun je openen in Stripe of als PDF downloaden. Je ziet uitsluitend facturen waartoe je toegang hebt. Stripe-facturen verschijnen zodra ze via de webhook zijn opgeslagen; de eerste maand naar rato staat er ook bij.',
 			'Handmatige correctie: een factuur kan in de DB op status "cancelled" worden gezet; admins kunnen indien nodig een correctie-batch aanmaken (kind: correction) en opnieuw genereren.',
 		],
 	},

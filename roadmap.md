@@ -17,3 +17,7 @@
 
 ## Later
 - Fase 3b (facturen op factuur), 4, 5
+
+## Mijn facturen — Stripe
+- [x] Stripe-facturen naast eigen facturen, met openen/downloaden; gerichte tests en documentatie
+- Klantcontrole met echte sessie niet beschikbaar: externe Supabase zonder beheerde browsersessie; controleer de testfactuur na inloggen.
