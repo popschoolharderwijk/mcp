@@ -1,6 +1,5 @@
 import { DevLoginErrorMessage, DevLoginSelectField, DevLoginSubmitButton } from '@/components/DevLoginButtonParts';
 import { useDevLogin } from '@/hooks/useDevLogin';
-import { resolveDevLoginInnerContainerClass } from '@/lib/auth/devLoginButtonHelpers';
 import { cn } from '@/lib/utils';
 
 /**
@@ -34,23 +33,22 @@ function DevLoginButtonInner({
 	autoLogin?: boolean;
 }) {
 	const { selectedValue, isLoading, error, handleDevLogin, handleValueChange } = useDevLogin(autoLogin);
-	const isLocalDev = import.meta.env.MODE === 'localdev';
 
 	return (
 		<div className={cn('flex flex-col w-full', className)}>
-			<div className={resolveDevLoginInnerContainerClass(showButton, isLocalDev)}>
+			<div
+				className={
+					showButton
+						? 'flex flex-col w-full gap-1.5 p-2 rounded-md border bg-background border-orange-500/30 dark:border-orange-400/30'
+						: 'flex flex-col w-full'
+				}
+			>
 				<DevLoginSelectField
 					selectedValue={selectedValue}
 					isLoading={isLoading}
 					onValueChange={handleValueChange}
 				/>
-				{showButton && (
-					<DevLoginSubmitButton
-						isLoading={isLoading}
-						isLocalDev={isLocalDev}
-						onLogin={() => void handleDevLogin()}
-					/>
-				)}
+				{showButton && <DevLoginSubmitButton isLoading={isLoading} onLogin={() => void handleDevLogin()} />}
 			</div>
 			<DevLoginErrorMessage error={error} />
 		</div>

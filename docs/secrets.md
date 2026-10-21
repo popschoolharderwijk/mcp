@@ -49,7 +49,7 @@ See [integrations/stripe-direct-debit.md §9](./integrations/stripe-direct-debit
 
 ## Dev Login Bypass (development/test only)
 
-For fast sign-in without Magic Link in development. Add to `.env.development` or `.env.test`.
+For fast sign-in without Magic Link in development. Add to `.env.local` (local Docker) or `.env.development` (mcp-dev).
 
 ### Frontend (Dev Login button)
 
@@ -62,7 +62,7 @@ For fast sign-in without Magic Link in development. Add to `.env.development` or
 
 | Variable | Description |
 |----------|-------------|
-| `SUPABASE_URL` | API URL of mcp-dev or mcp-test. |
+| `SUPABASE_URL` | API URL (local `http://127.0.0.1:54421`, mcp-dev, or mcp-test). |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key. |
 | `DEV_LOGIN_EMAIL`, `DEV_LOGIN_PASSWORD` | Credentials of the user to create. |
 | `DEV_LOGIN_FIRST_NAME`, `DEV_LOGIN_LAST_NAME` | Optional: profile fields. |

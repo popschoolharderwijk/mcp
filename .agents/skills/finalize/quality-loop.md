@@ -23,7 +23,7 @@ Prefer the **smallest change that genuinely resolves the finding**.
 - In: `bun run check`, `bun run check:ci` (incl. `tests/code/`),
   `bun run check:fallow`, types via `bun run supabase:types`
 - Out: `tests/auth`, `tests/rls`, `tests/e2e`
-- Never: `bun run db:reset` (user-only). If types/schema are out of sync, escalate and ask the user to run it
+- Never: `supabase db reset` / `db reset --linked` (user-only). If types/schema are out of sync, escalate and ask the user to reset + regenerate types
 
 ## Escalation
 
@@ -33,6 +33,6 @@ Stop and ask the user when any of these hold:
 2. **Hard caps** — 5 full outer passes without all-green, or 10 consecutive fallow-only retries without green (backstop; no-progress should usually fire first).
 3. **Out of scope** — design decision, destructive change, work outside the task, or tool config (Fallow/Biome) — ask first; see `.cursor/rules/fallow.mdc`.
 4. **Ambiguous** — root cause still unclear after reading the full output.
-5. **Types vs schema** — `supabase:types` / `tsc` fail because migrations are not on the linked DB → ask user for `bun run db:reset`.
+5. **Types vs schema** — `supabase:types` / `tsc` fail because migrations are not on the DB → ask user to reset (`supabase db reset` or `--linked`) and regenerate types.
 
 On escalation: failing step, exact error, what was tried, structured options. Do not stage, commit, or retry blindly.

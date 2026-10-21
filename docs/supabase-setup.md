@@ -27,7 +27,7 @@ supabase link --project-ref <project-id>
 supabase db push
 ```
 
-Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_sepa_direct_debit`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: `bun run db:reset`.
+Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_sepa_direct_debit`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `supabase db reset --linked` on remote) and regenerate types (`--local` or `bun run supabase:types`).
 
 ---
 
@@ -46,7 +46,7 @@ All authentication settings are managed in `supabase/config.toml` and pushed to 
 
 #### Remote project settings
 
-The `[remotes.test.auth]`, `[remotes.dev.auth]`, and `[remotes.prod.auth]` sections override defaults for remote projects. mcp-dev and mcp-test share Lovable URLs, `localhost:5173`, and the `[DEV]` mail subject. Production (`[remotes.prod.auth]`) uses `mcp.mplifi.nl`, no public signup, tighter rate limits, and subject `Je inloglink`.
+Root `[auth]` is the base config (local Docker: Vite `:8080` / `:8081`). On `config push` / branching, each `[remotes.*]` block is **deep-merged** over that base: nested tables merge, but **arrays and scalars replace wholesale** (they do not append). So `[remotes.*.auth].additional_redirect_urls` must list every allowed URL for that project — omitting it would push the local localhost list to the remote. mcp-dev and mcp-test set full Lovable redirect lists; production (`[remotes.prod.auth]`) uses `mcp.mplifi.nl`, no public signup, tighter rate limits, and subject `Je inloglink`. Unspecified auth fields (e.g. email templates subject `[DEV]`) still come from root.
 
 #### Push settings to remote
 

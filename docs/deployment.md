@@ -23,7 +23,7 @@ Production is on **Lovable Cloud** (`mcp.mplifi.nl`). Lovable provides HSTS/nosn
 Therefore CSP is a **meta tag** in `index.html`:
 
 - Works after every Lovable publish (it is in the built HTML).
-- `connect-src` / `img-src` use `https://*.supabase.co` so that dev, test, and prod work.
+- `connect-src` / `img-src` use `https://*.supabase.co` so that remote dev, test, and prod work; local Docker also allows `http://127.0.0.1:54421` / `http://localhost:54421` (and matching `ws://`).
 - `img-src` also allows `https://flagcdn.com` for country flags in the land picker.
 - `frame-ancestors` is not possible via meta; clickjacking remains partly platform-dependent.
 

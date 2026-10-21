@@ -8,19 +8,23 @@ alwaysApply: false
 
 ## NEVER manually edit generated types
 
-**Do not edit `src/integrations/supabase/types.ts` by hand** (no patching Functions/Tables for new RPCs or columns). It must match codegen from the linked database.
+**Do not edit `src/integrations/supabase/types.ts` by hand** (no patching Functions/Tables for new RPCs or columns). It must match codegen from the database.
 
-After **any** migration or schema change, ask the **user** to regenerate types:
+After **any** migration or schema change, ask the **user** to regenerate types (do not run these yourself):
 
 ```bash
-bun run db:reset
+# Local Docker stack
+supabase db reset
+supabase gen types typescript --local > src/integrations/supabase/types.ts
+
+# Or remote (linked project)
+supabase db reset --linked
+bun run supabase:types
 ```
 
-**Do not run this command yourself.**
+Reset applies migrations + seeds (`bootstrap.sql`, `lesson-types.sql`, `test.sql` on local/dev/test). Prefer that over editing `types.ts` in the editor or in agent diffs.
 
-That script resets the linked dev DB, applies migrations + `supabase/seeds/bootstrap.sql` + `supabase/seeds/lesson-types.sql` + `supabase/seeds/test.sql`, runs `supabase gen types typescript --linked`, and formats the output. Use that instead of editing `types.ts` in the editor or in agent diffs.
-
-If types are missing or wrong locally, ask the user to run `bun run db:reset` — do not “fix” TypeScript by changing `types.ts`.
+If types are missing or wrong, ask the user to regenerate — do not “fix” TypeScript by changing `types.ts`.
 
 ## Always Use Generated Types First
 
@@ -118,6 +122,6 @@ export type { StudentInfoCardData };
 
 1. **Type safety**: Types are auto-generated from the database schema
 2. **Consistency**: No drift between database and TypeScript types
-3. **Maintainability**: Changes to the database schema are reflected after running `supabase gen types typescript --linked`
+3. **Maintainability**: Changes to the database schema are reflected after regenerating types (`--local` or `--linked` / `bun run supabase:types`)
 4. **Less code**: Avoid duplicating type definitions
 5. **Discoverability**: All entity types in one place (`src/types/`)

@@ -1,7 +1,6 @@
 import { LuLoaderCircle, LuZap } from 'react-icons/lu';
 import { DevLoginSelectContent } from '@/components/DevLoginSelectContent';
 import { Select, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { resolveDevLoginButtonClass, resolveDevLoginButtonLabel } from '@/lib/auth/devLoginHookHelpers';
 import { cn } from '@/lib/utils';
 
 interface DevLoginSelectFieldProps {
@@ -26,11 +25,10 @@ export function DevLoginSelectField({ selectedValue, isLoading, onValueChange }:
 
 interface DevLoginSubmitButtonProps {
 	isLoading: boolean;
-	isLocalDev: boolean;
 	onLogin: () => void;
 }
 
-export function DevLoginSubmitButton({ isLoading, isLocalDev, onLogin }: DevLoginSubmitButtonProps) {
+export function DevLoginSubmitButton({ isLoading, onLogin }: DevLoginSubmitButtonProps) {
 	return (
 		<button
 			type="button"
@@ -40,11 +38,11 @@ export function DevLoginSubmitButton({ isLoading, isLocalDev, onLogin }: DevLogi
 				'inline-flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
 				'focus:outline-none focus:ring-2 focus:ring-ring',
 				'disabled:opacity-50 disabled:cursor-not-allowed',
-				resolveDevLoginButtonClass(isLocalDev),
+				'bg-orange-500/20 text-orange-600 hover:bg-orange-500/30 dark:text-orange-400',
 			)}
 		>
 			{isLoading ? <LuLoaderCircle className="h-3 w-3 animate-spin" /> : <LuZap className="h-3 w-3" />}
-			{resolveDevLoginButtonLabel(isLoading)}
+			{isLoading ? 'Inloggen...' : 'Dev Login'}
 		</button>
 	);
 }

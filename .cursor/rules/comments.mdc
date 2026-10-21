@@ -4,20 +4,40 @@ alwaysApply: true
 
 # Comments
 
-Write as if a first-time reader opened this file. **English** in code, tests, config comments, and project docs (see `style.mdc` for UI vs docs language).
+Write as if a first-time reader opened this file **today**, with no knowledge of this PR or chat. **English** in code, tests, config comments, and project docs (see `style.mdc` for UI vs docs language).
 
 Add a comment only when it explains **current** behavior or a **standing** constraint that is not obvious from the code. If the code is clear, **omit** the comment.
 
-## NEVER
+## Diff narration (hard rule)
 
-* **Change log or legacy contrast** — do not describe how the code differs from an earlier version, a removed approach, or a bug you fixed ("no longer X", "we used to Y", "instead of hsl(...)", "after the refactor")
+A comment must **not** teach the reader about the edit you just made. If deleting the chat/PR history would make the comment pointless or confusing, it is diff narration — rewrite or delete it.
+
+### NEVER (diff narration)
+
+* Contrast with an older version: "no longer X", "we used to Y", "instead of Z", "after the refactor", "previously…", "fixed by…"
+* Negated placement / anti-patterns as the point of the comment: "(no localhost on remotes)", "not in remotes", "don't put X here — belongs in Y"
+* Narrating the move: "Moved …", "Extracted …", "Added for …", "Kept in sync with the change above"
+* Parenthetical "corrections" that only make sense if you know the bug you just fixed
+* Documenting what you **removed** or **rejected** (that is changelog / PR text, not a code comment)
+
+### ALWAYS (standing invariant)
+
+* State what is true **now** and why a reader must respect it
+* Prefer positive placement: "Local stack (`supabase start`) uses root `[auth]`" — not "no localhost on remotes"
+* Cross-file constraints (mirrors, seed lists, remote sync) when the file alone does not show them
+
+### Smell check
+
+Read the comment aloud without the diff. Does it sound like a commit message or a scolding note to a past author? → **diff narration**. Does it sound like a rule a new teammate needs forever? → **keep** (if non-obvious).
+
+## NEVER (other)
+
 * **Restate the next line** — what the code already says plainly
-* **Absent features or rejected alternatives** — do not document what you did not implement or deleted
 * **Config noise** — do not explain a Tailwind/CSS mapping in a comment when the rule belongs in `.cursor/rules/` or `docs/` (e.g. token shape conventions)
 
 Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) are covered by `no-legacy.mdc`, not here.
 
-## ALWAYS
+## ALWAYS (other)
 
 * Describe **what this code does now** and **why**, only when a reader would miss it without the comment
 * Prefer **invariants** readers must respect: non-obvious constraints, domain rules, or why the obvious approach is wrong **in this codebase**
@@ -31,6 +51,15 @@ Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) ar
 
 // BAD: narrates the edit
 // Moved getContrastTextColor into the custom branch only
+
+// BAD: negated placement / anti-pattern reminder from a fix
+// Remotes override below (no localhost on remotes).
+
+// BAD: "belongs elsewhere" as the whole point
+// localhost belongs in root [auth] for Docker
+
+// GOOD: standing invariant (positive, current)
+// Local stack (`supabase start`). Each remote sets [remotes.*.auth] for its hosted URLs.
 
 // GOOD: standing invariant
 // Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see invoicePure.test.ts

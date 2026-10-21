@@ -16,6 +16,6 @@ Do **not** add backwards-compatible shims unless the user **explicitly** asks to
 ## ALWAYS
 
 * ✅ One current contract: rename or replace, then update **all** callers to that single surface
-* ✅ When editing original migrations (user will `db:reset`): make the schema/RPC match **today’s** callers only — no parallel old keys
+* ✅ When editing original migrations (user will reset the DB): make the schema/RPC match **today’s** callers only — no parallel old keys
 
 Comments must not narrate the removal either — see `comments.mdc`.

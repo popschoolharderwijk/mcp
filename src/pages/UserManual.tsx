@@ -328,7 +328,7 @@ const sections: ManualSection[] = [
 			'BTW-logica: leeftijd wordt berekend op basis van geboortedatum leerling versus lesdatum/collection date — <21 vrijgesteld, ≥21 belast. Onbekende geboortedatum → categorie "unknown", factuur met gemengde regels krijgt "mixed".',
 			'Facturen & incasso: edge functions generate-invoice, generate-sepa-xml en import-sepa-status. Facturen staan als PDF in de privé storage-bucket "invoices"; downloads via kortstondige signed URLs (60 sec).',
 			'E-mail: alle transactionele mails lopen via de edge function send-template-email (Resend). Templates staan in email_templates en zijn per project aanpasbaar. De helper sendTemplateEmail wordt hergebruikt vanuit meerdere functies (schedule-trial-lesson, submit-signup-request, create-duo-agreements, ...).',
-			'Migraties: elke schemawijziging staat als bestand in supabase/migrations/ (logische Nederlandse naam). Na een migratie regenereert bun run reset-db:dev de TypeScript-types in src/integrations/supabase/types.ts.',
+			'Migraties: elke schemawijziging staat als bestand in supabase/migrations/ (logische Nederlandse naam). Na een migratie: database resetten en TypeScript-types regenereren in src/integrations/supabase/types.ts (lokaal of linked).',
 			'CI/CD: aparte workflows voor formattering (Biome), linting, unit-tests en RLS-testsuite. RLS-tests draaien tegen een Supabase Preview branch met een impersonatie-helper (signInAs) om echte rolgedrag te verifiëren.',
 			'Ontwikkelrichtlijnen: geen LLM/AI-componenten, geen Radix UI, TanStack Query of React Hook Form; wél DataTable, PageSkeleton, SectionSkeleton, en verplicht Biome-format vóór commit.',
 		],

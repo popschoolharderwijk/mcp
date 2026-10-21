@@ -6,6 +6,7 @@ const MODE = import.meta.env.MODE;
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 const ENV_CONFIG: Record<string, { label: string; color: string }> = {
+	localdev: { label: 'LOCAL', color: 'bg-orange-500/20 text-orange-600 dark:text-orange-400' },
 	test: { label: 'TEST', color: 'bg-green-500/20 text-green-600 dark:text-green-400' },
 	development: { label: 'DEVELOPMENT', color: 'bg-orange-500/20 text-orange-600 dark:text-orange-400' },
 	production: { label: 'PRODUCTION', color: 'bg-red-500/20 text-red-600 dark:text-red-400' },
@@ -13,7 +14,7 @@ const ENV_CONFIG: Record<string, { label: string; color: string }> = {
 
 export function EnvironmentBadge({ className }: { className?: string }) {
 	// Badge is intentionally visible in production too so admins can identify
-	// the active environment (test / development / production). Do not remove
+	// the active environment (localdev / development / production). Do not remove
 	// this check without coordinating first.
 	const config = ENV_CONFIG[MODE] || { label: MODE.toUpperCase(), color: 'bg-gray-500/20 text-gray-600' };
 
