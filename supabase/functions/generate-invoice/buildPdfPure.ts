@@ -23,8 +23,8 @@ export function buildCompanyBlockLines(settings: Record<string, unknown>): strin
 			: null,
 		settings.company_email ? String(settings.company_email) : null,
 		settings.company_phone ? `Tel: ${settings.company_phone}` : null,
-		settings.company_kvk ? `KvK: ${settings.company_kvk}` : null,
-		settings.company_btw_nummer ? `BTW: ${settings.company_btw_nummer}` : null,
+		settings.company_kvk_number ? `KvK: ${settings.company_kvk_number}` : null,
+		settings.company_vat_number ? `BTW: ${settings.company_vat_number}` : null,
 	].filter((line): line is string => Boolean(line));
 }
 

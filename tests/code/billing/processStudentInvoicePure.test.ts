@@ -34,9 +34,9 @@ const invoiceLine: InvoiceLine = {
 	lesson_date: '2026-09-01',
 	quantity: 1,
 	unit_price_cents: 1210,
-	btw_rate: 21,
-	amount_excl_btw_cents: 1000,
-	btw_amount_cents: 210,
+	vat_rate: 21,
+	amount_excl_vat_cents: 1000,
+	vat_amount_cents: 210,
 	amount_total_cents: 1210,
 };
 
@@ -76,7 +76,7 @@ describe('buildInvoiceInsertRow', () => {
 				issueDate: '2026-07-01',
 				dueDate: '2026-07-15',
 				collectionDate: '2026-09-01',
-				totals: { excl: 1000, btw21: 210, btw0: 0, total: 1210 },
+				totals: { excl: 1000, vat21: 210, vat0: 0, total: 1210 },
 				ageCategory: '21_plus',
 			}),
 		).toEqual({
@@ -87,8 +87,8 @@ describe('buildInvoiceInsertRow', () => {
 			due_date: '2026-07-15',
 			period_start: '2026-09-01',
 			period_end: '2026-09-01',
-			amount_excl_btw_cents: 1000,
-			btw_amount_cents: 210,
+			amount_excl_vat_cents: 1000,
+			vat_amount_cents: 210,
 			amount_total_cents: 1210,
 			age_category: '21_plus',
 			status: 'issued',

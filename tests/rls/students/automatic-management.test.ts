@@ -308,8 +308,8 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			invoice_number: invoiceNumber,
 			student_user_id: studentCUserId,
 			due_date: '2026-12-31',
-			amount_excl_btw_cents: 1000,
-			btw_amount_cents: 0,
+			amount_excl_vat_cents: 1000,
+			vat_amount_cents: 0,
 			amount_total_cents: 1000,
 			status: 'issued',
 		});

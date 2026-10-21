@@ -6,5 +6,6 @@ describe('resolveFaviconSrc', () => {
 		expect(resolveFaviconSrc('production')).toBe('/favicon.svg');
 		expect(resolveFaviconSrc('development')).toBe('/favicon-local.svg');
 		expect(resolveFaviconSrc('localdev')).toBe('/favicon-localdev.svg');
+		expect(resolveFaviconSrc(undefined)).toBe('/favicon.svg');
 	});
 });
