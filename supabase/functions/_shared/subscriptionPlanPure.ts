@@ -37,6 +37,9 @@ export interface FirstInvoice {
 	amountCents: number;
 	taxRateId: string;
 	isProrated: boolean;
+	/** Catch-up invoice: last month covered and one line per month (see catchUpInvoicePure.ts). */
+	toMonth?: string;
+	lines?: Array<{ month: string; amountCents: number; taxRateId: string; isProrated: boolean }>;
 }
 
 export type SubscriptionPlan =

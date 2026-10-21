@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.5 — 2026-10-21
+
+- **Inhaalfactuur**: wordt de machtiging pas na de startmaand afgegeven, dan komen alle gemiste maanden (vanaf de start, eerste maand naar rato, augustus € 0) op één losse Stripe-factuur met een regel en btw per maand; het abonnement loopt daarna vanaf de volgende maand. Idempotent via een vaste sleutel per periode.
+
 ## 1.5.4 — 2026-10-21
 
 - **Geen dubbele Stripe-abonnementen meer**: het opbouwen van het betaalschema wordt per overeenkomst atomair geclaimd in de database, zodat webhook, terugkeerpagina en dagelijkse taak nooit tegelijk een schema aanmaken
