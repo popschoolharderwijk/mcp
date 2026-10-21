@@ -348,6 +348,35 @@ export type Database = {
           },
         ]
       }
+      agreement_payment_links: {
+        Row: {
+          created_at: string
+          lesson_agreement_id: string
+          rotated_at: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          lesson_agreement_id: string
+          rotated_at?: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          lesson_agreement_id?: string
+          rotated_at?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agreement_payment_links_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: true
+            referencedRelation: "lesson_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           audience: string[]
@@ -1351,6 +1380,32 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      payment_link_requests: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_agreement_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_agreement_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_agreement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_link_requests_lesson_agreement_id_fkey"
+            columns: ["lesson_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_agreements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
