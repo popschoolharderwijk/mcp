@@ -6,8 +6,6 @@ import {
 	applyPublicSignupSubmitOutcome,
 	executePublicSignupSubmit,
 	type SignupFormFields,
-	type SignupSepaFields,
-	validateSepaFields,
 } from '@/lib/signup/publicSignupHelpers';
 import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 import type { LessonType } from './types';
@@ -18,7 +16,7 @@ interface UsePublicSignupSubmitParams {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionRow[];
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
+	paysViaFund: boolean;
 	setSubmitting: (submitting: boolean) => void;
 	setError: (error: string | null) => void;
 	onSuccess: () => void;
@@ -30,7 +28,7 @@ export function usePublicSignupSubmit({
 	selectedOption,
 	lessonTypeOptions,
 	form,
-	sepa,
+	paysViaFund,
 	setSubmitting,
 	setError,
 	onSuccess,
@@ -39,12 +37,6 @@ export function usePublicSignupSubmit({
 		async (event: FormEvent) => {
 			event.preventDefault();
 			if (!selectedType) return;
-
-			const sepaError = validateSepaFields(sepa);
-			if (sepaError) {
-				setError(sepaError);
-				return;
-			}
 
 			setSubmitting(true);
 			setError(null);
@@ -55,7 +47,7 @@ export function usePublicSignupSubmit({
 				selectedOption,
 				lessonTypeOptions,
 				form,
-				sepa,
+				paysViaFund,
 				invoke: (body) => supabase.functions.invoke('submit-signup-request', { body }),
 				getInvokeErrorMessage,
 			});
@@ -69,7 +61,7 @@ export function usePublicSignupSubmit({
 			selectedOption,
 			lessonTypeOptions,
 			form,
-			sepa,
+			paysViaFund,
 			setSubmitting,
 			setError,
 			onSuccess,

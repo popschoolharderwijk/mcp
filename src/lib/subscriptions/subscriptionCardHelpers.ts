@@ -33,8 +33,10 @@ export function buildSubscriptionActionBody(
 	return { lesson_agreement_id: lessonAgreementId };
 }
 
-export function shouldShowResendInvitation(subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined): boolean {
- return !subscription?.stripe_schedule_id && !subscription?.stripe_subscription_id;
+export function shouldShowResendInvitation(
+	subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined,
+): boolean {
+	return !subscription?.stripe_schedule_id && !subscription?.stripe_subscription_id;
 }
 
 export function resolveSubscriptionActionError(

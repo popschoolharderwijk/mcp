@@ -299,7 +299,8 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 	await saveEnteredDatesOfBirth([
 		{ userId: form.studentUserId, stored: form.studentDateOfBirth, input: form.studentDateOfBirthInput },
 	]);
-	const mailSent = isNew && agreementId ? await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId }) : true;
+	const mailSent =
+		isNew && agreementId ? await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId }) : true;
 	if (!mailSent) toast.warning('Overeenkomst opgeslagen, maar de mail is niet verstuurd');
 	else showAgreementSavedToast({ isEdit: !isNew, isNew, paymentMethod: form.paymentMethod });
 	navigate(getAgreementSavedNavigatePath(fromRequestId, fromTrialId));

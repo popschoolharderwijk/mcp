@@ -71,7 +71,9 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		teacherProfile.data,
 		formatFeePreviewLabel(fee.preview),
 	);
-	const confirmation = await supabase.functions.invoke('send-agreement-confirmation', { body: { lesson_agreement_id: agreementId } });
+	const confirmation = await supabase.functions.invoke('send-agreement-confirmation', {
+		body: { lesson_agreement_id: agreementId },
+	});
 	result.studentSent = !confirmation.error && (confirmation.data as { ok?: boolean } | null)?.ok === true;
 	const targets = buildAgreementMailTargets(null, teacherProfile.data?.email);
 

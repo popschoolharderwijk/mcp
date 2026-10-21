@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { buildInsertPayload, parseSepaFields } from './lessonValidation.ts';
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { buildInsertPayload } from './lessonValidation.ts';
 import { sendSignupConfirmationEmail } from './sendConfirmationEmail.ts';
 import {
 	buildSignupInsertErrorResponse,
@@ -9,13 +10,13 @@ import {
 	resolveSignupMethodResponse,
 	shouldSendSignupConfirmationEmail,
 } from './submitSignupRequestPure.ts';
-import type { SepaFields, SignupRequest } from './types.ts';
+import type { SignupRequest } from './types.ts';
 import { validateLessonSelection } from './validateLessonSelection.ts';
 import { validateBasicFields } from './validation.ts';
 
 type SignupValidationResult =
 	| { ok: false; response: Response }
-	| { ok: true; body: SignupRequest; sepa: SepaFields; optionId: string | null };
+	| { ok: true; body: SignupRequest; optionId: string | null };
 
 async function validateSubmitSignupRequest(
 	supabase: ReturnType<typeof createClient>,
@@ -24,13 +25,19 @@ async function validateSubmitSignupRequest(
 	const basicError = validateBasicFields(body);
 	if (basicError) return { ok: false, response: basicError };
 
-	const sepaResult = parseSepaFields(body);
-	if (!sepaResult.ok) return { ok: false, response: sepaResult.response };
+	if (body.payment_method !== undefined && body.payment_method !== 'stripe' && body.payment_method !== 'manual')
+		return {
+			ok: false,
+			response: new Response(JSON.stringify({ error: 'Ongeldige betaalmethode' }), {
+				status: 400,
+				headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+			}),
+		};
 
 	const lessonResult = await validateLessonSelection(supabase, body);
 	if (!lessonResult.ok) return { ok: false, response: lessonResult.response };
 
-	return { ok: true, body, sepa: sepaResult.sepa, optionId: lessonResult.optionId };
+	return { ok: true, body, optionId: lessonResult.optionId };
 }
 
 async function persistSignupRequest(
@@ -39,7 +46,7 @@ async function persistSignupRequest(
 ): Promise<Response> {
 	const { data, error } = await supabase
 		.from('lesson_signup_requests')
-		.insert(buildInsertPayload(validated.body, validated.optionId, validated.sepa))
+		.insert(buildInsertPayload(validated.body, validated.optionId))
 		.select('id')
 		.single();
 

@@ -1,29 +1,26 @@
 import type { FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { formatIban } from '@/lib/direct-debit/iban';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import { SignupFormField } from './SignupFormField';
 
 interface PublicSignupStep3Props {
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
+	paysViaFund: boolean;
 	error: string | null;
 	submitting: boolean;
 	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
+	onFundChange: (paysViaFund: boolean) => void;
 	onPrevious: () => void;
 	onSubmit: (event: FormEvent) => void;
 }
 
 export function PublicSignupStep3({
 	form,
-	sepa,
+	paysViaFund,
 	error,
 	submitting,
 	onFormChange,
-	onSepaChange,
+	onFundChange,
 	onPrevious,
 	onSubmit,
 }: PublicSignupStep3Props) {
@@ -87,60 +84,18 @@ export function PublicSignupStep3({
 				/>
 			</div>
 			<div className="border-t pt-4 space-y-3">
-				<label className="flex items-start gap-2 cursor-pointer">
+				<p className="text-sm text-muted-foreground">
+					Na bevestiging van je les ontvang je een mail om de maandelijkse betaling via iDEAL te regelen.
+				</p>
+				<label className="flex items-start gap-2 text-sm">
 					<input
 						type="checkbox"
-						className="mt-1"
-						checked={sepa.enabled}
-						onChange={(event) => onSepaChange({ ...sepa, enabled: event.target.checked })}
+						checked={paysViaFund}
+						onChange={(event) => onFundChange(event.target.checked)}
+						className="mt-1 accent-primary"
 					/>
-					<span className="text-sm">
-						<span className="font-medium">Betalen via automatische incasso (SEPA)</span>
-						<span className="block text-muted-foreground">
-							Vul hieronder je bankgegevens in. We rekenen pas af na bevestiging van de aanmelding.
-						</span>
-					</span>
+					Ik betaal via een fonds (bijv. Jeugdfonds of Stichting Leergeld)
 				</label>
-				{sepa.enabled && (
-					<div className="space-y-3 pl-6">
-						<div>
-							<Label>IBAN *</Label>
-							<Input
-								className="mt-1 font-mono"
-								value={sepa.iban}
-								onChange={(event) => onSepaChange({ ...sepa, iban: event.target.value })}
-								onBlur={() => onSepaChange({ ...sepa, iban: formatIban(sepa.iban) })}
-								placeholder="NL00 BANK 0123 4567 89"
-								required={sepa.enabled}
-							/>
-						</div>
-						<SignupFormField
-							label="Rekeninghouder *"
-							value={sepa.holder}
-							onChange={(holder) => onSepaChange({ ...sepa, holder })}
-							required={sepa.enabled}
-						/>
-						<SignupFormField
-							label="BIC (optioneel)"
-							value={sepa.bic}
-							onChange={(bic) => onSepaChange({ ...sepa, bic })}
-						/>
-						<label className="flex items-start gap-2 cursor-pointer">
-							<input
-								type="checkbox"
-								className="mt-1"
-								checked={sepa.consent}
-								onChange={(event) => onSepaChange({ ...sepa, consent: event.target.checked })}
-							/>
-							<span className="text-xs text-muted-foreground">
-								Door ondertekening van dit machtigingsformulier geef ik toestemming aan POPschool
-								Harderwijk om doorlopend incasso-opdrachten naar mijn bank te sturen om een bedrag van
-								mijn rekening af te schrijven wegens lesgeld, en aan mijn bank om doorlopend een bedrag
-								van mijn rekening af te schrijven overeenkomstig die opdracht.
-							</span>
-						</label>
-					</div>
-				)}
 			</div>
 			<div>
 				<Label htmlFor="notes">Opmerkingen</Label>

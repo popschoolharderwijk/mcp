@@ -20,7 +20,7 @@ export function parseSepaFields(
 	};
 }
 
-export function buildInsertPayload(body: SignupRequest, optionId: string | null, sepa: SepaFields) {
+export function buildInsertPayload(body: SignupRequest, optionId: string | null, _sepa?: SepaFields) {
 	return {
 		lesson_type_id: body.lesson_type_id,
 		lesson_group_id: body.lesson_group_id ?? null,
@@ -34,9 +34,7 @@ export function buildInsertPayload(body: SignupRequest, optionId: string | null,
 		parent_email: body.parent_email?.trim().toLowerCase() || null,
 		parent_phone_number: body.parent_phone_number?.trim() || null,
 		notes: body.notes?.trim() || null,
-		sepa_iban: sepa.sepaIban,
-		sepa_account_holder: sepa.sepaHolder,
-		sepa_bic: sepa.sepaBic,
+		payment_method: body.payment_method ?? 'stripe',
 		status: 'pending' as const,
 	};
 }
