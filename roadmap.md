@@ -17,3 +17,6 @@
 
 ## Later
 - Fase 3b (facturen op factuur), 4, 5
+
+## Mijn facturen — Stripe
+- [ ] Stripe-facturen naast eigen facturen, met openen/downloaden; gerichte tests en documentatie
