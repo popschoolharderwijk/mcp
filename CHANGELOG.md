@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.8 — 2026-10-21
+
+- Stap 4: afgeleide status **Wacht op machtiging** (Stripe, actief, geen eenmalige groepsles, nog geen schema/abonnement). Nooit voor op factuur; niets wordt geblokkeerd en er gaan geen automatische herinneringen.
+- Nieuwe view `agreements_awaiting_mandate` (`security_invoker`) met ontvanger, startdatum, eerste/laatste verzending en dagen wachten. Medewerkers mogen verzenddatums van betaalverzoeken nu ook zien.
+- Overeenkomst: badge "Wacht op machtiging" met "verstuurd op …" of "nog niet verstuurd".
+- Nieuwe beheerpagina Financiën → Wacht op machtiging (langst wachtend eerst, "Opnieuw versturen"); teller op het beheerdashboard (verborgen bij 0).
+- Leerlingportaal: melding "Rond je betaling af" met knop "Machtiging afgeven" per wachtende overeenkomst.
+
 ## 1.5.7 — 2026-10-21
 
 - Stap 3: één klantbevestiging bij nieuwe overeenkomst (wizard, duo, groepsaanmelding), met betaalblok en vaste link; docentmail apart, geen mail bij bewerken.

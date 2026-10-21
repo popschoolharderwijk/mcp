@@ -115,6 +115,8 @@ const sections: ManualSection[] = [
 		details: [
 			'Bij een nieuwe overeenkomst ontvangt de ouder (anders leerling) één bevestigingsmail met lesgegevens en Machtiging afgeven. Op factuur bevat geen betaallink. Bij bewerken gaat geen nieuwe mail uit.',
 			'Opnieuw versturen maakt een nieuwe betaallink; de vorige vervalt. De knop verdwijnt zodra de machtiging gekoppeld is. Bij een uitgeschakelde of mislukte mail zie je een waarschuwing.',
+			'Wacht op machtiging: zolang een overeenkomst met automatische incasso nog geen machtiging heeft, staat er een badge "Wacht op machtiging" op de overeenkomst met de verzenddatum. Onder Financiën → Wacht op machtiging zie je alle wachtenden (langst wachtend eerst) en verstuur je de mail opnieuw; op het dashboard staat een teller zolang er iemand wacht. Lessen gaan gewoon door en er gaan geen automatische herinneringen.',
+			'Voor leerlingen: op je dashboard staat "Rond je betaling af" zolang je de maandelijkse betaling nog niet hebt geregeld. Met de knop "Machtiging afgeven" regel je dat via iDEAL.',
 			'Aanmelden vraagt geen bankgegevens. Na bevestiging volgt de mail voor betaling via iDEAL. Vink je een fonds aan, dan wordt de overeenkomst op factuur gezet.',
 
 			'Nieuwe overeenkomst: doorloop vier stappen — leerling, lessoort + optie, docent + planning, bevestiging.',
