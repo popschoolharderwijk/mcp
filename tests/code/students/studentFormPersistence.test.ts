@@ -14,7 +14,19 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 	},
 }));
 
+mock.module('@/integrations/supabase/client', () => ({
+	supabase: {
+		functions: {
+			invoke: async () => invokeResult,
+		},
+	},
+}));
+
 mock.module('../../../src/lib/auth/invokeError', () => ({
+	getInvokeErrorMessage: async () => 'invoke failed',
+}));
+
+mock.module('@/lib/auth/invokeError', () => ({
 	getInvokeErrorMessage: async () => 'invoke failed',
 }));
 

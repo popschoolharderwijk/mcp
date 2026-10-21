@@ -23,6 +23,10 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 	supabase: supabaseMock,
 }));
 
+mock.module('@/integrations/supabase/client', () => ({
+	supabase: supabaseMock,
+}));
+
 const signupRow = {
 	id: 'req-1',
 	first_name: 'Anna',

@@ -175,8 +175,11 @@ If `VITE_DEV_LOGIN_PASSWORD` is not set, the Dev Login button is disabled. Test-
 ## Testing
 
 ```bash
-# Unit tests (no Supabase needed)
-bun test tests/code
+# Unit tests (no Supabase needed). Uses --isolate so mock.module cannot leak across files.
+bun run test:code
+
+# Single file / filter (add --isolate yourself if the file mocks shared modules)
+bun test tests/code/auth/devLoginAttempt.test.ts --isolate
 
 # Agenda logic (recurrence, frequency, deviations; no Supabase needed)
 bun test agenda
@@ -187,7 +190,7 @@ bun test tests/rls
 bun test tests/auth
 bun test tests/e2e
 
-# All tests
+# All tests (not isolated — prefer bun run test:code for tests/code)
 bun test
 ```
 
