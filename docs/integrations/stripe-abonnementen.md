@@ -198,8 +198,9 @@ Er zijn geen SEPA-onderdelen verwijderd. Er zijn geen echte Stripe-aanroepen in 
 ### Controle-uitkomst en blokkades (22 oktober 2026)
 
 - `bun run check`: groen. `bun test code`: 2.773 geslaagd, 0 mislukt.
-- `bun run check:ci`: blokkeert op verouderde gegenereerde schema-types. De gekoppelde database mist eerdere schemaonderdelen: `lesson_type_options.label` en `billing_kind` ontbreken. Herstel eerst de eerdere, reeds bestaande migraties op de juiste mcp-dev-omgeving en genereer daarna zelf types met `bun run supabase:types`; geen reset en geen handmatige typewijzigingen.
-- Het platform heeft de gegenereerde bestanden teruggezet. Alleen automatische Biome-opmaak is uitgevoerd op `types.ts`, `previewAuthStorage.ts` en `src/tailwind.config.lov.json`.
+- De previewtypes zijn hersteld uit de intacte, eerder gegenereerde versie (`b38c575`), zonder handmatige aanpassingen aan typevelden. De betaler-resolver geeft optionele velden nu expliciet door aan de bestaande helpers.
+- De gekoppelde database mist eerdere schemaonderdelen: `lesson_type_options.label` en `billing_kind` ontbreken. Dit is een afzonderlijk runtime-risico; herstel de bestaande migraties op de juiste mcp-dev-omgeving vóór betalingstests en genereer daarna zelf types met `bun run supabase:types`; geen reset.
+- Het platform had de gegenereerde bestanden teruggezet. Automatische Biome-opmaak is uitgevoerd op `types.ts`, `previewAuthStorage.ts` en `src/tailwind.config.lov.json`.
 - De correcties zijn naar de Edge Functions uitgerold. Dagelijkse taak getest: ontbrekend geheim, verkeerd geheim en alleen de openbare sleutel geven 401. Geldige uitvoering wacht op jouw `CRON_SECRET` in beide opslagplaatsen.
 - Een ingelogde klant-/beheerflow is hier niet beschikbaar (extern beheerde Supabase). De zes sandboxcontroles hierboven blijven door jou te testen.
 - Bij herstel na een maandwisseling blijft de oorspronkelijke inhaalperiode behouden. Eventuele aanvullende maanden tussen die periode en een later hervat schema vereisen aparte controle; hiervoor wordt niet stil een extra factuur aangemaakt.

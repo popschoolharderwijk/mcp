@@ -8,7 +8,7 @@
 - [ ] Aanvullende maanden na late hervatting van een oude inhaalfactuur: betaling per tussenliggende maand nog niet end-to-end vastgesteld; gekoppelde database mist eerdere schemawijzigingen
 - [x] Alle open schedules pagineren voor adoptie en dubbel-detectie
 - [ ] Dagelijkse taak activeren: gebruiker moet dezelfde CRON_SECRET instellen in Edge Secrets en Vault; planning op mcp-dev omgezet, ongeautoriseerde toegang geverifieerd
-- [ ] check:ci groen: eerdere schemawijzigingen ontbreken op gekoppelde mcp-dev, gegenereerde types teruggezet; herstel eerdere fases en genereer types door gebruiker
+- [x] Previewtypes hersteld uit intacte gegenereerde versie; betaler-resolver typeveilig gemaakt
 - [x] Codetests, Biome, documentatie en CHANGELOG
 
 ## Fase 1 — tariefmodel (klaar)

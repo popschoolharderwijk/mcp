@@ -2,6 +2,8 @@
 
 ## 1.5.9 — 2026-10-22
 
+- Previewfouten hersteld door de intacte eerder gegenereerde schema-types terug te plaatsen (geen handmatige typevelden) en optionele betalergegevens expliciet aan helpers door te geven.
+
 - Stripe correctheidscontrole deel A: groepsbevestiging toont eenmalig SQL-cursusgeld met btw, zonder token of dode machtigingslink; opgeslagen e-mailtemplates ongewijzigd.
 - Betaallinkhash vervangt de oude link pas na geslaagde mail; mislukte/uitgeschakelde verzending houdt de oude link geldig.
 - Stripe-klanten gebruiken ouder-e-mail en ouder/aparte-debiteurnaam waar bekend, anders leerling; bestaande klantgegevens worden bijgewerkt met behoud van leerlingkoppeling.
