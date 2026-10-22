@@ -4,7 +4,7 @@ import {
 	buildAgreementPaymentVars,
 	wasTemplateEmailDelivered,
 } from '../../../supabase/functions/_shared/agreementConfirmationPure';
-import { resolveBillingRecipient } from '../../../supabase/functions/_shared/paymentLinkPure';
+import { buildPaymentPreview, resolveBillingRecipient } from '../../../supabase/functions/_shared/paymentLinkPure';
 
 const monthly = { month: '2026-11-01', amountCents: 7338, btwRate: 0, isProrated: false };
 const input = {
@@ -14,6 +14,22 @@ const input = {
 	link: 'https://mcp.mplifi.nl/direct-debit/start?t=token',
 };
 describe('agreement confirmation rules', () => {
+	it('one-off course keeps its exact start-month fee even after start and has no payment link', () => {
+		const preview = buildPaymentPreview({
+			billingKind: 'one_off',
+			startDate: '2026-09-15',
+			today: '2026-10-22',
+			months: [
+				{ month: '2026-09-01', amount_cents: 12000, btw_rate: 21, is_prorated: false },
+				{ month: '2026-10-01', amount_cents: 0, btw_rate: 21, is_prorated: false },
+			],
+		});
+		const vars = buildAgreementPaymentVars({ ...input, billingKind: 'one_off', preview });
+		expect(vars.bedrag).toBe('€ 120,00 (inclusief 21% btw)');
+		expect(vars.link).toBe('');
+		expect(preview.catchUp).toBeNull();
+		expect(preview.firstMonth).toBeNull();
+	});
 	it('automatic payment includes the fixed link and exact SQL amount', () => {
 		const vars = buildAgreementPaymentVars(input);
 		expect(vars.link).toBe(input.link);

@@ -7,5 +7,7 @@ describe('isValidCronSecret', () => {
 		expect(isValidCronSecret('abc124', 'abc123')).toBe(false);
 		expect(isValidCronSecret(null, 'abc123')).toBe(false);
 		expect(isValidCronSecret('abc123', undefined)).toBe(false);
+		expect(isValidCronSecret('publishable-key', 'private-cron-secret')).toBe(false);
+		expect(isValidCronSecret('', '')).toBe(false);
 	});
 });

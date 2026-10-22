@@ -1,6 +1,6 @@
 # Stripe-abonnementen op de catalogus (fase 3a)
 
-Stand: 20 oktober 2026. Vervangt de oude opzet (per overeenkomst een eigen product met 11 prijzen, `end_behavior: release`).
+Stand: 22 oktober 2026. Vervangt de oude opzet (per overeenkomst een eigen product met 11 prijzen, `end_behavior: release`).
 
 ## In het kort
 
@@ -79,7 +79,11 @@ Verwijderd: `lesson_agreements.price_per_lesson`, `stripe_price_id`, `stripe_sch
 
 ## Dagelijkse taak (cron)
 
-Op de `lovable`-branch is de taak ingepland (03:00 UTC). Voor **productie** in de SQL-editor van het productieproject uitvoeren (vervang ref en publishable key):
+Op **mcp-dev** is de taak ingepland op 03:00 UTC via `20261022072321_beveilig_dagelijkse_stripe_taak.sql`. De openbare sleutel wordt niet meer geaccepteerd.
+
+Maak per omgeving één sterke willekeurige waarde (bijvoorbeeld met een wachtwoordmanager). Bewaar **dezelfde waarde** als `CRON_SECRET` in Supabase → Edge Functions → Secrets en in Supabase → Vault met naam `CRON_SECRET`. Deel de waarde niet in chat en zet hem niet in code of een migratie. Het geheim ontbreekt nog op mcp-dev; zonder Vault-geheim slaat de planning de HTTP-aanroep over, zonder Edge-geheim weigert de functie toegang.
+
+Voor **productie** voer je onderstaande planning uit in het productieproject (vervang uitsluitend de project-ref). Maak eerst het geheim op beide plekken aan. `cron.schedule` met dezelfde taaknaam werkt de planning bij:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pg_cron;
@@ -90,14 +94,16 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url := 'https://<project-ref>.supabase.co/functions/v1/stripe-billing-daily',
-    headers := '{"Content-Type":"application/json","apikey":"<publishable key>"}'::jsonb,
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', secret.decrypted_secret),
     body := '{}'::jsonb
-  ) AS request_id;
+  ) AS request_id
+  FROM vault.decrypted_secrets AS secret
+  WHERE secret.name = 'CRON_SECRET' AND length(secret.decrypted_secret) > 0;
   $$
 );
 ```
 
-De functie accepteert alleen de publishable key van het project in de `apikey`-header. Elke stap doet alleen wat vandaag aan de beurt is en is idempotent; een extra aanroep kost hooguit wat Stripe-API-verkeer.
+De functie vergelijkt `x-cron-secret` met `CRON_SECRET` in constante tijd. Een ontbrekend/verkeerd geheim en de publishable key krijgen HTTP 401. Elke stap doet alleen wat vandaag aan de beurt is. Controleer na instellen de uitvoering in cron en de Edge Function-logs; toon nooit de Vault-waarde of HTTP-headers in loguitvoer.
 
 ## Tests (geen Stripe-aanroepen)
 
@@ -108,14 +114,14 @@ De functie accepteert alleen de publishable key van het project in de `apikey`-h
 ## Bekende risico's
 
 - Stripe-limiet van 10 fasen: bij veel tariefwissels binnen één horizon wordt de planning korter; de dagelijkse taak verlengt.
-- Als de dagelijkse taak een paar dagen niet draait, blijven eerste facturen en wijzigingen liggen tot de volgende run (geen dubbele facturen dankzij idempotency keys).
+- Als de dagelijkse taak een paar dagen niet draait, blijven eerste facturen en wijzigingen liggen tot de volgende run (factuuradoptie werkt ook na de 24-uurs-idempotencyperiode).
 - `agreement_fee_months` heeft (nog) geen eigen SQL-test; hij is een dunne lus om `compute_agreement_month_fee`, dat wel getest is.
 
 ## Betaaluitnodiging (mail)
 
 - De knop **Opnieuw versturen** roept `send-direct-debit-invite` aan. Die stuurt de eigen template `direct_debit_invite` via `send-template-email` (Resend), niet de algemene Supabase-inlogmail.
 - **Ontvanger** (`resolveBillingRecipient`): `students.parent_email` als die bekend is, anders het account-e-mailadres van de leerling.
-- **Vaste link** (stap 2, 21-10-2026): `/direct-debit/start?agreement=<id>&t=<token>`. De token is 32 willekeurige bytes (base64url); alleen de SHA-256-hash staat in `agreement_payment_links` (één rij per overeenkomst, alleen service_role). De link verloopt niet; bij elke nieuwe verzending komt er een nieuwe token en werkt de oude niet meer.
+- **Vaste link** (stap 2, 21-10-2026): `/direct-debit/start?agreement=<id>&t=<token>`. De token is 32 willekeurige bytes (base64url); alleen de SHA-256-hash staat in `agreement_payment_links` (één rij per overeenkomst, alleen service_role). De link verloopt niet. Eerst wordt de mail verstuurd, pas na succes vervangt de nieuwe hash de oude: mislukte/uitgeschakelde mail houdt de oude link geldig. Fouten bij hash- of auditopslag worden niet als succes gemeld. Mail en database vormen geen atomaire transactie: bij een opslagfout na verzending kan de nieuwe link nog ongeldig zijn; opnieuw versturen herstelt dit.
 - **Pagina met geldige token** (`payment-link-info`, zonder inloggen): lesvorm, maandbedrag met btw-tekst, eerste maand naar rato óf inhaalbedrag met regels per maand, en looptijd. Geen andere persoonsgegevens. "Ga naar iDEAL" roept `create-subscription-checkout` aan met `payment_token` (token-route, geen sessie); na iDEAL komt de klant terug op dezelfde link met `session_id` (mode `complete`). Is de machtiging al afgegeven, dan staat er "Je machtiging is al geregeld".
 - **Bedragen vooraf**: `_shared/paymentLink.ts` → `loadPaymentPreview` haalt de maanden uit `agreement_fee_months` (dezelfde SQL-bron als het schema) en `buildPaymentPreview` (`paymentLinkPure.ts`) verdeelt ze volgens dezelfde inhaalregel als stap 1.
 - **Zonder geldige token of sessie**: formulier "Stuur me een nieuwe link" (`request-payment-link`). Altijd dezelfde melding; maakt nooit accounts aan; mailt alleen als het adres de ontvanger of het account-adres is van een Stripe-overeenkomst die op machtiging wacht; max. 3 aanvragen per uur per overeenkomst (`payment_link_requests`).
@@ -146,12 +152,12 @@ Idempotentie: factuur `mcp_catchup_invoice_<overeenkomst>_<van>_<tot>`, regels `
 - Bij een nieuwe overeenkomst verstuurt `sendAgreementConfirmation` één klantmail `agreement_created` (wizard via `send-agreement-confirmation`, duo en groepsaanmelding rechtstreeks). Bij bewerken gaat geen klantmail uit; de docentbevestiging blijft apart.
 - Ontvanger: `students.parent_email`, anders account. Het `betaalblok` bevat maandbedrag met btw, eerste maand naar rato óf inhaalbedrag (direct afgeschreven), looptijd en **Machtiging afgeven**. Bedragen via `loadPaymentPreview` / `agreement_fee_months`, dezelfde bron als de vaste pagina.
 - Losse variabelen: `bedrag`, `eerste_maand_bedrag`, `inhaal_bedrag`, `minimale_looptijd_tot`, `link`. Op factuur: “Je ontvangt maandelijks een factuur van ons.” Geen link.
-- Elke verzending maakt een nieuwe vaste token en registreert `direct_debit_invitations`. **Opnieuw versturen** stuurt alleen `direct_debit_invite`, zichtbaar zolang geen schedule/abonnement gekoppeld is. Uitgeschakelde templates tellen niet als verstuurd; de wizard toont een waarschuwing.
+- Elke geslaagde verzending voor maandelijkse automatische betaling bewaart een nieuwe vaste token en registreert `direct_debit_invitations`. **Opnieuw versturen** stuurt alleen `direct_debit_invite`, zichtbaar zolang geen schedule/abonnement gekoppeld is. Uitgeschakelde templates tellen niet als verstuurd; de wizard toont een waarschuwing.
 - Publieke aanmelding vraagt geen IBAN/tenaamstelling/machtiging. Standaard `payment_method=stripe`; fonds aangevinkt → `manual` (op factuur). Goedkeuring/wizard neemt dit over. Oude SEPA-kolommen blijven ongemoeid; nieuwe aanmeldingen schrijven ze niet.
 - Migratie vervangt alleen de exacte oude standaardbevestiging; aangepaste templates blijven behouden. Voeg daarin zelf `{{betaalblok}}` toe via Instellingen → E-mailtemplates.
-- Stap 4 (wachtstatus, beheeroverzicht en portaalmelding) is niet uitgevoerd. Groepsbetaling via iDEAL blijft fase 4; geen nieuwe checkout hiervoor.
+- Stap 4 (wachtstatus, beheeroverzicht en portaalmelding) is uitgevoerd. Groepsbetaling via iDEAL blijft fase 4; geen nieuwe checkout hiervoor.
 - Previewcontrole: nieuwe overeenkomst → één klantmail met juiste ontvanger/bedragen; bewerken → geen mail; opnieuw versturen → oude link ongeldig; template uit → waarschuwing; aanmelden met/zonder fonds → overeenkomst op factuur/automatisch.
-- Na migratie: gebruiker draait `bun run db:reset` (of alleen types `bun run supabase:types`).
+- Na een al toegepaste migratie op mcp-dev: alleen `bun run supabase:types` indien nodig; geen reset.
 
 ## Stap 4 — Wacht op machtiging (21 oktober 2026)
 
@@ -160,3 +166,42 @@ Idempotentie: factuur `mcp_catchup_invoice_<overeenkomst>_<van>_<tot>`, regels `
 - Frontend-spiegel en tests: `src/lib/subscriptions/awaitingMandate.ts`.
 - **Schermen:** badge op de overeenkomst (`SubscriptionCard`), pagina Financiën → Wacht op machtiging (`/awaiting-mandate`), teller op het beheerdashboard (verborgen bij 0), melding "Rond je betaling af" op het leerlingdashboard met link naar `/direct-debit/start?agreement=…` (ingelogd).
 - Geen automatische herinneringen; lessen worden niet geblokkeerd.
+
+
+## Correctheidscontrole Stripe — deel A (22 oktober 2026)
+
+### Groepsbevestiging en betaler
+
+- `one_off`: eenmalig startmaandbedrag uit SQL, ook als de start al voorbij is. Het betaalblok vermeldt eenmalig cursusgeld met btw-tekst en een apart bericht over betaling. Geen token, vaste link of machtigingsknop. Groepsbetaling zelf blijft fase 4; opgeslagen e-mailtemplates zijn niet aangepast.
+- Beide checkout-routes gebruiken dezelfde betaler-resolver: `parent_email` → account-e-mail; naam via de bestaande ouder/aparte-debiteur/leerlingregel. `metadata.user_id` en `stripe_customers.user_id` blijven aan de leerling gekoppeld. Bestaande Stripe-klanten krijgen bijgewerkt e-mailadres/naam als die afwijken; klant-id en machtiging blijven behouden.
+
+### Eerste factuur en inhaalfactuur herstellen
+
+- De inhaalbeslissing gebruikt de **opgeslagen** schedule-id en `first_invoice_status`, niet een zojuist geadopteerd Stripe-schema. Factureren gebeurt vóór schedule-opslag: een schedulefout kan geen eerste factuur laten verdwijnen.
+- Voor aanmaken worden **alle** facturen van de klant doorlopen op `metadata.lesson_agreement_id`, `kind` (`first_month`/`catch_up`) en `month`. Een bestaande factuur wordt overgenomen, ook na 24 uur. Het factuur-id en de status worden onmiddellijk vastgelegd, vóór regels/finalisatie.
+- Nieuwe drafts hebben `auto_advance=false`; hervatten vult alleen ontbrekende maandregels aan. Bestaande definitieve facturen worden niet opnieuw gefinaliseerd. Een ongeldig gemaakte/oninvorderbare of dubbele eerste factuur leidt tot een herstelmelding, niet tot een nieuwe factuur. Een opgeslagen draft behoudt zijn oorspronkelijke inhaalperiode bij een maandwisseling.
+- De dagelijkse eerste-factuurroute gebruikt dezelfde claim als de schedule-opbouw. DB-schrijffouten worden gecontroleerd; een betaalstatus uit de webhook wordt bij finalisatie niet overschreven door `sent`.
+- Adoptie en dubbel-detectie van schedules gebruiken auto-paginering en alleen `active`/`not_started`, ook bij meer dan 1.000 overeenkomsten.
+- Pure regels: `firstInvoiceRecoveryPure.ts`, `paymentLinkDeliveryPure.ts`, `stripeBillingIdentityPure.ts`, `scheduleClaimPure.ts`. Regressietests: `tests/code/billing/stripeCorrectness.test.ts`, `tests/code/email/agreementConfirmationPure.test.ts` en `cronSecret.test.ts`.
+
+### Zelf testen in de sandbox
+
+1. Groepsaanmelding met/zonder fonds: eenmalig cursusbedrag met btw, geen machtigingsknop.
+2. Uitgeschakelde/mislukte mail: waarschuwing; oude betaallink blijft geldig. Geslaagde verzending: alleen de nieuwe link werkt.
+3. Ouder als betaler bij zowel ingelogde als vaste-link-checkout: e-mail/naam in Stripe controleren; bestaand klant-id blijft hetzelfde.
+4. Herstel na factuur-/opslagfout en opnieuw na >24 uur: één eerste/inhaalfactuur, ontbrekende draftregels aangevuld; daarna één schedule. Ook hervatten na een maandwisseling.
+5. Controleer abonnementen bij grote aantallen: ook late pagina's worden meegenomen.
+6. Maak `CRON_SECRET` op beide plekken aan; controleer de volgende dagelijkse uitvoering. Zonder/verkeerd geheim blijft toegang geweigerd.
+
+Er zijn geen SEPA-onderdelen verwijderd. Er zijn geen echte Stripe-aanroepen in de tests.
+
+### Controle-uitkomst en blokkades (22 oktober 2026)
+
+- `bun run check`: groen. `bun test code`: 2.773 geslaagd, 0 mislukt.
+- Na previewherstel ook `bun run check:ci` groen: 2.773 tests, 0 mislukt; actuele previewmelding `build OK`.
+- De previewtypes zijn hersteld uit de intacte, eerder gegenereerde versie (`b38c575`), zonder handmatige aanpassingen aan typevelden. De betaler-resolver geeft optionele velden nu expliciet door aan de bestaande helpers.
+- De gekoppelde database mist eerdere schemaonderdelen: `lesson_type_options.label` en `billing_kind` ontbreken. Dit is een afzonderlijk runtime-risico; herstel de bestaande migraties op de juiste mcp-dev-omgeving vóór betalingstests en genereer daarna zelf types met `bun run supabase:types`; geen reset.
+- Het platform had de gegenereerde bestanden teruggezet. Automatische Biome-opmaak is uitgevoerd op `types.ts`, `previewAuthStorage.ts` en `src/tailwind.config.lov.json`.
+- De correcties zijn naar de Edge Functions uitgerold. Dagelijkse taak getest: ontbrekend geheim, verkeerd geheim en alleen de openbare sleutel geven 401. Geldige uitvoering wacht op jouw `CRON_SECRET` in beide opslagplaatsen.
+- Een ingelogde klant-/beheerflow is hier niet beschikbaar (extern beheerde Supabase). De zes sandboxcontroles hierboven blijven door jou te testen.
+- Bij herstel na een maandwisseling blijft de oorspronkelijke inhaalperiode behouden. Eventuele aanvullende maanden tussen die periode en een later hervat schema vereisen aparte controle; hiervoor wordt niet stil een extra factuur aangemaakt.

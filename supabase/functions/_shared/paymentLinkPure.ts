@@ -150,8 +150,13 @@ export function buildPaymentPreview(input: {
 	startDate: string;
 	today: string;
 	months: PreviewFeeMonth[];
+	billingKind?: string;
 }): PaymentPreview {
 	const sorted = [...input.months].sort((a, b) => a.month.localeCompare(b.month));
+	if (input.billingKind === 'one_off') {
+		const fee = sorted.find((m) => m.month === monthStart(input.startDate));
+		return { monthly: fee ? toLine(fee) : null, firstMonth: null, catchUp: null };
+	}
 	const isRegular = (m: PreviewFeeMonth) => !m.is_prorated && m.amount_cents > 0;
 
 	if (needsCatchUp(input.startDate, input.today)) {

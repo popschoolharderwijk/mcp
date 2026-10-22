@@ -6,14 +6,15 @@ import {
 	buildCatchUpLineIdempotencyKey,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
-	needsCatchUp,
 	resolvePlanFromMonth,
 	splitCatchUpMonths,
 } from './catchUpInvoicePure.ts';
 import { getSafeErrorMessage } from './errors.ts';
+import { findRecordedFirstInvoice, recoverFirstInvoice, shouldCatchUp } from './firstInvoiceRecoveryPure.ts';
 import {
 	buildScheduleFromSubscriptionIdempotencyKey,
 	buildScheduleIdempotencyKey,
+	collectOpenSchedules,
 	findDuplicateScheduleGroups,
 	OPEN_SUBSCRIPTION_STATUSES,
 	pickScheduleToKeep,
@@ -59,22 +60,24 @@ export interface SubscriptionRow {
 	stripe_schedule_id: string | null;
 	first_invoice_status: string | null;
 	first_invoice_month: string | null;
+	first_invoice_stripe_id: string | null;
 }
 
 export async function findOpenSubscription(
 	admin: SupabaseClient,
 	agreementId: string,
 ): Promise<SubscriptionRow | null> {
-	const { data } = await admin
+	const { data, error } = await admin
 		.from('subscriptions')
 		.select(
-			'id, stripe_customer_id, stripe_subscription_id, stripe_schedule_id, first_invoice_status, first_invoice_month',
+			'id, stripe_customer_id, stripe_subscription_id, stripe_schedule_id, first_invoice_status, first_invoice_month, first_invoice_stripe_id',
 		)
 		.eq('lesson_agreement_id', agreementId)
 		.in('status', OPEN_STATUSES)
 		.order('created_at', { ascending: false })
 		.limit(1)
 		.maybeSingle();
+	if (error) throw new Error(error.message);
 	return (data as SubscriptionRow | null) ?? null;
 }
 
@@ -159,83 +162,106 @@ async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): 
 
 export async function issueFirstInvoice(
 	stripe: Stripe,
-	input: { agreementId: string; customerId: string; productId: string; first: FirstInvoice; pm?: string },
+	input: {
+		agreementId: string;
+		customerId: string;
+		productId: string;
+		first: FirstInvoice;
+		pm?: string;
+		record?: (invoice: Stripe.Invoice) => Promise<void>;
+	},
 ): Promise<string> {
-	if (input.first.lines && input.first.toMonth) return issueCatchUpInvoice(stripe, input);
-	const description = firstInvoiceDescription(input.first);
-	const metadata = { lesson_agreement_id: input.agreementId, kind: 'first_month', month: input.first.month };
-	const invoice = await stripe.invoices.create(
-		{
-			customer: input.customerId,
-			collection_method: 'charge_automatically',
-			auto_advance: true,
-			pending_invoice_items_behavior: 'exclude',
-			description,
-			metadata,
-			...(input.pm ? { default_payment_method: input.pm } : {}),
-		},
-		{ idempotencyKey: `mcp_first_invoice_${input.agreementId}_${input.first.month}` },
-	);
-	await stripe.invoiceItems.create(
-		{
-			customer: input.customerId,
-			invoice: invoice.id,
-			description,
-			price_data: {
-				currency: 'eur',
-				product: input.productId,
-				unit_amount: input.first.amountCents,
-				tax_behavior: 'inclusive',
-			},
-			tax_rates: [input.first.taxRateId],
-			metadata,
-		},
-		{ idempotencyKey: `mcp_first_invoice_item_${input.agreementId}_${input.first.month}` },
-	);
-	await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true });
-	return invoice.id;
-}
-
-async function issueCatchUpInvoice(
-	stripe: Stripe,
-	input: { agreementId: string; customerId: string; productId: string; first: FirstInvoice; pm?: string },
-): Promise<string> {
+	const catchUp = Boolean(input.first.lines && input.first.toMonth);
 	const from = input.first.month;
 	const to = input.first.toMonth ?? from;
-	const lines = input.first.lines ?? [];
-	const metadata = { lesson_agreement_id: input.agreementId, kind: 'catch_up', month: from, to_month: to };
-	const invoice = await stripe.invoices.create(
-		{
-			customer: input.customerId,
-			collection_method: 'charge_automatically',
-			auto_advance: true,
-			pending_invoice_items_behavior: 'exclude',
-			description: catchUpInvoiceDescription(from, to),
-			metadata,
-			...(input.pm ? { default_payment_method: input.pm } : {}),
-		},
-		{ idempotencyKey: buildCatchUpInvoiceIdempotencyKey(input.agreementId, from, to) },
-	);
-	for (const line of lines) {
-		await stripe.invoiceItems.create(
-			{
-				customer: input.customerId,
-				invoice: invoice.id,
-				description: catchUpLineDescription(line),
-				price_data: {
-					currency: 'eur',
-					product: input.productId,
-					unit_amount: line.amountCents,
-					tax_behavior: 'inclusive',
+	const kind = catchUp ? 'catch_up' : 'first_month';
+	const metadata = {
+		lesson_agreement_id: input.agreementId,
+		kind,
+		month: from,
+		...(catchUp ? { to_month: to } : {}),
+	};
+	const description = catchUp ? catchUpInvoiceDescription(from, to) : firstInvoiceDescription(input.first);
+	return recoverFirstInvoice({
+		invoices: stripe.invoices.list({ customer: input.customerId, limit: 100 }),
+		target: { agreementId: input.agreementId, kind, month: from },
+		create: () =>
+			stripe.invoices.create(
+				{
+					customer: input.customerId,
+					collection_method: 'charge_automatically',
+					auto_advance: false,
+					pending_invoice_items_behavior: 'exclude',
+					description,
+					metadata,
+					...(input.pm ? { default_payment_method: input.pm } : {}),
 				},
-				tax_rates: [line.taxRateId],
-				metadata: { ...metadata, line_month: line.month },
-			},
-			{ idempotencyKey: buildCatchUpLineIdempotencyKey(input.agreementId, from, to, line.month) },
-		);
-	}
-	await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true });
-	return invoice.id;
+				{
+					idempotencyKey: catchUp
+						? buildCatchUpInvoiceIdempotencyKey(input.agreementId, from, to)
+						: `mcp_first_invoice_${input.agreementId}_${from}`,
+				},
+			),
+		record: input.record ?? (async () => {}),
+		completeDraft: async (invoice) => {
+			// A recovered catch-up draft keeps its original coverage, even across a month rollover.
+			if (catchUp && invoice.metadata?.to_month !== to) {
+				throw new Error('Inhaalfactuur heeft een andere periode; herstel de opgeslagen factuur eerst');
+			}
+			const existingMonths = new Set<string>();
+			for await (const line of stripe.invoices.listLineItems(invoice.id, { limit: 100 })) {
+				if (line.metadata?.lesson_agreement_id === input.agreementId) {
+					existingMonths.add(line.metadata.line_month ?? line.metadata.month);
+				}
+			}
+			const lines = input.first.lines ?? [{ ...input.first }];
+			for (const line of lines) {
+				if (existingMonths.has(line.month)) continue;
+				await stripe.invoiceItems.create(
+					{
+						customer: input.customerId,
+						invoice: invoice.id,
+						description: catchUp ? catchUpLineDescription(line) : description,
+						price_data: {
+							currency: 'eur',
+							product: input.productId,
+							unit_amount: line.amountCents,
+							tax_behavior: 'inclusive',
+						},
+						tax_rates: [line.taxRateId],
+						metadata: { ...metadata, line_month: line.month },
+					},
+					{
+						idempotencyKey: catchUp
+							? buildCatchUpLineIdempotencyKey(input.agreementId, from, to, line.month)
+							: `mcp_first_invoice_item_${input.agreementId}_${from}`,
+					},
+				);
+			}
+			await stripe.invoices.finalizeInvoice(invoice.id, { auto_advance: true });
+		},
+	});
+}
+
+async function recordFirstInvoice(
+	admin: SupabaseClient,
+	agreementId: string,
+	first: FirstInvoice,
+	invoice: Stripe.Invoice,
+) {
+	const { error, data } = await admin
+		.from('subscriptions')
+		.update({
+			first_invoice_stripe_id: invoice.id,
+			first_invoice_month: first.month,
+			first_invoice_due_on: first.dueOn,
+			first_invoice_status: invoice.status === 'paid' ? 'paid' : invoice.status === 'draft' ? 'pending' : 'sent',
+		})
+		.eq('lesson_agreement_id', agreementId)
+		.in('status', OPEN_STATUSES)
+		.select('id');
+	if (error) throw new Error(error.message);
+	if (!data?.length) throw new Error('Eerste factuur kon niet worden vastgelegd');
 }
 
 export interface ScheduleResult {
@@ -383,7 +409,15 @@ async function syncAgreementScheduleInner(
 		};
 	}
 	try {
-		return await buildAgreementSchedule(admin, stripe, input, ctx, existing, customerId, today);
+		return await buildAgreementSchedule(
+			admin,
+			stripe,
+			input,
+			ctx,
+			await findOpenSubscription(admin, ctx.agreementId),
+			customerId,
+			today,
+		);
 	} finally {
 		await releaseScheduleBuild(admin, ctx.agreementId);
 	}
@@ -400,6 +434,28 @@ async function buildAgreementSchedule(
 ): Promise<ScheduleResult> {
 	const pm = input.defaultPaymentMethod ?? (await resolveDefaultPaymentMethod(stripe, customerId));
 	if (!pm) throw new Error('Nog geen machtiging gekoppeld: de klant moet de betaaluitnodiging eerst afronden');
+	// Recover the durable invoice even when its DB write failed before a month rollover.
+	if (!existing?.first_invoice_status) {
+		const invoice = await findRecordedFirstInvoice(stripe.invoices.list({ customer: customerId, limit: 100 }), {
+			agreementId: ctx.agreementId,
+			month: monthStart(ctx.startDate),
+		});
+		if (invoice) {
+			await recordFirstInvoice(
+				admin,
+				ctx.agreementId,
+				{
+					month: monthStart(ctx.startDate),
+					dueOn: today,
+					amountCents: invoice.total,
+					taxRateId: ctx.taxRates.exempt,
+					isProrated: false,
+				},
+				invoice,
+			);
+			existing = await findOpenSubscription(admin, ctx.agreementId);
+		}
+	}
 
 	let schedule: Stripe.SubscriptionSchedule | null = existing?.stripe_schedule_id
 		? await stripe.subscriptionSchedules.retrieve(existing.stripe_schedule_id)
@@ -414,16 +470,34 @@ async function buildAgreementSchedule(
 	if (!schedule) {
 		// Adopt an open schedule that already exists in Stripe for this agreement (e.g. created by a
 		// concurrent webhook before the claim existed) instead of creating a duplicate.
-		const listed = await stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 });
-		const adoptable = selectAdoptableSchedule(listed.data, ctx.agreementId);
+		const listed = await collectOpenSchedules(
+			stripe.subscriptionSchedules.list({ customer: customerId, limit: 100 }),
+		);
+		const adoptable = selectAdoptableSchedule(listed, ctx.agreementId);
 		if (adoptable) schedule = await stripe.subscriptionSchedules.retrieve(adoptable.id);
 	}
 	const running = schedule?.status === 'active';
+	if (existing?.first_invoice_status === 'pending' && existing.first_invoice_month) {
+		await issuePendingFirstInvoice(admin, stripe, ctx.agreementId, customerId, existing.first_invoice_month, today);
+		existing = await findOpenSubscription(admin, ctx.agreementId);
+	}
 
 	// Mandate after the start month (no schedule, no first invoice yet) → one catch-up invoice
 	// for all missed months; the schedule then starts next month.
-	const catchUp = !schedule && !existing?.first_invoice_status && needsCatchUp(ctx.startDate, today);
-	const fromMonth = resolvePlanFromMonth({ startDate: ctx.startDate, today, running, catchUp });
+	const catchUp = shouldCatchUp({
+		startDate: ctx.startDate,
+		today,
+		storedScheduleId: existing?.stripe_schedule_id,
+		firstInvoiceStatus: existing?.first_invoice_status,
+	});
+	let fromMonth = resolvePlanFromMonth({ startDate: ctx.startDate, today, running: running && !catchUp, catchUp });
+	if (!running && existing?.first_invoice_status && existing.first_invoice_month) {
+		const recorded = existing.first_invoice_stripe_id
+			? await stripe.invoices.retrieve(existing.first_invoice_stripe_id)
+			: null;
+		const coveredThrough = recorded?.metadata?.to_month ?? existing.first_invoice_month;
+		fromMonth = addMonths(coveredThrough, 1);
+	}
 	const allMonths = await loadFeeMonths(admin, ctx.agreementId, fromMonth, horizonMonthCount(fromMonth));
 	const split = catchUp ? splitCatchUpMonths(allMonths, today, ctx.taxRates) : null;
 	const plan = buildSubscriptionPlan({
@@ -434,9 +508,21 @@ async function buildAgreementSchedule(
 		months: split ? split.rest : allMonths,
 		priceIdByLookupKey: ctx.priceIdByLookupKey,
 		taxRates: ctx.taxRates,
-		continuation: running || Boolean(split),
+		continuation: running || Boolean(existing?.first_invoice_status) || Boolean(split),
 	});
 	if (!plan.ok) throw new Error(plan.error);
+	if (running && !catchUp && !existing?.first_invoice_status) {
+		// A previously persisted schedule must not hide its missing separate start-month invoice.
+		const [firstMonth] = await loadFeeMonths(admin, ctx.agreementId, monthStart(ctx.startDate), 1);
+		if (!firstMonth) throw new Error('Geen eerste factuurmaand gevonden');
+		plan.firstInvoice = {
+			month: firstMonth.month,
+			dueOn: ctx.startDate,
+			amountCents: firstMonth.amount_cents,
+			taxRateId: firstMonth.age_category === '21_plus' ? ctx.taxRates.nl_21_incl : ctx.taxRates.exempt,
+			isProrated: firstMonth.is_prorated,
+		};
+	}
 	if (split) {
 		plan.firstInvoice = {
 			month: split.fromMonth,
@@ -449,8 +535,52 @@ async function buildAgreementSchedule(
 		};
 	}
 
+	// First (partial or running) month as a separate invoice, only once per agreement.
+	let firstInvoice: ScheduleResult['firstInvoice'] = null;
+	let firstInvoiceFields: Record<string, unknown> = {};
+	if (plan.firstInvoice && !existing?.first_invoice_status) {
+		if (plan.firstInvoice.dueOn <= today) {
+			const invoiceId = await issueFirstInvoice(stripe, {
+				agreementId: ctx.agreementId,
+				customerId,
+				productId: ctx.productId,
+				first: plan.firstInvoice,
+				pm,
+				record: (invoice) =>
+					recordFirstInvoice(admin, ctx.agreementId, plan.firstInvoice as FirstInvoice, invoice),
+			});
+			firstInvoice = 'sent';
+			firstInvoiceFields = { first_invoice_stripe_id: invoiceId };
+		} else {
+			firstInvoice = 'pending';
+			firstInvoiceFields = { first_invoice_status: 'pending' };
+		}
+		firstInvoiceFields = {
+			...firstInvoiceFields,
+			first_invoice_month: plan.firstInvoice.month,
+			first_invoice_due_on: plan.firstInvoice.dueOn,
+		};
+	}
+
+	if (firstInvoice === 'sent') {
+		const { error } = await admin
+			.from('subscriptions')
+			.update({ first_invoice_status: 'sent' })
+			.eq('lesson_agreement_id', ctx.agreementId)
+			.eq('first_invoice_status', 'pending');
+		if (error) throw new Error(error.message);
+	}
+
 	if (schedule && running) {
-		await updateRunningSchedule(stripe, schedule, ctx, pm, plan.phases, plan.endBehavior, fromMonth);
+		await updateRunningSchedule(
+			stripe,
+			schedule,
+			ctx,
+			pm,
+			plan.phases,
+			plan.endBehavior,
+			addMonths(monthStart(today), 1),
+		);
 	} else if (schedule && plan.phases.length > 0) {
 		await stripe.subscriptionSchedules.update(schedule.id, {
 			end_behavior: plan.endBehavior,
@@ -467,31 +597,6 @@ async function buildAgreementSchedule(
 		schedule = await createNewSchedule(stripe, ctx, customerId, pm, plan.phases, plan.endBehavior, today);
 	}
 
-	// First (partial or running) month as a separate invoice, only once per agreement.
-	let firstInvoice: ScheduleResult['firstInvoice'] = null;
-	let firstInvoiceFields: Record<string, unknown> = {};
-	if (plan.firstInvoice && !existing?.first_invoice_status) {
-		if (plan.firstInvoice.dueOn <= today) {
-			const invoiceId = await issueFirstInvoice(stripe, {
-				agreementId: ctx.agreementId,
-				customerId,
-				productId: ctx.productId,
-				first: plan.firstInvoice,
-				pm,
-			});
-			firstInvoice = 'sent';
-			firstInvoiceFields = { first_invoice_status: 'sent', first_invoice_stripe_id: invoiceId };
-		} else {
-			firstInvoice = 'pending';
-			firstInvoiceFields = { first_invoice_status: 'pending' };
-		}
-		firstInvoiceFields = {
-			...firstInvoiceFields,
-			first_invoice_month: plan.firstInvoice.month,
-			first_invoice_due_on: plan.firstInvoice.dueOn,
-		};
-	}
-
 	const subscriptionId = schedule ? getStripeId(schedule.subscription) : (existing?.stripe_subscription_id ?? null);
 	await writeSubscriptionState(admin, {
 		lesson_agreement_id: ctx.agreementId,
@@ -501,7 +606,7 @@ async function buildAgreementSchedule(
 		stripe_schedule_id: schedule?.id ?? null,
 		status: subscriptionId ? (running ? 'active' : 'scheduled') : plan.phases.length > 0 ? 'scheduled' : 'canceled',
 	});
-	await admin
+	const { error: stateError } = await admin
 		.from('subscriptions')
 		.update({
 			needs_rebuild: false,
@@ -512,6 +617,7 @@ async function buildAgreementSchedule(
 		})
 		.eq('lesson_agreement_id', ctx.agreementId)
 		.in('status', [...OPEN_STATUSES, 'canceled']);
+	if (stateError) throw new Error(stateError.message);
 
 	return {
 		scheduleId: schedule?.id ?? null,
@@ -564,44 +670,93 @@ export async function recordRebuildError(
 	return message;
 }
 
-/** Issue first invoices whose due date has arrived (amount recomputed from the source). */
+/** Resume a pending first/catch-up draft using its original Stripe metadata coverage. */
+async function issuePendingFirstInvoice(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	agreementId: string,
+	customerId: string,
+	firstMonth: string,
+	today: string,
+) {
+	const existing = await findOpenSubscription(admin, agreementId);
+	if (existing?.first_invoice_status !== 'pending') return;
+	const ctx = await loadPlanContext(admin, agreementId);
+	const recorded = existing.first_invoice_stripe_id
+		? await stripe.invoices.retrieve(existing.first_invoice_stripe_id)
+		: await findRecordedFirstInvoice(stripe.invoices.list({ customer: customerId, limit: 100 }), {
+				agreementId,
+				month: firstMonth,
+			});
+	const toMonth = recorded?.metadata?.kind === 'catch_up' ? recorded.metadata.to_month : null;
+	const count = toMonth ? resolveFeeMonthCount(firstMonth, toMonth) : 1;
+	const months = await loadFeeMonths(admin, agreementId, firstMonth, count);
+	const month = months[0];
+	if (!month) throw new Error('Geen eerste factuurmaand gevonden');
+	if (!toMonth && ctx.startDate > today) return;
+	const split = toMonth ? splitCatchUpMonths(months, toMonth, ctx.taxRates) : null;
+	const first: FirstInvoice = split
+		? {
+				month: split.fromMonth,
+				toMonth: split.toMonth,
+				dueOn: today,
+				amountCents: split.amountCents,
+				taxRateId: split.lines[0].taxRateId,
+				isProrated: split.lines[0].isProrated,
+				lines: split.lines,
+			}
+		: {
+				month: month.month,
+				dueOn: today,
+				amountCents: month.amount_cents,
+				taxRateId: month.age_category === '21_plus' ? ctx.taxRates.nl_21_incl : ctx.taxRates.exempt,
+				isProrated: month.is_prorated,
+			};
+	const pm = await resolveDefaultPaymentMethod(stripe, customerId);
+	await issueFirstInvoice(stripe, {
+		agreementId,
+		customerId,
+		productId: ctx.productId,
+		pm,
+		first,
+		record: (invoice) => recordFirstInvoice(admin, agreementId, first, invoice),
+	});
+	const { error } = await admin
+		.from('subscriptions')
+		.update({ first_invoice_status: 'sent' })
+		.eq('lesson_agreement_id', agreementId)
+		.eq('first_invoice_status', 'pending');
+	if (error) throw new Error(error.message);
+}
+
+function resolveFeeMonthCount(from: string, to: string): number {
+	const [fy, fm] = from.split('-').map(Number);
+	const [ty, tm] = to.split('-').map(Number);
+	return (ty - fy) * 12 + tm - fm + 1;
+}
+
+/** Daily invoices share the schedule claim, so two retry paths cannot race. */
 export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Stripe, today: string) {
-	const { data: rows } = await admin
+	const { data: rows, error } = await admin
 		.from('subscriptions')
 		.select('lesson_agreement_id, stripe_customer_id, first_invoice_month')
 		.eq('first_invoice_status', 'pending')
 		.lte('first_invoice_due_on', today);
+	if (error) throw new Error(error.message);
 	const results: Array<{ lesson_agreement_id: string; ok: boolean; error?: string }> = [];
 	for (const row of rows ?? []) {
+		let claimed = false;
 		try {
-			const ctx = await loadPlanContext(admin, row.lesson_agreement_id);
-			const [month] = await loadFeeMonths(admin, row.lesson_agreement_id, row.first_invoice_month, 1);
-			if (!month || month.amount_cents <= 0) {
-				await admin
-					.from('subscriptions')
-					.update({ first_invoice_status: null })
-					.eq('lesson_agreement_id', row.lesson_agreement_id);
-				continue;
-			}
-			const pm = await resolveDefaultPaymentMethod(stripe, row.stripe_customer_id);
-			const invoiceId = await issueFirstInvoice(stripe, {
-				agreementId: row.lesson_agreement_id,
-				customerId: row.stripe_customer_id,
-				productId: ctx.productId,
-				pm,
-				first: {
-					month: month.month,
-					dueOn: today,
-					amountCents: month.amount_cents,
-					taxRateId: month.age_category === '21_plus' ? ctx.taxRates.nl_21_incl : ctx.taxRates.exempt,
-					isProrated: month.is_prorated,
-				},
-			});
-			await admin
-				.from('subscriptions')
-				.update({ first_invoice_status: 'sent', first_invoice_stripe_id: invoiceId })
-				.eq('lesson_agreement_id', row.lesson_agreement_id)
-				.eq('first_invoice_status', 'pending');
+			claimed = await claimScheduleBuild(admin, row.lesson_agreement_id, row.stripe_customer_id);
+			if (!claimed) continue;
+			await issuePendingFirstInvoice(
+				admin,
+				stripe,
+				row.lesson_agreement_id,
+				row.stripe_customer_id,
+				row.first_invoice_month,
+				today,
+			);
 			results.push({ lesson_agreement_id: row.lesson_agreement_id, ok: true });
 		} catch (err) {
 			results.push({
@@ -609,6 +764,8 @@ export async function issueDueFirstInvoices(admin: SupabaseClient, stripe: Strip
 				ok: false,
 				error: getSafeErrorMessage(toScheduleError(err)),
 			});
+		} finally {
+			if (claimed) await releaseScheduleBuild(admin, row.lesson_agreement_id);
 		}
 	}
 	return results;
@@ -626,8 +783,8 @@ export async function detectDuplicateSchedules(
 	admin: SupabaseClient,
 	stripe: Stripe,
 ): Promise<DuplicateSchedulesInfo[]> {
-	const listed = await stripe.subscriptionSchedules.list({ limit: 100 });
-	const groups = findDuplicateScheduleGroups(listed.data);
+	const listed = await collectOpenSchedules(stripe.subscriptionSchedules.list({ limit: 100 }));
+	const groups = findDuplicateScheduleGroups(listed);
 	const result: DuplicateSchedulesInfo[] = [];
 	for (const group of groups) {
 		const existing = await findOpenSubscription(admin, group.agreementId);
