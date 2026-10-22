@@ -67,6 +67,7 @@ function runAppend(
 	isLessonEvent = false,
 	isLessonSource = false,
 	noLessonPeriods: { start_date: string; end_date: string; name?: string | null }[] | undefined = undefined,
+	schoolYearBounds: { start_month: number; end_month: number } | undefined = undefined,
 ): CalendarEvent[] {
 	const events: CalendarEvent[] = [];
 	appendRecurringAgendaEvents(
@@ -80,6 +81,7 @@ function runAppend(
 		isLessonEvent,
 		isLessonSource,
 		noLessonPeriods,
+		schoolYearBounds,
 	);
 	return events;
 }
@@ -221,6 +223,48 @@ describe('appendRecurringAgendaEvents', () => {
 		expect(formatDateToDb(events[0]?.start as Date)).toBe('2025-07-14');
 		expect(events[0]?.resource.reason).toBe('Verschoven door lesvrije periode');
 		expect(events[0]?.resource.hasTimeOrDateChange).toBe(true);
+	});
+
+	it('skips August lesson occurrences under Sep–Jul school year bounds', () => {
+		const rangeStart = new Date('2025-08-01T00:00:00');
+		const rangeEnd = new Date('2025-08-31T23:59:59');
+		const events = runAppend(
+			mockAgendaEvent({
+				start_date: '2025-08-04',
+				recurring_end_date: '2025-08-25',
+			}),
+			rangeStart,
+			rangeEnd,
+			undefined,
+			[],
+			null,
+			true,
+			true,
+		);
+		expect(events).toHaveLength(0);
+	});
+
+	it('keeps August lesson occurrences when school year spans the full calendar year', () => {
+		const rangeStart = new Date('2025-08-01T00:00:00');
+		const rangeEnd = new Date('2025-08-31T23:59:59');
+		const events = runAppend(
+			mockAgendaEvent({
+				start_date: '2025-08-04',
+				recurring_end_date: '2025-08-18',
+			}),
+			rangeStart,
+			rangeEnd,
+			undefined,
+			[],
+			null,
+			true,
+			true,
+			undefined,
+			{ start_month: 1, end_month: 12 },
+		);
+		expect(events).toHaveLength(3);
+		expect(formatDateToDb(events[0]?.start as Date)).toBe('2025-08-04');
+		expect(formatDateToDb(events[2]?.start as Date)).toBe('2025-08-18');
 	});
 
 	it('uses deviation title and color overrides on an occurrence', () => {

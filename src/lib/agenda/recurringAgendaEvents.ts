@@ -23,6 +23,7 @@ type RecurringContext = {
 	isLessonEvent: boolean;
 	isLessonSource: boolean;
 	noLessonPeriods: NoLessonPeriod[] | undefined;
+	schoolYearBounds: SchoolYearBounds;
 };
 
 type RecurringScheduleParams = {
@@ -147,7 +148,7 @@ function resolveShiftedLessonDate(
 function shouldSkipShiftedLessonOccurrence(
 	shiftedDate: Date,
 	periodEnd: Date | null,
-	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
+	schoolYearBounds: SchoolYearBounds,
 ): boolean {
 	if (periodEnd && shiftedDate > periodEnd) return true;
 	return isNonBillingMonthString(formatDateToDb(shiftedDate), schoolYearBounds);
@@ -160,12 +161,13 @@ function evaluateLessonSourceOccurrenceVisibility(
 	rangeStart: Date,
 	rangeEnd: Date,
 	noLessonPeriods: NoLessonPeriod[] | undefined,
+	schoolYearBounds: SchoolYearBounds,
 ): OccurrenceVisibility {
 	const shift = resolveShiftedLessonDate(current, shiftDays, noLessonPeriods);
 	const nextShiftDays = shift.shiftDays;
 	const { shiftedDate, isShifted } = shift;
 
-	if (shouldSkipShiftedLessonOccurrence(shiftedDate, periodEnd)) {
+	if (shouldSkipShiftedLessonOccurrence(shiftedDate, periodEnd, schoolYearBounds)) {
 		return { shiftDays: nextShiftDays, shiftedDate, isShifted, skipOccurrence: true };
 	}
 
@@ -182,6 +184,7 @@ function evaluateOccurrenceVisibility(
 	rangeStart: Date,
 	rangeEnd: Date,
 	noLessonPeriods: NoLessonPeriod[] | undefined,
+	schoolYearBounds: SchoolYearBounds,
 ): OccurrenceVisibility {
 	if (isLessonSource && !effective) {
 		return evaluateLessonSourceOccurrenceVisibility(
@@ -191,6 +194,7 @@ function evaluateOccurrenceVisibility(
 			rangeStart,
 			rangeEnd,
 			noLessonPeriods,
+			schoolYearBounds,
 		);
 	}
 
@@ -435,6 +439,7 @@ function appendRecurringOccurrence(
 		rangeStart,
 		rangeEnd,
 		ctx.noLessonPeriods,
+		ctx.schoolYearBounds,
 	);
 
 	if (visibility.skipOccurrence) {
@@ -481,6 +486,7 @@ export function appendRecurringAgendaEvents(
 	isLessonEvent: boolean,
 	isLessonSource: boolean,
 	noLessonPeriods: NoLessonPeriod[] | undefined,
+	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
 ): void {
 	const ctx: RecurringContext = {
 		ev,
@@ -492,6 +498,7 @@ export function appendRecurringAgendaEvents(
 		isLessonEvent,
 		isLessonSource,
 		noLessonPeriods,
+		schoolYearBounds,
 	};
 	const schedule = resolveRecurringScheduleParams(ev, agreement);
 	const current = getFirstOccurrenceInRangeHelper(

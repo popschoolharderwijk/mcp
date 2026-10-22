@@ -1,10 +1,11 @@
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { displayDayToDbDay } from '@/lib/date/day-index';
+import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import { deleteTeacherAvailability, insertTeacherAvailability } from '@/lib/teachers/teacherAvailabilityApi';
 import {
 	type AvailabilityTimeForm,
-	DEFAULT_AVAILABILITY_TIME_FORM,
+	defaultAvailabilityTimeForm,
 	isAvailabilityTimeRangeValid,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 
@@ -69,6 +70,6 @@ export async function removeTeacherAvailabilitySlot(blockId: string): Promise<bo
 	return true;
 }
 
-export function resetAvailabilityDialogForm(): AvailabilityTimeForm {
-	return { ...DEFAULT_AVAILABILITY_TIME_FORM };
+export function resetAvailabilityDialogForm(agenda?: AgendaSetting): AvailabilityTimeForm {
+	return defaultAvailabilityTimeForm(agenda);
 }

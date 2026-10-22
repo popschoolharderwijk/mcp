@@ -5,12 +5,14 @@ type QueryResult = { data: unknown; error: { message: string } | null };
 let optionResult: QueryResult = { data: null, error: null };
 let studentResult: QueryResult = { data: null, error: null };
 let noLessonResult: QueryResult = { data: [], error: null };
+let appSettingsResult: QueryResult = { data: [], error: null };
 
 function thenableResult(result: QueryResult) {
 	const promise = Promise.resolve(result);
 	return Object.assign(promise, {
 		select: () => thenableResult(result),
 		eq: () => thenableResult(result),
+		in: () => thenableResult(result),
 		maybeSingle: () => promise,
 	});
 }
@@ -20,6 +22,7 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 		from: (table: string) => {
 			if (table === 'lesson_type_options') return thenableResult(optionResult);
 			if (table === 'students') return thenableResult(studentResult);
+			if (table === 'app_settings') return thenableResult(appSettingsResult);
 			return thenableResult(noLessonResult);
 		},
 	},
@@ -52,6 +55,7 @@ describe('loadAgreementBillingPreview', () => {
 		};
 		studentResult = { data: { date_of_birth: '2000-01-01' }, error: null };
 		noLessonResult = { data: [], error: null };
+		appSettingsResult = { data: [], error: null };
 	});
 
 	it('returns preview when lesson option and student data load successfully', async () => {
@@ -59,6 +63,17 @@ describe('loadAgreementBillingPreview', () => {
 		expect(result.error).toBeNull();
 		expect(result.preview?.tariff).toBe('adult');
 		expect(result.preview?.pricePerLessonCents).toBe(2360);
+	});
+
+	it('uses vat age threshold from app_settings when present', async () => {
+		appSettingsResult = {
+			data: [{ key: 'vat', value: { age_threshold_years: 30, standard_rate_percent: 21 } }],
+			error: null,
+		};
+		const result = await loadAgreementBillingPreview(agreement, '2026-09-01');
+		expect(result.error).toBeNull();
+		expect(result.preview?.tariff).toBe('youth');
+		expect(result.preview?.pricePerLessonCents).toBe(1950);
 	});
 
 	it('returns option lookup error message', async () => {

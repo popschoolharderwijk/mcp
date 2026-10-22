@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import type { FreeSlotForTeacher } from '@/lib/agreementSlots';
+import type { TrialLessonsSetting } from '@/lib/settings/appSettingsTypes';
 import { getScheduleTrialLessonResetValues, todayPlus } from '@/lib/trial-lessons/scheduleTrialLessonHelpers';
 
 export interface ScheduleTrialLessonSignupRequestPrefill {
@@ -13,6 +15,7 @@ export interface ScheduleTrialLessonSignupRequestPrefill {
 
 function resetFormFields(
 	signupRequest: ScheduleTrialLessonSignupRequestPrefill | null | undefined,
+	trial: TrialLessonsSetting,
 	setters: {
 		setStudentEmail: (value: string) => void;
 		setStudentFirstName: (value: string) => void;
@@ -24,7 +27,7 @@ function resetFormFields(
 		setDuration: (value: number) => void;
 	},
 ) {
-	const values = getScheduleTrialLessonResetValues(signupRequest);
+	const values = getScheduleTrialLessonResetValues(signupRequest, trial);
 	setters.setStudentEmail(values.studentEmail);
 	setters.setStudentFirstName(values.studentFirstName);
 	setters.setStudentLastName(values.studentLastName);
@@ -39,9 +42,11 @@ export function useScheduleTrialLessonFormState(
 	open: boolean,
 	signupRequest: ScheduleTrialLessonSignupRequestPrefill | null | undefined,
 ) {
-	const [fromDate, setFromDate] = useState(todayPlus(1));
-	const [toDate, setToDate] = useState(todayPlus(30));
-	const [duration, setDuration] = useState(30);
+	const { settings } = useAppSettingsContext();
+	const trial = settings.trial_lessons;
+	const [fromDate, setFromDate] = useState(() => todayPlus(1));
+	const [toDate, setToDate] = useState(() => todayPlus(trial.horizon_days));
+	const [duration, setDuration] = useState(() => trial.default_duration_minutes);
 	const [notes, setNotes] = useState('');
 	const [studentEmail, setStudentEmail] = useState('');
 	const [studentFirstName, setStudentFirstName] = useState('');
@@ -51,7 +56,7 @@ export function useScheduleTrialLessonFormState(
 
 	useEffect(() => {
 		if (!open) return;
-		resetFormFields(signupRequest, {
+		resetFormFields(signupRequest, trial, {
 			setStudentEmail,
 			setStudentFirstName,
 			setStudentLastName,
@@ -61,7 +66,7 @@ export function useScheduleTrialLessonFormState(
 			setToDate,
 			setDuration,
 		});
-	}, [open, signupRequest]);
+	}, [open, signupRequest, trial]);
 
 	return {
 		fromDate,

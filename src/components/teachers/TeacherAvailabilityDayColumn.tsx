@@ -1,4 +1,5 @@
 import { TeacherAvailabilityBlockButton } from '@/components/teachers/TeacherAvailabilityBlockButton';
+import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import {
 	type AvailabilityBlock,
 	findAvailabilityBlockCoveringTime,
@@ -13,6 +14,7 @@ interface TeacherAvailabilityDayColumnProps {
 	hours: number[];
 	timeSlots: string[];
 	blocks: AvailabilityBlock[];
+	agenda: AgendaSetting;
 	canEdit: boolean;
 	onEmptySlotClick: (dayIndex: number, time: string) => void;
 	onBlockClick: (block: AvailabilityBlock) => void;
@@ -24,6 +26,7 @@ export function TeacherAvailabilityDayColumn({
 	hours,
 	timeSlots,
 	blocks,
+	agenda,
 	canEdit,
 	onEmptySlotClick,
 	onBlockClick,
@@ -36,13 +39,13 @@ export function TeacherAvailabilityDayColumn({
 				<div
 					key={hour}
 					className="absolute left-0 right-0 border-t border-border/40"
-					style={{ top: `${getAvailabilityHourTopPercent(hour)}%` }}
+					style={{ top: `${getAvailabilityHourTopPercent(hour, agenda)}%` }}
 				/>
 			))}
 
 			{canEdit &&
 				timeSlots.slice(0, -1).map((time) => {
-					const { topPercent, heightPercent } = getAvailabilitySlotPosition(time);
+					const { topPercent, heightPercent } = getAvailabilitySlotPosition(time, agenda);
 					const existingBlock = findAvailabilityBlockCoveringTime(dayBlocks, time);
 					if (existingBlock) return null;
 

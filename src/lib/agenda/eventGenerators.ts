@@ -1,5 +1,7 @@
 import type { CalendarEvent } from '@/components/agenda/types';
+import type { SchoolYearBounds } from '@/lib/billing/schoolYear';
 import { addMinutes } from '@/lib/date/date-format';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { AgendaEventDeviationRow, AgendaEventRow } from '@/types/agenda-events';
 import type { LessonAgreementWithStudent } from '@/types/lesson-agreements';
 import type { NoLessonPeriod } from './noLessonPeriod';
@@ -18,6 +20,7 @@ export function generateAgendaEvents(
 	recurringByEventId?: Map<string, AgendaEventDeviationRow[]>,
 	agreementsMap?: Map<string, LessonAgreementWithStudent>,
 	noLessonPeriods?: NoLessonPeriod[],
+	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
 ): CalendarEvent[] {
 	const events: CalendarEvent[] = [];
 
@@ -43,6 +46,7 @@ export function generateAgendaEvents(
 			isLessonEvent,
 			ev.source_type === 'lesson_agreement' || ev.source_type === 'lesson_group',
 			noLessonPeriods,
+			schoolYearBounds,
 		);
 	}
 

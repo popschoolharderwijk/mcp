@@ -9,6 +9,8 @@
  * Keep in sync with src/lib/settings/appSettingsDefaults.ts.
  */
 export const APP_SETTINGS = {
+	/** Keys seeded in bootstrap.sql */
+	KEY_COUNT: 6,
 	SCHOOL_YEAR: {
 		start_month: 9,
 		end_month: 7,

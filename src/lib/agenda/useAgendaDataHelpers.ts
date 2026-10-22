@@ -17,6 +17,8 @@ import {
 	fetchUserParticipantEventIds,
 } from '@/lib/agenda/loadAgendaData';
 import { mergeSameSlotLessonEvents } from '@/lib/agenda/mergeSameSlotLessonEvents';
+import type { SchoolYearBounds } from '@/lib/billing/schoolYear';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { AgendaEventDeviationRow, AgendaEventRow } from '@/types/agenda-events';
 import type { AgendaLessonAgreement } from '@/types/lesson-agreements';
 import type { ProjectInfo } from '@/types/projects';
@@ -105,6 +107,7 @@ export function buildEnrichedAgendaEvents(
 	state: AgendaDataState,
 	currentDate: Date,
 	viewerUserId: string | undefined,
+	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
 ): CalendarEvent[] {
 	const deviationsByEventId = buildDeviationsByEventId(state.deviations);
 	const recurringByEventId = buildRecurringByEventId(state.deviations);
@@ -123,6 +126,7 @@ export function buildEnrichedAgendaEvents(
 		recurringByEventId,
 		agreementsMap,
 		state.noLessonPeriods,
+		schoolYearBounds,
 	);
 
 	const enriched = baseEvents.map((ev) =>

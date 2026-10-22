@@ -80,7 +80,7 @@ export interface ScheduleTrialLessonResetValues {
 	duration: number;
 }
 
-function trialLessonDefaultsFromSetting(trial: TrialLessonsSetting = APP_SETTINGS_BOOTSTRAP.trial_lessons) {
+function trialLessonDefaultsFromSetting(trial: TrialLessonsSetting) {
 	return {
 		fromDate: todayPlus(1),
 		toDate: todayPlus(trial.horizon_days),
@@ -90,8 +90,9 @@ function trialLessonDefaultsFromSetting(trial: TrialLessonsSetting = APP_SETTING
 
 export function getScheduleTrialLessonResetValues(
 	signupRequest: { email?: string; first_name?: string; last_name?: string } | null | undefined,
+	trial: TrialLessonsSetting = APP_SETTINGS_BOOTSTRAP.trial_lessons,
 ): ScheduleTrialLessonResetValues {
-	const defaults = trialLessonDefaultsFromSetting();
+	const defaults = trialLessonDefaultsFromSetting(trial);
 	return {
 		studentEmail: signupRequest?.email ?? '',
 		studentFirstName: signupRequest?.first_name ?? '',
