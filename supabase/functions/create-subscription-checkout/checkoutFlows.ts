@@ -6,13 +6,13 @@ import {
 	getReusablePaymentMethodIdFromSetupIntent,
 	getStripeId,
 } from '../_shared/stripe.ts';
+import { resolveStripeBillingIdentity, stripeBillingIdentityChanged } from '../_shared/stripeBillingIdentityPure.ts';
 import { CUSTOMER_DIRECT_DEBIT_ERROR, retrieveIfExists } from '../_shared/stripeRecoveryPure.ts';
 import { findOpenSubscription, recordRebuildError, syncAgreementSchedule } from '../_shared/subscriptionSchedule.ts';
 import {
 	buildCheckoutSessionUrls,
 	buildCompleteModeSuccessResponse,
 	buildDirectModeSuccessResponse,
-	buildStripeCustomerDisplayName,
 	resolveDirectModePaymentMethodId,
 	resolveExistingScheduleResponse,
 	resolveSetupIntentPaymentMethodId,
@@ -28,6 +28,21 @@ export async function ensureStripeCustomer(
 	billingUserId: string,
 	profile: ProfileRow,
 ): Promise<string> {
+	const { data: student, error: studentError } = await admin
+		.from('students')
+		.select('parent_email, parent_name, debtor_name, debtor_info_same_as_student')
+		.eq('user_id', billingUserId)
+		.maybeSingle();
+	if (studentError) throw new Error(studentError.message);
+	const identity = resolveStripeBillingIdentity({
+		accountEmail: profile.email,
+		firstName: profile.first_name,
+		lastName: profile.last_name,
+		parentEmail: student?.parent_email,
+		parentName: student?.parent_name,
+		debtorName: student?.debtor_name,
+		debtorSameAsStudent: student?.debtor_info_same_as_student,
+	});
 	const { data: existingCustomer } = await admin
 		.from('stripe_customers')
 		.select('stripe_customer_id')
@@ -38,18 +53,21 @@ export async function ensureStripeCustomer(
 	if (customerId) {
 		// A stored customer from another Stripe account does not exist here: create a new one.
 		const found = await retrieveIfExists(customerId, (id) => stripe.customers.retrieve(id));
-		if (found && !found.deleted) return customerId;
+		if (found && !found.deleted) {
+			if (stripeBillingIdentityChanged(found, identity)) await stripe.customers.update(customerId, identity);
+			return customerId;
+		}
 	}
 
 	const customer = await stripe.customers.create({
-		email: profile.email,
-		name: buildStripeCustomerDisplayName(profile.first_name, profile.last_name),
+		...identity,
 		metadata: { user_id: billingUserId },
 	});
 	customerId = customer.id;
-	await admin
+	const { error } = await admin
 		.from('stripe_customers')
 		.upsert({ user_id: billingUserId, stripe_customer_id: customerId }, { onConflict: 'user_id' });
+	if (error) throw new Error(error.message);
 	return customerId;
 }
 

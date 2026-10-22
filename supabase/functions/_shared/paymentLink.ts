@@ -9,6 +9,7 @@ import {
 	resolveInviteFeeMonths,
 	resolveInviteRecipientName,
 } from './directDebitInvitePure.ts';
+import { deliverPaymentLink } from './paymentLinkDeliveryPure.ts';
 import {
 	buildPaymentLinkUrl,
 	buildPaymentPreview,
@@ -62,9 +63,8 @@ export function isPaymentLinkAgreement(a: PaymentLinkAgreement | null): a is Pay
 	return Boolean(a?.is_active && a.payment_method === 'stripe' && a.lesson_type_options?.billing_kind !== 'one_off');
 }
 
-/** New token; the previous one stops working immediately. */
-export async function rotatePaymentLinkToken(admin: SupabaseClient, agreementId: string): Promise<string> {
-	const token = generatePaymentLinkToken();
+/** Commit a delivered token; never invalidate the old link before successful mail delivery. */
+export async function storePaymentLinkToken(admin: SupabaseClient, agreementId: string, token: string): Promise<void> {
 	const tokenHash = await hashPaymentLinkToken(token);
 	const { error } = await admin
 		.from('agreement_payment_links')
@@ -73,7 +73,6 @@ export async function rotatePaymentLinkToken(admin: SupabaseClient, agreementId:
 			{ onConflict: 'lesson_agreement_id' },
 		);
 	if (error) throw new Error(error.message);
-	return token;
 }
 
 export async function verifyPaymentLinkToken(
@@ -113,7 +112,12 @@ export async function loadPaymentPreview(
 		btw_rate: Number(m.btw_rate ?? 0),
 		is_prorated: Boolean(m.is_prorated),
 	}));
-	return buildPaymentPreview({ startDate: agreement.start_date, today, months });
+	return buildPaymentPreview({
+		startDate: agreement.start_date,
+		today,
+		months,
+		billingKind: agreement.lesson_type_options?.billing_kind,
+	});
 }
 
 export function formatAgreementLessonForm(agreement: PaymentLinkAgreement): string {
@@ -197,7 +201,7 @@ export async function sendPaymentLinkInvite(opts: {
 		return { ok: false, status: 422, error: 'Kon het lesgeld niet berekenen' };
 	}
 
-	const token = await rotatePaymentLinkToken(admin, agreement.id);
+	const token = generatePaymentLinkToken();
 	const studentName = formatInviteName(profile?.first_name, profile?.last_name);
 	const vars = buildDirectDebitInviteVars({
 		studentName,
@@ -215,18 +219,23 @@ export async function sendPaymentLinkInvite(opts: {
 		link: buildPaymentLinkUrl(opts.siteUrl, agreement.id, token),
 	});
 
-	const sent = await sendTemplateEmail({
-		event_key: 'direct_debit_invite',
-		to: opts.recipient,
-		vars,
-		origin: opts.origin,
-	});
+	const sent = await deliverPaymentLink(
+		() =>
+			sendTemplateEmail({
+				event_key: 'direct_debit_invite',
+				to: opts.recipient,
+				vars,
+				origin: opts.origin,
+			}),
+		() => storePaymentLinkToken(admin, agreement.id, token),
+	);
 	if (!sent) return { ok: false, status: 502, error: 'Versturen van de uitnodiging is mislukt' };
 
-	await admin.from('direct_debit_invitations').insert({
+	const { error } = await admin.from('direct_debit_invitations').insert({
 		lesson_agreement_id: agreement.id,
 		recipient_email: opts.recipient,
 		sent_by: opts.sentBy,
 	});
+	if (error) throw new Error(error.message);
 	return { ok: true };
 }

@@ -16,7 +16,7 @@ import { isValidCronSecret } from './authPure.ts';
 Deno.serve(async (req) => {
 	const preflight = handleCorsPreflight(req);
 	if (preflight) return preflight;
-	if (!isValidCronSecret(req.headers.get('apikey'), Deno.env.get('SUPABASE_ANON_KEY'))) {
+	if (!isValidCronSecret(req.headers.get('x-cron-secret'), Deno.env.get('CRON_SECRET'))) {
 		return jsonResponse(401, { error: 'Unauthorized' });
 	}
 	if (!Deno.env.get('STRIPE_SECRET_KEY')) return jsonResponse(200, { configured: false });

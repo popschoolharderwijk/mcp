@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.9 — 2026-10-22
+
+- Stripe correctheidscontrole deel A: groepsbevestiging toont eenmalig SQL-cursusgeld met btw, zonder token of dode machtigingslink; opgeslagen e-mailtemplates ongewijzigd.
+- Betaallinkhash vervangt de oude link pas na geslaagde mail; mislukte/uitgeschakelde verzending houdt de oude link geldig.
+- Stripe-klanten gebruiken ouder-e-mail en ouder/aparte-debiteurnaam waar bekend, anders leerling; bestaande klantgegevens worden bijgewerkt met behoud van leerlingkoppeling.
+- Eerste/inhaalfacturen worden vóór schedule-opslag vastgelegd en op Stripe-metadata geadopteerd, ook na 24 uur. Drafts hervatten alleen ontbrekende regels; dagelijkse facturatie deelt de scheduleclaim.
+- Adoptie en dubbel-detectie verwerken alle Stripe-schedulepagina's en sluiten vrijgegeven/afgesloten schedules uit.
+- Dagelijkse taak op mcp-dev omgezet naar `x-cron-secret` met `CRON_SECRET` uit Vault. Gebruiker moet dezelfde geheime waarde in Vault en Edge Functions Secrets aanmaken; zonder geheim geen uitvoering.
+- Gerichte pure regressietests toegevoegd; SEPA-onderdelen niet verwijderd.
+
 ## 1.5.8 — 2026-10-21
 
 - Stap 4: afgeleide status **Wacht op machtiging** (Stripe, actief, geen eenmalige groepsles, nog geen schema/abonnement). Nooit voor op factuur; niets wordt geblokkeerd en er gaan geen automatische herinneringen.

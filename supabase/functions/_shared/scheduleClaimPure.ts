@@ -28,7 +28,16 @@ export interface ScheduleLike {
 }
 
 export function isOpenScheduleStatus(status: string): boolean {
-	return status !== 'canceled' && status !== 'completed';
+	return status === 'active' || status === 'not_started';
+}
+
+/** Consume every page of Stripe's async iterator, keeping only genuinely open schedules. */
+export async function collectOpenSchedules<T extends ScheduleLike>(source: AsyncIterable<T>): Promise<T[]> {
+	const schedules: T[] = [];
+	for await (const schedule of source) {
+		if (isOpenScheduleStatus(schedule.status)) schedules.push(schedule);
+	}
+	return schedules;
 }
 
 /** The oldest open schedule in Stripe that belongs to the agreement, if any. */

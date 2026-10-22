@@ -89,6 +89,18 @@ const m = (month: string, amount_cents: number, is_prorated = false, btw_rate = 
 });
 
 describe('buildPaymentPreview', () => {
+	it('one-off always uses the start fee, even after the course started', () => {
+		const preview = buildPaymentPreview({
+			billingKind: 'one_off',
+			startDate: '2026-09-15',
+			today: '2026-11-01',
+			months: [m('2026-09-01', 12000, false, 21), m('2026-10-01', 0), m('2026-11-01', 0)],
+		});
+		expect(preview.monthly?.amountCents).toBe(12000);
+		expect(preview.monthly?.btwRate).toBe(21);
+		expect(preview.catchUp).toBeNull();
+		expect(preview.firstMonth).toBeNull();
+	});
 	it('start halfway October, mandate in December: catch-up Oct (pro rata) + Nov + Dec, monthly from January', () => {
 		const p = buildPaymentPreview({
 			startDate: '2026-10-15',

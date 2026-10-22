@@ -6,9 +6,10 @@ import {
 	loadBillingContacts,
 	loadPaymentLinkAgreement,
 	loadPaymentPreview,
-	rotatePaymentLinkToken,
+	storePaymentLinkToken,
 } from './paymentLink.ts';
-import { buildPaymentLinkUrl } from './paymentLinkPure.ts';
+import { deliverPaymentLink } from './paymentLinkDeliveryPure.ts';
+import { buildPaymentLinkUrl, generatePaymentLinkToken } from './paymentLinkPure.ts';
 import { sendTemplateEmail } from './sendTemplateEmail.ts';
 
 /** The only customer confirmation sender, shared by wizard, duo and signup approval. */
@@ -42,12 +43,13 @@ export async function sendAgreementConfirmation(
 				.maybeSingle(),
 			admin.from('profiles').select('first_name, last_name').eq('user_id', details.teacher_user_id).maybeSingle(),
 		]);
+		const oneOff = agreement.lesson_type_options?.billing_kind === 'one_off';
 		const preview =
-			agreement.payment_method === 'stripe'
+			agreement.payment_method === 'stripe' || oneOff
 				? await loadPaymentPreview(admin, agreement)
 				: { monthly: null, firstMonth: null, catchUp: null };
-		if (agreement.payment_method === 'stripe' && !preview.monthly) return false;
-		const token = agreement.payment_method === 'stripe' ? await rotatePaymentLinkToken(admin, agreementId) : null;
+		if ((agreement.payment_method === 'stripe' || oneOff) && !preview.monthly) return false;
+		const token = agreement.payment_method === 'stripe' && !oneOff ? generatePaymentLinkToken() : null;
 		const vars = {
 			leerling_naam: escapeConfirmationHtml(formatInviteName(student?.first_name, student?.last_name)),
 			docent_naam: escapeConfirmationHtml(formatInviteName(teacher?.first_name, teacher?.last_name)),
@@ -68,17 +70,24 @@ export async function sendAgreementConfirmation(
 			startdatum: formatInviteDate(agreement.start_date),
 			...buildAgreementPaymentVars({
 				paymentMethod: agreement.payment_method,
+				billingKind: agreement.lesson_type_options?.billing_kind,
 				preview,
 				minimumTermEnd: agreement.minimum_term_end,
 				link: token ? buildPaymentLinkUrl(opts.siteUrl, agreementId, token) : '',
 			}),
 		};
-		const sent = await sendTemplateEmail({
-			event_key: 'agreement_created',
-			to: recipient,
-			vars,
-			origin: opts.origin,
-		});
+		const sent = await deliverPaymentLink(
+			() =>
+				sendTemplateEmail({
+					event_key: 'agreement_created',
+					to: recipient,
+					vars,
+					origin: opts.origin,
+				}),
+			async () => {
+				if (token) await storePaymentLinkToken(admin, agreementId, token);
+			},
+		);
 		if (!sent) return false;
 		if (token) {
 			const { error } = await admin
