@@ -6,7 +6,7 @@ import {
 	buildDuoPairInsertPayload,
 	resolveDuoPairInsertFailureResponse,
 	resolveDuoPairInsertOutcome,
-} from './createDuoPairPure.ts';
+} from './createDuoPairHelpers.ts';
 import type { Body } from './types.ts';
 
 export async function createDuoPair(

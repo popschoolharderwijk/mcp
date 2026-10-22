@@ -1,14 +1,14 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import type { RebuildScheduleBody } from './validationPure.ts';
+import type { RebuildScheduleBody } from './validationHelpers.ts';
 
-export type { RebuildScheduleBody } from './validationPure.ts';
+export type { RebuildScheduleBody } from './validationHelpers.ts';
 export {
 	buildRebuildScheduleFailureResult,
 	buildRebuildScheduleResponse,
 	buildRebuildScheduleSuccessResult,
 	validateRebuildScheduleBody,
-} from './validationPure.ts';
+} from './validationHelpers.ts';
 
 export async function resolveRebuildAgreementIds(
 	admin: SupabaseClient,

@@ -1,6 +1,4 @@
 import { Link } from 'react-router-dom';
-import { NavPageHeaderIcon } from '@/components/layout/NavPageHeaderIcon';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageHeader } from '@/components/ui/page-header';
 import {
 	buildAgreementWizardStudentDisplay,
@@ -16,21 +14,11 @@ interface AgreementWizardPageHeaderProps {
 
 export function AgreementWizardPageHeader({ isEditMode, agreement }: AgreementWizardPageHeaderProps) {
 	if (shouldShowAgreementWizardEditHeader(isEditMode, agreement)) {
-		const { studentName, studentInitials } = buildAgreementWizardStudentDisplay(agreement);
+		const { studentName } = buildAgreementWizardStudentDisplay(agreement);
 
 		return (
 			<div className="mb-6">
 				<PageHeader
-					icon={
-						<Avatar className="h-16 w-16">
-							{agreement.student.avatar_url && (
-								<AvatarImage src={agreement.student.avatar_url} alt={studentName} />
-							)}
-							<AvatarFallback className="bg-primary/10 text-primary text-xl">
-								{studentInitials}
-							</AvatarFallback>
-						</Avatar>
-					}
 					title={
 						<Link to={buildStudentDetailPath(agreement.student_user_id)} className="hover:underline">
 							{studentName}
@@ -44,7 +32,7 @@ export function AgreementWizardPageHeader({ isEditMode, agreement }: AgreementWi
 
 	return (
 		<div className="mb-6">
-			<PageHeader icon={<NavPageHeaderIcon name="agreements" />} title="Nieuwe overeenkomst" />
+			<PageHeader title="Nieuwe overeenkomst" />
 		</div>
 	);
 }

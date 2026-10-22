@@ -12,7 +12,7 @@ import {
 	resolveBatchNotFoundError,
 	resolveMissingBatchLookupError,
 	shouldCloseBatchAfterImport,
-} from './applyStatusReportPure.ts';
+} from './applyStatusReportHelpers.ts';
 import { buildImportResponse } from './buildImportResponse.ts';
 import type { ApplyReportResult, BatchItemRow, BatchRow, ParsedReport } from './types.ts';
 

@@ -8,8 +8,8 @@ import {
 	validateMailConfig,
 	validateSendTemplateEmailBody,
 } from '../_shared/send-template-email-core.ts';
-import { isFailedEmailEventResult, readTemplateEmailEnv } from './prepareTemplateEmailPure.ts';
-import { buildSkippedTemplateEmailPayload, isSkippedTemplateResult } from './sendTemplateEmailHandlerPure.ts';
+import { isFailedEmailEventResult, readTemplateEmailEnv } from './prepareTemplateEmailHelpers.ts';
+import { buildSkippedTemplateEmailPayload, isSkippedTemplateResult } from './sendTemplateEmailHandlerHelpers.ts';
 
 type BegunTemplateEmailRequest = Extract<
 	Awaited<ReturnType<typeof beginAuthenticatedPostRequest<SendTemplateEmailBody>>>,

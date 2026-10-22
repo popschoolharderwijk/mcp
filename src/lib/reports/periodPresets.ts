@@ -10,6 +10,7 @@ import {
 	subYears,
 } from 'date-fns';
 import { formatDateToDb } from '@/lib/date/date-format';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 
 export type BasePeriodPreset = 'this_month' | 'last_month' | 'this_quarter' | 'last_quarter' | 'this_year' | 'custom';
 
@@ -65,12 +66,12 @@ export function getPresetDateRange(
 			return { start: formatDateToDb(startOfYear(prevY)), end: formatDateToDb(endOfYear(prevY)) };
 		}
 		case 'this_school_year': {
-			const schoolStartMonth = options?.schoolStartMonth ?? 9;
+			const schoolStartMonth = options?.schoolStartMonth ?? APP_SETTINGS_BOOTSTRAP.school_year.start_month;
 			const range = schoolYearRange(now, schoolStartMonth);
 			return { start: formatDateToDb(range.start), end: formatDateToDb(range.end) };
 		}
 		case 'last_school_year': {
-			const schoolStartMonth = options?.schoolStartMonth ?? 9;
+			const schoolStartMonth = options?.schoolStartMonth ?? APP_SETTINGS_BOOTSTRAP.school_year.start_month;
 			const range = schoolYearRange(subYears(now, 1), schoolStartMonth);
 			return { start: formatDateToDb(range.start), end: formatDateToDb(range.end) };
 		}

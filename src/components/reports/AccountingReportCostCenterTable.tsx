@@ -23,9 +23,9 @@ export function AccountingReportCostCenterTable({ rows }: AccountingReportCostCe
 							<tr className="border-b text-left text-muted-foreground">
 								<th className="py-2">Kostenplaats</th>
 								<th className="py-2 text-right">Facturen</th>
-								<th className="py-2 text-right">Omzet &lt;21</th>
+								<th className="py-2 text-right">Omzet jongeren</th>
 								<th className="py-2 text-right">Omzet onbekend</th>
-								<th className="py-2 text-right">Omzet 21+ excl</th>
+								<th className="py-2 text-right">Omzet volwassenen excl</th>
 								<th className="py-2 text-right">BTW</th>
 								<th className="py-2 text-right">Totaal bruto</th>
 							</tr>
@@ -38,13 +38,13 @@ export function AccountingReportCostCenterTable({ rows }: AccountingReportCostCe
 									</td>
 									<td className="py-2 text-right tabular-nums">{row.invoice_count}</td>
 									<td className="py-2 text-right tabular-nums">
-										{formatCentsEUR(row.revenue_under_21_cents)}
+										{formatCentsEUR(row.revenue_youth_cents)}
 									</td>
 									<td className="py-2 text-right tabular-nums">
 										{formatCentsEUR(row.revenue_unknown_age_cents)}
 									</td>
 									<td className="py-2 text-right tabular-nums">
-										{formatCentsEUR(row.revenue_21_plus_excl_cents)}
+										{formatCentsEUR(row.revenue_adult_excl_cents)}
 									</td>
 									<td className="py-2 text-right tabular-nums">{formatCentsEUR(row.vat_cents)}</td>
 									<td className="py-2 text-right tabular-nums font-medium">

@@ -59,9 +59,9 @@ export type LessonTypeOptionFormRow = {
 	frequency: LessonFrequency;
 	/** Snapshot price (legacy column, kept for backwards compat). */
 	price_per_lesson: string;
-	/** Per-lesson price for students under 21 (in euros, as string for input). */
-	price_per_lesson_under_21: string;
-	/** Per-lesson price for students aged 21 and over (in euros, as string for input). */
+	/** Per-lesson youth tariff (euros, as string for input). */
+	price_per_lesson_youth: string;
+	/** Per-lesson adult tariff (euros, as string for input). */
 	price_per_lesson_adult: string;
 };
 

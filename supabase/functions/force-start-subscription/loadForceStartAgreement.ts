@@ -1,5 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { resolveForceStartAgreementGate } from '../_shared/forceStartSubscriptionHandlerPure.ts';
+import { resolveForceStartAgreementGate } from '../_shared/forceStartSubscriptionHandlerHelpers.ts';
 import { jsonResponse } from '../_shared/http.ts';
 
 export async function loadForceStartAgreement(

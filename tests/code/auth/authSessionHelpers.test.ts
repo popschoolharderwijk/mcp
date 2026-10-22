@@ -3,6 +3,7 @@ import {
 	isAuthBackendUnreachableError,
 	planAuthSessionApply,
 	resolveAuthBootstrapProbeOutcome,
+	resolveAuthRoleFlags,
 	runAuthSessionSideEffects,
 } from '../../../src/lib/auth/authSessionHelpers';
 
@@ -168,5 +169,32 @@ describe('runAuthSessionSideEffects', () => {
 		});
 		expect(cleared).toBe(true);
 		expect(completed).toBe(true);
+	});
+});
+
+describe('resolveAuthRoleFlags', () => {
+	it('marks site admin as privileged without teacher flag', () => {
+		expect(resolveAuthRoleFlags('site_admin', null)).toEqual({
+			isAdmin: false,
+			isSiteAdmin: true,
+			isStaff: false,
+			isTeacher: false,
+			isPrivileged: true,
+		});
+	});
+
+	it('marks teacher when teacher user id is present', () => {
+		expect(resolveAuthRoleFlags(null, 'teacher-1')).toEqual({
+			isAdmin: false,
+			isSiteAdmin: false,
+			isStaff: false,
+			isTeacher: true,
+			isPrivileged: false,
+		});
+	});
+
+	it('marks admin as privileged', () => {
+		expect(resolveAuthRoleFlags('admin', null).isPrivileged).toBe(true);
+		expect(resolveAuthRoleFlags('admin', null).isAdmin).toBe(true);
 	});
 });

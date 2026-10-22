@@ -8,7 +8,7 @@ export interface ReportRow {
 	lesson_type_name: string | null;
 	lesson_type_color: string | null;
 	lesson_type_icon: string | null;
-	age_category: 'under_21' | '21_plus' | 'unknown';
+	age_category: 'youth' | 'adult' | 'unknown';
 	total_minutes: number;
 	lesson_count: number;
 	duo_perspective: 'teacher_block' | 'student_lesson' | null;
@@ -26,8 +26,8 @@ export interface ReportLessonTypeOption {
 export interface ReportSummary {
 	totalMinutes: number;
 	totalLessons: number;
-	under21Minutes: number;
-	over21Minutes: number;
+	youthMinutes: number;
+	adultMinutes: number;
 	projectMinutes: number;
 }
 
@@ -43,7 +43,7 @@ export const DUO_PERSPECTIVE_LABELS: Record<'teacher_block' | 'student_lesson', 
 };
 
 export const AGE_LABELS: Record<string, string> = {
-	under_21: 'Onder 21',
-	'21_plus': '21+',
+	youth: 'Jongeren',
+	adult: 'Volwassenen',
 	unknown: 'Onbekend',
 };

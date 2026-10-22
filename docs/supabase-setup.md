@@ -27,7 +27,7 @@ supabase link --project-ref <project-id>
 supabase db push
 ```
 
-Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_sepa_direct_debit`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `supabase db reset --linked` on remote) and regenerate types (`--local` or `bun run supabase:types`).
+Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_sepa_direct_debit`). Storage buckets (`avatars`, `announcement-images`, `sepa-batches`, invoices, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `supabase db reset --linked` on remote) and regenerate types (`bun run supabase:types:local` or `bun run supabase:types`).
 
 ---
 

@@ -3,6 +3,7 @@ import { createClientAs } from '../../db';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { APP_SETTINGS } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -55,7 +56,7 @@ function firstDayOfWeekInInclusiveRange(start: string, end: string, targetDow: n
 }
 
 /** Age bucket used by get_hours_report (PostgreSQL AGE(occurrence_date, date_of_birth)). */
-function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: string): 'under_21' | '21_plus' | 'unknown' {
+function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: string): 'youth' | 'adult' | 'unknown' {
 	const st = fixtures.allStudents.find((s) => s.user_id === studentUserId);
 	if (!st?.date_of_birth) return 'unknown';
 	const occ = new Date(`${occurrenceIso}T12:00:00.000Z`);
@@ -63,7 +64,7 @@ function ageCategoryOnOccurrenceDate(studentUserId: string, occurrenceIso: strin
 	let age = occ.getUTCFullYear() - dob.getUTCFullYear();
 	const m = occ.getUTCMonth() - dob.getUTCMonth();
 	if (m < 0 || (m === 0 && occ.getUTCDate() < dob.getUTCDate())) age--;
-	return age >= 21 ? '21_plus' : 'under_21';
+	return age >= APP_SETTINGS.VAT.age_threshold_years ? 'adult' : 'youth';
 }
 
 type HoursReportRow = {

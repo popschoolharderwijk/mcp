@@ -9,6 +9,7 @@ import {
 	readInvoiceMailEnv,
 	shouldRecordInvoiceEmailSent,
 } from './invoice.ts';
+import type { InvoiceVatSettings } from './invoiceHelpers.ts';
 import {
 	buildInvoiceInsertRow,
 	buildInvoiceLineInsertRows,
@@ -23,7 +24,7 @@ import {
 	resolvePreparedStudentInvoiceResult,
 	resolveStudentMandateRef,
 	shouldDeliverStudentInvoiceEmail,
-} from './processStudentInvoicePure.ts';
+} from './processStudentInvoiceHelpers.ts';
 import type {
 	AccountingSettings,
 	BatchItem,
@@ -39,6 +40,7 @@ interface ProcessStudentArgs {
 	batchId: string;
 	batch: DirectDebitBatch;
 	settings: AccountingSettings;
+	vat: InvoiceVatSettings;
 	studentUserId: string;
 	items: BatchItem[];
 	profileMap: Map<string, ProfileRow>;
@@ -242,6 +244,7 @@ export async function processStudentInvoice(args: ProcessStudentArgs): Promise<S
 			studentRow: args.studentMap.get(args.studentUserId),
 			items: args.items,
 			collectionDate: args.batch.collection_date,
+			vat: args.vat,
 		}),
 		args.studentUserId,
 	);

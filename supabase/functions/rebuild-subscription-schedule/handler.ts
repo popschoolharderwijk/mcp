@@ -1,7 +1,7 @@
 import { rebuildScheduleForAgreement } from '../_shared/billing.ts';
 import { jsonResponse } from '../_shared/http.ts';
 import { getSafeErrorMessage, getStripe } from '../_shared/stripe.ts';
-import { authenticateRebuildScheduleRequest } from './rebuildSubscriptionScheduleHandlerPure.ts';
+import { authenticateRebuildScheduleRequest } from './rebuildSubscriptionScheduleHandlerHelpers.ts';
 import {
 	buildRebuildScheduleFailureResult,
 	buildRebuildScheduleResponse,

@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { PartialSlotConfirmDialog } from '@/components/agreements/PartialSlotConfirmDialog';
 import { WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
-import { NavPageHeaderIcon } from '@/components/layout/NavPageHeaderIcon';
 import { LessonGroupWizardNavigation } from '@/components/lesson-groups/wizard/LessonGroupWizardNavigation';
 import {
 	LessonGroupStepBody,
@@ -31,7 +30,6 @@ export default function LessonGroupWizard() {
 		<>
 			<div className="mb-6">
 				<PageHeader
-					icon={<NavPageHeaderIcon name="lessonGroups" />}
 					title={resolveLessonGroupWizardTitle(wizard.isEditMode, wizard.form.name)}
 					subtitle={resolveLessonGroupWizardSubtitle(wizard.isEditMode)}
 				/>

@@ -1,6 +1,7 @@
 import { addDaysToDateStr } from '@/lib/date/date-format';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { NoLessonPeriod } from './calculateYearlyAmount';
-import { isNonBillingMonthString } from './schoolYear';
+import { isNonBillingMonthString, type SchoolYearBounds } from './schoolYear';
 
 function findNoLessonPeriod(dateStr: string, periods: ReadonlyArray<NoLessonPeriod>): NoLessonPeriod | undefined {
 	for (const p of periods) {
@@ -20,6 +21,7 @@ export function shiftDatePastNoLessonPeriods(
 	periodEnd: string,
 	noLessonPeriods: ReadonlyArray<NoLessonPeriod>,
 	initialShiftDays: number,
+	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
 ): { lessonDate: string | null; shiftDays: number } {
 	let shiftDays = initialShiftDays;
 	let actual = shiftDays > 0 ? addDaysToDateStr(originalDate, shiftDays) : originalDate;
@@ -31,7 +33,7 @@ export function shiftDatePastNoLessonPeriods(
 		actual = addDaysToDateStr(actual, len);
 	}
 	if (actual > periodEnd) return { lessonDate: null, shiftDays };
-	if (isNonBillingMonthString(actual)) return { lessonDate: null, shiftDays };
+	if (isNonBillingMonthString(actual, schoolYearBounds)) return { lessonDate: null, shiftDays };
 	return { lessonDate: actual, shiftDays };
 }
 

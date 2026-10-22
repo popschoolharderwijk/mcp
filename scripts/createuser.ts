@@ -24,7 +24,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { Constants } from '@/integrations/supabase/types';
-import { parseCreateUsersFromEnv } from './createUserPure';
+import { parseCreateUsersFromEnv } from './createUserHelpers';
 
 // Valid app_role values from the database enum
 const VALID_ROLES = Constants.public.Enums.app_role;

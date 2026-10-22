@@ -41,28 +41,9 @@ function mockRow(overrides: Partial<AgreementTableRow> = {}): AgreementTableRow 
 }
 
 describe('buildAgreementWizardStudentDisplay', () => {
-	it('builds full name and initials from first and last name', () => {
+	it('builds full name from first and last name', () => {
 		expect(buildAgreementWizardStudentDisplay(mockRow())).toEqual({
 			studentName: 'Jan Jansen',
-			studentInitials: 'JJ',
-		});
-	});
-
-	it('uses the last surname word for student initials', () => {
-		expect(
-			buildAgreementWizardStudentDisplay(
-				mockRow({
-					student: {
-						first_name: 'Adam',
-						last_name: 'van der Wal',
-						avatar_url: null,
-						email: 'adam@example.com',
-					},
-				}),
-			),
-		).toEqual({
-			studentName: 'Adam van der Wal',
-			studentInitials: 'AW',
 		});
 	});
 
@@ -75,20 +56,6 @@ describe('buildAgreementWizardStudentDisplay', () => {
 			),
 		).toEqual({
 			studentName: 'jan@example.com',
-			studentInitials: 'JA',
-		});
-	});
-
-	it('uses first-name initials when only first name is present', () => {
-		expect(
-			buildAgreementWizardStudentDisplay(
-				mockRow({
-					student: { first_name: 'Jan', last_name: null, avatar_url: null, email: 'jan@example.com' },
-				}),
-			),
-		).toEqual({
-			studentName: 'Jan',
-			studentInitials: 'JA',
 		});
 	});
 });

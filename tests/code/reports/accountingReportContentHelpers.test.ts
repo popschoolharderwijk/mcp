@@ -47,9 +47,9 @@ describe('resolveAccountingReportCostCenterRows', () => {
 	const row = {
 		cost_center: 'Piano',
 		invoice_count: 1,
-		revenue_under_21_cents: 100,
+		revenue_youth_cents: 100,
 		revenue_unknown_age_cents: 0,
-		revenue_21_plus_excl_cents: 200,
+		revenue_adult_excl_cents: 200,
 		vat_cents: 42,
 		total_receivables_cents: 342,
 	};

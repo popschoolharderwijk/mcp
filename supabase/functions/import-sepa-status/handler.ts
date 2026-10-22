@@ -1,6 +1,6 @@
 import { jsonResponse } from '../_shared/http.ts';
 import { applyStatusReport, buildImportResponse, findBatchForReport } from './applyStatusReport.ts';
-import { authorizeImportSepaStatusRequest } from './importSepaStatusHandlerPure.ts';
+import { authorizeImportSepaStatusRequest } from './importSepaStatusHandlerHelpers.ts';
 import { parseReportOrError } from './validation.ts';
 
 type AuthorizedImport = Extract<Awaited<ReturnType<typeof authorizeImportSepaStatusRequest>>, { ok: true }>;

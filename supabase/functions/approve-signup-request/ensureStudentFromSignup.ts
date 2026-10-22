@@ -8,7 +8,7 @@ import {
 	resolveExistingSignupStudentUserId,
 	resolveSignupStudentRowMutation,
 	shouldUpdateSignupPhoneOnCreate,
-} from './ensureStudentFromSignupPure.ts';
+} from './ensureStudentFromSignupHelpers.ts';
 import type { SignupRequestRow } from './types.ts';
 
 async function createSignupStudentUser(

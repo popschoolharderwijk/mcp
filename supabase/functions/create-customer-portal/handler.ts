@@ -7,7 +7,7 @@ import {
 	type CustomerPortalBody,
 	resolveMissingStripeCustomerResponse,
 	resolvePortalReturnUrl,
-} from './validationPure.ts';
+} from './validationHelpers.ts';
 
 async function createCustomerPortalSession(
 	admin: SupabaseClient,

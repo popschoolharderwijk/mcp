@@ -64,7 +64,7 @@ export function pickLatestCourseOptions(
 				durationMinutes: opt.durationMinutes,
 				frequency: opt.frequency,
 				pricePerLesson: opt.price,
-				pricePerLessonUnder21Cents: priceCents,
+				pricePerLessonYouthCents: priceCents,
 				pricePerLessonAdultCents: priceCents,
 				startDate: opt.startDate || null,
 				skippedUnknownOid: null,

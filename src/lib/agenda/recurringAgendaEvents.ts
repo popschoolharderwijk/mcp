@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@/components/agenda/types';
-import { isNonBillingMonthString } from '@/lib/billing/schoolYear';
+import { isNonBillingMonthString, type SchoolYearBounds } from '@/lib/billing/schoolYear';
 import { addMinutes, formatDateToDb } from '@/lib/date/date-format';
 import {
 	addInterval as addIntervalHelper,
@@ -7,6 +7,7 @@ import {
 	getFirstOccurrenceInRange as getFirstOccurrenceInRangeHelper,
 	getOccurrenceIndex,
 } from '@/lib/lessonHelpers';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import { applyTimeToDate, hasTimeChange } from '@/lib/time/time-format';
 import type { AgendaEventDeviationRow, AgendaEventRow, CancellationType } from '@/types/agenda-events';
 import type { LessonAgreementWithStudent, LessonFrequency } from '@/types/lesson-agreements';
@@ -143,9 +144,13 @@ function resolveShiftedLessonDate(
 	return { shiftedDate, shiftDays: days, isShifted };
 }
 
-function shouldSkipShiftedLessonOccurrence(shiftedDate: Date, periodEnd: Date | null): boolean {
+function shouldSkipShiftedLessonOccurrence(
+	shiftedDate: Date,
+	periodEnd: Date | null,
+	schoolYearBounds: SchoolYearBounds = APP_SETTINGS_BOOTSTRAP.school_year,
+): boolean {
 	if (periodEnd && shiftedDate > periodEnd) return true;
-	return isNonBillingMonthString(formatDateToDb(shiftedDate));
+	return isNonBillingMonthString(formatDateToDb(shiftedDate), schoolYearBounds);
 }
 
 function evaluateLessonSourceOccurrenceVisibility(

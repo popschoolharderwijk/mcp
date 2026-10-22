@@ -1,6 +1,6 @@
 import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
 import { createSupabaseClients, requireAdminUser } from '../_shared/supabase.ts';
-import { buildApproveSignupSuccessPayload, resolveTargetGroupId } from './approveSignupRequestPure.ts';
+import { buildApproveSignupSuccessPayload, resolveTargetGroupId } from './approveSignupRequestHelpers.ts';
 import { enrollGroupSignup } from './enrollGroupSignup.ts';
 import { ensureStudentFromSignup } from './ensureStudentFromSignup.ts';
 import { loadSignupRequest } from './loadSignupRequest.ts';

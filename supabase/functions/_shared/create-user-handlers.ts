@@ -12,7 +12,7 @@ import {
 	resolveMissingCreatedUserError,
 	shouldAssignCreateUserRole,
 	shouldUpdateCreatedUserPhone,
-} from './createUserHandlersPure.ts';
+} from './createUserHandlersHelpers.ts';
 import { jsonResponse } from './http.ts';
 
 type CreateUserRequest = CreateUserRequestBody;

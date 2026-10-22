@@ -4,8 +4,8 @@ import {
 	buildTrialParticipantRows,
 	buildTrialScheduleSuccessResult,
 	resolveTrialLessonTypeMeta,
-} from './createTrialSchedulePure.ts';
-import { buildTrialAgendaEventInsertRow, buildTrialLessonInsertRow } from './trialSchedulePayloadPure.ts';
+} from './createTrialScheduleHelpers.ts';
+import { buildTrialAgendaEventInsertRow, buildTrialLessonInsertRow } from './trialSchedulePayloadHelpers.ts';
 import type { Body } from './types.ts';
 
 interface TrialScheduleResult {

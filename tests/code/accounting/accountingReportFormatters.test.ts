@@ -6,22 +6,22 @@ import {
 } from '../../../src/lib/accounting/accountingReportFormatters';
 
 describe('getAccountingAgeBadge', () => {
-	it('returns configured badge for under 21', () => {
-		expect(getAccountingAgeBadge('under_21')).toEqual({
-			label: '<21 vrijgesteld',
+	it('returns configured badge for youth', () => {
+		expect(getAccountingAgeBadge('youth', 21)).toEqual({
+			label: 'Jongeren (vrijgesteld)',
 			variant: 'secondary',
 		});
 	});
 
-	it('returns configured badge for 21 plus', () => {
-		expect(getAccountingAgeBadge('21_plus')).toEqual({
-			label: '21+ BTW 21%',
+	it('returns configured badge for adult using the standard rate', () => {
+		expect(getAccountingAgeBadge('adult', 9)).toEqual({
+			label: 'Volwassenen (BTW 9%)',
 			variant: 'outline',
 		});
 	});
 
 	it('falls back to the raw category for unknown values', () => {
-		expect(getAccountingAgeBadge('custom')).toEqual({
+		expect(getAccountingAgeBadge('custom', 21)).toEqual({
 			label: 'custom',
 			variant: 'default',
 		});

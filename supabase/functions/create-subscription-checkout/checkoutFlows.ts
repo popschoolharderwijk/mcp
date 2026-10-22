@@ -19,7 +19,7 @@ import {
 	validateCompleteCheckoutSessionId,
 	validateCompleteCheckoutSessionMatch,
 	validateCompleteModePaymentReady,
-} from './checkoutFlowsPure.ts';
+} from './checkoutFlowsHelpers.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
 export async function ensureStripeCustomer(

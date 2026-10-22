@@ -1,5 +1,5 @@
 import { resolveAllowedSiteUrl } from './http.ts';
-import { buildSendTemplateEmailFetchInit, buildSendTemplateEmailRequestBody } from './sendTemplateEmailPure.ts';
+import { buildSendTemplateEmailFetchInit, buildSendTemplateEmailRequestBody } from './sendTemplateEmailHelpers.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';

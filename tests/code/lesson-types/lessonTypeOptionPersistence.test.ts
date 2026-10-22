@@ -16,7 +16,7 @@ const optionsForm: OptionRowWithKey[] = [
 		duration_minutes: '45',
 		frequency: 'weekly',
 		price_per_lesson: '30.00',
-		price_per_lesson_under_21: '25.00',
+		price_per_lesson_youth: '25.00',
 		price_per_lesson_adult: '30.00',
 	},
 ];
@@ -24,7 +24,7 @@ const optionsForm: OptionRowWithKey[] = [
 const modalForm: OptionModalFormState = {
 	duration_minutes: '45',
 	frequency: 'weekly',
-	price_per_lesson_under_21: '25.00',
+	price_per_lesson_youth: '25.00',
 	price_per_lesson_adult: '30.00',
 };
 
@@ -65,7 +65,7 @@ describe('isDuplicateOption', () => {
 			duration_minutes: '45',
 			frequency: 'weekly',
 			price_per_lesson: '30',
-			price_per_lesson_under_21: '25.00',
+			price_per_lesson_youth: '25.00',
 			price_per_lesson_adult: '30.00',
 		});
 	});

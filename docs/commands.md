@@ -58,11 +58,17 @@ supabase db reset
 bun run dev:local
 ```
 
-Types from the local stack:
+Types from the local stack (`supabase start` first):
 
 ```bash
-supabase gen types typescript --local > src/integrations/supabase/types.ts
+bun run supabase:types:local
 ```
+
+Plain `supabase gen types --local` often fails here with
+`password authentication failed` when another local stack is also running
+(CLI rewrites to Docker alias `db:5432` — see supabase/cli#5283). The script
+uses `postgresql://postgres:postgres@localhost:54422/postgres` instead
+(`localhost`, not `127.0.0.1`) so typegen stays on host networking (~2s).
 
 ---
 
@@ -91,7 +97,7 @@ git push --force origin main
 ```bash
 # Local Docker (after supabase start)
 supabase db reset
-supabase gen types typescript --local > src/integrations/supabase/types.ts
+bun run supabase:types:local
 
 # Link to the remote dev project (mcp-dev)
 supabase link --project-ref zdvscmogkfyddnnxzkdu
@@ -105,9 +111,11 @@ supabase db push --linked
 # Push config to remote
 supabase config push
 
-# Generate types for the linked project
+# Generate types (linked remote = default; local Docker = :local)
 bun run supabase:types
+bun run supabase:types:local
 # or: supabase gen types typescript --linked > src/integrations/supabase/types.ts
+# or: supabase gen types typescript --local > src/integrations/supabase/types.ts
 ```
 
 > 💡 **Workflow**: Default UI / Lovable is **mcp-dev** (`bun dev`). Local Docker is `bun run dev:local`. **CI on a PR** uses **mcp-test** (link via secret `SUPABASE_PROJECT_REF`). For `bun test tests/rls`: put mcp-test or mcp-dev credentials in `.env.test` or the shell. See [secrets.md](./secrets.md) and [architecture.md](./architecture.md).

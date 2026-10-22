@@ -18,6 +18,8 @@ export interface GetCalendarPropsParams {
 	min: Date;
 	max: Date;
 	scrollToTime: Date;
+	/** Slot step in minutes (from app_settings.agenda.slot_minutes). */
+	step: number;
 	onEventDrop: ((args: { event: CalendarEvent; start: Date; end: Date }) => void) | undefined;
 	onSelectEvent: ((event: CalendarEvent) => void) | undefined;
 	onSelectSlot: ((slotInfo: { start: Date; end: Date }) => void) | undefined;
@@ -36,6 +38,7 @@ export function getCalendarProps(params: GetCalendarPropsParams) {
 		min,
 		max,
 		scrollToTime,
+		step,
 		onEventDrop,
 		onSelectEvent,
 		onSelectSlot,
@@ -83,7 +86,7 @@ export function getCalendarProps(params: GetCalendarPropsParams) {
 		min,
 		max,
 		scrollToTime,
-		step: 30,
+		step,
 		timeslots: 1,
 		messages: agendaMessages,
 	};

@@ -8,7 +8,7 @@ import {
 import type { AccountingInvoice } from '@/lib/accounting/types';
 import { formatCentsEUR } from '@/lib/accounting/types';
 
-export function buildAccountingInvoiceColumns(): DataTableColumn<AccountingInvoice>[] {
+export function buildAccountingInvoiceColumns(standardRatePercent: number): DataTableColumn<AccountingInvoice>[] {
 	return [
 		{
 			key: 'period_start',
@@ -37,7 +37,7 @@ export function buildAccountingInvoiceColumns(): DataTableColumn<AccountingInvoi
 			sortable: true,
 			sortValue: (r) => r.age_category,
 			render: (r) => {
-				const badge = getAccountingAgeBadge(r.age_category);
+				const badge = getAccountingAgeBadge(r.age_category, standardRatePercent);
 				return <Badge variant={badge.variant}>{badge.label}</Badge>;
 			},
 		},

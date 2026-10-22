@@ -55,16 +55,6 @@ export function addDaysFromNow(days: number) {
 	return addDaysToDate(now(), days);
 }
 
-function addYearsToDate(date: Date, years: number) {
-	const d = new Date(date);
-	d.setFullYear(d.getFullYear() + years);
-	return d;
-}
-
-export function addYearsFromNow(years: number) {
-	return addYearsToDate(now(), years);
-}
-
 export function getDateForDayOfWeek(dayOfWeek: number, referenceDate: Date) {
 	const date = new Date(referenceDate);
 	const currentDay = date.getDay();

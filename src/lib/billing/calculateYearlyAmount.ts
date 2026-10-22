@@ -7,9 +7,10 @@
  */
 
 import { getOccurrenceDatesInRange } from '@/lib/lessonHelpers';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 import { shiftDatePastNoLessonPeriods, splitYearlyAmountAcrossBillingMonths } from './calculateYearlyAmountHelpers';
-import { BILLING_MONTHS_PER_YEAR } from './schoolYear';
+import { billingMonthsPerSchoolYear, type SchoolYearBounds } from './schoolYear';
 
 export interface NoLessonPeriod {
 	/** YYYY-MM-DD (inclusive). */
@@ -30,8 +31,10 @@ export interface CalculateYearlyAmountInput {
 	pricePerLessonCents: number;
 	/** No-lesson periods (e.g. school holidays). */
 	noLessonPeriods?: ReadonlyArray<NoLessonPeriod>;
-	/** Number of billing months over which the yearly amount is spread. Default 11. */
+	/** Number of billing months over which the yearly amount is spread. Derived from school year when omitted. */
 	billingMonths?: number;
+	/** School year bounds from app_settings. */
+	schoolYearBounds?: SchoolYearBounds;
 }
 
 export interface CalculateYearlyAmountResult {
@@ -49,7 +52,8 @@ export interface CalculateYearlyAmountResult {
 
 export function calculateYearlyAmount(input: CalculateYearlyAmountInput): CalculateYearlyAmountResult {
 	const { periodStart, periodEnd, dayOfWeek, frequency, pricePerLessonCents } = input;
-	const billingMonths = input.billingMonths ?? BILLING_MONTHS_PER_YEAR;
+	const schoolYearBounds = input.schoolYearBounds ?? APP_SETTINGS_BOOTSTRAP.school_year;
+	const billingMonths = input.billingMonths ?? billingMonthsPerSchoolYear(schoolYearBounds);
 	const noLessonPeriods = input.noLessonPeriods ?? [];
 
 	if (periodStart > periodEnd || pricePerLessonCents <= 0) {
@@ -68,6 +72,7 @@ export function calculateYearlyAmount(input: CalculateYearlyAmountInput): Calcul
 			periodEnd,
 			noLessonPeriods,
 			shiftDays,
+			schoolYearBounds,
 		);
 		shiftDays = nextShiftDays;
 		if (lessonDate) lessonDates.push(lessonDate);

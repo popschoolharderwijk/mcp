@@ -1,5 +1,5 @@
 export type InvoiceStatus = 'draft' | 'issued' | 'paid' | 'cancelled';
-export type InvoiceAgeCategory = 'under_21' | '21_plus' | 'unknown' | 'mixed';
+export type InvoiceAgeCategory = 'youth' | 'adult' | 'unknown' | 'mixed';
 
 export interface Invoice {
 	id: string;

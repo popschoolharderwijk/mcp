@@ -9,7 +9,7 @@ import {
 	buildForceStartSuccessPayload,
 	resolveForceStartBillingErrors,
 	resolveForceStartScheduleStatusError,
-} from '../_shared/forceStartSubscriptionHandlerPure.ts';
+} from '../_shared/forceStartSubscriptionHandlerHelpers.ts';
 import { getStripe } from '../_shared/stripe.ts';
 
 export async function executeForceStartSubscription(

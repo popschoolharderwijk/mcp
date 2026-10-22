@@ -18,7 +18,7 @@ export async function loadAgreementBillingPreview(
 		await Promise.all([
 			supabase
 				.from('lesson_type_options')
-				.select('price_per_lesson_under_21_cents, price_per_lesson_adult_cents')
+				.select('price_per_lesson_youth_cents, price_per_lesson_adult_cents')
 				.eq('lesson_type_id', agreement.lesson_type_id)
 				.eq('frequency', agreement.frequency)
 				.eq('duration_minutes', agreement.duration_minutes)

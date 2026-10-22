@@ -10,62 +10,66 @@ import {
 	getSchoolYearForDateString,
 	isNonBillingMonthString,
 } from '../../../src/lib/billing/schoolYear';
+import { APP_SETTINGS } from '../../rls/seed-data-constants';
+
+const bounds = APP_SETTINGS.SCHOOL_YEAR;
+const ageThreshold = APP_SETTINGS.VAT.age_threshold_years;
 
 describe('schoolYear', () => {
 	it('places September in the new school year', () => {
-		const sy = getSchoolYearForDateString('2026-09-15');
+		const sy = getSchoolYearForDateString('2026-09-15', bounds);
 		expect(sy.startYear).toBe(2026);
 		expect(sy.start).toBe('2026-09-01');
 		expect(sy.end).toBe('2027-07-31');
 	});
 
 	it('places January in the current school year', () => {
-		const sy = getSchoolYearForDateString('2027-01-10');
+		const sy = getSchoolYearForDateString('2027-01-10', bounds);
 		expect(sy.startYear).toBe(2026);
 	});
 
 	it('places August in the upcoming school year', () => {
-		const sy = getSchoolYearForDateString('2026-08-20');
+		const sy = getSchoolYearForDateString('2026-08-20', bounds);
 		expect(sy.startYear).toBe(2026);
 	});
 
 	it('isNonBillingMonthString detects August', () => {
-		expect(isNonBillingMonthString('2026-08-01')).toBe(true);
-		expect(isNonBillingMonthString('2026-07-31')).toBe(false);
-		expect(isNonBillingMonthString('2026-09-01')).toBe(false);
+		expect(isNonBillingMonthString('2026-08-01', bounds)).toBe(true);
+		expect(isNonBillingMonthString('2026-07-31', bounds)).toBe(false);
+		expect(isNonBillingMonthString('2026-09-01', bounds)).toBe(false);
 	});
 
 	it('clampToSchoolYear clamps to the agreement window', () => {
-		const sy = getSchoolYearForDateString('2026-09-15');
+		const sy = getSchoolYearForDateString('2026-09-15', bounds);
 		const clamped = clampToSchoolYear(sy, '2026-10-15', '2027-04-30');
 		expect(clamped).toEqual({ start: '2026-10-15', end: '2027-04-30' });
 	});
 
 	it('clampToSchoolYear uses school-year bounds when the agreement is wider', () => {
-		const sy = getSchoolYearForDateString('2026-09-15');
+		const sy = getSchoolYearForDateString('2026-09-15', bounds);
 		const clamped = clampToSchoolYear(sy, '2020-01-01', null);
 		expect(clamped).toEqual({ start: '2026-09-01', end: '2027-07-31' });
 	});
 
 	it('clampToSchoolYear returns null when there is no overlap', () => {
-		const sy = getSchoolYearForDateString('2026-09-15');
+		const sy = getSchoolYearForDateString('2026-09-15', bounds);
 		expect(clampToSchoolYear(sy, '2030-01-01', '2030-12-31')).toBeNull();
 	});
 });
 
 describe('pickAgeTariff', () => {
-	it('returns under_21 the day before the 21st birthday', () => {
-		expect(pickAgeTariff('2005-09-02', '2026-09-01')).toBe('under_21');
+	it('returns youth the day before the 21st birthday', () => {
+		expect(pickAgeTariff('2005-09-02', '2026-09-01', ageThreshold)).toBe('youth');
 	});
 	it('returns adult on the exact 21st birthday', () => {
-		expect(pickAgeTariff('2005-09-01', '2026-09-01')).toBe('adult');
+		expect(pickAgeTariff('2005-09-01', '2026-09-01', ageThreshold)).toBe('adult');
 	});
 	it('returns adult when DOB is null (safe fallback)', () => {
-		expect(pickAgeTariff(null, '2026-09-01')).toBe('adult');
+		expect(pickAgeTariff(null, '2026-09-01', ageThreshold)).toBe('adult');
 	});
 	it('pickPriceCents selects the matching tariff price', () => {
-		const opt = { price_per_lesson_under_21_cents: 1950, price_per_lesson_adult_cents: 2360 };
-		expect(pickPriceCents(opt, 'under_21')).toBe(1950);
+		const opt = { price_per_lesson_youth_cents: 1950, price_per_lesson_adult_cents: 2360 };
+		expect(pickPriceCents(opt, 'youth')).toBe(1950);
 		expect(pickPriceCents(opt, 'adult')).toBe(2360);
 	});
 });

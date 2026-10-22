@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { buildDeleteUserSuccessResponse } from './deleteUserHandlerPure.ts';
+import { buildDeleteUserSuccessResponse } from './deleteUserHandlerHelpers.ts';
 import { mapDeleteUserError, parseDeleteUserBody, resolveDeleteUserTargetId } from './handlers.ts';
 
 export async function executeDeleteUser(

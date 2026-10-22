@@ -1,20 +1,11 @@
-import { getUserInitials } from '@/lib/user-initials';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
-export interface AgreementWizardStudentDisplay {
-	studentName: string;
-	studentInitials: string;
-}
-
-export function buildAgreementWizardStudentDisplay(agreement: AgreementTableRow): AgreementWizardStudentDisplay {
+export function buildAgreementWizardStudentDisplay(agreement: AgreementTableRow): { studentName: string } {
 	const studentName =
 		[agreement.student.first_name, agreement.student.last_name].filter(Boolean).join(' ') ||
 		agreement.student.email;
 
-	return {
-		studentName,
-		studentInitials: getUserInitials(agreement.student),
-	};
+	return { studentName };
 }
 
 export function shouldShowAgreementWizardEditHeader(

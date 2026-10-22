@@ -1,7 +1,7 @@
 import { AgendaView } from '@/components/agenda/AgendaView';
 import { TeacherAddressSection } from '@/components/teachers/TeacherAddressSection';
 import { TeacherInfoProfileTab } from '@/components/teachers/TeacherInfoProfileTab';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import {
 	isTeacherInfoTabId,
 	type TeacherInfoTabId,
@@ -18,6 +18,12 @@ interface TeacherInfoTabsProps {
 	onProfileUpdate: () => void;
 }
 
+const TEACHER_TAB_ITEMS = [
+	{ value: 'profile' as const, label: 'Profiel' },
+	{ value: 'address' as const, label: 'Adres' },
+	{ value: 'agenda' as const, label: 'Agenda' },
+];
+
 export function TeacherInfoTabs({
 	targetTeacherUserId,
 	teacherProfile,
@@ -27,44 +33,28 @@ export function TeacherInfoTabs({
 	onProfileUpdate,
 }: TeacherInfoTabsProps) {
 	return (
-		<Tabs
-			value={activeTab}
-			onValueChange={(value) => {
-				if (isTeacherInfoTabId(value)) onTabChange(value);
-			}}
-			className="space-y-2"
-		>
-			<TabsList>
-				<TabsTrigger value="profile">Profiel</TabsTrigger>
-				<TabsTrigger value="address">Adres</TabsTrigger>
-				<TabsTrigger value="agenda">Agenda</TabsTrigger>
-			</TabsList>
-
-			<TabsContent value="profile">
+		<PageTabs value={activeTab} onValueChange={onTabChange} isTabId={isTeacherInfoTabId} items={TEACHER_TAB_ITEMS}>
+			<PageTabsContent value="profile">
 				<TeacherInfoProfileTab
 					targetTeacherUserId={targetTeacherUserId}
 					teacherProfile={teacherProfile}
 					canAccess={canAccess}
 					onProfileUpdate={onProfileUpdate}
 				/>
-			</TabsContent>
+			</PageTabsContent>
 
-			<TabsContent value="address">
-				<div className="grid gap-6 lg:grid-cols-2">
-					<div className="min-w-0">
-						<TeacherAddressSection
-							userId={teacherProfile.user_id}
-							canEdit={canAccess}
-							initialAddress={teacherAddressFieldsFromProfile(teacherProfile)}
-							onUpdate={onProfileUpdate}
-						/>
-					</div>
-				</div>
-			</TabsContent>
+			<PageTabsContent value="address" panelWidth="half">
+				<TeacherAddressSection
+					userId={teacherProfile.user_id}
+					canEdit={canAccess}
+					initialAddress={teacherAddressFieldsFromProfile(teacherProfile)}
+					onUpdate={onProfileUpdate}
+				/>
+			</PageTabsContent>
 
-			<TabsContent value="agenda">
+			<PageTabsContent value="agenda">
 				<AgendaView userId={targetTeacherUserId} canEdit={canAccess} />
-			</TabsContent>
-		</Tabs>
+			</PageTabsContent>
+		</PageTabs>
 	);
 }

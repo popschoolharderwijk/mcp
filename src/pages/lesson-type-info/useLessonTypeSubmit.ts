@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { persistLessonTypeWithOptions } from '@/pages/lesson-type-info/lessonTypeSubmitHelpers';
+import { persistLessonTypeWithOptions } from '@/pages/lesson-type-info/lessonTypeSubmit';
 import {
 	resolveLessonTypeCanSubmit,
 	resolveLessonTypeSubmitLabels,
-} from '@/pages/lesson-type-info/lessonTypeSubmitPureHelpers';
+} from '@/pages/lesson-type-info/lessonTypeSubmitHelpers';
 import type { OptionRowWithKey } from '@/pages/lesson-type-info/types';
 import { getLessonTypeFormValidationError } from '@/pages/lesson-type-info/validateLessonTypeForm';
 import type { LessonTypeFormState, LessonTypeOptionRow, LessonTypeRow } from '@/types/lesson-agreements';

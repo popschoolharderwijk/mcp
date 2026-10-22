@@ -11,7 +11,7 @@ import {
 	updateOptionModalDuration,
 	updateOptionModalFrequency,
 	updateOptionModalPriceAdult,
-	updateOptionModalPriceUnder21,
+	updateOptionModalPriceYouth,
 } from '@/pages/lesson-type-info/optionModalFormHelpers';
 import type { OptionModalFormState, OptionRowWithKey } from '@/pages/lesson-type-info/types';
 import type { LessonFrequency } from '@/types/lesson-agreements';
@@ -82,17 +82,17 @@ export function LessonTypeOptionEditDialog({
 					</div>
 					<div className="grid grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<Label>Prijs per les &lt;21 (€)</Label>
+							<Label>Prijs per les jongeren (€)</Label>
 							<PriceInput
-								value={optionModalForm.price_per_lesson_under_21}
+								value={optionModalForm.price_per_lesson_youth}
 								onChange={(e) =>
-									setOptionModalForm((prev) => updateOptionModalPriceUnder21(prev, e.target.value))
+									setOptionModalForm((prev) => updateOptionModalPriceYouth(prev, e.target.value))
 								}
 								className="h-10"
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label>Prijs per les 21+ (€)</Label>
+							<Label>Prijs per les volwassenen (€)</Label>
 							<PriceInput
 								value={optionModalForm.price_per_lesson_adult}
 								onChange={(e) =>

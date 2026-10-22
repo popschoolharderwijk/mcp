@@ -5,6 +5,37 @@
  */
 
 /**
+ * app_settings rows from supabase/seeds/bootstrap.sql.
+ * Keep in sync with src/lib/settings/appSettingsDefaults.ts.
+ */
+export const APP_SETTINGS = {
+	SCHOOL_YEAR: {
+		start_month: 9,
+		end_month: 7,
+	},
+	AGENDA: {
+		start_hour: 8,
+		end_hour: 21,
+		slot_minutes: 30,
+	},
+	VAT: {
+		age_threshold_years: 21,
+		standard_rate_percent: 21,
+	},
+	BRANDING: {
+		primary_hex: '#c4ab7c',
+	},
+	TRIAL_LESSONS: {
+		horizon_days: 30,
+		default_duration_minutes: 30,
+	},
+	AGREEMENTS: {
+		default_start_offset_days: 1,
+		default_payment_method: 'sepa' as const,
+	},
+} as const;
+
+/**
  * Lesson type options row counts (supabase/seeds/lesson-types.sql).
  * Full grid (e.g. guitar lesson type): 5 durations × 3 frequencies = 15 rows.
  * Saxophone lesson type (DB name `Saxofoonles`): 30 and 45 min only = 6 rows.

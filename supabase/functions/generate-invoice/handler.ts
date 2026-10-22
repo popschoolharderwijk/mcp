@@ -8,7 +8,7 @@ import {
 	resolveGenerateInvoiceIssueDate,
 	resolveGenerateInvoiceMissingBatchError,
 	resolveGenerateInvoiceSendEmail,
-} from './generateInvoiceHandlerPure.ts';
+} from './generateInvoiceHandlerHelpers.ts';
 import { computeDueDate, verifyAdminAccess } from './invoice.ts';
 import { loadBatchContext } from './loadBatchContext.ts';
 import { processStudentInvoice } from './processStudentInvoice.ts';
@@ -61,6 +61,7 @@ async function processGenerateInvoiceBatch(admin: SupabaseClient, batchId: strin
 			batchId,
 			batch: context.batch,
 			settings: context.settings,
+			vat: context.vat,
 			studentUserId: sid,
 			items: context.items,
 			profileMap: context.profileMap,

@@ -1,5 +1,5 @@
 import Stripe from 'npm:stripe@17.5.0';
-import { readGeneratedSepaDebitPaymentMethodId } from './stripePure.ts';
+import { readGeneratedSepaDebitPaymentMethodId } from './stripeHelpers.ts';
 
 export { getSafeErrorMessage } from './errors.ts';
 

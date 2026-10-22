@@ -18,7 +18,7 @@ function makeReportRow(overrides: Partial<ReportRow> = {}): ReportRow {
 		lesson_type_name: 'Piano',
 		lesson_type_color: '#FF5733',
 		lesson_type_icon: 'piano',
-		age_category: 'under_21',
+		age_category: 'youth',
 		total_minutes: 60,
 		lesson_count: 2,
 		duo_perspective: null,
@@ -37,14 +37,14 @@ describe('filterReportRows', () => {
 			lesson_type_name: null,
 			project_id: 'proj-1',
 			project_name: 'Bandproject',
-			age_category: '21_plus',
+			age_category: 'adult',
 			total_minutes: 90,
 			lesson_count: 0,
 		}),
 		makeReportRow({
 			lesson_type_id: 'lt-guitar',
 			lesson_type_name: 'Gitaar',
-			age_category: '21_plus',
+			age_category: 'adult',
 		}),
 	];
 
@@ -65,7 +65,7 @@ describe('filterReportRows', () => {
 	});
 
 	it('filters by age category', () => {
-		const result = filterReportRows(rows, { sourceType: null, lessonTypeId: null, ageCategory: 'under_21' });
+		const result = filterReportRows(rows, { sourceType: null, lessonTypeId: null, ageCategory: 'youth' });
 		expect(result).toHaveLength(1);
 		expect(result[0]?.lesson_type_name).toBe('Piano');
 	});
@@ -101,14 +101,14 @@ describe('applyReportSearch', () => {
 
 	it('matches age category labels', () => {
 		const rowsWithMixedAges = [
-			makeReportRow({ teacher_name: 'Anna Docent', lesson_type_name: 'Piano', age_category: 'under_21' }),
+			makeReportRow({ teacher_name: 'Anna Docent', lesson_type_name: 'Piano', age_category: 'youth' }),
 			makeReportRow({
 				teacher_name: 'Bob Docent',
 				lesson_type_name: 'Gitaar',
-				age_category: '21_plus',
+				age_category: 'adult',
 			}),
 		];
-		const result = applyReportSearch(rowsWithMixedAges, 'onder 21');
+		const result = applyReportSearch(rowsWithMixedAges, 'jongeren');
 		expect(result).toHaveLength(1);
 		expect(result[0]?.lesson_type_name).toBe('Piano');
 	});
@@ -146,13 +146,13 @@ describe('computeReportSummary', () => {
 			makeReportRow({
 				total_minutes: 60,
 				lesson_count: 2,
-				age_category: 'under_21',
+				age_category: 'youth',
 				source_type: 'lesson',
 			}),
 			makeReportRow({
 				total_minutes: 45,
 				lesson_count: 1,
-				age_category: '21_plus',
+				age_category: 'adult',
 				source_type: 'lesson',
 			}),
 			makeReportRow({
@@ -173,8 +173,8 @@ describe('computeReportSummary', () => {
 		expect(computeReportSummary(rows)).toEqual({
 			totalMinutes: 135,
 			totalLessons: 3,
-			under21Minutes: 60,
-			over21Minutes: 45,
+			youthMinutes: 60,
+			adultMinutes: 45,
 			projectMinutes: 30,
 		});
 	});

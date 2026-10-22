@@ -45,7 +45,7 @@ describe('loadAgreementBillingPreview', () => {
 	beforeEach(() => {
 		optionResult = {
 			data: {
-				price_per_lesson_under_21_cents: 1950,
+				price_per_lesson_youth_cents: 1950,
 				price_per_lesson_adult_cents: 2360,
 			},
 			error: null,

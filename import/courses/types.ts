@@ -13,7 +13,7 @@ export type MappedCourseOption = {
 	/** Euro amount stored in legacy `price_per_lesson`. */
 	pricePerLesson: number;
 	/** Same catalog price in cents for both age bands. */
-	pricePerLessonUnder21Cents: number;
+	pricePerLessonYouthCents: number;
 	pricePerLessonAdultCents: number;
 	startDate: string | null;
 	skippedUnknownOid: string | null;

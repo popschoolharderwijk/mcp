@@ -4,7 +4,7 @@ import {
 	validateActiveLessonType,
 	validateLessonGroupForSignup,
 	validateLessonTypeOptionForSignup,
-} from './validateLessonSelectionPure.ts';
+} from './validateLessonSelectionHelpers.ts';
 
 export async function validateLessonSelection(
 	supabase: SupabaseClient,

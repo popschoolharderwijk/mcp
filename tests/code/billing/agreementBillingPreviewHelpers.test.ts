@@ -12,7 +12,7 @@ const agreement = {
 };
 
 const option = {
-	price_per_lesson_under_21_cents: 1950,
+	price_per_lesson_youth_cents: 1950,
 	price_per_lesson_adult_cents: 2360,
 };
 
@@ -67,17 +67,17 @@ describe('computeAgreementBillingPreview', () => {
 		});
 	});
 
-	it('returns under_21 price error when under_21 cents are missing', () => {
+	it('returns youth price error when youth cents are missing', () => {
 		const result = computeAgreementBillingPreview(
 			agreement,
-			{ price_per_lesson_under_21_cents: null, price_per_lesson_adult_cents: 2360 },
+			{ price_per_lesson_youth_cents: null, price_per_lesson_adult_cents: 2360 },
 			'2010-01-01',
 			[],
 			'2026-09-01',
 		);
 		expect(result).toEqual({
 			ok: false,
-			error: 'Geen prijs <21 ingesteld voor deze duur/frequentie.',
+			error: 'Geen jongerenprijs ingesteld voor deze duur/frequentie.',
 			preview: null,
 		});
 	});
@@ -85,14 +85,14 @@ describe('computeAgreementBillingPreview', () => {
 	it('returns adult price error when adult cents are missing', () => {
 		const result = computeAgreementBillingPreview(
 			agreement,
-			{ price_per_lesson_under_21_cents: 1950, price_per_lesson_adult_cents: null },
+			{ price_per_lesson_youth_cents: 1950, price_per_lesson_adult_cents: null },
 			'2000-01-01',
 			[],
 			'2026-09-01',
 		);
 		expect(result).toEqual({
 			ok: false,
-			error: 'Geen prijs 21+ ingesteld voor deze duur/frequentie.',
+			error: 'Geen volwassenenprijs ingesteld voor deze duur/frequentie.',
 			preview: null,
 		});
 	});

@@ -64,8 +64,8 @@ export function ReportsDataTable({
 			label: 'Leeftijd',
 			value: tableAgeCategory,
 			options: [
-				{ id: 'under_21', label: 'Onder 21' },
-				{ id: '21_plus', label: '21+' },
+				{ id: 'youth', label: 'Jongeren' },
+				{ id: 'adult', label: 'Volwassenen' },
 			],
 			onChange: onTableAgeCategoryChange,
 			showAllOption: true,

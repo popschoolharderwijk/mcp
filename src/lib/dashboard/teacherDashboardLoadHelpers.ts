@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { assertDashboardQueriesOk } from '@/lib/dashboard/dashboardLoadErrorPure';
+import { assertDashboardQueriesOk } from '@/lib/dashboard/dashboardLoadErrorHelpers';
 import { assembleTeacherDashboardData, type TeacherDashboardData } from '@/lib/dashboard/teacherDashboardHelpers';
 import type { TeacherStatisticsAgreement } from '@/lib/statistics/myStatisticsHelpers';
 import type { PaginatedStudentsResponseRaw } from '@/types/students';

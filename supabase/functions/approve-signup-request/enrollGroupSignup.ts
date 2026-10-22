@@ -4,7 +4,7 @@ import {
 	buildGroupSignupApprovalUpdate,
 	resolveCreatedAgreementId,
 	resolveMemberInsertFailure,
-} from './enrollGroupSignupPure.ts';
+} from './enrollGroupSignupHelpers.ts';
 import type { SignupRequestRow } from './types.ts';
 
 async function insertGroupMember(

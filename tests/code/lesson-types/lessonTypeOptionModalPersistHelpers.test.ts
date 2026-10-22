@@ -45,7 +45,7 @@ describe('lessonTypeOptionModalPersistHelpers', () => {
 	const modalForm = {
 		duration_minutes: '45',
 		frequency: 'weekly' as const,
-		price_per_lesson_under_21: '20',
+		price_per_lesson_youth: '20',
 		price_per_lesson_adult: '25',
 	};
 

@@ -10,8 +10,8 @@ const SETTINGS: AccountingSettings = {
 	journal_code_memorial: '90',
 	journal_code_bank: '20',
 	account_debtors: '1300',
-	account_revenue_under_21: '8000',
-	account_revenue_21_plus: '8010',
+	account_revenue_youth: '8000',
+	account_revenue_adult: '8010',
 	account_vat_21: '1500',
 	account_bank_stripe: '1100',
 	vat_code_21: 'VH',
@@ -50,9 +50,9 @@ function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {
 		period: { start: '2026-06-01', end: '2026-06-30' },
 		summary: {
 			invoice_count: 1,
-			total_revenue_under_21_cents: 0,
+			total_revenue_youth_cents: 0,
 			total_revenue_unknown_age_cents: 0,
-			total_revenue_21_plus_excl_cents: 0,
+			total_revenue_adult_excl_cents: 0,
 			total_vat_cents: 0,
 			total_receivables_cents: 0,
 			total_paid_cents: 0,
@@ -72,7 +72,7 @@ function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {
 				period_start: '2026-06-01T00:00:00Z',
 				paid_at: '2026-06-03T10:00:00Z',
 				hosted_invoice_url: null,
-				age_category: '21_plus',
+				age_category: 'adult',
 				cost_center: 'Piano',
 				lesson_type_id: 'lt-1',
 				lesson_type_name: 'Piano',
@@ -87,7 +87,7 @@ function makeReport(overrides: Partial<AccountingReport['invoices'][number]> = {
 }
 
 describe('generateJournalLines', () => {
-	it('generates 5 lines for a paid 21+ invoice (AR, revenue, VAT, bank, AR credit)', () => {
+	it('generates 5 lines for a paid adult invoice (AR, revenue, VAT, bank, AR credit)', () => {
 		const lines = generateJournalLines(makeReport(), SETTINGS);
 		expect(lines.length).toBe(5);
 		const invoiceLines = lines.filter((l) => l.entryId === 'FACT-inv-1');
@@ -98,13 +98,13 @@ describe('generateJournalLines', () => {
 		expect(sumDeb).toBe(12100);
 	});
 
-	it('generates lines for an unpaid under-21 invoice (AR + exempt revenue)', () => {
+	it('generates lines for an unpaid youth invoice (AR + exempt revenue)', () => {
 		const lines = generateJournalLines(
 			makeReport({
 				status: 'open',
 				paid_at: null,
 				amount_paid_cents: 0,
-				age_category: 'under_21',
+				age_category: 'youth',
 				amount_excl_vat_cents: 5000,
 				vat_amount_cents: 0,
 				amount_due_cents: 5000,
@@ -136,10 +136,10 @@ describe('generateJournalLines', () => {
 		expect(lines.find((l) => l.account === '8010')).toBeUndefined();
 	});
 
-	it('omits VAT line when the 21+ invoice has zero VAT', () => {
+	it('omits VAT line when the adult invoice has zero VAT', () => {
 		const lines = generateJournalLines(
 			makeReport({
-				age_category: '21_plus',
+				age_category: 'adult',
 				amount_excl_vat_cents: 10000,
 				vat_amount_cents: 0,
 				amount_due_cents: 10000,
@@ -162,8 +162,8 @@ describe('generateJournalLines', () => {
 				amount_paid_cents: 0,
 				amount_due_cents: 16100,
 				amount_excl_vat_cents: 14000,
-				amount_excl_under_21_cents: 4000,
-				amount_excl_21_plus_cents: 10000,
+				amount_excl_youth_cents: 4000,
+				amount_excl_adult_cents: 10000,
 				vat_amount_cents: 2100,
 			}),
 			SETTINGS,

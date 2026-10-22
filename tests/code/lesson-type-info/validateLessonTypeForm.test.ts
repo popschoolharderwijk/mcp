@@ -20,7 +20,7 @@ const validOption: LessonTypeOptionFormRow = {
 	duration_minutes: '45',
 	frequency: 'weekly',
 	price_per_lesson: '25.00',
-	price_per_lesson_under_21: '20.00',
+	price_per_lesson_youth: '20.00',
 	price_per_lesson_adult: '25.00',
 };
 

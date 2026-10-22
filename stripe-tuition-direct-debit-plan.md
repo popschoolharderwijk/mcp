@@ -24,7 +24,7 @@ Monthly SEPA collection of tuition via Stripe, spread over **11 months per year*
 
 ### Prices per lesson
 
-Stored on `lesson_type_options`, extended with two age tariffs (<21 and 21+). ✅ Implemented.
+Stored on `lesson_type_options`, extended with two age tariffs (youth and adult). ✅ Implemented.
 
 ### School year
 

@@ -52,7 +52,7 @@ For each `lesson_agreements` row we attach **one Stripe `Subscription`** for mon
 | `subscriptions` | Mirror of Stripe Subscription. Contains `lesson_agreement_id`, status, period, default payment method (brand/last4), `stripe_schedule_id`. |
 | `subscription_invoices` | Mirror of Stripe Invoices: amount, status, `hosted_invoice_url`, period. |
 | `direct_debit_invitations` | Logs each sent invitation (timestamp, magic-link ID, agreement). |
-| `accounting_settings` | Per-organisation VAT and ledger settings (account/VAT code for 21% and exempt). Used by reporting and by `pickAgeTariff` for VAT assignment. |
+| `accounting_settings` | Per-organisation VAT and ledger settings (standard-rate and exempt account/VAT codes). Used by reporting; age/rate thresholds come from `app_settings.vat`. |
 
 > ℹ️ Schedule phases are **not** mirrored in a separate DB table — they are built on every push from `_shared/billing.ts` based on the current `calculateYearlyAmount` output (including shift logic for `no_lesson_periods` and the August pause).
 

@@ -1,7 +1,22 @@
 import type { Session } from '@supabase/supabase-js';
+import type { AppRole } from '@/lib/roles';
 
 /** Max wait for auth session + role/teacher probes before showing the offline screen. */
 export const AUTH_BOOTSTRAP_TIMEOUT_MS = 2_000;
+
+export function resolveAuthRoleFlags(role: AppRole | null, teacherUserId: string | null) {
+	const isAdmin = role === 'admin';
+	const isSiteAdmin = role === 'site_admin';
+	const isStaff = role === 'staff';
+	const isTeacher = teacherUserId !== null;
+	return {
+		isAdmin,
+		isSiteAdmin,
+		isStaff,
+		isTeacher,
+		isPrivileged: isAdmin || isSiteAdmin || isStaff,
+	};
+}
 
 export interface AuthSessionApplyPlan {
 	userId: string | null;

@@ -13,14 +13,6 @@ export function resolveLessonAgreementPreviewViewState(
 	return 'empty';
 }
 
-export function formatAgreementTariffLabel(tariff: AgreementBillingPreview['tariff']): string {
-	return tariff === 'under_21' ? '< 21 jaar' : '21+ jaar';
-}
-
-export function shouldShowAgreementLeftoverNote(leftoverCents: number): boolean {
-	return leftoverCents > 0;
-}
-
 export type LessonAgreementPreviewRenderKind = 'loading' | 'error' | 'content' | 'none';
 
 export function resolveLessonAgreementPreviewRenderKind(

@@ -35,7 +35,7 @@ function buildSynthesizedOptionsInsert(rows: AgreementCourseSqlRow[]): string {
     duration_minutes,
     frequency,
     price_per_lesson,
-    price_per_lesson_under_21_cents,
+    price_per_lesson_youth_cents,
     price_per_lesson_adult_cents
   )
   SELECT
@@ -43,11 +43,11 @@ function buildSynthesizedOptionsInsert(rows: AgreementCourseSqlRow[]): string {
     v.duration_minutes,
     v.frequency,
     v.price_per_lesson,
-    v.price_per_lesson_under_21_cents,
+    v.price_per_lesson_youth_cents,
     v.price_per_lesson_adult_cents
   FROM (VALUES
 ${tuples.join(',\n')}
-  ) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
+  ) AS v(lesson_type_id, duration_minutes, frequency, price_per_lesson, price_per_lesson_youth_cents, price_per_lesson_adult_cents)
   WHERE NOT EXISTS (
     SELECT 1 FROM public.lesson_type_options lto
     WHERE lto.lesson_type_id = v.lesson_type_id

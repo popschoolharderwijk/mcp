@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { hasAdminRole, isServiceRoleToken, stripBearerToken } from './invoicePure.ts';
+import { hasAdminRole, isServiceRoleToken, stripBearerToken } from './invoiceHelpers.ts';
 
 export {
 	buildInvoiceEmailDeliveryContent,
@@ -9,7 +9,7 @@ export {
 	computeDueDate,
 	readInvoiceMailEnv,
 	shouldRecordInvoiceEmailSent,
-} from './invoicePure.ts';
+} from './invoiceHelpers.ts';
 
 export async function verifyAdminAccess(
 	authHeader: string,

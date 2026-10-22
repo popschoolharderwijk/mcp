@@ -9,6 +9,17 @@
 -- Singleton accounting settings (from accounting_settings migration).
 INSERT INTO public.accounting_settings (id) VALUES (true) ON CONFLICT DO NOTHING;
 
+-- Application settings (key → jsonb). Values mirrored in tests/rls/seed-data-constants.ts APP_SETTINGS
+-- and src/lib/settings/appSettingsDefaults.ts.
+INSERT INTO public.app_settings (key, value) VALUES
+	('school_year', '{"start_month":9,"end_month":7}'::jsonb),
+	('agenda', '{"start_hour":8,"end_hour":21,"slot_minutes":30}'::jsonb),
+	('vat', '{"age_threshold_years":21,"standard_rate_percent":21}'::jsonb),
+	('branding', '{"primary_hex":"#c4ab7c"}'::jsonb),
+	('trial_lessons', '{"horizon_days":30,"default_duration_minutes":30}'::jsonb),
+	('agreements', '{"default_start_offset_days":1,"default_payment_method":"sepa"}'::jsonb)
+ON CONFLICT (key) DO NOTHING;
+
 -- Default email templates (from email_templates migration).
 INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
 	'signup_received',
