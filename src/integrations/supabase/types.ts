@@ -12,20 +12,23 @@ export type Database = {
 				Row: {
 					account_bank_sepa: string;
 					account_bank_stripe: string;
-					account_debtors: string;
-					account_revenue_21_plus: string;
-					account_revenue_under_21: string;
-					account_vat_21: string;
+					account_btw_21: string;
+					account_debiteuren: string;
+					account_omzet_21_plus: string;
+					account_omzet_under_21: string;
+					btw_code_21: string;
+					btw_code_exempt: string;
+					cancellation_notice_days: number;
 					company_address: string | null;
+					company_btw_nummer: string | null;
 					company_city: string | null;
 					company_email: string | null;
 					company_iban: string | null;
-					company_kvk_number: string | null;
+					company_kvk: string | null;
 					company_logo_url: string | null;
 					company_name: string | null;
 					company_phone: string | null;
 					company_postcode: string | null;
-					company_vat_number: string | null;
 					created_at: string;
 					created_by: string | null;
 					currency: string;
@@ -36,7 +39,7 @@ export type Database = {
 					invoice_number_prefix: string;
 					invoice_payment_term_days: number;
 					journal_code_bank: string;
-					journal_code_memorial: string;
+					journal_code_memoriaal: string;
 					payment_provider: string;
 					school_year_start_month: number;
 					sepa_collection_day: number;
@@ -47,28 +50,33 @@ export type Database = {
 					sepa_mandate_next_seq: number;
 					sepa_mandate_prefix: string;
 					sepa_remittance_template: string;
+					stripe_catalog_last_full_sync_at: string | null;
+					stripe_portal_configuration_id: string | null;
+					stripe_tax_rate_21_id: string | null;
+					stripe_tax_rate_exempt_id: string | null;
 					updated_at: string;
 					updated_by: string | null;
-					vat_code_21: string;
-					vat_code_exempt: string;
 				};
 				Insert: {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
-					account_debtors?: string;
-					account_revenue_21_plus?: string;
-					account_revenue_under_21?: string;
-					account_vat_21?: string;
+					account_btw_21?: string;
+					account_debiteuren?: string;
+					account_omzet_21_plus?: string;
+					account_omzet_under_21?: string;
+					btw_code_21?: string;
+					btw_code_exempt?: string;
+					cancellation_notice_days?: number;
 					company_address?: string | null;
+					company_btw_nummer?: string | null;
 					company_city?: string | null;
 					company_email?: string | null;
 					company_iban?: string | null;
-					company_kvk_number?: string | null;
+					company_kvk?: string | null;
 					company_logo_url?: string | null;
 					company_name?: string | null;
 					company_phone?: string | null;
 					company_postcode?: string | null;
-					company_vat_number?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -79,7 +87,7 @@ export type Database = {
 					invoice_number_prefix?: string;
 					invoice_payment_term_days?: number;
 					journal_code_bank?: string;
-					journal_code_memorial?: string;
+					journal_code_memoriaal?: string;
 					payment_provider?: string;
 					school_year_start_month?: number;
 					sepa_collection_day?: number;
@@ -90,28 +98,33 @@ export type Database = {
 					sepa_mandate_next_seq?: number;
 					sepa_mandate_prefix?: string;
 					sepa_remittance_template?: string;
+					stripe_catalog_last_full_sync_at?: string | null;
+					stripe_portal_configuration_id?: string | null;
+					stripe_tax_rate_21_id?: string | null;
+					stripe_tax_rate_exempt_id?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_code_21?: string;
-					vat_code_exempt?: string;
 				};
 				Update: {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
-					account_debtors?: string;
-					account_revenue_21_plus?: string;
-					account_revenue_under_21?: string;
-					account_vat_21?: string;
+					account_btw_21?: string;
+					account_debiteuren?: string;
+					account_omzet_21_plus?: string;
+					account_omzet_under_21?: string;
+					btw_code_21?: string;
+					btw_code_exempt?: string;
+					cancellation_notice_days?: number;
 					company_address?: string | null;
+					company_btw_nummer?: string | null;
 					company_city?: string | null;
 					company_email?: string | null;
 					company_iban?: string | null;
-					company_kvk_number?: string | null;
+					company_kvk?: string | null;
 					company_logo_url?: string | null;
 					company_name?: string | null;
 					company_phone?: string | null;
 					company_postcode?: string | null;
-					company_vat_number?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -122,7 +135,7 @@ export type Database = {
 					invoice_number_prefix?: string;
 					invoice_payment_term_days?: number;
 					journal_code_bank?: string;
-					journal_code_memorial?: string;
+					journal_code_memoriaal?: string;
 					payment_provider?: string;
 					school_year_start_month?: number;
 					sepa_collection_day?: number;
@@ -133,10 +146,12 @@ export type Database = {
 					sepa_mandate_next_seq?: number;
 					sepa_mandate_prefix?: string;
 					sepa_remittance_template?: string;
+					stripe_catalog_last_full_sync_at?: string | null;
+					stripe_portal_configuration_id?: string | null;
+					stripe_tax_rate_21_id?: string | null;
+					stripe_tax_rate_exempt_id?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_code_21?: string;
-					vat_code_exempt?: string;
 				};
 				Relationships: [];
 			};
@@ -315,6 +330,42 @@ export type Database = {
 					},
 				];
 			};
+			agreement_payment_links: {
+				Row: {
+					created_at: string;
+					lesson_agreement_id: string;
+					rotated_at: string;
+					token_hash: string;
+				};
+				Insert: {
+					created_at?: string;
+					lesson_agreement_id: string;
+					rotated_at?: string;
+					token_hash: string;
+				};
+				Update: {
+					created_at?: string;
+					lesson_agreement_id?: string;
+					rotated_at?: string;
+					token_hash?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'agreement_payment_links_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: true;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
+					{
+						foreignKeyName: 'agreement_payment_links_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: true;
+						referencedRelation: 'lesson_agreements';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			announcements: {
 				Row: {
 					audience: string[];
@@ -356,8 +407,12 @@ export type Database = {
 			};
 			direct_debit_batch_items: {
 				Row: {
+					age_category: string | null;
 					amount_cents: number;
+					amount_excl_btw_cents: number | null;
 					batch_id: string;
+					btw_amount_cents: number | null;
+					btw_rate: number | null;
 					created_at: string;
 					created_by: string | null;
 					currency: string;
@@ -376,8 +431,12 @@ export type Database = {
 					updated_by: string | null;
 				};
 				Insert: {
+					age_category?: string | null;
 					amount_cents: number;
+					amount_excl_btw_cents?: number | null;
 					batch_id: string;
+					btw_amount_cents?: number | null;
+					btw_rate?: number | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -396,8 +455,12 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Update: {
+					age_category?: string | null;
 					amount_cents?: number;
+					amount_excl_btw_cents?: number | null;
 					batch_id?: string;
+					btw_amount_cents?: number | null;
+					btw_rate?: number | null;
 					created_at?: string;
 					created_by?: string | null;
 					currency?: string;
@@ -422,6 +485,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'direct_debit_batches';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'direct_debit_batch_items_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
 					},
 					{
 						foreignKeyName: 'direct_debit_batch_items_lesson_agreement_id_fkey';
@@ -546,6 +616,13 @@ export type Database = {
 						foreignKeyName: 'direct_debit_invitations_lesson_agreement_id_fkey';
 						columns: ['lesson_agreement_id'];
 						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
+					{
+						foreignKeyName: 'direct_debit_invitations_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
 						referencedRelation: 'lesson_agreements';
 						referencedColumns: ['id'];
 					},
@@ -586,9 +663,11 @@ export type Database = {
 			};
 			invoice_lines: {
 				Row: {
-					amount_excl_vat_cents: number;
+					amount_excl_btw_cents: number;
 					amount_total_cents: number;
 					batch_item_id: string | null;
+					btw_amount_cents: number;
+					btw_rate: number;
 					created_at: string;
 					created_by: string | null;
 					description: string;
@@ -600,13 +679,13 @@ export type Database = {
 					unit_price_cents: number;
 					updated_at: string;
 					updated_by: string | null;
-					vat_amount_cents: number;
-					vat_rate: number;
 				};
 				Insert: {
-					amount_excl_vat_cents?: number;
+					amount_excl_btw_cents?: number;
 					amount_total_cents?: number;
 					batch_item_id?: string | null;
+					btw_amount_cents?: number;
+					btw_rate?: number;
 					created_at?: string;
 					created_by?: string | null;
 					description: string;
@@ -618,13 +697,13 @@ export type Database = {
 					unit_price_cents?: number;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_amount_cents?: number;
-					vat_rate?: number;
 				};
 				Update: {
-					amount_excl_vat_cents?: number;
+					amount_excl_btw_cents?: number;
 					amount_total_cents?: number;
 					batch_item_id?: string | null;
+					btw_amount_cents?: number;
+					btw_rate?: number;
 					created_at?: string;
 					created_by?: string | null;
 					description?: string;
@@ -636,8 +715,6 @@ export type Database = {
 					unit_price_cents?: number;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_amount_cents?: number;
-					vat_rate?: number;
 				};
 				Relationships: [
 					{
@@ -659,9 +736,10 @@ export type Database = {
 			invoices: {
 				Row: {
 					age_category: string;
-					amount_excl_vat_cents: number;
+					amount_excl_btw_cents: number;
 					amount_total_cents: number;
 					batch_id: string | null;
+					btw_amount_cents: number;
 					created_at: string;
 					created_by: string | null;
 					due_date: string;
@@ -679,13 +757,13 @@ export type Database = {
 					student_user_id: string;
 					updated_at: string;
 					updated_by: string | null;
-					vat_amount_cents: number;
 				};
 				Insert: {
 					age_category?: string;
-					amount_excl_vat_cents?: number;
+					amount_excl_btw_cents?: number;
 					amount_total_cents?: number;
 					batch_id?: string | null;
+					btw_amount_cents?: number;
 					created_at?: string;
 					created_by?: string | null;
 					due_date: string;
@@ -703,13 +781,13 @@ export type Database = {
 					student_user_id: string;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_amount_cents?: number;
 				};
 				Update: {
 					age_category?: string;
-					amount_excl_vat_cents?: number;
+					amount_excl_btw_cents?: number;
 					amount_total_cents?: number;
 					batch_id?: string | null;
+					btw_amount_cents?: number;
 					created_at?: string;
 					created_by?: string | null;
 					due_date?: string;
@@ -727,7 +805,6 @@ export type Database = {
 					student_user_id?: string;
 					updated_at?: string;
 					updated_by?: string | null;
-					vat_amount_cents?: number;
 				};
 				Relationships: [
 					{
@@ -753,8 +830,43 @@ export type Database = {
 					},
 				];
 			};
+			legacy_ids: {
+				Row: {
+					created_at: string;
+					entity_type: string;
+					id: string;
+					imported_at: string;
+					imported_by: string | null;
+					legacy_id: string;
+					new_id: string;
+					updated_at: string;
+				};
+				Insert: {
+					created_at?: string;
+					entity_type: string;
+					id?: string;
+					imported_at?: string;
+					imported_by?: string | null;
+					legacy_id: string;
+					new_id: string;
+					updated_at?: string;
+				};
+				Update: {
+					created_at?: string;
+					entity_type?: string;
+					id?: string;
+					imported_at?: string;
+					imported_by?: string | null;
+					legacy_id?: string;
+					new_id?: string;
+					updated_at?: string;
+				};
+				Relationships: [];
+			};
 			lesson_agreements: {
 				Row: {
+					cancellation_effective_date: string | null;
+					cancellation_requested_at: string | null;
 					created_at: string;
 					created_by: string | null;
 					day_of_week: number;
@@ -766,22 +878,22 @@ export type Database = {
 					is_active: boolean;
 					lesson_group_id: string | null;
 					lesson_type_id: string;
-					monthly_amount_cents: number | null;
+					lesson_type_option_id: string | null;
+					minimum_term_end: string | null;
 					notes: string | null;
 					payment_method: string;
-					price_per_lesson: number;
 					sepa_mandate_id: string | null;
 					signup_source: string | null;
 					start_date: string;
 					start_time: string;
-					stripe_price_id: string | null;
-					stripe_schedule_id: string | null;
 					student_user_id: string;
 					teacher_user_id: string;
 					updated_at: string;
 					updated_by: string | null;
 				};
 				Insert: {
+					cancellation_effective_date?: string | null;
+					cancellation_requested_at?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					day_of_week: number;
@@ -793,22 +905,22 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id: string;
-					monthly_amount_cents?: number | null;
+					lesson_type_option_id?: string | null;
+					minimum_term_end?: string | null;
 					notes?: string | null;
 					payment_method?: string;
-					price_per_lesson: number;
 					sepa_mandate_id?: string | null;
 					signup_source?: string | null;
 					start_date: string;
 					start_time: string;
-					stripe_price_id?: string | null;
-					stripe_schedule_id?: string | null;
 					student_user_id: string;
 					teacher_user_id: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
 				Update: {
+					cancellation_effective_date?: string | null;
+					cancellation_requested_at?: string | null;
 					created_at?: string;
 					created_by?: string | null;
 					day_of_week?: number;
@@ -820,16 +932,14 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id?: string;
-					monthly_amount_cents?: number | null;
+					lesson_type_option_id?: string | null;
+					minimum_term_end?: string | null;
 					notes?: string | null;
 					payment_method?: string;
-					price_per_lesson?: number;
 					sepa_mandate_id?: string | null;
 					signup_source?: string | null;
 					start_date?: string;
 					start_time?: string;
-					stripe_price_id?: string | null;
-					stripe_schedule_id?: string | null;
 					student_user_id?: string;
 					teacher_user_id?: string;
 					updated_at?: string;
@@ -848,6 +958,13 @@ export type Database = {
 						columns: ['lesson_type_id'];
 						isOneToOne: false;
 						referencedRelation: 'lesson_types';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'lesson_agreements_lesson_type_option_id_fkey';
+						columns: ['lesson_type_option_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_type_options';
 						referencedColumns: ['id'];
 					},
 					{
@@ -922,7 +1039,6 @@ export type Database = {
 					is_active: boolean;
 					lesson_type_id: string;
 					name: string;
-					price_per_lesson: number;
 					start_date: string;
 					start_time: string;
 					teacher_user_id: string;
@@ -940,7 +1056,6 @@ export type Database = {
 					is_active?: boolean;
 					lesson_type_id: string;
 					name: string;
-					price_per_lesson?: number;
 					start_date: string;
 					start_time: string;
 					teacher_user_id: string;
@@ -958,7 +1073,6 @@ export type Database = {
 					is_active?: boolean;
 					lesson_type_id?: string;
 					name?: string;
-					price_per_lesson?: number;
 					start_date?: string;
 					start_time?: string;
 					teacher_user_id?: string;
@@ -999,6 +1113,7 @@ export type Database = {
 					parent_email: string | null;
 					parent_name: string | null;
 					parent_phone_number: string | null;
+					payment_method: string;
 					phone_number: string | null;
 					processed_at: string | null;
 					processed_by: string | null;
@@ -1025,6 +1140,7 @@ export type Database = {
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
+					payment_method?: string;
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;
@@ -1051,6 +1167,7 @@ export type Database = {
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
+					payment_method?: string;
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;
@@ -1062,6 +1179,13 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'lesson_signup_requests_created_agreement_id_fkey';
+						columns: ['created_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
 					{
 						foreignKeyName: 'lesson_signup_requests_created_agreement_id_fkey';
 						columns: ['created_agreement_id'];
@@ -1092,43 +1216,87 @@ export type Database = {
 					},
 				];
 			};
-			lesson_type_options: {
+			lesson_type_option_tariffs: {
 				Row: {
+					amount_adult_cents: number | null;
+					amount_under_21_cents: number | null;
 					created_at: string;
 					created_by: string | null;
-					duration_minutes: number;
-					frequency: Database['public']['Enums']['lesson_frequency'];
+					effective_from: string;
 					id: string;
-					lesson_type_id: string;
-					price_per_lesson: number;
-					price_per_lesson_adult_cents: number | null;
-					price_per_lesson_under_21_cents: number | null;
+					lesson_type_option_id: string;
 					updated_at: string;
 					updated_by: string | null;
 				};
 				Insert: {
+					amount_adult_cents?: number | null;
+					amount_under_21_cents?: number | null;
 					created_at?: string;
 					created_by?: string | null;
-					duration_minutes: number;
-					frequency: Database['public']['Enums']['lesson_frequency'];
+					effective_from: string;
 					id?: string;
-					lesson_type_id: string;
-					price_per_lesson: number;
-					price_per_lesson_adult_cents?: number | null;
-					price_per_lesson_under_21_cents?: number | null;
+					lesson_type_option_id: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
 				Update: {
+					amount_adult_cents?: number | null;
+					amount_under_21_cents?: number | null;
+					created_at?: string;
+					created_by?: string | null;
+					effective_from?: string;
+					id?: string;
+					lesson_type_option_id?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'lesson_type_option_tariffs_lesson_type_option_id_fkey';
+						columns: ['lesson_type_option_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_type_options';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			lesson_type_options: {
+				Row: {
+					billing_kind: string;
+					created_at: string;
+					created_by: string | null;
+					duration_minutes: number;
+					frequency: Database['public']['Enums']['lesson_frequency'];
+					has_adult_tariff: boolean;
+					id: string;
+					label: string | null;
+					lesson_type_id: string;
+					updated_at: string;
+					updated_by: string | null;
+				};
+				Insert: {
+					billing_kind?: string;
+					created_at?: string;
+					created_by?: string | null;
+					duration_minutes: number;
+					frequency: Database['public']['Enums']['lesson_frequency'];
+					has_adult_tariff?: boolean;
+					id?: string;
+					label?: string | null;
+					lesson_type_id: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Update: {
+					billing_kind?: string;
 					created_at?: string;
 					created_by?: string | null;
 					duration_minutes?: number;
 					frequency?: Database['public']['Enums']['lesson_frequency'];
+					has_adult_tariff?: boolean;
 					id?: string;
+					label?: string | null;
 					lesson_type_id?: string;
-					price_per_lesson?: number;
-					price_per_lesson_adult_cents?: number | null;
-					price_per_lesson_under_21_cents?: number | null;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
@@ -1225,6 +1393,39 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Relationships: [];
+			};
+			payment_link_requests: {
+				Row: {
+					created_at: string;
+					id: string;
+					lesson_agreement_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					lesson_agreement_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					lesson_agreement_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'payment_link_requests_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
+					{
+						foreignKeyName: 'payment_link_requests_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_agreements';
+						referencedColumns: ['id'];
+					},
+				];
 			};
 			profiles: {
 				Row: {
@@ -1476,6 +1677,122 @@ export type Database = {
 					},
 				];
 			};
+			stripe_catalog_prices: {
+				Row: {
+					age_category: string;
+					amount_cents: number;
+					catalog_product_id: string;
+					created_at: string;
+					created_by: string | null;
+					id: string;
+					is_active_in_stripe: boolean;
+					lookup_key: string;
+					recurring: boolean;
+					stripe_price_id: string;
+					tariff_id: string | null;
+					updated_at: string;
+					updated_by: string | null;
+				};
+				Insert: {
+					age_category: string;
+					amount_cents: number;
+					catalog_product_id: string;
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					is_active_in_stripe?: boolean;
+					lookup_key: string;
+					recurring: boolean;
+					stripe_price_id: string;
+					tariff_id?: string | null;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Update: {
+					age_category?: string;
+					amount_cents?: number;
+					catalog_product_id?: string;
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					is_active_in_stripe?: boolean;
+					lookup_key?: string;
+					recurring?: boolean;
+					stripe_price_id?: string;
+					tariff_id?: string | null;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'stripe_catalog_prices_catalog_product_id_fkey';
+						columns: ['catalog_product_id'];
+						isOneToOne: false;
+						referencedRelation: 'stripe_catalog_products';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'stripe_catalog_prices_tariff_id_fkey';
+						columns: ['tariff_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_type_option_tariffs';
+						referencedColumns: ['id'];
+					},
+				];
+			};
+			stripe_catalog_products: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					id: string;
+					is_active_in_stripe: boolean;
+					last_error: string | null;
+					last_synced_at: string | null;
+					lesson_type_option_id: string | null;
+					product_name: string | null;
+					stripe_product_id: string | null;
+					sync_status: string;
+					updated_at: string;
+					updated_by: string | null;
+				};
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					is_active_in_stripe?: boolean;
+					last_error?: string | null;
+					last_synced_at?: string | null;
+					lesson_type_option_id?: string | null;
+					product_name?: string | null;
+					stripe_product_id?: string | null;
+					sync_status?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					is_active_in_stripe?: boolean;
+					last_error?: string | null;
+					last_synced_at?: string | null;
+					lesson_type_option_id?: string | null;
+					product_name?: string | null;
+					stripe_product_id?: string | null;
+					sync_status?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'stripe_catalog_products_lesson_type_option_id_fkey';
+						columns: ['lesson_type_option_id'];
+						isOneToOne: true;
+						referencedRelation: 'lesson_type_options';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			stripe_customers: {
 				Row: {
 					created_at: string;
@@ -1628,9 +1945,22 @@ export type Database = {
 					current_period_end: string | null;
 					current_period_start: string | null;
 					default_payment_method_brand: string | null;
+					first_invoice_due_on: string | null;
+					first_invoice_month: string | null;
+					first_invoice_status: string | null;
+					first_invoice_stripe_id: string | null;
 					id: string;
+					last_check_at: string | null;
+					last_check_expected_cents: number | null;
+					last_check_month: string | null;
+					last_check_stripe_cents: number | null;
+					last_rebuild_error: string | null;
+					last_rebuilt_at: string | null;
 					latest_invoice_id: string | null;
 					lesson_agreement_id: string;
+					needs_rebuild: boolean;
+					schedule_build_started_at: string | null;
+					schedule_horizon_end: string | null;
 					status: string;
 					stripe_customer_id: string;
 					stripe_price_id: string;
@@ -1647,9 +1977,22 @@ export type Database = {
 					current_period_end?: string | null;
 					current_period_start?: string | null;
 					default_payment_method_brand?: string | null;
+					first_invoice_due_on?: string | null;
+					first_invoice_month?: string | null;
+					first_invoice_status?: string | null;
+					first_invoice_stripe_id?: string | null;
 					id?: string;
+					last_check_at?: string | null;
+					last_check_expected_cents?: number | null;
+					last_check_month?: string | null;
+					last_check_stripe_cents?: number | null;
+					last_rebuild_error?: string | null;
+					last_rebuilt_at?: string | null;
 					latest_invoice_id?: string | null;
 					lesson_agreement_id: string;
+					needs_rebuild?: boolean;
+					schedule_build_started_at?: string | null;
+					schedule_horizon_end?: string | null;
 					status: string;
 					stripe_customer_id: string;
 					stripe_price_id: string;
@@ -1666,9 +2009,22 @@ export type Database = {
 					current_period_end?: string | null;
 					current_period_start?: string | null;
 					default_payment_method_brand?: string | null;
+					first_invoice_due_on?: string | null;
+					first_invoice_month?: string | null;
+					first_invoice_status?: string | null;
+					first_invoice_stripe_id?: string | null;
 					id?: string;
+					last_check_at?: string | null;
+					last_check_expected_cents?: number | null;
+					last_check_month?: string | null;
+					last_check_stripe_cents?: number | null;
+					last_rebuild_error?: string | null;
+					last_rebuilt_at?: string | null;
 					latest_invoice_id?: string | null;
 					lesson_agreement_id?: string;
+					needs_rebuild?: boolean;
+					schedule_build_started_at?: string | null;
+					schedule_horizon_end?: string | null;
 					status?: string;
 					stripe_customer_id?: string;
 					stripe_price_id?: string;
@@ -1678,6 +2034,13 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'subscriptions_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
 					{
 						foreignKeyName: 'subscriptions_lesson_agreement_id_fkey';
 						columns: ['lesson_agreement_id'];
@@ -1876,6 +2239,13 @@ export type Database = {
 						foreignKeyName: 'trial_lessons_created_agreement_id_fkey';
 						columns: ['created_agreement_id'];
 						isOneToOne: false;
+						referencedRelation: 'agreements_awaiting_mandate';
+						referencedColumns: ['lesson_agreement_id'];
+					},
+					{
+						foreignKeyName: 'trial_lessons_created_agreement_id_fkey';
+						columns: ['created_agreement_id'];
+						isOneToOne: false;
 						referencedRelation: 'lesson_agreements';
 						referencedColumns: ['id'];
 					},
@@ -1938,6 +2308,21 @@ export type Database = {
 			};
 		};
 		Views: {
+			agreements_awaiting_mandate: {
+				Row: {
+					created_at: string | null;
+					days_waiting: number | null;
+					first_sent_at: string | null;
+					last_sent_at: string | null;
+					lesson_agreement_id: string | null;
+					lesson_type_name: string | null;
+					recipient_email: string | null;
+					start_date: string | null;
+					student_name: string | null;
+					student_user_id: string | null;
+				};
+				Relationships: [];
+			};
 			view_profiles_with_display_name: {
 				Row: {
 					avatar_url: string | null;
@@ -1980,6 +2365,17 @@ export type Database = {
 				};
 				Returns: boolean;
 			};
+			agreement_fee_months: {
+				Args: { p_agreement_id: string; p_from_month: string; p_months: number };
+				Returns: {
+					age_category: string;
+					amount_cents: number;
+					btw_rate: number;
+					is_prorated: boolean;
+					month: string;
+					tariff_effective_from: string;
+				}[];
+			};
 			apply_audit_trail: { Args: { p_table: unknown }; Returns: undefined };
 			authenticated_has_execute_on: {
 				Args: { p_regprocedure: string };
@@ -1991,11 +2387,63 @@ export type Database = {
 			};
 			can_delete_user: { Args: { _target_id: string }; Returns: boolean };
 			can_manage_agenda_event: { Args: { ev_id: string }; Returns: boolean };
+			cancel_lesson_agreement: {
+				Args: { p_agreement_id: string; p_requested_on?: string };
+				Returns: string;
+			};
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
 			check_rls_forced: { Args: { p_table_name: string }; Returns: boolean };
+			claim_schedule_build: {
+				Args: { p_agreement_id: string; p_customer_id: string };
+				Returns: boolean;
+			};
 			cleanup_student_if_no_agreements: {
 				Args: { _user_id: string };
 				Returns: undefined;
+			};
+			compute_agreement_month_fee: {
+				Args: { p_agreement_id: string; p_month: string };
+				Returns: {
+					age_category: string;
+					amount_cents: number;
+					amount_excl_btw_cents: number;
+					btw_amount_cents: number;
+					btw_rate: number;
+					is_prorated: boolean;
+					tariff_effective_from: string;
+				}[];
+			};
+			compute_cancellation_effective_date: {
+				Args: {
+					p_minimum_term_end: string;
+					p_notice_days: number;
+					p_requested_on: string;
+				};
+				Returns: string;
+			};
+			compute_lesson_fee: {
+				Args: {
+					p_billing_kind: string;
+					p_date_of_birth: string;
+					p_end_date: string;
+					p_has_adult_tariff: boolean;
+					p_month: string;
+					p_start_date: string;
+					p_tariffs: Json;
+				};
+				Returns: {
+					age_category: string;
+					amount_cents: number;
+					amount_excl_btw_cents: number;
+					btw_amount_cents: number;
+					btw_rate: number;
+					is_prorated: boolean;
+					tariff_effective_from: string;
+				}[];
+			};
+			compute_minimum_term_end: {
+				Args: { p_start_date: string };
+				Returns: string;
 			};
 			current_user_id: { Args: never; Returns: string };
 			end_recurring_deviation_from_week: {
@@ -2122,13 +2570,40 @@ export type Database = {
 			next_mandate_reference: { Args: never; Returns: string };
 			normalize_compact_text: { Args: { p_value: string }; Returns: string };
 			normalize_trim_text: { Args: { p_value: string }; Returns: string };
+			option_tariffs_json: { Args: { p_option_id: string }; Returns: Json };
 			policy_exists: {
 				Args: { p_policy_name: string; p_table_name: string };
 				Returns: boolean;
 			};
+			preview_lesson_fee: {
+				Args: {
+					p_date_of_birth: string;
+					p_end_date: string;
+					p_lesson_type_option_id: string;
+					p_month: string;
+					p_start_date: string;
+				};
+				Returns: {
+					age_category: string;
+					amount_cents: number;
+					amount_excl_btw_cents: number;
+					btw_amount_cents: number;
+					btw_rate: number;
+					is_prorated: boolean;
+					tariff_effective_from: string;
+				}[];
+			};
 			recalc_direct_debit_batch: {
 				Args: { p_batch_id: string };
 				Returns: undefined;
+			};
+			release_schedule_build: {
+				Args: { p_agreement_id: string };
+				Returns: undefined;
+			};
+			set_student_date_of_birth_if_missing: {
+				Args: { p_date_of_birth: string; p_student_user_id: string };
+				Returns: boolean;
 			};
 			shift_recurring_deviation_to_next_week: {
 				Args: { p_deviation_id: string };
