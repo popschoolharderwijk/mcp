@@ -1,7 +1,13 @@
 import type { Session, User } from '@supabase/supabase-js';
-import { createContext, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { ServiceUnavailableScreen } from '@/components/ServiceUnavailableScreen';
 import { supabase } from '@/integrations/supabase/client';
-import { planAuthSessionApply, runAuthSessionSideEffects } from '@/lib/auth/authSessionHelpers';
+import {
+	AUTH_BOOTSTRAP_TIMEOUT_MS,
+	type AuthBackendProbeError,
+	planAuthSessionApply,
+	runAuthSessionSideEffects,
+} from '@/lib/auth/authSessionHelpers';
 import type { AppRole } from '@/lib/roles';
 
 interface AuthContextType {
@@ -31,27 +37,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const [role, setRole] = useState<AppRole | null>(null);
 	const [teacherUserId, setTeacherUserId] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
+	const [isUnavailable, setIsUnavailable] = useState(false);
+	const bootstrapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-	const fetchRole = useCallback(async (userId: string) => {
+	const clearBootstrapTimeout = useCallback(() => {
+		if (bootstrapTimeoutRef.current === null) return;
+		clearTimeout(bootstrapTimeoutRef.current);
+		bootstrapTimeoutRef.current = null;
+	}, []);
+
+	const completeLoading = useCallback(() => {
+		clearBootstrapTimeout();
+		setIsLoading(false);
+	}, [clearBootstrapTimeout]);
+
+	const markUnavailable = useCallback(() => {
+		clearBootstrapTimeout();
+		setIsUnavailable(true);
+		setIsLoading(false);
+	}, [clearBootstrapTimeout]);
+
+	const fetchRole = useCallback(async (userId: string): Promise<AuthBackendProbeError> => {
 		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
 
 		if (error) {
 			console.error('Error fetching user role:', error);
 			setRole(null);
-		} else {
-			setRole(data?.role ?? null);
+			return error;
 		}
+		setRole(data?.role ?? null);
+		return null;
 	}, []);
 
-	const fetchTeacher = useCallback(async (userId: string) => {
+	const fetchTeacher = useCallback(async (userId: string): Promise<AuthBackendProbeError> => {
 		const { data, error } = await supabase.from('teachers').select('user_id').eq('user_id', userId).maybeSingle();
 
 		if (error) {
 			console.error('Error fetching teacher:', error);
 			setTeacherUserId(null);
-		} else {
-			setTeacherUserId(data?.user_id ?? null);
+			return error;
 		}
+		setTeacherUserId(data?.user_id ?? null);
+		return null;
 	}, []);
 
 	const refreshRole = useCallback(async () => {
@@ -72,16 +99,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 					setRole(null);
 					setTeacherUserId(null);
 				},
-				onLoadingComplete: () => setIsLoading(false),
+				onLoadingComplete: completeLoading,
+				onBackendUnavailable: markUnavailable,
 			});
 		},
-		[fetchRole, fetchTeacher],
+		[fetchRole, fetchTeacher, completeLoading, markUnavailable],
 	);
 
 	useEffect(() => {
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			applySession(session, false);
-		});
+		bootstrapTimeoutRef.current = setTimeout(markUnavailable, AUTH_BOOTSTRAP_TIMEOUT_MS);
+
+		supabase.auth
+			.getSession()
+			.then(({ data: { session } }) => {
+				applySession(session, false);
+			})
+			.catch((error: unknown) => {
+				console.error('Error loading auth session:', error);
+				markUnavailable();
+			});
 
 		const {
 			data: { subscription },
@@ -89,8 +125,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			applySession(session, true);
 		});
 
-		return () => subscription.unsubscribe();
-	}, [applySession]);
+		return () => {
+			clearBootstrapTimeout();
+			subscription.unsubscribe();
+		};
+	}, [applySession, clearBootstrapTimeout, markUnavailable]);
 
 	const signOut = async () => {
 		await supabase.auth.signOut();
@@ -119,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				refreshRole,
 			}}
 		>
-			{children}
+			{isUnavailable ? <ServiceUnavailableScreen /> : children}
 		</AuthContext.Provider>
 	);
 }
