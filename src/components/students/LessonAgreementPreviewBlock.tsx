@@ -1,10 +1,8 @@
 import type { AgreementBillingPreview } from '@/hooks/useAgreementBillingPreview';
 import { formatAgreementCents } from '@/lib/students/lessonAgreementDialogHelpers';
 import {
-	formatAgreementTariffLabel,
 	resolveLessonAgreementPreviewRenderKind,
 	resolveLessonAgreementPreviewViewState,
-	shouldShowAgreementLeftoverNote,
 } from '@/lib/students/lessonAgreementPreviewHelpers';
 
 interface LessonAgreementPreviewBlockProps {
@@ -14,6 +12,8 @@ interface LessonAgreementPreviewBlockProps {
 }
 
 function LessonAgreementPreviewContent({ preview }: { preview: AgreementBillingPreview }) {
+	const tariffLabel = preview.tariff === 'youth' ? 'Jongeren tarief' : 'Volwassenen tarief';
+
 	return (
 		<div className="grid gap-3 sm:grid-cols-2">
 			<div>
@@ -23,8 +23,7 @@ function LessonAgreementPreviewContent({ preview }: { preview: AgreementBillingP
 			<div>
 				<p className="text-xs font-medium text-muted-foreground">Tarief</p>
 				<p className="font-medium">
-					{formatAgreementTariffLabel(preview.tariff)} — {formatAgreementCents(preview.pricePerLessonCents)}{' '}
-					per les
+					{tariffLabel} — {formatAgreementCents(preview.pricePerLessonCents)} per les
 				</p>
 			</div>
 			<div>
@@ -39,7 +38,7 @@ function LessonAgreementPreviewContent({ preview }: { preview: AgreementBillingP
 				<p className="text-xs font-medium text-muted-foreground">Maandbedrag (× 11, augustus geen incasso)</p>
 				<p className="font-semibold text-base">
 					{formatAgreementCents(preview.monthlyCents)}
-					{shouldShowAgreementLeftoverNote(preview.leftoverCents) && (
+					{preview.leftoverCents > 0 && (
 						<span className="text-xs font-normal text-muted-foreground ml-2">
 							(laatste maand +{formatAgreementCents(preview.leftoverCents)})
 						</span>

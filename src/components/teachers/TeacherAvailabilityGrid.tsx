@@ -4,13 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { DAY_NAMES_DISPLAY } from '@/lib/date/day-index';
 import {
 	type AvailabilityBlock,
-	buildAvailabilityHourLabels,
 	getAvailabilityHourTopPercent,
 	getTeacherAvailabilityCardDescription,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 
 const dayNames = DAY_NAMES_DISPLAY;
-const HOURS = buildAvailabilityHourLabels();
 
 interface TeacherAvailabilityGridProps {
 	vm: TeacherAvailabilitySectionViewModel;
@@ -19,7 +17,7 @@ interface TeacherAvailabilityGridProps {
 }
 
 export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: TeacherAvailabilityGridProps) {
-	const { canEdit, timeSlots, availabilityBlocks } = vm;
+	const { canEdit, agenda, timeSlots, hourLabels, availabilityBlocks } = vm;
 
 	return (
 		<>
@@ -55,12 +53,12 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 
 					<div className="flex h-64 sm:h-72 lg:h-80">
 						<div className="w-12 shrink-0 relative">
-							{HOURS.map((hour) => (
+							{hourLabels.map((hour) => (
 								<div
 									key={hour}
 									className="absolute left-0 right-0 text-xs text-muted-foreground leading-none"
 									style={{
-										top: `${getAvailabilityHourTopPercent(hour)}%`,
+										top: `${getAvailabilityHourTopPercent(hour, agenda)}%`,
 										transform: 'translateY(-50%)',
 									}}
 								>
@@ -74,9 +72,10 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 								key={dayName}
 								dayName={dayName}
 								dayIndex={dayIndex}
-								hours={HOURS}
+								hours={hourLabels}
 								timeSlots={timeSlots}
 								blocks={availabilityBlocks}
+								agenda={agenda}
 								canEdit={canEdit}
 								onEmptySlotClick={onEmptySlotClick}
 								onBlockClick={onBlockClick}

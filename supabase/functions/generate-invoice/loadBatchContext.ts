@@ -1,10 +1,17 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { buildBatchContextFromLoadedData, extractMandateIds, hasBatchItems } from './loadBatchContextPure.ts';
+import { DEFAULT_INVOICE_VAT_SETTINGS, type InvoiceVatSettings } from './invoiceHelpers.ts';
+import {
+	buildBatchContextFromLoadedData,
+	extractMandateIds,
+	hasBatchItems,
+	parseVatSettingsFromAppSetting,
+} from './loadBatchContextHelpers.ts';
 import type { AccountingSettings, BatchItem, DirectDebitBatch, ProfileRow, StudentRow } from './types.ts';
 
 export interface BatchContext {
 	settings: AccountingSettings;
+	vat: InvoiceVatSettings;
 	batch: DirectDebitBatch;
 	items: BatchItem[];
 	studentIds: string[];
@@ -21,6 +28,11 @@ async function loadAccountingSettings(
 		return { ok: false, response: jsonResponse(500, { error: 'Accounting-instellingen ontbreken' }) };
 	}
 	return { ok: true, settings: data as AccountingSettings };
+}
+
+async function loadInvoiceVatSettings(admin: SupabaseClient): Promise<InvoiceVatSettings> {
+	const { data } = await admin.from('app_settings').select('value').eq('key', 'vat').maybeSingle();
+	return parseVatSettingsFromAppSetting(data?.value, DEFAULT_INVOICE_VAT_SETTINGS);
 }
 
 async function loadDirectDebitBatch(
@@ -75,6 +87,8 @@ export async function loadBatchContext(
 	const settingsLoaded = await loadAccountingSettings(admin);
 	if (!settingsLoaded.ok) return settingsLoaded;
 
+	const vat = await loadInvoiceVatSettings(admin);
+
 	const batchLoaded = await loadDirectDebitBatch(admin, batchId);
 	if (!batchLoaded.ok) return batchLoaded;
 
@@ -86,6 +100,7 @@ export async function loadBatchContext(
 		ok: true,
 		context: buildBatchContextFromLoadedData({
 			settings: settingsLoaded.settings,
+			vat,
 			batch: batchLoaded.batch,
 			items: itemsLoaded.items,
 			profiles: relatedMaps.profiles,

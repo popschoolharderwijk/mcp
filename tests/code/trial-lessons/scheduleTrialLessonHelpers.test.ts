@@ -90,6 +90,16 @@ describe('getScheduleTrialLessonResetValues', () => {
 		expect(values.fromDate).toBe(todayPlus(1));
 		expect(values.toDate).toBe(todayPlus(30));
 	});
+
+	it('applies trial_lessons horizon and duration from settings', () => {
+		const values = getScheduleTrialLessonResetValues(null, {
+			horizon_days: 14,
+			default_duration_minutes: 45,
+		});
+		expect(values.fromDate).toBe(todayPlus(1));
+		expect(values.toDate).toBe(todayPlus(14));
+		expect(values.duration).toBe(45);
+	});
 });
 
 describe('groupFreeSlotsByDate', () => {

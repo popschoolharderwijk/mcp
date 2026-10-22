@@ -263,9 +263,19 @@ SET search_path = public
 AS $$
 DECLARE
   v_result JSON;
+  v_age_threshold_years integer;
 BEGIN
   IF public.current_user_id() IS NULL THEN
     RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT COALESCE((value->>'age_threshold_years')::integer, 21)
+  INTO v_age_threshold_years
+  FROM public.app_settings
+  WHERE key = 'vat';
+
+  IF v_age_threshold_years IS NULL OR v_age_threshold_years < 1 THEN
+    v_age_threshold_years := 21;
   END IF;
 
   WITH
@@ -338,9 +348,9 @@ BEGIN
       CASE
         WHEN s.date_of_birth IS NOT NULL THEN
           CASE
-            WHEN AGE(nco.occurrence_date, s.date_of_birth) >= INTERVAL '21 years'
-            THEN '21_plus'
-            ELSE 'under_21'
+            WHEN AGE(nco.occurrence_date, s.date_of_birth) >= make_interval(years => v_age_threshold_years)
+            THEN 'adult'
+            ELSE 'youth'
           END
         ELSE 'unknown'
       END AS age_category

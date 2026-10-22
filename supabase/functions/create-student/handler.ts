@@ -8,7 +8,7 @@ import {
 	resolveCreateStudentPersistFailure,
 	resolveCreateStudentRequestOutcome,
 	resolveCreateStudentValidationFailure,
-} from './createStudentHandlerPure.ts';
+} from './createStudentHandlerHelpers.ts';
 import {
 	buildStudentAuthCreatePayload,
 	buildStudentProfileFields,
@@ -16,7 +16,7 @@ import {
 	type CreateStudentRequestBody,
 	resolveExistingStudentUserId,
 	validateCreateStudentBody,
-} from './createStudentPure.ts';
+} from './createStudentHelpers.ts';
 
 async function createStudentAuthUser(
 	admin: SupabaseClient,

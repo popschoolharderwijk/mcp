@@ -36,12 +36,12 @@ function journalRevenueParts(inv: AccountingReport['invoices'][number]): {
 	taxable: number;
 	vat: number;
 } {
-	if (inv.age_category === '21_plus') {
+	if (inv.age_category === 'adult') {
 		return { exempt: 0, taxable: inv.amount_excl_vat_cents, vat: inv.vat_amount_cents };
 	}
 	if (inv.age_category === 'mixed') {
-		const taxable = inv.amount_excl_21_plus_cents ?? 0;
-		const exempt = inv.amount_excl_under_21_cents ?? inv.amount_excl_vat_cents - taxable;
+		const taxable = inv.amount_excl_adult_cents ?? 0;
+		const exempt = inv.amount_excl_youth_cents ?? inv.amount_excl_vat_cents - taxable;
 		return { exempt, taxable, vat: inv.vat_amount_cents };
 	}
 	return { exempt: inv.amount_excl_vat_cents, taxable: 0, vat: 0 };
@@ -76,7 +76,7 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 				entryId: invoiceEntryId,
 				date: invoiceDate,
 				journalCode: settings.journal_code_memorial,
-				account: settings.account_revenue_under_21,
+				account: settings.account_revenue_youth,
 				debit: 0,
 				credit: revenue.exempt,
 				description: desc,
@@ -91,7 +91,7 @@ export function generateJournalLines(report: AccountingReport, settings: Account
 				entryId: invoiceEntryId,
 				date: invoiceDate,
 				journalCode: settings.journal_code_memorial,
-				account: settings.account_revenue_21_plus,
+				account: settings.account_revenue_adult,
 				debit: 0,
 				credit: revenue.taxable,
 				description: desc,

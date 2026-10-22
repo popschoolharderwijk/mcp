@@ -3,7 +3,7 @@ import type Stripe from 'npm:stripe@17.5.0';
 import { jsonResponse } from './http.ts';
 import { getSafeErrorMessage, getStripe } from './stripe.ts';
 import { handleStripeWebhookEvent } from './stripe-webhook-handlers.ts';
-import { readStripeWebhookEnv, validateStripeWebhookRequest } from './stripeWebhookRequestPure.ts';
+import { readStripeWebhookEnv, validateStripeWebhookRequest } from './stripeWebhookRequestHelpers.ts';
 
 export async function executeStripeWebhook(req: Request): Promise<Response> {
 	const signature = req.headers.get('stripe-signature');

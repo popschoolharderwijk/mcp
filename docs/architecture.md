@@ -40,7 +40,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `students` | Student registration. **Managed automatically** via triggers on `lesson_agreements`. Includes `date_of_birth` for VAT age logic. |
 | `teachers` | Teacher registration. Links an `auth.users` row to a teacher record. |
 | `lesson_types` | Lesson types (Guitar, Piano, …). Reference data, visible to all signed-in users. |
-| `lesson_type_options` | Frequencies and rates per lesson type, with separate `price_per_lesson_under_21_cents` and `price_per_lesson_adult_cents`. |
+| `lesson_type_options` | Frequencies and rates per lesson type, with separate `price_per_lesson_youth_cents` and `price_per_lesson_adult_cents`. |
 | `lesson_agreements` | Lesson agreements between student and teacher. Day/time, start/end date, active status, notes, `stripe_schedule_id`. |
 | `no_lesson_periods` | School holidays / no-lesson periods. Triggers **shift logic** in `calculateYearlyAmount` and `eventGenerators`. |
 | `project_domains` / `project_labels` / `projects` | Hierarchical project structure with cost centre. Managed by admin/site_admin only. |

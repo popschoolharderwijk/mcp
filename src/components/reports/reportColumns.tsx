@@ -67,7 +67,6 @@ function ReportAgeCategoryCell({ row }: { row: ReportRow }) {
 	if (row.source_type === 'project') {
 		return <span className="text-muted-foreground">—</span>;
 	}
-	const variant =
-		row.age_category === 'under_21' ? 'secondary' : row.age_category === '21_plus' ? 'outline' : 'default';
+	const variant = row.age_category === 'youth' ? 'secondary' : row.age_category === 'adult' ? 'outline' : 'default';
 	return <Badge variant={variant}>{AGE_LABELS[row.age_category]}</Badge>;
 }

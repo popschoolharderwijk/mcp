@@ -9,7 +9,7 @@ import {
 	resolvePortalForOtherUserForbiddenResponse,
 	resolvePortalReturnUrl,
 	validateCustomerPortalUserId,
-} from '../../../supabase/functions/create-customer-portal/validationPure';
+} from '../../../supabase/functions/create-customer-portal/validationHelpers';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 

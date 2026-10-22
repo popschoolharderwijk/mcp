@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import { useAccountingReport, useAccountingSettings } from '@/hooks/useAccounting';
 import { useAuth } from '@/hooks/useAuth';
 import { buildAccountingInvoiceColumns } from '@/lib/accounting/accountingReportColumns';
@@ -10,6 +11,7 @@ import { type ExtendedPeriodPreset, getPresetDateRange } from '@/lib/reports/per
 export function useAccountingReportPage() {
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const hasAccess = isAdmin || isSiteAdmin;
+	const { settings: appSettings } = useAppSettingsContext();
 
 	const { settings, loading: settingsLoading } = useAccountingSettings();
 	const schoolStartMonth = settings?.school_year_start_month ?? 8;
@@ -49,7 +51,10 @@ export function useAccountingReportPage() {
 		);
 	};
 
-	const invoiceColumns = useMemo(() => buildAccountingInvoiceColumns(), []);
+	const invoiceColumns = useMemo(
+		() => buildAccountingInvoiceColumns(appSettings.vat.standard_rate_percent),
+		[appSettings.vat.standard_rate_percent],
+	);
 
 	return {
 		hasAccess,

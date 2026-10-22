@@ -10,7 +10,7 @@ import {
 	resolveDirectDebitAgreementAccessError,
 	resolveDirectDebitInviteMissingEmailResponse,
 	resolveDirectDebitInviteRecipient,
-} from './sendDirectDebitInvitePure.ts';
+} from './sendDirectDebitInviteHelpers.ts';
 
 type DirectDebitInviteContext =
 	| { ok: false; response: Response }

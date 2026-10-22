@@ -25,7 +25,7 @@ export function mapLessonTypeOptionsToForm(typedOptions: LessonTypeOptionRow[]):
 		duration_minutes: option.duration_minutes.toString(),
 		frequency: option.frequency,
 		price_per_lesson: option.price_per_lesson.toString(),
-		price_per_lesson_under_21: centsToInput(option.price_per_lesson_under_21_cents),
+		price_per_lesson_youth: centsToInput(option.price_per_lesson_youth_cents),
 		price_per_lesson_adult: centsToInput(option.price_per_lesson_adult_cents),
 	}));
 }

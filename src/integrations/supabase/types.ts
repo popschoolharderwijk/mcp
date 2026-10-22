@@ -38,8 +38,8 @@ export type Database = {
 					account_bank_sepa: string;
 					account_bank_stripe: string;
 					account_debtors: string;
-					account_revenue_21_plus: string;
-					account_revenue_under_21: string;
+					account_revenue_adult: string;
+					account_revenue_youth: string;
 					account_vat_21: string;
 					company_address: string | null;
 					company_city: string | null;
@@ -81,8 +81,8 @@ export type Database = {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
 					account_debtors?: string;
-					account_revenue_21_plus?: string;
-					account_revenue_under_21?: string;
+					account_revenue_adult?: string;
+					account_revenue_youth?: string;
 					account_vat_21?: string;
 					company_address?: string | null;
 					company_city?: string | null;
@@ -124,8 +124,8 @@ export type Database = {
 					account_bank_sepa?: string;
 					account_bank_stripe?: string;
 					account_debtors?: string;
-					account_revenue_21_plus?: string;
-					account_revenue_under_21?: string;
+					account_revenue_adult?: string;
+					account_revenue_youth?: string;
 					account_vat_21?: string;
 					company_address?: string | null;
 					company_city?: string | null;
@@ -376,6 +376,27 @@ export type Database = {
 					title?: string;
 					updated_at?: string;
 					updated_by?: string | null;
+				};
+				Relationships: [];
+			};
+			app_settings: {
+				Row: {
+					key: string;
+					updated_at: string;
+					updated_by: string | null;
+					value: Json;
+				};
+				Insert: {
+					key: string;
+					updated_at?: string;
+					updated_by?: string | null;
+					value: Json;
+				};
+				Update: {
+					key?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+					value?: Json;
 				};
 				Relationships: [];
 			};
@@ -1127,7 +1148,7 @@ export type Database = {
 					lesson_type_id: string;
 					price_per_lesson: number;
 					price_per_lesson_adult_cents: number | null;
-					price_per_lesson_under_21_cents: number | null;
+					price_per_lesson_youth_cents: number | null;
 					updated_at: string;
 					updated_by: string | null;
 				};
@@ -1140,7 +1161,7 @@ export type Database = {
 					lesson_type_id: string;
 					price_per_lesson: number;
 					price_per_lesson_adult_cents?: number | null;
-					price_per_lesson_under_21_cents?: number | null;
+					price_per_lesson_youth_cents?: number | null;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
@@ -1153,7 +1174,7 @@ export type Database = {
 					lesson_type_id?: string;
 					price_per_lesson?: number;
 					price_per_lesson_adult_cents?: number | null;
-					price_per_lesson_under_21_cents?: number | null;
+					price_per_lesson_youth_cents?: number | null;
 					updated_at?: string;
 					updated_by?: string | null;
 				};

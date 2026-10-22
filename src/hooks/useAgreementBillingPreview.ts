@@ -1,7 +1,7 @@
 /**
  * Computes a live yearly/monthly amount preview for a lesson agreement, based on:
  *   - the matching `lesson_type_options` (for age tariffs),
- *   - the student's date of birth (to choose under_21 vs adult),
+ *   - the student's date of birth (to choose youth vs adult),
  *   - all `no_lesson_periods` in the school year.
  *
  * The school year is today's (or start_date when that is in the future),

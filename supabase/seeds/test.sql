@@ -1888,7 +1888,7 @@ VALUES
     date_trunc('month', CURRENT_DATE)::date,
     (date_trunc('month', CURRENT_DATE) + interval '1 month' - interval '1 day')::date,
     3000, 0, 3000,
-    'under_21', 'draft',
+    'youth', 'draft',
     NULL, NULL, NULL,
     '10000000-0001-0000-0000-000000000000'
   ),
@@ -1902,7 +1902,7 @@ VALUES
     date_trunc('month', CURRENT_DATE)::date,
     (date_trunc('month', CURRENT_DATE) + interval '1 month' - interval '1 day')::date,
     4500, 0, 4500,
-    'under_21', 'issued',
+    'youth', 'issued',
     now() - interval '1 day', NULL, 'student-001@test.nl',
     '10000000-0001-0000-0000-000000000000'
   ),
@@ -1916,7 +1916,7 @@ VALUES
     (date_trunc('month', CURRENT_DATE) - interval '1 month')::date,
     (date_trunc('month', CURRENT_DATE) - interval '1 day')::date,
     3000, 0, 3000,
-    'under_21', 'paid',
+    'youth', 'paid',
     now() - interval '35 days', now() - interval '20 days', 'student-012@test.nl',
     '10000000-0001-0000-0000-000000000000'
   );
@@ -2221,8 +2221,12 @@ FROM (
     p.email,
     CASE
       WHEN s.date_of_birth IS NULL THEN 'unknown'
-      WHEN s.date_of_birth > (CURRENT_DATE - interval '21 years')::date THEN 'under_21'
-      ELSE '21_plus'
+      WHEN AGE(CURRENT_DATE, s.date_of_birth) >= make_interval(years => COALESCE((
+        SELECT (value->>'age_threshold_years')::integer
+        FROM public.app_settings
+        WHERE key = 'vat'
+      ), 21)) THEN 'adult'
+      ELSE 'youth'
     END AS age_category,
     row_number() OVER (ORDER BY b.collection_date, i.student_user_id) AS rn
   FROM public.direct_debit_batch_items i
@@ -2290,12 +2294,12 @@ FROM (
   FROM public.invoices
 ) base
 CROSS JOIN (VALUES
-  (1, '50000000-0001-0000-0000-000000000000'::uuid, 'paid', 4500, 80, 'under_21'),
-  (2, '50000000-0001-0000-0000-000000000000'::uuid, 'paid', 4500, 50, 'under_21'),
-  (3, '50000000-0001-0000-0000-000000000000'::uuid, 'cancelled', 4500, 20, 'under_21'),
-  (4, '50000000-0001-0000-0000-000000000000'::uuid, 'draft', 4500, 0, 'under_21'),
-  (5, '50000000-0009-0000-0000-000000000000'::uuid, 'issued', 9000, 12, 'under_21'),
-  (6, '50000000-0031-0000-0000-000000000000'::uuid, 'issued', 6000, 9, '21_plus')
+  (1, '50000000-0001-0000-0000-000000000000'::uuid, 'paid', 4500, 80, 'youth'),
+  (2, '50000000-0001-0000-0000-000000000000'::uuid, 'paid', 4500, 50, 'youth'),
+  (3, '50000000-0001-0000-0000-000000000000'::uuid, 'cancelled', 4500, 20, 'youth'),
+  (4, '50000000-0001-0000-0000-000000000000'::uuid, 'draft', 4500, 0, 'youth'),
+  (5, '50000000-0009-0000-0000-000000000000'::uuid, 'issued', 9000, 12, 'youth'),
+  (6, '50000000-0031-0000-0000-000000000000'::uuid, 'issued', 6000, 9, 'adult')
 ) AS x(i, student_user_id, status, cents, days_ago, age_category)
 JOIN public.profiles p ON p.user_id = x.student_user_id;
 

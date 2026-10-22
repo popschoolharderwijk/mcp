@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { validateSignupRequestStatus } from './loadSignupRequestPure.ts';
+import { validateSignupRequestStatus } from './loadSignupRequestHelpers.ts';
 import type { SignupRequestRow } from './types.ts';
 
 export async function loadSignupRequest(

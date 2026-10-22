@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import type { CalendarEvent } from '@/components/agenda/types';
 import type { LessonGroupInfo } from '@/lib/agenda/enrichAgendaEvent';
 import {
@@ -39,6 +40,7 @@ function applyAgendaDataState(setState: (state: AgendaDataState) => void, next: 
 }
 
 export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDataResult {
+	const { settings } = useAppSettingsContext();
 	const [state, setState] = useState<AgendaDataState>(createEmptyAgendaDataState);
 	const [loading, setLoading] = useState(true);
 
@@ -63,8 +65,8 @@ export function useAgendaData(effectiveUserId: string | undefined): UseAgendaDat
 
 	const getEnrichedEvents = useCallback(
 		(currentDate: Date, viewerUserId: string | undefined): CalendarEvent[] =>
-			buildEnrichedAgendaEvents(state, currentDate, viewerUserId),
-		[state],
+			buildEnrichedAgendaEvents(state, currentDate, viewerUserId, settings.school_year),
+		[state, settings.school_year],
 	);
 
 	return {

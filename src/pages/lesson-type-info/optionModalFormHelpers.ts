@@ -12,8 +12,8 @@ export function updateOptionModalFrequency(
 	return { ...prev, frequency };
 }
 
-export function updateOptionModalPriceUnder21(prev: OptionModalFormState, value: string): OptionModalFormState {
-	return { ...prev, price_per_lesson_under_21: value };
+export function updateOptionModalPriceYouth(prev: OptionModalFormState, value: string): OptionModalFormState {
+	return { ...prev, price_per_lesson_youth: value };
 }
 
 export function updateOptionModalPriceAdult(prev: OptionModalFormState, value: string): OptionModalFormState {

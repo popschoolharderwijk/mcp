@@ -94,8 +94,8 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],
 	},
 	{
-		pattern: '/no-lesson-periods',
-		items: [{ label: NAV_LABELS.noLessonPeriods, href: '/no-lesson-periods' }],
+		pattern: /^\/settings(?:\/[^/]+)?$/,
+		items: [{ label: NAV_LABELS.settings, href: '/settings' }],
 	},
 	{ pattern: '/teachers', items: [{ label: NAV_LABELS.teachers, href: '/teachers' }] },
 	{

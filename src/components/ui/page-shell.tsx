@@ -13,6 +13,11 @@ export interface PageShellProps {
 	loading?: boolean;
 	className?: string;
 	contentClassName?: string;
+	/**
+	 * `half` constrains the whole page card (title + body) to half the container
+	 * on large screens. Default `full`.
+	 */
+	width?: 'full' | 'half';
 }
 
 /** Body placeholder matching typical PageShell content (search + table/cards). */
@@ -57,8 +62,9 @@ export function PageShell({
 	loading = false,
 	className,
 	contentClassName,
+	width = 'full',
 }: PageShellProps) {
-	return (
+	const card = (
 		<Card className={className}>
 			<CardHeader>
 				<div className="flex items-center justify-between gap-4">
@@ -74,4 +80,14 @@ export function PageShell({
 			<CardContent className={cn(contentClassName)}>{loading ? <PageShellBodySkeleton /> : children}</CardContent>
 		</Card>
 	);
+
+	if (width === 'half') {
+		return (
+			<div className="grid gap-6 lg:grid-cols-2">
+				<div className="min-w-0">{card}</div>
+			</div>
+		);
+	}
+
+	return card;
 }

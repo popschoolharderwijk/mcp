@@ -7,7 +7,7 @@ import {
 	resolveInvoiceNotAvailableError,
 	resolveMissingInvoiceIdError,
 	resolveSignedUrlCreationError,
-} from './validationPure.ts';
+} from './validationHelpers.ts';
 
 interface Body {
 	invoice_id: string;

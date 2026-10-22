@@ -1,3 +1,5 @@
+import { formatAdultVatBadgeLabel } from '@/lib/settings/vatLabelHelpers';
+
 export type AccountingAgeBadgeVariant = 'secondary' | 'outline' | 'default';
 
 export interface AccountingAgeBadge {
@@ -5,14 +7,13 @@ export interface AccountingAgeBadge {
 	variant: AccountingAgeBadgeVariant;
 }
 
-const ACCOUNTING_AGE_BADGE: Record<string, AccountingAgeBadge> = {
-	under_21: { label: '<21 vrijgesteld', variant: 'secondary' },
-	'21_plus': { label: '21+ BTW 21%', variant: 'outline' },
-	unknown: { label: 'Onbekende leeftijd', variant: 'default' },
-};
-
-export function getAccountingAgeBadge(ageCategory: string): AccountingAgeBadge {
-	return ACCOUNTING_AGE_BADGE[ageCategory] ?? { label: ageCategory, variant: 'default' };
+export function getAccountingAgeBadge(ageCategory: string, standardRatePercent: number): AccountingAgeBadge {
+	if (ageCategory === 'youth') return { label: 'Jongeren (vrijgesteld)', variant: 'secondary' };
+	if (ageCategory === 'adult') {
+		return { label: formatAdultVatBadgeLabel(standardRatePercent), variant: 'outline' };
+	}
+	if (ageCategory === 'unknown') return { label: 'Onbekende leeftijd', variant: 'default' };
+	return { label: ageCategory, variant: 'default' };
 }
 
 export function formatAccountingInvoiceDate(periodStart: string): string {

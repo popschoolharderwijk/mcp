@@ -5,6 +5,39 @@
  */
 
 /**
+ * app_settings rows from supabase/seeds/bootstrap.sql.
+ * Keep in sync with src/lib/settings/appSettingsDefaults.ts.
+ */
+export const APP_SETTINGS = {
+	/** Keys seeded in bootstrap.sql */
+	KEY_COUNT: 6,
+	SCHOOL_YEAR: {
+		start_month: 9,
+		end_month: 7,
+	},
+	AGENDA: {
+		start_hour: 8,
+		end_hour: 21,
+		slot_minutes: 30,
+	},
+	VAT: {
+		age_threshold_years: 21,
+		standard_rate_percent: 21,
+	},
+	BRANDING: {
+		primary_hex: '#c4ab7c',
+	},
+	TRIAL_LESSONS: {
+		horizon_days: 30,
+		default_duration_minutes: 30,
+	},
+	AGREEMENTS: {
+		default_start_offset_days: 1,
+		default_payment_method: 'sepa' as const,
+	},
+} as const;
+
+/**
  * Lesson type options row counts (supabase/seeds/lesson-types.sql).
  * Full grid (e.g. guitar lesson type): 5 durations × 3 frequencies = 15 rows.
  * Saxophone lesson type (DB name `Saxofoonles`): 30 and 45 min only = 6 rows.
@@ -103,6 +136,8 @@ export const TEACHER_VIEWED_BY_STUDENT = {
 export const STUDENTS = {
 	// Total number of students in seed data
 	TOTAL: 60, // students 001-060
+	/** First email when sorted by display_name ASC (Adam van der Wal) */
+	FIRST_EMAIL_BY_DISPLAY_NAME_ASC: 'student-017@test.nl',
 } as const;
 
 /**
@@ -118,6 +153,19 @@ export const TEACHERS = {
 	WITH_COC: 7,
 	/** Teachers without VOG (Henry, Iris, Jack) */
 	WITHOUT_COC: 3,
+	/** first_name order for display_name ASC (first + last from seeds/test.sql) */
+	SORTED_FIRST_NAMES_ASC: [
+		'Alice',
+		'Bob',
+		'Charlotte',
+		'Diana',
+		'Eva',
+		'Frank',
+		'Grace',
+		'Hendrik',
+		'Iris',
+		'Jacques',
+	] as const,
 } as const;
 
 /**
@@ -171,4 +219,6 @@ export const USERS = {
 	WITHOUT_ROLE: 80,
 	/** Profiles matching user-*.test.nl (no teacher/student row, no user_roles) */
 	PLAIN_USERS: 10,
+	/** First email when sorted by display_name ASC (Adam van der Wal) */
+	FIRST_EMAIL_BY_DISPLAY_NAME_ASC: 'student-017@test.nl',
 } as const;

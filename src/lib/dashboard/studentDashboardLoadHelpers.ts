@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
-import { assertDashboardQueriesOk, DashboardLoadError } from '@/lib/dashboard/dashboardLoadErrorPure';
+import { assertDashboardQueriesOk, DashboardLoadError } from '@/lib/dashboard/dashboardLoadErrorHelpers';
 import {
 	mapStudentDashboardQueryResults,
 	type StudentDashboardData,

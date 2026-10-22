@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import type { AgreementBillingPreview } from '../../../src/lib/billing/agreementBillingPreviewHelpers';
 import {
-	formatAgreementTariffLabel,
 	resolveLessonAgreementPreviewRenderKind,
 	resolveLessonAgreementPreviewViewState,
-	shouldShowAgreementLeftoverNote,
 } from '../../../src/lib/students/lessonAgreementPreviewHelpers';
 
 const preview: AgreementBillingPreview = {
 	schoolYearLabel: '2026-2027',
-	tariff: 'under_21',
+	tariff: 'youth',
 	pricePerLessonCents: 2000,
 	lessonsCount: 36,
 	yearlyCents: 72000,
@@ -35,26 +33,6 @@ describe('resolveLessonAgreementPreviewViewState', () => {
 
 	it('returns empty when no preview is available', () => {
 		expect(resolveLessonAgreementPreviewViewState(false, null, null)).toBe('empty');
-	});
-});
-
-describe('formatAgreementTariffLabel', () => {
-	it('formats under 21 tariff label', () => {
-		expect(formatAgreementTariffLabel('under_21')).toBe('< 21 jaar');
-	});
-
-	it('formats adult tariff label', () => {
-		expect(formatAgreementTariffLabel('adult')).toBe('21+ jaar');
-	});
-});
-
-describe('shouldShowAgreementLeftoverNote', () => {
-	it('returns true when leftover cents are positive', () => {
-		expect(shouldShowAgreementLeftoverNote(100)).toBe(true);
-	});
-
-	it('returns false when leftover cents are zero', () => {
-		expect(shouldShowAgreementLeftoverNote(0)).toBe(false);
 	});
 });
 

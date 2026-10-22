@@ -29,7 +29,7 @@ const option: LessonTypeOptionRow = {
 	duration_minutes: 45,
 	frequency: 'weekly',
 	price_per_lesson: 25,
-	price_per_lesson_under_21_cents: 2000,
+	price_per_lesson_youth_cents: 2000,
 	price_per_lesson_adult_cents: 2500,
 	created_at: '2026-01-01T00:00:00Z',
 	updated_at: '2026-01-01T00:00:00Z',
@@ -71,7 +71,7 @@ describe('mapLessonTypeOptionsToForm', () => {
 				duration_minutes: '45',
 				frequency: 'weekly',
 				price_per_lesson: '25',
-				price_per_lesson_under_21: '20.00',
+				price_per_lesson_youth: '20.00',
 				price_per_lesson_adult: '25.00',
 			},
 		]);

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { AgendaView } from '@/components/agenda/AgendaView';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { SignupRequestItem } from '@/components/students/SignupRequestItem';
@@ -7,7 +6,7 @@ import { StudentParentSection } from '@/components/students/StudentParentSection
 import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/students/StudentProfileCards';
 import { StudentProfileSection } from '@/components/students/StudentProfileSection';
 import { useStudentProfileForm } from '@/components/students/useStudentProfileForm';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import { isStudentInfoTabId, type StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
@@ -24,40 +23,25 @@ interface StudentInfoTabsProps {
 	onProfileUpdate: () => void;
 }
 
-/** Keep form/list cards half-width on large screens (same as teacher profile column). */
-function HalfWidthTabPanel({ children }: { children: ReactNode }) {
-	return (
-		<div className="grid gap-6 lg:grid-cols-2">
-			<div className="min-w-0">{children}</div>
-		</div>
-	);
-}
-
 function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Student; onProfileUpdate: () => void }) {
 	const { vm, saving, runSave, setDateOfBirthDraftSynced } = useStudentProfileForm(student, onProfileUpdate);
 
 	return (
 		<>
-			<TabsContent value="profile">
-				<HalfWidthTabPanel>
-					<StudentProfileSection
-						vm={vm}
-						saving={saving}
-						onSave={() => void runSave('profile')}
-						onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
-					/>
-				</HalfWidthTabPanel>
-			</TabsContent>
-			<TabsContent value="address">
-				<HalfWidthTabPanel>
-					<StudentAddressSection vm={vm} saving={saving} onSave={() => void runSave('address')} />
-				</HalfWidthTabPanel>
-			</TabsContent>
-			<TabsContent value="parent">
-				<HalfWidthTabPanel>
-					<StudentParentSection vm={vm} saving={saving} onSave={() => void runSave('parent')} />
-				</HalfWidthTabPanel>
-			</TabsContent>
+			<PageTabsContent value="profile" panelWidth="half">
+				<StudentProfileSection
+					vm={vm}
+					saving={saving}
+					onSave={() => void runSave('profile')}
+					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
+				/>
+			</PageTabsContent>
+			<PageTabsContent value="address" panelWidth="half">
+				<StudentAddressSection vm={vm} saving={saving} onSave={() => void runSave('address')} />
+			</PageTabsContent>
+			<PageTabsContent value="parent" panelWidth="half">
+				<StudentParentSection vm={vm} saving={saving} onSave={() => void runSave('parent')} />
+			</PageTabsContent>
 		</>
 	);
 }
@@ -75,29 +59,27 @@ function StudentInfoSharedTabs({
 }) {
 	return (
 		<>
-			<TabsContent value="agreements">
-				<HalfWidthTabPanel>
-					<StudentAgreementsCard
-						agreements={agreements}
-						description="Alle overeenkomsten van deze leerling"
-						emptyMessage="Geen lesovereenkomsten"
-						studentUserId={userId}
-					/>
-				</HalfWidthTabPanel>
-			</TabsContent>
+			<PageTabsContent value="agreements" panelWidth="half">
+				<StudentAgreementsCard
+					agreements={agreements}
+					description="Alle overeenkomsten van deze leerling"
+					emptyMessage="Geen lesovereenkomsten"
+					studentUserId={userId}
+				/>
+			</PageTabsContent>
 
-			<TabsContent value="signups">
+			<PageTabsContent value="signups" panelWidth="half">
 				<StudentSignupRequestsCard
 					requests={signupRequests}
 					description="Aanmeldingen gekoppeld aan dit e-mailadres"
 					emptyMessage="Geen aanmeldingen"
 					renderItem={(request) => <SignupRequestItem key={request.id} request={request} />}
 				/>
-			</TabsContent>
+			</PageTabsContent>
 
-			<TabsContent value="agenda">
+			<PageTabsContent value="agenda">
 				<AgendaView userId={userId} canEdit={canEditAgenda} />
-			</TabsContent>
+			</PageTabsContent>
 		</>
 	);
 }
@@ -113,27 +95,21 @@ export function StudentInfoTabs({
 	onTabChange,
 	onProfileUpdate,
 }: StudentInfoTabsProps) {
-	return (
-		<Tabs
-			value={activeTab}
-			onValueChange={(value) => {
-				if (isStudentInfoTabId(value)) onTabChange(value);
-			}}
-			className="space-y-2"
-		>
-			<TabsList>
-				{isPrivileged && (
-					<>
-						<TabsTrigger value="profile">Profiel</TabsTrigger>
-						<TabsTrigger value="address">Adres</TabsTrigger>
-						<TabsTrigger value="parent">Ouder/voogd</TabsTrigger>
-					</>
-				)}
-				<TabsTrigger value="agreements">Lesovereenkomsten ({agreements.length})</TabsTrigger>
-				<TabsTrigger value="signups">Aanmeldingen ({signupRequests.length})</TabsTrigger>
-				<TabsTrigger value="agenda">Agenda</TabsTrigger>
-			</TabsList>
+	const items = [
+		...(isPrivileged
+			? [
+					{ value: 'profile' as const, label: 'Profiel' },
+					{ value: 'address' as const, label: 'Adres' },
+					{ value: 'parent' as const, label: 'Ouder/voogd' },
+				]
+			: []),
+		{ value: 'agreements' as const, label: `Lesovereenkomsten (${agreements.length})` },
+		{ value: 'signups' as const, label: `Aanmeldingen (${signupRequests.length})` },
+		{ value: 'agenda' as const, label: 'Agenda' },
+	];
 
+	return (
+		<PageTabs value={activeTab} onValueChange={onTabChange} isTabId={isStudentInfoTabId} items={items}>
 			{isPrivileged && <StudentPrivilegedFormTabs student={student} onProfileUpdate={onProfileUpdate} />}
 
 			<StudentInfoSharedTabs
@@ -142,6 +118,6 @@ export function StudentInfoTabs({
 				signupRequests={signupRequests}
 				canEditAgenda={canEditAgenda}
 			/>
-		</Tabs>
+		</PageTabs>
 	);
 }

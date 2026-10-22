@@ -10,8 +10,9 @@ import {
 	resolveBillToEmail,
 	resolveBillToName,
 	shouldUseDebtorBillTo,
-} from './buildPdfPure.ts';
-import { fmtDateNL, fmtEUR, wrap } from './format.ts';
+} from './buildPdfHelpers.ts';
+import { fmtDateNL, fmtEUR, formatVatPercentLabel, wrap } from './format.ts';
+import { resolveStandardVatRateFromLines } from './invoiceHelpers.ts';
 import type { InvoiceLine, InvoiceTotals, StudentInfo } from './types.ts';
 
 const HEADER_FILL = rgb(PDF_RGB.red, PDF_RGB.green, PDF_RGB.blue);
@@ -141,7 +142,7 @@ function drawLinesTable(layout: PdfLayout, lines: InvoiceLine[]): number {
 	return ty;
 }
 
-function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number): number {
+function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number, standardRatePercent: number): number {
 	const { page, width, margin, fonts } = layout;
 	let ty = startY - 12;
 	const totalsX = width - margin - 200;
@@ -167,7 +168,13 @@ function drawTotalsBox(layout: PdfLayout, totals: InvoiceTotals, startY: number)
 		ty -= 14;
 	}
 	if (totals.vat21 > 0) {
-		page.drawText('BTW 21%', { x: totalsX, y: ty, size: 9, font: fonts.font, color: BLACK });
+		page.drawText(formatVatPercentLabel(standardRatePercent), {
+			x: totalsX,
+			y: ty,
+			size: 9,
+			font: fonts.font,
+			color: BLACK,
+		});
 		page.drawText(fmtEUR(totals.vat21), { x: width - margin - 60, y: ty, size: 9, font: fonts.font, color: BLACK });
 		ty -= 14;
 	}
@@ -241,14 +248,14 @@ export async function buildPdf(args: {
 	const width = page.getWidth();
 	const margin = 40;
 	const layout: PdfLayout = { page, width, margin, fonts: { font, bold } };
-	const companyName = String(args.settings.company_name ?? 'popschool harderwijk');
+	const companyName = String(args.settings.company_name?.trim() || '—');
 
 	drawHeader(layout, companyName);
 	drawCompanyBlock(layout, args.settings);
 	drawInvoiceMeta(layout, args.invoiceNumber, args.issueDate, args.dueDate, args.periodStart, args.periodEnd);
 	drawBillTo(layout, args.student);
 	const afterLinesY = drawLinesTable(layout, args.lines);
-	const afterTotalsY = drawTotalsBox(layout, args.totals, afterLinesY);
+	const afterTotalsY = drawTotalsBox(layout, args.totals, afterLinesY, resolveStandardVatRateFromLines(args.lines));
 	drawPaymentNote(layout, args.settings, args.dueDate, args.mandateRef, afterTotalsY);
 	drawFooter(layout, args.settings);
 

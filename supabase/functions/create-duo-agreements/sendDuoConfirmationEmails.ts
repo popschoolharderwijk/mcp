@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendTemplateEmail } from '../_shared/sendTemplateEmail.ts';
-import { buildDuoConfirmationEmailPlan, dispatchDuoConfirmationEmailJobs } from './duoConfirmationEmailPure.ts';
+import { buildDuoConfirmationEmailPlan, dispatchDuoConfirmationEmailJobs } from './duoConfirmationEmailHelpers.ts';
 import type { Body } from './types.ts';
 
 export async function sendDuoConfirmationEmails(admin: SupabaseClient, req: Request, body: Body): Promise<void> {

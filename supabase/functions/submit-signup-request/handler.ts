@@ -8,7 +8,7 @@ import {
 	readSignupServiceEnv,
 	resolveSignupMethodResponse,
 	shouldSendSignupConfirmationEmail,
-} from './submitSignupRequestPure.ts';
+} from './submitSignupRequestHelpers.ts';
 import type { SepaFields, SignupRequest } from './types.ts';
 import { validateLessonSelection } from './validateLessonSelection.ts';
 import { validateBasicFields } from './validation.ts';

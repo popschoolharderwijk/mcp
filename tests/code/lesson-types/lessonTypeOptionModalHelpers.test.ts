@@ -24,7 +24,7 @@ const editingOption = {
 	duration_minutes: '45',
 	frequency: 'weekly' as const,
 	price_per_lesson: '25',
-	price_per_lesson_under_21: '20',
+	price_per_lesson_youth: '20',
 	price_per_lesson_adult: '25',
 } as const;
 
@@ -97,7 +97,7 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
+				price_per_lesson_youth: '20',
 				price_per_lesson_adult: '25',
 			},
 			priceAdult: 25,
@@ -117,7 +117,7 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
+				price_per_lesson_youth: '20',
 				price_per_lesson_adult: '25',
 			},
 			priceAdult: 25,
@@ -138,7 +138,7 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
+				price_per_lesson_youth: '20',
 				price_per_lesson_adult: '25',
 			},
 			priceAdult: 25,
@@ -162,7 +162,7 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
+				price_per_lesson_youth: '20',
 				price_per_lesson_adult: '25',
 			},
 			priceAdult: 25,
@@ -185,7 +185,7 @@ describe('runSaveOptionInModal', () => {
 			optionModalForm: {
 				duration_minutes: '45',
 				frequency: 'weekly',
-				price_per_lesson_under_21: '20',
+				price_per_lesson_youth: '20',
 				price_per_lesson_adult: '25',
 			},
 			priceAdult: 25,
@@ -215,7 +215,7 @@ describe('buildOptionModalFormFromEditing', () => {
 		expect(buildOptionModalFormFromEditing(editingOption as never)).toEqual({
 			duration_minutes: '45',
 			frequency: 'weekly',
-			price_per_lesson_under_21: '20',
+			price_per_lesson_youth: '20',
 			price_per_lesson_adult: '25',
 		});
 	});

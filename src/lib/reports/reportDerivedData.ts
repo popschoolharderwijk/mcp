@@ -52,18 +52,18 @@ export function buildReportLessonTypeOptions(data: ReportRow[]): ReportLessonTyp
 export function computeReportSummary(dataVisibleInTable: ReportRow[]): ReportSummary {
 	let totalMinutes = 0;
 	let totalLessons = 0;
-	let under21Minutes = 0;
-	let over21Minutes = 0;
+	let youthMinutes = 0;
+	let adultMinutes = 0;
 	let projectMinutes = 0;
 	for (const row of dataVisibleInTable) {
 		if (row.duo_perspective === 'student_lesson') continue;
 		totalMinutes += row.total_minutes;
 		if (row.source_type === 'lesson') totalLessons += row.lesson_count;
-		if (row.age_category === 'under_21') under21Minutes += row.total_minutes;
-		if (row.age_category === '21_plus') over21Minutes += row.total_minutes;
+		if (row.age_category === 'youth') youthMinutes += row.total_minutes;
+		if (row.age_category === 'adult') adultMinutes += row.total_minutes;
 		if (row.source_type === 'project') projectMinutes += row.total_minutes;
 	}
-	return { totalMinutes, totalLessons, under21Minutes, over21Minutes, projectMinutes };
+	return { totalMinutes, totalLessons, youthMinutes, adultMinutes, projectMinutes };
 }
 
 export function buildHoursReportRpcParams(

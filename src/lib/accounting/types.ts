@@ -5,8 +5,8 @@ export interface AccountingSettings {
 	journal_code_memorial: string;
 	journal_code_bank: string;
 	account_debtors: string;
-	account_revenue_under_21: string;
-	account_revenue_21_plus: string;
+	account_revenue_youth: string;
+	account_revenue_adult: string;
 	account_vat_21: string;
 	account_bank_stripe: string;
 	account_bank_sepa: string;
@@ -40,16 +40,16 @@ export interface AccountingSettings {
 	invoice_footer_text: string | null;
 }
 
-export type AgeCategory = 'under_21' | '21_plus' | 'unknown' | 'mixed';
+export type AgeCategory = 'youth' | 'adult' | 'unknown' | 'mixed';
 
 export interface AccountingInvoice {
 	invoice_id: string;
 	/** Set when the report row is one invoice line. */
 	line_id?: string;
 	/** Exempt excl. VAT. Set on mixed invoices so both revenue accounts can be posted. */
-	amount_excl_under_21_cents?: number;
+	amount_excl_youth_cents?: number;
 	/** Taxable excl. VAT. Set on mixed invoices so both revenue accounts can be posted. */
-	amount_excl_21_plus_cents?: number;
+	amount_excl_adult_cents?: number;
 	stripe_invoice_id: string;
 	status: string;
 	amount_due_cents: number;
@@ -72,9 +72,9 @@ export interface AccountingInvoice {
 
 export interface AccountingSummary {
 	invoice_count: number;
-	total_revenue_under_21_cents: number;
+	total_revenue_youth_cents: number;
 	total_revenue_unknown_age_cents: number;
-	total_revenue_21_plus_excl_cents: number;
+	total_revenue_adult_excl_cents: number;
 	total_vat_cents: number;
 	total_receivables_cents: number;
 	total_paid_cents: number;
@@ -84,9 +84,9 @@ export interface AccountingSummary {
 export interface AccountingCostCenter {
 	cost_center: string;
 	invoice_count: number;
-	revenue_under_21_cents: number;
+	revenue_youth_cents: number;
 	revenue_unknown_age_cents: number;
-	revenue_21_plus_excl_cents: number;
+	revenue_adult_excl_cents: number;
 	vat_cents: number;
 	total_receivables_cents: number;
 }

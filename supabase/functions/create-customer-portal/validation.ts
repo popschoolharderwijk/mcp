@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { canOpenPortalForOtherUser, resolvePortalForOtherUserForbiddenResponse } from './validationPure.ts';
+import { canOpenPortalForOtherUser, resolvePortalForOtherUserForbiddenResponse } from './validationHelpers.ts';
 
 export async function resolveCustomerPortalTargetUserId(
 	userClient: SupabaseClient,

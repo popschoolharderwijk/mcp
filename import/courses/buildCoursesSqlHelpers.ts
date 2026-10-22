@@ -25,7 +25,7 @@ function buildLessonTypeOptionsInsert(rows: CourseSqlRow[]): string {
 	for (const row of rows) {
 		for (const opt of row.options) {
 			optionTuples.push(
-				`  (${sqlString(row.name)}, ${sqlInteger(opt.durationMinutes)}, '${opt.frequency}'::public.lesson_frequency, ${sqlNumber(opt.pricePerLesson)}, ${sqlInteger(opt.pricePerLessonUnder21Cents)}, ${sqlInteger(opt.pricePerLessonAdultCents)})`,
+				`  (${sqlString(row.name)}, ${sqlInteger(opt.durationMinutes)}, '${opt.frequency}'::public.lesson_frequency, ${sqlNumber(opt.pricePerLesson)}, ${sqlInteger(opt.pricePerLessonYouthCents)}, ${sqlInteger(opt.pricePerLessonAdultCents)})`,
 			);
 		}
 	}
@@ -36,19 +36,19 @@ function buildLessonTypeOptionsInsert(rows: CourseSqlRow[]): string {
 	}
 
 	const valuesSql = optionTuples.join(',\n');
-	return `  -- Lesson type options (latest startdate per duration+frequency; same price for <21 and 21+)
+	return `  -- Lesson type options (latest startdate per duration+frequency; same price for youth and adult)
   INSERT INTO public.lesson_type_options (
     lesson_type_id,
     duration_minutes,
     frequency,
     price_per_lesson,
-    price_per_lesson_under_21_cents,
+    price_per_lesson_youth_cents,
     price_per_lesson_adult_cents
   )
-  SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson, opt.price_per_lesson_under_21_cents, opt.price_per_lesson_adult_cents
+  SELECT lt.id, opt.duration_minutes, opt.frequency, opt.price_per_lesson, opt.price_per_lesson_youth_cents, opt.price_per_lesson_adult_cents
   FROM (VALUES
 ${valuesSql}
-  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
+  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_youth_cents, price_per_lesson_adult_cents)
   INNER JOIN public.lesson_types lt ON lt.name = opt.lesson_type_name
   WHERE NOT EXISTS (
     SELECT 1 FROM public.lesson_type_options lto
@@ -62,11 +62,11 @@ ${valuesSql}
 
   UPDATE public.lesson_type_options AS lto
   SET
-    price_per_lesson_under_21_cents = opt.price_per_lesson_under_21_cents,
+    price_per_lesson_youth_cents = opt.price_per_lesson_youth_cents,
     price_per_lesson_adult_cents = opt.price_per_lesson_adult_cents
   FROM (VALUES
 ${valuesSql}
-  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_under_21_cents, price_per_lesson_adult_cents)
+  ) AS opt(lesson_type_name, duration_minutes, frequency, price_per_lesson, price_per_lesson_youth_cents, price_per_lesson_adult_cents)
   INNER JOIN public.lesson_types lt ON lt.name = opt.lesson_type_name
   WHERE lto.lesson_type_id = lt.id
     AND lto.duration_minutes = opt.duration_minutes

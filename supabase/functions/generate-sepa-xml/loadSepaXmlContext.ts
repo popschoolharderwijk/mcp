@@ -7,7 +7,7 @@ import {
 	resolveSepaBatchStatusFailure,
 	resolveSepaSettingsIncomplete,
 	resolveSepaSettingsLoadFailure,
-} from './loadSepaXmlContextPure.ts';
+} from './loadSepaXmlContextHelpers.ts';
 import type { BatchRow, ItemRow, SepaXmlContext, SettingsRow } from './types.ts';
 
 export async function loadSepaXmlContext(

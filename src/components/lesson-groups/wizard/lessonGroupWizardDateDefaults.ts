@@ -1,9 +1,10 @@
-import { addDaysFromNow, addYearsFromNow, formatDateToDb } from '@/lib/date/date-format';
+import { wizardDefaultEndDate, wizardDefaultStartDate } from '@/components/agreements/wizard/wizardDateDefaults';
+import type { AgreementsSetting, SchoolYearSetting } from '@/lib/settings/appSettingsTypes';
 
-export function lessonGroupDefaultStartDate(): string {
-	return formatDateToDb(addDaysFromNow(1));
+export function lessonGroupDefaultStartDate(agreements?: AgreementsSetting): string {
+	return wizardDefaultStartDate(agreements);
 }
 
-export function lessonGroupDefaultEndDate(): string {
-	return formatDateToDb(addYearsFromNow(1));
+export function lessonGroupDefaultEndDate(schoolYear?: SchoolYearSetting, asOf?: Date): string {
+	return wizardDefaultEndDate(schoolYear, asOf);
 }

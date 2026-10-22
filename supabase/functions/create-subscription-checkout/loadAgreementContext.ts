@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { resolveAgreementPreProfileFailure, resolveAgreementProfileFailure } from './loadAgreementContextPure.ts';
+import { resolveAgreementPreProfileFailure, resolveAgreementProfileFailure } from './loadAgreementContextHelpers.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
 export async function loadAgreementContext(

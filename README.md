@@ -15,7 +15,7 @@ Web app for running a music school: students and teachers, lesson agreements, a 
 ## Core features
 
 - Passwordless sign-in via Magic Link (OTP) — no passwords in production.
-- Lesson agreements with age-based rates (<21 / 21+), weekly/biweekly cadence, no-lesson periods with **shift logic** (lessons shift forward; August stays a pause).
+- Lesson agreements with age-based rates (youth / adult), weekly/biweekly cadence, no-lesson periods with **shift logic** (lessons shift forward; August stays a pause).
 - Agenda with recurring events, deviations, cancellations (teacher vs student) and multi-participant projects.
 - Stripe SEPA direct debit per lesson agreement: setup via iDEAL, then a monthly `SubscriptionSchedule` over 11 months.
 - Database-backed email templates with inline preview and test send.

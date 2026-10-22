@@ -33,11 +33,11 @@ export function ReportsSummaryCards({ summary }: { summary: ReportSummary }) {
 				<CardHeader className="pb-2">
 					<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
 						<LuUsers className="h-4 w-4" />
-						Uren onder 21
+						Uren jongeren
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="text-2xl font-bold">{formatDurationMinutes(summary.under21Minutes)}</div>
+					<div className="text-2xl font-bold">{formatDurationMinutes(summary.youthMinutes)}</div>
 					<p className="text-xs text-muted-foreground">Vrijgesteld van BTW</p>
 				</CardContent>
 			</Card>
@@ -45,11 +45,11 @@ export function ReportsSummaryCards({ summary }: { summary: ReportSummary }) {
 				<CardHeader className="pb-2">
 					<CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
 						<LuUsers className="h-4 w-4" />
-						Uren 21+
+						Uren volwassenen
 					</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="text-2xl font-bold">{formatDurationMinutes(summary.over21Minutes)}</div>
+					<div className="text-2xl font-bold">{formatDurationMinutes(summary.adultMinutes)}</div>
 					<p className="text-xs text-muted-foreground">BTW-plichtig</p>
 				</CardContent>
 			</Card>

@@ -1,5 +1,5 @@
 import { jsonResponse } from '../_shared/http.ts';
-import { authenticateCreateDuoRequest } from './createDuoAgreementsHandlerPure.ts';
+import { authenticateCreateDuoRequest } from './createDuoAgreementsHandlerHelpers.ts';
 import { createDuoPair } from './createDuoPair.ts';
 import { sendDuoConfirmationEmails } from './sendDuoConfirmationEmails.ts';
 

@@ -1,7 +1,7 @@
 import type { User } from 'https://esm.sh/@supabase/supabase-js@2';
 import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
 import { createSupabaseClients, requireAuthenticatedUser } from '../_shared/supabase.ts';
-import { resolveCheckoutInitiatorAuthorization } from './checkoutAuthHandlerPure.ts';
+import { resolveCheckoutInitiatorAuthorization } from './checkoutAuthHandlerHelpers.ts';
 import { loadAgreementContext } from './loadAgreementContext.ts';
 import type { Body } from './types.ts';
 import { resolveCheckoutMode, validateCheckoutBody } from './validation.ts';

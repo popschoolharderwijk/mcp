@@ -37,7 +37,7 @@ export function buildOptionFormRow(
 		duration_minutes: modalForm.duration_minutes,
 		frequency: modalForm.frequency,
 		price_per_lesson: priceAdult.toString(),
-		price_per_lesson_under_21: modalForm.price_per_lesson_under_21,
+		price_per_lesson_youth: modalForm.price_per_lesson_youth,
 		price_per_lesson_adult: modalForm.price_per_lesson_adult,
 	};
 }
@@ -52,7 +52,7 @@ export async function persistExistingOptionUpdate(
 	const dbPayload = buildOptionDbPayloadFromForm(
 		modalForm.duration_minutes,
 		modalForm.frequency,
-		modalForm.price_per_lesson_under_21,
+		modalForm.price_per_lesson_youth,
 		modalForm.price_per_lesson_adult,
 		priceAdult,
 	);
@@ -79,7 +79,7 @@ export async function persistNewOptionInsert(
 	const dbPayload = buildOptionDbPayloadFromForm(
 		modalForm.duration_minutes,
 		modalForm.frequency,
-		modalForm.price_per_lesson_under_21,
+		modalForm.price_per_lesson_youth,
 		modalForm.price_per_lesson_adult,
 		priceAdult,
 	);

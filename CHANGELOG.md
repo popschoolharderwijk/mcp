@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.5 — 2026-10-22
+
+- Nieuw menu **Instellingen**: schooljaar, lesvrije periodes, agenda, tarieven, huisstijl, proeflessen en overeenkomsten
+- Scherm **Tijdelijk niet beschikbaar** bij onderhoud of storing
+- Fix: sorteren op naam in overzichten van leerlingen, docenten en gebruikers
+
 ## 1.1.4 — 2026-10-21
 
 - Menu-item **Data-import** verwijderd (Excel-import van historische gegevens)

@@ -5,7 +5,7 @@ import {
 	resolveExistingStudentUserId,
 	resolveStudentRowMutation,
 	shouldUpdateStudentPhoneOnCreate,
-} from './ensureStudentUserPure.ts';
+} from './ensureStudentUserHelpers.ts';
 
 interface StudentPayload {
 	date_of_birth: string | null;

@@ -1,24 +1,10 @@
 import { LuLoaderCircle } from 'react-icons/lu';
 import { Navigate } from 'react-router-dom';
-import { ColorIcon } from '@/components/ui/color-icon';
-import { resolveIconFromList } from '@/components/ui/icon-picker';
 import { PageHeader } from '@/components/ui/page-header';
-import { MUSIC_ICONS } from '@/constants/icons';
 import { resolveLessonTypeInfoViewState } from '@/lib/lesson-types/lessonTypeInfoPageHelpers';
 import { LessonTypeFormCard } from '@/pages/lesson-type-info/LessonTypeFormCard';
 import { LessonTypeOptionsPanel } from '@/pages/lesson-type-info/LessonTypeOptionsPanel';
 import { useLessonTypeInfoPage } from '@/pages/lesson-type-info/useLessonTypeInfoPage';
-
-function LessonTypeInfoPageIcon({ iconName, color }: { iconName?: string; color?: string | null }) {
-	return (
-		<ColorIcon
-			icon={iconName ? resolveIconFromList(MUSIC_ICONS, iconName) : undefined}
-			color={color || null}
-			size="lg"
-			className="h-16 w-16 [&_svg]:h-8 [&_svg]:w-8"
-		/>
-	);
-}
 
 export default function LessonTypeInfo() {
 	const vm = useLessonTypeInfoPage();
@@ -45,10 +31,7 @@ export default function LessonTypeInfo() {
 
 	return (
 		<div className="space-y-6">
-			<PageHeader
-				icon={<LessonTypeInfoPageIcon iconName={vm.form.icon} color={vm.form.color} />}
-				title={vm.lessonTypeTitle}
-			/>
+			<PageHeader title={vm.lessonTypeTitle} />
 
 			<div className="grid gap-6 lg:grid-cols-2">
 				<div className="min-w-0">

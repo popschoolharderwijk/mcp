@@ -1,5 +1,5 @@
 // Shared billing helpers for Stripe subscription schedules.
-// Pure billing math lives in billingPure.ts (Bun-testable); this file owns DB/Stripe IO.
+// Pure billing math lives in billingHelpers.ts (Bun-testable); this file owns DB/Stripe IO.
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
@@ -15,13 +15,13 @@ import {
 	type LessonFrequency,
 	resolveStripeSubscriptionId,
 	type YearlyResult,
-} from './billingPure.ts';
+} from './billingHelpers.ts';
 
 import {
 	alignFuturePhasePayloads,
 	collectKeptSchedulePhases,
 	inheritSchedulePaymentMethod,
-} from './rebuildSchedulePure.ts';
+} from './rebuildScheduleHelpers.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 
 export type { AgeTariff, YearlyResult };
@@ -128,12 +128,12 @@ async function loadLessonTypeOptionPrices(
 	admin: SupabaseClient,
 	agreement: AgreementRow,
 ): Promise<{
-	price_per_lesson_under_21_cents: number | null;
+	price_per_lesson_youth_cents: number | null;
 	price_per_lesson_adult_cents: number | null;
 }> {
 	const { data: option, error } = await admin
 		.from('lesson_type_options')
-		.select('price_per_lesson_under_21_cents, price_per_lesson_adult_cents')
+		.select('price_per_lesson_youth_cents, price_per_lesson_adult_cents')
 		.eq('lesson_type_id', agreement.lesson_type_id)
 		.eq('frequency', agreement.frequency)
 		.eq('duration_minutes', agreement.duration_minutes)

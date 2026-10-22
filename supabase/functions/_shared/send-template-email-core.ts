@@ -8,10 +8,10 @@ import {
 	buildPortalFooter,
 	type SendTemplateEmailBody,
 	validateSendTemplateEmailBodyInput,
-} from './send-template-email-pure.ts';
+} from './send-template-email-helpers.ts';
 import { requirePrivilegedUser } from './supabase.ts';
 
-export type { SendTemplateEmailBody } from './send-template-email-pure.ts';
+export type { SendTemplateEmailBody } from './send-template-email-helpers.ts';
 
 export function validateSendTemplateEmailBody(body: SendTemplateEmailBody): Response | null {
 	const error = validateSendTemplateEmailBodyInput(body);
@@ -119,4 +119,4 @@ export async function sendEmailViaResend(input: {
 	return { messageId: (result as { id?: string }).id ?? null };
 }
 
-export { normalizeTemplateVars as normalizeVars, renderTemplate } from './send-template-email-pure.ts';
+export { normalizeTemplateVars as normalizeVars, renderTemplate } from './send-template-email-helpers.ts';

@@ -16,7 +16,7 @@ export function optionSort(a: LessonTypeOptionFormRow, b: LessonTypeOptionFormRo
 export function buildOptionDbPayloadFromForm(
 	durationMinutes: string,
 	frequency: LessonFrequency,
-	priceUnder21Input: string,
+	priceYouthInput: string,
 	priceAdultInput: string,
 	priceAdult: number,
 ) {
@@ -24,7 +24,7 @@ export function buildOptionDbPayloadFromForm(
 		duration_minutes: parseInt(durationMinutes, 10),
 		frequency,
 		price_per_lesson: priceAdult,
-		price_per_lesson_under_21_cents: inputToCents(priceUnder21Input),
+		price_per_lesson_youth_cents: inputToCents(priceYouthInput),
 		price_per_lesson_adult_cents: inputToCents(priceAdultInput),
 	};
 }

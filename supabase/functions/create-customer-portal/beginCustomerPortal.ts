@@ -1,13 +1,13 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCorsPreflight, requireAuthHeader, requirePost } from '../_shared/http.ts';
 import { createSupabaseClients, requireAuthenticatedUser } from '../_shared/supabase.ts';
-import { buildCustomerPortalPostSuccess, resolveCustomerPortalPostGate } from './beginCustomerPortalPure.ts';
+import { buildCustomerPortalPostSuccess, resolveCustomerPortalPostGate } from './beginCustomerPortalHelpers.ts';
 import { resolveCustomerPortalTargetUserId } from './validation.ts';
 import {
 	type CustomerPortalBody,
 	parseCustomerPortalRequestBody,
 	validateCustomerPortalUserId,
-} from './validationPure.ts';
+} from './validationHelpers.ts';
 
 export async function beginCustomerPortalPost(
 	req: Request,

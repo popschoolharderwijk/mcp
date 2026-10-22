@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { validateImportBody } from '../../../supabase/functions/import-sepa-status/importSepaStatusValidationPure';
+import { validateImportBody } from '../../../supabase/functions/import-sepa-status/importSepaStatusValidationHelpers';
 
 async function readError(response: Response): Promise<string> {
 	const body = (await response.json()) as { error: string };

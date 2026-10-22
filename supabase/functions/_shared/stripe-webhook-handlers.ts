@@ -15,7 +15,7 @@ import {
 	resolveStripeWebhookAction,
 	shouldHandleSubscriptionCheckout,
 	shouldProcessSetupCheckoutSession,
-} from './stripeWebhookHandlersPure.ts';
+} from './stripeWebhookHandlersHelpers.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 
 async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: string): Promise<boolean> {

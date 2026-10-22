@@ -35,6 +35,7 @@ const dbNoRLS = createClientBypassRLS();
 const TABLES_REQUIRING_FORCE_RLS = [
 	'accounting_settings',
 	'announcements',
+	'app_settings',
 	'email_templates',
 	'direct_debit_batch_items',
 	'direct_debit_batches',
@@ -56,6 +57,7 @@ const TABLES_REQUIRING_FORCE_RLS = [
  */
 const TABLES_ANON_MUST_NOT_SELECT = [
 	'accounting_settings',
+	'app_settings',
 	'email_templates',
 	'direct_debit_batch_items',
 	'direct_debit_batches',

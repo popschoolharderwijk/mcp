@@ -12,8 +12,8 @@ import {
 	beginTemplateEmailRequest,
 	loadActiveTemplateEmail,
 } from './prepareTemplateEmail.ts';
-import { readTemplateEmailEnv } from './prepareTemplateEmailPure.ts';
-import { buildSendTemplateEmailSuccessPayload } from './sendTemplateEmailHandlerPure.ts';
+import { readTemplateEmailEnv } from './prepareTemplateEmailHelpers.ts';
+import { buildSendTemplateEmailSuccessPayload } from './sendTemplateEmailHandlerHelpers.ts';
 
 type PreparedTemplateEmailRequest =
 	| { ok: false; response: Response }

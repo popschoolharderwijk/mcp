@@ -1,5 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import { useEffect, useMemo } from 'react';
+import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import { buildAgendaViewDerivedState } from '@/components/agenda/agendaViewDerivedState';
 import { useAgendaViewHandlers } from '@/components/agenda/useAgendaViewHandlers';
 import { useAgendaData } from '@/hooks/useAgendaData';
@@ -18,6 +19,7 @@ interface UseAgendaViewModelParams {
 
 export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 	const { effectiveUserId, canEdit, canManageAgenda, isPrivileged, user } = params;
+	const { settings } = useAppSettingsContext();
 	const agendaData = useAgendaData(effectiveUserId);
 	const ui = useAgendaUI();
 
@@ -30,7 +32,10 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		[agendaData.getEnrichedEvents, ui.currentDate, effectiveUserId, ui.optimisticMove],
 	);
 
-	const timeGrid = useMemo(() => resolveAgendaTimeGrid(events), [events]);
+	const timeGrid = useMemo(
+		() => resolveAgendaTimeGrid(events, new Date(), settings.agenda),
+		[events, settings.agenda],
+	);
 
 	const derived = useMemo(
 		() =>
@@ -63,6 +68,7 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		min: timeGrid.min,
 		max: timeGrid.max,
 		scrollToTime: timeGrid.scrollToTime,
+		step: settings.agenda.slot_minutes,
 		onEventDrop: handlers.handleEventDrop,
 		onSelectEvent: handlers.handleSelectEvent,
 		onSelectSlot: handlers.handleSelectSlot,

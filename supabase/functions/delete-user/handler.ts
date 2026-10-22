@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { resolveDeleteUserRequestAuth } from './deleteUserHandlerPure.ts';
+import { resolveDeleteUserRequestAuth } from './deleteUserHandlerHelpers.ts';
 import { executeDeleteUser } from './executeDeleteUser.ts';
 
 function createDeleteUserAdminClient() {

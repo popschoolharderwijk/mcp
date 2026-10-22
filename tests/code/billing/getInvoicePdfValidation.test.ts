@@ -6,7 +6,7 @@ import {
 	resolveInvoiceNotAvailableError,
 	resolveMissingInvoiceIdError,
 	resolveSignedUrlCreationError,
-} from '../../../supabase/functions/get-invoice-pdf/validationPure';
+} from '../../../supabase/functions/get-invoice-pdf/validationHelpers';
 
 describe('resolveMissingInvoiceIdError', () => {
 	it('returns Dutch missing invoice id message', () => {

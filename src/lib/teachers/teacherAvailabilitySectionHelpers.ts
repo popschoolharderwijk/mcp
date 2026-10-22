@@ -1,5 +1,11 @@
 import type { Tables } from '@/integrations/supabase/types';
-import { AVAILABILITY_CONFIG, DEFAULT_END_TIME, DEFAULT_START_TIME } from '@/lib/availability';
+import {
+	availabilityConfigFromAgenda,
+	availabilityDefaultEndTime,
+	availabilityDefaultStartTime,
+} from '@/lib/availability';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
+import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 
 export interface AvailabilityBlock {
 	id: string;
@@ -15,40 +21,47 @@ export interface AvailabilityTimeForm {
 	end_time: string;
 }
 
-export const DEFAULT_AVAILABILITY_TIME_FORM: AvailabilityTimeForm = {
-	start_time: DEFAULT_START_TIME,
-	end_time: DEFAULT_END_TIME,
-};
+export function defaultAvailabilityTimeForm(
+	agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda,
+): AvailabilityTimeForm {
+	return {
+		start_time: availabilityDefaultStartTime(agenda),
+		end_time: availabilityDefaultEndTime(agenda),
+	};
+}
 
-export function generateAvailabilityTimeSlots(): string[] {
+export function generateAvailabilityTimeSlots(agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda): string[] {
+	const config = availabilityConfigFromAgenda(agenda);
 	const slots: string[] = [];
-	const totalMinutes = (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
-	const slotCount = Math.floor(totalMinutes / AVAILABILITY_CONFIG.SLOT_DURATION_MINUTES);
+	const totalMinutes = (config.END_HOUR - config.START_HOUR) * 60;
+	const slotCount = Math.floor(totalMinutes / config.SLOT_DURATION_MINUTES);
 	for (let i = 0; i <= slotCount; i++) {
-		const totalMinutesFromStart = i * AVAILABILITY_CONFIG.SLOT_DURATION_MINUTES;
-		const hour = AVAILABILITY_CONFIG.START_HOUR + Math.floor(totalMinutesFromStart / 60);
+		const totalMinutesFromStart = i * config.SLOT_DURATION_MINUTES;
+		const hour = config.START_HOUR + Math.floor(totalMinutesFromStart / 60);
 		const minute = totalMinutesFromStart % 60;
 		slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
 	}
 	return slots;
 }
 
-export function buildAvailabilityHourLabels(): number[] {
-	return Array.from(
-		{ length: AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR + 1 },
-		(_, index) => AVAILABILITY_CONFIG.START_HOUR + index,
-	);
+export function buildAvailabilityHourLabels(agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda): number[] {
+	const config = availabilityConfigFromAgenda(agenda);
+	return Array.from({ length: config.END_HOUR - config.START_HOUR + 1 }, (_, index) => config.START_HOUR + index);
 }
 
-export function buildAvailabilityBlocks(availability: Tables<'teacher_availability'>[]): AvailabilityBlock[] {
-	const totalMinutes = (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
+export function buildAvailabilityBlocks(
+	availability: Tables<'teacher_availability'>[],
+	agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda,
+): AvailabilityBlock[] {
+	const config = availabilityConfigFromAgenda(agenda);
+	const totalMinutes = (config.END_HOUR - config.START_HOUR) * 60;
 
 	return availability.map((entry) => {
 		const displayDay = entry.day_of_week === 0 ? 6 : entry.day_of_week - 1;
 		const [startHour, startMin] = entry.start_time.split(':').map(Number);
 		const [endHour, endMin] = entry.end_time.split(':').map(Number);
-		const startMinutes = (startHour - AVAILABILITY_CONFIG.START_HOUR) * 60 + startMin;
-		const endMinutes = (endHour - AVAILABILITY_CONFIG.START_HOUR) * 60 + endMin;
+		const startMinutes = (startHour - config.START_HOUR) * 60 + startMin;
+		const endMinutes = (endHour - config.START_HOUR) * 60 + endMin;
 		const topPercent = (startMinutes / totalMinutes) * 100;
 		const heightPercent = ((endMinutes - startMinutes) / totalMinutes) * 100;
 
@@ -110,20 +123,25 @@ export function buildAvailabilitySlotFormFromBlock(startTime: string, endTime: s
 	};
 }
 
-export function getAvailabilityHourTopPercent(hour: number): number {
-	return (
-		((hour - AVAILABILITY_CONFIG.START_HOUR) / (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR)) *
-		100
-	);
+export function getAvailabilityHourTopPercent(
+	hour: number,
+	agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda,
+): number {
+	const config = availabilityConfigFromAgenda(agenda);
+	return ((hour - config.START_HOUR) / (config.END_HOUR - config.START_HOUR)) * 100;
 }
 
-export function getAvailabilitySlotPosition(time: string): { topPercent: number; heightPercent: number } {
-	const totalMinutes = (AVAILABILITY_CONFIG.END_HOUR - AVAILABILITY_CONFIG.START_HOUR) * 60;
+export function getAvailabilitySlotPosition(
+	time: string,
+	agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda,
+): { topPercent: number; heightPercent: number } {
+	const config = availabilityConfigFromAgenda(agenda);
+	const totalMinutes = (config.END_HOUR - config.START_HOUR) * 60;
 	const [hour, minute] = time.split(':').map(Number);
-	const minutesFromStart = (hour - AVAILABILITY_CONFIG.START_HOUR) * 60 + minute;
+	const minutesFromStart = (hour - config.START_HOUR) * 60 + minute;
 	return {
 		topPercent: (minutesFromStart / totalMinutes) * 100,
-		heightPercent: (30 / totalMinutes) * 100,
+		heightPercent: (config.SLOT_DURATION_MINUTES / totalMinutes) * 100,
 	};
 }
 

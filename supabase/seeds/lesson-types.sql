@@ -118,13 +118,13 @@ WHERE lt.name = 'DJ / Beats'
 
 -- Default rates for weekly/biweekly lesson_type_options (from stripe_billing migration).
 UPDATE public.lesson_type_options
-SET price_per_lesson_under_21_cents = 1950,
+SET price_per_lesson_youth_cents = 1950,
     price_per_lesson_adult_cents = 2360
 WHERE frequency = 'weekly'
-  AND price_per_lesson_under_21_cents IS NULL;
+  AND price_per_lesson_youth_cents IS NULL;
 
 UPDATE public.lesson_type_options
-SET price_per_lesson_under_21_cents = 2055,
+SET price_per_lesson_youth_cents = 2055,
     price_per_lesson_adult_cents = 2498
 WHERE frequency = 'biweekly'
-  AND price_per_lesson_under_21_cents IS NULL;
+  AND price_per_lesson_youth_cents IS NULL;

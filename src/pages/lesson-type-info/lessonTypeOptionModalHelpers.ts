@@ -54,7 +54,7 @@ export function buildOptionModalFormFromEditing(editingOption: OptionRowWithKey)
 	return {
 		duration_minutes: editingOption.duration_minutes,
 		frequency: editingOption.frequency,
-		price_per_lesson_under_21: editingOption.price_per_lesson_under_21,
+		price_per_lesson_youth: editingOption.price_per_lesson_youth,
 		price_per_lesson_adult: editingOption.price_per_lesson_adult,
 	};
 }

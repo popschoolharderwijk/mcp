@@ -9,6 +9,7 @@ alwaysApply: true
 After migration or schema changes: **tell the user** to reset and regenerate types. Do not execute it.
 
 * **Never hand-edit `src/integrations/supabase/types.ts`.** After schema/migration changes the user regenerates types (see below) so types stay codegen-only.
+* **Never commit “until types / after db reset” casts or comments.** If a new table/RPC is missing from generated types, tell the user to reset + regenerate; do not ship `as unknown as` table shims or pending-work comments (see `comments.mdc`).
 * **Local stack** (`supabase start`, default `bun dev`): user runs `supabase db reset` (no `--linked`), then optionally `supabase gen types typescript --local > src/integrations/supabase/types.ts`.
 * **Remote** (mcp-dev / mcp-test): use the `--linked` flag:
   - `supabase db reset --linked`
@@ -17,19 +18,3 @@ After migration or schema changes: **tell the user** to reset and regenerate typ
   - All other Supabase commands that work with a remote database must also use `--linked`
 * When documenting or planning Supabase DB commands for the user, match the target: local CLI without `--linked`, remote with `--linked`.
 * Default / Lovable UI uses remote mcp-dev via `bun dev`. Local Docker is opt-in: `supabase start` + `bun run dev:local`. CI uses mcp-test via `--linked`.
-
-## Edge function module naming (`supabase/functions/`)
-
-Use one naming scheme for Bun-testable / no-IO modules: **`*Pure.ts`**. Do not mix with `*Helpers*`.
-
-| Kind | Naming | Examples |
-|------|--------|----------|
-| Pure logic (no DB/Stripe/HTTP IO; Bun-testable) | `*Pure.ts` | `billingPure.ts`, `invoicePure.ts`, `rebuildSchedulePure.ts` |
-| IO wrappers / orchestration (DB, Stripe, Deno APIs) | plain name, no `Pure`/`Helpers` suffix | `billing.ts`, `invoice.ts`, `subscription-storage.ts` |
-
-### Rules
-
-* **Always** name new edge extract modules `*Pure.ts` when they are side-effect-free and tested from `tests/code/`.
-* **Never** introduce `*Helpers.ts` (or `*HelpersPure.ts`) under `supabase/functions/` — that naming is for the frontend (`src/`), not edge.
-* Keep IO in the plain-named sibling; re-export pure symbols from the IO module when callers need a single import surface.
-* Matching Bun tests live under `tests/code/` and import the `*Pure` module (e.g. `billingPure.test.ts` → `billingPure.ts`).

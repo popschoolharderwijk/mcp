@@ -1,4 +1,5 @@
 import type { SlotWithStatus } from '@/lib/agreementSlots';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 import type { User } from '@/types/users';
 
@@ -35,7 +36,7 @@ export function createInitialWizardForm(defaultStartDate: string, defaultEndDate
 		slot: null,
 		partnerStudentUserId: null,
 		partnerUser: null,
-		paymentMethod: 'sepa',
+		paymentMethod: APP_SETTINGS_BOOTSTRAP.agreements.default_payment_method,
 		sepaMandateId: null,
 	};
 }

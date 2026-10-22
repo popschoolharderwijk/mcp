@@ -4,7 +4,7 @@ import {
 	fromRequestBody,
 	fromSignupRequest,
 	isSignupRequestEligibleForTrialScheduling,
-} from './resolveStudentDataPure.ts';
+} from './resolveStudentDataHelpers.ts';
 import type { Body, ResolvedStudentData, SignupRequestRow } from './types.ts';
 
 export async function resolveStudentData(

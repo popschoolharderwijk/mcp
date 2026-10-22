@@ -11,7 +11,7 @@ function makeReportRow(overrides: Partial<ReportRow> = {}): ReportRow {
 		lesson_type_name: 'Piano',
 		lesson_type_color: '#FF5733',
 		lesson_type_icon: 'piano',
-		age_category: 'under_21',
+		age_category: 'youth',
 		total_minutes: 60,
 		lesson_count: 2,
 		duo_perspective: null,

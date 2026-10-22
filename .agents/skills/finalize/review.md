@@ -16,6 +16,7 @@ Reject and fix comments that:
 * Contrast with the past (“no longer”, “we used to”, “instead of”, “after the refactor”, “fixed…”)
 * Exist mainly to say what **not** to put here (“no localhost on remotes”, “don’t use X”, “belongs in Y not Z”)
 * Read like a commit message or a note to the agent who just edited the file
+* **Pending-work excuses** — “until types / after db reset”, “temporary”, “for now”, “TODO/FIXME/HACK”, “workaround until …” (see `comments.mdc`). Delete the comment; fix the code properly or escalate for DB reset + type regen — never leave the sticky note.
 
 Keep only **standing invariants**: what is true now, why a first-time reader must care.
 

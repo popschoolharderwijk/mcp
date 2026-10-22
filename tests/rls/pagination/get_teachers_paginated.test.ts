@@ -246,4 +246,34 @@ describe('RLS: get_teachers_paginated', () => {
 			expect(teacher.is_active).toBe(false);
 		});
 	});
+
+	it('returns teachers sorted by display name ascending', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const { data, error } = await db.rpc('get_teachers_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'asc',
+		});
+
+		expect(error).toBeNull();
+		const result = data as unknown as PaginatedTeachersResponse;
+		expect(result.data.map((t) => t.profile.first_name)).toEqual([...TEACHERS.SORTED_FIRST_NAMES_ASC]);
+	});
+
+	it('returns teachers sorted by display name descending', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+
+		const { data, error } = await db.rpc('get_teachers_paginated', {
+			p_limit: 100,
+			p_offset: 0,
+			p_sort_column: 'name',
+			p_sort_direction: 'desc',
+		});
+
+		expect(error).toBeNull();
+		const result = data as unknown as PaginatedTeachersResponse;
+		expect(result.data.map((t) => t.profile.first_name)).toEqual([...TEACHERS.SORTED_FIRST_NAMES_ASC].reverse());
+	});
 });

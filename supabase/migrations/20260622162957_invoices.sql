@@ -49,7 +49,7 @@ CREATE TABLE public.invoices (
   vat_amount_cents bigint NOT NULL DEFAULT 0,
   amount_total_cents bigint NOT NULL DEFAULT 0,
   age_category text NOT NULL DEFAULT 'unknown'
-    CHECK (age_category IN ('under_21','21_plus','unknown','mixed')),
+    CHECK (age_category IN ('youth','adult','unknown','mixed')),
   status text NOT NULL DEFAULT 'draft'
     CHECK (status IN ('draft','issued','paid','cancelled')),
   pdf_storage_path text,
@@ -99,7 +99,7 @@ CREATE TABLE public.invoice_lines (
   lesson_date date,
   quantity numeric(10,2) NOT NULL DEFAULT 1,
   unit_price_cents bigint NOT NULL DEFAULT 0,
-  vat_rate integer NOT NULL DEFAULT 0 CHECK (vat_rate IN (0, 9, 21)),
+  vat_rate integer NOT NULL DEFAULT 0 CHECK (vat_rate >= 0 AND vat_rate <= 100),
   amount_excl_vat_cents bigint NOT NULL DEFAULT 0,
   vat_amount_cents bigint NOT NULL DEFAULT 0,
   amount_total_cents bigint NOT NULL DEFAULT 0,
@@ -251,21 +251,21 @@ BEGIN
       i.paid_at,
       NULL::text AS hosted_invoice_url,
       CASE
-        WHEN il.vat_rate > 0 THEN '21_plus'
+        WHEN il.vat_rate > 0 THEN 'adult'
         WHEN i.age_category = 'unknown' THEN 'unknown'
-        ELSE 'under_21'
+        ELSE 'youth'
       END AS age_category,
       il.amount_excl_vat_cents,
       il.vat_amount_cents,
       CASE
         WHEN il.vat_rate = 0 AND i.age_category IS DISTINCT FROM 'unknown' THEN il.amount_excl_vat_cents
         ELSE 0
-      END AS excl_under_21_cents,
+      END AS excl_youth_cents,
       CASE
         WHEN il.vat_rate = 0 AND i.age_category = 'unknown' THEN il.amount_excl_vat_cents
         ELSE 0
       END AS excl_unknown_cents,
-      CASE WHEN il.vat_rate > 0 THEN il.amount_excl_vat_cents ELSE 0 END AS excl_21_plus_cents,
+      CASE WHEN il.vat_rate > 0 THEN il.amount_excl_vat_cents ELSE 0 END AS excl_adult_cents,
       i.student_user_id,
       by_agreement.id AS lesson_type_id,
       by_agreement.name AS lesson_type_name,
@@ -321,9 +321,9 @@ BEGIN
   summary AS (
     SELECT
       COUNT(DISTINCT invoice_id)::int AS invoice_count,
-      COALESCE(SUM(excl_under_21_cents), 0)::int AS total_revenue_under_21_cents,
+      COALESCE(SUM(excl_youth_cents), 0)::int AS total_revenue_youth_cents,
       COALESCE(SUM(excl_unknown_cents), 0)::int AS total_revenue_unknown_age_cents,
-      COALESCE(SUM(excl_21_plus_cents), 0)::int AS total_revenue_21_plus_excl_cents,
+      COALESCE(SUM(excl_adult_cents), 0)::int AS total_revenue_adult_excl_cents,
       COALESCE(SUM(vat_amount_cents), 0)::int AS total_vat_cents,
       COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents,
       COALESCE(SUM(CASE WHEN status = 'paid' THEN amount_paid ELSE 0 END), 0)::int AS total_paid_cents,
@@ -335,9 +335,9 @@ BEGIN
       json_build_object(
         'cost_center', cc,
         'invoice_count', invoice_count,
-        'revenue_under_21_cents', revenue_under_21_cents,
+        'revenue_youth_cents', revenue_youth_cents,
         'revenue_unknown_age_cents', revenue_unknown_age_cents,
-        'revenue_21_plus_excl_cents', revenue_21_plus_excl_cents,
+        'revenue_adult_excl_cents', revenue_adult_excl_cents,
         'vat_cents', vat_cents,
         'total_receivables_cents', total_receivables_cents
       )
@@ -347,9 +347,9 @@ BEGIN
       SELECT
         cost_center AS cc,
         COUNT(DISTINCT invoice_id)::int AS invoice_count,
-        COALESCE(SUM(excl_under_21_cents), 0)::int AS revenue_under_21_cents,
+        COALESCE(SUM(excl_youth_cents), 0)::int AS revenue_youth_cents,
         COALESCE(SUM(excl_unknown_cents), 0)::int AS revenue_unknown_age_cents,
-        COALESCE(SUM(excl_21_plus_cents), 0)::int AS revenue_21_plus_excl_cents,
+        COALESCE(SUM(excl_adult_cents), 0)::int AS revenue_adult_excl_cents,
         COALESCE(SUM(vat_amount_cents), 0)::int AS vat_cents,
         COALESCE(SUM(amount_due), 0)::int AS total_receivables_cents
       FROM invoice_base

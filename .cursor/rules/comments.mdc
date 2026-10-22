@@ -34,6 +34,16 @@ Read the comment aloud without the diff. Does it sound like a commit message or 
 
 * **Restate the next line** — what the code already says plainly
 * **Config noise** — do not explain a Tailwind/CSS mapping in a comment when the rule belongs in `.cursor/rules/` or `docs/` (e.g. token shape conventions)
+* **Pending / temporary / deferred work** — comments that document an incomplete state, a future cleanup, or a blocker the reader must “remember to finish”. These are PR notes, not code. **Never commit them.**
+
+### NEVER (pending-work comments) — examples
+
+* “Untyped until `supabase gen types` / after db reset”
+* “Temporary until X”, “for now”, “TODO: wire up”, “FIXME”, “HACK”, “remove after …”
+* “Cast needed until types include …”, “workaround until migration is applied”
+* Any comment whose only job is to excuse bad typing, a shim, or missing codegen
+
+If the code is blocked on DB reset / type regen: **stop and tell the user** to reset and regenerate types (see `supabase.mdc`). Do not land an untyped cast plus a sticky note. If a standing invariant remains after the proper fix, write that invariant — not the temporary excuse.
 
 Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) are covered by `no-legacy.mdc`, not here.
 
@@ -58,11 +68,14 @@ Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) ar
 // BAD: "belongs elsewhere" as the whole point
 // localhost belongs in root [auth] for Docker
 
+// BAD: pending-work sticky note — never commit
+// Untyped until `supabase gen types` includes app_settings after db reset.
+
 // GOOD: standing invariant (positive, current)
 // Local stack (`supabase start`). Each remote sets [remotes.*.auth] for its hosted URLs.
 
 // GOOD: standing invariant
-// Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see invoicePure.test.ts
+// Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see invoiceHelpers.test.ts
 
 // GOOD: omit — obvious
 const kind = resolveAgendaDefaultKind(resource) ?? 'lesson';

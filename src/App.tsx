@@ -11,6 +11,7 @@ import Agenda from './pages/Agenda';
 import Agreements from './pages/Agreements';
 import AgreementWizard from './pages/AgreementWizard';
 import Announcements from './pages/Announcements';
+import AppSettings from './pages/AppSettings';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
 import Dashboard from './pages/Dashboard';
@@ -31,7 +32,6 @@ import MyStatistics from './pages/MyStatistics';
 import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
 import MyTrial from './pages/MyTrial';
-import NoLessonPeriods from './pages/NoLessonPeriods';
 import NotFound from './pages/NotFound';
 import Projects from './pages/Projects';
 import PublicSignup from './pages/PublicSignup';
@@ -87,7 +87,8 @@ const App = () => (
 						<Route path="/trial-lessons" element={<TrialLessons />} />
 						<Route path="/my-trial" element={<MyTrial />} />
 
-						<Route path="/no-lesson-periods" element={<NoLessonPeriods />} />
+						<Route path="/settings" element={<AppSettings />} />
+						<Route path="/settings/:tab" element={<AppSettings />} />
 						<Route path="/email-templates" element={<EmailTemplates />} />
 						<Route path="/account" element={<Account defaultTab="profile" />} />
 						<Route path="/account/profile" element={<Account defaultTab="profile" />} />

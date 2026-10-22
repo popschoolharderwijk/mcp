@@ -17,7 +17,7 @@ const sampleRow: CourseSqlRow = {
 			durationMinutes: 30,
 			frequency: 'weekly',
 			pricePerLesson: 73.38,
-			pricePerLessonUnder21Cents: 7338,
+			pricePerLessonYouthCents: 7338,
 			pricePerLessonAdultCents: 7338,
 			startDate: '2026-09-01',
 			skippedUnknownOid: null,

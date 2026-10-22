@@ -233,13 +233,14 @@ BEGIN
                 ELSE '[]'::JSON
               END
             )
+            ORDER BY %I %s NULLS LAST, ps.display_name ASC, ps.user_id ASC
           ) FROM paginated_students ps),
           '[]'::JSON
         ),
         'total_count', COALESCE((SELECT total_count FROM filtered_total), 0),
         'limit', $4, 'offset', $5
       )
-    $q$, v_sort_column, v_sort_direction);
+    $q$, v_sort_column, v_sort_direction, v_sort_column, v_sort_direction);
   ELSE
     v_query := format($q$
       WITH student_base AS (
@@ -371,6 +372,7 @@ BEGIN
                 ELSE '[]'::JSON
               END
             )
+            ORDER BY %I %s NULLS LAST, ps.display_name ASC, ps.user_id ASC
           ) FROM paginated_students ps
           LEFT JOIN page_counts pc ON pc.student_user_id = ps.user_id),
           '[]'::JSON
@@ -378,7 +380,7 @@ BEGIN
         'total_count', COALESCE((SELECT total_count FROM filtered_total), 0),
         'limit', $4, 'offset', $5
       )
-    $q$, v_sort_column, v_sort_direction);
+    $q$, v_sort_column, v_sort_direction, v_sort_column, v_sort_direction);
   END IF;
 
   EXECUTE v_query
@@ -553,6 +555,7 @@ BEGIN
             ),
             'lesson_types', COALESCE(tlt.lesson_types, '[]'::JSON)
           )
+          ORDER BY %I %s NULLS LAST, pt.display_name ASC, pt.user_id ASC
         ) FROM paginated_teachers pt
         LEFT JOIN teacher_lesson_types_data tlt ON tlt.teacher_user_id = pt.user_id),
         '[]'::JSON
@@ -561,7 +564,7 @@ BEGIN
       'limit', $4,
       'offset', $5
     )
-  $q$, v_sort_column, v_sort_direction);
+  $q$, v_sort_column, v_sort_direction, v_sort_column, v_sort_direction);
 
   EXECUTE v_query
   INTO v_result
@@ -914,6 +917,7 @@ BEGIN
             'last_sign_in_at', pu.last_sign_in_at,
             'role', pu.role
           )
+          ORDER BY %I %s NULLS LAST, pu.display_name ASC, pu.user_id ASC
         ) FROM paginated_users pu),
         '[]'::JSON
       ),
@@ -921,7 +925,7 @@ BEGIN
       'limit', $3,
       'offset', $4
     )
-  $q$, v_sort_column, v_sort_direction);
+  $q$, v_sort_column, v_sort_direction, v_sort_column, v_sort_direction);
 
   EXECUTE v_query
   INTO v_result

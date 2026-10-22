@@ -1,4 +1,5 @@
 import { LuSave } from 'react-icons/lu';
+import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +10,7 @@ import {
 	clampSchoolYearStartMonth,
 	clampSepaCollectionDay,
 } from '@/lib/settings/accountingSettingsManagerHelpers';
+import { formatVatCodeFieldLabel, formatVatPayableAccountLabel } from '@/lib/settings/vatLabelHelpers';
 
 type AccountingSettingsFieldProps = {
 	form: AccountingSettings;
@@ -68,6 +70,9 @@ export function AccountingSettingsJournalsCard(props: AccountingSettingsFieldPro
 }
 
 export function AccountingSettingsLedgerAccountsCard(props: AccountingSettingsFieldProps) {
+	const { settings } = useAppSettingsContext();
+	const standardRatePercent = settings.vat.standard_rate_percent;
+
 	return (
 		<Card>
 			<CardHeader>
@@ -89,19 +94,19 @@ export function AccountingSettingsLedgerAccountsCard(props: AccountingSettingsFi
 				/>
 				<AccountingSettingsField
 					{...props}
-					label="Omzet <21 (vrijgesteld)"
-					fieldKey="account_revenue_under_21"
+					label="Omzet jongeren (vrijgesteld)"
+					fieldKey="account_revenue_youth"
 					placeholder="bv. 8000"
 				/>
 				<AccountingSettingsField
 					{...props}
-					label="Omzet 21+ (excl. BTW)"
-					fieldKey="account_revenue_21_plus"
+					label="Omzet volwassenen (excl. BTW)"
+					fieldKey="account_revenue_adult"
 					placeholder="bv. 8010"
 				/>
 				<AccountingSettingsField
 					{...props}
-					label="BTW af te dragen 21%"
+					label={formatVatPayableAccountLabel(standardRatePercent)}
 					fieldKey="account_vat_21"
 					placeholder="bv. 1500"
 				/>
@@ -184,6 +189,9 @@ export function AccountingSettingsSepaCard({ form, canEdit, update }: Accounting
 }
 
 export function AccountingSettingsTaxCard({ form, canEdit, update }: AccountingSettingsFieldProps) {
+	const { settings } = useAppSettingsContext();
+	const standardRatePercent = settings.vat.standard_rate_percent;
+
 	return (
 		<Card>
 			<CardHeader>
@@ -194,7 +202,7 @@ export function AccountingSettingsTaxCard({ form, canEdit, update }: AccountingS
 					form={form}
 					canEdit={canEdit}
 					update={update}
-					label="BTW-code 21%"
+					label={formatVatCodeFieldLabel(standardRatePercent)}
 					fieldKey="vat_code_21"
 					placeholder="bv. VH"
 				/>

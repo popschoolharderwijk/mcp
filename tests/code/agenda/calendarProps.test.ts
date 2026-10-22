@@ -30,6 +30,7 @@ const baseParams = {
 	min: new Date(0, 0, 0, AVAILABILITY_CONFIG.START_HOUR, 0, 0),
 	max: new Date(0, 0, 0, AVAILABILITY_CONFIG.END_HOUR, 0, 0),
 	scrollToTime: new Date('2026-02-17T09:00:00'),
+	step: AVAILABILITY_CONFIG.SLOT_DURATION_MINUTES,
 	onEventDrop: () => undefined,
 	onSelectEvent: () => undefined,
 	onSelectSlot: () => undefined,

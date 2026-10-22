@@ -5,7 +5,7 @@ import {
 	buildTrialSharedVars,
 	buildTrialTeacherName,
 	shouldSendTrialTeacherNotification,
-} from './sendTrialNotificationsPure.ts';
+} from './sendTrialNotificationsHelpers.ts';
 import type { Body } from './types.ts';
 
 export async function sendTrialNotifications(

@@ -8,7 +8,7 @@ import {
 	groupLessonTypeNamesByTeacher,
 	parseRecentDashboardStudents,
 } from '@/lib/dashboard/dashboardDataHelpers';
-import { assertDashboardQueriesOk } from '@/lib/dashboard/dashboardLoadErrorPure';
+import { assertDashboardQueriesOk } from '@/lib/dashboard/dashboardLoadErrorHelpers';
 import { OPEN_SIGNUP_REQUEST_STATUSES } from '@/lib/signup-requests/signupRequestStatuses';
 import type { PaginatedStudentsResponseRaw } from '@/types/students';
 

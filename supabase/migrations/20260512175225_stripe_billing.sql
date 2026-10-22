@@ -8,7 +8,7 @@ ALTER TABLE public.lesson_agreements
 
 -- Age-specific prices on lesson options (in cents)
 ALTER TABLE public.lesson_type_options
-  ADD COLUMN IF NOT EXISTS price_per_lesson_under_21_cents integer,
+  ADD COLUMN IF NOT EXISTS price_per_lesson_youth_cents integer,
   ADD COLUMN IF NOT EXISTS price_per_lesson_adult_cents integer;
 
 -- ============================================================

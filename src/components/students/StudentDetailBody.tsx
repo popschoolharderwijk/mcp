@@ -1,13 +1,7 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PageHeader } from '@/components/ui/page-header';
 import type { useStudentDetailPage } from '@/hooks/useStudentDetailPage';
 import { getDisplayName } from '@/lib/display-name';
-import {
-	buildStudentAvatarFallback,
-	buildStudentInitials,
-	formatStudentPhoneSubtitle,
-	type StudentProfileData,
-} from '@/lib/students/studentDetailHelpers';
+import { formatStudentPhoneSubtitle, type StudentProfileData } from '@/lib/students/studentDetailHelpers';
 import type { StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import { StudentInfoTabs } from '@/pages/student-detail/StudentInfoTabs';
 import type { Student } from '@/types/students';
@@ -38,21 +32,10 @@ export function StudentDetailBody({
 	onTabChange,
 	onProfileUpdate,
 }: StudentDetailBodyProps) {
-	const displayName = getDisplayName(profile);
-	const initials = buildStudentInitials(profile);
-
 	return (
 		<div className="space-y-6">
 			<PageHeader
-				icon={
-					<Avatar className="h-16 w-16">
-						<AvatarImage src={profile.avatar_url ?? undefined} alt={displayName} />
-						<AvatarFallback className="bg-primary/10 text-primary text-lg">
-							{buildStudentAvatarFallback(profile, initials)}
-						</AvatarFallback>
-					</Avatar>
-				}
-				title={displayName}
+				title={getDisplayName(profile)}
 				subtitle={formatStudentPhoneSubtitle(profile.email, profile.phone_number)}
 			/>
 

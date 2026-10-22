@@ -3,13 +3,13 @@ import {
 	updateOptionModalDuration,
 	updateOptionModalFrequency,
 	updateOptionModalPriceAdult,
-	updateOptionModalPriceUnder21,
+	updateOptionModalPriceYouth,
 } from '../../../src/pages/lesson-type-info/optionModalFormHelpers';
 
 const baseForm = {
 	duration_minutes: '45',
 	frequency: 'weekly' as const,
-	price_per_lesson_under_21: '20',
+	price_per_lesson_youth: '20',
 	price_per_lesson_adult: '25',
 };
 
@@ -25,11 +25,11 @@ describe('updateOptionModalFrequency', () => {
 	});
 });
 
-describe('updateOptionModalPriceUnder21', () => {
-	it('updates under-21 price', () => {
-		expect(updateOptionModalPriceUnder21(baseForm, '22')).toEqual({
+describe('updateOptionModalPriceYouth', () => {
+	it('updates youth price', () => {
+		expect(updateOptionModalPriceYouth(baseForm, '22')).toEqual({
 			...baseForm,
-			price_per_lesson_under_21: '22',
+			price_per_lesson_youth: '22',
 		});
 	});
 });

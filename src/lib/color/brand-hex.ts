@@ -1,8 +1,7 @@
-// Canonical brand primary hex — must match --primary in src/styles/theme-tokens.css.
-// Changes here must also be mirrored in:
-// - supabase/functions/generate-invoice/invoicePure.ts (mail HTML header)
-// - supabase/functions/generate-invoice/buildPdfPure.ts (PDF_RGB)
-// - public/favicon.svg and public/favicon-local.svg
-// Tests enforce drift; update mirrors when editing this file.
+// Canonical brand primary hex — must match bootstrap app_settings.branding and --primary in theme-tokens.css.
+// Logged-in UI applies app_settings.branding via applyBrandPrimaryToDocument; PDF/mail use this constant / edge mirrors.
+// Tests enforce drift against APP_SETTINGS / APP_SETTINGS_BOOTSTRAP.
 
-export const PRIMARY_HEX = '#c4ab7c';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
+
+export const PRIMARY_HEX = APP_SETTINGS_BOOTSTRAP.branding.primary_hex;

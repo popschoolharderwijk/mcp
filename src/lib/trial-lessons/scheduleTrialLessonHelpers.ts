@@ -5,6 +5,8 @@ import {
 	type FreeSlotForTeacher,
 	getFreeSlotsAcrossTeachers,
 } from '@/lib/agreementSlots';
+import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
+import type { TrialLessonsSetting } from '@/lib/settings/appSettingsTypes';
 
 const DAY_NAMES = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 
@@ -78,17 +80,27 @@ export interface ScheduleTrialLessonResetValues {
 	duration: number;
 }
 
+function trialLessonDefaultsFromSetting(trial: TrialLessonsSetting) {
+	return {
+		fromDate: todayPlus(1),
+		toDate: todayPlus(trial.horizon_days),
+		duration: trial.default_duration_minutes,
+	};
+}
+
 export function getScheduleTrialLessonResetValues(
 	signupRequest: { email?: string; first_name?: string; last_name?: string } | null | undefined,
+	trial: TrialLessonsSetting = APP_SETTINGS_BOOTSTRAP.trial_lessons,
 ): ScheduleTrialLessonResetValues {
+	const defaults = trialLessonDefaultsFromSetting(trial);
 	return {
 		studentEmail: signupRequest?.email ?? '',
 		studentFirstName: signupRequest?.first_name ?? '',
 		studentLastName: signupRequest?.last_name ?? '',
 		notes: '',
-		fromDate: todayPlus(1),
-		toDate: todayPlus(30),
-		duration: 30,
+		fromDate: defaults.fromDate,
+		toDate: defaults.toDate,
+		duration: defaults.duration,
 	};
 }
 

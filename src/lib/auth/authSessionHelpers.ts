@@ -1,10 +1,30 @@
 import type { Session } from '@supabase/supabase-js';
+import type { AppRole } from '@/lib/roles';
+
+/** Max wait for auth session + role/teacher probes before showing the offline screen. */
+export const AUTH_BOOTSTRAP_TIMEOUT_MS = 2_000;
+
+export function resolveAuthRoleFlags(role: AppRole | null, teacherUserId: string | null) {
+	const isAdmin = role === 'admin';
+	const isSiteAdmin = role === 'site_admin';
+	const isStaff = role === 'staff';
+	const isTeacher = teacherUserId !== null;
+	return {
+		isAdmin,
+		isSiteAdmin,
+		isStaff,
+		isTeacher,
+		isPrivileged: isAdmin || isSiteAdmin || isStaff,
+	};
+}
 
 export interface AuthSessionApplyPlan {
 	userId: string | null;
 	shouldFetchRoleAndTeacher: boolean;
 	shouldClearRoleOnLogout: boolean;
 }
+
+export type AuthBackendProbeError = { message?: string } | null;
 
 export function planAuthSessionApply(session: Session | null, clearOnLogout: boolean): AuthSessionApplyPlan {
 	const userId = session?.user?.id ?? null;
@@ -15,17 +35,48 @@ export function planAuthSessionApply(session: Session | null, clearOnLogout: boo
 	};
 }
 
+export function isAuthBackendUnreachableError(error: AuthBackendProbeError | undefined): boolean {
+	const message = error?.message?.toLowerCase() ?? '';
+	if (message.length === 0) return false;
+	return (
+		message.includes('failed to fetch') ||
+		message.includes('networkerror') ||
+		message.includes('network request failed') ||
+		message.includes('fetch failed') ||
+		message.includes('load failed')
+	);
+}
+
+export function resolveAuthBootstrapProbeOutcome(
+	roleError: AuthBackendProbeError,
+	teacherError: AuthBackendProbeError,
+): 'ready' | 'unavailable' {
+	if (isAuthBackendUnreachableError(roleError) || isAuthBackendUnreachableError(teacherError)) {
+		return 'unavailable';
+	}
+	return 'ready';
+}
+
 export function runAuthSessionSideEffects(params: {
 	plan: AuthSessionApplyPlan;
-	fetchRole: (userId: string) => Promise<void>;
-	fetchTeacher: (userId: string) => Promise<void>;
+	fetchRole: (userId: string) => Promise<AuthBackendProbeError>;
+	fetchTeacher: (userId: string) => Promise<AuthBackendProbeError>;
 	clearRoleState: () => void;
 	onLoadingComplete: () => void;
+	onBackendUnavailable: () => void;
 }): void {
 	if (params.plan.shouldFetchRoleAndTeacher && params.plan.userId) {
-		Promise.all([params.fetchRole(params.plan.userId), params.fetchTeacher(params.plan.userId)]).finally(
-			params.onLoadingComplete,
-		);
+		void Promise.all([params.fetchRole(params.plan.userId), params.fetchTeacher(params.plan.userId)])
+			.then(([roleError, teacherError]) => {
+				if (resolveAuthBootstrapProbeOutcome(roleError, teacherError) === 'unavailable') {
+					params.onBackendUnavailable();
+					return;
+				}
+				params.onLoadingComplete();
+			})
+			.catch(() => {
+				params.onBackendUnavailable();
+			});
 		return;
 	}
 	if (params.plan.shouldClearRoleOnLogout) {

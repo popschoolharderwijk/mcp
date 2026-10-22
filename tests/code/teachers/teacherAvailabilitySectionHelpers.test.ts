@@ -19,6 +19,11 @@ describe('generateAvailabilityTimeSlots', () => {
 	it('starts at the configured start hour', () => {
 		expect(generateAvailabilityTimeSlots()[0]).toBe(DEFAULT_START_TIME);
 	});
+
+	it('uses agenda start hour and slot length from settings', () => {
+		const slots = generateAvailabilityTimeSlots({ start_hour: 9, end_hour: 11, slot_minutes: 60 });
+		expect(slots).toEqual(['09:00', '10:00', '11:00']);
+	});
 });
 
 describe('buildAvailabilityBlocks', () => {

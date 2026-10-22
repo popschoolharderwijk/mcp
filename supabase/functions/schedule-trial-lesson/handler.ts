@@ -4,7 +4,7 @@ import { createTrialSchedule, markSignupScheduled } from './createTrialSchedule.
 import { ensureStudentUser } from './ensureStudentUser.ts';
 import { resolveStudentData } from './resolveStudentData.ts';
 import { requireScheduleTrialLessonAccess, runScheduleTrialLessonSafely } from './scheduleTrialLessonAccess.ts';
-import { buildScheduleTrialLessonSuccessPayload } from './scheduleTrialLessonPure.ts';
+import { buildScheduleTrialLessonSuccessPayload } from './scheduleTrialLessonHelpers.ts';
 import { sendTrialNotifications } from './sendTrialNotifications.ts';
 import type { Body } from './types.ts';
 import { computeEndTime, validateScheduleBody, validateStudentData } from './validation.ts';

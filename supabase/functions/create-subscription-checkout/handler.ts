@@ -2,7 +2,7 @@ import { jsonResponse } from '../_shared/http.ts';
 import { getSafeErrorMessage, getStripe } from '../_shared/stripe.ts';
 import { authenticateCheckoutRequest } from './authenticateCheckoutRequest.ts';
 import { ensureStripeCustomer, handleCheckoutMode, handleCompleteMode, handleDirectMode } from './checkoutFlows.ts';
-import { resolveCheckoutFlowMode } from './createSubscriptionCheckoutHandlerPure.ts';
+import { resolveCheckoutFlowMode } from './createSubscriptionCheckoutHandlerHelpers.ts';
 
 export async function handleCreateSubscriptionCheckoutRequest(req: Request): Promise<Response> {
 	const auth = await authenticateCheckoutRequest(req);

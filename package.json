@@ -1,7 +1,7 @@
 {
 	"name": "mcp",
 	"private": true,
-	"version": "1.1.4",
+	"version": "1.1.5",
 	"license": "GPL-3.0",
 	"type": "module",
 	"scripts": {
@@ -19,6 +19,7 @@
 		"check:ci": "biome ci --error-on-warnings && tsc -b --noEmit && bun run test:code && rm -f *.tsbuildinfo && echo 'no errors'",
 		"check:fallow": "fallow --quiet --format json && fallow --quiet --fail-on-issues",
 		"supabase:types": "bun run scripts/gen-supabase-types.ts",
+		"supabase:types:local": "bun run scripts/gen-supabase-types.ts --local",
 		"lint:sql": "squawk supabase/migrations/*.sql",
 		"lint:db": "supabase db lint --linked --level warning --fail-on warning",
 		"reset-branch:lovable": "bun run scripts/reset-branch-lovable.ts",
