@@ -70,12 +70,12 @@ export function runAuthSessionSideEffects(params: {
 			.then(([roleError, teacherError]) => {
 				if (resolveAuthBootstrapProbeOutcome(roleError, teacherError) === 'unavailable') {
 					params.onBackendUnavailable();
+					return;
 				}
 				params.onLoadingComplete();
 			})
 			.catch(() => {
 				params.onBackendUnavailable();
-				params.onLoadingComplete();
 			});
 		return;
 	}

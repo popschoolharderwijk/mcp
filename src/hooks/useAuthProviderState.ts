@@ -27,6 +27,7 @@ export function useAuthProviderState() {
 
 	const completeLoading = useCallback(() => {
 		clearBootstrapTimeout();
+		setIsUnavailable(false);
 		setIsLoading(false);
 	}, [clearBootstrapTimeout]);
 

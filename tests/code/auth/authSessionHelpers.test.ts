@@ -117,7 +117,7 @@ describe('runAuthSessionSideEffects', () => {
 			setTimeout(resolve, 0);
 		});
 		expect(unavailable).toBe(true);
-		expect(completed).toBe(true);
+		expect(completed).toBe(false);
 	});
 
 	it('signals unavailable when a probe throws', async () => {
@@ -145,7 +145,7 @@ describe('runAuthSessionSideEffects', () => {
 			setTimeout(resolve, 0);
 		});
 		expect(unavailable).toBe(true);
-		expect(completed).toBe(true);
+		expect(completed).toBe(false);
 	});
 
 	it('clears role state on logout', () => {
