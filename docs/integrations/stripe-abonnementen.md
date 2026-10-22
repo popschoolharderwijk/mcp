@@ -198,6 +198,7 @@ Er zijn geen SEPA-onderdelen verwijderd. Er zijn geen echte Stripe-aanroepen in 
 ### Controle-uitkomst en blokkades (22 oktober 2026)
 
 - `bun run check`: groen. `bun test code`: 2.773 geslaagd, 0 mislukt.
+- Na previewherstel ook `bun run check:ci` groen: 2.773 tests, 0 mislukt; actuele previewmelding `build OK`.
 - De previewtypes zijn hersteld uit de intacte, eerder gegenereerde versie (`b38c575`), zonder handmatige aanpassingen aan typevelden. De betaler-resolver geeft optionele velden nu expliciet door aan de bestaande helpers.
 - De gekoppelde database mist eerdere schemaonderdelen: `lesson_type_options.label` en `billing_kind` ontbreken. Dit is een afzonderlijk runtime-risico; herstel de bestaande migraties op de juiste mcp-dev-omgeving vóór betalingstests en genereer daarna zelf types met `bun run supabase:types`; geen reset.
 - Het platform had de gegenereerde bestanden teruggezet. Automatische Biome-opmaak is uitgevoerd op `types.ts`, `previewAuthStorage.ts` en `src/tailwind.config.lov.json`.

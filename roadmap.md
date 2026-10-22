@@ -9,6 +9,7 @@
 - [x] Alle open schedules pagineren voor adoptie en dubbel-detectie
 - [ ] Dagelijkse taak activeren: gebruiker moet dezelfde CRON_SECRET instellen in Edge Secrets en Vault; planning op mcp-dev omgezet, ongeautoriseerde toegang geverifieerd
 - [x] Previewtypes hersteld uit intacte gegenereerde versie; betaler-resolver typeveilig gemaakt
+- [x] check en check:ci groen; 2.773 codetests geslaagd; preview build OK
 - [x] Codetests, Biome, documentatie en CHANGELOG
 
 ## Fase 1 — tariefmodel (klaar)
