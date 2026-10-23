@@ -120,3 +120,45 @@ export function describeSchoolYearBounds(bounds: SchoolYearBounds): string {
 	const endDayNum = lastDayOfMonth(2025, bounds.end_month);
 	return `Dit schooljaar loopt van 1 ${startName} t/m ${endDayNum} ${endName}.`;
 }
+
+/** Calendar months (1–12) that fall inside the school-year window, in order. */
+function monthsInSchoolYear(bounds: SchoolYearBounds): Set<number> {
+	const months = new Set<number>();
+	let month = bounds.start_month;
+	for (;;) {
+		months.add(month);
+		if (month === bounds.end_month) break;
+		month = month === 12 ? 1 : month + 1;
+	}
+	return months;
+}
+
+/** Dutch lowercase labels for months outside the school-year window (non-billing gap). */
+export function nonBillingMonthLabels(bounds: SchoolYearBounds): string[] {
+	const inYear = monthsInSchoolYear(bounds);
+	const labels: string[] = [];
+	for (let month = 1; month <= 12; month += 1) {
+		if (!inYear.has(month)) {
+			labels.push(monthLabelNl(month).toLowerCase());
+		}
+	}
+	return labels;
+}
+
+/**
+ * Incasso preview caption for monthly amount, e.g.
+ * `Maandbedrag (× 11, augustus geen incasso)` for Sep–Jul.
+ */
+export function describeMonthlyBillingCaption(bounds: SchoolYearBounds): string {
+	const billingMonths = billingMonthsPerSchoolYear(bounds);
+	const gaps = nonBillingMonthLabels(bounds);
+	if (gaps.length === 0) {
+		return `Maandbedrag (× ${billingMonths})`;
+	}
+	if (gaps.length === 1) {
+		return `Maandbedrag (× ${billingMonths}, ${gaps[0]} geen incasso)`;
+	}
+	const last = gaps[gaps.length - 1];
+	const head = gaps.slice(0, -1).join(', ');
+	return `Maandbedrag (× ${billingMonths}, ${head} en ${last} geen incasso)`;
+}

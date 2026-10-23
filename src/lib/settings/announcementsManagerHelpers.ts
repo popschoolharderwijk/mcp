@@ -36,15 +36,6 @@ export function buildAnnouncementSavePayload(input: AnnouncementFormSaveInput) {
 	};
 }
 
-export function insertTextAtCursor(
-	currentValue: string,
-	selectionStart: number,
-	selectionEnd: number,
-	snippet: string,
-): string {
-	return currentValue.slice(0, selectionStart) + snippet + currentValue.slice(selectionEnd);
-}
-
 export function isAnnouncementFormValid(title: string, audience: AnnouncementAudience[]): boolean {
 	return title.trim().length > 0 && audience.length > 0;
 }

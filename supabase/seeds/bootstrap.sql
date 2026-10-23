@@ -20,78 +20,91 @@ INSERT INTO public.app_settings (key, value) VALUES
 	('agreements', '{"default_start_offset_days":1,"default_payment_method":"sepa"}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
--- Default email templates (from email_templates migration).
-INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
+-- Default email templates (from email_templates migration). Bodies are markdown.
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'signup_received',
 	'Bevestiging van je aanmelding bij Popschool Harderwijk',
-	'<p>Hoi {{leerling_naam}},</p>
-<p>Bedankt voor je aanmelding bij Popschool Harderwijk!</p>
-<p>We hebben je aanvraag voor <strong>{{les_type}}</strong> ({{frequentie}}) ontvangen voor <strong>{{prijs_per_les}}</strong> per les.</p>
-<p>We nemen zo snel mogelijk contact met je op om je inschrijving te verwerken.</p>
-<p>Met muzikale groet,<br/>Popschool Harderwijk</p>',
-	true
+	'Hoi {{leerling_naam}},
+
+Bedankt voor je aanmelding bij Popschool Harderwijk!
+
+We hebben je aanvraag voor **{{les_type}}** ({{frequentie}}) ontvangen voor **{{prijs_per_les}}** per les.
+
+We nemen zo snel mogelijk contact met je op om je inschrijving te verwerken.
+
+Met muzikale groet,
+Popschool Harderwijk'
 ) ON CONFLICT (event_key) DO NOTHING;
 
-INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'trial_scheduled',
 	'Je proefles bij Popschool Harderwijk is ingepland',
-	'<p>Hoi {{leerling_naam}},</p>
-<p>Je proefles voor <strong>{{les_type}}</strong> is ingepland op <strong>{{datum}}</strong> om <strong>{{tijd}}</strong> ({{duur}} minuten).</p>
-<p>Na de proefles kun je in de portal aangeven of je verder wilt met lessen. Pas dan stellen we een definitieve overeenkomst op.</p>
-<p>Veel plezier en tot dan!<br/>Popschool Harderwijk</p>',
-	true
+	'Hoi {{leerling_naam}},
+
+Je proefles voor **{{les_type}}** is ingepland op **{{datum}}** om **{{tijd}}** ({{duur}} minuten).
+
+Na de proefles kun je in de portal aangeven of je verder wilt met lessen. Pas dan stellen we een definitieve overeenkomst op.
+
+Veel plezier en tot dan!
+Popschool Harderwijk'
 ) ON CONFLICT (event_key) DO NOTHING;
 
-INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'trial_scheduled_teacher',
 	'Nieuwe proefles ingepland: {{leerling_naam}}',
-	'<p>Hoi {{docent_naam}},</p>
-<p>Er is een proefles voor je ingepland.</p>
-<ul>
-  <li><strong>Leerling:</strong> {{leerling_naam}}</li>
-  <li><strong>Lessoort:</strong> {{les_type}}</li>
-  <li><strong>Datum:</strong> {{datum}}</li>
-  <li><strong>Tijd:</strong> {{tijd}} ({{duur}} minuten)</li>
-</ul>
-<p>De afspraak staat in je agenda.</p>
-<p>Groet,<br/>Popschool Harderwijk</p>',
-	true
+	'Hoi {{docent_naam}},
+
+Er is een proefles voor je ingepland.
+
+- **Leerling:** {{leerling_naam}}
+- **Lessoort:** {{les_type}}
+- **Datum:** {{datum}}
+- **Tijd:** {{tijd}} ({{duur}} minuten)
+
+De afspraak staat in je agenda.
+
+Groet,
+Popschool Harderwijk'
 ) ON CONFLICT (event_key) DO NOTHING;
 
-INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'agreement_created',
 	'Je lesovereenkomst bij Popschool Harderwijk is aangemaakt',
-	'<p>Hoi {{leerling_naam}},</p>
-<p>Fijn dat je bij ons komt lessen! Je lesovereenkomst is aangemaakt met de volgende gegevens:</p>
-<ul>
-  <li><strong>Docent:</strong> {{docent_naam}}</li>
-  <li><strong>Lessoort:</strong> {{les_type}}</li>
-  <li><strong>Frequentie:</strong> {{frequentie}}</li>
-  <li><strong>Dag &amp; tijd:</strong> {{dag}} om {{tijd}}</li>
-  <li><strong>Startdatum:</strong> {{startdatum}}</li>
-  <li><strong>Prijs per les:</strong> {{prijs_per_les}}</li>
-  <li><strong>Betaalmethode:</strong> {{betaalmethode}}</li>
-</ul>
-<p>In het leerlingportaal vind je je agenda, facturen en overige informatie over je lessen.</p>
-<p>Veel muziekplezier!<br/>Popschool Harderwijk</p>',
-	true
+	'Hoi {{leerling_naam}},
+
+Fijn dat je bij ons komt lessen! Je lesovereenkomst is aangemaakt met de volgende gegevens:
+
+- **Docent:** {{docent_naam}}
+- **Lessoort:** {{les_type}}
+- **Frequentie:** {{frequentie}}
+- **Dag & tijd:** {{dag}} om {{tijd}}
+- **Startdatum:** {{startdatum}}
+- **Prijs per les:** {{prijs_per_les}}
+- **Betaalmethode:** {{betaalmethode}}
+
+In het leerlingportaal vind je je agenda, facturen en overige informatie over je lessen.
+
+Veel muziekplezier!
+Popschool Harderwijk'
 ) ON CONFLICT (event_key) DO NOTHING;
 
-INSERT INTO public.email_templates (event_key, subject, body_html, is_enabled) VALUES (
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'agreement_created_teacher',
 	'Nieuwe lesovereenkomst: {{leerling_naam}}',
-	'<p>Hoi {{docent_naam}},</p>
-<p>Er is een nieuwe lesovereenkomst aan je gekoppeld:</p>
-<ul>
-  <li><strong>Leerling:</strong> {{leerling_naam}}</li>
-  <li><strong>Lessoort:</strong> {{les_type}}</li>
-  <li><strong>Frequentie:</strong> {{frequentie}}</li>
-  <li><strong>Dag &amp; tijd:</strong> {{dag}} om {{tijd}}</li>
-  <li><strong>Startdatum:</strong> {{startdatum}}</li>
-  <li><strong>Prijs per les:</strong> {{prijs_per_les}}</li>
-  <li><strong>Betaalmethode:</strong> {{betaalmethode}}</li>
-</ul>
-<p>De lessen verschijnen automatisch in je agenda.</p>
-<p>Groet,<br/>Popschool Harderwijk</p>',
-	true
+	'Hoi {{docent_naam}},
+
+Er is een nieuwe lesovereenkomst aan je gekoppeld:
+
+- **Leerling:** {{leerling_naam}}
+- **Lessoort:** {{les_type}}
+- **Frequentie:** {{frequentie}}
+- **Dag & tijd:** {{dag}} om {{tijd}}
+- **Startdatum:** {{startdatum}}
+- **Prijs per les:** {{prijs_per_les}}
+- **Betaalmethode:** {{betaalmethode}}
+
+De lessen verschijnen automatisch in je agenda.
+
+Groet,
+Popschool Harderwijk'
 ) ON CONFLICT (event_key) DO NOTHING;

@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildEmailTemplateRowsMap,
-	getEmailTemplateStatusClassName,
-	getEmailTemplateStatusLabel,
 	mergeSavedEmailTemplateRow,
 	renderEmailTemplatePreview,
-	resolveEmailTemplateTestResult,
-	toggleEmailTemplateActiveKey,
 } from '../../../src/lib/email/emailTemplateManagerHelpers';
 
 describe('renderEmailTemplatePreview', () => {
@@ -23,31 +19,11 @@ describe('buildEmailTemplateRowsMap', () => {
 	it('indexes rows by event key', () => {
 		expect(
 			buildEmailTemplateRowsMap([
-				{ event_key: 'signup', subject: 'Welkom', body_html: '<p>Hi</p>', is_enabled: true },
+				{ event_key: 'signup', subject: 'Welkom', body_markdown: 'Hi' },
 			]),
 		).toEqual({
-			signup: { event_key: 'signup', subject: 'Welkom', body_html: '<p>Hi</p>', is_enabled: true },
+			signup: { event_key: 'signup', subject: 'Welkom', body_markdown: 'Hi' },
 		});
-	});
-});
-
-describe('toggleEmailTemplateActiveKey', () => {
-	it('opens the selected event key', () => {
-		expect(toggleEmailTemplateActiveKey(null, 'signup')).toBe('signup');
-	});
-
-	it('closes the active event key when clicked again', () => {
-		expect(toggleEmailTemplateActiveKey('signup', 'signup')).toBeNull();
-	});
-});
-
-describe('resolveEmailTemplateTestResult', () => {
-	it('returns skipped when the function response was skipped', () => {
-		expect(resolveEmailTemplateTestResult({ skipped: true })).toBe('skipped');
-	});
-
-	it('returns sent when the function response was not skipped', () => {
-		expect(resolveEmailTemplateTestResult({ skipped: false })).toBe('sent');
 	});
 });
 
@@ -55,26 +31,13 @@ describe('mergeSavedEmailTemplateRow', () => {
 	it('merges editor state into the existing row', () => {
 		expect(
 			mergeSavedEmailTemplateRow(
-				{ event_key: 'signup', subject: 'Old', body_html: '<p>Old</p>', is_enabled: false },
-				{ subject: 'New', body_html: '<p>New</p>', is_enabled: true },
+				{ event_key: 'signup', subject: 'Old', body_markdown: 'Old' },
+				{ subject: 'New', body_markdown: 'New' },
 			),
 		).toEqual({
 			event_key: 'signup',
 			subject: 'New',
-			body_html: '<p>New</p>',
-			is_enabled: true,
+			body_markdown: 'New',
 		});
-	});
-});
-
-describe('getEmailTemplateStatusLabel', () => {
-	it('returns the active label for enabled templates', () => {
-		expect(getEmailTemplateStatusLabel(true)).toBe('Actief');
-	});
-});
-
-describe('getEmailTemplateStatusClassName', () => {
-	it('returns the muted class for disabled templates', () => {
-		expect(getEmailTemplateStatusClassName(false)).toBe('bg-muted text-muted-foreground');
 	});
 });

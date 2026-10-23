@@ -102,7 +102,7 @@ const sections: ManualSection[] = [
 		details: [
 			'Plannen: open een aanmelding en klik "Proefles". Kies uit beschikbare slots (vandaag t/m +30 dagen, 30 min per slot) met daarbij de docent.',
 			'Beschikbaarheid: het systeem houdt rekening met de beschikbaarheid van docenten die de gekozen lessoort geven, al ingeplande lessen, bestaande proeflessen én lesvrije periodes.',
-			'Mailbevestiging: leerling/aanmelder en docent ontvangen automatisch een mail (templates trial_scheduled en trial_scheduled_teacher, aanpasbaar via E-mailtemplates).',
+			'Mailbevestiging: leerling/aanmelder en docent ontvangen automatisch een mail (templates trial_scheduled en trial_scheduled_teacher, aanpasbaar via Instellingen → E-mailtemplates).',
 			'Vervolg: na de proefles kan staff "Verwerken" tot lesovereenkomst, of "Afwijzen".',
 			'Mijn proefles: leerlingen zien hun ingeplande proefles via "Mijn proefles" in het portal.',
 		],
@@ -260,10 +260,10 @@ const sections: ManualSection[] = [
 		title: NAV_LABELS.emailTemplates,
 		description: 'Pas de teksten van automatische e-mails aan zonder code te wijzigen.',
 		details: [
-			'Templates: o.a. proefles ingepland (leerling/docent), betaaluitnodiging, welkomstmail en mandaatbevestiging.',
-			'Variabelen: gebruik placeholders zoals {{student_name}}, {{lesson_date}}, {{teacher_name}} — beschikbare variabelen staan per template vermeld.',
-			'Onderwerp & body: pas onderwerp en HTML-inhoud apart aan. Een voorbeeldweergave toont het resultaat.',
-			'Reset: knop "Herstel default" zet een template terug naar de standaardversie.',
+			'Beheer: Instellingen → E-mailtemplates (alleen Site Admin mag opslaan).',
+			'Templates: o.a. aanmelding bevestigd, proefles ingepland (leerling/docent) en lesovereenkomst aangemaakt.',
+			'Variabelen: placeholders zoals {{leerling_naam}} — beschikbare variabelen staan per template vermeld.',
+			'Onderwerp & body: pas onderwerp en Markdown-inhoud aan; een voorvertoning toont het resultaat. Testmail versturen vanuit de bewerkingsmodal.',
 		],
 	},
 	{

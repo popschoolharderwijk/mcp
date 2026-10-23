@@ -3,7 +3,6 @@ import type { AccountingSettings } from '../../../src/lib/accounting/types';
 import {
 	buildAccountingSettingsUpdatePayload,
 	clampInvoicePaymentTermDays,
-	clampSchoolYearStartMonth,
 	clampSepaCollectionDay,
 	resolveAccountingSettingsSaveErrorMessage,
 	resolveAccountingSettingsSaveSuccessMessage,
@@ -21,7 +20,6 @@ const sampleSettings = {
 	vat_code_21: 'VH',
 	vat_code_exempt: '0',
 	currency: 'EUR',
-	school_year_start_month: 9,
 	description_template: 'Lesgeld {periode}',
 	payment_provider: 'sepa',
 	sepa_creditor_name: 'Popschool',
@@ -60,7 +58,6 @@ describe('buildAccountingSettingsUpdatePayload', () => {
 			vat_code_21: 'VH',
 			vat_code_exempt: '0',
 			currency: 'EUR',
-			school_year_start_month: 9,
 			description_template: 'Lesgeld {periode}',
 			payment_provider: 'sepa',
 			sepa_creditor_name: 'Popschool',
@@ -92,14 +89,6 @@ describe('clampSepaCollectionDay', () => {
 		expect(clampSepaCollectionDay(40)).toBe(28);
 		expect(clampSepaCollectionDay(0)).toBe(27);
 		expect(clampSepaCollectionDay(15)).toBe(15);
-	});
-});
-
-describe('clampSchoolYearStartMonth', () => {
-	it('clamps values to valid month range', () => {
-		expect(clampSchoolYearStartMonth(15)).toBe(12);
-		expect(clampSchoolYearStartMonth(0)).toBe(1);
-		expect(clampSchoolYearStartMonth(9)).toBe(9);
 	});
 });
 

@@ -14,6 +14,7 @@ describe('parseAppSettingsTab', () => {
 	it('accepts known tabs', () => {
 		expect(parseAppSettingsTab('no-lesson-periods')).toBe('no-lesson-periods');
 		expect(parseAppSettingsTab('agenda')).toBe('agenda');
+		expect(parseAppSettingsTab('email-templates')).toBe('email-templates');
 	});
 });
 

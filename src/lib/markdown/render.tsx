@@ -40,9 +40,15 @@ export function renderMarkdown(source: string): ReactNode {
 			);
 		}
 		const key = `p-${blockIndex++}`;
+		const lines = block.text.split('\n');
 		return (
 			<p key={key} className="leading-relaxed">
-				{parseMarkdownInline(block.text, `p${blockIndex}`)}
+				{lines.map((line, lineIndex) => (
+					<span key={`${key}-l-${lineIndex}`}>
+						{lineIndex > 0 ? <br /> : null}
+						{parseMarkdownInline(line, `${key}-l${lineIndex}`)}
+					</span>
+				))}
 			</p>
 		);
 	});

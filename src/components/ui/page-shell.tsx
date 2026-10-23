@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { type PageContentWidth, wrapPageContentWidth } from '@/lib/layout/pageContentWidthHelpers';
 import { cn } from '@/lib/utils';
+
+export type { PageContentWidth };
 
 export interface PageShellProps {
 	title: ReactNode;
@@ -14,10 +17,9 @@ export interface PageShellProps {
 	className?: string;
 	contentClassName?: string;
 	/**
-	 * `half` constrains the whole page card (title + body) to half the container
-	 * on large screens. Default `full`.
+	 * Tailwind fraction of the container on large screens. Default `full`.
 	 */
-	width?: 'full' | 'half';
+	width?: PageContentWidth;
 }
 
 /** Body placeholder matching typical PageShell content (search + table/cards). */
@@ -81,13 +83,5 @@ export function PageShell({
 		</Card>
 	);
 
-	if (width === 'half') {
-		return (
-			<div className="grid gap-6 lg:grid-cols-2">
-				<div className="min-w-0">{card}</div>
-			</div>
-		);
-	}
-
-	return card;
+	return wrapPageContentWidth(width, card);
 }

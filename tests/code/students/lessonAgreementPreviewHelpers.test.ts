@@ -7,6 +7,7 @@ import {
 
 const preview: AgreementBillingPreview = {
 	schoolYearLabel: '2026-2027',
+	monthlyBillingCaption: 'Maandbedrag (× 11, augustus geen incasso)',
 	tariff: 'youth',
 	pricePerLessonCents: 2000,
 	lessonsCount: 36,

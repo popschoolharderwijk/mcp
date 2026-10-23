@@ -4,7 +4,6 @@
 // Auth: requires JWT (from a logged-in user) OR service-role (for server-side triggers
 // from other edge functions). Anonymous calls are rejected.
 //
-// When is_enabled=false: silently skip with { skipped: true } — no error.
 // When template is missing: 404. On Resend error: 502 with message.
 //
 // Body: { event_key: string, to: string, vars?: Record<string, string> }

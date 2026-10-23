@@ -28,7 +28,7 @@ function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Stud
 
 	return (
 		<>
-			<PageTabsContent value="profile" panelWidth="half">
+			<PageTabsContent value="profile" panelWidth="1/2">
 				<StudentProfileSection
 					vm={vm}
 					saving={saving}
@@ -36,10 +36,10 @@ function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Stud
 					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
 				/>
 			</PageTabsContent>
-			<PageTabsContent value="address" panelWidth="half">
+			<PageTabsContent value="address" panelWidth="1/2">
 				<StudentAddressSection vm={vm} saving={saving} onSave={() => void runSave('address')} />
 			</PageTabsContent>
-			<PageTabsContent value="parent" panelWidth="half">
+			<PageTabsContent value="parent" panelWidth="1/2">
 				<StudentParentSection vm={vm} saving={saving} onSave={() => void runSave('parent')} />
 			</PageTabsContent>
 		</>
@@ -59,7 +59,7 @@ function StudentInfoSharedTabs({
 }) {
 	return (
 		<>
-			<PageTabsContent value="agreements" panelWidth="half">
+			<PageTabsContent value="agreements" panelWidth="1/2">
 				<StudentAgreementsCard
 					agreements={agreements}
 					description="Alle overeenkomsten van deze leerling"
@@ -68,7 +68,7 @@ function StudentInfoSharedTabs({
 				/>
 			</PageTabsContent>
 
-			<PageTabsContent value="signups" panelWidth="half">
+			<PageTabsContent value="signups" panelWidth="1/2">
 				<StudentSignupRequestsCard
 					requests={signupRequests}
 					description="Aanmeldingen gekoppeld aan dit e-mailadres"

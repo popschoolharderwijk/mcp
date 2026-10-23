@@ -1,44 +1,50 @@
-import { useEffect, useState } from 'react';
-import { LuChevronDown, LuChevronRight } from 'react-icons/lu';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TemplateEditorForm } from '@/components/settings/TemplateEditorForm';
 import { useTemplateEditor } from '@/components/settings/useTemplateEditor';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DataTable } from '@/components/ui/data-table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { SectionSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
-import {
-	buildEmailTemplateRowsMap,
-	type EmailTemplateRow,
-	getEmailTemplateStatusClassName,
-	getEmailTemplateStatusLabel,
-	toggleEmailTemplateActiveKey,
-} from '@/lib/email/emailTemplateManagerHelpers';
+import { buildEmailTemplateRowsMap, type EmailTemplateRow } from '@/lib/email/emailTemplateManagerHelpers';
+import { buildEmailTemplatesColumns, type EmailTemplateTableRow } from '@/lib/email/emailTemplatesTableColumns';
 import { type EmailEventDefinition, listEmailEvents } from '@/lib/email/events';
 
-function TemplateEditorBody({
+const EMAIL_TEMPLATE_COLUMNS = buildEmailTemplatesColumns();
+
+interface EmailTemplatesManagerProps {
+	canEdit: boolean;
+}
+
+function TemplateEditorDialogBody({
 	event,
 	row,
+	canEdit,
 	onSaved,
+	onCancel,
 }: {
 	event: EmailEventDefinition;
 	row: EmailTemplateRow;
+	canEdit: boolean;
 	onSaved: (r: EmailTemplateRow) => void;
+	onCancel: () => void;
 }) {
-	const vm = useTemplateEditor({ event, row, onSaved });
+	const vm = useTemplateEditor({ event, row, onSaved, onCancel, canEdit });
 	return <TemplateEditorForm vm={vm} />;
 }
 
-export function EmailTemplatesManager() {
+export function EmailTemplatesManager({ canEdit }: EmailTemplatesManagerProps) {
 	const events = listEmailEvents();
 	const [rows, setRows] = useState<Record<string, EmailTemplateRow> | null>(null);
-	const [activeKey, setActiveKey] = useState<string | null>(null);
+	const [searchQuery, setSearchQuery] = useState('');
+	const [editingEventKey, setEditingEventKey] = useState<string | null>(null);
 
 	useEffect(() => {
 		void (async () => {
 			const { data, error } = await supabase
 				.from('email_templates')
-				.select('event_key, subject, body_html, is_enabled');
+				.select('event_key, subject, body_markdown');
 			if (error) {
 				toast.error('Kon templates niet laden');
 				console.error(error);
@@ -48,81 +54,77 @@ export function EmailTemplatesManager() {
 		})();
 	}, []);
 
+	const tableRows: EmailTemplateTableRow[] = useMemo(
+		() =>
+			events.map((event) => {
+				const row = rows?.[event.key];
+				return {
+					event,
+					subject: row?.subject ?? '',
+					hasRow: Boolean(row),
+				};
+			}),
+		[events, rows],
+	);
+
+	const editingEvent = editingEventKey ? events.find((e) => e.key === editingEventKey) : undefined;
+	const editingRow = editingEventKey && rows ? rows[editingEventKey] : undefined;
+
 	if (!rows) {
-		return (
-			<PageShell
-				title={NAV_LABELS.emailTemplates}
-				description="Beheer de inhoud van automatische e-mails"
-				loading
-			/>
-		);
+		return <SectionSkeleton />;
 	}
 
 	return (
-		<PageShell title={NAV_LABELS.emailTemplates} description="Beheer de inhoud van automatische e-mails">
-			<div className="space-y-3">
-				{events.map((event) => {
-					const row = rows[event.key];
-					const isOpen = activeKey === event.key;
+		<>
+			<Card>
+				<CardHeader>
+					<CardTitle>E-mailtemplates</CardTitle>
+					<CardDescription>Beheer de inhoud van automatische e-mails (Markdown).</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<DataTable
+						data={tableRows}
+						columns={EMAIL_TEMPLATE_COLUMNS}
+						searchQuery={searchQuery}
+						onSearchChange={setSearchQuery}
+						searchFields={[(row) => row.event.label, (row) => row.event.description]}
+						getRowKey={(row) => row.event.key}
+						emptyMessage="Geen e-mailtemplates gevonden."
+						initialSortColumn="label"
+						initialSortDirection="asc"
+						paginated={false}
+						rowActions={{
+							onEdit: (row) => {
+								if (row.hasRow) setEditingEventKey(row.event.key);
+							},
+						}}
+					/>
+				</CardContent>
+			</Card>
 
-					if (!row) {
-						return (
-							<Card key={event.key}>
-								<CardHeader>
-									<CardTitle>{event.label}</CardTitle>
-									<CardDescription>
-										Geen template-rij in de database voor <code>{event.key}</code>. Voeg deze toe
-										via een migratie.
-									</CardDescription>
-								</CardHeader>
-							</Card>
-						);
-					}
-
-					return (
-						<Card key={event.key}>
-							<button
-								type="button"
-								onClick={() => setActiveKey(toggleEmailTemplateActiveKey(activeKey, event.key))}
-								className="w-full text-left"
-								aria-expanded={isOpen}
-							>
-								<CardHeader className="hover:bg-accent transition-colors rounded-t-lg">
-									<div className="flex items-start justify-between gap-4">
-										<div className="flex items-start gap-3 min-w-0">
-											{isOpen ? (
-												<LuChevronDown className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
-											) : (
-												<LuChevronRight className="h-5 w-5 mt-0.5 shrink-0 text-muted-foreground" />
-											)}
-											<div className="min-w-0">
-												<CardTitle>{event.label}</CardTitle>
-												<CardDescription>{event.description}</CardDescription>
-											</div>
-										</div>
-										<span
-											className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${getEmailTemplateStatusClassName(row.is_enabled)}`}
-										>
-											{getEmailTemplateStatusLabel(row.is_enabled)}
-										</span>
-									</div>
-								</CardHeader>
-							</button>
-							{isOpen && (
-								<div className="border-t px-6 py-4">
-									<TemplateEditorBody
-										event={event}
-										row={row}
-										onSaved={(saved) =>
-											setRows((prev) => (prev ? { ...prev, [event.key]: saved } : prev))
-										}
-									/>
-								</div>
-							)}
-						</Card>
-					);
-				})}
-			</div>
-		</PageShell>
+			<Dialog
+				open={Boolean(editingEvent && editingRow)}
+				onOpenChange={(open) => {
+					if (!open) setEditingEventKey(null);
+				}}
+			>
+				<DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>{editingEvent?.label ?? 'E-mailtemplate'}</DialogTitle>
+					</DialogHeader>
+					{editingEvent && editingRow && (
+						<TemplateEditorDialogBody
+							event={editingEvent}
+							row={editingRow}
+							canEdit={canEdit}
+							onCancel={() => setEditingEventKey(null)}
+							onSaved={(saved) => {
+								setRows((prev) => (prev ? { ...prev, [saved.event_key]: saved } : prev));
+							}}
+						/>
+					)}
+				</DialogContent>
+			</Dialog>
+		</>
 	);
 }

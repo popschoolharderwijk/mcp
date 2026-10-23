@@ -5,11 +5,8 @@ import { useFormCrudDialogActions, useFormCrudDialogState } from '@/hooks/useFor
 import { supabase } from '@/integrations/supabase/client';
 import { runAnnouncementImageUpload } from '@/lib/settings/announcementsImageUploadHelpers';
 import { runAnnouncementSave } from '@/lib/settings/announcementsManagerControllerHelpers';
-import {
-	audienceFromFormFlags,
-	insertTextAtCursor,
-	isAnnouncementFormValid,
-} from '@/lib/settings/announcementsManagerHelpers';
+import { audienceFromFormFlags, isAnnouncementFormValid } from '@/lib/settings/announcementsManagerHelpers';
+import { insertTextAtCursor } from '@/lib/text/insertTextAtCursorHelpers';
 
 interface AnnouncementFormState {
 	title: string;

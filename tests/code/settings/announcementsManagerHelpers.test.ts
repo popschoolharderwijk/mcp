@@ -4,11 +4,9 @@ import {
 	audienceLabel,
 	buildAnnouncementImagePath,
 	buildAnnouncementSavePayload,
-	insertTextAtCursor,
 	isAnnouncementFormValid,
 	isAnnouncementImageFile,
 } from '../../../src/lib/settings/announcementsManagerHelpers';
-
 describe('audienceLabel', () => {
 	it('joins audience labels', () => {
 		expect(audienceLabel(['teachers', 'students'])).toBe('Docenten + Leerlingen');
@@ -37,12 +35,6 @@ describe('buildAnnouncementSavePayload', () => {
 			audience: ['teachers'],
 			published_at: '2026-01-01T00:00:00.000Z',
 		});
-	});
-});
-
-describe('insertTextAtCursor', () => {
-	it('inserts snippet at cursor position', () => {
-		expect(insertTextAtCursor('hello world', 5, 5, ' beautiful')).toBe('hello beautiful world');
 	});
 });
 

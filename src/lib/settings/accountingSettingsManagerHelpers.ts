@@ -13,7 +13,6 @@ export function buildAccountingSettingsUpdatePayload(form: AccountingSettings) {
 		vat_code_21: form.vat_code_21,
 		vat_code_exempt: form.vat_code_exempt,
 		currency: form.currency,
-		school_year_start_month: form.school_year_start_month,
 		description_template: form.description_template,
 		payment_provider: form.payment_provider,
 		sepa_creditor_name: form.sepa_creditor_name,
@@ -41,10 +40,6 @@ export function buildAccountingSettingsUpdatePayload(form: AccountingSettings) {
 
 export function clampSepaCollectionDay(value: number): number {
 	return Math.min(28, Math.max(1, value || 27));
-}
-
-export function clampSchoolYearStartMonth(value: number): number {
-	return Math.min(12, Math.max(1, value || 1));
 }
 
 export function clampInvoicePaymentTermDays(value: number): number {

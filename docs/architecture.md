@@ -47,7 +47,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `agenda_events` | Agenda items (manual, lesson, or project). Contains `source_type` / `source_id`, start/end, recurring. |
 | `agenda_participants` | Links participants (`auth.users`) to agenda events. |
 | `agenda_event_deviations` | Deviations on recurring events (reschedule, cancel, including `cancellation_type`). |
-| `email_templates` | App-level transactional mail templates (`event_key`, `subject`, `body_html`, `is_enabled`). Managed via the Settings UI. |
+| `email_templates` | App-level transactional mail templates (`event_key`, `subject`, `body_markdown`). Managed via Instellingen → E-mailtemplates (`site_admin` writes). |
 | `stripe_customers` | 1:1 mapping `auth.users.id` ↔ `stripe_customer_id`. |
 | `subscriptions` | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`). |
 | `subscription_invoices` | Mirror of Stripe Invoices (amount, status, hosted URL, period). |

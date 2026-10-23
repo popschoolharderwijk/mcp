@@ -1,14 +1,12 @@
 export interface EmailTemplateRow {
 	event_key: string;
 	subject: string;
-	body_html: string;
-	is_enabled: boolean;
+	body_markdown: string;
 }
 
 export interface EmailTemplateEditorState {
 	subject: string;
-	body_html: string;
-	is_enabled: boolean;
+	body_markdown: string;
 }
 
 export function renderEmailTemplatePreview(template: string, vars: Record<string, string>): string {
@@ -26,27 +24,10 @@ export function buildEmailTemplateRowsMap(rows: EmailTemplateRow[]): Record<stri
 	return map;
 }
 
-export function toggleEmailTemplateActiveKey(activeKey: string | null, eventKey: string): string | null {
-	return activeKey === eventKey ? null : eventKey;
-}
-
-export function resolveEmailTemplateTestResult(data: { skipped?: boolean } | null): 'skipped' | 'sent' {
-	return data?.skipped ? 'skipped' : 'sent';
-}
-
 export function mergeSavedEmailTemplateRow(row: EmailTemplateRow, editor: EmailTemplateEditorState): EmailTemplateRow {
 	return {
 		...row,
 		subject: editor.subject,
-		body_html: editor.body_html,
-		is_enabled: editor.is_enabled,
+		body_markdown: editor.body_markdown,
 	};
-}
-
-export function getEmailTemplateStatusLabel(isEnabled: boolean): string {
-	return isEnabled ? 'Actief' : 'Uitgeschakeld';
-}
-
-export function getEmailTemplateStatusClassName(isEnabled: boolean): string {
-	return isEnabled ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground';
 }

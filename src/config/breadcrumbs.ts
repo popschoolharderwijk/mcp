@@ -86,10 +86,6 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/mandates', items: [{ label: NAV_LABELS.mandates, href: '/mandates' }] },
 	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
 	{
-		pattern: '/email-templates',
-		items: [{ label: NAV_LABELS.emailTemplates, href: '/email-templates' }],
-	},
-	{
 		pattern: '/announcements',
 		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],
 	},

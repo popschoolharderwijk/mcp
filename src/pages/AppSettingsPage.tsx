@@ -38,9 +38,9 @@ export function AppSettingsPage({ tabParam, canEdit }: AppSettingsPageProps) {
 	return (
 		<PageShell
 			title={NAV_LABELS.settings}
-			description="Schooljaar, lesvrije periodes, agenda, tarieven en overige siteconfiguratie"
+			description="Schooljaar, lesvrije periodes, agenda, tarieven, e-mailtemplates en overige siteconfiguratie"
 			loading={loading}
-			width="half"
+			width="3/4"
 		>
 			<AppSettingsTabPanels
 				settings={settings}

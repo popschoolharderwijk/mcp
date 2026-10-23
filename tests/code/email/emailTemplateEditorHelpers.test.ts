@@ -7,13 +7,11 @@ describe('buildEmailTemplateEditorStateFromRow', () => {
 			buildEmailTemplateEditorStateFromRow({
 				event_key: 'signup',
 				subject: 'Welkom',
-				body_html: '<p>Hi</p>',
-				is_enabled: true,
+				body_markdown: 'Hi **there**',
 			}),
 		).toEqual({
 			subject: 'Welkom',
-			body_html: '<p>Hi</p>',
-			is_enabled: true,
+			body_markdown: 'Hi **there**',
 		});
 	});
 });

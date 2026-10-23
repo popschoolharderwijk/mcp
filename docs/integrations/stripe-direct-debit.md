@@ -159,7 +159,7 @@ Stripe test cards / iDEAL simulator: see [Stripe testing docs](https://stripe.co
 ## 11. Related features
 
 - **Reporting** — `AccountingReport.tsx` + `get_hours_report()` (see `src/pages/AccountingReport.tsx` and migration `20260604113315`) give a per-teacher / per-student breakdown with VAT per lesson date. Source data: agenda + `accounting_settings`.
-- **App mail templates** — all direct-debit related mail goes through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Settings → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
+- **App mail templates** — all direct-debit related mail goes through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Instellingen → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
 - **Cancellations** — `cancellation_type` (`'student' | 'teacher'`) determines whether a cancelled lesson counts in the calculation. See memory `mem://logic/lesson-cancellation-requirements`.
 
 ## 12. Known limitations / TODO

@@ -5,11 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { AccountingSettings } from '@/lib/accounting/types';
-import {
-	clampInvoicePaymentTermDays,
-	clampSchoolYearStartMonth,
-	clampSepaCollectionDay,
-} from '@/lib/settings/accountingSettingsManagerHelpers';
+import { clampInvoicePaymentTermDays, clampSepaCollectionDay } from '@/lib/settings/accountingSettingsManagerHelpers';
 import { formatVatCodeFieldLabel, formatVatPayableAccountLabel } from '@/lib/settings/vatLabelHelpers';
 
 type AccountingSettingsFieldProps = {
@@ -222,20 +218,6 @@ export function AccountingSettingsTaxCard({ form, canEdit, update }: AccountingS
 					fieldKey="currency"
 					placeholder="EUR"
 				/>
-				<div className="space-y-1.5">
-					<Label htmlFor="acc-month">Boekjaar startmaand</Label>
-					<Input
-						id="acc-month"
-						type="number"
-						min={1}
-						max={12}
-						disabled={!canEdit}
-						value={form.school_year_start_month}
-						onChange={(e) =>
-							update('school_year_start_month', clampSchoolYearStartMonth(Number(e.target.value)))
-						}
-					/>
-				</div>
 			</CardContent>
 		</Card>
 	);
