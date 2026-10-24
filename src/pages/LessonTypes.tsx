@@ -3,8 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { LessonTypesDeleteDialog } from '@/components/lesson-types/LessonTypesPageParts';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import { useLessonTypesPageController } from '@/hooks/useLessonTypesPageController';
 
@@ -21,9 +20,8 @@ export default function LessonTypes() {
 
 	return (
 		<div>
-			<PageShell
-				title={NAV_LABELS.lessonTypes}
-				description={`Beheer alle ${NAV_LABELS.lessonTypes.toLowerCase()} en hun configuratie`}
+			<NavPageShell
+				item="lessonTypes"
 				actions={
 					<Button onClick={controller.handleCreate}>
 						<LuPlus className="mr-2 h-4 w-4" />
@@ -51,7 +49,7 @@ export default function LessonTypes() {
 						onDelete: controller.handleDelete,
 					}}
 				/>
-			</PageShell>
+			</NavPageShell>
 
 			<LessonTypesDeleteDialog
 				deleteDialog={controller.deleteDialog}

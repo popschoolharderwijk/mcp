@@ -15,9 +15,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { PageShell } from '@/components/ui/page-shell';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { NAV_LABELS } from '@/config/nav-labels';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeacherAvailability } from '@/hooks/useTeacherAvailability';
 import { DEFAULT_END_TIME, DEFAULT_START_TIME } from '@/lib/availability';
@@ -124,9 +123,8 @@ export default function MyAvailability() {
 
 	return (
 		<>
-			<PageShell
-				title={NAV_LABELS.myAvailability}
-				description="Beheer je beschikbare dagen en tijden voor het plannen van lessen"
+			<NavPageShell
+				item="myAvailability"
 				loading={pageGate === 'auth-loading' || loading}
 				actions={
 					<Button onClick={() => setAddDialogOpen(true)}>
@@ -142,7 +140,7 @@ export default function MyAvailability() {
 						<MyAvailabilitySlotRow avail={avail} deletingId={deletingId} onDelete={handleDelete} />
 					)}
 				/>
-			</PageShell>
+			</NavPageShell>
 
 			<Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
 				<DialogContent>

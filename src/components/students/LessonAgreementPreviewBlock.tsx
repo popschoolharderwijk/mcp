@@ -35,7 +35,7 @@ function LessonAgreementPreviewContent({ preview }: { preview: AgreementBillingP
 				<p className="font-medium">{formatAgreementCents(preview.yearlyCents)}</p>
 			</div>
 			<div className="sm:col-span-2">
-				<p className="text-xs font-medium text-muted-foreground">Maandbedrag (× 11, augustus geen incasso)</p>
+				<p className="text-xs font-medium text-muted-foreground">{preview.monthlyBillingCaption}</p>
 				<p className="font-semibold text-base">
 					{formatAgreementCents(preview.monthlyCents)}
 					{preview.leftoverCents > 0 && (

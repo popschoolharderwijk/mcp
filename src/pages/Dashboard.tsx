@@ -6,7 +6,7 @@ import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { StatsGrid } from '@/components/dashboard/StatsGrid';
 import { TeacherAvailability } from '@/components/dashboard/TeacherAvailability';
 import { StudentAgreementsCard } from '@/components/students/StudentProfileCards';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_DESCRIPTIONS, NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,7 +129,7 @@ function StudentAgreementsPanel({
 	return (
 		<StudentAgreementsCard
 			agreements={agreements}
-			description="Je lessen"
+			description={NAV_DESCRIPTIONS.dashboard}
 			emptyMessage="Je hebt nog geen overeenkomsten."
 			studentUserId={userId}
 		/>

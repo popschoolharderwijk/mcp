@@ -18,7 +18,6 @@ import Dashboard from './pages/Dashboard';
 import DirectDebit from './pages/DirectDebit';
 import DirectDebitBatchDetail from './pages/DirectDebitBatchDetail';
 import DirectDebitStart from './pages/DirectDebitStart';
-import EmailTemplates from './pages/EmailTemplates';
 import Invoices from './pages/Invoices';
 import LessonGroups from './pages/LessonGroups';
 import LessonGroupWizard from './pages/LessonGroupWizard';
@@ -89,7 +88,6 @@ const App = () => (
 
 						<Route path="/settings" element={<AppSettings />} />
 						<Route path="/settings/:tab" element={<AppSettings />} />
-						<Route path="/email-templates" element={<EmailTemplates />} />
 						<Route path="/account" element={<Account defaultTab="profile" />} />
 						<Route path="/account/profile" element={<Account defaultTab="profile" />} />
 						<Route path="/account/appearance" element={<Account defaultTab="appearance" />} />

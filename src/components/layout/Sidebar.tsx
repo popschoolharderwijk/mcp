@@ -6,12 +6,19 @@ import { NAV_GAP } from '@/components/layout/sidebar-config';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useSidebarNavVisibility } from '@/hooks/useSidebarNavVisibility';
-import { resolveSidebarDevToolsContainerClass, resolveSidebarWidthClass } from '@/lib/layout/sidebarShellHelpers';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
 	collapsed?: boolean;
 	onToggle?: () => void;
+}
+
+function sidebarWidthClass(collapsed: boolean): string {
+	return collapsed ? 'w-16' : 'w-64';
+}
+
+function sidebarDevToolsClass(collapsed: boolean): string {
+	return collapsed ? 'flex justify-center p-2' : 'p-2 w-full';
 }
 
 export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
@@ -22,7 +29,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 			<aside
 				className={cn(
 					'relative flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300',
-					resolveSidebarWidthClass(collapsed),
+					sidebarWidthClass(collapsed),
 				)}
 			>
 				<SidebarLogo collapsed={collapsed} onToggle={onToggle} />
@@ -38,7 +45,7 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 					</ScrollArea>
 				</div>
 
-				<div className={cn('border-t border-sidebar-border', resolveSidebarDevToolsContainerClass(collapsed))}>
+				<div className={cn('border-t border-sidebar-border', sidebarDevToolsClass(collapsed))}>
 					<DevTools className={collapsed ? undefined : 'w-full'} collapsed={collapsed} />
 				</div>
 			</aside>

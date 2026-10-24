@@ -13,7 +13,6 @@ export interface AccountingSettings {
 	vat_code_21: string;
 	vat_code_exempt: string;
 	currency: string;
-	school_year_start_month: number;
 	description_template: string;
 	payment_provider: PaymentProvider;
 	sepa_creditor_name: string | null;

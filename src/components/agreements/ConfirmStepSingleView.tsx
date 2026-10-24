@@ -1,6 +1,5 @@
 import { UserDisplay } from '@/components/ui/user-display';
 import type { SlotWithStatus } from '@/lib/agreementSlots';
-import { hasConfirmStepSelectedUser } from '@/lib/agreements/confirmStepSingleViewHelpers';
 import type { WizardLessonTypeInfo, WizardTeacherInfo } from '@/types/lesson-agreements';
 import type { UserOptional } from '@/types/users';
 import { ConfirmStepRow } from './ConfirmStepRow';
@@ -18,6 +17,10 @@ interface ConfirmStepSingleViewProps {
 	endDate: string;
 	selectedTeacher: WizardTeacherInfo | undefined;
 	effectiveSlot: SlotWithStatus | null;
+}
+
+function hasConfirmStepSelectedUser(selectedUser: UserOptional | null): selectedUser is UserOptional {
+	return selectedUser !== null;
 }
 
 export function ConfirmStepSingleView({

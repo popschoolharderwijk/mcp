@@ -6,9 +6,8 @@ import { CrudFormDialogActions } from '@/components/ui/crud-form-dialog-actions'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageShell } from '@/components/ui/page-shell';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { Textarea } from '@/components/ui/textarea';
-import { NAV_LABELS } from '@/config/nav-labels';
 import type { Announcement } from '@/hooks/useAnnouncements';
 import type { useAnnouncementsManager } from '@/hooks/useAnnouncementsManager';
 import { formatDbDateToUi } from '@/lib/date/date-format';
@@ -59,9 +58,8 @@ export function AnnouncementsManagerCard({ state }: { state: AnnouncementsManage
 	const view = resolveAnnouncementsManagerCardView(isSchemaMissing, isLoading, announcements.length);
 
 	return (
-		<PageShell
-			title={NAV_LABELS.announcements}
-			description="Plaats berichten die getoond worden op het dashboard van docenten en/of leerlingen"
+		<NavPageShell
+			item="announcements"
 			actions={
 				<Button onClick={openCreate} size="sm" disabled={isSchemaMissing}>
 					<LuPlus className="mr-2 h-4 w-4" />
@@ -76,7 +74,7 @@ export function AnnouncementsManagerCard({ state }: { state: AnnouncementsManage
 				onEdit={state.openEdit}
 				onDelete={state.setDeleteTarget}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { LessonAgreement } from '../../../src/components/students/LessonAgreementItem';
-import { NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-items';
 import {
 	buildStudentDashboardStatItems,
 	mapStudentDashboardQueryResults,

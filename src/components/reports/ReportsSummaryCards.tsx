@@ -1,6 +1,6 @@
 import { LuClock, LuFolderOpen, LuUsers } from 'react-icons/lu';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { NAV_ICONS } from '@/config/nav-labels';
+import { NAV_ICONS } from '@/config/nav-items';
 import { formatDurationMinutes } from '@/lib/time/time-format';
 import type { ReportSummary } from '@/types/reports';
 

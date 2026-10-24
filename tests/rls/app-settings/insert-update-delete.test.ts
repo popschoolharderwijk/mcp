@@ -94,6 +94,10 @@ describe('RLS: app_settings UPDATE - blocked for non-site-admin', () => {
 	it('student cannot update app setting', async () => {
 		await expectUpdateBlocked(TestUsers.STUDENT_001);
 	});
+
+	it('user without role cannot update app setting', async () => {
+		await expectUpdateBlocked(TestUsers.USER_001);
+	});
 });
 
 describe('RLS: app_settings DELETE - blocked for non-site-admin', () => {
@@ -111,6 +115,10 @@ describe('RLS: app_settings DELETE - blocked for non-site-admin', () => {
 
 	it('student cannot delete app setting', async () => {
 		await expectDeleteBlocked(TestUsers.STUDENT_001);
+	});
+
+	it('user without role cannot delete app setting', async () => {
+		await expectDeleteBlocked(TestUsers.USER_001);
 	});
 });
 

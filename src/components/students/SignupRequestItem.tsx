@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { LuClipboardList } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { resolveSignupRequestBadgeVariant } from '@/lib/signup-requests/signupRequestItemHelpers';
 import { cn } from '@/lib/utils';
 import { type SignupRequestDetail, SignupRequestDialog } from './SignupRequestDialog';
 
@@ -16,6 +15,13 @@ const STATUS_LABEL: Record<SignupRequestDetail['status'], string> = {
 	approved: 'Goedgekeurd',
 	rejected: 'Afgewezen',
 	trial_scheduled: 'Proefles ingepland',
+};
+
+const STATUS_BADGE_VARIANT: Record<SignupRequestDetail['status'], 'default' | 'secondary' | 'outline'> = {
+	pending: 'default',
+	approved: 'secondary',
+	rejected: 'outline',
+	trial_scheduled: 'outline',
 };
 
 export function SignupRequestItem({ request, className }: SignupRequestItemProps) {
@@ -44,7 +50,7 @@ export function SignupRequestItem({ request, className }: SignupRequestItemProps
 									{request.lesson_type_name ?? 'Aanmelding'}
 								</span>
 								<Badge
-									variant={resolveSignupRequestBadgeVariant(request.status)}
+									variant={STATUS_BADGE_VARIANT[request.status]}
 									className="w-fit text-[10px] px-1 py-0"
 								>
 									{STATUS_LABEL[request.status]}

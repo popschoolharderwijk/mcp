@@ -38,3 +38,5 @@ export function formatTrialScheduledTime(scheduledStartTime: string): string {
 }
 
 export type MyTrialViewState = 'auth-loading' | 'unauthenticated' | 'loading' | 'empty' | 'content';
+
+export type MyTrialContentState = Exclude<MyTrialViewState, 'auth-loading' | 'unauthenticated'>;

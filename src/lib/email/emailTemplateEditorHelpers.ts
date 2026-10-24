@@ -4,16 +4,7 @@ import {
 	type EmailTemplateEditorState,
 	type EmailTemplateRow,
 	mergeSavedEmailTemplateRow,
-	resolveEmailTemplateTestResult,
 } from '@/lib/email/emailTemplateManagerHelpers';
-
-export function buildEmailTemplateEditorStateFromRow(row: EmailTemplateRow): EmailTemplateEditorState {
-	return {
-		subject: row.subject,
-		body_html: row.body_html,
-		is_enabled: row.is_enabled,
-	};
-}
 
 export async function saveEmailTemplateForEvent(
 	eventKey: string,
@@ -22,7 +13,10 @@ export async function saveEmailTemplateForEvent(
 ): Promise<EmailTemplateRow | null> {
 	const { error } = await supabase
 		.from('email_templates')
-		.update({ subject: editor.subject, body_html: editor.body_html, is_enabled: editor.is_enabled })
+		.update({
+			subject: editor.subject,
+			body_markdown: editor.body_markdown,
+		})
 		.eq('event_key', eventKey);
 
 	if (error) {
@@ -45,7 +39,7 @@ export async function sendTestEmailForTemplate(
 		return false;
 	}
 
-	const { data, error } = await supabase.functions.invoke('send-template-email', {
+	const { error } = await supabase.functions.invoke('send-template-email', {
 		body: {
 			event_key: eventKey,
 			to: testEmail,
@@ -56,12 +50,6 @@ export async function sendTestEmailForTemplate(
 	if (error) {
 		toast.error('Versturen mislukt');
 		console.error(error);
-		return false;
-	}
-
-	const result = resolveEmailTemplateTestResult(data as { skipped?: boolean } | null);
-	if (result === 'skipped') {
-		toast.warning('Template staat uit — geen mail verstuurd');
 		return false;
 	}
 

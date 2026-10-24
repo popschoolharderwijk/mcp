@@ -6,8 +6,7 @@
 CREATE TABLE public.email_templates (
 	event_key text PRIMARY KEY,
 	subject text NOT NULL,
-	body_html text NOT NULL,
-	is_enabled boolean NOT NULL DEFAULT true,
+	body_markdown text NOT NULL,
 	created_at timestamptz NOT NULL DEFAULT now(),
 	updated_at timestamptz NOT NULL DEFAULT now(),
 	created_by uuid,
@@ -20,16 +19,16 @@ ALTER TABLE public.email_templates FORCE ROW LEVEL SECURITY;
 CREATE POLICY email_templates_select ON public.email_templates
 	FOR SELECT TO authenticated USING (true);
 
-CREATE POLICY email_templates_insert_admin ON public.email_templates
-	FOR INSERT TO authenticated WITH CHECK (is_admin() OR is_site_admin());
+CREATE POLICY email_templates_insert_site_admin ON public.email_templates
+	FOR INSERT TO authenticated WITH CHECK (is_site_admin());
 
-CREATE POLICY email_templates_update_admin ON public.email_templates
+CREATE POLICY email_templates_update_site_admin ON public.email_templates
 	FOR UPDATE TO authenticated
-	USING (is_admin() OR is_site_admin())
-	WITH CHECK (is_admin() OR is_site_admin());
+	USING (is_site_admin())
+	WITH CHECK (is_site_admin());
 
-CREATE POLICY email_templates_delete_admin ON public.email_templates
-	FOR DELETE TO authenticated USING (is_admin() OR is_site_admin());
+CREATE POLICY email_templates_delete_site_admin ON public.email_templates
+	FOR DELETE TO authenticated USING (is_site_admin());
 
 CREATE TRIGGER email_templates_set_audit_fields
 	BEFORE INSERT OR UPDATE ON public.email_templates

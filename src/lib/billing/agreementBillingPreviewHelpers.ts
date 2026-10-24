@@ -1,6 +1,11 @@
 import { pickAgeTariff, pickPriceCents } from '@/lib/billing/ageTariff';
 import { type CalculateYearlyAmountResult, calculateYearlyAmount } from '@/lib/billing/calculateYearlyAmount';
-import { clampToSchoolYear, getSchoolYearForDateString, type SchoolYearBounds } from '@/lib/billing/schoolYear';
+import {
+	clampToSchoolYear,
+	describeMonthlyBillingCaption,
+	getSchoolYearForDateString,
+	type SchoolYearBounds,
+} from '@/lib/billing/schoolYear';
 import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
@@ -23,6 +28,7 @@ export interface AgreementBillingPreview extends CalculateYearlyAmountResult {
 	tariff: 'youth' | 'adult';
 	pricePerLessonCents: number;
 	schoolYearLabel: string;
+	monthlyBillingCaption: string;
 	periodStart: string;
 	periodEnd: string;
 }
@@ -88,6 +94,7 @@ export function computeAgreementBillingPreview(
 			tariff,
 			pricePerLessonCents,
 			schoolYearLabel: `${schoolYear.startYear}/${schoolYear.startYear + 1}`,
+			monthlyBillingCaption: describeMonthlyBillingCaption(schoolYearBounds),
 			periodStart: window.start,
 			periodEnd: window.end,
 		},

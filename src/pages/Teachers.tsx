@@ -1,8 +1,7 @@
 import { Navigate, useNavigate } from 'react-router-dom';
 import { TeachersPageCreateButton, TeachersPageDialogs } from '@/components/teachers/TeachersPageDialogs';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useActiveLessonTypes } from '@/hooks/useActiveLessonTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useListPageTableState } from '@/hooks/useListPageTableState';
@@ -60,11 +59,7 @@ export default function Teachers() {
 
 	return (
 		<div>
-			<PageShell
-				title={NAV_LABELS.teachers}
-				description="Beheer alle docenten en hun profielgegevens"
-				actions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}
-			>
+			<NavPageShell item="teachers" actions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}>
 				<DataTable
 					data={controller.teachers}
 					columns={controller.columns}
@@ -90,7 +85,7 @@ export default function Teachers() {
 						onDelete: controller.handleDelete,
 					}}
 				/>
-			</PageShell>
+			</NavPageShell>
 
 			<TeachersPageDialogs
 				teacherFormDialog={controller.teacherFormDialog}

@@ -3,7 +3,6 @@ import {
 	buildTrialNotificationRecipient,
 	buildTrialSharedVars,
 	buildTrialTeacherName,
-	shouldSendTrialTeacherNotification,
 } from '../../../supabase/functions/schedule-trial-lesson/sendTrialNotificationsHelpers';
 
 describe('buildTrialNotificationRecipient', () => {
@@ -44,15 +43,5 @@ describe('buildTrialTeacherName', () => {
 
 	it('returns docent fallback when name is empty', () => {
 		expect(buildTrialTeacherName(null, null)).toBe('docent');
-	});
-});
-
-describe('shouldSendTrialTeacherNotification', () => {
-	it('returns true when teacher email exists', () => {
-		expect(shouldSendTrialTeacherNotification('teacher@example.com')).toBe(true);
-	});
-
-	it('returns false when teacher email is missing', () => {
-		expect(shouldSendTrialTeacherNotification(null)).toBe(false);
 	});
 });

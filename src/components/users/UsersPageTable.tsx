@@ -1,9 +1,8 @@
 import { LuPlus } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { buildUsersRowActions } from '@/components/users/UsersPageParts';
-import { NAV_LABELS } from '@/config/nav-labels';
 import type { buildUsersColumns, buildUsersQuickFilterGroups, UserWithRole } from '@/lib/users/usersPageHelpers';
 import {
 	resolveUsersTableInitialSortColumn,
@@ -36,9 +35,8 @@ interface UsersPageTableProps {
 
 export function UsersPageTable(props: UsersPageTableProps) {
 	return (
-		<PageShell
-			title={NAV_LABELS.users}
-			description="Beheer alle gebruikers en hun rollen"
+		<NavPageShell
+			item="users"
 			actions={
 				shouldShowUsersCreateButton(props.isAdmin, props.isSiteAdmin) ? (
 					<Button onClick={props.onCreate}>
@@ -70,6 +68,6 @@ export function UsersPageTable(props: UsersPageTableProps) {
 				onSortChange={props.onSortChange}
 				rowActions={props.rowActions}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }

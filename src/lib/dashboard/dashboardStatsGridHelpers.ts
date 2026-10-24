@@ -1,5 +1,5 @@
-import type { NavLabelKey } from '@/config/nav-labels';
-import { NAV_LABELS } from '@/config/nav-labels';
+import type { NavLabelKey } from '@/config/nav-items';
+import { NAV_LABELS } from '@/config/nav-items';
 import type { DashboardStats } from '@/lib/dashboard/dashboardDataHelpers';
 
 export const DASHBOARD_STAT_KEYS = [
@@ -33,18 +33,6 @@ export interface DashboardStatItem {
 export function inactiveCountDescription(inactiveCount: number): string | undefined {
 	if (inactiveCount === 0) return undefined;
 	return `${inactiveCount} inactief`;
-}
-
-export function dashboardStatsGridClass(count: number): string {
-	if (count <= 3) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3';
-	if (count === 4) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-4';
-	return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
-}
-
-const STAT_SKELETON_KEYS = ['one', 'two', 'three', 'four', 'five', 'six'] as const;
-
-export function dashboardStatSkeletonKeys(count: number): string[] {
-	return STAT_SKELETON_KEYS.slice(0, count);
 }
 
 export function buildDashboardStatItems(stats: DashboardStats): DashboardStatItem[] {

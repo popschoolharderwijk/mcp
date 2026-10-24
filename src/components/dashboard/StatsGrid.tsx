@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NAV_ICONS } from '@/config/nav-labels';
-import {
-	type DashboardStatItem,
-	dashboardStatSkeletonKeys,
-	dashboardStatsGridClass,
-} from '@/lib/dashboard/dashboardStatsGridHelpers';
+import { NAV_ICONS } from '@/config/nav-items';
+import type { DashboardStatItem } from '@/lib/dashboard/dashboardStatsGridHelpers';
+
+const STAT_SKELETON_KEYS = ['one', 'two', 'three', 'four', 'five', 'six'] as const;
+
+function dashboardStatsGridClass(count: number): string {
+	if (count <= 3) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3';
+	if (count === 4) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-4';
+	return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
+}
 
 interface StatsGridProps {
 	items: DashboardStatItem[];
@@ -20,7 +24,7 @@ export function StatsGrid({ items, isLoading = false, skeletonCount }: StatsGrid
 	if (isLoading) {
 		return (
 			<div className={gridClass}>
-				{dashboardStatSkeletonKeys(skeletonCount).map((key) => (
+				{STAT_SKELETON_KEYS.slice(0, skeletonCount).map((key) => (
 					<Card key={key}>
 						<CardContent className="space-y-1 p-3">
 							<div className="flex items-center gap-2">

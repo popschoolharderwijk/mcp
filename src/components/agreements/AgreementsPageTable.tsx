@@ -1,8 +1,7 @@
 import type { NavigateFunction } from 'react-router-dom';
 import { AgreementsPageCreateButton } from '@/components/agreements/AgreementsPageDialogs';
 import { DataTable, type QuickFilterGroup } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { AgreementAction } from '@/lib/agreements/agreementsPageActionHelpers';
 import { AGREEMENT_COLUMNS } from '@/lib/agreements/agreementsTableColumns';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
@@ -43,11 +42,7 @@ export function AgreementsPageTable({
 	runAction,
 }: AgreementsPageTableProps) {
 	return (
-		<PageShell
-			title={NAV_LABELS.agreements}
-			description="Beheer lesovereenkomsten tussen leerlingen en docenten"
-			actions={<AgreementsPageCreateButton navigate={navigate} />}
-		>
+		<NavPageShell item="agreements" actions={<AgreementsPageCreateButton navigate={navigate} />}>
 			<DataTable
 				data={agreements}
 				columns={AGREEMENT_COLUMNS}
@@ -72,6 +67,6 @@ export function AgreementsPageTable({
 					onDelete: (agreement) => runAction({ kind: 'delete', agreement }),
 				}}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }

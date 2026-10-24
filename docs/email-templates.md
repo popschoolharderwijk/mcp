@@ -3,7 +3,7 @@
 The application has **two** layers of email templates:
 
 1. **Supabase Auth emails** (Magic Link / OTP) — managed via `supabase/config.toml` and the Supabase Dashboard. Files in `docs/email-templates/`.
-2. **App-level transactional emails** — stored in the database (`email_templates`) and managed in the app via **Settings → E-mailtemplates** (`EmailTemplatesManager`).
+2. **App-level transactional emails** — stored in the database (`email_templates`) and managed in the app via **Instellingen → E-mailtemplates** (`/settings/email-templates`).
 
 Both use the same SMTP provider (Resend).
 
@@ -36,39 +36,38 @@ The Stripe direct-debit flow uses its own variant with `token_hash` format — s
 
 ## 2. App-level email templates (database-backed)
 
-Manage via the UI: **Settings → E-mailtemplates** (`src/components/settings/EmailTemplatesManager.tsx`).
+Manage via the UI: **Instellingen → E-mailtemplates** (`src/components/settings/EmailTemplatesManager.tsx`).
 
 ### Data model
 
-Table `email_templates` (migration `20260513085233`):
+Table `email_templates` (migration `20260513101733_email_templates.sql`):
 
 | Column | Purpose |
 |--------|---------|
-| `event_key` | Unique event key (e.g. `direct_debit_invite`, `signup_approved`). |
+| `event_key` | Unique event key (e.g. `signup_received`, `trial_scheduled`). |
 | `subject` | Subject line; supports `{{variable}}` interpolation. |
-| `body_html` | HTML body with the same variables. |
-| `is_enabled` | Whether the template is active. Disabled = no mail sent. |
+| `body_markdown` | Markdown body with the same variables (converted to HTML at send time). |
 | `updated_at` | Last changed. |
 
-RLS: only `is_privileged()` (admin/staff) may read/write.
+RLS: authenticated users may **SELECT**. Only `is_site_admin()` may **INSERT / UPDATE / DELETE**.
 
 ### Which events exist
 
-Defined in `supabase/functions/_shared/email-events.ts`. Each entry describes:
+Defined in `supabase/functions/_shared/email-events.ts` (mirrored in `src/lib/email/events.ts`). Each entry describes:
 - `eventKey` — link to `email_templates.event_key`
 - `label` + `description` — shown in the manager
 - `variables` — which placeholders are available
 
-`EmailTemplatesManager` shows each event as a **collapsible** item; content (subject, body, preview, test send) loads only when opened so the overview stays calm.
+`EmailTemplatesManager` shows events in a **DataTable**; clicking a row opens a modal with subject, markdown editor, preview, and test send.
 
 ### Send flow
 
 Edge function `send-template-email` (`supabase/functions/send-template-email/index.ts`):
 
-1. Receives `{ eventKey, to, variables }` (JWT required; privileged or service-role only).
-2. Loads the template from `email_templates` where `event_key = ?` and `is_enabled = true`.
+1. Receives `{ event_key, to, vars }` (JWT required; privileged or service-role only).
+2. Loads the template from `email_templates` where `event_key = ?`.
 3. Fills variables (`{{name}}` → value).
-4. Sends via Resend with `RESEND_API_KEY`.
+4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY_TRANSACTIONAL`.
 
 Other edge functions (`send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
 

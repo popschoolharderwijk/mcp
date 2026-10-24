@@ -4,7 +4,6 @@ import {
 	buildTrialNotificationRecipient,
 	buildTrialSharedVars,
 	buildTrialTeacherName,
-	shouldSendTrialTeacherNotification,
 } from './sendTrialNotificationsHelpers.ts';
 import type { Body } from './types.ts';
 
@@ -44,7 +43,7 @@ export async function sendTrialNotifications(
 		origin,
 	});
 
-	if (!shouldSendTrialTeacherNotification(teacherProfile?.email)) return;
+	if (!teacherProfile?.email) return;
 
 	await sendTemplateEmail({
 		event_key: 'trial_scheduled_teacher',

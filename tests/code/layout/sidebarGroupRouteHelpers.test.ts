@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { isSidebarGroupRouteActive } from '../../../src/components/layout/sidebarGroupRouteHelpers';
 import { buildFinanceNavGroup } from '../../../src/components/layout/sidebarMainNavHelpers';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-items';
 
 describe('isSidebarGroupRouteActive', () => {
 	const teachersItem = {

@@ -5,11 +5,8 @@ import { useFormCrudDialogActions, useFormCrudDialogState } from '@/hooks/useFor
 import { supabase } from '@/integrations/supabase/client';
 import { runAnnouncementImageUpload } from '@/lib/settings/announcementsImageUploadHelpers';
 import { runAnnouncementSave } from '@/lib/settings/announcementsManagerControllerHelpers';
-import {
-	audienceFromFormFlags,
-	insertTextAtCursor,
-	isAnnouncementFormValid,
-} from '@/lib/settings/announcementsManagerHelpers';
+import { audienceFromFormFlags, isAnnouncementFormValid } from '@/lib/settings/announcementsManagerHelpers';
+import { insertSnippetIntoTextarea } from '@/lib/text/insertTextAtCursorHelpers';
 
 interface AnnouncementFormState {
 	title: string;
@@ -59,14 +56,11 @@ export function useAnnouncementsManager() {
 				setForm((f) => ({ ...f, body: f.body + snippet }));
 				return;
 			}
-			const start = el.selectionStart ?? el.value.length;
-			const end = el.selectionEnd ?? el.value.length;
-			const next = insertTextAtCursor(el.value, start, end, snippet);
-			setForm((f) => ({ ...f, body: next }));
+			const { nextValue, caret } = insertSnippetIntoTextarea(el, el.value, snippet);
+			setForm((f) => ({ ...f, body: nextValue }));
 			requestAnimationFrame(() => {
 				el.focus();
-				const pos = start + snippet.length;
-				el.setSelectionRange(pos, pos);
+				el.setSelectionRange(caret, caret);
 			});
 		},
 		[setForm],

@@ -1,8 +1,4 @@
 import { LuBan, LuRepeat, LuTriangleAlert } from 'react-icons/lu';
-import {
-	getCancelledOverlayIconClass,
-	shouldShowChangedOverlayIcon,
-} from '@/components/agenda/agendaEventOverlayIconsHelpers';
 import { getCancellationBanTitle } from '@/lib/agenda/agendaEventDisplay';
 
 interface AgendaEventOverlayIconsProps {
@@ -11,6 +7,14 @@ interface AgendaEventOverlayIconsProps {
 	isTeacherCancelled: boolean;
 	hasTimeOrDateChange: boolean;
 	iconColorClass: string;
+}
+
+function shouldShowChangedOverlayIcon(isCancelled: boolean, hasTimeOrDateChange: boolean): boolean {
+	return hasTimeOrDateChange && !isCancelled;
+}
+
+function getCancelledOverlayIconClass(isTeacherCancelled: boolean, iconColorClass: string): string {
+	return isTeacherCancelled ? 'text-orange-500' : iconColorClass;
 }
 
 export function AgendaEventOverlayIcons({

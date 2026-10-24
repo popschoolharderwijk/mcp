@@ -14,14 +14,12 @@ CREATE TABLE public.accounting_settings (
   vat_code_21 text NOT NULL DEFAULT 'VH',
   vat_code_exempt text NOT NULL DEFAULT '0',
   currency text NOT NULL DEFAULT 'EUR',
-  school_year_start_month integer NOT NULL DEFAULT 8,
   description_template text NOT NULL DEFAULT 'Lesgeld {periode} - {leerling}',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   created_by uuid REFERENCES auth.users(id),
   updated_by uuid REFERENCES auth.users(id),
-  CONSTRAINT accounting_settings_singleton CHECK (id = true),
-  CONSTRAINT accounting_settings_month_valid CHECK (school_year_start_month BETWEEN 1 AND 12)
+  CONSTRAINT accounting_settings_singleton CHECK (id = true)
 );
 
 -- Grants (admin/site_admin via RLS only)

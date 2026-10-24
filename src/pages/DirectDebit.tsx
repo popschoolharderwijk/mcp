@@ -8,8 +8,7 @@ import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAccountingSettings } from '@/hooks/useAccounting';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDbDateToUi } from '@/lib/date/date-format';
@@ -55,9 +54,8 @@ function DirectDebitContent() {
 	}, [load]);
 
 	return (
-		<PageShell
-			title={NAV_LABELS.directDebit}
-			description="Beheer SEPA-incassobatches"
+		<NavPageShell
+			item="directDebit"
 			actions={
 				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 					<DialogTrigger asChild>
@@ -95,7 +93,7 @@ function DirectDebitContent() {
 				initialSortDirection="desc"
 				rowActions={{ onEdit: (batch) => navigate(`/direct-debit/batches/${batch.id}`) }}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }
 

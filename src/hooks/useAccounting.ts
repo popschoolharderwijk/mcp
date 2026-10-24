@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { shouldLoadAccountingReport } from '@/lib/accounting/accountingLoadHelpers';
 import type { AccountingReport, AccountingSettings } from '@/lib/accounting/types';
+
+function shouldLoadAccountingReport(enabled: boolean, startDate: string, endDate: string): boolean {
+	return enabled && startDate.length > 0 && endDate.length > 0;
+}
 
 export function useAccountingSettings() {
 	const [settings, setSettings] = useState<AccountingSettings | null>(null);

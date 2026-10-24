@@ -1,5 +1,6 @@
 import type { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
+import { markdownToHtml } from '../_shared/markdownToHtmlHelpers.ts';
 import {
 	buildRenderedEmailHtml,
 	normalizeVars,
@@ -7,13 +8,8 @@ import {
 	type SendTemplateEmailBody,
 	sendEmailViaResend,
 } from '../_shared/send-template-email-core.ts';
-import {
-	authorizeTemplateEmailRequest,
-	beginTemplateEmailRequest,
-	loadActiveTemplateEmail,
-} from './prepareTemplateEmail.ts';
+import { authorizeTemplateEmailRequest, beginTemplateEmailRequest, loadTemplateEmail } from './prepareTemplateEmail.ts';
 import { readTemplateEmailEnv } from './prepareTemplateEmailHelpers.ts';
-import { buildSendTemplateEmailSuccessPayload } from './sendTemplateEmailHandlerHelpers.ts';
 
 type PreparedTemplateEmailRequest =
 	| { ok: false; response: Response }
@@ -24,7 +20,7 @@ type PreparedTemplateEmailRequest =
 			admin: ReturnType<typeof createClient>;
 			resendKey: string;
 			fromEmail: string;
-			template: { subject: string; body_html: string; is_enabled: boolean };
+			template: { subject: string; body_markdown: string };
 	  };
 
 async function prepareSendTemplateEmailRequest(req: Request): Promise<PreparedTemplateEmailRequest> {
@@ -34,7 +30,7 @@ async function prepareSendTemplateEmailRequest(req: Request): Promise<PreparedTe
 	const authorized = await authorizeTemplateEmailRequest(begunResult.begun);
 	if (!authorized.ok) return authorized;
 
-	const loaded = await loadActiveTemplateEmail(authorized.admin, begunResult.begun.body.event_key);
+	const loaded = await loadTemplateEmail(authorized.admin, begunResult.begun.body.event_key);
 	if (!loaded.ok) return loaded;
 
 	const mailEnv = readTemplateEmailEnv((key) => Deno.env.get(key));
@@ -54,8 +50,8 @@ async function deliverPreparedTemplateEmail(
 ): Promise<Response> {
 	const vars = normalizeVars(prepared.body.vars);
 	const subject = renderTemplate(prepared.template.subject, vars);
-	const renderedHtml = renderTemplate(prepared.template.body_html, vars);
-	const html = await buildRenderedEmailHtml(prepared.admin, prepared.req, prepared.body, renderedHtml);
+	const bodyHtml = markdownToHtml(renderTemplate(prepared.template.body_markdown, vars));
+	const html = await buildRenderedEmailHtml(prepared.admin, prepared.req, prepared.body, bodyHtml);
 
 	const sendResult = await sendEmailViaResend({
 		resendKey: prepared.resendKey,
@@ -66,7 +62,7 @@ async function deliverPreparedTemplateEmail(
 	});
 	if (sendResult instanceof Response) return sendResult;
 
-	return jsonResponse(200, buildSendTemplateEmailSuccessPayload(sendResult.messageId));
+	return jsonResponse(200, { ok: true, message_id: sendResult.messageId });
 }
 
 export async function handleSendTemplateEmailRequest(req: Request): Promise<Response> {

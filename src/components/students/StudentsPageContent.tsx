@@ -1,7 +1,6 @@
 import { StudentDeleteDialog } from '@/components/students/StudentDeleteDialog';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { useListPageTableState } from '@/hooks/useListPageTableState';
 import type { useStudentsPageController } from '@/hooks/useStudentsPageController';
 import { buildStudentsRowActions } from '@/lib/students/studentsPageViewHelpers';
@@ -31,7 +30,7 @@ export function StudentsPageContent({
 
 	return (
 		<div>
-			<PageShell title={NAV_LABELS.students} description="Beheer alle leerlingen en hun gegevens">
+			<NavPageShell item="students">
 				<DataTable
 					data={controller.students}
 					columns={controller.columns}
@@ -53,7 +52,7 @@ export function StudentsPageContent({
 					onSortChange={tableState.handleSortChange}
 					rowActions={rowActions}
 				/>
-			</PageShell>
+			</NavPageShell>
 
 			<StudentDeleteDialog
 				deleteDialog={controller.deleteDialog}

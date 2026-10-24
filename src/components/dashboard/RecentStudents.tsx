@@ -3,7 +3,7 @@ import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListC
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import type { DashboardStudent } from '@/hooks/useDashboardData';
 import { formatDateTimeShort } from '@/lib/date/date-format';
 import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';

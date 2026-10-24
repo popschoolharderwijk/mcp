@@ -14,7 +14,7 @@ export function useAccountingReportPage() {
 	const { settings: appSettings } = useAppSettingsContext();
 
 	const { settings, loading: settingsLoading } = useAccountingSettings();
-	const schoolStartMonth = settings?.school_year_start_month ?? 8;
+	const schoolStartMonth = appSettings.school_year.start_month;
 
 	const [preset, setPreset] = useState<ExtendedPeriodPreset>('this_month');
 	const initial = getPresetDateRange('this_month', { schoolStartMonth });

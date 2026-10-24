@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import type { StudentDashboardInvoice } from '@/lib/dashboard/studentDashboardHelpers';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 import { formatCentsEUR, INVOICE_STATUS_LABELS } from '@/lib/invoices/types';

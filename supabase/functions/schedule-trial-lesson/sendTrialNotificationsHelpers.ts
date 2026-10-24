@@ -23,7 +23,3 @@ export function buildTrialTeacherName(firstName: string | null, lastName: string
 	const teacherName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
 	return teacherName.length > 0 ? teacherName : 'docent';
 }
-
-export function shouldSendTrialTeacherNotification(teacherEmail: string | null | undefined): boolean {
-	return Boolean(teacherEmail);
-}

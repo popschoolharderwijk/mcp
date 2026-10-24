@@ -56,14 +56,10 @@ export function resolveEmailEvent(
 export async function loadEmailTemplate(
 	admin: ReturnType<typeof createClient>,
 	eventKey: string,
-): Promise<
-	| Response
-	| { template: { subject: string; body_html: string; is_enabled: boolean } }
-	| { skipped: true; reason: 'template_disabled' }
-> {
+): Promise<Response | { template: { subject: string; body_markdown: string } }> {
 	const { data: template, error: tErr } = await admin
 		.from('email_templates')
-		.select('subject, body_html, is_enabled')
+		.select('subject, body_markdown')
 		.eq('event_key', eventKey)
 		.maybeSingle();
 
@@ -72,7 +68,6 @@ export async function loadEmailTemplate(
 		return jsonResponse(500, { error: 'Kon template niet ophalen' });
 	}
 	if (!template) return jsonResponse(404, { error: 'Template bestaat niet' });
-	if (!template.is_enabled) return { skipped: true, reason: 'template_disabled' };
 	return { template };
 }
 

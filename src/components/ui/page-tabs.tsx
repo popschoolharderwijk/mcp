@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { type PageContentWidth, wrapPageContentWidth } from '@/lib/layout/pageContentWidthHelpers';
 import { cn } from '@/lib/utils';
 
 export interface PageTabItem<T extends string> {
@@ -15,10 +16,9 @@ interface PageTabsProps<T extends string> {
 	children: ReactNode;
 	className?: string;
 	/**
-	 * `half` constrains the whole tab shell (list + panels) to half the container
-	 * on large screens. Default `full`.
+	 * Tailwind fraction of the container on large screens. Default `full`.
 	 */
-	width?: 'full' | 'half';
+	width?: PageContentWidth;
 }
 
 /** URL-synced tab shell shared by detail pages and Beheer Instellingen. */
@@ -50,36 +50,22 @@ export function PageTabs<T extends string>({
 		</Tabs>
 	);
 
-	if (width === 'half') {
-		return (
-			<div className="grid gap-6 lg:grid-cols-2">
-				<div className="min-w-0">{tabs}</div>
-			</div>
-		);
-	}
-
-	return tabs;
+	return wrapPageContentWidth(width, tabs);
 }
 
 type PageTabsContentProps = ComponentPropsWithoutRef<typeof TabsContent> & {
 	/**
-	 * `half` keeps panel content to half the tab shell on large screens
+	 * Tailwind fraction within the tab shell on large screens
 	 * (same layout as leerling/docent profile columns). Default `full`.
 	 * Use when the tab shell stays `width="full"` but the form should be narrow.
 	 */
-	panelWidth?: 'full' | 'half';
+	panelWidth?: PageContentWidth;
 };
 
 export function PageTabsContent({ panelWidth = 'full', className, children, ...props }: PageTabsContentProps) {
 	return (
 		<TabsContent className={cn(className)} {...props}>
-			{panelWidth === 'half' ? (
-				<div className="grid gap-6 lg:grid-cols-2">
-					<div className="min-w-0">{children}</div>
-				</div>
-			) : (
-				children
-			)}
+			{wrapPageContentWidth(panelWidth, children)}
 		</TabsContent>
 	);
 }

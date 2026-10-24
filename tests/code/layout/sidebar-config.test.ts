@@ -9,7 +9,7 @@ import {
 	nextSidebarGroupOpen,
 	teacherChildNavItems,
 } from '../../../src/components/layout/sidebar-config';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-items';
 
 describe('sidebar nav item constants', () => {
 	it('maps admin nav items to hrefs', () => {

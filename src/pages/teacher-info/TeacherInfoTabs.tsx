@@ -43,7 +43,7 @@ export function TeacherInfoTabs({
 				/>
 			</PageTabsContent>
 
-			<PageTabsContent value="address" panelWidth="half">
+			<PageTabsContent value="address" panelWidth="1/2">
 				<TeacherAddressSection
 					userId={teacherProfile.user_id}
 					canEdit={canAccess}

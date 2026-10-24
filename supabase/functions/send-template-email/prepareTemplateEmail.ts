@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
+import { beginAuthenticatedPostRequest } from '../_shared/http.ts';
 import {
 	authenticateSendTemplateEmailRequest,
 	loadEmailTemplate,
@@ -9,7 +9,6 @@ import {
 	validateSendTemplateEmailBody,
 } from '../_shared/send-template-email-core.ts';
 import { isFailedEmailEventResult, readTemplateEmailEnv } from './prepareTemplateEmailHelpers.ts';
-import { buildSkippedTemplateEmailPayload, isSkippedTemplateResult } from './sendTemplateEmailHandlerHelpers.ts';
 
 type BegunTemplateEmailRequest = Extract<
 	Awaited<ReturnType<typeof beginAuthenticatedPostRequest<SendTemplateEmailBody>>>,
@@ -54,20 +53,11 @@ export async function authorizeTemplateEmailRequest(
 	return { ok: true, admin };
 }
 
-export async function loadActiveTemplateEmail(
+export async function loadTemplateEmail(
 	admin: ReturnType<typeof createClient>,
 	eventKey: string,
-): Promise<
-	| { ok: false; response: Response }
-	| { ok: true; template: { subject: string; body_html: string; is_enabled: boolean } }
-> {
+): Promise<{ ok: false; response: Response } | { ok: true; template: { subject: string; body_markdown: string } }> {
 	const templateResult = await loadEmailTemplate(admin, eventKey);
 	if (templateResult instanceof Response) return { ok: false, response: templateResult };
-	if (isSkippedTemplateResult(templateResult)) {
-		return {
-			ok: false,
-			response: jsonResponse(200, buildSkippedTemplateEmailPayload(templateResult.reason)),
-		};
-	}
 	return { ok: true, template: templateResult.template };
 }

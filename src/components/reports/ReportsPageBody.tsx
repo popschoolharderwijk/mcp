@@ -2,8 +2,8 @@ import { PeriodPresetControls } from '@/components/reports/PeriodPresetControls'
 import { ReportsDataTable } from '@/components/reports/ReportsDataTable';
 import { ReportsSummaryCards } from '@/components/reports/ReportsSummaryCards';
 import { ReportsTeacherFilter } from '@/components/reports/ReportsTeacherFilter';
-import { PageShell, PageShellBodySkeleton } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
+import { PageShellBodySkeleton } from '@/components/ui/page-shell';
 import type { useReportsPage } from '@/hooks/useReportsPage';
 import { BASE_PRESET_LABELS, type BasePeriodPreset } from '@/lib/reports/periodPresets';
 
@@ -14,7 +14,7 @@ interface ReportsPageBodyProps {
 
 export function ReportsPageBody({ reportPresets, page }: ReportsPageBodyProps) {
 	return (
-		<PageShell title={NAV_LABELS.reports} description="Urenrapportage per docent, lessoort en leeftijdscategorie">
+		<NavPageShell item="reports">
 			<div className="space-y-6">
 				<PeriodPresetControls
 					preset={page.preset}
@@ -55,6 +55,6 @@ export function ReportsPageBody({ reportPresets, page }: ReportsPageBodyProps) {
 					/>
 				)}
 			</div>
-		</PageShell>
+		</NavPageShell>
 	);
 }

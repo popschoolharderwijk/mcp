@@ -17,7 +17,6 @@ const SETTINGS: AccountingSettings = {
 	vat_code_21: 'VH',
 	vat_code_exempt: '0',
 	currency: 'EUR',
-	school_year_start_month: 8,
 	description_template: 'x',
 	account_bank_sepa: '1102',
 	payment_provider: 'stripe',

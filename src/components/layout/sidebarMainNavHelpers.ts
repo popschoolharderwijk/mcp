@@ -1,5 +1,5 @@
 import { adminOperationalNavItems, financeNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 
 export const ADMIN_SECTION_KEY = 'admin-section';
 

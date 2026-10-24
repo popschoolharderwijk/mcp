@@ -6,6 +6,7 @@ import {
 	TrialLessonsSettingsForm,
 	VatSettingsForm,
 } from '@/components/settings/AppSettingsForms';
+import { EmailTemplatesManager } from '@/components/settings/EmailTemplatesManager';
 import { NoLessonPeriodsManager } from '@/components/settings/NoLessonPeriodsManager';
 import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import {
@@ -95,6 +96,10 @@ export function AppSettingsTabPanels({
 					saving={savingKey === 'agreements'}
 					onSave={(value) => onSave('agreements', value)}
 				/>
+			</PageTabsContent>
+
+			<PageTabsContent value="email-templates">
+				<EmailTemplatesManager canEdit={canEdit} />
 			</PageTabsContent>
 		</PageTabs>
 	);

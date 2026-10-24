@@ -1,4 +1,4 @@
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 
 export const NAV_GAP = '0.375rem';
 
@@ -19,7 +19,6 @@ export const financeNavItems = [
 export const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },
 	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: NAV_ICONS.lessonTypes },
-	{ href: '/email-templates', label: NAV_LABELS.emailTemplates, icon: NAV_ICONS.emailTemplates },
 	{ href: '/announcements', label: NAV_LABELS.announcements, icon: NAV_ICONS.announcements },
 	{ href: '/manual', label: NAV_LABELS.manual, icon: NAV_ICONS.manual },
 	{ href: '/settings', label: NAV_LABELS.settings, icon: NAV_ICONS.settings },

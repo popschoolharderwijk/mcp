@@ -5,7 +5,8 @@ export type AppSettingsTabId =
 	| 'vat'
 	| 'branding'
 	| 'trial-lessons'
-	| 'agreements';
+	| 'agreements'
+	| 'email-templates';
 
 const APP_SETTINGS_TABS = new Set<AppSettingsTabId>([
 	'school-year',
@@ -15,6 +16,7 @@ const APP_SETTINGS_TABS = new Set<AppSettingsTabId>([
 	'branding',
 	'trial-lessons',
 	'agreements',
+	'email-templates',
 ]);
 
 const DEFAULT_APP_SETTINGS_TAB: AppSettingsTabId = 'school-year';
@@ -27,6 +29,7 @@ export const APP_SETTINGS_TAB_ITEMS: { value: AppSettingsTabId; label: string }[
 	{ value: 'branding', label: 'Huisstijl' },
 	{ value: 'trial-lessons', label: 'Proeflessen' },
 	{ value: 'agreements', label: 'Overeenkomsten' },
+	{ value: 'email-templates', label: 'E-mailtemplates' },
 ];
 
 export function isAppSettingsTabId(value: string): value is AppSettingsTabId {

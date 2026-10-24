@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { buildFinanceNavGroup, buildSidebarMainNavItems } from '../../../src/components/layout/sidebarMainNavHelpers';
-import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-items';
 
 describe('buildSidebarMainNavItems', () => {
 	const baseVisibility = {

@@ -3,8 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { ScheduleTrialLessonDialog } from '@/components/trial-lessons/ScheduleTrialLessonDialog';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignupRequestsPageController } from '@/hooks/useSignupRequestsPageController';
 import {
@@ -25,9 +24,8 @@ export default function SignupRequests() {
 
 	return (
 		<>
-			<PageShell
-				title={NAV_LABELS.signupRequests}
-				description="Beheer openstaande en afgehandelde aanmeldingen"
+			<NavPageShell
+				item="signupRequests"
 				actions={
 					<div className="flex gap-2">
 						<Button
@@ -53,7 +51,7 @@ export default function SignupRequests() {
 					loading={controller.loading}
 					getRowKey={(row) => row.id}
 				/>
-			</PageShell>
+			</NavPageShell>
 			<ScheduleTrialLessonDialog
 				open={controller.trialFor !== null}
 				onOpenChange={(open) => !open && controller.setTrialFor(null)}

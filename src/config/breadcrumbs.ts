@@ -5,7 +5,7 @@
  * are defined here; the page adds the last item via setBreadcrumbSuffix().
  */
 
-import { NAV_LABELS } from './nav-labels';
+import { NAV_LABELS } from './nav-items';
 
 export interface BreadcrumbItem {
 	label: string;
@@ -85,10 +85,6 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/direct-debit', items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }] },
 	{ pattern: '/mandates', items: [{ label: NAV_LABELS.mandates, href: '/mandates' }] },
 	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
-	{
-		pattern: '/email-templates',
-		items: [{ label: NAV_LABELS.emailTemplates, href: '/email-templates' }],
-	},
 	{
 		pattern: '/announcements',
 		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],

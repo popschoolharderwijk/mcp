@@ -25,6 +25,7 @@ describe('computeAgreementBillingPreview', () => {
 				tariff: 'adult',
 				pricePerLessonCents: 2360,
 				schoolYearLabel: '2026/2027',
+				monthlyBillingCaption: 'Maandbedrag (× 11, augustus geen incasso)',
 				periodStart: '2026-09-01',
 				periodEnd: '2027-07-31',
 			},
