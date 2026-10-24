@@ -99,6 +99,15 @@ describe('parseAppSettingValue', () => {
 			}),
 		).toBeNull();
 	});
+
+	it('parses bootstrap tips', () => {
+		expect(parseAppSettingValue('tips', APP_SETTINGS.TIPS)).toEqual(APP_SETTINGS.TIPS);
+	});
+
+	it('rejects tips when interval minutes are out of range', () => {
+		expect(parseAppSettingValue('tips', { auto_interval_minutes: -1 })).toBeNull();
+		expect(parseAppSettingValue('tips', { auto_interval_minutes: 24 * 60 + 1 })).toBeNull();
+	});
 });
 
 describe('vatInclusiveDivisor', () => {

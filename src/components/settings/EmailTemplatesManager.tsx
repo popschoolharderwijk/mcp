@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { TemplateEditorForm } from '@/components/settings/TemplateEditorForm';
 import { useTemplateEditor } from '@/components/settings/useTemplateEditor';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SectionSkeleton } from '@/components/ui/page-skeleton';
@@ -132,7 +132,6 @@ export function EmailTemplatesManager({ canEdit }: EmailTemplatesManagerProps) {
 			<Card>
 				<CardHeader>
 					<CardTitle>E-mailtemplates</CardTitle>
-					<CardDescription>Beheer de inhoud van automatische e-mails (Markdown).</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<DataTable

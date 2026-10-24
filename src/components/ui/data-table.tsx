@@ -405,7 +405,8 @@ export function DataTable<T>({
 												size="icon"
 												className="relative h-9 w-9 shrink-0"
 												onClick={() => setFilterOpen(!filterOpen)}
-												aria-label="Toggle filter"
+												aria-label="Filters"
+												data-tip-target="table-quick-filter"
 											>
 												<LuFilter className="h-4 w-4" />
 												{activeFilterCount > 0 && (

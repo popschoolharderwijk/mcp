@@ -1,6 +1,14 @@
 /** Known app_settings keys and their value shapes (mirrors bootstrap.sql). */
 
-export const APP_SETTING_KEYS = ['school_year', 'agenda', 'vat', 'branding', 'trial_lessons', 'agreements'] as const;
+export const APP_SETTING_KEYS = [
+	'school_year',
+	'agenda',
+	'vat',
+	'branding',
+	'trial_lessons',
+	'agreements',
+	'tips',
+] as const;
 
 export type AppSettingKey = (typeof APP_SETTING_KEYS)[number];
 
@@ -37,6 +45,11 @@ export interface AgreementsSetting {
 	default_payment_method: AgreementPaymentMethod;
 }
 
+export interface TipsSetting {
+	/** Minimum minutes between consecutive automatic tip spotlights. */
+	auto_interval_minutes: number;
+}
+
 export type AppSettingValueByKey = {
 	school_year: SchoolYearSetting;
 	agenda: AgendaSetting;
@@ -44,6 +57,7 @@ export type AppSettingValueByKey = {
 	branding: BrandingSetting;
 	trial_lessons: TrialLessonsSetting;
 	agreements: AgreementsSetting;
+	tips: TipsSetting;
 };
 
 export type AppSettingsMap = {

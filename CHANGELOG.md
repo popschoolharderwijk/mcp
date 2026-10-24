@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 — 2026-10-24
+
+- **Tips** in de topbalk: geel lampje bij ongezien tips, klik toont de volgende tip
+- Tips voor o.a. snelzoeken, thema, zijbalk, snelle filters en agenda
+
 ## 1.1.6 — 2026-10-24
 
 - Zoeken bovenaan: leerlingen, docenten en gebruikers; openen met **/**

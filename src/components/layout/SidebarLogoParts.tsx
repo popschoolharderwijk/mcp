@@ -28,6 +28,7 @@ export function SidebarLogoToggleButton({ collapsed, onToggle }: SidebarLogoTogg
 			className={className}
 			onClick={handleToggle}
 			aria-label={collapsed ? 'Zijbalk uitklappen' : 'Zijbalk inklappen'}
+			data-tip-target="sidebar-collapse"
 		>
 			<LuChevronLeft className={cn('h-4 w-4', collapsed && 'rotate-180')} />
 		</Button>

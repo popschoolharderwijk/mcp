@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSettingsProvider } from '@/components/AppSettingsProvider';
+import { TipsProvider } from '@/components/tips/TipsProvider';
 import { BreadcrumbProvider } from '@/contexts/BreadcrumbContext';
 import { Sidebar } from './Sidebar';
 import { TopNav } from './TopNav';
@@ -15,11 +16,13 @@ export function DashboardLayout() {
 
 				<div className="flex flex-1 flex-col overflow-hidden">
 					<BreadcrumbProvider>
-						<TopNav />
+						<TipsProvider>
+							<TopNav />
 
-						<main className="flex-1 overflow-auto p-6">
-							<Outlet />
-						</main>
+							<main className="flex-1 overflow-auto p-6">
+								<Outlet />
+							</main>
+						</TipsProvider>
 					</BreadcrumbProvider>
 				</div>
 			</div>

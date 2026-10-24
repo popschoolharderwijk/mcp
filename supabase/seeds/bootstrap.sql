@@ -17,7 +17,8 @@ INSERT INTO public.app_settings (key, value) VALUES
 	('vat', '{"age_threshold_years":21,"standard_rate_percent":21}'::jsonb),
 	('branding', '{"primary_hex":"#c4ab7c"}'::jsonb),
 	('trial_lessons', '{"horizon_days":30,"default_duration_minutes":30}'::jsonb),
-	('agreements', '{"default_start_offset_days":1,"default_payment_method":"sepa"}'::jsonb)
+	('agreements', '{"default_start_offset_days":1,"default_payment_method":"sepa"}'::jsonb),
+	('tips', '{"auto_interval_minutes":10}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- Default email templates (from email_templates migration). Bodies are markdown.

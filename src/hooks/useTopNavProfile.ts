@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnSlashKey } from '@/lib/keyboard/keyboardHelpers';
+import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnHotkey } from '@/lib/keyboard/keyboardHelpers';
 import type { TopNavProfile } from '@/lib/layout/topNavHelpers';
 import { fetchUserRoleAndProfile } from '@/lib/layout/topNavProfile';
 
@@ -32,7 +32,7 @@ export function useCommandPaletteHotkey(onToggle: () => void) {
 	useEffect(() => {
 		const down = (event: KeyboardEvent) => {
 			if (
-				!shouldOpenCommandPaletteOnSlashKey({
+				!shouldOpenCommandPaletteOnHotkey({
 					key: event.key,
 					ctrlKey: event.ctrlKey,
 					metaKey: event.metaKey,

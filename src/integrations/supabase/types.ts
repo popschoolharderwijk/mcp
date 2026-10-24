@@ -1976,6 +1976,30 @@ export type Database = {
 				};
 				Relationships: [];
 			};
+			user_tip_progress: {
+				Row: {
+					last_action_at: string | null;
+					status: string;
+					tip_id: string;
+					updated_at: string;
+					user_id: string;
+				};
+				Insert: {
+					last_action_at?: string | null;
+					status: string;
+					tip_id: string;
+					updated_at?: string;
+					user_id: string;
+				};
+				Update: {
+					last_action_at?: string | null;
+					status?: string;
+					tip_id?: string;
+					updated_at?: string;
+					user_id?: string;
+				};
+				Relationships: [];
+			};
 		};
 		Views: {
 			view_profiles_with_display_name: {
