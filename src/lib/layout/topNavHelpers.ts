@@ -1,23 +1,7 @@
-import { NAV_LABELS } from '@/config/nav-items';
-
 export interface TopNavProfile {
 	first_name: string | null;
 	last_name: string | null;
 	avatar_url: string | null;
-}
-
-export interface QuickNavItem {
-	href: string;
-	label: string;
-	group: string;
-}
-
-export function buildQuickNavItems(isAdmin: boolean, isSiteAdmin: boolean): QuickNavItem[] {
-	const items: QuickNavItem[] = [{ href: '/', label: NAV_LABELS.dashboard, group: 'Navigatie' }];
-	if (isAdmin || isSiteAdmin) {
-		items.push({ href: '/teachers', label: NAV_LABELS.teachers, group: 'Navigatie' });
-	}
-	return items;
 }
 
 export function canViewAppVersion(isAdmin: boolean, isSiteAdmin: boolean): boolean {

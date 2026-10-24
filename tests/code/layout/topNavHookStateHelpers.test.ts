@@ -9,7 +9,6 @@ describe('buildTopNavHookState', () => {
 				open: false,
 				setOpen: () => {},
 				breadcrumbItems: [{ label: 'Dashboard', href: '/' }],
-				quickNavItems: [{ href: '/', label: 'Dashboard', group: 'Navigatie' }],
 				displayName: 'Anna Bakker',
 				email: 'anna@example.com',
 				roleLabel: 'staff',

@@ -1,6 +1,5 @@
-import { PageHeader } from '@/components/ui/page-header';
-import { getDisplayName } from '@/lib/display-name';
-import type { TeacherInfoTabId } from '@/lib/teachers/teacherInfoTabsHelpers';
+import { UserPageHeader } from '@/components/ui/user-page-header';
+import type { PersonDetailTabId } from '@/lib/profile/personDetailTabsHelpers';
 import { TeacherInfoTabs } from '@/pages/teacher-info/TeacherInfoTabs';
 import type { Teacher } from '@/types/teachers';
 
@@ -8,8 +7,8 @@ interface TeacherInfoPageContentProps {
 	targetTeacherUserId: string;
 	teacherProfile: Teacher;
 	canAccess: boolean;
-	activeTab: TeacherInfoTabId;
-	onTabChange: (tab: TeacherInfoTabId) => void;
+	activeTab: PersonDetailTabId;
+	onTabChange: (tab: PersonDetailTabId) => void;
 	onProfileUpdate: () => void;
 }
 
@@ -23,7 +22,7 @@ export function TeacherInfoPageContent({
 }: TeacherInfoPageContentProps) {
 	return (
 		<div className="space-y-6">
-			<PageHeader title={getDisplayName(teacherProfile)} subtitle={teacherProfile.email} />
+			<UserPageHeader profile={teacherProfile} />
 
 			<TeacherInfoTabs
 				targetTeacherUserId={targetTeacherUserId}

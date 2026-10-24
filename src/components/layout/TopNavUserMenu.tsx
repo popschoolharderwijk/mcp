@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuLogOut, LuMoon, LuPalette, LuSearch, LuShieldAlert, LuSun, LuUser } from 'react-icons/lu';
+import { LuLogOut, LuMoon, LuPalette, LuSearch, LuShieldAlert, LuSquareSlash, LuSun, LuUser } from 'react-icons/lu';
 import { ChangelogDialog } from '@/components/layout/ChangelogDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -196,14 +196,15 @@ export function TopNavSearchButton({ onOpenSearch }: { onOpenSearch: () => void 
 	return (
 		<Button
 			variant="outline"
-			className="relative h-9 w-full max-w-sm justify-start text-sm text-muted-foreground shrink-0"
+			className="h-9 w-auto px-3 text-sm text-muted-foreground shrink-0"
 			onClick={onOpenSearch}
 		>
 			<LuSearch className="mr-2 h-4 w-4" />
-			<span>Zoeken...</span>
-			<kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-				<span className="text-xs">⌘</span>K
-			</kbd>
+			<span className="inline-flex items-center gap-1.5">
+				Typ
+				<LuSquareSlash className="h-4 w-4" aria-hidden />
+				om te zoeken
+			</span>
 		</Button>
 	);
 }

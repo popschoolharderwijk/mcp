@@ -1,5 +1,5 @@
+import { ProfileFormSaveCard } from '@/components/profile/ProfileFormSaveCard';
 import { StudentFormParentSection } from '@/components/students/StudentFormParentSection';
-import { StudentFormSaveCard } from '@/components/students/StudentFormSaveCard';
 import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
 
 interface StudentParentSectionProps {
@@ -10,8 +10,8 @@ interface StudentParentSectionProps {
 
 export function StudentParentSection({ vm, saving, onSave }: StudentParentSectionProps) {
 	return (
-		<StudentFormSaveCard title="Ouder/voogd gegevens" saving={saving} onSave={onSave}>
+		<ProfileFormSaveCard title="Ouder/voogd gegevens" saving={saving} onSave={onSave}>
 			<StudentFormParentSection vm={vm} />
-		</StudentFormSaveCard>
+		</ProfileFormSaveCard>
 	);
 }

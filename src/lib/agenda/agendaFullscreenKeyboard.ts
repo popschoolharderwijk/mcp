@@ -1,27 +1,11 @@
-export interface AgendaKeyboardTarget {
-	tagName: string;
-	isContentEditable?: boolean;
-}
-
-/** True when keyboard focus is in a field where letter shortcuts must not fire. */
-export function isTypingTarget(target: AgendaKeyboardTarget | null): boolean {
-	if (target === null) return false;
-	const tag = target.tagName;
-	if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-	return Boolean(target.isContentEditable);
-}
-
-function agendaKeyboardTargetFromEventTarget(target: EventTarget | null): AgendaKeyboardTarget | null {
-	if (!(target instanceof HTMLElement)) return null;
-	return { tagName: target.tagName, isContentEditable: target.isContentEditable };
-}
+import { isTypingTarget, type KeyboardTarget, keyboardTargetFromEventTarget } from '@/lib/keyboard/keyboardHelpers';
 
 export interface AgendaFullscreenKeyEvent {
 	key: string;
 	ctrlKey: boolean;
 	metaKey: boolean;
 	altKey: boolean;
-	target: AgendaKeyboardTarget | null;
+	target: KeyboardTarget | null;
 }
 
 /** True when F should toggle agenda fullscreen (no modifiers, not typing). */
@@ -38,7 +22,7 @@ export function shouldToggleAgendaFullscreen(event: KeyboardEvent): boolean {
 		ctrlKey: event.ctrlKey,
 		metaKey: event.metaKey,
 		altKey: event.altKey,
-		target: agendaKeyboardTargetFromEventTarget(event.target),
+		target: keyboardTargetFromEventTarget(event.target),
 	});
 }
 
@@ -61,6 +45,6 @@ export function resolveAgendaNavigateFromKeyboard(event: KeyboardEvent): AgendaN
 		ctrlKey: event.ctrlKey,
 		metaKey: event.metaKey,
 		altKey: event.altKey,
-		target: agendaKeyboardTargetFromEventTarget(event.target),
+		target: keyboardTargetFromEventTarget(event.target),
 	});
 }

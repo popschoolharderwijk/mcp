@@ -23,6 +23,11 @@ interface RouteBreadcrumb {
 const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/', items: [] },
 	{ pattern: '/agenda', items: [{ label: NAV_LABELS.agenda, href: '/agenda' }] },
+	// /users/:userId(/:tab) – base only; page adds user name via suffix
+	{
+		pattern: /^\/users\/[^/]+(?:\/[^/]+)?$/,
+		items: [{ label: NAV_LABELS.users, href: '/users' }],
+	},
 	{ pattern: '/users', items: [{ label: NAV_LABELS.users, href: '/users' }] },
 	{
 		pattern: '/lesson-types/new',

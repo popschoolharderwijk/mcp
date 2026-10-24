@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.6 — 2026-10-24
+
+- Zoeken bovenaan: leerlingen, docenten en gebruikers; openen met **/**
+- **Gebruikersdetail** met tabbladen Profiel, Adres en Agenda
+- **E-mailtemplates** verplaatst naar Instellingen
+- E-mailtemplates: Markdown-editor i.p.v. HTML met live voorbeeld
+
 ## 1.1.5 — 2026-10-22
 
 - Nieuw menu **Instellingen**: schooljaar, lesvrije periodes, agenda, tarieven, huisstijl, proeflessen en overeenkomsten

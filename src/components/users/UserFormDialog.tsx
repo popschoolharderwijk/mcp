@@ -21,6 +21,7 @@ import {
 } from '@/lib/users/userFormDialogHelpers';
 import {
 	assignableRoles,
+	emptyUserForm,
 	getUserFormDialogCopy,
 	isUserRoleLocked,
 	resolveUserFormSubmitDisabled,
@@ -44,23 +45,15 @@ interface UserFormDialogProps {
 	user?: UserData;
 }
 
-const emptyForm: UserFormState = {
-	email: '',
-	first_name: '',
-	last_name: '',
-	phone_number: '',
-	role: null,
-};
-
 export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserFormDialogProps) {
 	const { isAdmin, isSiteAdmin } = useAuth();
 	const isEditMode = !!user;
-	const [form, setForm] = useState<UserFormState>(emptyForm);
+	const [form, setForm] = useState<UserFormState>(emptyUserForm);
 	const [saving, setSaving] = useState(false);
 
 	useEffect(() => {
 		if (!open) return;
-		setForm(buildUserFormStateForOpen(user, emptyForm));
+		setForm(buildUserFormStateForOpen(user, emptyUserForm));
 	}, [open, user]);
 
 	const handleSubmit = async () => {
@@ -72,7 +65,7 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 				isEditMode,
 				editUser: user,
 				setForm,
-				emptyForm,
+				emptyForm: emptyUserForm,
 				onOpenChange,
 				onSuccess,
 				submitUserForm,
@@ -85,14 +78,14 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 	const { dialogTitle, dialogDescription, submitLabel, savingLabel } = getUserFormDialogCopy(isEditMode, form);
 	const roleLocked = isUserRoleLocked(isEditMode, isAdmin, isSiteAdmin, user?.role);
 	const roles = assignableRoles(isSiteAdmin);
-	const initialForm = buildUserFormStateForOpen(user, emptyForm);
+	const initialForm = buildUserFormStateForOpen(user, emptyUserForm);
 	const submitDisabled = resolveUserFormSubmitDisabled(isEditMode, form, initialForm);
 
 	return (
 		<Dialog
 			open={open}
 			onOpenChange={(newOpen) =>
-				handleUserFormDialogOpenChange(saving, newOpen, setForm, emptyForm, onOpenChange)
+				handleUserFormDialogOpenChange(saving, newOpen, setForm, emptyUserForm, onOpenChange)
 			}
 		>
 			<DialogContent>
@@ -110,7 +103,7 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 				<DialogFooter>
 					<Button
 						variant="outline"
-						onClick={() => handleUserFormDialogCancel(saving, setForm, emptyForm, onOpenChange)}
+						onClick={() => handleUserFormDialogCancel(saving, setForm, emptyUserForm, onOpenChange)}
 						disabled={saving}
 					>
 						Annuleren

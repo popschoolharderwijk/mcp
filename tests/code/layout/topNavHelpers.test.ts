@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	buildQuickNavItems,
 	buildTopNavUserInitialsInput,
 	canViewAppVersion,
 	formatTopNavDisplayName,
@@ -9,19 +8,6 @@ import {
 	resolveThemeToggleIcon,
 	shouldShowTopNavVersion,
 } from '../../../src/lib/layout/topNavHelpers';
-
-describe('buildQuickNavItems', () => {
-	it('includes dashboard for all users', () => {
-		expect(buildQuickNavItems(false, false)).toEqual([{ href: '/', label: 'Dashboard', group: 'Navigatie' }]);
-	});
-
-	it('includes teachers for admins', () => {
-		expect(buildQuickNavItems(true, false)).toEqual([
-			{ href: '/', label: 'Dashboard', group: 'Navigatie' },
-			{ href: '/teachers', label: 'Docenten', group: 'Navigatie' },
-		]);
-	});
-});
 
 describe('canViewAppVersion', () => {
 	it('returns true for admin', () => {

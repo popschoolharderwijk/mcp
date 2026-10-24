@@ -1,4 +1,4 @@
-# Finalize — diff review (comments + test theater)
+# Finalize — diff review (comments + test theater + no-legacy)
 
 Mandatory before declaring **DONE**. Also re-check after any Fallow-driven edit that adds comments or tests.
 
@@ -6,6 +6,7 @@ Canonical rules:
 
 * Comments / diff narration → [`.cursor/rules/comments.mdc`](../../../.cursor/rules/comments.mdc)
 * Test theater → [`.cursor/rules/tests.mdc`](../../../.cursor/rules/tests.mdc) (“What to test”)
+* No-legacy → [`.cursor/rules/no-legacy.mdc`](../../../.cursor/rules/no-legacy.mdc)
 
 ## 1. Diff-narration comments
 
@@ -36,3 +37,15 @@ Reject and fix tests that:
 Fix by: delete the theater test; inline or remove the trivial helper; or replace with a behavior test that would still matter if the helper were inlined.
 
 **Never** “fix” Fallow by adding theater tests. Prefer a real refactor or escalate.
+
+## 3. No-legacy
+
+Scan files touched this finalize / this session for unsolicited compatibility layers (see `no-legacy.mdc`).
+
+Reject and fix:
+
+* Dual names / parallel keys for the same concept
+* “Also accept the old name/shape” fallbacks, deprecated aliases, soft-migration wrappers
+* Keeping a removed API alive “just in case”
+
+Fix by: one current contract; update **all** callers; no dual surfaces unless the user **explicitly** asked for compatibility. Comments must not narrate the removal either — see section 1 / `comments.mdc`.

@@ -43,6 +43,7 @@ import TeacherAvailability from './pages/TeacherAvailability';
 import TeacherInfo from './pages/TeacherInfo';
 import Teachers from './pages/Teachers';
 import TrialLessons from './pages/TrialLessons';
+import UserDetail from './pages/UserDetail';
 import UserManual from './pages/UserManual';
 import Users from './pages/Users';
 
@@ -72,6 +73,8 @@ const App = () => (
 					>
 						<Route path="/" element={<Dashboard />} />
 						<Route path="/agenda" element={<Agenda />} />
+						<Route path="/users/:userId/:tab" element={<UserDetail />} />
+						<Route path="/users/:userId" element={<UserDetail />} />
 						<Route path="/users" element={<Users />} />
 						<Route path="/lesson-types" element={<LessonTypes />} />
 						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />

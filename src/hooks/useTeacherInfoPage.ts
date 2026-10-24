@@ -3,16 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getDisplayName } from '@/lib/display-name';
+import {
+	type PersonDetailTabId,
+	parsePersonDetailTab,
+	resolvePersonDetailTabRoute,
+} from '@/lib/profile/personDetailTabsHelpers';
 import { fetchTeacherProfile } from '@/lib/teachers/fetchTeacherProfile';
 import { canAccessTeacherProfile, resolveTargetTeacherUserId } from '@/lib/teachers/teacherInfoHelpers';
 import { resolveTeacherInfoPageGate } from '@/lib/teachers/teacherInfoPageShellHelpers';
-import {
-	parseTeacherInfoTab,
-	resolveTeacherInfoBasePath,
-	resolveTeacherInfoTabRedirect,
-	resolveTeacherInfoTabRoute,
-	type TeacherInfoTabId,
-} from '@/lib/teachers/teacherInfoTabsHelpers';
+import { resolveTeacherInfoBasePath, resolveTeacherInfoTabRedirect } from '@/lib/teachers/teacherInfoTabsHelpers';
 import type { Teacher } from '@/types/teachers';
 
 export function useTeacherInfoPage() {
@@ -24,7 +23,7 @@ export function useTeacherInfoPage() {
 	const [profileVersion, setProfileVersion] = useState(0);
 
 	const basePath = resolveTeacherInfoBasePath(id);
-	const activeTab = parseTeacherInfoTab(tabParam);
+	const activeTab = parsePersonDetailTab(tabParam);
 	const tabRedirectTo = resolveTeacherInfoTabRedirect(basePath, tabParam);
 
 	const targetTeacherUserId = resolveTargetTeacherUserId({
@@ -71,8 +70,8 @@ export function useTeacherInfoPage() {
 		hasProfile: teacherProfile !== null,
 	});
 
-	const onTabChange = (tab: TeacherInfoTabId) => {
-		navigate(resolveTeacherInfoTabRoute(basePath, tab), { replace: true });
+	const onTabChange = (tab: PersonDetailTabId) => {
+		navigate(resolvePersonDetailTabRoute(basePath, tab), { replace: true });
 	};
 
 	return {

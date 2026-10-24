@@ -11,6 +11,14 @@ export interface UserFormState {
 	role: AppRole | null;
 }
 
+export const emptyUserForm: UserFormState = {
+	email: '',
+	first_name: '',
+	last_name: '',
+	phone_number: '',
+	role: null,
+};
+
 export interface UserFormEditContext {
 	user_id: string;
 	role: AppRole | null;

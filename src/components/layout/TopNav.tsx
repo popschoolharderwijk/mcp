@@ -31,12 +31,7 @@ export function TopNav() {
 				/>
 			</header>
 
-			<TopNavCommandPalette
-				open={topNav.open}
-				onOpenChange={topNav.setOpen}
-				quickNavItems={topNav.quickNavItems}
-				onNavigate={topNav.onNavigate}
-			/>
+			<TopNavCommandPalette open={topNav.open} onOpenChange={topNav.setOpen} onNavigate={topNav.onNavigate} />
 		</>
 	);
 }
