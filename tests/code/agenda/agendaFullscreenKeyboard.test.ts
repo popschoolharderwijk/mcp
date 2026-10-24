@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	type AgendaKeyboardTarget,
-	isTypingTarget,
 	resolveAgendaNavigateKey,
 	shouldHandleAgendaFullscreenKey,
 } from '../../../src/lib/agenda/agendaFullscreenKeyboard';
+import type { KeyboardTarget } from '../../../src/lib/keyboard/keyboardHelpers';
 
 function keyEvent(
 	overrides: Partial<{
@@ -12,7 +11,7 @@ function keyEvent(
 		ctrlKey: boolean;
 		metaKey: boolean;
 		altKey: boolean;
-		target: AgendaKeyboardTarget | null;
+		target: KeyboardTarget | null;
 	}> = {},
 ) {
 	return {
@@ -24,24 +23,6 @@ function keyEvent(
 		...overrides,
 	};
 }
-
-describe('isTypingTarget', () => {
-	it('returns false for null', () => {
-		expect(isTypingTarget(null)).toBe(false);
-	});
-
-	it('returns true for form fields and contenteditable', () => {
-		expect(isTypingTarget({ tagName: 'INPUT' })).toBe(true);
-		expect(isTypingTarget({ tagName: 'TEXTAREA' })).toBe(true);
-		expect(isTypingTarget({ tagName: 'SELECT' })).toBe(true);
-		expect(isTypingTarget({ tagName: 'DIV', isContentEditable: true })).toBe(true);
-	});
-
-	it('returns false for ordinary elements', () => {
-		expect(isTypingTarget({ tagName: 'BUTTON' })).toBe(false);
-		expect(isTypingTarget({ tagName: 'DIV', isContentEditable: false })).toBe(false);
-	});
-});
 
 describe('shouldHandleAgendaFullscreenKey', () => {
 	it('handles plain f and F', () => {

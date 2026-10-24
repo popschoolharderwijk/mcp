@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnSlashKey } from '@/lib/keyboard/keyboardHelpers';
 import type { TopNavProfile } from '@/lib/layout/topNavHelpers';
 import { fetchUserRoleAndProfile } from '@/lib/layout/topNavProfile';
 
@@ -30,10 +31,19 @@ export function useTopNavProfileData(userId: string | undefined) {
 export function useCommandPaletteHotkey(onToggle: () => void) {
 	useEffect(() => {
 		const down = (event: KeyboardEvent) => {
-			if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
-				event.preventDefault();
-				onToggle();
+			if (
+				!shouldOpenCommandPaletteOnSlashKey({
+					key: event.key,
+					ctrlKey: event.ctrlKey,
+					metaKey: event.metaKey,
+					altKey: event.altKey,
+					target: keyboardTargetFromEventTarget(event.target),
+				})
+			) {
+				return;
 			}
+			event.preventDefault();
+			onToggle();
 		};
 
 		document.addEventListener('keydown', down);
