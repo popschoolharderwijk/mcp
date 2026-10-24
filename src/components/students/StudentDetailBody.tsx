@@ -1,6 +1,5 @@
-import { PageHeader } from '@/components/ui/page-header';
+import { UserPageHeader } from '@/components/ui/user-page-header';
 import type { useStudentDetailPage } from '@/hooks/useStudentDetailPage';
-import { getDisplayName } from '@/lib/display-name';
 import { formatStudentPhoneSubtitle, type StudentProfileData } from '@/lib/students/studentDetailHelpers';
 import type { StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import { StudentInfoTabs } from '@/pages/student-detail/StudentInfoTabs';
@@ -34,8 +33,8 @@ export function StudentDetailBody({
 }: StudentDetailBodyProps) {
 	return (
 		<div className="space-y-6">
-			<PageHeader
-				title={getDisplayName(profile)}
+			<UserPageHeader
+				profile={profile}
 				subtitle={formatStudentPhoneSubtitle(profile.email, profile.phone_number)}
 			/>
 

@@ -1,7 +1,6 @@
 import type { NavigateFunction } from 'react-router-dom';
 import type { TopNavProfile } from '@/lib/layout/topNavHelpers';
 import {
-	buildQuickNavItems,
 	buildTopNavUserInitialsInput,
 	canViewAppVersion,
 	formatTopNavDisplayName,
@@ -26,7 +25,6 @@ export interface TopNavHookInput {
 }
 
 export function assembleTopNavHookResult(input: TopNavHookInput) {
-	const quickNavItems = buildQuickNavItems(input.isAdmin, input.isSiteAdmin);
 	const userInitialsInput = buildTopNavUserInitialsInput(input.profile, input.userEmail);
 	const navigationCallbacks = buildTopNavNavigationCallbacks(
 		input.navigate,
@@ -40,7 +38,6 @@ export function assembleTopNavHookResult(input: TopNavHookInput) {
 			open: input.open,
 			setOpen: input.setOpen,
 			breadcrumbItems: input.breadcrumbItems,
-			quickNavItems,
 			displayName: formatTopNavDisplayName(input.profile, input.userEmail),
 			email: input.userEmail,
 			roleLabel: formatTopNavRoleLabel(input.role),

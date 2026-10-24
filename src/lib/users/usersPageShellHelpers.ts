@@ -3,7 +3,7 @@ import type { useUsersPageController } from '@/hooks/useUsersPageController';
 import type { AppRole } from '@/lib/roles';
 import type { UserWithRole } from '@/lib/users/usersPageHelpers';
 
-function shouldShowUsersPage(isAdmin: boolean, isSiteAdmin: boolean): boolean {
+export function shouldShowUsersPage(isAdmin: boolean, isSiteAdmin: boolean): boolean {
 	return isAdmin || isSiteAdmin;
 }
 

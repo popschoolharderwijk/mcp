@@ -1,28 +1,23 @@
 import { AgendaView } from '@/components/agenda/AgendaView';
-import { TeacherAddressSection } from '@/components/teachers/TeacherAddressSection';
+import { ProfileAddressSection } from '@/components/profile/ProfileAddressSection';
 import { TeacherInfoProfileTab } from '@/components/teachers/TeacherInfoProfileTab';
 import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import {
-	isTeacherInfoTabId,
-	type TeacherInfoTabId,
-	teacherAddressFieldsFromProfile,
-} from '@/lib/teachers/teacherInfoTabsHelpers';
+	isPersonDetailTabId,
+	PERSON_DETAIL_TAB_ITEMS,
+	type PersonDetailTabId,
+} from '@/lib/profile/personDetailTabsHelpers';
+import { profileAddressFieldsFromRow } from '@/lib/profile/profileAddressSectionHelpers';
 import type { Teacher } from '@/types/teachers';
 
 interface TeacherInfoTabsProps {
 	targetTeacherUserId: string;
 	teacherProfile: Teacher;
 	canAccess: boolean;
-	activeTab: TeacherInfoTabId;
-	onTabChange: (tab: TeacherInfoTabId) => void;
+	activeTab: PersonDetailTabId;
+	onTabChange: (tab: PersonDetailTabId) => void;
 	onProfileUpdate: () => void;
 }
-
-const TEACHER_TAB_ITEMS = [
-	{ value: 'profile' as const, label: 'Profiel' },
-	{ value: 'address' as const, label: 'Adres' },
-	{ value: 'agenda' as const, label: 'Agenda' },
-];
 
 export function TeacherInfoTabs({
 	targetTeacherUserId,
@@ -33,7 +28,12 @@ export function TeacherInfoTabs({
 	onProfileUpdate,
 }: TeacherInfoTabsProps) {
 	return (
-		<PageTabs value={activeTab} onValueChange={onTabChange} isTabId={isTeacherInfoTabId} items={TEACHER_TAB_ITEMS}>
+		<PageTabs
+			value={activeTab}
+			onValueChange={onTabChange}
+			isTabId={isPersonDetailTabId}
+			items={PERSON_DETAIL_TAB_ITEMS}
+		>
 			<PageTabsContent value="profile">
 				<TeacherInfoProfileTab
 					targetTeacherUserId={targetTeacherUserId}
@@ -44,11 +44,12 @@ export function TeacherInfoTabs({
 			</PageTabsContent>
 
 			<PageTabsContent value="address" panelWidth="1/2">
-				<TeacherAddressSection
+				<ProfileAddressSection
 					userId={teacherProfile.user_id}
 					canEdit={canAccess}
-					initialAddress={teacherAddressFieldsFromProfile(teacherProfile)}
+					initialAddress={profileAddressFieldsFromRow(teacherProfile)}
 					onUpdate={onProfileUpdate}
+					idPrefix="teacher-address"
 				/>
 			</PageTabsContent>
 

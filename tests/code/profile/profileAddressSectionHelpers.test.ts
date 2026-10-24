@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import { emptyProfileAddressForm } from '../../../src/lib/profile/profileAddressHelpers';
 import {
-	resolveTeacherAddressBootstrap,
-	resolveTeacherAddressSaveBlock,
-	teacherAddressFormFromValueKey,
-	teacherAddressValueKey,
-} from '../../../src/lib/teachers/teacherAddressSectionHelpers';
+	profileAddressFieldsFromRow,
+	profileAddressFormFromValueKey,
+	profileAddressValueKey,
+	resolveProfileAddressBootstrap,
+	resolveProfileAddressSaveBlock,
+} from '../../../src/lib/profile/profileAddressSectionHelpers';
 
-describe('resolveTeacherAddressBootstrap', () => {
+describe('resolveProfileAddressBootstrap', () => {
 	it('starts empty and loading when no initial address is provided', () => {
-		expect(resolveTeacherAddressBootstrap(undefined)).toEqual({
+		expect(resolveProfileAddressBootstrap(undefined)).toEqual({
 			hasInitial: false,
 			form: emptyProfileAddressForm,
 			loading: true,
@@ -18,7 +19,7 @@ describe('resolveTeacherAddressBootstrap', () => {
 
 	it('hydrates from initial address without loading', () => {
 		expect(
-			resolveTeacherAddressBootstrap({
+			resolveProfileAddressBootstrap({
 				street_name: 'Hoofdstraat',
 				house_number: '12',
 				postal_code: '1234 AB',
@@ -39,10 +40,10 @@ describe('resolveTeacherAddressBootstrap', () => {
 	});
 });
 
-describe('teacherAddressValueKey', () => {
+describe('profileAddressValueKey', () => {
 	it('returns null when initial address is missing', () => {
-		expect(teacherAddressValueKey(undefined)).toBeNull();
-		expect(teacherAddressValueKey(null)).toBeNull();
+		expect(profileAddressValueKey(undefined)).toBeNull();
+		expect(profileAddressValueKey(null)).toBeNull();
 	});
 
 	it('is stable for the same field values regardless of object identity', () => {
@@ -53,12 +54,12 @@ describe('teacherAddressValueKey', () => {
 			city: 'Amsterdam',
 			country_code: 'NL',
 		};
-		expect(teacherAddressValueKey(fields)).toBe(teacherAddressValueKey({ ...fields }));
+		expect(profileAddressValueKey(fields)).toBe(profileAddressValueKey({ ...fields }));
 	});
 
 	it('changes when a field value changes', () => {
 		expect(
-			teacherAddressValueKey({
+			profileAddressValueKey({
 				street_name: 'A',
 				house_number: '1',
 				postal_code: '1234AB',
@@ -66,7 +67,7 @@ describe('teacherAddressValueKey', () => {
 				country_code: 'NL',
 			}),
 		).not.toBe(
-			teacherAddressValueKey({
+			profileAddressValueKey({
 				street_name: 'B',
 				house_number: '1',
 				postal_code: '1234AB',
@@ -77,9 +78,9 @@ describe('teacherAddressValueKey', () => {
 	});
 });
 
-describe('teacherAddressFormFromValueKey', () => {
+describe('profileAddressFormFromValueKey', () => {
 	it('round-trips fields through the value key', () => {
-		expect(teacherAddressFormFromValueKey('Hoofdstraat\u000112\u00011234AB\u0001Amsterdam\u0001NL')).toEqual({
+		expect(profileAddressFormFromValueKey('Hoofdstraat\u000112\u00011234AB\u0001Amsterdam\u0001NL')).toEqual({
 			street_name: 'Hoofdstraat',
 			house_number: '12',
 			postal_code: '1234AB',
@@ -89,10 +90,10 @@ describe('teacherAddressFormFromValueKey', () => {
 	});
 });
 
-describe('resolveTeacherAddressSaveBlock', () => {
+describe('resolveProfileAddressSaveBlock', () => {
 	it('blocks invalid NL postcodes', () => {
 		expect(
-			resolveTeacherAddressSaveBlock({
+			resolveProfileAddressSaveBlock({
 				...emptyProfileAddressForm,
 				country_code: 'NL',
 				postal_code: '1234A',
@@ -105,12 +106,49 @@ describe('resolveTeacherAddressSaveBlock', () => {
 
 	it('allows a valid optional address', () => {
 		expect(
-			resolveTeacherAddressSaveBlock({
+			resolveProfileAddressSaveBlock({
 				...emptyProfileAddressForm,
 				street_name: 'Hoofdstraat',
 				house_number: '12',
 				country_code: 'NL',
 			}),
 		).toEqual({ blocked: false });
+	});
+});
+
+describe('profileAddressFieldsFromRow', () => {
+	it('maps address fields and defaults country to NL when missing', () => {
+		expect(
+			profileAddressFieldsFromRow({
+				street_name: null,
+				house_number: null,
+				postal_code: null,
+				city: null,
+			}),
+		).toEqual({
+			street_name: null,
+			house_number: null,
+			postal_code: null,
+			city: null,
+			country_code: 'NL',
+		});
+	});
+
+	it('keeps provided address values including country_code', () => {
+		expect(
+			profileAddressFieldsFromRow({
+				street_name: 'Hoofdstraat',
+				house_number: '12',
+				postal_code: '1234 AB',
+				city: 'Amsterdam',
+				country_code: 'BE',
+			}),
+		).toEqual({
+			street_name: 'Hoofdstraat',
+			house_number: '12',
+			postal_code: '1234 AB',
+			city: 'Amsterdam',
+			country_code: 'BE',
+		});
 	});
 });

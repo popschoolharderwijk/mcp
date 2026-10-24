@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerPaginatedListState } from '@/hooks/useServerPaginatedListState';
 import { useUsersPageController } from '@/hooks/useUsersPageController';
 import type { AppRole } from '@/lib/roles';
+import { userDetailHref } from '@/lib/users/userDetailPageHelpers';
+import type { UserWithRole } from '@/lib/users/usersPageHelpers';
 import {
 	buildUserFormDialogOpenChangeHandler,
 	buildUsersDeleteDialogOpenChangeHandler,
@@ -12,6 +15,7 @@ import {
 } from '@/lib/users/usersPageShellHelpers';
 
 export function useUsersPage() {
+	const navigate = useNavigate();
 	const { user, isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const pagination = useServerPaginatedListState({
 		storageKey: 'users',
@@ -44,16 +48,23 @@ export function useUsersPage() {
 		setSelectedRole,
 	});
 
+	const handleEdit = useCallback(
+		(targetUser: UserWithRole) => {
+			navigate(userDetailHref(targetUser.user_id));
+		},
+		[navigate],
+	);
+
 	const rowActions = useMemo(
 		() =>
 			buildUsersPageRowActions({
 				isAdmin: shell.isAdmin,
 				isSiteAdmin: shell.isSiteAdmin,
 				currentUserId: shell.userId,
-				onEdit: controller.handleEdit,
+				onEdit: handleEdit,
 				onDelete: controller.handleDelete,
 			}),
-		[shell.isAdmin, shell.isSiteAdmin, shell.userId, controller.handleEdit, controller.handleDelete],
+		[shell.isAdmin, shell.isSiteAdmin, shell.userId, handleEdit, controller.handleDelete],
 	);
 
 	return {

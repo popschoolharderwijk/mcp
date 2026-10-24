@@ -5,16 +5,17 @@ description: >
   runs check → CI → Fallow until all three pass. Fallow failures retry fallow only,
   then one verification pass from check. Complexity/CRAP: real fixes and
   behavior-asserting tests only — never coverage theater. Before DONE, extra review
-  for diff-narration comments and test theater. Use only when the user explicitly
-  asks to finalize, run the quality gates, clean up before a commit/PR, or get the
-  repo green.
+  for diff-narration comments, test theater, and no-legacy. Use only when the user
+  explicitly asks to finalize, run the quality gates, clean up before a commit/PR,
+  or get the repo green.
 ---
 
 # Finalize
 
 Get the repo green. Done only when `bun run check`, `bun run check:ci`, and
 `bun run check:fallow` all exit 0 in one consecutive outer pass, **and** the
-diff-narration / test-theater review in [`review.md`](review.md) is clean.
+diff-narration / test-theater / no-legacy review in [`review.md`](review.md) is
+clean.
 
 ## Load once
 
@@ -22,7 +23,7 @@ diff-narration / test-theater review in [`review.md`](review.md) is clean.
 2. **Fallow / CRAP** — read [`fallow.md`](fallow.md) before fixing any Fallow finding.
 3. **Language** — read [`language.md`](language.md); enforce before declaring success.
 4. **Quality loop details** — read [`quality-loop.md`](quality-loop.md) for fix priority, escalation, and scope.
-5. **Diff review** — read [`review.md`](review.md) (diff-narration comments + test theater). Apply on every edit that adds comments or tests; full pass before DONE.
+5. **Diff review** — read [`review.md`](review.md) (diff-narration comments + test theater + no-legacy). Apply on every edit that adds comments or tests; full pass before DONE.
 
 ## When to use
 
@@ -53,8 +54,8 @@ Use these `package.json` scripts. `bun run fix` is the Biome write command; it i
 6. After a repaired fallow pass first becomes green, run exactly one verification
    pass: **check → ci → fallow**.
 7. If all three verification commands pass consecutively, run the
-   [`review.md`](review.md) pass on the session diff (comments + tests). Fix any
-   hits, then re-verify from **check** if code/tests changed.
+   [`review.md`](review.md) pass on the session diff (comments + tests +
+   no-legacy). Fix any hits, then re-verify from **check** if code/tests changed.
 8. Only then stop: **DONE**. Handle any verification failure using steps 3–6.
 
 **Restart points (single table):**
@@ -86,5 +87,6 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 2. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
 3. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
 4. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
-5. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
-6. Never `git add` or `git commit`. The user always stages and commits.
+5. No unsolicited legacy / dual-API shims — [`review.md`](review.md) / `.cursor/rules/no-legacy.mdc`.
+6. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
+7. Never `git add` or `git commit`. The user always stages and commits.

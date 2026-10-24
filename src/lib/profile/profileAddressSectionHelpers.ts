@@ -5,16 +5,16 @@ import {
 } from '@/lib/profile/profileAddressHelpers';
 import type { ProfileAddressFields, ProfileAddressFormState } from '@/types/profile-address';
 
-export type TeacherAddressBootstrap = {
+export type ProfileAddressBootstrap = {
 	hasInitial: boolean;
 	form: ProfileAddressFormState;
 	loading: boolean;
 };
 
 /** Initial local form state from optional parent address fields. */
-export function resolveTeacherAddressBootstrap(
+export function resolveProfileAddressBootstrap(
 	initialAddress?: Partial<ProfileAddressFields> | null,
-): TeacherAddressBootstrap {
+): ProfileAddressBootstrap {
 	const hasInitial = initialAddress != null;
 	return {
 		hasInitial,
@@ -24,7 +24,7 @@ export function resolveTeacherAddressBootstrap(
 }
 
 /** Stable primitive key so referential-only parent object churn does not reset the form. */
-export function teacherAddressValueKey(initialAddress?: Partial<ProfileAddressFields> | null): string | null {
+export function profileAddressValueKey(initialAddress?: Partial<ProfileAddressFields> | null): string | null {
 	if (initialAddress == null) return null;
 	return [
 		initialAddress.street_name ?? '',
@@ -35,8 +35,8 @@ export function teacherAddressValueKey(initialAddress?: Partial<ProfileAddressFi
 	].join('\u0001');
 }
 
-/** Rebuild form fields from a value key produced by `teacherAddressValueKey`. */
-export function teacherAddressFormFromValueKey(key: string): ProfileAddressFormState {
+/** Rebuild form fields from a value key produced by `profileAddressValueKey`. */
+export function profileAddressFormFromValueKey(key: string): ProfileAddressFormState {
 	const [street_name, house_number, postal_code, city, country_code] = key.split('\u0001');
 	return profileAddressFormFromFields({
 		street_name,
@@ -47,11 +47,28 @@ export function teacherAddressFormFromValueKey(key: string): ProfileAddressFormS
 	});
 }
 
-export type TeacherAddressSaveBlock = { blocked: true; message: string } | { blocked: false };
+export type ProfileAddressSaveBlock = { blocked: true; message: string } | { blocked: false };
 
 /** Toast when address save should be blocked; null when validation passes. */
-export function resolveTeacherAddressSaveBlock(form: ProfileAddressFormState): TeacherAddressSaveBlock {
+export function resolveProfileAddressSaveBlock(form: ProfileAddressFormState): ProfileAddressSaveBlock {
 	const message = getProfileAddressValidationError(form);
 	if (message) return { blocked: true, message };
 	return { blocked: false };
+}
+
+/** Address fields from a profile-like row (defaults country to NL). */
+export function profileAddressFieldsFromRow(row: {
+	street_name?: string | null;
+	house_number?: string | null;
+	postal_code?: string | null;
+	city?: string | null;
+	country_code?: string | null;
+}): ProfileAddressFields {
+	return {
+		street_name: row.street_name ?? null,
+		house_number: row.house_number ?? null,
+		postal_code: row.postal_code ?? null,
+		city: row.city ?? null,
+		country_code: row.country_code ?? 'NL',
+	};
 }

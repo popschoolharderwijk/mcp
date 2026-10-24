@@ -41,25 +41,21 @@ One scheme everywhere — frontend (`src/`), scripts, and edge (`supabase/functi
 
 **End pages** are detail pages for a single entity: e.g. TeacherInfo, LessonTypeInfo, a student detail page, AgreementWizard for one agreement. For these pages:
 
-### PageHeader at the top
+### Header at the top
 
-- Use **PageHeader** from `@/components/ui/page-header` and place it **always as the first element** in the main page content (directly under any layout wrapper, before tabs/cards/content).
-- Props: `title` (entity name), optional `subtitle` (e.g. email, lessoort name), optional `actions`.
-- **No page-level icons** (no Avatar, ColorIcon, or nav icon in the header). Icons stay in sidebar/nav and in-content UI only.
-- Do not put other content above the PageHeader on end pages.
+- Place the header **always as the first element** in the main page content (directly under any layout wrapper, before tabs/cards/content). Do not put other content above it.
+- **Person end pages** (student, teacher, user detail): use **UserPageHeader** from `@/components/ui/user-page-header` — large avatar + name (+ optional subtitle/actions). Do not use plain `PageHeader` there.
+- **Other end pages** (lesson type, agreement, settings, etc.): use **PageHeader** from `@/components/ui/page-header`. Props: `title`, optional `subtitle`, optional `actions`. **No page-level icons** (no Avatar, ColorIcon, or nav icon) on `PageHeader`; icons stay in sidebar/nav and in-content UI only.
 
 ```tsx
+import { UserPageHeader } from '@/components/ui/user-page-header';
 import { PageHeader } from '@/components/ui/page-header';
 
-return (
-  <div className="space-y-6">
-    <PageHeader
-      title={entityName}
-      subtitle={optionalSubtitle}
-    />
-    {/* Tabs, cards, etc. follow below */}
-  </div>
-);
+// Person detail
+<UserPageHeader profile={person} subtitle={optionalSubtitle} />
+
+// Non-person end page
+<PageHeader title={entityName} subtitle={optionalSubtitle} />
 ```
 
 ### Breadcrumbs

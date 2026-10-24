@@ -7,11 +7,11 @@ import {
 	profileAddressFormFromFields,
 } from '@/lib/profile/profileAddressHelpers';
 import {
-	resolveTeacherAddressBootstrap,
-	resolveTeacherAddressSaveBlock,
-	teacherAddressFormFromValueKey,
-	teacherAddressValueKey,
-} from '@/lib/teachers/teacherAddressSectionHelpers';
+	profileAddressFormFromValueKey,
+	profileAddressValueKey,
+	resolveProfileAddressBootstrap,
+	resolveProfileAddressSaveBlock,
+} from '@/lib/profile/profileAddressSectionHelpers';
 import type { ProfileAddressFields, ProfileAddressFormState } from '@/types/profile-address';
 
 async function loadProfileAddress(userId: string): Promise<ProfileAddressFormState> {
@@ -25,20 +25,20 @@ async function loadProfileAddress(userId: string): Promise<ProfileAddressFormSta
 	return profileAddressFormFromFields(data as unknown as ProfileAddressFields);
 }
 
-export function useTeacherAddressSection(
+export function useProfileAddressSection(
 	userId: string,
 	initialAddress?: Partial<ProfileAddressFields> | null,
 	onUpdate?: () => void,
 ) {
-	const bootstrap = resolveTeacherAddressBootstrap(initialAddress);
+	const bootstrap = resolveProfileAddressBootstrap(initialAddress);
 	const [form, setForm] = useState<ProfileAddressFormState>(() => bootstrap.form);
 	const [loading, setLoading] = useState(bootstrap.loading);
 	const [saving, setSaving] = useState(false);
-	const addressKey = teacherAddressValueKey(initialAddress);
+	const addressKey = profileAddressValueKey(initialAddress);
 
 	useEffect(() => {
 		if (addressKey != null) {
-			setForm(teacherAddressFormFromValueKey(addressKey));
+			setForm(profileAddressFormFromValueKey(addressKey));
 			setLoading(false);
 			return;
 		}
@@ -57,7 +57,7 @@ export function useTeacherAddressSection(
 	}, [addressKey, userId]);
 
 	const onSave = async () => {
-		const block = resolveTeacherAddressSaveBlock(form);
+		const block = resolveProfileAddressSaveBlock(form);
 		if (block.blocked) {
 			toast.error(block.message);
 			return;
