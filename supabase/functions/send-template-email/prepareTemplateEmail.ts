@@ -56,10 +56,7 @@ export async function authorizeTemplateEmailRequest(
 export async function loadTemplateEmail(
 	admin: ReturnType<typeof createClient>,
 	eventKey: string,
-): Promise<
-	| { ok: false; response: Response }
-	| { ok: true; template: { subject: string; body_markdown: string } }
-> {
+): Promise<{ ok: false; response: Response } | { ok: true; template: { subject: string; body_markdown: string } }> {
 	const templateResult = await loadEmailTemplate(admin, eventKey);
 	if (templateResult instanceof Response) return { ok: false, response: templateResult };
 	return { ok: true, template: templateResult.template };

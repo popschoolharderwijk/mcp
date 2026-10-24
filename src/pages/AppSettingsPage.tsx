@@ -35,11 +35,7 @@ export function AppSettingsPage({ tabParam, canEdit }: AppSettingsPageProps) {
 	};
 
 	return (
-		<NavPageShell
-			item="settings"
-			loading={loading}
-			width="full"
-		>
+		<NavPageShell item="settings" loading={loading} width="full">
 			<AppSettingsTabPanels
 				settings={settings}
 				canEdit={canEdit}

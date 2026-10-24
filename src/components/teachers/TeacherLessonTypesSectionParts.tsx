@@ -1,5 +1,4 @@
 import { LuPlus, LuX } from 'react-icons/lu';
-import { shouldShowTeacherLessonTypesAddPopover } from '@/components/teachers/teacherLessonTypesSectionHelpers';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
@@ -69,6 +68,10 @@ interface TeacherLessonTypesSectionBodyProps {
 	onAddPopoverOpenChange: (open: boolean) => void;
 	onAddLessonType: (lessonTypeId: string) => void;
 	onRemoveLessonType: (lessonTypeId: string) => void;
+}
+
+function shouldShowTeacherLessonTypesAddPopover(canEdit: boolean, availableLessonTypeCount: number): boolean {
+	return canEdit && availableLessonTypeCount > 0;
 }
 
 export function TeacherLessonTypesSectionBody({

@@ -84,7 +84,7 @@ Popschool Harderwijk`,
 	},
 } as const satisfies Record<string, EmailTemplateEditorState>;
 
-export type EmailTemplateBootstrapKey = keyof typeof EMAIL_TEMPLATE_BOOTSTRAP;
+type EmailTemplateBootstrapKey = keyof typeof EMAIL_TEMPLATE_BOOTSTRAP;
 
 export function getEmailTemplateBootstrap(eventKey: string): EmailTemplateEditorState | null {
 	if (!(eventKey in EMAIL_TEMPLATE_BOOTSTRAP)) return null;
@@ -102,10 +102,7 @@ export function isEmailTemplateEditorDirty(
 	return editor.subject !== row.subject || editor.body_markdown !== row.body_markdown;
 }
 
-export function isEmailTemplateEditorAtBootstrap(
-	editor: EmailTemplateEditorState,
-	eventKey: string,
-): boolean {
+export function isEmailTemplateEditorAtBootstrap(editor: EmailTemplateEditorState, eventKey: string): boolean {
 	const defaults = getEmailTemplateBootstrap(eventKey);
 	if (!defaults) return true;
 	return editor.subject === defaults.subject && editor.body_markdown === defaults.body_markdown;

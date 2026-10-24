@@ -6,13 +6,6 @@ import {
 	mergeSavedEmailTemplateRow,
 } from '@/lib/email/emailTemplateManagerHelpers';
 
-export function buildEmailTemplateEditorStateFromRow(row: EmailTemplateRow): EmailTemplateEditorState {
-	return {
-		subject: row.subject,
-		body_markdown: row.body_markdown,
-	};
-}
-
 export async function saveEmailTemplateForEvent(
 	eventKey: string,
 	editor: EmailTemplateEditorState,

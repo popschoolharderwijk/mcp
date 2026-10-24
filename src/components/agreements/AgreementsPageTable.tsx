@@ -42,10 +42,7 @@ export function AgreementsPageTable({
 	runAction,
 }: AgreementsPageTableProps) {
 	return (
-		<NavPageShell
-			item="agreements"
-			actions={<AgreementsPageCreateButton navigate={navigate} />}
-		>
+		<NavPageShell item="agreements" actions={<AgreementsPageCreateButton navigate={navigate} />}>
 			<DataTable
 				data={agreements}
 				columns={AGREEMENT_COLUMNS}

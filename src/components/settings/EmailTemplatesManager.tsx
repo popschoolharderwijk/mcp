@@ -13,6 +13,30 @@ import { type EmailEventDefinition, listEmailEvents } from '@/lib/email/events';
 
 const EMAIL_TEMPLATE_COLUMNS = buildEmailTemplatesColumns();
 
+function buildEmailTemplateTableRows(
+	events: EmailEventDefinition[],
+	rows: Record<string, EmailTemplateRow> | null,
+): EmailTemplateTableRow[] {
+	return events.map((event) => {
+		const row = rows?.[event.key];
+		return {
+			event,
+			subject: row?.subject ?? '',
+			hasRow: Boolean(row),
+		};
+	});
+}
+
+function resolveEditingEmailTemplate(
+	events: EmailEventDefinition[],
+	rows: Record<string, EmailTemplateRow>,
+	editingEventKey: string | null,
+): { event: EmailEventDefinition; row: EmailTemplateRow } | null {
+	const event = events.find((e) => e.key === editingEventKey);
+	const row = editingEventKey ? rows[editingEventKey] : undefined;
+	return event && row ? { event, row } : null;
+}
+
 interface EmailTemplatesManagerProps {
 	canEdit: boolean;
 }
@@ -34,6 +58,57 @@ function TemplateEditorDialogBody({
 	return <TemplateEditorForm vm={vm} />;
 }
 
+function EmailTemplateEditorDialog({
+	events,
+	rows,
+	editingEventKey,
+	canEdit,
+	onClose,
+	onSaved,
+}: {
+	events: EmailEventDefinition[];
+	rows: Record<string, EmailTemplateRow>;
+	editingEventKey: string | null;
+	canEdit: boolean;
+	onClose: () => void;
+	onSaved: (saved: EmailTemplateRow) => void;
+}) {
+	const editing = resolveEditingEmailTemplate(events, rows, editingEventKey);
+	return (
+		<Dialog
+			open={editing !== null}
+			onOpenChange={(open) => {
+				if (!open) onClose();
+			}}
+		>
+			<DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+				<DialogHeader>
+					<DialogTitle>{editing?.event.label ?? 'E-mailtemplate'}</DialogTitle>
+				</DialogHeader>
+				{editing !== null && (
+					<TemplateEditorDialogBody
+						event={editing.event}
+						row={editing.row}
+						canEdit={canEdit}
+						onCancel={onClose}
+						onSaved={onSaved}
+					/>
+				)}
+			</DialogContent>
+		</Dialog>
+	);
+}
+
+async function loadEmailTemplateRows(): Promise<Record<string, EmailTemplateRow> | null> {
+	const { data, error } = await supabase.from('email_templates').select('event_key, subject, body_markdown');
+	if (error) {
+		toast.error('Kon templates niet laden');
+		console.error(error);
+		return null;
+	}
+	return buildEmailTemplateRowsMap(data ?? []);
+}
+
 export function EmailTemplatesManager({ canEdit }: EmailTemplatesManagerProps) {
 	const events = listEmailEvents();
 	const [rows, setRows] = useState<Record<string, EmailTemplateRow> | null>(null);
@@ -41,34 +116,12 @@ export function EmailTemplatesManager({ canEdit }: EmailTemplatesManagerProps) {
 	const [editingEventKey, setEditingEventKey] = useState<string | null>(null);
 
 	useEffect(() => {
-		void (async () => {
-			const { data, error } = await supabase
-				.from('email_templates')
-				.select('event_key, subject, body_markdown');
-			if (error) {
-				toast.error('Kon templates niet laden');
-				console.error(error);
-				return;
-			}
-			setRows(buildEmailTemplateRowsMap((data ?? []) as EmailTemplateRow[]));
-		})();
+		void loadEmailTemplateRows().then((next) => {
+			if (next) setRows(next);
+		});
 	}, []);
 
-	const tableRows: EmailTemplateTableRow[] = useMemo(
-		() =>
-			events.map((event) => {
-				const row = rows?.[event.key];
-				return {
-					event,
-					subject: row?.subject ?? '',
-					hasRow: Boolean(row),
-				};
-			}),
-		[events, rows],
-	);
-
-	const editingEvent = editingEventKey ? events.find((e) => e.key === editingEventKey) : undefined;
-	const editingRow = editingEventKey && rows ? rows[editingEventKey] : undefined;
+	const tableRows = useMemo(() => buildEmailTemplateTableRows(events, rows), [events, rows]);
 
 	if (!rows) {
 		return <SectionSkeleton />;
@@ -102,29 +155,16 @@ export function EmailTemplatesManager({ canEdit }: EmailTemplatesManagerProps) {
 				</CardContent>
 			</Card>
 
-			<Dialog
-				open={Boolean(editingEvent && editingRow)}
-				onOpenChange={(open) => {
-					if (!open) setEditingEventKey(null);
+			<EmailTemplateEditorDialog
+				events={events}
+				rows={rows}
+				editingEventKey={editingEventKey}
+				canEdit={canEdit}
+				onClose={() => setEditingEventKey(null)}
+				onSaved={(saved) => {
+					setRows((prev) => (prev ? { ...prev, [saved.event_key]: saved } : prev));
 				}}
-			>
-				<DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
-					<DialogHeader>
-						<DialogTitle>{editingEvent?.label ?? 'E-mailtemplate'}</DialogTitle>
-					</DialogHeader>
-					{editingEvent && editingRow && (
-						<TemplateEditorDialogBody
-							event={editingEvent}
-							row={editingRow}
-							canEdit={canEdit}
-							onCancel={() => setEditingEventKey(null)}
-							onSaved={(saved) => {
-								setRows((prev) => (prev ? { ...prev, [saved.event_key]: saved } : prev));
-							}}
-						/>
-					)}
-				</DialogContent>
-			</Dialog>
+			/>
 		</>
 	);
 }

@@ -2,7 +2,18 @@ import { Navigate } from 'react-router-dom';
 import { AccountingReportContent } from '@/components/reports/AccountingReportContent';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAccountingReportPage } from '@/hooks/useAccountingReportPage';
-import { resolveAccountingReportPageView } from '@/lib/accounting/accountingReportPageHelpers';
+
+type AccountingReportPageView = 'redirect' | 'loading' | 'content';
+
+function resolveAccountingReportPageView(
+	authLoading: boolean,
+	hasAccess: boolean,
+	settingsLoading: boolean,
+): AccountingReportPageView {
+	if (authLoading) return 'loading';
+	if (!hasAccess) return 'redirect';
+	return settingsLoading ? 'loading' : 'content';
+}
 
 export default function AccountingReportPage() {
 	const state = useAccountingReportPage();

@@ -41,14 +41,19 @@ export function renderMarkdown(source: string): ReactNode {
 		}
 		const key = `p-${blockIndex++}`;
 		const lines = block.text.split('\n');
+		const lineOccurrence = new Map<string, number>();
 		return (
 			<p key={key} className="leading-relaxed">
-				{lines.map((line, lineIndex) => (
-					<span key={`${key}-l-${lineIndex}`}>
-						{lineIndex > 0 ? <br /> : null}
-						{parseMarkdownInline(line, `${key}-l${lineIndex}`)}
-					</span>
-				))}
+				{lines.map((line, lineIndex) => {
+					const occurrence = lineOccurrence.get(line) ?? 0;
+					lineOccurrence.set(line, occurrence + 1);
+					return (
+						<span key={`${key}-l-${line}-${occurrence}`}>
+							{lineIndex > 0 ? <br /> : null}
+							{parseMarkdownInline(line, `${key}-l${line}-${occurrence}`)}
+						</span>
+					);
+				})}
 			</p>
 		);
 	});

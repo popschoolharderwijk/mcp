@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { sidebarGroupOpenStorageKey } from '@/lib/layout/sidebarGroupStorageHelpers';
+
+function sidebarGroupOpenStorageKey(groupKey: string): string {
+	return `sidebar:group-open:${groupKey}`;
+}
 
 function readStoredOpen(storageKey: string): boolean {
 	if (typeof window === 'undefined') return false;

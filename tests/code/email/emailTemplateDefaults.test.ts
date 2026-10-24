@@ -7,9 +7,14 @@ import {
 } from '../../../src/lib/email/emailTemplateDefaults';
 
 describe('getEmailTemplateBootstrap', () => {
-	it('returns a copy of the signup_received bootstrap template', () => {
+	it('returns an independent copy of the signup_received bootstrap template', () => {
 		const defaults = getEmailTemplateBootstrap('signup_received');
 		expect(defaults).toEqual(EMAIL_TEMPLATE_BOOTSTRAP.signup_received);
+		expect(defaults).not.toBeNull();
+		(defaults as { subject: string }).subject = 'mutated';
+		expect(getEmailTemplateBootstrap('signup_received')?.subject).toBe(
+			EMAIL_TEMPLATE_BOOTSTRAP.signup_received.subject,
+		);
 	});
 
 	it('returns null for an unknown event key', () => {
@@ -27,13 +32,17 @@ describe('isEmailTemplateEditorDirty', () => {
 	it('is dirty when the subject changed', () => {
 		expect(isEmailTemplateEditorDirty({ ...row, subject: 'Andere' }, row)).toBe(true);
 	});
+
+	it('is dirty when only body_markdown changed', () => {
+		expect(isEmailTemplateEditorDirty({ ...row, body_markdown: 'anders' }, row)).toBe(true);
+	});
 });
 
 describe('isEmailTemplateEditorAtBootstrap', () => {
 	it('is true when editor matches bootstrap', () => {
-		expect(isEmailTemplateEditorAtBootstrap({ ...EMAIL_TEMPLATE_BOOTSTRAP.trial_scheduled }, 'trial_scheduled')).toBe(
-			true,
-		);
+		expect(
+			isEmailTemplateEditorAtBootstrap({ ...EMAIL_TEMPLATE_BOOTSTRAP.trial_scheduled }, 'trial_scheduled'),
+		).toBe(true);
 	});
 
 	it('is false when body differs from bootstrap', () => {
@@ -43,5 +52,9 @@ describe('isEmailTemplateEditorAtBootstrap', () => {
 				'trial_scheduled',
 			),
 		).toBe(false);
+	});
+
+	it('is true for an unknown event key', () => {
+		expect(isEmailTemplateEditorAtBootstrap({ subject: 'x', body_markdown: 'y' }, 'unknown_event')).toBe(true);
 	});
 });

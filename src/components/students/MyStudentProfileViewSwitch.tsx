@@ -27,12 +27,7 @@ export function MyStudentProfileViewSwitch({
 	}
 
 	if (renderedView === 'skeleton') {
-		return (
-			<NavPageShell
-				item="myProfile"
-				loading
-			/>
-		);
+		return <NavPageShell item="myProfile" loading />;
 	}
 
 	return (

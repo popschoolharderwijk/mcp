@@ -63,7 +63,6 @@ export type Database = {
 					journal_code_bank: string;
 					journal_code_memorial: string;
 					payment_provider: string;
-					school_year_start_month: number;
 					sepa_collection_day: number;
 					sepa_creditor_bic: string | null;
 					sepa_creditor_iban: string | null;
@@ -106,7 +105,6 @@ export type Database = {
 					journal_code_bank?: string;
 					journal_code_memorial?: string;
 					payment_provider?: string;
-					school_year_start_month?: number;
 					sepa_collection_day?: number;
 					sepa_creditor_bic?: string | null;
 					sepa_creditor_iban?: string | null;
@@ -149,7 +147,6 @@ export type Database = {
 					journal_code_bank?: string;
 					journal_code_memorial?: string;
 					payment_provider?: string;
-					school_year_start_month?: number;
 					sepa_collection_day?: number;
 					sepa_creditor_bic?: string | null;
 					sepa_creditor_iban?: string | null;
@@ -599,31 +596,28 @@ export type Database = {
 			};
 			email_templates: {
 				Row: {
-					body_html: string;
+					body_markdown: string;
 					created_at: string;
 					created_by: string | null;
 					event_key: string;
-					is_enabled: boolean;
 					subject: string;
 					updated_at: string;
 					updated_by: string | null;
 				};
 				Insert: {
-					body_html: string;
+					body_markdown: string;
 					created_at?: string;
 					created_by?: string | null;
 					event_key: string;
-					is_enabled?: boolean;
 					subject: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
 				Update: {
-					body_html?: string;
+					body_markdown?: string;
 					created_at?: string;
 					created_by?: string | null;
 					event_key?: string;
-					is_enabled?: boolean;
 					subject?: string;
 					updated_at?: string;
 					updated_by?: string | null;

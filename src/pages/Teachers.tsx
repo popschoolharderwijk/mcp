@@ -59,10 +59,7 @@ export default function Teachers() {
 
 	return (
 		<div>
-			<NavPageShell
-				item="teachers"
-				actions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}
-			>
+			<NavPageShell item="teachers" actions={<TeachersPageCreateButton onCreate={controller.handleCreate} />}>
 				<DataTable
 					data={controller.teachers}
 					columns={controller.columns}

@@ -1,13 +1,19 @@
-import { type Ref, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { type MutableRefObject, type Ref, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-	MARKDOWN_PANEL_MAX_PX,
-	MARKDOWN_PANEL_MIN_PX,
-	resolveMatchedMarkdownPanelHeight,
-} from '@/lib/markdown/markdownPanelHeightHelpers';
 import { renderMarkdown } from '@/lib/markdown/render';
 import { cn } from '@/lib/utils';
+
+const MARKDOWN_PANEL_MIN_PX = 200;
+const MARKDOWN_PANEL_MAX_PX = 448; // 28rem
+
+/** Shared pixel height for editor + preview: taller content wins, within min/max. */
+function resolveMatchedMarkdownPanelHeight(editorScrollHeight: number, previewScrollHeight: number): number {
+	return Math.min(
+		MARKDOWN_PANEL_MAX_PX,
+		Math.max(MARKDOWN_PANEL_MIN_PX, Math.max(editorScrollHeight, previewScrollHeight)),
+	);
+}
 
 interface MarkdownBodyFieldProps {
 	id: string;
@@ -57,7 +63,7 @@ function assignRef<T>(ref: Ref<T> | undefined, node: T | null) {
 		ref(node);
 		return;
 	}
-	ref.current = node;
+	(ref as MutableRefObject<T | null>).current = node;
 }
 
 /** Shared markdown textarea + live preview (announcements / email templates). */

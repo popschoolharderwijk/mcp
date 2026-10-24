@@ -8,13 +8,8 @@ import {
 	type SendTemplateEmailBody,
 	sendEmailViaResend,
 } from '../_shared/send-template-email-core.ts';
-import {
-	authorizeTemplateEmailRequest,
-	beginTemplateEmailRequest,
-	loadTemplateEmail,
-} from './prepareTemplateEmail.ts';
+import { authorizeTemplateEmailRequest, beginTemplateEmailRequest, loadTemplateEmail } from './prepareTemplateEmail.ts';
 import { readTemplateEmailEnv } from './prepareTemplateEmailHelpers.ts';
-import { buildSendTemplateEmailSuccessPayload } from './sendTemplateEmailHandlerHelpers.ts';
 
 type PreparedTemplateEmailRequest =
 	| { ok: false; response: Response }
@@ -67,7 +62,7 @@ async function deliverPreparedTemplateEmail(
 	});
 	if (sendResult instanceof Response) return sendResult;
 
-	return jsonResponse(200, buildSendTemplateEmailSuccessPayload(sendResult.messageId));
+	return jsonResponse(200, { ok: true, message_id: sendResult.messageId });
 }
 
 export async function handleSendTemplateEmailRequest(req: Request): Promise<Response> {

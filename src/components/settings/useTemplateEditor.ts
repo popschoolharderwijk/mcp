@@ -5,11 +5,7 @@ import {
 	isEmailTemplateEditorAtBootstrap,
 	isEmailTemplateEditorDirty,
 } from '@/lib/email/emailTemplateDefaults';
-import {
-	buildEmailTemplateEditorStateFromRow,
-	saveEmailTemplateForEvent,
-	sendTestEmailForTemplate,
-} from '@/lib/email/emailTemplateEditorHelpers';
+import { saveEmailTemplateForEvent, sendTestEmailForTemplate } from '@/lib/email/emailTemplateEditorHelpers';
 import { type EmailTemplateRow, renderEmailTemplatePreview } from '@/lib/email/emailTemplateManagerHelpers';
 import type { EmailEventDefinition } from '@/lib/email/events';
 
@@ -30,9 +26,8 @@ export function useTemplateEditor({ event, row, onSaved, onCancel, canEdit }: Us
 	const [sendingTest, setSendingTest] = useState(false);
 
 	useEffect(() => {
-		const editorState = buildEmailTemplateEditorStateFromRow(row);
-		setSubject(editorState.subject);
-		setBodyMarkdown(editorState.body_markdown);
+		setSubject(row.subject);
+		setBodyMarkdown(row.body_markdown);
 	}, [row]);
 
 	const editorState = { subject, body_markdown: bodyMarkdown };

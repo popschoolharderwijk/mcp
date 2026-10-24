@@ -7,8 +7,19 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EnvironmentBadge } from '@/components/ui/environment-badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { type DevToolsRenderMode, resolveDevToolsRenderMode } from '@/lib/dev/devToolsHelpers';
 import { cn } from '@/lib/utils';
+
+type DevToolsRenderMode = 'hidden' | 'production-badge' | 'collapsed' | 'expanded';
+
+function resolveDevToolsRenderMode(isProduction: boolean, collapsed: boolean | undefined): DevToolsRenderMode {
+	if (isProduction) {
+		return collapsed === true ? 'production-badge' : 'hidden';
+	}
+	if (collapsed) {
+		return 'collapsed';
+	}
+	return 'expanded';
+}
 
 const DEV_TOOLS_ACCENT = 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20';
 const DEV_TOOLS_BADGE = 'bg-orange-500/20 text-orange-600 dark:text-orange-400 border-orange-500/20';

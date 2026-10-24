@@ -153,18 +153,11 @@ export default function MyStudents() {
 	}
 
 	if (shouldShowMyStudentsSkeleton(authLoading, loading)) {
-		return (
-			<NavPageShell
-				item="myStudents"
-				loading
-			/>
-		);
+		return <NavPageShell item="myStudents" loading />;
 	}
 
 	return (
-		<NavPageShell
-			item="myStudents"
-		>
+		<NavPageShell item="myStudents">
 			<DataTable
 				data={students}
 				columns={columns}

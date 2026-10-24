@@ -7,6 +7,7 @@ import {
 	isAnnouncementFormValid,
 	isAnnouncementImageFile,
 } from '../../../src/lib/settings/announcementsManagerHelpers';
+
 describe('audienceLabel', () => {
 	it('joins audience labels', () => {
 		expect(audienceLabel(['teachers', 'students'])).toBe('Docenten + Leerlingen');

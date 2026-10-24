@@ -4,6 +4,8 @@
  * Update this file when seed data changes, and all tests will automatically use the new values.
  */
 
+import { EMAIL_TEMPLATE_BOOTSTRAP } from '../../src/lib/email/emailTemplateDefaults';
+
 /**
  * app_settings rows from supabase/seeds/bootstrap.sql.
  * Keep in sync with src/lib/settings/appSettingsDefaults.ts.
@@ -35,6 +37,66 @@ export const APP_SETTINGS = {
 		default_start_offset_days: 1,
 		default_payment_method: 'sepa' as const,
 	},
+} as const;
+
+/**
+ * email_templates rows from supabase/seeds/bootstrap.sql.
+ * Bodies/subjects must match EMAIL_TEMPLATE_BOOTSTRAP in src/lib/email/emailTemplateDefaults.ts.
+ */
+export const EMAIL_TEMPLATES = {
+	TOTAL: 5,
+	/** Alphabetical order matching `.order('event_key')`. */
+	EVENT_KEYS: [
+		'agreement_created',
+		'agreement_created_teacher',
+		'signup_received',
+		'trial_scheduled',
+		'trial_scheduled_teacher',
+	] as const,
+	BY_KEY: EMAIL_TEMPLATE_BOOTSTRAP,
+} as const;
+
+/**
+ * accounting_settings singleton defaults from migration + bootstrap.sql INSERT (id).
+ */
+export const ACCOUNTING_SETTINGS = {
+	JOURNAL_CODE_MEMORIAL: '90',
+	JOURNAL_CODE_BANK: '20',
+	ACCOUNT_DEBTORS: '1300',
+	ACCOUNT_REVENUE_YOUTH: '8000',
+	ACCOUNT_REVENUE_ADULT: '8010',
+	ACCOUNT_VAT_21: '1500',
+	ACCOUNT_BANK_STRIPE: '1100',
+	VAT_CODE_21: 'VH',
+	VAT_CODE_EXEMPT: '0',
+	CURRENCY: 'EUR',
+	DESCRIPTION_TEMPLATE: 'Lesgeld {periode} - {leerling}',
+} as const;
+
+/**
+ * Bandcoaching group from supabase/seeds/test.sql: teacher Eve, members student-001..008.
+ */
+export const LESSON_GROUPS = {
+	BANDCOACHING_ID: '73000000-0001-0000-0000-000000000000',
+	BANDCOACHING_MEMBER_COUNT: 8,
+} as const;
+
+/**
+ * no_lesson_periods rows from supabase/seeds/test.sql.
+ */
+export const NO_LESSON_PERIODS = {
+	STUDY_DAYS_ID: '76000000-0001-0000-0000-000000000000',
+	/** Alphabetical order matching `.order('name')`. */
+	NAMES: ['Herfstvakantie', 'Studiedagen'] as const,
+} as const;
+
+/**
+ * announcements rows from supabase/seeds/test.sql: one published + active, one inactive draft.
+ */
+export const ANNOUNCEMENTS = {
+	TOTAL: 2,
+	PUBLISHED_ID: '77000000-0001-0000-0000-000000000000',
+	DRAFT_ID: '77000000-0002-0000-0000-000000000000',
 } as const;
 
 /**

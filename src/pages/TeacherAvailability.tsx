@@ -65,10 +65,7 @@ export default function TeacherAvailability() {
 	}
 
 	return (
-		<NavPageShell
-			item="availability"
-			loading={loading || authLoading}
-		>
+		<NavPageShell item="availability" loading={loading || authLoading}>
 			<div className="space-y-6">
 				<ReportsTeacherFilter
 					selectedTeacherUserId={selectedTeacherUserId}

@@ -5,8 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { AccountingSettings } from '@/lib/accounting/types';
-import { clampInvoicePaymentTermDays, clampSepaCollectionDay } from '@/lib/settings/accountingSettingsManagerHelpers';
 import { formatVatCodeFieldLabel, formatVatPayableAccountLabel } from '@/lib/settings/vatLabelHelpers';
+
+function clampSepaCollectionDay(value: number): number {
+	return Math.min(28, Math.max(1, value || 27));
+}
+
+function clampInvoicePaymentTermDays(value: number): number {
+	return Math.min(90, Math.max(1, value || 14));
+}
 
 type AccountingSettingsFieldProps = {
 	form: AccountingSettings;

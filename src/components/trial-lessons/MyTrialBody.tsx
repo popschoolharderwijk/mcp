@@ -1,8 +1,13 @@
 import { MyTrialCard } from '@/components/trial-lessons/MyTrialCard';
 import type { EnrichedTrialLessonStudent } from '@/lib/trial-lessons/enrichTrialLessons';
-import { shouldRenderMyTrialCard } from '@/lib/trial-lessons/myTrialBodyHelpers';
-import type { TrialDecision } from '@/lib/trial-lessons/myTrialHelpers';
-import type { MyTrialContentState } from '@/lib/trial-lessons/myTrialPageHelpers';
+import type { MyTrialContentState, TrialDecision } from '@/lib/trial-lessons/myTrialHelpers';
+
+function shouldRenderMyTrialCard(
+	contentState: MyTrialContentState,
+	latest: EnrichedTrialLessonStudent | undefined,
+): latest is EnrichedTrialLessonStudent {
+	return contentState === 'content' && latest !== undefined;
+}
 
 interface MyTrialBodyProps {
 	contentState: MyTrialContentState;

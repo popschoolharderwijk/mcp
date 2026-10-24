@@ -35,18 +35,6 @@ export function inactiveCountDescription(inactiveCount: number): string | undefi
 	return `${inactiveCount} inactief`;
 }
 
-export function dashboardStatsGridClass(count: number): string {
-	if (count <= 3) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3';
-	if (count === 4) return 'grid gap-2 md:grid-cols-2 lg:grid-cols-4';
-	return 'grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6';
-}
-
-const STAT_SKELETON_KEYS = ['one', 'two', 'three', 'four', 'five', 'six'] as const;
-
-export function dashboardStatSkeletonKeys(count: number): string[] {
-	return STAT_SKELETON_KEYS.slice(0, count);
-}
-
 export function buildDashboardStatItems(stats: DashboardStats): DashboardStatItem[] {
 	return [
 		{

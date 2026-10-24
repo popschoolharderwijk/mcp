@@ -17,11 +17,7 @@ describe('renderEmailTemplatePreview', () => {
 
 describe('buildEmailTemplateRowsMap', () => {
 	it('indexes rows by event key', () => {
-		expect(
-			buildEmailTemplateRowsMap([
-				{ event_key: 'signup', subject: 'Welkom', body_markdown: 'Hi' },
-			]),
-		).toEqual({
+		expect(buildEmailTemplateRowsMap([{ event_key: 'signup', subject: 'Welkom', body_markdown: 'Hi' }])).toEqual({
 			signup: { event_key: 'signup', subject: 'Welkom', body_markdown: 'Hi' },
 		});
 	});

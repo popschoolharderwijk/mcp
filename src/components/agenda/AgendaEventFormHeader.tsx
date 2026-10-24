@@ -1,7 +1,6 @@
 import { ColorPicker } from '@/components/ui/color-picker';
 import { Input } from '@/components/ui/input';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
-import { isAgendaLessonFormHeader } from '@/lib/agenda/agendaEventFormHeaderHelpers';
 
 interface AgendaEventFormHeaderIconProps {
 	isLesson: boolean;
@@ -77,6 +76,10 @@ interface AgendaEventFormHeaderProps {
 	setTitle: (value: string) => void;
 	isCancelledEvent: boolean;
 	isNewEvent: boolean;
+}
+
+function isAgendaLessonFormHeader(isLessonEvent: boolean, isLessonGroupEvent: boolean): boolean {
+	return isLessonEvent || isLessonGroupEvent;
 }
 
 export function AgendaEventFormHeader({

@@ -3,7 +3,6 @@ import type { FreeSlotForTeacher } from '@/lib/agreementSlots';
 import type { TrialLessonSchedulingTeacher } from '@/lib/trial-lessons/loadTrialLessonSchedulingData';
 import { formatTrialLessonDateHeader } from '@/lib/trial-lessons/scheduleTrialLessonHelpers';
 import { getTrialLessonSlotKey, isTrialLessonSlotSelected } from '@/lib/trial-lessons/scheduleTrialLessonSlotHelpers';
-import { resolveTrialLessonSlotRowClassName } from '@/lib/trial-lessons/trialLessonSlotRowHelpers';
 
 interface TrialLessonSlotPickerProps {
 	slotsGroupedByDate: Map<string, FreeSlotForTeacher[]>;
@@ -18,6 +17,12 @@ const UNKNOWN_TEACHER_PROFILE = {
 	email: 'Onbekende docent',
 	avatar_url: null,
 };
+
+function resolveTrialLessonSlotRowClassName(isSelected: boolean): string {
+	return `flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-accent ${
+		isSelected ? 'bg-accent' : ''
+	}`;
+}
 
 function TrialLessonSlotRow({
 	slot,

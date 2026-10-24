@@ -3,8 +3,6 @@ import { NAV_LABELS } from '../../../src/config/nav-items';
 import type { DashboardStats } from '../../../src/lib/dashboard/dashboardDataHelpers';
 import {
 	buildDashboardStatItems,
-	dashboardStatSkeletonKeys,
-	dashboardStatsGridClass,
 	inactiveCountDescription,
 } from '../../../src/lib/dashboard/dashboardStatsGridHelpers';
 
@@ -79,25 +77,5 @@ describe('inactiveCountDescription', () => {
 
 	it('returns a Dutch inactive count', () => {
 		expect(inactiveCountDescription(2)).toBe('2 inactief');
-	});
-});
-
-describe('dashboardStatsGridClass', () => {
-	it('uses three columns for student-sized grids', () => {
-		expect(dashboardStatsGridClass(3)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-3');
-	});
-
-	it('uses four columns for teacher-sized grids', () => {
-		expect(dashboardStatsGridClass(4)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-4');
-	});
-
-	it('uses six columns for privileged grids', () => {
-		expect(dashboardStatsGridClass(6)).toBe('grid gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6');
-	});
-});
-
-describe('dashboardStatSkeletonKeys', () => {
-	it('returns stable keys for a teacher-sized grid', () => {
-		expect(dashboardStatSkeletonKeys(4)).toEqual(['one', 'two', 'three', 'four']);
 	});
 });

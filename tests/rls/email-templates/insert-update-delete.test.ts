@@ -3,6 +3,7 @@ import { createClientAs } from '../../db';
 import { expectInsufficientPrivilege, unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
+import { EMAIL_TEMPLATES } from '../seed-data-constants';
 import { type TestUser, TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -43,7 +44,7 @@ async function expectInsertBlocked(user: TestUser) {
 async function expectUpdateBlocked(user: TestUser) {
 	const db = await createClientAs(user);
 	const before = unwrapSingleRow(
-		await db.from('email_templates').select('subject').eq('event_key', EVENT_KEY).single(),
+		await db.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
 	);
 	const data = unwrap(
 		await db
@@ -55,9 +56,10 @@ async function expectUpdateBlocked(user: TestUser) {
 	expect(data).toHaveLength(0);
 
 	const verify = unwrapSingleRow(
-		await db.from('email_templates').select('subject').eq('event_key', EVENT_KEY).single(),
+		await db.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
 	);
 	expect(verify.subject).toBe(before.subject);
+	expect(verify.body_markdown).toBe(before.body_markdown);
 }
 
 async function expectDeleteBlocked(user: TestUser) {
@@ -107,6 +109,10 @@ describe('RLS: email_templates UPDATE - blocked for non-site-admin', () => {
 	it('student cannot update email template', async () => {
 		await expectUpdateBlocked(TestUsers.STUDENT_001);
 	});
+
+	it('user without role cannot update email template', async () => {
+		await expectUpdateBlocked(TestUsers.USER_001);
+	});
 });
 
 describe('RLS: email_templates DELETE - blocked for non-site-admin', () => {
@@ -124,6 +130,10 @@ describe('RLS: email_templates DELETE - blocked for non-site-admin', () => {
 
 	it('student cannot delete email template', async () => {
 		await expectDeleteBlocked(TestUsers.STUDENT_001);
+	});
+
+	it('user without role cannot delete email template', async () => {
+		await expectDeleteBlocked(TestUsers.USER_001);
 	});
 });
 
@@ -148,32 +158,32 @@ describe('RLS: email_templates writes - site_admin allowed', () => {
 		expect(deleted[0].event_key).toBe(TEMP_KEY);
 	});
 
-	it('site_admin can update signup_received subject and restore it', async () => {
+	it('site_admin can update signup_received subject and body_markdown and restore them', async () => {
 		const siteAdminId = fixtures.requireUserId(TestUsers.SITE_ADMIN);
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
-		const original = unwrapSingleRow(
-			await db.from('email_templates').select('subject').eq('event_key', EVENT_KEY).single(),
-		);
+		const original = EMAIL_TEMPLATES.BY_KEY.signup_received;
 
 		const updated = unwrap(
 			await db
 				.from('email_templates')
-				.update({ subject: 'RLS update probe' })
+				.update({ subject: 'RLS update probe', body_markdown: 'RLS body probe' })
 				.eq('event_key', EVENT_KEY)
-				.select('event_key, subject, updated_by'),
+				.select('event_key, subject, body_markdown, updated_by'),
 		);
 		expect(updated).toHaveLength(1);
 		expect(updated[0].subject).toBe('RLS update probe');
+		expect(updated[0].body_markdown).toBe('RLS body probe');
 		expect(updated[0].updated_by).toBe(siteAdminId);
 
 		const restored = unwrap(
 			await db
 				.from('email_templates')
-				.update({ subject: original.subject })
+				.update({ subject: original.subject, body_markdown: original.body_markdown })
 				.eq('event_key', EVENT_KEY)
-				.select('subject'),
+				.select('subject, body_markdown'),
 		);
 		expect(restored).toHaveLength(1);
 		expect(restored[0].subject).toBe(original.subject);
+		expect(restored[0].body_markdown).toBe(original.body_markdown);
 	});
 });

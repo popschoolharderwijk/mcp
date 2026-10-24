@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
+import { EMAIL_TEMPLATES } from '../seed-data-constants';
 import { type TestUser, TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -15,14 +16,6 @@ afterAll(async () => {
 	await verifyState(initialState);
 });
 
-const SEEDED_EVENT_KEYS = [
-	'signup_received',
-	'trial_scheduled',
-	'trial_scheduled_teacher',
-	'agreement_created',
-	'agreement_created_teacher',
-] as const;
-
 /**
  * email_templates SELECT: every authenticated role can read seeded templates.
  */
@@ -32,20 +25,29 @@ async function selectEmailTemplates(user: TestUser) {
 	const data = unwrap(
 		await db.from('email_templates').select('event_key, subject, body_markdown').order('event_key'),
 	);
-	expect(data).toHaveLength(SEEDED_EVENT_KEYS.length);
-	const keys = data.map((row) => row.event_key);
-	expect(keys).toEqual([
-		'agreement_created',
-		'agreement_created_teacher',
-		'signup_received',
-		'trial_scheduled',
-		'trial_scheduled_teacher',
-	]);
-	expect(data[0].body_markdown).not.toBe('');
-	expect(data[1].body_markdown).not.toBe('');
-	expect(data[2].body_markdown).not.toBe('');
-	expect(data[3].body_markdown).not.toBe('');
-	expect(data[4].body_markdown).not.toBe('');
+	expect(data).toHaveLength(EMAIL_TEMPLATES.TOTAL);
+	expect(data.map((row) => row.event_key)).toEqual([...EMAIL_TEMPLATES.EVENT_KEYS]);
+	const byKey = Object.fromEntries(data.map((row) => [row.event_key, row]));
+	expect(byKey.agreement_created).toEqual({
+		event_key: 'agreement_created',
+		...EMAIL_TEMPLATES.BY_KEY.agreement_created,
+	});
+	expect(byKey.agreement_created_teacher).toEqual({
+		event_key: 'agreement_created_teacher',
+		...EMAIL_TEMPLATES.BY_KEY.agreement_created_teacher,
+	});
+	expect(byKey.signup_received).toEqual({
+		event_key: 'signup_received',
+		...EMAIL_TEMPLATES.BY_KEY.signup_received,
+	});
+	expect(byKey.trial_scheduled).toEqual({
+		event_key: 'trial_scheduled',
+		...EMAIL_TEMPLATES.BY_KEY.trial_scheduled,
+	});
+	expect(byKey.trial_scheduled_teacher).toEqual({
+		event_key: 'trial_scheduled_teacher',
+		...EMAIL_TEMPLATES.BY_KEY.trial_scheduled_teacher,
+	});
 }
 
 describe('RLS: email_templates SELECT', () => {

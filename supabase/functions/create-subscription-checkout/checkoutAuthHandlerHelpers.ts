@@ -1,4 +1,6 @@
-import { canInitiateSubscriptionCheckout } from './checkoutAuthorizationHelpers.ts';
+function canInitiateSubscriptionCheckout(callerUserId: string, studentUserId: string, isPrivileged: boolean): boolean {
+	return isPrivileged || callerUserId === studentUserId;
+}
 
 export function resolveCheckoutInitiatorAuthorization(
 	rpcError: unknown,
