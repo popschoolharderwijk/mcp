@@ -45,7 +45,7 @@ describe('RLS: user_tip_progress own rows', () => {
 			last_action_at: null,
 		});
 
-		const actedAt = '2026-03-01T12:00:00.000Z';
+		const actedAt = '2026-03-01T12:00:00+00:00';
 		const [updated] = unwrap(
 			await db
 				.from('user_tip_progress')
