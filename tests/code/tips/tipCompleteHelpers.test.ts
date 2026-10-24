@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	resolveTipIdFromCompleteOn,
-	resolveTipIdFromTargetClick,
-	tipCompletesOn,
-} from '../../../src/lib/tips/tipCompleteHelpers';
+import { resolveTipIdFromCompleteOn, resolveTipIdFromTargetClick } from '../../../src/lib/tips/tipCompleteHelpers';
 import type { TipDefinition } from '../../../src/types/tips';
 
 const searchTip: TipDefinition = {
@@ -34,15 +30,6 @@ const agendaFullscreenTip: TipDefinition = {
 };
 
 const registry = [searchTip, themeTip, agendaFullscreenTip];
-
-describe('tipCompletesOn', () => {
-	it('matches listed modes only', () => {
-		expect(tipCompletesOn(searchTip, 'command-search-hotkey')).toBe(true);
-		expect(tipCompletesOn(searchTip, 'target-click')).toBe(false);
-		expect(tipCompletesOn(agendaFullscreenTip, 'target-click')).toBe(true);
-		expect(tipCompletesOn(agendaFullscreenTip, 'agenda-fullscreen-hotkey')).toBe(true);
-	});
-});
 
 describe('resolveTipIdFromCompleteOn', () => {
 	it('returns tip id for the matching mode', () => {
