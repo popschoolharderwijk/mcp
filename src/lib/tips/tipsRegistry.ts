@@ -1,0 +1,68 @@
+import type { TipDefinition } from '@/types/tips';
+
+export const TIPS_REGISTRY: readonly TipDefinition[] = [
+	{
+		id: 'command-search-slash',
+		title: 'Snel zoeken',
+		body: 'Druk op {{/}} of klik op {{icon:search}} om de zoekbalk te openen. Zoek mensen, pagina’s en meer zonder de muis.',
+		routes: ['*'],
+		target: 'command-search',
+		completeOn: 'slash-search',
+	},
+	{
+		id: 'tips-nav',
+		title: 'Tips terugvinden',
+		body: 'Open hier het overzicht van tips voor deze pagina. Een geel lampje {{icon:tips}} betekent dat er nog tips zijn die je niet gezien hebt.',
+		routes: ['*'],
+		target: 'tips-nav',
+		completeOn: 'target-click',
+	},
+	{
+		id: 'theme-dark-mode',
+		title: 'Licht of donker',
+		body: 'Klik op {{icon:sun}} of {{icon:moon}} om te wisselen tussen licht en donker thema.',
+		routes: ['*'],
+		target: 'theme-toggle',
+		completeOn: 'target-click',
+	},
+	{
+		id: 'sidebar-collapse',
+		title: 'Zijbalk inklappen',
+		body: 'Klik op {{icon:chevron-left}} om de zijbalk smaller te maken. Zo houd je meer ruimte over voor de inhoud.',
+		routes: ['*'],
+		target: 'sidebar-collapse',
+		completeOn: 'target-click',
+	},
+	{
+		id: 'table-quick-filter',
+		title: 'Snelle filters',
+		body: 'Open de filters met {{icon:filter}}. Handig om tabellen snel te beperken zonder te zoeken.',
+		routes: ['*'],
+		target: 'table-quick-filter',
+		completeOn: 'target-click',
+	},
+	{
+		id: 'agenda-fullscreen',
+		title: 'Agenda vergroten',
+		body: 'Klik op {{icon:maximize}} of druk op {{f}} om de agenda over het hele scherm te tonen.',
+		routes: ['/agenda'],
+		target: 'agenda-fullscreen',
+		completeOn: 'target-click',
+	},
+	{
+		id: 'agenda-nav-keyboard',
+		title: 'Agenda bladeren',
+		body: 'Gebruik de pijltjestoetsen {{←}} en {{→}} om van periode te wisselen, of {{↑}} om naar vandaag te springen.',
+		routes: ['/agenda'],
+		target: 'agenda-nav',
+		completeOn: 'agenda-nav-keys',
+	},
+	{
+		id: 'agenda-date-picker',
+		title: 'Spring naar datum',
+		body: 'Klik op de datum om snel naar een andere dag of maand te kunnen gaan.',
+		routes: ['/agenda'],
+		target: 'agenda-date-picker',
+		completeOn: 'target-click',
+	},
+] as const;

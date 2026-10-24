@@ -1,5 +1,6 @@
 import { TopNavCommandPalette } from '@/components/layout/TopNavCommandPalette';
 import { TopNavSearchButton, TopNavUserMenu } from '@/components/layout/TopNavUserMenu';
+import { TipsNavButtonConnected } from '@/components/tips/TipsProvider';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { getUserInitials } from '@/components/ui/user-display';
 import { useTopNav } from '@/hooks/useTopNav';
@@ -14,6 +15,7 @@ export function TopNav() {
 					<Breadcrumb items={topNav.breadcrumbItems} className="min-w-0 shrink-0" />
 				)}
 				<div className="flex-1" />
+				<TipsNavButtonConnected />
 				<TopNavSearchButton onOpenSearch={() => topNav.setOpen(true)} />
 				<TopNavUserMenu
 					displayName={topNav.displayName}

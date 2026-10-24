@@ -7,6 +7,7 @@ import type {
 	AppSettingValueByKey,
 	BrandingSetting,
 	SchoolYearSetting,
+	TipsSetting,
 	TrialLessonsSetting,
 	VatSetting,
 } from '@/lib/settings/appSettingsTypes';
@@ -78,6 +79,13 @@ function parseAgreements(value: unknown): AgreementsSetting | null {
 	return { default_start_offset_days, default_payment_method };
 }
 
+function parseTips(value: unknown): TipsSetting | null {
+	if (!isRecord(value)) return null;
+	const auto_interval_minutes = asIntegerInRange(value.auto_interval_minutes, 0, 24 * 60);
+	if (auto_interval_minutes === null) return null;
+	return { auto_interval_minutes };
+}
+
 const PARSERS: {
 	[K in AppSettingKey]: (value: unknown) => AppSettingValueByKey[K] | null;
 } = {
@@ -87,6 +95,7 @@ const PARSERS: {
 	branding: parseBranding,
 	trial_lessons: parseTrialLessons,
 	agreements: parseAgreements,
+	tips: parseTips,
 };
 
 export function isAppSettingKey(value: string): value is AppSettingKey {

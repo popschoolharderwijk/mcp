@@ -75,6 +75,10 @@ textarea::-moz-placeholder {
 	.animate-slide-in-from-bottom {
 		animation: slide-in-from-bottom 0.3s ease-out;
 	}
+
+	.animate-tip-ring-pulse {
+		animation: tip-ring-pulse 1.35s ease-in-out infinite;
+	}
 }
 
 @keyframes animate-in {
@@ -116,5 +120,15 @@ textarea::-moz-placeholder {
 	to {
 		opacity: 1;
 		transform: translateY(0);
+	}
+}
+
+@keyframes tip-ring-pulse {
+	0%,
+	100% {
+		box-shadow: 0 0 0 0 hsl(var(--primary) / 0.75);
+	}
+	50% {
+		box-shadow: 0 0 0 14px hsl(var(--primary) / 0);
 	}
 }

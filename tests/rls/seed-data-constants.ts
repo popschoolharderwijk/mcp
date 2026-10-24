@@ -12,7 +12,7 @@ import { EMAIL_TEMPLATE_BOOTSTRAP } from '../../src/lib/email/emailTemplateDefau
  */
 export const APP_SETTINGS = {
 	/** Keys seeded in bootstrap.sql */
-	KEY_COUNT: 6,
+	KEY_COUNT: 7,
 	SCHOOL_YEAR: {
 		start_month: 9,
 		end_month: 7,
@@ -36,6 +36,9 @@ export const APP_SETTINGS = {
 	AGREEMENTS: {
 		default_start_offset_days: 1,
 		default_payment_method: 'sepa' as const,
+	},
+	TIPS: {
+		auto_interval_minutes: 10,
 	},
 } as const;
 

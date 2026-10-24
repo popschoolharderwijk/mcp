@@ -38,7 +38,7 @@ function TopNavThemeToggleButton({
 	const iconByTheme = { moon: LuMoon, sun: LuSun } as const;
 	const ThemeIcon = iconByTheme[resolveThemeToggleIcon(resolvedTheme)];
 	return (
-		<Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleTheme}>
+		<Button variant="ghost" size="icon" className="h-9 w-9" onClick={onToggleTheme} data-tip-target="theme-toggle">
 			<ThemeIcon className="h-5 w-5" />
 			<span className="sr-only">Thema wisselen</span>
 		</Button>
@@ -198,6 +198,7 @@ export function TopNavSearchButton({ onOpenSearch }: { onOpenSearch: () => void 
 			variant="outline"
 			className="h-9 w-auto px-3 text-sm text-muted-foreground shrink-0"
 			onClick={onOpenSearch}
+			data-tip-target="command-search"
 		>
 			<LuSearch className="mr-2 h-4 w-4" />
 			<span className="inline-flex items-center gap-1.5">

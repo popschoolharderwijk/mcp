@@ -1,3 +1,5 @@
+import { NAV_LABELS } from '@/config/nav-items';
+
 export type AppSettingsTabId =
 	| 'school-year'
 	| 'no-lesson-periods'
@@ -6,6 +8,7 @@ export type AppSettingsTabId =
 	| 'branding'
 	| 'trial-lessons'
 	| 'agreements'
+	| 'tips'
 	| 'email-templates';
 
 const APP_SETTINGS_TABS = new Set<AppSettingsTabId>([
@@ -16,6 +19,7 @@ const APP_SETTINGS_TABS = new Set<AppSettingsTabId>([
 	'branding',
 	'trial-lessons',
 	'agreements',
+	'tips',
 	'email-templates',
 ]);
 
@@ -29,6 +33,7 @@ export const APP_SETTINGS_TAB_ITEMS: { value: AppSettingsTabId; label: string }[
 	{ value: 'branding', label: 'Huisstijl' },
 	{ value: 'trial-lessons', label: 'Proeflessen' },
 	{ value: 'agreements', label: 'Overeenkomsten' },
+	{ value: 'tips', label: NAV_LABELS.tips },
 	{ value: 'email-templates', label: 'E-mailtemplates' },
 ];
 

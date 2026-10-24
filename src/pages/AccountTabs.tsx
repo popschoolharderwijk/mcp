@@ -1,6 +1,7 @@
 import { LuMonitor, LuMoon, LuSun, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { AccountProfileAvatarSection } from '@/components/account/AccountProfileAvatarSection';
 import { AccountProfileFormFields } from '@/components/account/AccountProfileFormFields';
+import { AccountTipsResetCard } from '@/components/tips/AccountTipsResetCard';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,40 +74,44 @@ export function AccountAppearanceTab({
 	onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
 }) {
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Thema</CardTitle>
-				<CardDescription>Kies je voorkeur voor licht of donker thema</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<div className="flex gap-2">
-					<Button
-						variant="outline"
-						className={cn('flex-1', theme === 'light' && 'border-primary bg-primary/10')}
-						onClick={() => onThemeChange('light')}
-					>
-						<LuSun className="mr-2 h-4 w-4" />
-						Licht
-					</Button>
-					<Button
-						variant="outline"
-						className={cn('flex-1', theme === 'dark' && 'border-primary bg-primary/10')}
-						onClick={() => onThemeChange('dark')}
-					>
-						<LuMoon className="mr-2 h-4 w-4" />
-						Donker
-					</Button>
-					<Button
-						variant="outline"
-						className={cn('flex-1', theme === 'system' && 'border-primary bg-primary/10')}
-						onClick={() => onThemeChange('system')}
-					>
-						<LuMonitor className="mr-2 h-4 w-4" />
-						Systeem
-					</Button>
-				</div>
-			</CardContent>
-		</Card>
+		<div className="space-y-6">
+			<Card>
+				<CardHeader>
+					<CardTitle>Thema</CardTitle>
+					<CardDescription>Kies je voorkeur voor licht of donker thema</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							className={cn('flex-1', theme === 'light' && 'border-primary bg-primary/10')}
+							onClick={() => onThemeChange('light')}
+						>
+							<LuSun className="mr-2 h-4 w-4" />
+							Licht
+						</Button>
+						<Button
+							variant="outline"
+							className={cn('flex-1', theme === 'dark' && 'border-primary bg-primary/10')}
+							onClick={() => onThemeChange('dark')}
+						>
+							<LuMoon className="mr-2 h-4 w-4" />
+							Donker
+						</Button>
+						<Button
+							variant="outline"
+							className={cn('flex-1', theme === 'system' && 'border-primary bg-primary/10')}
+							onClick={() => onThemeChange('system')}
+						>
+							<LuMonitor className="mr-2 h-4 w-4" />
+							Systeem
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
+
+			<AccountTipsResetCard />
+		</div>
 	);
 }
 

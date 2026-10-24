@@ -3,6 +3,7 @@ import {
 	AgreementsSettingsForm,
 	BrandingSettingsForm,
 	SchoolYearSettingsForm,
+	TipsSettingsForm,
 	TrialLessonsSettingsForm,
 	VatSettingsForm,
 } from '@/components/settings/AppSettingsForms';
@@ -95,6 +96,15 @@ export function AppSettingsTabPanels({
 					initial={settings.agreements}
 					saving={savingKey === 'agreements'}
 					onSave={(value) => onSave('agreements', value)}
+				/>
+			</PageTabsContent>
+
+			<PageTabsContent value="tips">
+				<TipsSettingsForm
+					canEdit={canEdit}
+					initial={settings.tips}
+					saving={savingKey === 'tips'}
+					onSave={(value) => onSave('tips', value)}
 				/>
 			</PageTabsContent>
 

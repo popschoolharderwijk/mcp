@@ -30,32 +30,34 @@ export function CalendarToolbarNavigation({ label, date, messages, onNavigate }:
 
 	return (
 		<span className="rbc-btn-group rbc-nav-group">
-			<button
-				type="button"
-				onClick={() => onNavigate(CALENDAR_NAVIGATE.TODAY)}
-				aria-label={todayShortcutLabel}
-				title={todayShortcutLabel}
-			>
-				{todayLabel}
-			</button>
-			<button
-				type="button"
-				className="rbc-nav-prev"
-				onClick={() => onNavigate(CALENDAR_NAVIGATE.PREVIOUS)}
-				aria-label={previousLabel}
-				title={previousLabel}
-			>
-				<LuChevronLeft className="h-5 w-5" />
-			</button>
-			<button
-				type="button"
-				className="rbc-nav-next"
-				onClick={() => onNavigate(CALENDAR_NAVIGATE.NEXT)}
-				aria-label={nextLabel}
-				title={nextLabel}
-			>
-				<LuChevronRight className="h-5 w-5" />
-			</button>
+			<span className="inline-flex items-center gap-1" data-tip-target="agenda-nav">
+				<button
+					type="button"
+					onClick={() => onNavigate(CALENDAR_NAVIGATE.TODAY)}
+					aria-label={todayShortcutLabel}
+					title={todayShortcutLabel}
+				>
+					{todayLabel}
+				</button>
+				<button
+					type="button"
+					className="rbc-nav-prev"
+					onClick={() => onNavigate(CALENDAR_NAVIGATE.PREVIOUS)}
+					aria-label={previousLabel}
+					title={previousLabel}
+				>
+					<LuChevronLeft className="h-5 w-5" />
+				</button>
+				<button
+					type="button"
+					className="rbc-nav-next"
+					onClick={() => onNavigate(CALENDAR_NAVIGATE.NEXT)}
+					aria-label={nextLabel}
+					title={nextLabel}
+				>
+					<LuChevronRight className="h-5 w-5" />
+				</button>
+			</span>
 			<DatePicker
 				value={formatDateToDb(date)}
 				onChange={(next) => {
@@ -69,6 +71,7 @@ export function CalendarToolbarNavigation({ label, date, messages, onNavigate }:
 						className="rbc-toolbar-label"
 						aria-label="Ga naar datum"
 						title="Ga naar datum"
+						data-tip-target="agenda-date-picker"
 					>
 						{label}
 					</button>
@@ -115,6 +118,7 @@ export function CalendarToolbarViewSelect({ view, viewOptions, messages, onView 
 					aria-label={fullscreenLabel}
 					title={fullscreenLabel}
 					className="rbc-toolbar-fullscreen"
+					data-tip-target="agenda-fullscreen"
 				>
 					{fullscreen.isFullscreen ? (
 						<LuMinimize2 className="h-4 w-4" />

@@ -29,4 +29,7 @@ export const APP_SETTINGS_BOOTSTRAP: AppSettingsMap = {
 		default_start_offset_days: 1,
 		default_payment_method: 'sepa',
 	},
+	tips: {
+		auto_interval_minutes: 10,
+	},
 };

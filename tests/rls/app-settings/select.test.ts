@@ -31,6 +31,7 @@ async function selectAppSettings(user: TestUser) {
 	expect(byKey.branding).toEqual(APP_SETTINGS.BRANDING);
 	expect(byKey.trial_lessons).toEqual(APP_SETTINGS.TRIAL_LESSONS);
 	expect(byKey.agreements).toEqual(APP_SETTINGS.AGREEMENTS);
+	expect(byKey.tips).toEqual(APP_SETTINGS.TIPS);
 }
 
 describe('RLS: app_settings SELECT', () => {

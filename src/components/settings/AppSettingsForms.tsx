@@ -7,6 +7,7 @@ import { ColorPicker } from '@/components/ui/color-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { NAV_LABELS } from '@/config/nav-items';
 import { describeSchoolYearBounds } from '@/lib/billing/schoolYear';
 import { MONTH_LABELS_NL } from '@/lib/date/month-labels';
 import {
@@ -25,6 +26,7 @@ import type {
 	AgreementsSetting,
 	BrandingSetting,
 	SchoolYearSetting,
+	TipsSetting,
 	TrialLessonsSetting,
 	VatSetting,
 } from '@/lib/settings/appSettingsTypes';
@@ -406,6 +408,39 @@ export function AgreementsSettingsForm({ canEdit, initial, saving, onSave }: Sav
 					saving={saving}
 					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.agreements)}
 					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.agreements })}
+					onSave={() => void onSave(form)}
+				/>
+			</CardContent>
+		</Card>
+	);
+}
+
+export function TipsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<TipsSetting>) {
+	const [form, setForm] = useState(initial);
+	useEffect(() => setForm(initial), [initial]);
+
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{NAV_LABELS.tips}</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-4">
+				<div className="max-w-xs space-y-2">
+					<Label>Minimale wachttijd (minuten)</Label>
+					<Input
+						type="number"
+						min={0}
+						max={24 * 60}
+						disabled={!canEdit}
+						value={form.auto_interval_minutes}
+						onChange={(e) => setForm((f) => ({ ...f, auto_interval_minutes: Number(e.target.value) }))}
+					/>
+				</div>
+				<SettingsFormActions
+					canEdit={canEdit}
+					saving={saving}
+					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.tips)}
+					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.tips })}
 					onSave={() => void onSave(form)}
 				/>
 			</CardContent>
