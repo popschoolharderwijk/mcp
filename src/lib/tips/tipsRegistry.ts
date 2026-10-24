@@ -2,20 +2,20 @@ import type { TipDefinition } from '@/types/tips';
 
 export const TIPS_REGISTRY: readonly TipDefinition[] = [
 	{
-		id: 'command-search',
-		title: 'Snel zoeken',
-		body: 'Druk op de {{/}} toets om het zoekvenster te openen.',
-		routes: ['*'],
-		target: 'command-search',
-		completeOn: ['command-search-hotkey'],
-	},
-	{
 		id: 'tips-nav',
 		title: 'Tips terugvinden',
 		body: 'Open hier het overzicht van tips voor deze pagina. Een geel lampje {{icon:tips}} betekent dat er nog tips zijn die je niet gezien hebt.',
 		routes: ['*'],
 		target: 'tips-nav',
 		completeOn: ['target-click'],
+	},
+	{
+		id: 'command-search',
+		title: 'Snel zoeken',
+		body: 'Druk op de {{/}} toets om het zoekvenster te openen.',
+		routes: ['*'],
+		target: 'command-search',
+		completeOn: ['command-search-hotkey'],
 	},
 	{
 		id: 'theme-dark-mode',
