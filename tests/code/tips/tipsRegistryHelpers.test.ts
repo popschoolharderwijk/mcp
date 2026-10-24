@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	hasUnseenTipsAwaitingTarget,
 	hasUnseenTipsForPage,
 	listTipsForPage,
 	matchesRoute,
@@ -109,6 +110,35 @@ describe('hasUnseenTipsForPage', () => {
 		};
 		expect(hasUnseenTipsForPage(registry, '/agenda', progress)).toBe(true);
 		expect(hasUnseenTipsForPage(registry, '/students', progress)).toBe(false);
+	});
+
+	it('is false when matching unseen tips have no present target yet', () => {
+		const progress: TipProgressMap = {
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
+		};
+		const present = (target: string) => target !== 'agenda-fullscreen';
+		expect(hasUnseenTipsForPage(registry, '/agenda', progress, present)).toBe(false);
+	});
+});
+
+describe('hasUnseenTipsAwaitingTarget', () => {
+	it('is true when an unseen page tip target is missing', () => {
+		const progress: TipProgressMap = {
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
+		};
+		const present = (target: string) => target !== 'agenda-fullscreen';
+		expect(hasUnseenTipsAwaitingTarget(registry, '/agenda', progress, present)).toBe(true);
+	});
+
+	it('is false when all matching tips already have progress even if targets are missing', () => {
+		const progress: TipProgressMap = {
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
+			'agenda-fullscreen': { status: 'dismissed', updatedAt: '2026-01-03T00:00:00.000Z', lastActionAt: null },
+		};
+		expect(hasUnseenTipsAwaitingTarget(registry, '/agenda', progress, () => false)).toBe(false);
 	});
 });
 

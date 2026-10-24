@@ -35,6 +35,16 @@ export function hasUnseenTipsForPage(
 	return registry.some((tip) => !progress[tip.id] && matchesRoute(tip, pathname) && isTargetPresent(tip.target));
 }
 
+/** True when an unseen route-matching tip has no `[data-tip-target]` in the document yet. */
+export function hasUnseenTipsAwaitingTarget(
+	registry: readonly TipDefinition[],
+	pathname: string,
+	progress: TipProgressMap,
+	isTargetPresent: TipTargetPresent = alwaysPresent,
+): boolean {
+	return registry.some((tip) => !progress[tip.id] && matchesRoute(tip, pathname) && !isTargetPresent(tip.target));
+}
+
 /** Page tips with a present target; most recently seen first (unseen last). */
 export function listTipsForPage(
 	registry: readonly TipDefinition[],
@@ -87,9 +97,10 @@ function isRadixDialogOpen(): boolean {
 	return document.querySelector('[role="dialog"][data-state="open"]') !== null;
 }
 
-/** Resolves true when `[data-tip-target]` exists (or appears within the wait window). */
-export function waitForTipTarget(target: string, signal: AbortSignal): Promise<boolean> {
-	if (document.querySelector(tipTargetSelector(target))) return Promise.resolve(true);
+/** Resolves true when any of the targets exists (or appears within the wait window). */
+export function waitForAnyTipTarget(targets: readonly string[], signal: AbortSignal): Promise<boolean> {
+	if (targets.length === 0) return Promise.resolve(false);
+	if (targets.some(tipTargetIsPresent)) return Promise.resolve(true);
 
 	return new Promise((resolve) => {
 		const timeout = window.setTimeout(() => {
@@ -98,7 +109,7 @@ export function waitForTipTarget(target: string, signal: AbortSignal): Promise<b
 		}, TIP_TARGET_WAIT_MS);
 
 		const observer = new MutationObserver(() => {
-			if (!document.querySelector(tipTargetSelector(target))) return;
+			if (!targets.some(tipTargetIsPresent)) return;
 			window.clearTimeout(timeout);
 			observer.disconnect();
 			resolve(true);
@@ -116,6 +127,11 @@ export function waitForTipTarget(target: string, signal: AbortSignal): Promise<b
 			{ once: true },
 		);
 	});
+}
+
+/** Resolves true when `[data-tip-target]` exists (or appears within the wait window). */
+export function waitForTipTarget(target: string, signal: AbortSignal): Promise<boolean> {
+	return waitForAnyTipTarget([target], signal);
 }
 
 /** Resolves true when no Radix dialog is open; false if aborted while waiting. */
