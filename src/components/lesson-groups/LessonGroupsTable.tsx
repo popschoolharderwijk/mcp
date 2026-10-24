@@ -3,8 +3,7 @@ import type { NavigateFunction } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { LessonGroupTableRow } from '@/lib/lesson-groups/lessonGroupsPageHelpers';
 import { buildLessonGroupColumns, LessonGroupRowActions } from '@/lib/lesson-groups/lessonGroupsTableColumns';
 import type { LessonGroupRow } from '@/types/lesson-groups';
@@ -33,9 +32,8 @@ export function LessonGroupsTable({
 	const columns = buildLessonGroupColumns(navigate);
 
 	return (
-		<PageShell
-			title={NAV_LABELS.lessonGroups}
-			description="Beheer lesgroepen en hun deelnemers"
+		<NavPageShell
+			item="lessonGroups"
 			actions={
 				canEdit ? (
 					<Button onClick={() => navigate('/lesson-groups/new')}>
@@ -69,7 +67,7 @@ export function LessonGroupsTable({
 						: undefined,
 				}}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }
 

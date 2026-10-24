@@ -5,9 +5,8 @@ import { SignupRequestItem } from '@/components/students/SignupRequestItem';
 import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/students/StudentProfileCards';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageShell } from '@/components/ui/page-shell';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { getUserInitials } from '@/components/ui/user-display';
-import { NAV_LABELS } from '@/config/nav-labels';
 import { getDisplayName } from '@/lib/display-name';
 import { hasParentContactInfo } from '@/lib/students/myStudentProfileHelpers';
 import type { MyStudentProfileData } from '@/lib/students/myStudentProfileLoadHelpers';
@@ -23,7 +22,7 @@ export function MyStudentProfileContent({ profile, agreements, signupRequests }:
 	const initials = getUserInitials(profile.profile);
 
 	return (
-		<PageShell title={NAV_LABELS.myProfile} description="Bekijk je profielgegevens en lesovereenkomsten">
+		<NavPageShell item="myProfile">
 			<div className="space-y-6">
 				<div className="grid gap-6 md:grid-cols-2">
 					<Card>
@@ -69,6 +68,6 @@ export function MyStudentProfileContent({ profile, agreements, signupRequests }:
 					renderItem={(request) => <SignupRequestItem request={request} />}
 				/>
 			</div>
-		</PageShell>
+		</NavPageShell>
 	);
 }

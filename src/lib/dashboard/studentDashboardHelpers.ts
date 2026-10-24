@@ -1,5 +1,5 @@
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NAV_LABELS } from '@/config/nav-items';
 import type { Enums } from '@/integrations/supabase/types';
 import { type DashboardStatItem, inactiveCountDescription } from '@/lib/dashboard/dashboardStatsGridHelpers';
 import type { InvoiceStatus } from '@/lib/invoices/types';

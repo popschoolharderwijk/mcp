@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { AccountingReportContent } from '@/components/reports/AccountingReportContent';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAccountingReportPage } from '@/hooks/useAccountingReportPage';
 import { resolveAccountingReportPageView } from '@/lib/accounting/accountingReportPageHelpers';
 
@@ -13,7 +12,7 @@ export default function AccountingReportPage() {
 		return <Navigate to="/" replace />;
 	}
 	if (view === 'loading') {
-		return <PageShell title={NAV_LABELS.accounting} description="Boekhoudrapportage voor Exact Online" loading />;
+		return <NavPageShell item="accounting" loading />;
 	}
 
 	return <AccountingReportContent state={state} />;

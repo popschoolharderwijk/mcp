@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnnouncementAccordionItem } from '@/components/dashboard/AnnouncementsSectionParts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import { useAnnouncements } from '@/hooks/useAnnouncements';
 import {
 	getDefaultExpandedAnnouncementIds,

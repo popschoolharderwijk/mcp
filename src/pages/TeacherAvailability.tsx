@@ -3,8 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ReportsTeacherFilter } from '@/components/reports/ReportsTeacherFilter';
 import { AvailabilityDayGrid } from '@/components/teachers/AvailabilityDayGrid';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import type { Tables } from '@/integrations/supabase/types';
 import { DAY_NAMES } from '@/lib/date/day-index';
@@ -66,9 +65,8 @@ export default function TeacherAvailability() {
 	}
 
 	return (
-		<PageShell
-			title={NAV_LABELS.availability}
-			description="Bekijk de beschikbaarheid van alle docenten"
+		<NavPageShell
+			item="availability"
 			loading={loading || authLoading}
 		>
 			<div className="space-y-6">
@@ -97,6 +95,6 @@ export default function TeacherAvailability() {
 					}}
 				/>
 			</div>
-		</PageShell>
+		</NavPageShell>
 	);
 }

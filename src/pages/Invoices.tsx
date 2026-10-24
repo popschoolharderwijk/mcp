@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { supabase } from '@/integrations/supabase/client';
 import { downloadInvoicePdf } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { invoiceSearchHaystack } from '@/lib/invoices/invoiceSearchHelpers';
@@ -65,7 +64,7 @@ function List() {
 	};
 
 	return (
-		<PageShell title={NAV_LABELS.invoices} description="Overzicht van alle facturen">
+		<NavPageShell item="invoices">
 			<DataTable
 				data={rows}
 				columns={INVOICE_COLUMNS}
@@ -87,6 +86,6 @@ function List() {
 					),
 				}}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }

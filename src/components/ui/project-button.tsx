@@ -7,7 +7,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { NAV_ICONS } from '@/config/nav-labels';
+import { NAV_ICONS } from '@/config/nav-items';
 import { cn } from '@/lib/utils';
 
 const ProjectIcon = NAV_ICONS.projects;

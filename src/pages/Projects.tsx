@@ -8,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import { DataTable } from '@/components/ui/data-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectsPageController } from '@/hooks/useProjectsPageController';
 import { PROJECT_COLUMNS, type ProjectAction } from '@/lib/projects/projectsPageHelpers';
@@ -104,9 +103,8 @@ export default function Projects() {
 
 	return (
 		<div>
-			<PageShell
-				title={NAV_LABELS.projects}
-				description={`Beheer alle ${NAV_LABELS.projects.toLowerCase()}`}
+			<NavPageShell
+				item="projects"
 				actions={
 					<ProjectsHeaderActions
 						canEdit={permissions.canEdit}
@@ -142,7 +140,7 @@ export default function Projects() {
 					)}
 					rowActions={rowActions}
 				/>
-			</PageShell>
+			</NavPageShell>
 
 			<ProjectFormDialog
 				open={formDialog.open}

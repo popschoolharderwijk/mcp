@@ -6,7 +6,7 @@ import { adminHrefs, adminNavItems, isPathInGroup, NAV_GAP } from '@/components/
 import { ADMIN_SECTION_KEY, buildFinanceNavGroup } from '@/components/layout/sidebarMainNavHelpers';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import { usePersistedSidebarGroupOpen } from '@/hooks/usePersistedSidebarGroupOpen';
 import { cn } from '@/lib/utils';
 

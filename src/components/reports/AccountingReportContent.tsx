@@ -4,8 +4,7 @@ import { AccountingReportInvoiceTableSection } from '@/components/reports/Accoun
 import { AccountingReportOptionalSections } from '@/components/reports/AccountingReportOptionalSections';
 import { PeriodPresetControls } from '@/components/reports/PeriodPresetControls';
 import { Button } from '@/components/ui/button';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { useAccountingReportPage } from '@/hooks/useAccountingReportPage';
 import {
 	buildAccountingJournalLinesSummary,
@@ -30,7 +29,7 @@ export function AccountingReportContent({ state }: AccountingReportContentProps)
 
 	return (
 		<div className="space-y-6">
-			<PageShell title={NAV_LABELS.accounting} description="Boekhoudrapportage voor Exact Online">
+			<NavPageShell item="accounting">
 				<div className="space-y-6">
 					<PeriodPresetControls
 						preset={state.preset}
@@ -70,7 +69,7 @@ export function AccountingReportContent({ state }: AccountingReportContentProps)
 
 					<AccountingReportOptionalSections summary={summary} report={state.report} />
 				</div>
-			</PageShell>
+			</NavPageShell>
 
 			<AccountingReportInvoiceTableSection tableView={tableView} state={state} />
 		</div>

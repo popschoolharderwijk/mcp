@@ -15,10 +15,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageShell } from '@/components/ui/page-shell';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelectSingle } from '@/components/ui/user-select';
-import { NAV_LABELS } from '@/config/nav-labels';
 import { supabase } from '@/integrations/supabase/client';
 import {
 	executeNewMandateCreate,
@@ -69,9 +68,8 @@ function MandatesContent() {
 	};
 
 	return (
-		<PageShell
-			title={NAV_LABELS.mandates}
-			description="Beheer SEPA-mandaten van leerlingen"
+		<NavPageShell
+			item="mandates"
 			actions={
 				<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
 					<DialogTrigger asChild>
@@ -107,7 +105,7 @@ function MandatesContent() {
 				emptyMessage="Nog geen mandaten"
 				rowActions={{ onDelete: (mandate) => handleDelete(mandate.id) }}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }
 

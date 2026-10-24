@@ -1,5 +1,5 @@
-import type { NavLabelKey } from '@/config/nav-labels';
-import { NAV_LABELS } from '@/config/nav-labels';
+import type { NavLabelKey } from '@/config/nav-items';
+import { NAV_LABELS } from '@/config/nav-items';
 import type { DashboardStats } from '@/lib/dashboard/dashboardDataHelpers';
 
 export const DASHBOARD_STAT_KEYS = [

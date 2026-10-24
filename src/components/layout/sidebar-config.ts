@@ -1,4 +1,4 @@
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-labels';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 
 export const NAV_GAP = '0.375rem';
 

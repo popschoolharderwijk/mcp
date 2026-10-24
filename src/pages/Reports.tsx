@@ -1,7 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { ReportsPageBody } from '@/components/reports/ReportsPageBody';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useReportsPage } from '@/hooks/useReportsPage';
 import { BASE_PRESET_LABELS, type BasePeriodPreset } from '@/lib/reports/periodPresets';
 import { shouldRedirectReportsAccess } from '@/lib/reports/reportsPageHelpers';
@@ -17,9 +16,8 @@ export default function Reports() {
 
 	if (page.authLoading) {
 		return (
-			<PageShell
-				title={NAV_LABELS.reports}
-				description="Urenrapportage per docent, lessoort en leeftijdscategorie"
+			<NavPageShell
+				item="reports"
 				loading
 			/>
 		);

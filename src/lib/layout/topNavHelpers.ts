@@ -1,4 +1,4 @@
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NAV_LABELS } from '@/config/nav-items';
 
 export interface TopNavProfile {
 	first_name: string | null;

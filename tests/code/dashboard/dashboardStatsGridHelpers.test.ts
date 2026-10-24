@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { NAV_LABELS } from '../../../src/config/nav-labels';
+import { NAV_LABELS } from '../../../src/config/nav-items';
 import type { DashboardStats } from '../../../src/lib/dashboard/dashboardDataHelpers';
 import {
 	buildDashboardStatItems,

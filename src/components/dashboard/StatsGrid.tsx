@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NAV_ICONS } from '@/config/nav-labels';
+import { NAV_ICONS } from '@/config/nav-items';
 import {
 	type DashboardStatItem,
 	dashboardStatSkeletonKeys,

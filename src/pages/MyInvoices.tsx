@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { supabase } from '@/integrations/supabase/client';
 import { downloadInvoicePdf } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { buildMyInvoiceColumns, InvoicePdfDownloadButton } from '@/lib/invoices/invoiceTableColumns';
@@ -48,7 +47,7 @@ export default function MyInvoices() {
 	};
 
 	return (
-		<PageShell title={NAV_LABELS.myInvoices} description="Overzicht van al je facturen">
+		<NavPageShell item="myInvoices">
 			<DataTable
 				data={invoices}
 				columns={MY_INVOICE_COLUMNS}
@@ -70,6 +69,6 @@ export default function MyInvoices() {
 					),
 				}}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }

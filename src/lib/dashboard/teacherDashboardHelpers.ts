@@ -1,4 +1,4 @@
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NAV_LABELS } from '@/config/nav-items';
 import { type DashboardStudent, parseRecentDashboardStudents } from '@/lib/dashboard/dashboardDataHelpers';
 import type { DashboardStatItem } from '@/lib/dashboard/dashboardStatsGridHelpers';
 import {

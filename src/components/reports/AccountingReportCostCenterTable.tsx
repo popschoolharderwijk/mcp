@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { NAV_ICONS } from '@/config/nav-labels';
+import { NAV_ICONS } from '@/config/nav-items';
 import type { AccountingCostCenter } from '@/lib/accounting/types';
 import { formatCentsEUR } from '@/lib/accounting/types';
 

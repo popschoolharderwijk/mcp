@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import { persistAppSettingSave } from '@/components/settings/AppSettingsForms';
 import { AppSettingsTabPanels } from '@/components/settings/AppSettingsTabPanels';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import {
 	type AppSettingsTabId,
@@ -36,11 +35,10 @@ export function AppSettingsPage({ tabParam, canEdit }: AppSettingsPageProps) {
 	};
 
 	return (
-		<PageShell
-			title={NAV_LABELS.settings}
-			description="Schooljaar, lesvrije periodes, agenda, tarieven, e-mailtemplates en overige siteconfiguratie"
+		<NavPageShell
+			item="settings"
 			loading={loading}
-			width="3/4"
+			width="full"
 		>
 			<AppSettingsTabPanels
 				settings={settings}
@@ -50,6 +48,6 @@ export function AppSettingsPage({ tabParam, canEdit }: AppSettingsPageProps) {
 				onTabChange={onTabChange}
 				onSave={onSave}
 			/>
-		</PageShell>
+		</NavPageShell>
 	);
 }

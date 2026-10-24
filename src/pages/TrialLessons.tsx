@@ -3,8 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { ScheduleTrialLessonDialog } from '@/components/trial-lessons/ScheduleTrialLessonDialog';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { useAuth } from '@/hooks/useAuth';
 import { useTrialLessonsPageController } from '@/hooks/useTrialLessonsPageController';
 
@@ -18,9 +17,8 @@ export default function TrialLessons() {
 
 	return (
 		<>
-			<PageShell
-				title={NAV_LABELS.trialLessons}
-				description="Overzicht van ingeplande proeflessen"
+			<NavPageShell
+				item="trialLessons"
 				actions={
 					<Button onClick={() => controller.setOpenSchedule(true)}>
 						<LuPlus className="mr-2 h-4 w-4" />
@@ -35,7 +33,7 @@ export default function TrialLessons() {
 					getRowKey={(row) => row.id}
 					emptyMessage="Nog geen proeflessen ingepland."
 				/>
-			</PageShell>
+			</NavPageShell>
 			<ScheduleTrialLessonDialog
 				open={controller.openSchedule}
 				onOpenChange={controller.setOpenSchedule}

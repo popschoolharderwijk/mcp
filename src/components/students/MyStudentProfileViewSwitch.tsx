@@ -2,8 +2,7 @@ import { Navigate } from 'react-router-dom';
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
 import { MyStudentProfileContent } from '@/components/students/MyStudentProfileContent';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
-import { PageShell } from '@/components/ui/page-shell';
-import { NAV_LABELS } from '@/config/nav-labels';
+import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { MyStudentProfileView } from '@/lib/students/myStudentProfileHelpers';
 import type { MyStudentProfileData } from '@/lib/students/myStudentProfileLoadHelpers';
 import { resolveMyStudentProfileRenderedView } from '@/lib/students/myStudentProfileViewHelpers';
@@ -29,9 +28,8 @@ export function MyStudentProfileViewSwitch({
 
 	if (renderedView === 'skeleton') {
 		return (
-			<PageShell
-				title={NAV_LABELS.myProfile}
-				description="Bekijk je profielgegevens en lesovereenkomsten"
+			<NavPageShell
+				item="myProfile"
 				loading
 			/>
 		);

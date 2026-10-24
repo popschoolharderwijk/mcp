@@ -5,7 +5,7 @@
  * are defined here; the page adds the last item via setBreadcrumbSuffix().
  */
 
-import { NAV_LABELS } from './nav-labels';
+import { NAV_LABELS } from './nav-items';
 
 export interface BreadcrumbItem {
 	label: string;
