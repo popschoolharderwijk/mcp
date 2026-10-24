@@ -1,20 +1,10 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { TeacherInsert } from '../../types';
-import { expectError, expectNoError } from '../../utils';
+import { unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { TestUsers } from '../test-users';
-
-const dbNoRLS = createClientBypassRLS();
-
-// User IDs from fixtures for insert tests
-const studentBUserId = fixtures.requireUserId(TestUsers.STUDENT_002);
-const studentCUserId = fixtures.requireUserId(TestUsers.STUDENT_003);
-const studentDUserId = fixtures.requireUserId(TestUsers.STUDENT_004);
-
-// Use Bob's teacher ID for UPDATE/DELETE block tests (not Alice, since Alice is used in the test)
-const testTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
+import { type TestUser, TestUsers } from '../test-users';
 
 /**
  * Teachers INSERT/UPDATE/DELETE permissions:
@@ -30,323 +20,191 @@ const testTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
  * All other roles (staff, user without role) cannot insert, update, or delete teachers.
  * Note: Teachers are identified by the teachers table, not by a role.
  */
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+const dbNoRLS = createClientBypassRLS();
+
+const studentBUserId = fixtures.requireUserId(TestUsers.STUDENT_002);
+const studentCUserId = fixtures.requireUserId(TestUsers.STUDENT_003);
+const studentDUserId = fixtures.requireUserId(TestUsers.STUDENT_004);
+const bobTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
+const aliceTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
+
+async function expectInsertBlocked(user: TestUser) {
+	const db = await createClientAs(user);
+	unwrapError(
+		await db
+			.from('teachers')
+			.insert({ user_id: studentBUserId } satisfies TeacherInsert)
+			.select(),
+	);
+}
+
+async function expectUpdateBlocked(user: TestUser, targetTeacherUserId: string) {
+	const db = await createClientAs(user);
+	expect(
+		unwrap(
+			await db
+				.from('teachers')
+				.update({ bio: 'Hacked bio' })
+				.eq('user_id', targetTeacherUserId)
+				.select('user_id'),
+		),
+	).toHaveLength(0);
+}
+
+async function expectDeleteBlocked(user: TestUser, targetTeacherUserId: string) {
+	const db = await createClientAs(user);
+	expect(
+		unwrap(await db.from('teachers').delete().eq('user_id', targetTeacherUserId).select('user_id')),
+	).toHaveLength(0);
+}
+
+async function expectAdminCanUpdateBioAndRestore(user: TestUser) {
+	const db = await createClientAs(user);
+	const original = unwrapSingleRow(
+		await db.from('teachers').select('user_id, bio').eq('user_id', bobTeacherUserId).single(),
+	);
+
+	const updated = unwrap(
+		await db.from('teachers').update({ bio: 'Admin updated bio' }).eq('user_id', bobTeacherUserId).select('bio'),
+	);
+	expect(updated).toEqual([{ bio: 'Admin updated bio' }]);
+
+	unwrap(await db.from('teachers').update({ bio: original.bio }).eq('user_id', bobTeacherUserId).select('bio'));
+}
+
+async function expectAdminCanInsertAndDelete(user: TestUser, newTeacherUserId: string) {
+	const db = await createClientAs(user);
+	const inserted = unwrap(
+		await db
+			.from('teachers')
+			.insert({ user_id: newTeacherUserId } satisfies TeacherInsert)
+			.select('user_id'),
+	);
+	expect(inserted).toEqual([{ user_id: newTeacherUserId }]);
+
+	const deleted = unwrap(await db.from('teachers').delete().eq('user_id', newTeacherUserId).select('user_id'));
+	expect(deleted).toEqual([{ user_id: newTeacherUserId }]);
+}
+
 describe('RLS: teachers INSERT - blocked for non-admin roles', () => {
-	const newTeacher: TeacherInsert = { user_id: studentBUserId };
-
 	it('user without role cannot insert teacher', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data, error } = await db.from('teachers').insert(newTeacher).select();
-
-		// Should fail - no INSERT policy for regular users
-		expectError(data, error);
+		await expectInsertBlocked(TestUsers.STUDENT_001);
 	});
 
 	it('teacher cannot insert teacher', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db.from('teachers').insert(newTeacher).select();
-
-		expectError(data, error);
+		await expectInsertBlocked(TestUsers.TEACHER_ALICE);
 	});
 
 	it('staff cannot insert teacher', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data, error } = await db.from('teachers').insert(newTeacher).select();
-
-		expectError(data, error);
+		await expectInsertBlocked(TestUsers.STAFF_ONE);
 	});
 });
 
 describe('RLS: teachers INSERT - admin permissions', () => {
-	let initialState: DatabaseState;
-	const { setupState, verifyState } = setupDatabaseStateVerification();
-
-	beforeAll(async () => {
-		initialState = await setupState();
-	});
-
-	afterAll(async () => {
-		await verifyState(initialState);
-	});
-
 	it('admin can insert teacher', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		const newTeacher: TeacherInsert = { user_id: studentCUserId };
-		const { data, error } = await db.from('teachers').insert(newTeacher).select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(newTeacher.user_id);
-
-		// Cleanup
-		if (data?.[0]?.user_id) {
-			await dbNoRLS.from('teachers').delete().eq('user_id', data[0].user_id);
-		}
+		const inserted = unwrap(
+			await db
+				.from('teachers')
+				.insert({ user_id: studentCUserId } satisfies TeacherInsert)
+				.select('user_id'),
+		);
+		expect(inserted).toEqual([{ user_id: studentCUserId }]);
+		unwrap(await dbNoRLS.from('teachers').delete().eq('user_id', studentCUserId).select('user_id'));
 	});
 
 	it('site_admin can insert teacher', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		const newTeacher: TeacherInsert = { user_id: studentCUserId };
-		const { data, error } = await db.from('teachers').insert(newTeacher).select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(newTeacher.user_id);
-
-		// Cleanup
-		if (data?.[0]?.user_id) {
-			await dbNoRLS.from('teachers').delete().eq('user_id', data[0].user_id);
-		}
+		const inserted = unwrap(
+			await db
+				.from('teachers')
+				.insert({ user_id: studentCUserId } satisfies TeacherInsert)
+				.select('user_id'),
+		);
+		expect(inserted).toEqual([{ user_id: studentCUserId }]);
+		unwrap(await dbNoRLS.from('teachers').delete().eq('user_id', studentCUserId).select('user_id'));
 	});
 });
 
 describe('RLS: teachers UPDATE - blocked for non-admin roles', () => {
 	it('user without role cannot update teacher', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ updated_at: new Date().toISOString() })
-			.eq('user_id', testTeacherUserId)
-			.select();
-
-		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.STUDENT_001, bobTeacherUserId);
 	});
 
 	it('teacher cannot update other teachers', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ updated_at: new Date().toISOString() })
-			.eq('user_id', testTeacherUserId)
-			.select();
-
-		// Should fail - teacher can only update their own record
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.TEACHER_ALICE, bobTeacherUserId);
 	});
 
 	it('staff cannot update teacher', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data: teachers } = await db.from('teachers').select('user_id').limit(1);
-		if (!teachers || teachers.length === 0) {
-			throw new Error('No teachers found for test');
-		}
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ updated_at: new Date().toISOString() })
-			.eq('user_id', teachers[0].user_id)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.STAFF_ONE, bobTeacherUserId);
 	});
 });
 
 describe('RLS: teachers UPDATE - teacher own record', () => {
-	let initialState: DatabaseState;
-	const { setupState, verifyState } = setupDatabaseStateVerification();
-
-	beforeAll(async () => {
-		initialState = await setupState();
-	});
-
-	afterAll(async () => {
-		await verifyState(initialState);
-	});
-
 	it('teacher can update own teacher record (bio)', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const aliceTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
+		const original = unwrapSingleRow(
+			await db.from('teachers').select('bio').eq('user_id', aliceTeacherUserId).single(),
+		);
 
-		// Get original bio
-		const { data: original } = await db.from('teachers').select('bio').eq('user_id', aliceTeacherUserId).single();
-		const originalBio = original?.bio;
+		const updated = unwrap(
+			await db
+				.from('teachers')
+				.update({ bio: 'Updated bio by teacher' })
+				.eq('user_id', aliceTeacherUserId)
+				.select('bio'),
+		);
+		expect(updated).toEqual([{ bio: 'Updated bio by teacher' }]);
 
-		// Update bio
-		const newBio = 'Updated bio by teacher';
-		const { data, error } = await db
-			.from('teachers')
-			.update({ bio: newBio })
-			.eq('user_id', aliceTeacherUserId)
-			.select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.bio).toBe(newBio);
-
-		// Restore original bio
-		await db.from('teachers').update({ bio: originalBio }).eq('user_id', aliceTeacherUserId);
+		unwrap(await db.from('teachers').update({ bio: original.bio }).eq('user_id', aliceTeacherUserId).select('bio'));
 	});
 
 	it('teacher cannot update other teachers records', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const bobTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_BOB);
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ bio: 'Hacked bio' })
-			.eq('user_id', bobTeacherUserId)
-			.select();
-
-		// Should fail - teacher can only update their own record
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectUpdateBlocked(TestUsers.TEACHER_ALICE, bobTeacherUserId);
 	});
 });
 
 describe('RLS: teachers UPDATE - admin permissions', () => {
-	let initialState: DatabaseState;
-	const { setupState, verifyState } = setupDatabaseStateVerification();
-
-	beforeAll(async () => {
-		initialState = await setupState();
+	it('admin can update teacher bio and restore it', async () => {
+		await expectAdminCanUpdateBioAndRestore(TestUsers.ADMIN_ONE);
 	});
 
-	afterAll(async () => {
-		await verifyState(initialState);
-	});
-
-	it('admin can update teacher', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		const { data: teachers } = await db.from('teachers').select('*').limit(1);
-		if (!teachers || teachers.length === 0) {
-			throw new Error('No teachers found for test');
-		}
-
-		const originalTeacher = teachers[0];
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ updated_at: new Date().toISOString() })
-			.eq('user_id', originalTeacher.user_id)
-			.select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(originalTeacher.user_id);
-	});
-
-	it('site_admin can update teacher', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		const { data: teachers } = await db.from('teachers').select('*').limit(1);
-		if (!teachers || teachers.length === 0) {
-			throw new Error('No teachers found for test');
-		}
-
-		const originalTeacher = teachers[0];
-
-		const { data, error } = await db
-			.from('teachers')
-			.update({ updated_at: new Date().toISOString() })
-			.eq('user_id', originalTeacher.user_id)
-			.select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(originalTeacher.user_id);
+	it('site_admin can update teacher bio and restore it', async () => {
+		await expectAdminCanUpdateBioAndRestore(TestUsers.SITE_ADMIN);
 	});
 });
 
 describe('RLS: teachers DELETE - blocked for non-admin roles', () => {
 	it('user without role cannot delete teacher', async () => {
-		const db = await createClientAs(TestUsers.STUDENT_001);
-
-		const { data, error } = await db.from('teachers').delete().eq('user_id', testTeacherUserId).select();
-
-		// RLS blocks - 0 rows affected
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.STUDENT_001, bobTeacherUserId);
 	});
 
 	it('teacher cannot delete teacher', async () => {
-		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-
-		const { data, error } = await db.from('teachers').delete().eq('user_id', testTeacherUserId).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.TEACHER_ALICE, bobTeacherUserId);
 	});
 
 	it('staff cannot delete teacher', async () => {
-		const db = await createClientAs(TestUsers.STAFF_ONE);
-
-		const { data: teachers } = await db.from('teachers').select('user_id').limit(1);
-		if (!teachers || teachers.length === 0) {
-			throw new Error('No teachers found for test');
-		}
-
-		const { data, error } = await db.from('teachers').delete().eq('user_id', teachers[0].user_id).select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		await expectDeleteBlocked(TestUsers.STAFF_ONE, bobTeacherUserId);
 	});
 });
 
 describe('RLS: teachers DELETE - admin permissions', () => {
-	let initialState: DatabaseState;
-	const { setupState, verifyState } = setupDatabaseStateVerification();
-
-	beforeAll(async () => {
-		initialState = await setupState();
-	});
-
-	afterAll(async () => {
-		await verifyState(initialState);
-	});
-
 	it('admin can delete teacher', async () => {
-		const db = await createClientAs(TestUsers.ADMIN_ONE);
-
-		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
-		const newTeacher: TeacherInsert = { user_id: studentDUserId };
-		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
-		expectNoError(inserted, insertError);
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert teacher');
-		}
-
-		const teacherUserId = inserted[0].user_id;
-
-		// Delete
-		const { data, error } = await db.from('teachers').delete().eq('user_id', teacherUserId).select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(teacherUserId);
+		await expectAdminCanInsertAndDelete(TestUsers.ADMIN_ONE, studentDUserId);
 	});
 
 	it('site_admin can delete teacher', async () => {
-		const db = await createClientAs(TestUsers.SITE_ADMIN);
-
-		// Create a teacher to delete (use studentDUserId - should not be a teacher in seed)
-		const newTeacher: TeacherInsert = { user_id: studentDUserId };
-		const { data: inserted, error: insertError } = await db.from('teachers').insert(newTeacher).select();
-		expectNoError(inserted, insertError);
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert teacher');
-		}
-
-		const teacherUserId = inserted[0].user_id;
-
-		// Delete
-		const { data, error } = await db.from('teachers').delete().eq('user_id', teacherUserId).select();
-
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(teacherUserId);
+		await expectAdminCanInsertAndDelete(TestUsers.SITE_ADMIN, studentDUserId);
 	});
 });

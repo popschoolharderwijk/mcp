@@ -15,7 +15,7 @@
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
-import { expectNonNull } from '../../utils';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { AGENDA_EVENTS, LESSON_AGREEMENTS } from '../seed-data-constants';
@@ -40,21 +40,18 @@ describe('agenda_events SELECT RLS', () => {
 		const studentUserId = fixtures.requireUserId(TestUsers.STUDENT_001);
 
 		// student-001 participates in "Lesoverleg" event per seeds/test.sql
-		const { data: participantEvents } = await dbNoRLS
-			.from('agenda_participants')
-			.select('event_id')
-			.eq('user_id', studentUserId);
+		const participantEvents = unwrap(
+			await dbNoRLS.from('agenda_participants').select('event_id').eq('user_id', studentUserId),
+		);
 
-		expectNonNull(participantEvents);
 		expect(participantEvents).toHaveLength(AGENDA_EVENTS.STUDENT_001_PARTICIPATIONS);
 
 		const eventId = participantEvents[0].event_id;
 
-		const { data: events, error } = await studentDb.from('agenda_events').select('id').eq('id', eventId);
+		const events = unwrap(await studentDb.from('agenda_events').select('id').eq('id', eventId));
 
-		expect(error).toBeNull();
-		expect(events?.length).toBe(1);
-		expect(events?.[0].id).toBe(eventId);
+		expect(events).toHaveLength(1);
+		expect(events[0].id).toBe(eventId);
 	});
 
 	it('participant can see event they participate in (student-012 in Projectoverleg)', async () => {
@@ -62,36 +59,30 @@ describe('agenda_events SELECT RLS', () => {
 		const studentUserId = fixtures.requireUserId(TestUsers.STUDENT_012);
 
 		// student-012 participates in "Wekelijks overleg" + 2 lesson_agreements per seeds/test.sql
-		const { data: participantEvents } = await dbNoRLS
-			.from('agenda_participants')
-			.select('event_id')
-			.eq('user_id', studentUserId);
+		const participantEvents = unwrap(
+			await dbNoRLS.from('agenda_participants').select('event_id').eq('user_id', studentUserId),
+		);
 
-		expectNonNull(participantEvents);
 		expect(participantEvents).toHaveLength(AGENDA_EVENTS.STUDENT_012_PARTICIPATIONS);
 
 		const eventId = participantEvents[0].event_id;
 
-		const { data: events, error } = await studentDb.from('agenda_events').select('id').eq('id', eventId);
+		const events = unwrap(await studentDb.from('agenda_events').select('id').eq('id', eventId));
 
-		expect(error).toBeNull();
-		expect(events?.length).toBe(1);
-		expect(events?.[0].id).toBe(eventId);
+		expect(events).toHaveLength(1);
+		expect(events[0].id).toBe(eventId);
 	});
 
 	it('non-participant student cannot see events they do not participate in', async () => {
 		const studentDb = await createClientAs(TestUsers.STUDENT_002);
 		const studentUserId = fixtures.requireUserId(TestUsers.STUDENT_002);
 
-		const { data: allManualEvents } = await dbNoRLS.from('agenda_events').select('id').eq('source_type', 'manual');
-		expectNonNull(allManualEvents);
+		const allManualEvents = unwrap(await dbNoRLS.from('agenda_events').select('id').eq('source_type', 'manual'));
+		const studentParticipations = unwrap(
+			await dbNoRLS.from('agenda_participants').select('event_id').eq('user_id', studentUserId),
+		);
 
-		const { data: studentParticipations } = await dbNoRLS
-			.from('agenda_participants')
-			.select('event_id')
-			.eq('user_id', studentUserId);
-
-		const participatingEventIds = new Set(studentParticipations?.map((p) => p.event_id) ?? []);
+		const participatingEventIds = new Set(studentParticipations.map((p) => p.event_id));
 		const nonParticipatingManual = allManualEvents.filter((e) => !participatingEventIds.has(e.id));
 
 		expect(nonParticipatingManual).toHaveLength(AGENDA_EVENTS.NON_PARTICIPATING_MANUAL_FOR_STUDENT_002);
@@ -99,45 +90,33 @@ describe('agenda_events SELECT RLS', () => {
 		// Pick one event student cannot see
 		const nonParticipatingEventId = nonParticipatingManual[0].id;
 
-		const { data: events, error } = await studentDb
-			.from('agenda_events')
-			.select('id')
-			.eq('id', nonParticipatingEventId);
+		const events = unwrap(await studentDb.from('agenda_events').select('id').eq('id', nonParticipatingEventId));
 
-		expect(error).toBeNull();
-		expect(events?.length).toBe(0);
+		expect(events).toHaveLength(0);
 	});
 
 	it('privileged user (staff) can see all events', async () => {
 		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data: allEvents } = await dbNoRLS.from('agenda_events').select('id');
-		const { data: staffEvents, error } = await staffDb.from('agenda_events').select('id');
+		const allEvents = unwrap(await dbNoRLS.from('agenda_events').select('id'));
+		const staffEvents = unwrap(await staffDb.from('agenda_events').select('id'));
 
-		expect(error).toBeNull();
-		expectNonNull(allEvents);
 		expect(staffEvents).toHaveLength(allEvents.length);
 	});
 
 	it('privileged user (admin) can see all events', async () => {
 		const adminDb = await createClientAs(TestUsers.ADMIN_ONE);
-		const { data: allEvents } = await dbNoRLS.from('agenda_events').select('id');
-		const { data: adminEvents, error } = await adminDb.from('agenda_events').select('id');
+		const allEvents = unwrap(await dbNoRLS.from('agenda_events').select('id'));
+		const adminEvents = unwrap(await adminDb.from('agenda_events').select('id'));
 
-		expect(error).toBeNull();
-		expectNonNull(allEvents);
-		expectNonNull(adminEvents);
 		expect(adminEvents).toHaveLength(allEvents.length);
 	});
 
 	it('privileged user (site_admin) can see all events', async () => {
 		const siteAdminDb = await createClientAs(TestUsers.SITE_ADMIN);
-		const { data: allEvents } = await dbNoRLS.from('agenda_events').select('id');
-		const { data: siteAdminEvents, error } = await siteAdminDb.from('agenda_events').select('id');
+		const allEvents = unwrap(await dbNoRLS.from('agenda_events').select('id'));
+		const siteAdminEvents = unwrap(await siteAdminDb.from('agenda_events').select('id'));
 
-		expect(error).toBeNull();
-		expectNonNull(allEvents);
-		expectNonNull(siteAdminEvents);
 		expect(siteAdminEvents).toHaveLength(allEvents.length);
 	});
 
@@ -146,23 +125,25 @@ describe('agenda_events SELECT RLS', () => {
 		const teacherUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 
 		// Verify teacher-alice has lesson_agreement events (created from agreements)
-		const { data: teacherLessonEvents } = await dbNoRLS
-			.from('agenda_events')
-			.select('id')
-			.eq('source_type', 'lesson_agreement')
-			.eq('owner_user_id', teacherUserId);
+		const teacherLessonEvents = unwrap(
+			await dbNoRLS
+				.from('agenda_events')
+				.select('id')
+				.eq('source_type', 'lesson_agreement')
+				.eq('owner_user_id', teacherUserId),
+		);
 
-		expectNonNull(teacherLessonEvents);
 		expect(teacherLessonEvents).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE);
 
 		// Teacher should be able to see their lesson events
-		const { data: events, error } = await teacherDb
-			.from('agenda_events')
-			.select('id, owner_user_id, source_type')
-			.eq('source_type', 'lesson_agreement')
-			.eq('owner_user_id', teacherUserId);
+		const events = unwrap(
+			await teacherDb
+				.from('agenda_events')
+				.select('id, owner_user_id, source_type')
+				.eq('source_type', 'lesson_agreement')
+				.eq('owner_user_id', teacherUserId),
+		);
 
-		expect(error).toBeNull();
 		expect(events).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE);
 	});
 
@@ -171,13 +152,8 @@ describe('agenda_events SELECT RLS', () => {
 		const studentDb = await createClientAs(TestUsers.STUDENT_009);
 
 		// RLS allows participants to see their events
-		const { data: events, error } = await studentDb
-			.from('agenda_events')
-			.select('id')
-			.eq('source_type', 'lesson_agreement');
+		const events = unwrap(await studentDb.from('agenda_events').select('id').eq('source_type', 'lesson_agreement'));
 
-		expect(error).toBeNull();
-		expectNonNull(events);
 		expect(events).toHaveLength(LESSON_AGREEMENTS.STUDENT_009);
 	});
 
@@ -187,13 +163,10 @@ describe('agenda_events SELECT RLS', () => {
 		const teacherUserId = fixtures.requireUserId(TestUsers.TEACHER_ALICE);
 
 		// Get events where teacher is owner (lesson_agreement events)
-		const { data: ownedEvents, error } = await teacherDb
-			.from('agenda_events')
-			.select('id, owner_user_id')
-			.eq('owner_user_id', teacherUserId);
+		const ownedEvents = unwrap(
+			await teacherDb.from('agenda_events').select('id, owner_user_id').eq('owner_user_id', teacherUserId),
+		);
 
-		expect(error).toBeNull();
-		expectNonNull(ownedEvents);
 		expect(ownedEvents).toHaveLength(AGENDA_EVENTS.TEACHER_ALICE_OWNED);
 		expect(ownedEvents.every((e) => e.owner_user_id === teacherUserId)).toBe(true);
 	});

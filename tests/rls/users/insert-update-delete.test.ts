@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { formatDateToDb, now } from '../../../src/lib/date/date-format';
-import { createClientAs, createClientBypassRLS } from '../../db';
+import { createClientAs } from '../../db';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
-const dbNoRLS = createClientBypassRLS();
-const { requireUserId, requireProfile } = fixtures;
+const { requireUserId, requireProfile, requireStudentId, requireTeacherId, requireLessonTypeId } = fixtures;
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -18,6 +18,10 @@ beforeAll(async () => {
 afterAll(async () => {
 	await verifyState(initialState);
 });
+
+const lessonAgreementStudentUserId = requireStudentId(TestUsers.STUDENT_001);
+const lessonAgreementTeacherUserId = requireTeacherId(TestUsers.TEACHER_ALICE);
+const lessonAgreementLessonTypeId = requireLessonTypeId('Gitaarles');
 
 /**
  * Users without role, teacher, or student permissions:
@@ -40,57 +44,62 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 			const ownProfile = requireProfile(TestUsers.USER_001);
 			const newFirstName = 'Updated';
 
-			const { data, error } = await db
-				.from('profiles')
-				.update({ first_name: newFirstName })
-				.eq('user_id', ownProfile.user_id)
-				.select();
+			const data = unwrap(
+				await db
+					.from('profiles')
+					.update({ first_name: newFirstName })
+					.eq('user_id', ownProfile.user_id)
+					.select(),
+			);
 
-			expect(error).toBeNull();
 			expect(data).toHaveLength(1);
-			expect(data?.[0]?.first_name).toBe(newFirstName);
+			expect(data[0].first_name).toBe(newFirstName);
 
-			// Restore original
-			await db.from('profiles').update({ first_name: ownProfile.first_name }).eq('user_id', ownProfile.user_id);
+			unwrap(
+				await db
+					.from('profiles')
+					.update({ first_name: ownProfile.first_name })
+					.eq('user_id', ownProfile.user_id)
+					.select('user_id'),
+			);
 		});
 
 		it('USER_A cannot update other profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 			const otherProfile = requireProfile(TestUsers.USER_002);
 
-			const { data, error } = await db
-				.from('profiles')
-				.update({ first_name: 'Hacked' })
-				.eq('user_id', otherProfile.user_id)
-				.select();
-
-			expect(error).toBeNull();
-			expect(data).toHaveLength(0);
+			expect(
+				unwrap(
+					await db
+						.from('profiles')
+						.update({ first_name: 'Hacked' })
+						.eq('user_id', otherProfile.user_id)
+						.select(),
+				),
+			).toHaveLength(0);
 		});
 
 		it('USER_A cannot insert profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db
-				.from('profiles')
-				.insert({
-					user_id: '00000000-0000-0000-0000-999999999999',
-					email: 'hacked@test.nl',
-				})
-				.select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(
+				await db
+					.from('profiles')
+					.insert({
+						user_id: '00000000-0000-0000-0000-999999999999',
+						email: 'hacked@test.nl',
+					})
+					.select(),
+			);
 		});
 
 		it('USER_A cannot delete profiles', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 			const otherProfile = requireProfile(TestUsers.USER_002);
 
-			const { data, error } = await db.from('profiles').delete().eq('user_id', otherProfile.user_id).select();
-
-			expect(error).toBeNull();
-			expect(data).toHaveLength(0);
+			expect(
+				unwrap(await db.from('profiles').delete().eq('user_id', otherProfile.user_id).select()),
+			).toHaveLength(0);
 		});
 	});
 
@@ -99,10 +108,7 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 			const db = await createClientAs(TestUsers.USER_001);
 			const ownUserId = requireUserId(TestUsers.USER_001);
 
-			const { data, error } = await db.from('students').insert({ user_id: ownUserId }).select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(await db.from('students').insert({ user_id: ownUserId }).select());
 		});
 	});
 
@@ -111,10 +117,7 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 			const db = await createClientAs(TestUsers.USER_001);
 			const ownUserId = requireUserId(TestUsers.USER_001);
 
-			const { data, error } = await db.from('teachers').insert({ user_id: ownUserId }).select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(await db.from('teachers').insert({ user_id: ownUserId }).select());
 		});
 	});
 
@@ -122,33 +125,23 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 		it('USER_A cannot insert lesson agreements', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			// Get valid IDs using bypass RLS (lesson_agreements uses student_user_id, not student id)
-			const { data: student } = await dbNoRLS.from('students').select('user_id').limit(1).single();
-			const { data: teacher } = await dbNoRLS.from('teachers').select('user_id').limit(1).single();
-			const { data: lessonType } = await dbNoRLS.from('lesson_types').select('id').limit(1).single();
-
-			if (!student || !teacher || !lessonType) {
-				throw new Error('Failed to get test data');
-			}
-
-			const { data, error } = await db
-				.from('lesson_agreements')
-				.insert({
-					student_user_id: student.user_id,
-					teacher_user_id: teacher.user_id,
-					lesson_type_id: lessonType.id,
-					day_of_week: 1,
-					start_time: '14:00',
-					start_date: formatDateToDb(now()),
-					is_active: true,
-					duration_minutes: 30,
-					frequency: 'weekly',
-					price_per_lesson: 30,
-				})
-				.select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(
+				await db
+					.from('lesson_agreements')
+					.insert({
+						student_user_id: lessonAgreementStudentUserId,
+						teacher_user_id: lessonAgreementTeacherUserId,
+						lesson_type_id: lessonAgreementLessonTypeId,
+						day_of_week: 1,
+						start_time: '14:00',
+						start_date: formatDateToDb(now()),
+						is_active: true,
+						duration_minutes: 30,
+						frequency: 'weekly',
+						price_per_lesson: 30,
+					})
+					.select(),
+			);
 		});
 	});
 
@@ -156,17 +149,16 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 		it('USER_A cannot insert lesson types', async () => {
 			const db = await createClientAs(TestUsers.USER_001);
 
-			const { data, error } = await db
-				.from('lesson_types')
-				.insert({
-					name: 'Hacked Type',
-					icon: 'test',
-					color: '#FF0000',
-				})
-				.select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(
+				await db
+					.from('lesson_types')
+					.insert({
+						name: 'Hacked Type',
+						icon: 'test',
+						color: '#FF0000',
+					})
+					.select(),
+			);
 		});
 	});
 
@@ -175,10 +167,7 @@ describe('RLS: users without role/teacher/student - INSERT/UPDATE/DELETE', () =>
 			const db = await createClientAs(TestUsers.USER_001);
 			const ownUserId = requireUserId(TestUsers.USER_001);
 
-			const { data, error } = await db.from('user_roles').insert({ user_id: ownUserId, role: 'staff' }).select();
-
-			expect(error).not.toBeNull();
-			expect(data).toBeNull();
+			unwrapError(await db.from('user_roles').insert({ user_id: ownUserId, role: 'staff' }).select());
 		});
 	});
 });

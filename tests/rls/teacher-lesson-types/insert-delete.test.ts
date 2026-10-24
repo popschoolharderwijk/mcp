@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { TeacherLessonTypeInsert } from '../../types';
-import { expectError, expectNoError } from '../../utils';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -17,6 +17,17 @@ const guitarLessonTypeId = fixtures.requireLessonTypeId('Gitaarles');
 const saxLessonTypeId = fixtures.requireLessonTypeId('Saxofoonles');
 // Use Drums for Bob - Bob doesn't have it
 const drumsLessonTypeId = fixtures.requireLessonTypeId('Drumles');
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 /**
  * Teacher Lesson Types INSERT/DELETE permissions:
@@ -42,33 +53,25 @@ describe('RLS: teacher_lesson_types INSERT - blocked for non-admin roles', () =>
 	it('user without role cannot insert lesson type link', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
-
-		expectError(data, error);
+		unwrapError(await db.from('teacher_lesson_types').insert(newLink).select());
 	});
 
 	it('student cannot insert lesson type link', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
-
-		expectError(data, error);
+		unwrapError(await db.from('teacher_lesson_types').insert(newLink).select());
 	});
 
 	it('teacher cannot insert lesson type link', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
-
-		expectError(data, error);
+		unwrapError(await db.from('teacher_lesson_types').insert(newLink).select());
 	});
 
 	it('staff cannot insert lesson type link', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
-
-		expectError(data, error);
+		unwrapError(await db.from('teacher_lesson_types').insert(newLink).select());
 	});
 });
 
@@ -81,21 +84,19 @@ describe('RLS: teacher_lesson_types INSERT - admin permissions', () => {
 			lesson_type_id: saxLessonTypeId,
 		};
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
+		const [row] = unwrap(await db.from('teacher_lesson_types').insert(newLink).select());
 
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
-		expect(data[0]?.teacher_user_id).toBe(aliceTeacherUserId);
-		expect(data[0]?.lesson_type_id).toBe(saxLessonTypeId);
+		expect(row.teacher_user_id).toBe(aliceTeacherUserId);
+		expect(row.lesson_type_id).toBe(saxLessonTypeId);
 
-		// Cleanup
-		if (data?.[0]) {
+		unwrap(
 			await dbNoRLS
 				.from('teacher_lesson_types')
 				.delete()
-				.eq('teacher_user_id', data[0].teacher_user_id)
-				.eq('lesson_type_id', data[0].lesson_type_id);
-		}
+				.eq('teacher_user_id', row.teacher_user_id)
+				.eq('lesson_type_id', row.lesson_type_id)
+				.select(),
+		);
 	});
 
 	it('site_admin can insert lesson type link', async () => {
@@ -103,20 +104,22 @@ describe('RLS: teacher_lesson_types INSERT - admin permissions', () => {
 
 		const newLink: TeacherLessonTypeInsert = {
 			teacher_user_id: bobTeacherUserId,
-			lesson_type_id: drumsLessonTypeId, // Use Drums - not in seed for Bob
+			lesson_type_id: drumsLessonTypeId,
 		};
 
-		const { data, error } = await db.from('teacher_lesson_types').insert(newLink).select();
+		const [row] = unwrap(await db.from('teacher_lesson_types').insert(newLink).select());
 
-		expectNoError(data, error);
-		expect(data).toHaveLength(1);
+		expect(row.teacher_user_id).toBe(bobTeacherUserId);
+		expect(row.lesson_type_id).toBe(drumsLessonTypeId);
 
-		// Cleanup
-		await dbNoRLS
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', data[0].teacher_user_id)
-			.eq('lesson_type_id', data[0].lesson_type_id);
+		unwrap(
+			await dbNoRLS
+				.from('teacher_lesson_types')
+				.delete()
+				.eq('teacher_user_id', row.teacher_user_id)
+				.eq('lesson_type_id', row.lesson_type_id)
+				.select(),
+		);
 	});
 });
 
@@ -124,109 +127,97 @@ describe('RLS: teacher_lesson_types DELETE - blocked for non-admin roles', () =>
 	it('user without role cannot delete lesson type link', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', aliceTeacherUserId)
-			.eq('lesson_type_id', guitarLessonTypeId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('teacher_lesson_types')
+					.delete()
+					.eq('teacher_user_id', aliceTeacherUserId)
+					.eq('lesson_type_id', guitarLessonTypeId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 
 	it('teacher cannot delete lesson type link', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', aliceTeacherUserId)
-			.eq('lesson_type_id', guitarLessonTypeId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('teacher_lesson_types')
+					.delete()
+					.eq('teacher_user_id', aliceTeacherUserId)
+					.eq('lesson_type_id', guitarLessonTypeId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 
 	it('staff cannot delete lesson type link', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', aliceTeacherUserId)
-			.eq('lesson_type_id', guitarLessonTypeId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('teacher_lesson_types')
+					.delete()
+					.eq('teacher_user_id', aliceTeacherUserId)
+					.eq('lesson_type_id', guitarLessonTypeId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 });
 
 describe('RLS: teacher_lesson_types DELETE - admin permissions', () => {
-	let initialState: DatabaseState;
-	const { setupState, verifyState } = setupDatabaseStateVerification();
-
-	beforeAll(async () => {
-		initialState = await setupState();
-	});
-
-	afterAll(async () => {
-		await verifyState(initialState);
-	});
-
 	it('admin can delete lesson type link', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Create a test link to delete (use Saxofoon - not in seed for Alice)
-		const insertResult = await dbNoRLS
-			.from('teacher_lesson_types')
-			.insert({
-				teacher_user_id: aliceTeacherUserId,
-				lesson_type_id: saxLessonTypeId,
-			})
-			.select();
+		unwrap(
+			await dbNoRLS
+				.from('teacher_lesson_types')
+				.insert({
+					teacher_user_id: aliceTeacherUserId,
+					lesson_type_id: saxLessonTypeId,
+				})
+				.select(),
+		);
 
-		if (insertResult.error) {
-			throw insertResult.error;
-		}
+		const data = unwrap(
+			await db
+				.from('teacher_lesson_types')
+				.delete()
+				.eq('teacher_user_id', aliceTeacherUserId)
+				.eq('lesson_type_id', saxLessonTypeId)
+				.select(),
+		);
 
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', aliceTeacherUserId)
-			.eq('lesson_type_id', saxLessonTypeId)
-			.select();
-
-		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 	});
 
 	it('site_admin can delete lesson type link', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		// Create a test link to delete (use Drums - not in seed for Bob)
-		const insertResult = await dbNoRLS
-			.from('teacher_lesson_types')
-			.insert({
-				teacher_user_id: bobTeacherUserId,
-				lesson_type_id: drumsLessonTypeId,
-			})
-			.select();
+		unwrap(
+			await dbNoRLS
+				.from('teacher_lesson_types')
+				.insert({
+					teacher_user_id: bobTeacherUserId,
+					lesson_type_id: drumsLessonTypeId,
+				})
+				.select(),
+		);
 
-		if (insertResult.error) {
-			throw insertResult.error;
-		}
+		const data = unwrap(
+			await db
+				.from('teacher_lesson_types')
+				.delete()
+				.eq('teacher_user_id', bobTeacherUserId)
+				.eq('lesson_type_id', drumsLessonTypeId)
+				.select(),
+		);
 
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', bobTeacherUserId)
-			.eq('lesson_type_id', drumsLessonTypeId)
-			.select();
-
-		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 	});
 });
@@ -238,46 +229,47 @@ describe('RLS: teacher_lesson_types DELETE - admin permissions', () => {
  */
 describe('TRIGGER: teacher_lesson_types DELETE - blocked when agreements exist', () => {
 	const teacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
-	const lessonTypeId = fixtures.requireLessonTypeId('Gitaarles');
+	const gitaarLessonTypeId = fixtures.requireLessonTypeId('Gitaarles');
 
 	it('admin cannot delete teacher_lesson_type when agreement exists for that combination', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Student 009 already has an agreement with Alice for Gitaar (see fixtures)
-		// Try to delete Alice's link to Gitaar - should fail
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', teacherUserId)
-			.eq('lesson_type_id', lessonTypeId)
-			.select();
+		const error = unwrapError(
+			await db
+				.from('teacher_lesson_types')
+				.delete()
+				.eq('teacher_user_id', teacherUserId)
+				.eq('lesson_type_id', gitaarLessonTypeId)
+				.select(),
+		);
 
-		// Trigger should block the delete
-		expectError(data, error);
 		expect(error.message).toContain('Cannot remove lesson type from teacher');
 	});
 
 	it('admin can delete teacher_lesson_type when no agreement exists for that combination', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		// Alice has Zang in seed - no student has an agreement for Zang
-		const lessonTypeId = fixtures.requireLessonTypeId('Zangles');
+		const zangLessonTypeId = fixtures.requireLessonTypeId('Zangles');
 
-		// Try to delete - should succeed because no agreement exists for Zang + Alice
-		const { data, error } = await db
-			.from('teacher_lesson_types')
-			.delete()
-			.eq('teacher_user_id', teacherUserId)
-			.eq('lesson_type_id', lessonTypeId)
-			.select();
+		const data = unwrap(
+			await db
+				.from('teacher_lesson_types')
+				.delete()
+				.eq('teacher_user_id', teacherUserId)
+				.eq('lesson_type_id', zangLessonTypeId)
+				.select(),
+		);
 
-		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 
-		// Restore the link
-		await dbNoRLS.from('teacher_lesson_types').insert({
-			teacher_user_id: teacherUserId,
-			lesson_type_id: lessonTypeId,
-		});
+		unwrap(
+			await dbNoRLS
+				.from('teacher_lesson_types')
+				.insert({
+					teacher_user_id: teacherUserId,
+					lesson_type_id: zangLessonTypeId,
+				})
+				.select(),
+		);
 	});
 });

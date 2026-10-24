@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { LessonAgreementInsert } from '../../types';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -35,11 +36,8 @@ describe('RLS: students automatic management via lesson agreements', () => {
 	it('student is automatically created when lesson agreement is inserted and deleted when all agreements are removed', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		// Verify student does not exist
-		const { data: studentsBefore } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsBefore).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 
-		// Insert lesson agreement
 		const newAgreement: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
 			teacher_user_id: teacherAliceUserId,
@@ -53,41 +51,27 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(newAgreement).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert lesson agreement');
-		}
+		const [inserted] = unwrap(await db.from('lesson_agreements').insert(newAgreement).select());
+		expect(inserted.student_user_id).toBe(studentCUserId);
 
-		// Verify student was automatically created
-		const { data: studentsAfter } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
+		const studentsAfter = unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId));
 		expect(studentsAfter).toHaveLength(1);
-		expect(studentsAfter?.[0]?.user_id).toBe(studentCUserId);
+		expect(studentsAfter[0].user_id).toBe(studentCUserId);
 
-		// Cleanup: delete all agreements for this student via normal client (trigger should automatically delete student)
-		await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId);
+		unwrap(await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId).select('id'));
 
-		// Verify all agreements are gone
-		const { data: agreementsAfter } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsAfter).toHaveLength(0);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(0);
 
-		// Verify student was automatically deleted by trigger
-		const { data: studentsAfterCleanup } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsAfterCleanup).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 	});
 
 	it('student is created with 2 agreements and remains when 1 is deleted, but is deleted when the 2nd is removed', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		// Verify student does not exist initially
-		const { data: studentsInitial } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsInitial).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 
-		// Create first lesson agreement (will create the student)
 		const agreement1: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
 			teacher_user_id: teacherAliceUserId,
@@ -101,19 +85,12 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted1, error: error1 } = await db.from('lesson_agreements').insert(agreement1).select();
-		expect(error1).toBeNull();
-		expect(inserted1).toHaveLength(1);
-		if (!inserted1 || inserted1.length === 0) {
-			throw new Error('Failed to insert first lesson agreement');
-		}
+		const [inserted1] = unwrap(await db.from('lesson_agreements').insert(agreement1).select());
 
-		// Verify student was automatically created after first agreement
-		const { data: studentsAfterFirst } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
+		const studentsAfterFirst = unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId));
 		expect(studentsAfterFirst).toHaveLength(1);
-		expect(studentsAfterFirst?.[0]?.user_id).toBe(studentCUserId);
+		expect(studentsAfterFirst[0].user_id).toBe(studentCUserId);
 
-		// Create second lesson agreement
 		const agreement2: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
 			teacher_user_id: teacherAliceUserId,
@@ -127,65 +104,34 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted2, error: error2 } = await db.from('lesson_agreements').insert(agreement2).select();
-		expect(error2).toBeNull();
-		expect(inserted2).toHaveLength(1);
-		if (!inserted2 || inserted2.length === 0) {
-			throw new Error('Failed to insert second lesson agreement');
-		}
+		const [inserted2] = unwrap(await db.from('lesson_agreements').insert(agreement2).select());
 
-		// Verify student still exists with 2 agreements
-		const { data: studentsWithTwo } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsWithTwo).toHaveLength(1);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		// Verify there are 2 agreements
-		const { data: agreementsBefore } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsBefore).toHaveLength(2);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(2);
 
-		// Delete first agreement
-		const { error: deleteError1 } = await db.from('lesson_agreements').delete().eq('id', inserted1[0].id);
-		expect(deleteError1).toBeNull();
+		unwrap(await db.from('lesson_agreements').delete().eq('id', inserted1.id).select('id'));
 
-		// Verify student still exists (because second agreement remains)
-		const { data: studentsAfterOneDeleted } = await dbNoRLS
-			.from('students')
-			.select('*')
-			.eq('user_id', studentCUserId);
-		expect(studentsAfterOneDeleted).toHaveLength(1);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		// Verify only 1 agreement remains
-		const { data: agreementsAfterOne } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsAfterOne).toHaveLength(1);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(1);
 
-		// Delete second (last) agreement
-		const { error: deleteError2 } = await db.from('lesson_agreements').delete().eq('id', inserted2[0].id);
-		expect(deleteError2).toBeNull();
+		unwrap(await db.from('lesson_agreements').delete().eq('id', inserted2.id).select('id'));
 
-		// Verify student was automatically deleted when last agreement was removed
-		const { data: studentsAfterBothDeleted } = await dbNoRLS
-			.from('students')
-			.select('*')
-			.eq('user_id', studentCUserId);
-		expect(studentsAfterBothDeleted).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 
-		// Verify no agreements remain
-		const { data: agreementsAfterBoth } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsAfterBoth).toHaveLength(0);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(0);
 	});
 
 	it('expired agreements still count - student remains even if all agreements are expired', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		// Create an expired agreement
 		const expiredAgreement: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
 			teacher_user_id: teacherAliceUserId,
@@ -200,35 +146,22 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted } = await db.from('lesson_agreements').insert(expiredAgreement).select();
-		expect(inserted).toHaveLength(1);
-		if (!inserted || inserted.length === 0) {
-			throw new Error('Failed to insert expired lesson agreement');
-		}
+		unwrap(await db.from('lesson_agreements').insert(expiredAgreement).select());
 
-		// Verify student exists
-		const { data: students } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(students).toHaveLength(1);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		// Cleanup: delete all agreements for this student via normal client (trigger should automatically delete student)
-		await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId);
+		unwrap(await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId).select('id'));
 
-		// Verify all agreements are gone
-		const { data: agreementsAfter } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsAfter).toHaveLength(0);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(0);
 
-		// Verify student was automatically deleted by trigger
-		const { data: studentsAfterCleanup } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsAfterCleanup).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 	});
 
 	it('multiple agreements deleted in one operation removes student automatically', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		// Create multiple agreements for the same student
 		const agreement1: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
 			teacher_user_id: teacherAliceUserId,
@@ -255,32 +188,18 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted1 } = await db.from('lesson_agreements').insert(agreement1).select();
-		const { data: inserted2 } = await db.from('lesson_agreements').insert(agreement2).select();
-		expect(inserted1).toHaveLength(1);
-		expect(inserted2).toHaveLength(1);
+		unwrap(await db.from('lesson_agreements').insert(agreement1).select());
+		unwrap(await db.from('lesson_agreements').insert(agreement2).select());
 
-		// Verify student exists
-		const { data: studentsBefore } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsBefore).toHaveLength(1);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		// Delete all agreements via normal client (should trigger automatic student deletion)
-		const { error: deleteError } = await db
-			.from('lesson_agreements')
-			.delete()
-			.eq('student_user_id', studentCUserId);
-		expect(deleteError).toBeNull();
+		unwrap(await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId).select('id'));
 
-		// Verify all agreements are gone
-		const { data: agreementsAfter } = await dbNoRLS
-			.from('lesson_agreements')
-			.select('*')
-			.eq('student_user_id', studentCUserId);
-		expect(agreementsAfter).toHaveLength(0);
+		expect(
+			unwrap(await dbNoRLS.from('lesson_agreements').select('*').eq('student_user_id', studentCUserId)),
+		).toHaveLength(0);
 
-		// Verify student was automatically deleted by trigger
-		const { data: studentsAfter } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsAfter).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 	});
 
 	it('student is not auto-deleted when an invoice remains after agreements are removed', async () => {
@@ -300,45 +219,28 @@ describe('RLS: students automatic management via lesson agreements', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted, error: insertError } = await db.from('lesson_agreements').insert(agreement).select();
-		expect(insertError).toBeNull();
-		expect(inserted).toHaveLength(1);
+		unwrap(await db.from('lesson_agreements').insert(agreement).select());
 
-		const { error: invoiceError } = await dbNoRLS.from('invoices').insert({
-			invoice_number: invoiceNumber,
-			student_user_id: studentCUserId,
-			due_date: '2026-12-31',
-			amount_excl_vat_cents: 1000,
-			vat_amount_cents: 0,
-			amount_total_cents: 1000,
-			status: 'issued',
-		});
-		expect(invoiceError).toBeNull();
+		unwrap(
+			await dbNoRLS.from('invoices').insert({
+				invoice_number: invoiceNumber,
+				student_user_id: studentCUserId,
+				due_date: '2026-12-31',
+				amount_excl_vat_cents: 1000,
+				vat_amount_cents: 0,
+				amount_total_cents: 1000,
+				status: 'issued',
+			}),
+		);
 
-		const { error: deleteError } = await db
-			.from('lesson_agreements')
-			.delete()
-			.eq('student_user_id', studentCUserId);
-		expect(deleteError).toBeNull();
+		unwrap(await db.from('lesson_agreements').delete().eq('student_user_id', studentCUserId).select('id'));
 
-		const { data: studentsAfterAgreementDelete } = await dbNoRLS
-			.from('students')
-			.select('*')
-			.eq('user_id', studentCUserId);
-		expect(studentsAfterAgreementDelete).toHaveLength(1);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		const { error: deleteInvoiceError } = await dbNoRLS
-			.from('invoices')
-			.delete()
-			.eq('invoice_number', invoiceNumber);
-		expect(deleteInvoiceError).toBeNull();
+		unwrap(await dbNoRLS.from('invoices').delete().eq('invoice_number', invoiceNumber).select('invoice_number'));
 
-		const { error: cleanupError } = await dbNoRLS.rpc('cleanup_student_if_no_agreements', {
-			_user_id: studentCUserId,
-		});
-		expect(cleanupError).toBeNull();
+		unwrap(await dbNoRLS.rpc('cleanup_student_if_no_agreements', { _user_id: studentCUserId }));
 
-		const { data: studentsAfterCleanup } = await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId);
-		expect(studentsAfterCleanup).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 	});
 });

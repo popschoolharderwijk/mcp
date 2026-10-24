@@ -5,7 +5,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { TrialLessonInsert } from '../../types';
-import { expectInsufficientPrivilege, unwrap, unwrapError } from '../../utils';
+import { expectInsufficientPrivilege, unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -38,11 +38,15 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-	if (seededIds.length > 0) {
-		unwrap(await dbNoRLS.from('trial_lessons').delete().in('id', seededIds));
-	}
+	unwrap(await dbNoRLS.from('trial_lessons').delete().in('id', seededIds).select('id'));
 	await verifyState(initialState);
 });
+
+async function seedTrial(): Promise<string> {
+	const [created] = unwrap(await dbNoRLS.from('trial_lessons').insert(makeInsert()).select('id'));
+	seededIds.push(created.id);
+	return created.id;
+}
 
 describe('trial_lessons INSERT RLS', () => {
 	it('staff can insert', async () => {
@@ -54,44 +58,70 @@ describe('trial_lessons INSERT RLS', () => {
 
 	it('teacher cannot insert', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const err = unwrapError(await db.from('trial_lessons').insert(makeInsert()).select('id'));
-		expectInsufficientPrivilege(err);
+		expectInsufficientPrivilege(unwrapError(await db.from('trial_lessons').insert(makeInsert()).select('id')));
 	});
 
 	it('student cannot insert', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_009);
-		const err = unwrapError(await db.from('trial_lessons').insert(makeInsert()).select('id'));
-		expectInsufficientPrivilege(err);
+		expectInsufficientPrivilege(unwrapError(await db.from('trial_lessons').insert(makeInsert()).select('id')));
 	});
 });
 
-describe('trial_lessons UPDATE/DELETE RLS', () => {
+describe('trial_lessons UPDATE RLS', () => {
 	it('teacher cannot update their own assigned trial', async () => {
-		const [created] = unwrap(await dbNoRLS.from('trial_lessons').insert(makeInsert()).select('id'));
-		seededIds.push(created.id);
+		const id = await seedTrial();
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
-		const { error } = await db.from('trial_lessons').update({ notes: 'x' }).eq('id', created.id).select('id');
-		// Update returning no rows is allowed silently; check that data is unchanged via service role
-		const { data: after } = await dbNoRLS.from('trial_lessons').select('notes').eq('id', created.id).single();
-		expect(after?.notes ?? null).toBeNull();
-		expect(error).toBeNull();
+		expect(unwrap(await db.from('trial_lessons').update({ notes: 'x' }).eq('id', id).select('id'))).toHaveLength(0);
+		expect(
+			unwrapSingleRow(await dbNoRLS.from('trial_lessons').select('notes').eq('id', id).single()).notes,
+		).toBeNull();
 	});
 
-	it('student cannot delete their own trial', async () => {
-		const [created] = unwrap(await dbNoRLS.from('trial_lessons').insert(makeInsert()).select('id'));
-		seededIds.push(created.id);
+	it('student cannot update their own trial', async () => {
+		const id = await seedTrial();
 		const db = await createClientAs(TestUsers.STUDENT_009);
-		await db.from('trial_lessons').delete().eq('id', created.id);
-		const { data: still } = await dbNoRLS.from('trial_lessons').select('id').eq('id', created.id).maybeSingle();
-		expect(still?.id).toBe(created.id);
+		expect(unwrap(await db.from('trial_lessons').update({ notes: 'x' }).eq('id', id).select('id'))).toHaveLength(0);
+		expect(
+			unwrapSingleRow(await dbNoRLS.from('trial_lessons').select('notes').eq('id', id).single()).notes,
+		).toBeNull();
 	});
 
 	it('admin can update', async () => {
-		const [created] = unwrap(await dbNoRLS.from('trial_lessons').insert(makeInsert()).select('id'));
-		seededIds.push(created.id);
+		const id = await seedTrial();
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
-		unwrap(await db.from('trial_lessons').update({ notes: 'updated' }).eq('id', created.id).select('id'));
-		const { data: after } = await dbNoRLS.from('trial_lessons').select('notes').eq('id', created.id).single();
-		expect(after?.notes).toBe('updated');
+		unwrap(await db.from('trial_lessons').update({ notes: 'updated' }).eq('id', id).select('id'));
+		expect(unwrapSingleRow(await dbNoRLS.from('trial_lessons').select('notes').eq('id', id).single()).notes).toBe(
+			'updated',
+		);
+	});
+});
+
+describe('trial_lessons DELETE RLS', () => {
+	it('teacher cannot delete their own assigned trial', async () => {
+		const id = await seedTrial();
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		expect(unwrap(await db.from('trial_lessons').delete().eq('id', id).select('id'))).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('trial_lessons').select('id').eq('id', id))).toEqual([{ id }]);
+	});
+
+	it('student cannot delete their own trial', async () => {
+		const id = await seedTrial();
+		const db = await createClientAs(TestUsers.STUDENT_009);
+		expect(unwrap(await db.from('trial_lessons').delete().eq('id', id).select('id'))).toHaveLength(0);
+		expect(unwrap(await dbNoRLS.from('trial_lessons').select('id').eq('id', id))).toEqual([{ id }]);
+	});
+
+	it('admin can delete', async () => {
+		const id = await seedTrial();
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+		expect(unwrap(await db.from('trial_lessons').delete().eq('id', id).select('id'))).toEqual([{ id }]);
+		expect(unwrap(await dbNoRLS.from('trial_lessons').select('id').eq('id', id))).toHaveLength(0);
+	});
+
+	it('staff can delete', async () => {
+		const id = await seedTrial();
+		const db = await createClientAs(TestUsers.STAFF_ONE);
+		expect(unwrap(await db.from('trial_lessons').delete().eq('id', id).select('id'))).toEqual([{ id }]);
+		expect(unwrap(await dbNoRLS.from('trial_lessons').select('id').eq('id', id))).toHaveLength(0);
 	});
 });

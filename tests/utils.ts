@@ -11,12 +11,12 @@ export function expectNonNull<T>(data: T | null | undefined): asserts data is T 
 	expect(data).not.toBeNull();
 }
 
-export function expectError<T>(data: T | null, error: PostgrestError | null): asserts error is PostgrestError {
+function expectError<T>(data: T | null, error: PostgrestError | null): asserts error is PostgrestError {
 	expect(error).not.toBeNull();
 	expect(data).toBeNull();
 }
 
-export function expectNoError<T>(data: T | null | undefined, error: PostgrestError | null): asserts data is T {
+function expectNoError<T>(data: T | null | undefined, error: PostgrestError | null): asserts data is T {
 	expect(error).toBeNull();
 	expect(data).toBeDefined();
 }

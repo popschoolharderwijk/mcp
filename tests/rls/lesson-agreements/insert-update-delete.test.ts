@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import type { LessonAgreementInsert } from '../../types';
-import { expectNoError, unwrap, unwrapError } from '../../utils';
+import { unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { type TestUser, TestUsers } from '../test-users';
@@ -129,8 +129,7 @@ describe('RLS: lesson_agreements UPDATE - staff permissions', () => {
 		const db = await createClientAs(user);
 
 		// Get first agreement to update
-		const resultAgreement = await db.from('lesson_agreements').select('*').limit(1).single();
-		const agreement = unwrap(resultAgreement);
+		const agreement = unwrapSingleRow(await db.from('lesson_agreements').select('*').limit(1).single());
 
 		const newNotes = `Updated by ${user}`;
 		const data = unwrap(
@@ -197,17 +196,10 @@ describe('RLS: lesson_agreements DELETE - staff permissions', () => {
 			price_per_lesson: 30,
 		};
 
-		const { data: inserted, error: insertError } = await db
-			.from('lesson_agreements')
-			.insert(newAgreement)
-			.select()
-			.single();
-		expectNoError(inserted, insertError);
+		const inserted = unwrapSingleRow(await db.from('lesson_agreements').insert(newAgreement).select().single());
 
-		// Delete
-		const { data, error } = await db.from('lesson_agreements').delete().eq('id', inserted.id).select();
+		const data = unwrap(await db.from('lesson_agreements').delete().eq('id', inserted.id).select());
 
-		expectNoError(data, error);
 		expect(data).toHaveLength(1);
 		expect(data[0].id).toBe(inserted.id);
 	}
@@ -268,8 +260,7 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 			price_per_lesson: 30,
 		};
 
-		const result = await db.from('lesson_agreements').insert(validAgreement).select().single();
-		const inserted = unwrap(result);
+		const inserted = unwrapSingleRow(await db.from('lesson_agreements').insert(validAgreement).select().single());
 
 		// Try to update student_user_id to be the teacher's user_id
 		const error = unwrapError(
@@ -283,7 +274,6 @@ describe('RLS: lesson_agreements - teacher cannot be their own student', () => {
 		// Should fail - teacher cannot be their own student
 		expect(error.message).toContain('teacher cannot be their own student');
 
-		// Cleanup
-		await db.from('lesson_agreements').delete().eq('id', inserted.id);
+		unwrap(await db.from('lesson_agreements').delete().eq('id', inserted.id).select('id'));
 	});
 });

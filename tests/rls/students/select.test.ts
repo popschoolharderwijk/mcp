@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { LESSON_AGREEMENTS, STUDENTS } from '../seed-data-constants';
@@ -35,27 +36,24 @@ describe('RLS: students SELECT', () => {
 	it('site_admin sees all students', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(STUDENTS.TOTAL);
 	});
 
 	it('admin sees all students', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(STUDENTS.TOTAL);
 	});
 
 	it('staff sees all students', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(STUDENTS.TOTAL);
 	});
 
@@ -63,20 +61,18 @@ describe('RLS: students SELECT', () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const studentAUserId = fixtures.requireUserId(TestUsers.STUDENT_001);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.user_id).toBe(studentAUserId);
+		expect(data[0].user_id).toBe(studentAUserId);
 	});
 
 	it('student cannot see other students', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const studentBUserId = fixtures.requireStudentId(TestUsers.STUDENT_002);
 
-		const { data, error } = await db.from('students').select('*').eq('user_id', studentBUserId);
+		const data = unwrap(await db.from('students').select('*').eq('user_id', studentBUserId));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(0);
 	});
 
@@ -90,13 +86,12 @@ describe('RLS: students SELECT', () => {
 				.map((a) => a.student_user_id),
 		);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(LESSON_AGREEMENTS.TEACHER_ALICE);
 		expect(data).toHaveLength(allowedStudentUserIds.size);
 
-		for (const row of data ?? []) {
+		for (const row of data) {
 			expect(allowedStudentUserIds.has(row.user_id)).toBe(true);
 		}
 	});
@@ -105,9 +100,8 @@ describe('RLS: students SELECT', () => {
 		// Use USER_010 (no role) - never used by other tests that create students
 		const db = await createClientAs(TestUsers.USER_010);
 
-		const { data, error } = await db.from('students').select('*');
+		const data = unwrap(await db.from('students').select('*'));
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(0);
 	});
 });

@@ -1,10 +1,22 @@
-import { describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
 import { unwrap } from '../../utils';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
 const { allUserRoles, requireUserId } = fixtures;
+
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+
+beforeAll(async () => {
+	initialState = await setupState();
+});
+
+afterAll(async () => {
+	await verifyState(initialState);
+});
 
 describe('RLS: user_roles SELECT', () => {
 	it('site_admin sees all user roles', async () => {

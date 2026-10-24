@@ -126,7 +126,7 @@ describe('agenda_participants SELECT RLS', () => {
 			.eq('event_id', event.id);
 
 		expect(error).toBeNull();
-		expect(studentSees?.length).toBe(1);
+		expect(studentSees ?? []).toHaveLength(1);
 		expect(studentSees?.[0].user_id).toBe(student001UserId);
 
 		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
