@@ -3,14 +3,14 @@
  *
  * Tests cover:
  * - Owner cannot be removed as participant (trigger)
- * - Only event owner or privileged users can manage participants
+ * - Only event owner or privileged users can insert / update / delete participants
  */
 
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { formatDateToDb, now } from '../../../src/lib/date/date-format';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { AgendaEventInsert } from '../../types';
-import { expectNonNull, unwrap, unwrapError } from '../../utils';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -93,8 +93,7 @@ describe('agenda_participants owner protection', () => {
 		);
 
 		// Cleanup: remove owner participant (bypass RLS) and event
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await staffDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('non-owner cannot delete participants from event they do not own', async () => {
@@ -129,28 +128,28 @@ describe('agenda_participants owner protection', () => {
 			}),
 		);
 
-		// Student tries to remove another participant - should fail (RLS)
-		const deleteResult = await studentDb
-			.from('agenda_participants')
-			.delete()
-			.eq('event_id', event.id)
-			.eq('user_id', student002UserId);
+		expect(
+			unwrap(
+				await studentDb
+					.from('agenda_participants')
+					.delete()
+					.eq('event_id', event.id)
+					.eq('user_id', student002UserId)
+					.select('user_id'),
+			),
+		).toHaveLength(0);
 
-		// RLS should prevent this - no rows affected or error
-		// Note: Supabase RLS on DELETE returns success but affects 0 rows
-		expect(deleteResult.error).toBeNull();
+		expect(
+			unwrap(
+				await dbNoRLS
+					.from('agenda_participants')
+					.select('user_id')
+					.eq('event_id', event.id)
+					.eq('user_id', student002UserId),
+			),
+		).toEqual([{ user_id: student002UserId }]);
 
-		// Verify participant still exists
-		const { data: remaining } = await dbNoRLS
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id)
-			.eq('user_id', student002UserId);
-		expect(remaining?.length).toBe(1);
-
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await staffDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('owner can add and remove non-owner participants', async () => {
@@ -180,29 +179,91 @@ describe('agenda_participants owner protection', () => {
 			}),
 		);
 
-		// Verify both exist
-		const { data: participants } = await staffDb
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expect(participants?.length).toBe(2);
+		expect(
+			unwrap(await staffDb.from('agenda_participants').select('user_id').eq('event_id', event.id)),
+		).toHaveLength(2);
 
-		// Remove non-owner participant
 		unwrap(
 			await staffDb.from('agenda_participants').delete().eq('event_id', event.id).eq('user_id', student001UserId),
 		);
 
-		// Verify only owner remains
-		const { data: remaining } = await staffDb
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expect(remaining?.length).toBe(1);
-		expect(remaining?.[0]?.user_id).toBe(staffUserId);
+		expect(unwrap(await staffDb.from('agenda_participants').select('user_id').eq('event_id', event.id))).toEqual([
+			{ user_id: staffUserId },
+		]);
 
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await staffDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
+	});
+});
+
+describe('agenda_participants UPDATE', () => {
+	it('owner can update a participant user_id on their event', async () => {
+		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
+		const [event] = unwrap(
+			await staffDb
+				.from('agenda_events')
+				.insert(createManualEvent(staffUserId, 'Test event for participant update'))
+				.select('id'),
+		);
+
+		unwrap(
+			await staffDb.from('agenda_participants').insert([
+				{ event_id: event.id, user_id: staffUserId },
+				{ event_id: event.id, user_id: student001UserId },
+			]),
+		);
+
+		const updated = unwrap(
+			await staffDb
+				.from('agenda_participants')
+				.update({ user_id: student002UserId })
+				.eq('event_id', event.id)
+				.eq('user_id', student001UserId)
+				.select('user_id'),
+		);
+		expect(updated).toEqual([{ user_id: student002UserId }]);
+
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
+	});
+
+	it('non-owner cannot update participants on an event they do not own', async () => {
+		const staffDb = await createClientAs(TestUsers.STAFF_ONE);
+		const studentDb = await createClientAs(TestUsers.STUDENT_001);
+		const [event] = unwrap(
+			await staffDb
+				.from('agenda_events')
+				.insert(createManualEvent(staffUserId, 'Test event for blocked participant update'))
+				.select('id'),
+		);
+
+		unwrap(
+			await staffDb.from('agenda_participants').insert([
+				{ event_id: event.id, user_id: staffUserId },
+				{ event_id: event.id, user_id: student001UserId },
+			]),
+		);
+
+		expect(
+			unwrap(
+				await studentDb
+					.from('agenda_participants')
+					.update({ user_id: student002UserId })
+					.eq('event_id', event.id)
+					.eq('user_id', student001UserId)
+					.select('user_id'),
+			),
+		).toHaveLength(0);
+
+		expect(
+			unwrap(
+				await dbNoRLS
+					.from('agenda_participants')
+					.select('user_id')
+					.eq('event_id', event.id)
+					.eq('user_id', student001UserId),
+			),
+		).toEqual([{ user_id: student001UserId }]);
+
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 });
 
@@ -227,8 +288,7 @@ describe('agenda_participants teacher restriction', () => {
 		expect(error.message).toContain('row-level security');
 
 		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await dbNoRLS.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('student can add another student as participant to their event', async () => {
@@ -257,16 +317,11 @@ describe('agenda_participants teacher restriction', () => {
 			}),
 		);
 
-		// Verify both participants exist
-		const { data: participants } = await dbNoRLS
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expect(participants?.length).toBe(2);
+		expect(
+			unwrap(await dbNoRLS.from('agenda_participants').select('user_id').eq('event_id', event.id)),
+		).toHaveLength(2);
 
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await studentDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('teacher can add student as participant to their event', async () => {
@@ -295,16 +350,11 @@ describe('agenda_participants teacher restriction', () => {
 			}),
 		);
 
-		// Verify both participants exist
-		const { data: participants } = await dbNoRLS
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expect(participants?.length).toBe(2);
+		expect(
+			unwrap(await dbNoRLS.from('agenda_participants').select('user_id').eq('event_id', event.id)),
+		).toHaveLength(2);
 
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await teacherDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('teacher cannot add another teacher as participant to their event', async () => {
@@ -327,8 +377,7 @@ describe('agenda_participants teacher restriction', () => {
 		expect(error.message).toContain('row-level security');
 
 		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await dbNoRLS.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('privileged user (staff) can add teacher as participant', async () => {
@@ -349,18 +398,11 @@ describe('agenda_participants teacher restriction', () => {
 			}),
 		);
 
-		// Verify participant exists
-		const { data: participants } = await dbNoRLS
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expectNonNull(participants);
-		expect(participants.length).toBe(1);
-		expect(participants[0].user_id).toBe(teacherAliceUserId);
+		expect(unwrap(await dbNoRLS.from('agenda_participants').select('user_id').eq('event_id', event.id))).toEqual([
+			{ user_id: teacherAliceUserId },
+		]);
 
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await staffDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 
 	it('privileged user (admin) can add teacher as participant', async () => {
@@ -382,17 +424,10 @@ describe('agenda_participants teacher restriction', () => {
 			}),
 		);
 
-		// Verify participant exists
-		const { data: participants } = await dbNoRLS
-			.from('agenda_participants')
-			.select('user_id')
-			.eq('event_id', event.id);
-		expectNonNull(participants);
-		expect(participants.length).toBe(1);
-		expect(participants[0].user_id).toBe(teacherBobUserId);
+		expect(unwrap(await dbNoRLS.from('agenda_participants').select('user_id').eq('event_id', event.id))).toEqual([
+			{ user_id: teacherBobUserId },
+		]);
 
-		// Cleanup
-		await dbNoRLS.from('agenda_participants').delete().eq('event_id', event.id);
-		await adminDb.from('agenda_events').delete().eq('id', event.id);
+		unwrap(await dbNoRLS.from('agenda_events').delete().eq('id', event.id).select('id'));
 	});
 });

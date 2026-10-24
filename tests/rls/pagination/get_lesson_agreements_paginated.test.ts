@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { LESSON_AGREEMENTS, PAGINATION } from '../seed-data-constants';
@@ -50,14 +51,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('site_admin sees all agreements', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.TOTAL);
 		const agreementIds = result.data.map((a) => a.id);
@@ -69,14 +68,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('admin sees all agreements', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.TOTAL);
 	});
@@ -84,14 +81,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('staff sees all agreements', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.TOTAL);
 	});
@@ -99,14 +94,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('student sees only their own agreements', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_009);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.STUDENT_009);
 		const agreementIds = result.data.map((a) => a.id);
@@ -118,14 +111,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('student cannot see other students agreements', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_010);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.STUDENT_010);
 		const agreementIds = result.data.map((a) => a.id);
@@ -137,14 +128,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('teacher sees only agreements where they are the teacher', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.TEACHER_ALICE);
 		const agreementIds = result.data.map((a) => a.id);
@@ -157,14 +146,12 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 	it('teacher cannot see agreements where they are not the teacher', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_BOB);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(LESSON_AGREEMENTS.TEACHER_BOB);
 		const agreementIds = result.data.map((a) => a.id);
@@ -178,25 +165,23 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Get first page
-		const { data: page1Data, error: error1 } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: PAGINATION.PAGE_SIZE,
-			p_offset: 0,
-		});
-
-		expect(error1).toBeNull();
-		const page1 = page1Data as unknown as PaginatedAgreementsResponse;
+		const page1 = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: PAGINATION.PAGE_SIZE,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(page1.data).toHaveLength(PAGINATION.PAGE_SIZE);
 		expect(page1.limit).toBe(PAGINATION.PAGE_SIZE);
 		expect(page1.offset).toBe(0);
 
 		// Get second page
-		const { data: page2Data, error: error2 } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: PAGINATION.PAGE_SIZE,
-			p_offset: PAGINATION.PAGE_SIZE,
-		});
-
-		expect(error2).toBeNull();
-		const page2 = page2Data as unknown as PaginatedAgreementsResponse;
+		const page2 = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: PAGINATION.PAGE_SIZE,
+				p_offset: PAGINATION.PAGE_SIZE,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		expect(page2.data).toHaveLength(PAGINATION.PAGE_SIZE);
 		expect(page2.limit).toBe(PAGINATION.PAGE_SIZE);
 		expect(page2.offset).toBe(PAGINATION.PAGE_SIZE);
@@ -208,22 +193,20 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 		const page1Ids = new Set(page1.data.map((a) => a.id));
 		const page2Ids = new Set(page2.data.map((a) => a.id));
 		const intersection = [...page1Ids].filter((id) => page2Ids.has(id));
-		expect(intersection.length).toBe(0);
+		expect(intersection).toHaveLength(0);
 	});
 
 	it('teacher filter works', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const teacherAliceUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_teacher_user_id: teacherAliceUserId,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_teacher_user_id: teacherAliceUserId,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		// All returned agreements should have Teacher Alice as teacher
 		result.data.forEach((agreement) => {
 			expect(agreement.teacher_user_id).toBe(teacherAliceUserId);
@@ -234,15 +217,13 @@ describe('RLS: get_lesson_agreements_paginated', () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const student009UserId = fixtures.requireUserId(TestUsers.STUDENT_009);
 
-		const { data, error } = await db.rpc('get_lesson_agreements_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_student_user_id: student009UserId,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedAgreementsResponse;
+		const result = unwrap(
+			await db.rpc('get_lesson_agreements_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_student_user_id: student009UserId,
+			}),
+		) as unknown as PaginatedAgreementsResponse;
 		// All returned agreements should be for Student 009
 		result.data.forEach((agreement) => {
 			expect(agreement.student_user_id).toBe(student009UserId);

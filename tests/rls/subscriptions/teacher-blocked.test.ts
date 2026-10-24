@@ -1,15 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
-import { unwrap } from '../../utils';
+import { unwrap, unwrapSingleRow } from '../../utils';
+import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
 /**
- * Verifies that teachers can NOT see incasso/bank/subscription information
- * for their students. Only the student and privileged staff/admin may.
+ * SELECT visibility for subscription billing data:
+ * - teachers must not see student subscription / invoice rows
+ * - the linked student and privileged staff may
  *
- * We seed a subscription via the service role (bypassing RLS), assert
- * row-level visibility per role, and clean up afterwards.
+ * Rows are seeded via the service role (bypassing RLS) and removed afterwards.
  */
 
 const agreementId = fixtures.requireAgreementId(TestUsers.STUDENT_009, TestUsers.TEACHER_ALICE);
@@ -17,40 +18,49 @@ const FAKE_CUSTOMER_ID = 'cus_rls_test_teacher_blocked';
 const FAKE_SUBSCRIPTION_ID = 'sub_rls_test_teacher_blocked';
 const FAKE_INVOICE_ID = 'in_rls_test_teacher_blocked';
 
-let subscriptionId: string;
+let initialState: DatabaseState;
+const { setupState, verifyState } = setupDatabaseStateVerification();
+const dbNoRLS = createClientBypassRLS();
 
 beforeAll(async () => {
-	const admin = createClientBypassRLS();
-	const { data: sub, error: subErr } = await admin
-		.from('subscriptions')
-		.insert({
-			lesson_agreement_id: agreementId,
-			stripe_subscription_id: FAKE_SUBSCRIPTION_ID,
-			stripe_customer_id: FAKE_CUSTOMER_ID,
-			stripe_price_id: 'price_rls_test',
-			status: 'active',
-			default_payment_method_brand: 'ideal',
-		})
-		.select()
-		.single();
-	if (subErr || !sub) throw new Error(`Failed to seed subscription: ${subErr?.message}`);
-	subscriptionId = sub.id;
+	initialState = await setupState();
 
-	const { error: invErr } = await admin.from('subscription_invoices').insert({
-		subscription_id: subscriptionId,
-		stripe_invoice_id: FAKE_INVOICE_ID,
-		amount_due: 1000,
-		amount_paid: 1000,
-		currency: 'eur',
-		status: 'paid',
-	});
-	if (invErr) throw new Error(`Failed to seed invoice: ${invErr.message}`);
+	const sub = unwrapSingleRow(
+		await dbNoRLS
+			.from('subscriptions')
+			.insert({
+				lesson_agreement_id: agreementId,
+				stripe_subscription_id: FAKE_SUBSCRIPTION_ID,
+				stripe_customer_id: FAKE_CUSTOMER_ID,
+				stripe_price_id: 'price_rls_test',
+				status: 'active',
+				default_payment_method_brand: 'ideal',
+			})
+			.select('id')
+			.single(),
+	);
+
+	unwrap(
+		await dbNoRLS
+			.from('subscription_invoices')
+			.insert({
+				subscription_id: sub.id,
+				stripe_invoice_id: FAKE_INVOICE_ID,
+				amount_due: 1000,
+				amount_paid: 1000,
+				currency: 'eur',
+				status: 'paid',
+			})
+			.select('id'),
+	);
 });
 
 afterAll(async () => {
-	const admin = createClientBypassRLS();
-	await admin.from('subscription_invoices').delete().eq('stripe_invoice_id', FAKE_INVOICE_ID);
-	await admin.from('subscriptions').delete().eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID);
+	unwrap(await dbNoRLS.from('subscription_invoices').delete().eq('stripe_invoice_id', FAKE_INVOICE_ID).select('id'));
+	unwrap(
+		await dbNoRLS.from('subscriptions').delete().eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID).select('id'),
+	);
+	await verifyState(initialState);
 });
 
 describe('RLS: teachers cannot see subscription / incasso data', () => {
@@ -59,7 +69,7 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscriptions').select('id').eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID),
 		);
-		expect(rows.length).toBe(0);
+		expect(rows).toHaveLength(0);
 	});
 
 	it('teacher of the agreement sees zero subscription_invoices rows', async () => {
@@ -67,7 +77,7 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscription_invoices').select('id').eq('stripe_invoice_id', FAKE_INVOICE_ID),
 		);
-		expect(rows.length).toBe(0);
+		expect(rows).toHaveLength(0);
 	});
 
 	it('student of the agreement sees their subscription row', async () => {
@@ -75,7 +85,7 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscriptions').select('id').eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID),
 		);
-		expect(rows.length).toBe(1);
+		expect(rows).toHaveLength(1);
 	});
 
 	it('student of the agreement sees their subscription_invoices row', async () => {
@@ -83,7 +93,7 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscription_invoices').select('id').eq('stripe_invoice_id', FAKE_INVOICE_ID),
 		);
-		expect(rows.length).toBe(1);
+		expect(rows).toHaveLength(1);
 	});
 
 	it('staff sees the subscription row', async () => {
@@ -91,7 +101,7 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscriptions').select('id').eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID),
 		);
-		expect(rows.length).toBe(1);
+		expect(rows).toHaveLength(1);
 	});
 
 	it('unrelated teacher sees zero subscription rows', async () => {
@@ -99,6 +109,6 @@ describe('RLS: teachers cannot see subscription / incasso data', () => {
 		const rows = unwrap(
 			await db.from('subscriptions').select('id').eq('stripe_subscription_id', FAKE_SUBSCRIPTION_ID),
 		);
-		expect(rows.length).toBe(0);
+		expect(rows).toHaveLength(0);
 	});
 });

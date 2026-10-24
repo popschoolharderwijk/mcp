@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -23,18 +24,20 @@ describe('Constraints: phone_number validation', () => {
 		const profile = requireProfile(TestUsers.STUDENT_001);
 		const originalPhoneNumber = profile.phone_number;
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '0612345678' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db.from('profiles').update({ phone_number: '0612345678' }).eq('user_id', profile.user_id).select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.phone_number).toBe('0612345678');
+		expect(data[0].phone_number).toBe('0612345678');
 
-		// Restore original
-		await db.from('profiles').update({ phone_number: originalPhoneNumber }).eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ phone_number: originalPhoneNumber })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('allows NULL phone number', async () => {
@@ -42,78 +45,60 @@ describe('Constraints: phone_number validation', () => {
 		const profile = requireProfile(TestUsers.STUDENT_001);
 		const originalPhoneNumber = profile.phone_number;
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: null })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db.from('profiles').update({ phone_number: null }).eq('user_id', profile.user_id).select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.phone_number).toBeNull();
+		expect(data[0].phone_number).toBeNull();
 
-		// Restore original
-		await db.from('profiles').update({ phone_number: originalPhoneNumber }).eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ phone_number: originalPhoneNumber })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('rejects phone number with less than 10 digits', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '061234567' })
-			.eq('user_id', profile.user_id)
-			.select();
-
-		// CHECK constraint should reject: must be exactly 10 digits
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(
+			await db.from('profiles').update({ phone_number: '061234567' }).eq('user_id', profile.user_id).select(),
+		);
 	});
 
 	it('rejects phone number with more than 10 digits', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '06123456789' })
-			.eq('user_id', profile.user_id)
-			.select();
-
-		// CHECK constraint should reject: must be exactly 10 digits
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(
+			await db.from('profiles').update({ phone_number: '06123456789' }).eq('user_id', profile.user_id).select(),
+		);
 	});
 
 	it('rejects phone number with non-numeric characters', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '06-12345678' })
-			.eq('user_id', profile.user_id)
-			.select();
-
-		// CHECK constraint should reject: must contain only digits
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(
+			await db.from('profiles').update({ phone_number: '06-12345678' }).eq('user_id', profile.user_id).select(),
+		);
 	});
 
 	it('rejects phone number with spaces', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '06 12 34 56 78' })
-			.eq('user_id', profile.user_id)
-			.select();
-
-		// CHECK constraint should reject: must contain only digits
-		expect(error).not.toBeNull();
-		expect(data).toBeNull();
+		unwrapError(
+			await db
+				.from('profiles')
+				.update({ phone_number: '06 12 34 56 78' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 	});
 
 	it('coerces empty string phone number to null', async () => {
@@ -121,16 +106,19 @@ describe('Constraints: phone_number validation', () => {
 		const profile = requireProfile(TestUsers.STUDENT_001);
 		const originalPhoneNumber = profile.phone_number;
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ phone_number: '' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db.from('profiles').update({ phone_number: '' }).eq('user_id', profile.user_id).select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.phone_number).toBeNull();
+		expect(data[0].phone_number).toBeNull();
 
-		await db.from('profiles').update({ phone_number: originalPhoneNumber }).eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ phone_number: originalPhoneNumber })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 });

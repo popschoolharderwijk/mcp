@@ -30,17 +30,32 @@ async function selectGroupIds(user: TestUser) {
 
 async function selectMemberStudentIds(user: TestUser) {
 	const db = await createClientAs(user);
-	return unwrap(await db.from('lesson_group_members').select('student_user_id')).map((row) => row.student_user_id);
+	return unwrap(await db.from('lesson_group_members').select('student_user_id').order('student_user_id')).map(
+		(row) => row.student_user_id,
+	);
 }
+
+const BANDCOACHING_MEMBER_IDS = [
+	TestUsers.STUDENT_001,
+	TestUsers.STUDENT_002,
+	TestUsers.STUDENT_003,
+	TestUsers.STUDENT_004,
+	TestUsers.STUDENT_005,
+	TestUsers.STUDENT_006,
+	TestUsers.STUDENT_007,
+	TestUsers.STUDENT_008,
+]
+	.map((user) => fixtures.requireUserId(user))
+	.sort();
 
 async function expectSeesGroupAndAllMembers(user: TestUser) {
 	expect(await selectGroupIds(user)).toEqual([LESSON_GROUPS.BANDCOACHING_ID]);
-	expect(await selectMemberStudentIds(user)).toHaveLength(LESSON_GROUPS.BANDCOACHING_MEMBER_COUNT);
+	expect(await selectMemberStudentIds(user)).toEqual(BANDCOACHING_MEMBER_IDS);
 }
 
 async function expectSeesNothing(user: TestUser) {
-	expect(await selectGroupIds(user)).toEqual([]);
-	expect(await selectMemberStudentIds(user)).toEqual([]);
+	expect(await selectGroupIds(user)).toHaveLength(0);
+	expect(await selectMemberStudentIds(user)).toHaveLength(0);
 }
 
 describe('RLS: lesson_groups + members SELECT - privileged', () => {

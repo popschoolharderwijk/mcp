@@ -43,15 +43,13 @@ let trialA: string;
 let trialB: string;
 
 beforeAll(async () => {
+	initialState = await setupState();
 	trialA = await seedTrial(studentAUserId, teacherAliceUserId);
 	trialB = await seedTrial(studentBUserId, teacherBobUserId);
-	initialState = await setupState();
 });
 
 afterAll(async () => {
-	if (seededIds.length > 0) {
-		unwrap(await dbNoRLS.from('trial_lessons').delete().in('id', seededIds));
-	}
+	unwrap(await dbNoRLS.from('trial_lessons').delete().in('id', seededIds).select('id'));
 	await verifyState(initialState);
 });
 

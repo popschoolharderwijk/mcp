@@ -118,7 +118,7 @@ describe('RLS: lesson_signup_requests SELECT - email-matched access', () => {
 	it('plain user without matching email sees nothing', async () => {
 		const db = await createClientAs(TestUsers.USER_001);
 		const data = unwrap(await db.from('lesson_signup_requests').select('id'));
-		expect(data.length).toBe(0);
+		expect(data).toHaveLength(0);
 	});
 });
 

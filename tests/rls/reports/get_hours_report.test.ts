@@ -267,7 +267,7 @@ describe('RPC: get_hours_report', () => {
 			}),
 		);
 		const lessonRows = rowsFromReport(raw).filter((r) => r.source_type === 'lesson');
-		expect(lessonRows).toEqual([]);
+		expect(lessonRows).toHaveLength(0);
 	});
 
 	it('staff report includes Alice and Bob as lesson teachers (seed has weekly agreements for both)', async () => {

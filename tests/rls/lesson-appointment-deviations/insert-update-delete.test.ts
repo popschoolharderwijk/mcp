@@ -188,7 +188,7 @@ describe('Teacher CAN create deviations for their own lesson agreements', () => 
 		unwrap(await teacherDb.from('agenda_event_deviations').delete().eq('id', inserted.id));
 
 		const { data: remaining } = await dbNoRLS.from('agenda_event_deviations').select('id').eq('id', inserted.id);
-		expect(remaining?.length).toBe(0);
+		expect(remaining ?? []).toHaveLength(0);
 	});
 });
 
@@ -269,7 +269,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 			.select('id');
 
 		expect(updateResult.error).toBeNull();
-		expect(updateResult.data?.length).toBe(0);
+		expect(updateResult.data ?? []).toHaveLength(0);
 
 		await teacherDb.from('agenda_event_deviations').delete().eq('id', inserted.id);
 	});
@@ -301,7 +301,7 @@ describe('Student CANNOT create deviations for lesson agreements', () => {
 		expect(deleteResult.error).toBeNull();
 
 		const { data: stillExists } = await dbNoRLS.from('agenda_event_deviations').select('id').eq('id', inserted.id);
-		expect(stillExists?.length).toBe(1);
+		expect(stillExists ?? []).toHaveLength(1);
 
 		await teacherDb.from('agenda_event_deviations').delete().eq('id', inserted.id);
 	});
@@ -393,7 +393,7 @@ describe('Staff/admin CAN manage deviations for any lesson agreement', () => {
 		unwrap(await siteAdminDb.from('agenda_event_deviations').delete().eq('id', inserted.id));
 
 		const { data: remaining } = await dbNoRLS.from('agenda_event_deviations').select('id').eq('id', inserted.id);
-		expect(remaining?.length).toBe(0);
+		expect(remaining ?? []).toHaveLength(0);
 	});
 });
 

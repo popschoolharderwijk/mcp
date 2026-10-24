@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { USERS } from '../seed-data-constants';
@@ -49,14 +50,12 @@ describe('RLS: get_users_paginated', () => {
 	it('site_admin sees all users', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(USERS.TOTAL);
 		expect(result.data.length).toBe(USERS.TOTAL);
@@ -65,14 +64,12 @@ describe('RLS: get_users_paginated', () => {
 	it('admin sees all users', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(USERS.TOTAL);
 		expect(result.data.length).toBe(USERS.TOTAL);
@@ -81,92 +78,82 @@ describe('RLS: get_users_paginated', () => {
 	it('staff cannot see any users (function only allows admin/site_admin)', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		// Staff cannot see any users via this function (only admin/site_admin can)
 		expect(result.total_count).toBe(0);
-		expect(result.data.length).toBe(0);
+		expect(result.data).toHaveLength(0);
 	});
 
 	it('teacher cannot see any users', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(0);
-		expect(result.data.length).toBe(0);
+		expect(result.data).toHaveLength(0);
 	});
 
 	it('student cannot see any users', async () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(0);
-		expect(result.data.length).toBe(0);
+		expect(result.data).toHaveLength(0);
 	});
 
 	it('user without role cannot see any users', async () => {
 		const db = await createClientAs(TestUsers.USER_001);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		expect(data).not.toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toBeInstanceOf(Array);
 		expect(result.total_count).toBe(0);
-		expect(result.data.length).toBe(0);
+		expect(result.data).toHaveLength(0);
 	});
 
 	it('pagination works correctly', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Get first page
-		const { data: page1Data, error: error1 } = await db.rpc('get_users_paginated', {
-			p_limit: 20,
-			p_offset: 0,
-		});
-
-		expect(error1).toBeNull();
-		const page1 = page1Data as unknown as PaginatedUsersResponse;
+		const page1 = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 20,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(page1.data.length).toBe(20);
 		expect(page1.limit).toBe(20);
 		expect(page1.offset).toBe(0);
 		expect(page1.total_count).toBe(USERS.TOTAL);
 
 		// Get second page
-		const { data: page2Data, error: error2 } = await db.rpc('get_users_paginated', {
-			p_limit: 20,
-			p_offset: 20,
-		});
-
-		expect(error2).toBeNull();
-		const page2 = page2Data as unknown as PaginatedUsersResponse;
+		const page2 = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 20,
+				p_offset: 20,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(page2.data.length).toBe(20);
 		expect(page2.limit).toBe(20);
 		expect(page2.offset).toBe(20);
@@ -179,21 +166,20 @@ describe('RLS: get_users_paginated', () => {
 		const page1Ids = new Set(page1.data.map((u) => u.user_id));
 		const page2Ids = new Set(page2.data.map((u) => u.user_id));
 		const intersection = [...page1Ids].filter((id) => page2Ids.has(id));
-		expect(intersection.length).toBe(0);
+		expect(intersection).toHaveLength(0);
 	});
 
 	it('search filter works', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
 		// Search for site-admin - unique match in seed
-		const { data: searchDataRaw, error } = await db.rpc('get_users_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_search: 'site-admin',
-		});
-
-		expect(error).toBeNull();
-		const searchData = searchDataRaw as unknown as PaginatedUsersResponse;
+		const searchData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_search: 'site-admin',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(searchData.total_count).toBe(1);
 		expect(searchData.data).toHaveLength(1);
 		expect(searchData.data[0]?.email).toBe(TestUsers.SITE_ADMIN);
@@ -202,14 +188,13 @@ describe('RLS: get_users_paginated', () => {
 	it('role filter works - site_admin', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data: siteAdminDataRaw, error: siteAdminError } = await db.rpc('get_users_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_role: 'site_admin',
-		});
-
-		expect(siteAdminError).toBeNull();
-		const siteAdminData = siteAdminDataRaw as unknown as PaginatedUsersResponse;
+		const siteAdminData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_role: 'site_admin',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(siteAdminData.total_count).toBe(USERS.SITE_ADMIN);
 		siteAdminData.data.forEach((user) => {
 			expect(user.role).toBe('site_admin');
@@ -219,14 +204,13 @@ describe('RLS: get_users_paginated', () => {
 	it('role filter works - admin', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data: adminDataRaw, error: adminError } = await db.rpc('get_users_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_role: 'admin',
-		});
-
-		expect(adminError).toBeNull();
-		const adminData = adminDataRaw as unknown as PaginatedUsersResponse;
+		const adminData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_role: 'admin',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(adminData.total_count).toBe(USERS.ADMIN);
 		adminData.data.forEach((user) => {
 			expect(user.role).toBe('admin');
@@ -236,14 +220,13 @@ describe('RLS: get_users_paginated', () => {
 	it('role filter works - staff', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data: staffDataRaw, error: staffError } = await db.rpc('get_users_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_role: 'staff',
-		});
-
-		expect(staffError).toBeNull();
-		const staffData = staffDataRaw as unknown as PaginatedUsersResponse;
+		const staffData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_role: 'staff',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(staffData.total_count).toBe(USERS.STAFF);
 		staffData.data.forEach((user) => {
 			expect(user.role).toBe('staff');
@@ -253,14 +236,13 @@ describe('RLS: get_users_paginated', () => {
 	it('role filter works - none (users without role)', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data: noneDataRaw, error: noneError } = await db.rpc('get_users_paginated', {
-			p_limit: 100,
-			p_offset: 0,
-			p_role: 'none',
-		});
-
-		expect(noneError).toBeNull();
-		const noneData = noneDataRaw as unknown as PaginatedUsersResponse;
+		const noneData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 100,
+				p_offset: 0,
+				p_role: 'none',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		// Users without app_role (teachers, students, and regular users)
 		expect(noneData.total_count).toBe(USERS.WITHOUT_ROLE);
 		noneData.data.forEach((user) => {
@@ -271,14 +253,13 @@ describe('RLS: get_users_paginated', () => {
 	it('role filter works - null (all users)', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data: allDataRaw, error: allError } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-			p_role: undefined,
-		});
-
-		expect(allError).toBeNull();
-		const allData = allDataRaw as unknown as PaginatedUsersResponse;
+		const allData = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+				p_role: undefined,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(allData.total_count).toBe(USERS.TOTAL);
 	});
 
@@ -286,13 +267,12 @@ describe('RLS: get_users_paginated', () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const siteAdminUserId = fixtures.requireUserId(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-		});
-
-		expect(error).toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(result.data).toHaveLength(USERS.TOTAL);
 
 		// Find site admin user
@@ -312,28 +292,26 @@ describe('RLS: get_users_paginated', () => {
 	it('returns users sorted by display name ascending', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-			p_sort_column: 'name',
-			p_sort_direction: 'asc',
-		});
-
-		expect(error).toBeNull();
-		const result = data as unknown as PaginatedUsersResponse;
+		const result = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+				p_sort_column: 'name',
+				p_sort_direction: 'asc',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		const emails = result.data.map((u) => u.email);
 		expect(emails).toHaveLength(USERS.TOTAL);
 		expect(emails[0]).toBe(USERS.FIRST_EMAIL_BY_DISPLAY_NAME_ASC);
 
-		const { data: descData, error: descError } = await db.rpc('get_users_paginated', {
-			p_limit: 1000,
-			p_offset: 0,
-			p_sort_column: 'name',
-			p_sort_direction: 'desc',
-		});
-
-		expect(descError).toBeNull();
-		const descResult = descData as unknown as PaginatedUsersResponse;
+		const descResult = unwrap(
+			await db.rpc('get_users_paginated', {
+				p_limit: 1000,
+				p_offset: 0,
+				p_sort_column: 'name',
+				p_sort_direction: 'desc',
+			}),
+		) as unknown as PaginatedUsersResponse;
 		expect(descResult.data.map((u) => u.email)).toEqual([...emails].reverse());
 	});
 });

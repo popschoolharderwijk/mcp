@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs } from '../../db';
+import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
@@ -22,110 +23,125 @@ describe('RLS: profiles UPDATE - own profile', () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const profile = requireProfile(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Updated', last_name: 'User A' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Updated', last_name: 'User A' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Updated');
-		expect(data?.[0]?.last_name).toBe('User A');
+		expect(data[0].first_name).toBe('Updated');
+		expect(data[0].last_name).toBe('User A');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: profile.first_name, last_name: profile.last_name })
-			.eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('teacher can update own profile', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 		const profile = requireProfile(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Updated', last_name: 'Alice' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Updated', last_name: 'Alice' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Updated');
-		expect(data?.[0]?.last_name).toBe('Alice');
+		expect(data[0].first_name).toBe('Updated');
+		expect(data[0].last_name).toBe('Alice');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: profile.first_name, last_name: profile.last_name })
-			.eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('staff can update own profile', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
 		const profile = requireProfile(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Updated', last_name: 'Staff' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Updated', last_name: 'Staff' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Updated');
-		expect(data?.[0]?.last_name).toBe('Staff');
+		expect(data[0].first_name).toBe('Updated');
+		expect(data[0].last_name).toBe('Staff');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: profile.first_name, last_name: profile.last_name })
-			.eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('admin can update own profile', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 		const profile = requireProfile(TestUsers.ADMIN_ONE);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Updated', last_name: 'Admin' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Updated', last_name: 'Admin' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Updated');
-		expect(data?.[0]?.last_name).toBe('Admin');
+		expect(data[0].first_name).toBe('Updated');
+		expect(data[0].last_name).toBe('Admin');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: profile.first_name, last_name: profile.last_name })
-			.eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 
 	it('site_admin can update own profile', async () => {
 		const db = await createClientAs(TestUsers.SITE_ADMIN);
 		const profile = requireProfile(TestUsers.SITE_ADMIN);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Updated', last_name: 'Site Admin' })
-			.eq('user_id', profile.user_id)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Updated', last_name: 'Site Admin' })
+				.eq('user_id', profile.user_id)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Updated');
-		expect(data?.[0]?.last_name).toBe('Site Admin');
+		expect(data[0].first_name).toBe('Updated');
+		expect(data[0].last_name).toBe('Site Admin');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: profile.first_name, last_name: profile.last_name })
-			.eq('user_id', profile.user_id);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
 	});
 });
 
@@ -134,43 +150,45 @@ describe('RLS: profiles UPDATE - other profiles', () => {
 		const db = await createClientAs(TestUsers.STUDENT_001);
 		const targetUserId = requireUserId(TestUsers.STUDENT_002);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Hacked', last_name: null })
-			.eq('user_id', targetUserId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('profiles')
+					.update({ first_name: 'Hacked', last_name: null })
+					.eq('user_id', targetUserId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 
 	it('teacher cannot update other profiles', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 		const targetUserId = requireUserId(TestUsers.STUDENT_001);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Hacked', last_name: null })
-			.eq('user_id', targetUserId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('profiles')
+					.update({ first_name: 'Hacked', last_name: null })
+					.eq('user_id', targetUserId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 
 	it('staff cannot update other profiles', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
-		// Try to update teacher profile
 		const teacherUserId = requireUserId(TestUsers.TEACHER_ALICE);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Hacked', last_name: null })
-			.eq('user_id', teacherUserId)
-			.select();
-
-		expect(error).toBeNull();
-		expect(data).toHaveLength(0);
+		expect(
+			unwrap(
+				await db
+					.from('profiles')
+					.update({ first_name: 'Hacked', last_name: null })
+					.eq('user_id', teacherUserId)
+					.select(),
+			),
+		).toHaveLength(0);
 	});
 
 	it('admin can update any profile', async () => {
@@ -178,22 +196,25 @@ describe('RLS: profiles UPDATE - other profiles', () => {
 		const teacherUserId = requireUserId(TestUsers.TEACHER_BOB);
 		const originalProfile = requireProfile(TestUsers.TEACHER_BOB);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Admin', last_name: 'Updated' })
-			.eq('user_id', teacherUserId)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Admin', last_name: 'Updated' })
+				.eq('user_id', teacherUserId)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Admin');
-		expect(data?.[0]?.last_name).toBe('Updated');
+		expect(data[0].first_name).toBe('Admin');
+		expect(data[0].last_name).toBe('Updated');
 
-		// Restore original - note: seed has typo "Teacher Box" instead of "Teacher Bob"
-		await db
-			.from('profiles')
-			.update({ first_name: originalProfile.first_name, last_name: originalProfile.last_name })
-			.eq('user_id', teacherUserId);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: originalProfile.first_name, last_name: originalProfile.last_name })
+				.eq('user_id', teacherUserId)
+				.select('user_id'),
+		);
 	});
 
 	it('site_admin can update any profile', async () => {
@@ -201,21 +222,24 @@ describe('RLS: profiles UPDATE - other profiles', () => {
 		const staffUserId = requireUserId(TestUsers.STAFF_ONE);
 		const originalProfile = requireProfile(TestUsers.STAFF_ONE);
 
-		const { data, error } = await db
-			.from('profiles')
-			.update({ first_name: 'Site Admin', last_name: 'Updated' })
-			.eq('user_id', staffUserId)
-			.select();
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: 'Site Admin', last_name: 'Updated' })
+				.eq('user_id', staffUserId)
+				.select(),
+		);
 
-		expect(error).toBeNull();
 		expect(data).toHaveLength(1);
-		expect(data?.[0]?.first_name).toBe('Site Admin');
-		expect(data?.[0]?.last_name).toBe('Updated');
+		expect(data[0].first_name).toBe('Site Admin');
+		expect(data[0].last_name).toBe('Updated');
 
-		// Restore original
-		await db
-			.from('profiles')
-			.update({ first_name: originalProfile.first_name, last_name: originalProfile.last_name })
-			.eq('user_id', staffUserId);
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ first_name: originalProfile.first_name, last_name: originalProfile.last_name })
+				.eq('user_id', staffUserId)
+				.select('user_id'),
+		);
 	});
 });

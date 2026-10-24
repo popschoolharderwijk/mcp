@@ -156,7 +156,7 @@ describe('agenda_events UPDATE RLS', () => {
 			.select('title');
 
 		expect(updateResult.error).toBeNull();
-		expect(updateResult.data?.length).toBe(0);
+		expect(updateResult.data ?? []).toHaveLength(0);
 
 		const [unchanged] = unwrap(await dbNoRLS.from('agenda_events').select('title').eq('id', event.id));
 		expect(unchanged.title).toBe('Test event no update');
@@ -204,7 +204,7 @@ describe('agenda_events DELETE RLS', () => {
 		unwrap(await staffDb.from('agenda_events').delete().eq('id', event.id));
 
 		const { data: remaining } = await dbNoRLS.from('agenda_events').select('id').eq('id', event.id);
-		expect(remaining?.length).toBe(0);
+		expect(remaining ?? []).toHaveLength(0);
 	});
 
 	it('non-owner non-privileged cannot delete event they do not own', async () => {
@@ -223,7 +223,7 @@ describe('agenda_events DELETE RLS', () => {
 		expect(deleteResult.error).toBeNull();
 
 		const { data: stillExists } = await dbNoRLS.from('agenda_events').select('id').eq('id', event.id);
-		expect(stillExists?.length).toBe(1);
+		expect(stillExists ?? []).toHaveLength(1);
 
 		await staffDb.from('agenda_events').delete().eq('id', event.id);
 	});
@@ -242,7 +242,7 @@ describe('agenda_events DELETE RLS', () => {
 		unwrap(await adminDb.from('agenda_events').delete().eq('id', event.id));
 
 		const { data: deleted } = await dbNoRLS.from('agenda_events').select('id').eq('id', event.id);
-		expect(deleted?.length).toBe(0);
+		expect(deleted ?? []).toHaveLength(0);
 	});
 
 	it('privileged user (site_admin) can delete any event', async () => {
@@ -259,6 +259,6 @@ describe('agenda_events DELETE RLS', () => {
 		unwrap(await siteAdminDb.from('agenda_events').delete().eq('id', event.id));
 
 		const { data: deleted } = await dbNoRLS.from('agenda_events').select('id').eq('id', event.id);
-		expect(deleted?.length).toBe(0);
+		expect(deleted ?? []).toHaveLength(0);
 	});
 });

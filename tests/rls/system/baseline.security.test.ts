@@ -327,7 +327,7 @@ describe('RLS Baseline Security Checks', () => {
 			// This test will fail if someone adds a new view without security_invoker = on
 			// To fix: either add security_invoker = on to the view, or add it to ALLOWED_SECURITY_DEFINER_VIEWS
 			// with proper documentation and security review
-			expect(unexpectedSecurityDefinerViews).toEqual([]);
+			expect(unexpectedSecurityDefinerViews).toHaveLength(0);
 		});
 
 		it('all allowed SECURITY DEFINER views exist', async () => {
