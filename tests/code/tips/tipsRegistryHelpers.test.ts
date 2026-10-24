@@ -9,12 +9,12 @@ import {
 import type { TipDefinition, TipProgressMap } from '../../../src/types/tips';
 
 const searchTip: TipDefinition = {
-	id: 'command-search-slash',
+	id: 'command-search',
 	title: 'Snel zoeken',
 	body: 'body',
 	routes: ['*'],
 	target: 'command-search',
-	completeOn: 'slash-search',
+	completeOn: ['command-search-hotkey'],
 };
 
 const themeTip: TipDefinition = {
@@ -23,7 +23,7 @@ const themeTip: TipDefinition = {
 	body: 'body',
 	routes: ['*'],
 	target: 'theme-toggle',
-	completeOn: 'target-click',
+	completeOn: ['target-click'],
 };
 
 const agendaTip: TipDefinition = {
@@ -32,7 +32,7 @@ const agendaTip: TipDefinition = {
 	body: 'body',
 	routes: ['/agenda'],
 	target: 'agenda-fullscreen',
-	completeOn: 'target-click',
+	completeOn: ['target-click', 'agenda-fullscreen-hotkey'],
 };
 
 const registry = [searchTip, themeTip, agendaTip];
@@ -54,19 +54,19 @@ describe('matchesRoute', () => {
 
 describe('selectAutoTip', () => {
 	it('returns first tip when progress empty', () => {
-		expect(selectAutoTip(registry, '/students', {})?.id).toBe('command-search-slash');
+		expect(selectAutoTip(registry, '/students', {})?.id).toBe('command-search');
 	});
 
 	it('skips tips that already have progress', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(selectAutoTip(registry, '/students', progress)?.id).toBe('theme-dark-mode');
 	});
 
 	it('returns agenda tip on /agenda when earlier tips done', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'dismissed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'dismissed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(selectAutoTip(registry, '/agenda', progress)?.id).toBe('agenda-fullscreen');
@@ -74,7 +74,7 @@ describe('selectAutoTip', () => {
 
 	it('returns null when all matching tips have progress', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'dismissed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(selectAutoTip(registry, '/students', progress)).toBeNull();
@@ -82,7 +82,7 @@ describe('selectAutoTip', () => {
 
 	it('returns null on /students when only agenda tip left', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(selectAutoTip(registry, '/students', progress)).toBeNull();
@@ -96,7 +96,7 @@ describe('hasUnseenTipsForPage', () => {
 
 	it('is false when all matching tips have progress', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'dismissed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(hasUnseenTipsForPage(registry, '/students', progress)).toBe(false);
@@ -104,7 +104,7 @@ describe('hasUnseenTipsForPage', () => {
 
 	it('is true on /agenda when only agenda tip is unseen', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(hasUnseenTipsForPage(registry, '/agenda', progress)).toBe(true);
@@ -115,21 +115,21 @@ describe('hasUnseenTipsForPage', () => {
 describe('listTipsForPage', () => {
 	it('sorts by most recently seen first', () => {
 		const progress: TipProgressMap = {
-			'command-search-slash': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
+			'command-search': { status: 'completed', updatedAt: '2026-01-01T00:00:00.000Z', lastActionAt: null },
 			'theme-dark-mode': { status: 'completed', updatedAt: '2026-01-03T00:00:00.000Z', lastActionAt: null },
 			'agenda-fullscreen': { status: 'dismissed', updatedAt: '2026-01-02T00:00:00.000Z', lastActionAt: null },
 		};
 		expect(listTipsForPage(registry, '/agenda', progress).map((tip) => tip.id)).toEqual([
 			'theme-dark-mode',
 			'agenda-fullscreen',
-			'command-search-slash',
+			'command-search',
 		]);
 	});
 
 	it('omits tips whose target is not present', () => {
 		const present = (target: string) => target !== 'theme-toggle';
 		expect(listTipsForPage(registry, '/agenda', {}, present).map((tip) => tip.id)).toEqual([
-			'command-search-slash',
+			'command-search',
 			'agenda-fullscreen',
 		]);
 	});

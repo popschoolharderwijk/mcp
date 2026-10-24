@@ -1,18 +1,18 @@
 import { type Dispatch, type MutableRefObject, type SetStateAction, useEffect } from 'react';
 import type { AgendaFullscreenKeyEvent } from '@/lib/agenda/agendaFullscreenKeyboard';
-import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnSlashKey } from '@/lib/keyboard/keyboardHelpers';
-import { resolveAgendaTipIdFromKey } from '@/lib/tips/tipKeyboardCompleteHelpers';
+import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnHotkey } from '@/lib/keyboard/keyboardHelpers';
+import { resolveTipIdFromCompleteOn, resolveTipIdFromTargetClick } from '@/lib/tips/tipCompleteHelpers';
+import { resolveAgendaTipCompleteOnFromKey } from '@/lib/tips/tipKeyboardCompleteHelpers';
 import { TIPS_REGISTRY } from '@/lib/tips/tipsRegistry';
 import type { TipDefinition } from '@/types/tips';
 
 function resolveTipIdFromKeyEvent(pathname: string, keyEvent: AgendaFullscreenKeyEvent): string | null {
-	if (shouldOpenCommandPaletteOnSlashKey(keyEvent)) return 'command-search-slash';
-	return resolveAgendaTipIdFromKey(pathname, keyEvent);
-}
-
-function resolveTipIdFromTipTarget(target: string | null): string | null {
-	if (!target) return null;
-	return TIPS_REGISTRY.find((entry) => entry.target === target)?.id ?? null;
+	if (shouldOpenCommandPaletteOnHotkey(keyEvent)) {
+		return resolveTipIdFromCompleteOn(TIPS_REGISTRY, 'command-search-hotkey');
+	}
+	const agendaMode = resolveAgendaTipCompleteOnFromKey(pathname, keyEvent);
+	if (!agendaMode) return null;
+	return resolveTipIdFromCompleteOn(TIPS_REGISTRY, agendaMode);
 }
 
 export function useTipsCompletion(params: {
@@ -51,7 +51,8 @@ export function useTipsCompletion(params: {
 
 		const onClick = (event: MouseEvent) => {
 			const el = event.target instanceof Element ? event.target.closest('[data-tip-target]') : null;
-			const tipId = resolveTipIdFromTipTarget(
+			const tipId = resolveTipIdFromTargetClick(
+				TIPS_REGISTRY,
 				el instanceof HTMLElement ? el.getAttribute('data-tip-target') : null,
 			);
 			if (tipId) markAction(tipId);

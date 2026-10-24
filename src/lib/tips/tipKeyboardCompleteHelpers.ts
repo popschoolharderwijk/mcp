@@ -3,16 +3,15 @@ import {
 	resolveAgendaNavigateKey,
 	shouldHandleAgendaFullscreenKey,
 } from '@/lib/agenda/agendaFullscreenKeyboard';
+import type { TipCompleteOn } from '@/types/tips';
 
-export type AgendaTipIdFromKey = 'agenda-fullscreen' | 'agenda-nav-keyboard';
-
-/** Agenda tip ids completed by keyboard; only on `/agenda` (same scope as the agenda panel listeners). */
-export function resolveAgendaTipIdFromKey(
+/** Agenda keyboard completion modes; only on `/agenda` (same scope as the agenda panel listeners). */
+export function resolveAgendaTipCompleteOnFromKey(
 	pathname: string,
 	event: AgendaFullscreenKeyEvent,
-): AgendaTipIdFromKey | null {
+): TipCompleteOn | null {
 	if (pathname !== '/agenda') return null;
-	if (shouldHandleAgendaFullscreenKey(event)) return 'agenda-fullscreen';
-	if (resolveAgendaNavigateKey(event)) return 'agenda-nav-keyboard';
+	if (shouldHandleAgendaFullscreenKey(event)) return 'agenda-fullscreen-hotkey';
+	if (resolveAgendaNavigateKey(event)) return 'agenda-nav-keys';
 	return null;
 }

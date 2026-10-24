@@ -2,12 +2,12 @@ import type { TipDefinition } from '@/types/tips';
 
 export const TIPS_REGISTRY: readonly TipDefinition[] = [
 	{
-		id: 'command-search-slash',
+		id: 'command-search',
 		title: 'Snel zoeken',
-		body: 'Druk op {{/}} of klik op {{icon:search}} om de zoekbalk te openen. Zoek mensen, pagina’s en meer zonder de muis.',
+		body: 'Druk op de {{/}} toets om het zoekvenster te openen.',
 		routes: ['*'],
 		target: 'command-search',
-		completeOn: 'slash-search',
+		completeOn: ['command-search-hotkey'],
 	},
 	{
 		id: 'tips-nav',
@@ -15,7 +15,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Open hier het overzicht van tips voor deze pagina. Een geel lampje {{icon:tips}} betekent dat er nog tips zijn die je niet gezien hebt.',
 		routes: ['*'],
 		target: 'tips-nav',
-		completeOn: 'target-click',
+		completeOn: ['target-click'],
 	},
 	{
 		id: 'theme-dark-mode',
@@ -23,7 +23,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Klik op {{icon:sun}} of {{icon:moon}} om te wisselen tussen licht en donker thema.',
 		routes: ['*'],
 		target: 'theme-toggle',
-		completeOn: 'target-click',
+		completeOn: ['target-click'],
 	},
 	{
 		id: 'sidebar-collapse',
@@ -31,7 +31,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Klik op {{icon:chevron-left}} om de zijbalk smaller te maken. Zo houd je meer ruimte over voor de inhoud.',
 		routes: ['*'],
 		target: 'sidebar-collapse',
-		completeOn: 'target-click',
+		completeOn: ['target-click'],
 	},
 	{
 		id: 'table-quick-filter',
@@ -39,7 +39,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Open de filters met {{icon:filter}}. Handig om tabellen snel te beperken zonder te zoeken.',
 		routes: ['*'],
 		target: 'table-quick-filter',
-		completeOn: 'target-click',
+		completeOn: ['target-click'],
 	},
 	{
 		id: 'agenda-fullscreen',
@@ -47,7 +47,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Klik op {{icon:maximize}} of druk op {{f}} om de agenda over het hele scherm te tonen.',
 		routes: ['/agenda'],
 		target: 'agenda-fullscreen',
-		completeOn: 'target-click',
+		completeOn: ['target-click', 'agenda-fullscreen-hotkey'],
 	},
 	{
 		id: 'agenda-nav-keyboard',
@@ -55,7 +55,7 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Gebruik de pijltjestoetsen {{←}} en {{→}} om van periode te wisselen, of {{↑}} om naar vandaag te springen.',
 		routes: ['/agenda'],
 		target: 'agenda-nav',
-		completeOn: 'agenda-nav-keys',
+		completeOn: ['agenda-nav-keys'],
 	},
 	{
 		id: 'agenda-date-picker',
@@ -63,6 +63,6 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		body: 'Klik op de datum om snel naar een andere dag of maand te kunnen gaan.',
 		routes: ['/agenda'],
 		target: 'agenda-date-picker',
-		completeOn: 'target-click',
+		completeOn: ['target-click'],
 	},
 ] as const;

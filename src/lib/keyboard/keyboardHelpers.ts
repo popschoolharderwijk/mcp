@@ -16,8 +16,8 @@ export function keyboardTargetFromEventTarget(target: EventTarget | null): Keybo
 	return { tagName: target.tagName, isContentEditable: target.isContentEditable };
 }
 
-/** True when `/` should open the command palette (GitHub-style; no modifiers, not typing). */
-export function shouldOpenCommandPaletteOnSlashKey(event: {
+/** True when the command-palette hotkey should fire (currently `/`; no modifiers, not typing). */
+export function shouldOpenCommandPaletteOnHotkey(event: {
 	key: string;
 	ctrlKey: boolean;
 	metaKey: boolean;

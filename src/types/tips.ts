@@ -1,7 +1,7 @@
 /** Tip progress status stored in `user_tip_progress.status`. */
 export type TipStatus = 'dismissed' | 'completed';
 
-export type TipCompleteOn = 'slash-search' | 'target-click' | 'agenda-nav-keys';
+export type TipCompleteOn = 'command-search-hotkey' | 'target-click' | 'agenda-nav-keys' | 'agenda-fullscreen-hotkey';
 
 export interface TipDefinition {
 	id: string;
@@ -11,7 +11,8 @@ export interface TipDefinition {
 	routes: string[];
 	/** Value of `[data-tip-target="…"]` on the highlighted element. */
 	target: string;
-	completeOn: TipCompleteOn;
+	/** Ways this tip can be marked completed; empty means never via action handlers. */
+	completeOn: readonly TipCompleteOn[];
 }
 
 export interface TipProgressEntry {

@@ -4,6 +4,7 @@ import { LuX } from 'react-icons/lu';
 import { TipBody } from '@/components/tips/TipBody';
 import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { tipCompletesOn } from '@/lib/tips/tipCompleteHelpers';
 import {
 	readTipTargetRect,
 	TIP_SPOTLIGHT_CARD_WIDTH,
@@ -91,9 +92,17 @@ function TipSpotlightLayers({
 		TIP_HOLE_PADDING,
 	);
 	const pos = tipSpotlightCardPosition(rect);
+	const allowTargetClick = tipCompletesOn(tip, 'target-click');
 	const fadeStyle = {
 		opacity: visible ? 1 : 0,
 		transition: `opacity ${TIP_FADE_MS}ms ease-out`,
+	};
+	const holeStyle = {
+		...fadeStyle,
+		top: hole.top,
+		left: hole.left,
+		width: hole.width,
+		height: hole.height,
 	};
 
 	return (
@@ -103,30 +112,24 @@ function TipSpotlightLayers({
 				style={{ ...fadeStyle, clipPath }}
 				aria-hidden
 			/>
-			{/* Soft glow + pulsing ring around the target (clicks pass through). */}
+			{/* Soft glow + pulsing ring around the target. */}
 			<div
 				className="absolute rounded-md"
 				style={{
-					...fadeStyle,
-					top: hole.top,
-					left: hole.left,
-					width: hole.width,
-					height: hole.height,
+					...holeStyle,
 					boxShadow: '0 0 0 3px hsl(var(--primary)), 0 0 36px 10px hsl(var(--primary) / 0.6)',
 				}}
 				aria-hidden
 			/>
 			<div
 				className={cn('absolute rounded-md border-2 border-primary', visible && 'animate-tip-ring-pulse')}
-				style={{
-					...fadeStyle,
-					top: hole.top,
-					left: hole.left,
-					width: hole.width,
-					height: hole.height,
-				}}
+				style={holeStyle}
 				aria-hidden
 			/>
+			{/* Block clicks on the hole when the tip does not complete via target-click. */}
+			{!allowTargetClick ? (
+				<div className="pointer-events-auto absolute rounded-md" style={holeStyle} aria-hidden />
+			) : null}
 			<Card
 				className="pointer-events-auto absolute shadow-lg"
 				style={{ ...fadeStyle, top: pos.top, left: pos.left, width: TIP_SPOTLIGHT_CARD_WIDTH }}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { isTypingTarget, shouldOpenCommandPaletteOnSlashKey } from '../../../src/lib/keyboard/keyboardHelpers';
+import { isTypingTarget, shouldOpenCommandPaletteOnHotkey } from '../../../src/lib/keyboard/keyboardHelpers';
 
 describe('isTypingTarget', () => {
 	it('returns false for null', () => {
@@ -19,10 +19,10 @@ describe('isTypingTarget', () => {
 	});
 });
 
-describe('shouldOpenCommandPaletteOnSlashKey', () => {
+describe('shouldOpenCommandPaletteOnHotkey', () => {
 	it('opens on plain slash', () => {
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: '/',
 				ctrlKey: false,
 				metaKey: false,
@@ -34,7 +34,7 @@ describe('shouldOpenCommandPaletteOnSlashKey', () => {
 
 	it('ignores other keys and modifier combinations', () => {
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: 'k',
 				ctrlKey: false,
 				metaKey: false,
@@ -43,7 +43,7 @@ describe('shouldOpenCommandPaletteOnSlashKey', () => {
 			}),
 		).toBe(false);
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: '/',
 				ctrlKey: true,
 				metaKey: false,
@@ -52,7 +52,7 @@ describe('shouldOpenCommandPaletteOnSlashKey', () => {
 			}),
 		).toBe(false);
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: '/',
 				ctrlKey: false,
 				metaKey: true,
@@ -61,7 +61,7 @@ describe('shouldOpenCommandPaletteOnSlashKey', () => {
 			}),
 		).toBe(false);
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: '/',
 				ctrlKey: false,
 				metaKey: false,
@@ -73,7 +73,7 @@ describe('shouldOpenCommandPaletteOnSlashKey', () => {
 
 	it('ignores slash while typing in a field', () => {
 		expect(
-			shouldOpenCommandPaletteOnSlashKey({
+			shouldOpenCommandPaletteOnHotkey({
 				key: '/',
 				ctrlKey: false,
 				metaKey: false,
