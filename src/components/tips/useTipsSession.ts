@@ -1,4 +1,4 @@
-import { type MutableRefObject, useRef, useState } from 'react';
+import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { useTipsAutoShow } from '@/components/tips/useTipsAutoShow';
 import { useTipsCompletion } from '@/components/tips/useTipsCompletion';
 import { useTipsReplay } from '@/components/tips/useTipsReplay';
@@ -20,6 +20,7 @@ export function useTipsSession(params: {
 	pathname: string;
 	userId: string | null;
 	progressLoaded: boolean;
+	tipsEnabled: boolean;
 	autoIntervalMinutes: number;
 	progressRef: MutableRefObject<TipProgressMap>;
 	writeStatus: (tipId: string, status: TipStatus) => Promise<void>;
@@ -31,6 +32,7 @@ export function useTipsSession(params: {
 		pathname,
 		userId,
 		progressLoaded,
+		tipsEnabled,
 		autoIntervalMinutes,
 		progressRef,
 		writeStatus,
@@ -47,10 +49,19 @@ export function useTipsSession(params: {
 	const activeTipRef = useRef(activeTip);
 	activeTipRef.current = activeTip;
 
+	useEffect(() => {
+		if (tipsEnabled) return;
+		setActiveTip(null);
+		setActiveTipImmediate(false);
+		setBrowserOpen(false);
+		setPendingReplayId(null);
+	}, [tipsEnabled]);
+
 	useTipsAutoShow({
 		pathname,
 		progressLoaded,
 		userId,
+		tipsEnabled,
 		autoIntervalMinutes,
 		progressRef,
 		autoShownPathRef,
@@ -90,9 +101,9 @@ export function useTipsSession(params: {
 	});
 
 	return {
-		activeTip,
+		activeTip: tipsEnabled ? activeTip : null,
 		activeTipImmediate,
-		browserOpen,
+		browserOpen: tipsEnabled && browserOpen,
 		setBrowserOpen,
 		dismissActiveTip,
 		resetProgress,

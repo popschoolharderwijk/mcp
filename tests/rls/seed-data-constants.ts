@@ -38,6 +38,7 @@ export const APP_SETTINGS = {
 		default_payment_method: 'sepa' as const,
 	},
 	TIPS: {
+		enabled: false,
 		auto_interval_minutes: 10,
 	},
 } as const;

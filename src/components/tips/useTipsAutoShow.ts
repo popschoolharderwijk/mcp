@@ -49,6 +49,7 @@ export function useTipsAutoShow(params: {
 	pathname: string;
 	progressLoaded: boolean;
 	userId: string | null;
+	tipsEnabled: boolean;
 	autoIntervalMinutes: number;
 	progressRef: MutableRefObject<TipProgressMap>;
 	autoShownPathRef: MutableRefObject<string | null>;
@@ -59,6 +60,7 @@ export function useTipsAutoShow(params: {
 		pathname,
 		progressLoaded,
 		userId,
+		tipsEnabled,
 		autoIntervalMinutes,
 		progressRef,
 		autoShownPathRef,
@@ -71,7 +73,7 @@ export function useTipsAutoShow(params: {
 		setActiveTipImmediate(false);
 		autoShownPathRef.current = null;
 
-		if (!progressLoaded || !userId) return;
+		if (!tipsEnabled || !progressLoaded || !userId) return;
 
 		const controller = new AbortController();
 		let intervalTimer: number | undefined;
@@ -132,6 +134,7 @@ export function useTipsAutoShow(params: {
 		pathname,
 		progressLoaded,
 		userId,
+		tipsEnabled,
 		autoIntervalMinutes,
 		progressRef,
 		autoShownPathRef,

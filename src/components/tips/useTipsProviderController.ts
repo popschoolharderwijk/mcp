@@ -8,6 +8,7 @@ import type { TipDefinition, TipProgressMap } from '@/types/tips';
 
 export interface TipsProviderController {
 	pathname: string;
+	tipsEnabled: boolean;
 	progress: TipProgressMap;
 	hasNewTips: boolean;
 	onTipsButtonClick: () => void;
@@ -24,6 +25,7 @@ export function useTipsProviderController(): TipsProviderController {
 	const { user } = useAuth();
 	const { pathname } = useLocation();
 	const { settings } = useAppSettingsContext();
+	const tipsEnabled = settings.tips.enabled;
 	const userId = user?.id ?? null;
 	const { progress, progressLoaded, progressRef, writeStatus, recordAction, bumpSeenAt, resetAllProgress } =
 		useTipsProgress(userId);
@@ -32,6 +34,7 @@ export function useTipsProviderController(): TipsProviderController {
 		pathname,
 		userId,
 		progressLoaded,
+		tipsEnabled,
 		autoIntervalMinutes: settings.tips.auto_interval_minutes,
 		progressRef,
 		writeStatus,
@@ -40,12 +43,13 @@ export function useTipsProviderController(): TipsProviderController {
 		resetAllProgress,
 	});
 
-	const hasNewTips = useHasUnseenTipsForPage(pathname, progress);
+	const hasUnseenTips = useHasUnseenTipsForPage(pathname, progress);
 
 	return {
 		pathname,
+		tipsEnabled,
 		progress,
-		hasNewTips,
+		hasNewTips: tipsEnabled && hasUnseenTips,
 		...session,
 	};
 }

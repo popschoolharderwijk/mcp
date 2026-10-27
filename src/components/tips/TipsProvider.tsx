@@ -6,6 +6,7 @@ import { useTipsProviderController } from '@/components/tips/useTipsProviderCont
 import type { TipProgressMap } from '@/types/tips';
 
 interface TipsContextValue {
+	tipsEnabled: boolean;
 	progress: TipProgressMap;
 	hasNewTips: boolean;
 	onTipsButtonClick: () => void;
@@ -26,6 +27,7 @@ export function TipsProvider({ children }: { children: ReactNode }) {
 	return (
 		<TipsContext.Provider
 			value={{
+				tipsEnabled: ctrl.tipsEnabled,
 				progress: ctrl.progress,
 				hasNewTips: ctrl.hasNewTips,
 				onTipsButtonClick: ctrl.onTipsButtonClick,
@@ -33,7 +35,7 @@ export function TipsProvider({ children }: { children: ReactNode }) {
 			}}
 		>
 			{children}
-			{ctrl.activeTip ? (
+			{ctrl.tipsEnabled && ctrl.activeTip ? (
 				<TipSpotlight
 					key={ctrl.activeTip.id}
 					tip={ctrl.activeTip}
@@ -41,18 +43,21 @@ export function TipsProvider({ children }: { children: ReactNode }) {
 					onDismiss={ctrl.dismissActiveTip}
 				/>
 			) : null}
-			<TipsBrowserDialog
-				open={ctrl.browserOpen}
-				onOpenChange={ctrl.setBrowserOpen}
-				pathname={ctrl.pathname}
-				progress={ctrl.progress}
-				onShowTip={ctrl.onShowTip}
-			/>
+			{ctrl.tipsEnabled ? (
+				<TipsBrowserDialog
+					open={ctrl.browserOpen}
+					onOpenChange={ctrl.setBrowserOpen}
+					pathname={ctrl.pathname}
+					progress={ctrl.progress}
+					onShowTip={ctrl.onShowTip}
+				/>
+			) : null}
 		</TipsContext.Provider>
 	);
 }
 
 export function TipsNavButtonConnected() {
-	const { hasNewTips, onTipsButtonClick } = useTips();
+	const { tipsEnabled, hasNewTips, onTipsButtonClick } = useTips();
+	if (!tipsEnabled) return null;
 	return <TipsNavButton hasNewTips={hasNewTips} onClick={onTipsButtonClick} />;
 }
