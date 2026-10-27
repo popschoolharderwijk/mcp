@@ -12,6 +12,7 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 		preferredSqlOrder: ['courses.sql', 'profiles.sql'],
 		resolvePath: (path) => `/abs/${path}`,
 		resetImportLog: async () => {},
+		resetIdMap: async () => {},
 		runImportConverter: async () => {},
 		uploadImportSqlFiles: async () => ({ ok: true, files: ['courses.sql', 'profiles.sql'] }),
 		applyImportSettings: async () => ({
@@ -48,7 +49,10 @@ describe('runImportCli', () => {
 			['bun', 'import/index.ts', 'import/source', 'import/out', '--upload'],
 			baseDeps({
 				resetImportLog: async (path) => {
-					ran.push(`reset:${path}`);
+					ran.push(`reset-log:${path}`);
+				},
+				resetIdMap: async (path) => {
+					ran.push(`reset-id-map:${path}`);
 				},
 				runImportConverter: async (converter, dirs) => {
 					ran.push(`convert:${converter.name}:${dirs.sourceDir}:${dirs.outDir}`);
@@ -62,11 +66,13 @@ describe('runImportCli', () => {
 		);
 		expect(code).toBe(0);
 		expect(ran).toEqual([
-			'reset:/abs/import/out/import.log',
+			'reset-log:/abs/import/out/import.log',
+			'reset-id-map:/abs/import/out/id-map.json',
 			'convert:courses:/abs/import/source:/abs/import/out',
 			'convert:profiles:/abs/import/source:/abs/import/out',
 			'upload:/abs/import/out',
 		]);
+		expect(logs.some((line) => line.includes('Reset id-map.json'))).toBe(true);
 		expect(logs.some((line) => line.includes('Uploaded: courses.sql, profiles.sql'))).toBe(true);
 	});
 

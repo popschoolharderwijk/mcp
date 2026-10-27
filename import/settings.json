@@ -1,7 +1,7 @@
 {
 	"minAgreementEndDate": null,
 	"removeOutdatedStudents": false,
-	"useLessonTypeAliases": true,
+	"useLessonTypeAliases": false,
 	"lessonTypeAliases": {
 		"Muziekclub": [
 			"MuziekClub",

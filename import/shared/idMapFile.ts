@@ -15,3 +15,8 @@ export async function saveIdMap(path: string, map: MongoIdMap): Promise<void> {
 	await mkdir(dirname(path), { recursive: true });
 	await Bun.write(path, `${JSON.stringify(map, null, 2)}\n`);
 }
+
+/** Discard a previous run's id-map so a full CLI import starts with fresh UUIDs. */
+export async function resetIdMap(path: string): Promise<void> {
+	await saveIdMap(path, createEmptyIdMap());
+}

@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { IMPORT_LOG_FILE, type ImportConverterName } from '../config';
+import { IMPORT_ID_MAP_FILE, IMPORT_LOG_FILE, type ImportConverterName } from '../config';
 import type { ImportConverter } from './converterTypes';
 import { formatImportConverterBanner } from './importConsoleHelpers';
 import type { ApplyImportSettingsResult } from './loadImportSettingsHelpers';
@@ -13,6 +13,8 @@ export type ImportCliDeps = {
 	preferredSqlOrder: readonly string[];
 	resolvePath: (path: string) => string;
 	resetImportLog: (path: string) => Promise<void>;
+	/** Clear `id-map.json` once at the start of a full pipeline (not between converters). */
+	resetIdMap: (path: string) => Promise<void>;
 	runImportConverter: (converter: ImportConverter, dirs: ImportConverterDirs) => Promise<void>;
 	uploadImportSqlFiles: (params: {
 		outDir: string;
@@ -56,7 +58,10 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 	}
 	log(formatSettingsLog(settingsResult));
 
+	const mapPath = join(dirs.outDir, IMPORT_ID_MAP_FILE);
 	await deps.resetImportLog(logPath);
+	await deps.resetIdMap(mapPath);
+	log(`Reset ${IMPORT_ID_MAP_FILE}`);
 	for (const [index, name] of deps.converterNames.entries()) {
 		log(formatImportConverterBanner(name, index, false));
 		await deps.runImportConverter(deps.converters[name], dirs);

@@ -39,7 +39,7 @@ async function expectUpdateBlocked(user: TestUser) {
 		await db
 			.from('no_lesson_periods')
 			.update({ name: 'Hacked' })
-			.eq('id', NO_LESSON_PERIODS.STUDY_DAYS_ID)
+			.eq('id', NO_LESSON_PERIODS.CHRISTMAS_ID)
 			.select('id'),
 	);
 	expect(data).toHaveLength(0);
@@ -48,7 +48,7 @@ async function expectUpdateBlocked(user: TestUser) {
 async function expectDeleteBlocked(user: TestUser) {
 	const db = await createClientAs(user);
 	const data = unwrap(
-		await db.from('no_lesson_periods').delete().eq('id', NO_LESSON_PERIODS.STUDY_DAYS_ID).select('id'),
+		await db.from('no_lesson_periods').delete().eq('id', NO_LESSON_PERIODS.CHRISTMAS_ID).select('id'),
 	);
 	expect(data).toHaveLength(0);
 }

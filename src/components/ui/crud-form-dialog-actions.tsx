@@ -14,12 +14,21 @@ export interface CrudFormDialogActionsProps {
 	deleteDescription: string;
 }
 
-export function CrudFormDialogActions({
-	onCancel,
-	onSave,
-	saving,
-	disabled,
-	isEditing,
+/** Footer for the create/edit dialog. Pair with CrudFormDeleteConfirmDialog outside that Dialog. */
+export function CrudFormDialogActions({ onCancel, onSave, saving, disabled, isEditing }: CrudFormDialogActionsProps) {
+	return (
+		<FormDialogFooter
+			onCancel={onCancel}
+			onSave={onSave}
+			saving={saving}
+			disabled={disabled}
+			isEditing={isEditing}
+		/>
+	);
+}
+
+/** Must sit outside the edit Dialog so row-level delete still mounts when the editor is closed. */
+export function CrudFormDeleteConfirmDialog({
 	deleteOpen,
 	onDeleteOpenChange,
 	onDeleteConfirm,
@@ -27,23 +36,14 @@ export function CrudFormDialogActions({
 	deleteDescription,
 }: CrudFormDialogActionsProps) {
 	return (
-		<>
-			<FormDialogFooter
-				onCancel={onCancel}
-				onSave={onSave}
-				saving={saving}
-				disabled={disabled}
-				isEditing={isEditing}
-			/>
-			<ConfirmDeleteDialog
-				open={deleteOpen}
-				onOpenChange={onDeleteOpenChange}
-				onConfirm={async () => {
-					await onDeleteConfirm();
-				}}
-				title={deleteTitle}
-				description={deleteDescription}
-			/>
-		</>
+		<ConfirmDeleteDialog
+			open={deleteOpen}
+			onOpenChange={onDeleteOpenChange}
+			onConfirm={async () => {
+				await onDeleteConfirm();
+			}}
+			title={deleteTitle}
+			description={deleteDescription}
+		/>
 	);
 }
