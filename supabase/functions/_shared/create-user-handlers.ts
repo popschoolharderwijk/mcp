@@ -188,6 +188,7 @@ async function createUserWithAuthorization(
 	supabaseUser: SupabaseClient,
 	supabaseAdmin: SupabaseClient,
 	body: CreateUserRequest,
+	accessToken: string | undefined,
 ): Promise<{ userId: string; email: string | undefined; error: Response | null }> {
 	const authorizationError = await authorizeCreateUserRequest(supabaseUser, body, accessToken);
 	if (authorizationError) return { userId: '', email: undefined, error: authorizationError };

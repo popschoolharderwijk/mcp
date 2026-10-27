@@ -46,3 +46,5 @@
 - [x] Stap 4: status "Wacht op machtiging", beheeroverzicht, melding leerlingportaal (plan afgerond)
 - [x] Stap 3: docs, handleiding; check + check:ci
 - Klantmail en machtiging na opslaan nog zelf testen: externe Supabase zonder beschikbare klant-/beheerderssessie.
+
+- [x] 401 "Invalid token" in alle edge functions opgelost en opnieuw uitgerold (27-10-2026)

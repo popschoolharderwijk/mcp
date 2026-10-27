@@ -1,6 +1,6 @@
-import { bearerTokenFromHeader } from '../_shared/authHeaderPure.ts';
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type * as XLSX from 'npm:xlsx@0.18.5';
+import { bearerTokenFromHeader } from '../_shared/authHeaderPure.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getSafeErrorMessage } from '../_shared/errors.ts';
 import { createLegacyImportAdminClient, createLegacyImportUserClient } from './importClients.ts';

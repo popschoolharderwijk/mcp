@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.10 — 2026-10-27
+
+- "Invalid token" (401) opgelost in alle edge functions: de inlogtoken wordt nu expliciet aan `auth.getUser` doorgegeven (gedeelde helper `bearerTokenFromHeader`), ook in create-user, generate-invoice en import-legacy-data.
+
 ## 1.5.9 — 2026-10-22
 
 - Previewfouten hersteld door de intacte eerder gegenereerde schema-types terug te plaatsen (geen handmatige typevelden) en optionele betalergegevens expliciet aan helpers door te geven.
