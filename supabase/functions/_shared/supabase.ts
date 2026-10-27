@@ -6,16 +6,22 @@ export type SupabaseClients = {
 	admin: SupabaseClient;
 };
 
+const accessTokens = new WeakMap<SupabaseClient, string>();
+
 export function createSupabaseClients(authHeader: string): SupabaseClients {
 	const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 	const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
 	const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
+	const userClient = createClient(supabaseUrl, anonKey, {
+		global: { headers: { Authorization: authHeader } },
+		auth: { autoRefreshToken: false, persistSession: false },
+	});
+	const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+	if (token) accessTokens.set(userClient, token);
+
 	return {
-		userClient: createClient(supabaseUrl, anonKey, {
-			global: { headers: { Authorization: authHeader } },
-			auth: { autoRefreshToken: false, persistSession: false },
-		}),
+		userClient,
 		admin: createClient(supabaseUrl, serviceKey, {
 			auth: { autoRefreshToken: false, persistSession: false },
 		}),
@@ -28,7 +34,7 @@ export async function requireAuthenticatedUser(userClient: SupabaseClient): Prom
 	const {
 		data: { user },
 		error: userErr,
-	} = await userClient.auth.getUser();
+	} = await userClient.auth.getUser(accessTokens.get(userClient));
 	if (userErr || !user) return { ok: false, response: jsonResponse(401, { error: 'Invalid token' }) };
 	return { ok: true, user };
 }
