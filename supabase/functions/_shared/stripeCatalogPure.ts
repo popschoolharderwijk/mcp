@@ -234,3 +234,67 @@ export function resolveCatalogStatus(option: OptionInput | null, today: string):
 	if (buildDesiredPrices(option, today).length === 0) return 'no_tariff';
 	return option.lesson_type_active ? 'in_sync' : 'archived';
 }
+
+/** Stripe price as seen globally by lookup key (may live on another product). */
+export interface LookupPrice {
+	stripe_price_id: string;
+	lookup_key: string;
+	product_id: string;
+	active: boolean;
+	unit_amount: number | null;
+	recurring: boolean;
+}
+
+export interface PriceAdoptionPlan {
+	/** Desired prices already present in Stripe on this product with the same amount: only persist. */
+	adopt: Array<{ price: DesiredPrice; stripe_price_id: string; active: boolean }>;
+	/** Desired prices to create; `transfer` moves the lookup key from an existing, different price. */
+	create: Array<{ price: DesiredPrice; transfer: boolean }>;
+}
+
+/**
+ * Decide per desired price whether Stripe already has it (adopt) or a new price is needed.
+ * A lookup key held by a price on another product or with a different amount/interval is
+ * transferred to a fresh price, so the deterministic key always points at the right amount.
+ */
+export function planPriceAdoption(
+	desired: DesiredPrice[],
+	lookupPrices: LookupPrice[],
+	productId: string,
+): PriceAdoptionPlan {
+	const byKey = new Map(lookupPrices.map((p) => [p.lookup_key, p]));
+	const plan: PriceAdoptionPlan = { adopt: [], create: [] };
+	for (const d of desired) {
+		const found = byKey.get(d.lookup_key);
+		if (!found) {
+			plan.create.push({ price: d, transfer: false });
+			continue;
+		}
+		const same =
+			found.product_id === productId && found.unit_amount === d.amount_cents && found.recurring === d.recurring;
+		if (same) plan.adopt.push({ price: d, stripe_price_id: found.stripe_price_id, active: found.active });
+		else plan.create.push({ price: d, transfer: true });
+	}
+	return plan;
+}
+
+/** Idempotency key for a price create; includes the product so a re-created product never collides. */
+export function priceIdempotencyKey(lookupKey: string, productId: string, transfer: boolean): string {
+	return `${lookupKey}:${productId}${transfer ? ':t' : ''}`;
+}
+
+/** Existing Stripe tax rate usable for our key: tagged by us, or same percentage + inclusive. */
+export function matchTaxRateKey(rate: {
+	active: boolean;
+	percentage: number;
+	inclusive: boolean;
+	metadata?: Record<string, string> | null;
+}): TaxRateKey | null {
+	if (!rate.active) return null;
+	const tagged = rate.metadata?.mcp_key;
+	if (tagged === 'nl_21_incl' || tagged === 'exempt') return tagged;
+	if (!rate.inclusive) return null;
+	if (rate.percentage === 21) return 'nl_21_incl';
+	if (rate.percentage === 0) return 'exempt';
+	return null;
+}
