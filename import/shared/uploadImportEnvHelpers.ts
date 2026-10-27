@@ -1,5 +1,4 @@
 export type UploadImportEnv = {
-	supabaseUrl: string;
 	dbUrl: string;
 };
 
@@ -18,33 +17,30 @@ export function orderImportSqlFileNames(fileNames: readonly string[], preferredO
 }
 
 /**
- * Validate upload env vars and build the Session-pooler DB URL.
+ * Validate upload env vars and build the DB URL.
  * `SUPABASE_DB_URL` must contain `{PASSWORD}` for `SUPABASE_DB_PASSWORD`.
+ * Hosted: Session pooler URI. Local Docker: e.g. `postgresql://postgres:{PASSWORD}@localhost:54422/postgres`.
  */
 export function readUploadImportEnv(
 	env: NodeJS.ProcessEnv = process.env,
 ): { ok: true; value: UploadImportEnv } | { ok: false; error: string } {
-	const supabaseUrl = env.SUPABASE_URL?.trim() ?? '';
 	const dbUrlTemplate = env.SUPABASE_DB_URL?.trim() ?? '';
 	const dbPassword = env.SUPABASE_DB_PASSWORD ?? '';
 
-	const error = uploadEnvValidationError(supabaseUrl, dbUrlTemplate, dbPassword);
+	const error = uploadEnvValidationError(dbUrlTemplate, dbPassword);
 	if (error != null) {
 		return { ok: false, error };
 	}
 
 	return {
 		ok: true,
-		value: { supabaseUrl, dbUrl: applyDbUrlPassword(dbUrlTemplate, dbPassword) },
+		value: { dbUrl: applyDbUrlPassword(dbUrlTemplate, dbPassword) },
 	};
 }
 
-function uploadEnvValidationError(supabaseUrl: string, dbUrlTemplate: string, dbPassword: string): string | null {
-	if (supabaseUrl === '') {
-		return 'Missing SUPABASE_URL in environment';
-	}
+function uploadEnvValidationError(dbUrlTemplate: string, dbPassword: string): string | null {
 	if (dbUrlTemplate === '') {
-		return 'Missing SUPABASE_DB_URL in environment. Copy the Session pooler URI from Supabase → Database → Connect (not Direct connection; that is IPv6-only) and keep `{PASSWORD}` as the password placeholder.';
+		return 'Missing SUPABASE_DB_URL in environment. Hosted: Session pooler URI from Supabase → Database → Connect (not Direct connection; that is IPv6-only). Local: postgresql://postgres:{PASSWORD}@localhost:54422/postgres. Keep `{PASSWORD}` as the password placeholder.';
 	}
 	if (dbPassword === '') {
 		return 'Missing SUPABASE_DB_PASSWORD in environment';
