@@ -1,5 +1,5 @@
-import { bearerTokenFromHeader } from './authHeaderPure.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { bearerTokenFromHeader } from './authHeaderPure.ts';
 import {
 	type CreateUserRequestBody,
 	canAssignCreateUserRole,
@@ -141,7 +141,12 @@ export async function processCreateUserRequest(req: Request, authHeader: string)
 	if (validationError) return validationError;
 
 	const { supabaseUser, supabaseAdmin } = createCreateUserClients(authHeader);
-	const created = await createUserWithAuthorization(supabaseUser, supabaseAdmin, body, bearerTokenFromHeader(authHeader));
+	const created = await createUserWithAuthorization(
+		supabaseUser,
+		supabaseAdmin,
+		body,
+		bearerTokenFromHeader(authHeader),
+	);
 	if (created.error) return created.error;
 
 	return jsonResponse(200, buildCreateUserSuccessResponse(created.userId, created.email));
