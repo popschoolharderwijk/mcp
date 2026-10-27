@@ -218,12 +218,17 @@ async function syncOne(
 		// Prices already on the product (matched by lookup key) are adopted into the app catalog.
 		const createKeys = new Set(plan.createPrices.map((p) => p.lookup_key));
 		const onProduct = new Map(existingPrices.filter((p) => p.lookup_key).map((p) => [p.lookup_key as string, p]));
-		const wantActive = plan.createPrices.length > 0 || (plan.productUpdate?.active ?? existingProduct?.active ?? true);
+		const wantActive =
+			plan.createPrices.length > 0 || (plan.productUpdate?.active ?? existingProduct?.active ?? true);
 		if (wantActive && option.lesson_type_active) {
 			for (const d of buildDesiredPrices(option, today)) {
 				const ex = onProduct.get(d.lookup_key);
 				if (ex && !createKeys.has(d.lookup_key)) {
-					priceRows.push({ ...pricePersist(d), stripe_price_id: ex.stripe_price_id, is_active_in_stripe: true });
+					priceRows.push({
+						...pricePersist(d),
+						stripe_price_id: ex.stripe_price_id,
+						is_active_in_stripe: true,
+					});
 				}
 			}
 		}
@@ -236,7 +241,10 @@ async function syncOne(
 		}
 		for (const c of adoption.create) {
 			const created = await stripe.prices.create(
-				{ ...buildPriceCreateParams(productId, option.id, c.price), ...(c.transfer ? { transfer_lookup_key: true } : {}) },
+				{
+					...buildPriceCreateParams(productId, option.id, c.price),
+					...(c.transfer ? { transfer_lookup_key: true } : {}),
+				},
 				{ idempotencyKey: priceIdempotencyKey(c.price.lookup_key, productId, c.transfer) },
 			);
 			priceRows.push({ ...pricePersist(c.price), stripe_price_id: created.id, is_active_in_stripe: true });
