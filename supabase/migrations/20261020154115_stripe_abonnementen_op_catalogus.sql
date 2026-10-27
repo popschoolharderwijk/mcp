@@ -78,8 +78,9 @@ BEGIN
     SELECT pg_get_functiondef(p.oid) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname IN ('get_lesson_agreements_paginated', 'get_students_paginated')
   LOOP
-    v_def := regexp_replace(v_def, '(la|pi)\.price_per_lesson,\s*', '', 'g');
-    v_def := regexp_replace(v_def, ',\s*''price_per_lesson'', pa\.price_per_lesson', '', 'g');
+    -- get_students_paginated: SELECT uses la.price_per_lesson; JSON uses sa.price_per_lesson.
+    v_def := regexp_replace(v_def, '\m(la|pi|sa|pa)\.price_per_lesson\s*,\s*', '', 'g');
+    v_def := regexp_replace(v_def, ',\s*''price_per_lesson''\s*,\s*(la|pi|sa|pa)\.price_per_lesson', '', 'g');
     IF v_def LIKE '%price_per_lesson%' THEN
       RAISE EXCEPTION 'price_per_lesson still referenced after rewrite';
     END IF;

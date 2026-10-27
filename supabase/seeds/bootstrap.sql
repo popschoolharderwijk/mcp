@@ -115,69 +115,72 @@ WHERE NOT EXISTS (
 -- 11x per school year; group lessons one-off). < 21 VAT exempt, 21+ incl. 21% VAT.
 -- tests/code/billing/bootstrapTariffs.test.ts checks the marked block against the list.
 -- Afterwards every other 1-9-2026 tariff is removed (earlier fictional test data).
+-- One DO block: remote seed sends SQL in batches; TEMP tables do not survive across batches.
 -- -----------------------------------------------------------------------------
-DROP TABLE IF EXISTS tmp_tarievenlijst;
-CREATE TEMP TABLE tmp_tarievenlijst (
-  type_name text, duration_minutes integer, frequency public.lesson_frequency,
-  label text, under_cents bigint, adult_cents bigint
-);
-INSERT INTO tmp_tarievenlijst VALUES
--- BEGIN TARIEVENLIJST
-  ('Gitaarles', 30, 'weekly', NULL, 7338, 8879),
-  ('Gitaarles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Drumles', 30, 'weekly', NULL, 7338, 8879),
-  ('Drumles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Zangles', 30, 'weekly', NULL, 7338, 8879),
-  ('Zangles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Basles', 30, 'weekly', NULL, 7338, 8879),
-  ('Basles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Keyboardles', 30, 'weekly', NULL, 7338, 8879),
-  ('Keyboardles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Saxofoonles', 30, 'weekly', NULL, 7338, 8879),
-  ('Saxofoonles', 30, 'biweekly', NULL, 3867, 4679),
-  ('Duoles', 30, 'weekly', NULL, 5156, 6239),
-  ('Duoles', 30, 'biweekly', NULL, 2679, 3241),
-  ('De Popkids', 60, 'weekly', NULL, 2455, NULL),
-  ('Popkoor', 60, 'weekly', '12-18 jaar', 3000, NULL),
-  ('Popkoor', 60, 'weekly', '18+', 3000, 3631),
-  ('Bandcoaching', 60, 'biweekly', NULL, 1691, 2046),
-  ('Klank en Kriebels', 45, 'weekly', NULL, 6600, NULL),
-  ('Notenkrakers', 45, 'weekly', NULL, 6600, NULL),
-  ('Mini Maestro''s', 45, 'weekly', NULL, 7650, NULL),
-  ('De Muziekclub', 45, 'weekly', NULL, 7650, NULL),
-  ('DJ-School', 60, 'weekly', NULL, 10996, 13305),
-  ('Laatbloeiers', 60, 'weekly', NULL, NULL, 8250)
--- END TARIEVENLIJST
-;
+DO $tarieven$
+BEGIN
+  CREATE TEMP TABLE tmp_tarievenlijst (
+    type_name text, duration_minutes integer, frequency public.lesson_frequency,
+    label text, under_cents bigint, adult_cents bigint
+  ) ON COMMIT DROP;
+  INSERT INTO tmp_tarievenlijst VALUES
+  -- BEGIN TARIEVENLIJST
+    ('Gitaarles', 30, 'weekly', NULL, 7338, 8879),
+    ('Gitaarles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Drumles', 30, 'weekly', NULL, 7338, 8879),
+    ('Drumles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Zangles', 30, 'weekly', NULL, 7338, 8879),
+    ('Zangles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Basles', 30, 'weekly', NULL, 7338, 8879),
+    ('Basles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Keyboardles', 30, 'weekly', NULL, 7338, 8879),
+    ('Keyboardles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Saxofoonles', 30, 'weekly', NULL, 7338, 8879),
+    ('Saxofoonles', 30, 'biweekly', NULL, 3867, 4679),
+    ('Duoles', 30, 'weekly', NULL, 5156, 6239),
+    ('Duoles', 30, 'biweekly', NULL, 2679, 3241),
+    ('De Popkids', 60, 'weekly', NULL, 2455, NULL),
+    ('Popkoor', 60, 'weekly', '12-18 jaar', 3000, NULL),
+    ('Popkoor', 60, 'weekly', '18+', 3000, 3631),
+    ('Bandcoaching', 60, 'biweekly', NULL, 1691, 2046),
+    ('Klank en Kriebels', 45, 'weekly', NULL, 6600, NULL),
+    ('Notenkrakers', 45, 'weekly', NULL, 6600, NULL),
+    ('Mini Maestro''s', 45, 'weekly', NULL, 7650, NULL),
+    ('De Muziekclub', 45, 'weekly', NULL, 7650, NULL),
+    ('DJ-School', 60, 'weekly', NULL, 10996, 13305),
+    ('Laatbloeiers', 60, 'weekly', NULL, NULL, 8250)
+  -- END TARIEVENLIJST
+  ;
 
-INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
-SELECT lto.id, DATE '2026-09-01', v.under_cents, v.adult_cents
-FROM tmp_tarievenlijst v
-JOIN public.lesson_types lt ON lt.name = v.type_name
-JOIN public.lesson_type_options lto
-  ON lto.lesson_type_id = lt.id
- AND lto.duration_minutes = v.duration_minutes
- AND lto.frequency = v.frequency
- AND COALESCE(lto.label, '') = COALESCE(v.label, '')
-ON CONFLICT (lesson_type_option_id, effective_from) DO UPDATE
-  SET amount_under_21_cents = EXCLUDED.amount_under_21_cents,
-      amount_adult_cents = EXCLUDED.amount_adult_cents;
+  INSERT INTO public.lesson_type_option_tariffs (lesson_type_option_id, effective_from, amount_under_21_cents, amount_adult_cents)
+  SELECT lto.id, DATE '2026-09-01', v.under_cents, v.adult_cents
+  FROM tmp_tarievenlijst v
+  JOIN public.lesson_types lt ON lt.name = v.type_name
+  JOIN public.lesson_type_options lto
+    ON lto.lesson_type_id = lt.id
+   AND lto.duration_minutes = v.duration_minutes
+   AND lto.frequency = v.frequency
+   AND COALESCE(lto.label, '') = COALESCE(v.label, '')
+  ON CONFLICT (lesson_type_option_id, effective_from) DO UPDATE
+    SET amount_under_21_cents = EXCLUDED.amount_under_21_cents,
+        amount_adult_cents = EXCLUDED.amount_adult_cents;
 
--- Cleanup: remove every other 1-9-2026 tariff (fictional amounts from earlier test data).
-DELETE FROM public.lesson_type_option_tariffs t
-WHERE t.effective_from = DATE '2026-09-01'
-  AND NOT EXISTS (
-    SELECT 1
-    FROM tmp_tarievenlijst v
-    JOIN public.lesson_types lt ON lt.name = v.type_name
-    JOIN public.lesson_type_options lto
-      ON lto.lesson_type_id = lt.id
-     AND lto.duration_minutes = v.duration_minutes
-     AND lto.frequency = v.frequency
-     AND COALESCE(lto.label, '') = COALESCE(v.label, '')
-    WHERE lto.id = t.lesson_type_option_id
-  );
-DROP TABLE tmp_tarievenlijst;
+  -- Cleanup: remove every other 1-9-2026 tariff (fictional amounts from earlier test data).
+  DELETE FROM public.lesson_type_option_tariffs t
+  WHERE t.effective_from = DATE '2026-09-01'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM tmp_tarievenlijst v
+      JOIN public.lesson_types lt ON lt.name = v.type_name
+      JOIN public.lesson_type_options lto
+        ON lto.lesson_type_id = lt.id
+       AND lto.duration_minutes = v.duration_minutes
+       AND lto.frequency = v.frequency
+       AND COALESCE(lto.label, '') = COALESCE(v.label, '')
+      WHERE lto.id = t.lesson_type_option_id
+    );
+END;
+$tarieven$;
 
 -- Singleton accounting settings (from accounting_settings migration).
 INSERT INTO public.accounting_settings (id) VALUES (true) ON CONFLICT DO NOTHING;

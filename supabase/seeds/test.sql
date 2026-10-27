@@ -1708,6 +1708,22 @@ WHERE la.student_user_id = sp.user_id
   AND lt.name = 'Gitaarles'
   AND la.is_active = true;
 
+-- Student 012: historical submitted batch used SEPA; mandate is revoked now.
+-- payment_method defaults to stripe — must be sepa before the batch-item insert
+-- (trg_prevent_stripe_agreement_in_batch).
+UPDATE public.lesson_agreements la
+SET
+  payment_method = 'sepa',
+  sepa_mandate_id = '78000000-0003-0000-0000-000000000000'
+FROM public.profiles sp, public.profiles tp, public.lesson_types lt
+WHERE la.student_user_id = sp.user_id
+  AND la.teacher_user_id = tp.user_id
+  AND la.lesson_type_id = lt.id
+  AND sp.email = 'student-012@test.nl'
+  AND tp.email = 'teacher-alice@test.nl'
+  AND lt.name = 'Gitaarles'
+  AND la.is_active = true;
+
 UPDATE public.accounting_settings
 SET
   sepa_mandate_next_seq = 4,
@@ -1822,7 +1838,8 @@ JOIN public.lesson_types lt ON lt.id = la.lesson_type_id
 WHERE sp.email = 'student-012@test.nl'
   AND tp.email = 'teacher-alice@test.nl'
   AND lt.name = 'Gitaarles'
-  AND la.is_active = true;
+  AND la.is_active = true
+  AND la.payment_method = 'sepa';
 
 SELECT public.recalc_direct_debit_batch('79000000-0002-0000-0000-000000000000');
 SELECT public.recalc_direct_debit_batch('79000000-0003-0000-0000-000000000000');
