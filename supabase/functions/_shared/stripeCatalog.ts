@@ -2,13 +2,18 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
 import {
+	buildDesiredPrices,
 	buildPriceCreateParams,
 	buildProductName,
+	type LookupPrice,
+	matchTaxRateKey,
 	type ExistingPrice,
 	type ExistingProduct,
 	isPlanEmpty,
 	type OptionInput,
 	planCatalogSync,
+	planPriceAdoption,
+	priceIdempotencyKey,
 	resolveCatalogStatus,
 	TAX_RATE_PARAMS,
 	type TaxRateKey,
@@ -64,10 +69,15 @@ export async function ensureTaxRates(admin: SupabaseClient, stripe: Stripe): Pro
 	}
 	if (found.nl_21_incl && found.exempt) return;
 
+	// Adopt existing rates: our tagged ones win over untagged rates with the same percentage.
+	const untagged: Partial<Record<TaxRateKey, string>> = {};
 	for await (const rate of stripe.taxRates.list({ active: true, limit: 100 })) {
-		const key = rate.metadata?.mcp_key as TaxRateKey | undefined;
-		if (key && !found[key]) found[key] = rate.id;
+		const key = matchTaxRateKey(rate);
+		if (!key) continue;
+		if (rate.metadata?.mcp_key === key) found[key] ??= rate.id;
+		else untagged[key] ??= rate.id;
 	}
+	for (const key of ['nl_21_incl', 'exempt'] as const) found[key] ??= untagged[key];
 	for (const key of ['nl_21_incl', 'exempt'] as const) {
 		if (!found[key]) {
 			const created = await stripe.taxRates.create(TAX_RATE_PARAMS[key] as Stripe.TaxRateCreateParams, {
@@ -139,8 +149,32 @@ async function findStripeProduct(stripe: Stripe, row: CatalogRow | undefined, op
 	const stored = await retrieveIfExists(row?.stripe_product_id, (id) => stripe.products.retrieve(id));
 	if (stored && !('deleted' in stored && stored.deleted)) return stored;
 	if (!optionId) return null;
-	const found = await stripe.products.search({ query: `metadata['lesson_type_option_id']:'${optionId}'`, limit: 1 });
-	return found.data[0] ?? null;
+	// Listing (not search) is consistent right after creation and works in every region.
+	let archived: Stripe.Product | null = null;
+	for await (const p of stripe.products.list({ limit: 100 })) {
+		if (p.metadata?.lesson_type_option_id !== optionId) continue;
+		if (p.active) return p;
+		archived ??= p;
+	}
+	return archived;
+}
+
+async function listPricesByLookupKeys(stripe: Stripe, keys: string[]): Promise<LookupPrice[]> {
+	const out: LookupPrice[] = [];
+	for (let i = 0; i < keys.length; i += 10) {
+		for await (const p of stripe.prices.list({ lookup_keys: keys.slice(i, i + 10), limit: 100 })) {
+			if (!p.lookup_key) continue;
+			out.push({
+				stripe_price_id: p.id,
+				lookup_key: p.lookup_key,
+				product_id: typeof p.product === 'string' ? p.product : p.product.id,
+				active: p.active,
+				unit_amount: p.unit_amount,
+				recurring: p.recurring !== null,
+			});
+		}
+	}
+	return out;
 }
 
 async function listStripePrices(stripe: Stripe, productId: string): Promise<ExistingPrice[]> {
@@ -181,11 +215,31 @@ async function syncOne(
 
 	const priceRows: Array<Record<string, unknown>> = [];
 	if (productId && option) {
-		for (const price of plan.createPrices) {
-			const created = await stripe.prices.create(buildPriceCreateParams(productId, option.id, price), {
-				idempotencyKey: price.lookup_key,
-			});
-			priceRows.push({ ...pricePersist(price), stripe_price_id: created.id, is_active_in_stripe: true });
+		// Prices already on the product (matched by lookup key) are adopted into the app catalog.
+		const createKeys = new Set(plan.createPrices.map((p) => p.lookup_key));
+		const onProduct = new Map(existingPrices.filter((p) => p.lookup_key).map((p) => [p.lookup_key as string, p]));
+		const wantActive = plan.createPrices.length > 0 || (plan.productUpdate?.active ?? existingProduct?.active ?? true);
+		if (wantActive && option.lesson_type_active) {
+			for (const d of buildDesiredPrices(option, today)) {
+				const ex = onProduct.get(d.lookup_key);
+				if (ex && !createKeys.has(d.lookup_key)) {
+					priceRows.push({ ...pricePersist(d), stripe_price_id: ex.stripe_price_id, is_active_in_stripe: true });
+				}
+			}
+		}
+		// Missing on this product: the lookup key may still exist elsewhere in Stripe.
+		const lookup = await listPricesByLookupKeys(stripe, [...createKeys]);
+		const adoption = planPriceAdoption(plan.createPrices, lookup, productId);
+		for (const a of adoption.adopt) {
+			if (!a.active) await stripe.prices.update(a.stripe_price_id, { active: true });
+			priceRows.push({ ...pricePersist(a.price), stripe_price_id: a.stripe_price_id, is_active_in_stripe: true });
+		}
+		for (const c of adoption.create) {
+			const created = await stripe.prices.create(
+				{ ...buildPriceCreateParams(productId, option.id, c.price), ...(c.transfer ? { transfer_lookup_key: true } : {}) },
+				{ idempotencyKey: priceIdempotencyKey(c.price.lookup_key, productId, c.transfer) },
+			);
+			priceRows.push({ ...pricePersist(c.price), stripe_price_id: created.id, is_active_in_stripe: true });
 		}
 	}
 	for (const id of plan.reactivatePriceIds) await stripe.prices.update(id, { active: true });
@@ -213,10 +267,11 @@ async function syncOne(
 		catalogId = data.id;
 	}
 	if (catalogId && priceRows.length > 0) {
-		await admin.from('stripe_catalog_prices').upsert(
+		const { error: priceErr } = await admin.from('stripe_catalog_prices').upsert(
 			priceRows.map((p) => ({ ...p, catalog_product_id: catalogId })),
 			{ onConflict: 'lookup_key' },
 		);
+		if (priceErr) throw new Error('Opslaan prijzen mislukt');
 	}
 	// Price rows that do not exist on the current Stripe product (e.g. from another account) are inactive.
 	let staleIds: string[] = [];
