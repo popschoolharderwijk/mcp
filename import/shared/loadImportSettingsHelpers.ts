@@ -3,20 +3,20 @@ import { IMPORT_SETTINGS_FILE } from '../config';
 import { buildScheduleFrequencyMap } from '../courses/parseScheduleFrequenciesHelpers';
 import { collectStudentOidsWithKeptAgreements } from './agreementCutoffHelpers';
 import { resetImportRuntimeSettings, setImportSettings, setStudentOidAllowlist } from './importRuntimeSettingsHelpers';
-import { DEFAULT_IMPORT_SETTINGS, type ImportSettings, parseImportSettings } from './importSettingsHelpers';
+import { type ImportSettings, parseImportSettings } from './importSettingsHelpers';
 import { parseMongoExportText } from './parseMongoExportHelpers';
 
 export type ApplyImportSettingsResult =
-	| { ok: true; settings: ImportSettings; settingsPath: string; missingFile: boolean }
+	| { ok: true; settings: ImportSettings; settingsPath: string }
 	| { ok: false; error: string };
 
-/** Read and validate `<sourceDir>/settings.json`, or defaults when the file is absent. */
-async function loadImportSettingsFile(
+/** Read and validate settings JSON at path. */
+export async function loadImportSettingsFile(
 	settingsPath: string,
-): Promise<{ ok: true; value: ImportSettings; missingFile: boolean } | { ok: false; error: string }> {
+): Promise<{ ok: true; value: ImportSettings } | { ok: false; error: string }> {
 	const file = Bun.file(settingsPath);
 	if (!(await file.exists())) {
-		return { ok: true, value: { ...DEFAULT_IMPORT_SETTINGS }, missingFile: true };
+		return { ok: false, error: `Settings file not found: ${settingsPath}` };
 	}
 
 	let raw: unknown;
@@ -30,7 +30,7 @@ async function loadImportSettingsFile(
 	if (!parsed.ok) {
 		return { ok: false, error: `${settingsPath}: ${parsed.error}` };
 	}
-	return { ok: true, value: parsed.value, missingFile: false };
+	return { ok: true, value: parsed.value };
 }
 
 async function readOptionalSourceText(
@@ -43,12 +43,17 @@ async function readOptionalSourceText(
 	return { ok: true, text: await file.text() };
 }
 
+/** Absolute path to package `import/settings.json`. */
+function resolveImportSettingsPath(): string {
+	return join(import.meta.dir, '..', IMPORT_SETTINGS_FILE);
+}
+
 /**
- * Load settings from the source dir, set runtime state, and optionally build the student allowlist.
+ * Load `import/settings.json`, set runtime state, and optionally build the student allowlist from source dumps.
  */
 export async function applyImportSettingsFromSource(sourceDir: string): Promise<ApplyImportSettingsResult> {
 	resetImportRuntimeSettings();
-	const settingsPath = join(sourceDir, IMPORT_SETTINGS_FILE);
+	const settingsPath = resolveImportSettingsPath();
 	const loaded = await loadImportSettingsFile(settingsPath);
 	if (!loaded.ok) return loaded;
 
@@ -60,7 +65,6 @@ export async function applyImportSettingsFromSource(sourceDir: string): Promise<
 			ok: true,
 			settings: loaded.value,
 			settingsPath,
-			missingFile: loaded.missingFile,
 		};
 	}
 
@@ -80,6 +84,5 @@ export async function applyImportSettingsFromSource(sourceDir: string): Promise<
 		ok: true,
 		settings: loaded.value,
 		settingsPath,
-		missingFile: loaded.missingFile,
 	};
 }

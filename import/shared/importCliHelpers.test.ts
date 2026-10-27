@@ -16,9 +16,13 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 		uploadImportSqlFiles: async () => ({ ok: true, files: ['courses.sql', 'profiles.sql'] }),
 		applyImportSettings: async () => ({
 			ok: true,
-			settings: { minAgreementEndDate: null, removeOutdatedStudents: false },
-			settingsPath: '/abs/import/source/settings.json',
-			missingFile: true,
+			settings: {
+				minAgreementEndDate: null,
+				removeOutdatedStudents: false,
+				useLessonTypeAliases: false,
+				lessonTypeAliases: {},
+			},
+			settingsPath: '/abs/import/settings.json',
 		}),
 		log: () => {},
 		error: () => {},

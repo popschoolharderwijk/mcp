@@ -9,14 +9,24 @@ describe('parseImportSettings', () => {
 		});
 		expect(parseImportSettings({ minAgreementEndDate: null, removeOutdatedStudents: true })).toEqual({
 			ok: true,
-			value: { minAgreementEndDate: null, removeOutdatedStudents: true },
+			value: {
+				minAgreementEndDate: null,
+				removeOutdatedStudents: true,
+				useLessonTypeAliases: false,
+				lessonTypeAliases: {},
+			},
 		});
 	});
 
 	it('normalizes a valid minAgreementEndDate', () => {
 		expect(parseImportSettings({ minAgreementEndDate: '2024-08-01' })).toEqual({
 			ok: true,
-			value: { minAgreementEndDate: '2024-08-01', removeOutdatedStudents: false },
+			value: {
+				minAgreementEndDate: '2024-08-01',
+				removeOutdatedStudents: false,
+				useLessonTypeAliases: false,
+				lessonTypeAliases: {},
+			},
 		});
 	});
 
@@ -26,6 +36,16 @@ describe('parseImportSettings', () => {
 		expect(parseImportSettings({ minAgreementEndDate: '01-08-2024' }).ok).toBe(false);
 		expect(parseImportSettings({ minAgreementEndDate: '2024-13-01' }).ok).toBe(false);
 		expect(parseImportSettings({ removeOutdatedStudents: 'yes' }).ok).toBe(false);
+		expect(parseImportSettings({ useLessonTypeAliases: 'yes' }).ok).toBe(false);
+		expect(parseImportSettings({ useLessonTypeAliases: true })).toEqual({
+			ok: true,
+			value: {
+				minAgreementEndDate: null,
+				removeOutdatedStudents: false,
+				useLessonTypeAliases: true,
+				lessonTypeAliases: {},
+			},
+		});
 	});
 });
 

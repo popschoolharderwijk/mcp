@@ -5,9 +5,11 @@
  *   bun import <source> <out>
  *   bun import <source> <out> --upload
  *
- * Optional `<source>/settings.json` (see `import/settings.json`):
+ * Required `import/settings.json`:
  *   minAgreementEndDate — null | YYYY-MM-DD
  *   removeOutdatedStudents — boolean
+ *   useLessonTypeAliases — boolean (master switch for lessonTypeAliases)
+ *   lessonTypeAliases — canonical name → Mongo course names (when useLessonTypeAliases)
  */
 
 import { resolve } from 'node:path';

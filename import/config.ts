@@ -2,7 +2,7 @@
 
 export const IMPORT_ID_MAP_FILE = 'id-map.json';
 export const IMPORT_LOG_FILE = 'import.log';
-/** Per-run options; loaded from `<source>/settings.json` (see `import/settings.json` example). */
+/** Tool options; loaded from `import/settings.json` next to this package. */
 export const IMPORT_SETTINGS_FILE = 'settings.json';
 
 /**

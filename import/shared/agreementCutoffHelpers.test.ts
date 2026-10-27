@@ -25,12 +25,22 @@ function agreementDoc(overrides: Record<string, unknown> = {}): Record<string, u
 
 describe('agreementDocPassesCutoff', () => {
 	it('keeps every doc when minAgreementEndDate is null', () => {
-		const settings: ImportSettings = { minAgreementEndDate: null, removeOutdatedStudents: false };
+		const settings: ImportSettings = {
+			minAgreementEndDate: null,
+			removeOutdatedStudents: false,
+			useLessonTypeAliases: false,
+			lessonTypeAliases: {},
+		};
 		expect(agreementDocPassesCutoff(agreementDoc({ enddate: '2020-01-01' }), settings, scheduleMap())).toBe(true);
 	});
 
 	it('drops agreements that end before the cutoff and keeps open or later ends', () => {
-		const settings: ImportSettings = { minAgreementEndDate: '2024-06-01', removeOutdatedStudents: false };
+		const settings: ImportSettings = {
+			minAgreementEndDate: '2024-06-01',
+			removeOutdatedStudents: false,
+			useLessonTypeAliases: false,
+			lessonTypeAliases: {},
+		};
 		const map = scheduleMap();
 		expect(agreementDocPassesCutoff(agreementDoc({ enddate: '2024-05-31' }), settings, map)).toBe(false);
 		expect(agreementDocPassesCutoff(agreementDoc({ enddate: '2024-06-01' }), settings, map)).toBe(true);
@@ -40,7 +50,12 @@ describe('agreementDocPassesCutoff', () => {
 
 describe('collectStudentOidsWithKeptAgreements', () => {
 	it('collects students only from agreements that pass the cutoff', () => {
-		const settings: ImportSettings = { minAgreementEndDate: '2024-06-01', removeOutdatedStudents: true };
+		const settings: ImportSettings = {
+			minAgreementEndDate: '2024-06-01',
+			removeOutdatedStudents: true,
+			useLessonTypeAliases: false,
+			lessonTypeAliases: {},
+		};
 		const oids = collectStudentOidsWithKeptAgreements(
 			[
 				agreementDoc({

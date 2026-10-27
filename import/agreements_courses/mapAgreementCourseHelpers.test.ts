@@ -83,11 +83,31 @@ describe('buildGroupCourseOidSet', () => {
 describe('buildCourseNameByOid', () => {
 	it('maps trimmed course names by oid', () => {
 		expect(
-			buildCourseNameByOid([
-				{ _id: { $oid: 'c1' }, name: '  Bandles  ' },
-				{ _id: { $oid: 'c2' }, name: '' },
-			]),
+			buildCourseNameByOid(
+				[
+					{ _id: { $oid: 'c1' }, name: '  Bandles  ' },
+					{ _id: { $oid: 'c2' }, name: '' },
+				],
+				new Map(),
+			),
 		).toEqual(new Map([['c1', 'Bandles']]));
+	});
+
+	it('rewrites names present in sourceToCanonical', () => {
+		expect(
+			buildCourseNameByOid(
+				[
+					{ _id: { $oid: 'c1' }, name: '15 Muziekclub September 2025' },
+					{ _id: { $oid: 'c2' }, name: '09 Gitaar' },
+				],
+				new Map([['15 Muziekclub September 2025', 'Muziekclub']]),
+			),
+		).toEqual(
+			new Map([
+				['c1', 'Muziekclub'],
+				['c2', '09 Gitaar'],
+			]),
+		);
 	});
 });
 

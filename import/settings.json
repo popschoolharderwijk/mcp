@@ -1,4 +1,86 @@
 {
 	"minAgreementEndDate": null,
-	"removeOutdatedStudents": false
+	"removeOutdatedStudents": false,
+	"useLessonTypeAliases": true,
+	"lessonTypeAliases": {
+		"Muziekclub": [
+			"MuziekClub",
+			"15 Muziekclub September 2025",
+			"16 Muziekclub November 2025",
+			"17 Muziekclub Februari 2026",
+			"18 Muziekclub Mei 2026",
+			"37 Muziekclub | 60 min | sept 2026",
+			"38 Muziekclub | maart 2027"
+		],
+		"Laatbloeiers Band 21+": [
+			"Laatbloeiers Band 21+",
+			"Laatbloeiersband",
+			"12 Laatbloeiers Band 21+ Oktober 2025",
+			"13 Laatbloeiers Band 21+ Maart 2026",
+			"45 Laatbloeiers band | okt 2026"
+		],
+		"Laatbloeiers Gitaar 21+": [
+			"Laatbloeiers Gitaar 21+",
+			"13 Laatbloeiers Gitaar 21+ Oktober 2025",
+			"44 Laatbloeiers gitaar | okt 2026"
+		],
+		"Laatbloeiers Drum 21+": ["Laatbloeiers Drum 21+"],
+		"Laatbloeiers Toetsen 21+": [
+			"14 Laatbloeiers toetsen 21+ Oktober 2025",
+			"15 Laatbloeiers toetsen 21+ Januari 2026"
+		],
+		"DJ School 8-12 jaar": [
+			"DJ School 8 - 12 jaar",
+			"03 DJ School 8-12 jaar Oktober 2025",
+			"04 DJ School 8-12 jaar april 2026",
+			"44 DJ School 8 - 12 jaar | januari 2027"
+		],
+		"DJ School 12-16 jaar": [
+			"DJ School 12 -16 jaar",
+			"05 DJ School 12-16 jaar Oktober 2025",
+			"45 DJ School 12-16 jaar | januari 2027"
+		],
+		"DJ School 18+": ["03 DJ School 18+ januari 2026", "43 DJ School volwassenen | okt 2026"],
+		"Klankenpaleis 0,5-1,5 jaar": [
+			"34 Klankenpaleis | 0,5 - 1,5 jaar | 45 min | sept 2026",
+			"39 Klankenpaleis | 0,5 - 1,5 | 45 min | maart 2027"
+		],
+		"Klankenpaleis 2-4 jaar": [
+			"35 Klankenpaleis | 2 - 4 jaar | 45 min | sept 2026",
+			"40 Klankenpaleis | 2 - 4 jaar | 45 min | maart 2027"
+		],
+		"Klankenpaleis 4-6 jaar": [
+			"36 Klankenpaleis | 4 - 6 jaar | 60 min | sept 2026",
+			"41 Klankenpaleis | 4 -6 jaar | 60 min | maart 2027"
+		],
+		"Kampvuurgitaar": ["11 Kampvuurgitaar Juni 2026"],
+		"Bandcoaching | Spelen in een band": ["Bandcoaching | Spelen in een band"],
+		"Spelen in een Band 8-11 jaar": ["22 Spelen in een Band 8-11 jaar"],
+		"Spelen in een Band 12-14 jaar": ["23 Spelen in een Band 12-14 jaar"],
+		"Spelen in een Band 15-18": ["24 Spelen in een Band 15-18"],
+		"Spelen in een Band 18+": ["25 Spelen in een Band 18+"],
+		"Zangkoor 8-12 jaar": ["31 Zang koor 8-12 jaar"],
+		"Zangkoor 13-17 jaar": ["32 Zangkoor 13-17 jaar"],
+		"Zangkoor 18+": ["33 Zang koor 18+"],
+		"Drums": ["07 Drums"],
+		"Drums DUO": ["08 Drums DUO"],
+		"Gitaar": ["09 Gitaar"],
+		"Gitaar DUO": ["10 Gitaar DUO"],
+		"Basgitaar": ["02 Basgitaar"],
+		"Toetsen": ["26 Toetsen"],
+		"Toetsen DUO": ["27 Toetsen DUO"],
+		"Zang": ["29 Zang"],
+		"Zang DUO": ["30 Zang DUO"],
+		"Saxofoon": ["21 Saxofoon"],
+		"Trompet": ["28 Trompet"],
+		"Muziekproductie": ["19 Muziekproductie"],
+		"Meerdere instrumenten": ["Meerdere instrumenten"],
+		"Anders (in overleg of huur)": ["01 Anders (in overleg of huur)"],
+		"Singer / Songwriter": ["Singer / Songwriter"],
+		"Young Beats": ["Young Beats"],
+		"Podiumpresentatie": ["Podiumpresentatie"],
+		"Muziektheorie & Solfege 1 en 2": ["20 Muziektheorie & Solfege 1 en 2"],
+		"Summer school / City Beats": ["Summer school / City Beats"],
+		"Faders up individueel": ["Faders up individueel"]
+	}
 }

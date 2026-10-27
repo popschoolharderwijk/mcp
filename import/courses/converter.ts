@@ -1,4 +1,7 @@
+import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
+import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
+import { buildCoursesBatch } from './buildCoursesBatchHelpers';
 import { buildCoursesSql } from './buildCoursesSqlHelpers';
 import {
 	courseRowWarningReasons,
@@ -18,6 +21,12 @@ export const coursesConverter: ImportConverter<MappedCourseRow, CourseSqlRow> = 
 	prepareContext(extraFileDocs) {
 		const scheduleDocs = extraFileDocs[0] ?? [];
 		setCourseScheduleFrequencyMap(buildScheduleFrequencyMap(scheduleDocs));
+	},
+	buildBatch(primaryDocs, _extraFileDocs, idMap, createId) {
+		if (!getImportSettings().useLessonTypeAliases) {
+			return buildImportBatch(primaryDocs, coursesConverter, idMap, createId);
+		}
+		return buildCoursesBatch(primaryDocs, idMap, createId);
 	},
 	mapDoc: mapCourseDoc,
 	warningsForRow: courseRowWarningReasons,

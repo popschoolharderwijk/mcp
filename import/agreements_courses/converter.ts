@@ -3,6 +3,7 @@ import { agreementDocPassesCutoff } from '../shared/agreementCutoffHelpers';
 import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
 import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
+import { invertLessonTypeAliases } from '../shared/lessonTypeAliasHelpers';
 import { buildAgreementsCoursesSql } from './buildAgreementsCoursesSqlHelpers';
 import { buildCoursePriceIndex } from './coursePriceIndexHelpers';
 import { attachLessonGroupsToAgreementRows } from './groupLessonImportHelpers';
@@ -34,7 +35,13 @@ export const agreementsCoursesConverter: ImportConverter<MappedAgreementCourseRo
 		setAgreementCoursePriceIndex(buildCoursePriceIndex(courseDocs));
 		setAgreementDuoCourseOids(buildDuoCourseOidSet(courseDocs));
 		setAgreementGroupCourseOids(buildGroupCourseOidSet(courseDocs));
-		setAgreementCourseNameByOid(buildCourseNameByOid(courseDocs));
+		const settings = getImportSettings();
+		let sourceToCanonical = new Map<string, string>();
+		if (settings.useLessonTypeAliases) {
+			const inverted = invertLessonTypeAliases(settings.lessonTypeAliases);
+			if (inverted.ok) sourceToCanonical = inverted.sourceToCanonical;
+		}
+		setAgreementCourseNameByOid(buildCourseNameByOid(courseDocs, sourceToCanonical));
 	},
 	buildBatch(primaryDocs, extraFileDocs, idMap, createId) {
 		const scheduleMap = buildScheduleFrequencyMap(extraFileDocs[0] ?? []);

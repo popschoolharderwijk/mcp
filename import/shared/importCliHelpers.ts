@@ -24,10 +24,11 @@ export type ImportCliDeps = {
 };
 
 function formatSettingsLog(result: Extract<ApplyImportSettingsResult, { ok: true }>): string {
-	const { settings, settingsPath, missingFile } = result;
+	const { settings, settingsPath } = result;
 	const min = settings.minAgreementEndDate ?? 'null';
-	const source = missingFile ? `${settingsPath} (missing → defaults)` : settingsPath;
-	return `Settings: minAgreementEndDate=${min}, removeOutdatedStudents=${settings.removeOutdatedStudents} ← ${source}`;
+	const aliasCanonical = Object.keys(settings.lessonTypeAliases).length;
+	const aliasSources = Object.values(settings.lessonTypeAliases).reduce((n, list) => n + list.length, 0);
+	return `Settings: minAgreementEndDate=${min}, removeOutdatedStudents=${settings.removeOutdatedStudents}, useLessonTypeAliases=${settings.useLessonTypeAliases}, lessonTypeAliases=${aliasCanonical}→${aliasSources} ← ${settingsPath}`;
 }
 
 /** Run `bun import <source> <out> [--upload]` (full pipeline) and return a process exit code. */

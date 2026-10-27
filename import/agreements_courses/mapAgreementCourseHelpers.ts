@@ -112,11 +112,14 @@ export function buildGroupCourseOidSet(courseDocs: unknown[]): Set<string> {
 	return oids;
 }
 
-/** Mongo course oid → trimmed name (for lesson group titles). */
-export function buildCourseNameByOid(courseDocs: unknown[]): Map<string, string> {
+/** Mongo course oid → lesson-type name (`sourceToCanonical` when listed, otherwise trimmed source name). */
+export function buildCourseNameByOid(
+	courseDocs: unknown[],
+	sourceToCanonical: ReadonlyMap<string, string>,
+): Map<string, string> {
 	const names = new Map<string, string>();
 	forEachNamedCourse(courseDocs, (oid, name) => {
-		names.set(oid, name);
+		names.set(oid, sourceToCanonical.get(name) ?? name);
 	});
 	return names;
 }
