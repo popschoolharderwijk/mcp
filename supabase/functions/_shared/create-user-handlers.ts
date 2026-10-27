@@ -1,3 +1,4 @@
+import { bearerTokenFromHeader } from './authHeaderPure.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
 	type CreateUserRequestBody,
@@ -140,7 +141,7 @@ export async function processCreateUserRequest(req: Request, authHeader: string)
 	if (validationError) return validationError;
 
 	const { supabaseUser, supabaseAdmin } = createCreateUserClients(authHeader);
-	const created = await createUserWithAuthorization(supabaseUser, supabaseAdmin, body);
+	const created = await createUserWithAuthorization(supabaseUser, supabaseAdmin, body, bearerTokenFromHeader(authHeader));
 	if (created.error) return created.error;
 
 	return jsonResponse(200, buildCreateUserSuccessResponse(created.userId, created.email));
@@ -149,11 +150,12 @@ export async function processCreateUserRequest(req: Request, authHeader: string)
 async function authorizeCreateUserRequest(
 	supabaseUser: SupabaseClient,
 	body: CreateUserRequest,
+	accessToken: string | undefined,
 ): Promise<Response | null> {
 	const {
 		data: { user: requestingUser },
 		error: userError,
-	} = await supabaseUser.auth.getUser();
+	} = await supabaseUser.auth.getUser(accessToken);
 
 	if (userError || !requestingUser) {
 		return jsonResponse(401, { error: 'Invalid or expired token' });
@@ -187,7 +189,7 @@ async function createUserWithAuthorization(
 	supabaseAdmin: SupabaseClient,
 	body: CreateUserRequest,
 ): Promise<{ userId: string; email: string | undefined; error: Response | null }> {
-	const authorizationError = await authorizeCreateUserRequest(supabaseUser, body);
+	const authorizationError = await authorizeCreateUserRequest(supabaseUser, body, accessToken);
 	if (authorizationError) return { userId: '', email: undefined, error: authorizationError };
 
 	return finalizeAuthorizedCreateUser(supabaseUser, supabaseAdmin, body);
