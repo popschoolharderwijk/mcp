@@ -7,6 +7,7 @@ describe('teacherLessonTypesConverter', () => {
 	it('builds unique links from agreements using teachers.jsonl and the id-map', () => {
 		teacherLessonTypesConverter.prepareContext?.([
 			[{ _id: { $oid: 'teacher-1' } }, { _id: { $oid: 'teacher-2' } }],
+			[],
 		]);
 
 		let idMap = createEmptyIdMap();

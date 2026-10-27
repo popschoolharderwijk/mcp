@@ -1,6 +1,7 @@
 import { buildRoleBatchFromMappedDocs } from '../shared/buildRoleBatchHelpers';
 import type { ImportBatch } from '../shared/converterTypes';
 import type { MongoIdMap } from '../shared/idMapHelpers';
+import { studentDocPassesAllowlist } from '../shared/importRuntimeSettingsHelpers';
 import type { StudentSqlRow } from './buildStudentsSqlHelpers';
 import {
 	mapStudentDoc,
@@ -15,7 +16,7 @@ import {
  */
 export function buildStudentsRoleBatch(docs: unknown[], initialIdMap: MongoIdMap): ImportBatch<StudentSqlRow> {
 	return buildRoleBatchFromMappedDocs({
-		docs,
+		docs: docs.filter(studentDocPassesAllowlist),
 		initialIdMap,
 		entityType: 'student',
 		mappedKeys: STUDENT_MAPPED_KEYS,

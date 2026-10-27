@@ -2,6 +2,8 @@
 
 export const IMPORT_ID_MAP_FILE = 'id-map.json';
 export const IMPORT_LOG_FILE = 'import.log';
+/** Per-run options; loaded from `<source>/settings.json` (see `import/settings.json` example). */
+export const IMPORT_SETTINGS_FILE = 'settings.json';
 
 /**
  * Pipeline order (dependency order):
@@ -17,7 +19,7 @@ export const IMPORT_SOURCES = {
 	profiles: ['teachers.jsonl', 'students.jsonl'],
 	students: ['students.jsonl'],
 	teachers: ['teachers.jsonl'],
-	teacher_lesson_types: ['agreements_course.jsonl', 'teachers.jsonl'],
+	teacher_lesson_types: ['agreements_course.jsonl', 'teachers.jsonl', 'schedule_frequencies.jsonl'],
 	agreements_courses: ['agreements_course.jsonl', 'schedule_frequencies.jsonl', 'courses.json'],
 } as const;
 

@@ -1,6 +1,8 @@
 import { buildScheduleFrequencyMap } from '../courses/parseScheduleFrequenciesHelpers';
+import { agreementDocPassesCutoff } from '../shared/agreementCutoffHelpers';
 import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
+import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
 import { buildAgreementsCoursesSql } from './buildAgreementsCoursesSqlHelpers';
 import { buildCoursePriceIndex } from './coursePriceIndexHelpers';
 import { attachLessonGroupsToAgreementRows } from './groupLessonImportHelpers';
@@ -34,8 +36,11 @@ export const agreementsCoursesConverter: ImportConverter<MappedAgreementCourseRo
 		setAgreementGroupCourseOids(buildGroupCourseOidSet(courseDocs));
 		setAgreementCourseNameByOid(buildCourseNameByOid(courseDocs));
 	},
-	buildBatch(primaryDocs, _extraFileDocs, idMap, createId) {
-		const batch = buildImportBatch(primaryDocs, agreementsCoursesConverter, idMap, createId);
+	buildBatch(primaryDocs, extraFileDocs, idMap, createId) {
+		const scheduleMap = buildScheduleFrequencyMap(extraFileDocs[0] ?? []);
+		const settings = getImportSettings();
+		const docs = primaryDocs.filter((doc) => agreementDocPassesCutoff(doc, settings, scheduleMap));
+		const batch = buildImportBatch(docs, agreementsCoursesConverter, idMap, createId);
 		const attached = attachLessonGroupsToAgreementRows(batch.sqlRows, batch.idMap, createId);
 		return { idMap: attached.idMap, sqlRows: attached.rows, report: batch.report };
 	},

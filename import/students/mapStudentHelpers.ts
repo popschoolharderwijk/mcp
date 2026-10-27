@@ -1,5 +1,4 @@
 import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '../../src/lib/text/normalizeText';
-import { classifySourceKeys, type SourceKeyClassification } from '../shared/classifySourceKeysHelpers';
 import { normalizeIsoDate } from '../shared/dateHelpers';
 import {
 	allocateImportEmail,
@@ -36,19 +35,12 @@ export const STUDENT_MAPPED_KEYS = new Set([
 /** Known Mongo keys that we intentionally do not import. */
 export const STUDENT_IGNORED_KEYS = new Set(['studentnumber', 'orgdebnumber', 'comments']);
 
-export type StudentKeyClassification = SourceKeyClassification;
-
 /** Default state for unit tests; profiles passes a shared batch state. */
 let emailDedupState: ImportEmailDedupState = createImportEmailDedupState();
 
 /** Clear module email dedup state before converting in isolation (tests). */
 export function resetStudentEmailDedup(): void {
 	emailDedupState = createImportEmailDedupState();
-}
-
-/** Classify unmapped student keys into unexpected (skipped) vs intentionally ignored. */
-export function classifyStudentKeys(doc: object): StudentKeyClassification {
-	return classifySourceKeys(doc, STUDENT_MAPPED_KEYS, STUDENT_IGNORED_KEYS);
 }
 
 /** Convert mapped-row soft issues into import-report warning reasons. */

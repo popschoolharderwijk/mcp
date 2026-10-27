@@ -1,4 +1,8 @@
+import { buildScheduleFrequencyMap } from '../courses/parseScheduleFrequenciesHelpers';
+import { agreementDocPassesCutoff } from '../shared/agreementCutoffHelpers';
+import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
+import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
 import { buildTeacherLessonTypesSql } from './buildTeacherLessonTypesSqlHelpers';
 import {
 	buildKnownTeacherOidSet,
@@ -17,6 +21,12 @@ export const teacherLessonTypesConverter: ImportConverter<MappedTeacherLessonTyp
 	ignoredKeys: IGNORED_KEYS,
 	prepareContext(extraFileDocs) {
 		setKnownTeacherOids(buildKnownTeacherOidSet(extraFileDocs[0] ?? []));
+	},
+	buildBatch(primaryDocs, extraFileDocs, idMap, createId) {
+		const scheduleMap = buildScheduleFrequencyMap(extraFileDocs[1] ?? []);
+		const settings = getImportSettings();
+		const docs = primaryDocs.filter((doc) => agreementDocPassesCutoff(doc, settings, scheduleMap));
+		return buildImportBatch(docs, teacherLessonTypesConverter, idMap, createId);
 	},
 	mapDoc: mapTeacherLessonTypeDoc,
 	warningsForRow: teacherLessonTypeRowWarningReasons,

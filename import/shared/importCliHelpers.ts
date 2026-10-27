@@ -2,6 +2,8 @@ import { join } from 'node:path';
 import { IMPORT_LOG_FILE, type ImportConverterName } from '../config';
 import type { ImportConverter } from './converterTypes';
 import { formatImportConverterBanner } from './importConsoleHelpers';
+import type { ApplyImportSettingsResult } from './loadImportSettingsHelpers';
+import { applyImportSettingsFromSource } from './loadImportSettingsHelpers';
 import { parseImportCommand } from './parseImportCommandHelpers';
 import type { ImportConverterDirs } from './runImportConverter';
 
@@ -16,14 +18,23 @@ export type ImportCliDeps = {
 		outDir: string;
 		preferredSqlOrder: readonly string[];
 	}) => Promise<{ ok: true; files: string[] } | { ok: false; error: string }>;
+	applyImportSettings?: (sourceDir: string) => Promise<ApplyImportSettingsResult>;
 	log?: (message: string) => void;
 	error?: (message: string) => void;
 };
+
+function formatSettingsLog(result: Extract<ApplyImportSettingsResult, { ok: true }>): string {
+	const { settings, settingsPath, missingFile } = result;
+	const min = settings.minAgreementEndDate ?? 'null';
+	const source = missingFile ? `${settingsPath} (missing → defaults)` : settingsPath;
+	return `Settings: minAgreementEndDate=${min}, removeOutdatedStudents=${settings.removeOutdatedStudents} ← ${source}`;
+}
 
 /** Run `bun import <source> <out> [--upload]` (full pipeline) and return a process exit code. */
 export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise<number> {
 	const log = deps.log ?? console.log;
 	const error = deps.error ?? console.error;
+	const applySettings = deps.applyImportSettings ?? applyImportSettingsFromSource;
 
 	const parsed = parseImportCommand(argv);
 	if (!parsed.ok) {
@@ -36,6 +47,13 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 		outDir: deps.resolvePath(parsed.out),
 	};
 	const logPath = join(dirs.outDir, IMPORT_LOG_FILE);
+
+	const settingsResult = await applySettings(dirs.sourceDir);
+	if (!settingsResult.ok) {
+		error(settingsResult.error);
+		return 1;
+	}
+	log(formatSettingsLog(settingsResult));
 
 	await deps.resetImportLog(logPath);
 	for (const [index, name] of deps.converterNames.entries()) {

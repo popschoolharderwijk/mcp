@@ -4,6 +4,7 @@ import type { ImportBatch } from '../shared/converterTypes';
 import { getMappedId, type MongoIdMap, setMappedId } from '../shared/idMapHelpers';
 import { createImportEmailDedupState, type ImportEmailDedupState } from '../shared/importEmailHelpers';
 import { assignSortedReportKeys, recordKeys } from '../shared/importKeySetHelpers';
+import { studentDocPassesAllowlist } from '../shared/importRuntimeSettingsHelpers';
 import { asOptionalString } from '../shared/mapPersonFieldHelpers';
 import { createEmptyReport } from '../shared/reportHelpers';
 import {
@@ -331,6 +332,7 @@ export function buildProfilesBatch(
 		ingestTeacherDoc(state, doc);
 	}
 	for (const doc of studentDocs) {
+		if (!studentDocPassesAllowlist(doc)) continue;
 		ingestStudentDoc(state, doc);
 	}
 

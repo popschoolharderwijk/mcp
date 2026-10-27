@@ -1,13 +1,16 @@
 import { classifyCourseFlags } from '../courses/courseFlagsHelpers';
-import type { LessonFrequency, ScheduleFrequencyEntry } from '../courses/types';
-import { normalizeIsoDate, toAmsterdamScheduleSlot } from '../shared/dateHelpers';
+import type { ScheduleFrequencyEntry } from '../courses/types';
+import { readPositiveLessonCount, resolveAgreementEndDate } from '../shared/agreementEndDateHelpers';
+import { normalizeIsoDate } from '../shared/dateHelpers';
 import { getMappedId, type MongoIdMap } from '../shared/idMapHelpers';
 import { asFiniteNumber } from '../shared/numberHelpers';
 import { extractMongoOid } from '../shared/parseMongoExportHelpers';
+import { pickLatestScheduleSlot } from '../shared/scheduleSlotHelpers';
 import { type CoursePriceIndex, resolveAgreementCoursePrice } from './coursePriceIndexHelpers';
-import { deriveEndDateFromLessonCount, eventsLessonCountMismatchWarning } from './deriveAgreementEndDateHelpers';
-import { computeGroupAgendaStartDate } from './groupLessonImportHelpers';
+import { eventsLessonCountMismatchWarning } from './deriveAgreementEndDateHelpers';
 import type { AgreementCourseMapResult, MappedAgreementCourseRow } from './types';
+
+export { pickLatestScheduleSlot } from '../shared/scheduleSlotHelpers';
 
 /** Mongo keys that `mapAgreementCourseDoc` reads into the import. */
 export const MAPPED_KEYS = new Set([
@@ -133,30 +136,6 @@ function mapPaymentType(paymentType: string | null): 'sepa' | 'manual' | null {
 	if (paymentType === 'incasso') return 'sepa';
 	if (paymentType === 'invoice') return 'manual';
 	return null;
-}
-
-function parseScheduleInstant(value: unknown): Date | null {
-	if (typeof value !== 'string' || value.trim() === '') return null;
-	const date = new Date(value);
-	return Number.isNaN(date.getTime()) ? null : date;
-}
-
-/** Latest usable schedule startdatetime → day_of_week + start_time in Europe/Amsterdam. */
-export function pickLatestScheduleSlot(schedule: unknown): { dayOfWeek: number; startTime: string } | null {
-	if (!Array.isArray(schedule)) return null;
-
-	let latest: Date | null = null;
-	for (const item of schedule) {
-		if (item === null || typeof item !== 'object' || Array.isArray(item)) continue;
-		const instant = parseScheduleInstant((item as Record<string, unknown>).startdatetime);
-		if (!instant) continue;
-		if (!latest || instant.getTime() > latest.getTime()) {
-			latest = instant;
-		}
-	}
-	if (!latest) return null;
-
-	return toAmsterdamScheduleSlot(latest);
 }
 
 function buildNotes(
@@ -300,32 +279,6 @@ function resolveScheduleAndStart(
 		startDate,
 		endDate,
 	};
-}
-
-/** Positive integer lesson count from Mongo `numberoflessons`, or null. */
-function readPositiveLessonCount(value: unknown): number | null {
-	const n = asFiniteNumber(value);
-	if (n == null || !Number.isInteger(n) || n < 1) return null;
-	return n;
-}
-
-/**
- * Prefer explicit enddate; else for non-autorenewal packages derive from
- * first weekday-aligned occurrence + (n - 1) frequency intervals.
- */
-function resolveAgreementEndDate(
-	record: Record<string, unknown>,
-	explicitEndDate: string | null,
-	startDate: string,
-	dayOfWeek: number,
-	frequency: LessonFrequency,
-): string | null {
-	if (explicitEndDate != null) return explicitEndDate;
-	if (record.autorenewal !== false) return null;
-	const numberOfLessons = readPositiveLessonCount(record.numberoflessons);
-	if (numberOfLessons == null) return null;
-	const firstOccurrence = computeGroupAgendaStartDate(startDate, dayOfWeek);
-	return deriveEndDateFromLessonCount(firstOccurrence, frequency, numberOfLessons);
 }
 
 function resolvePaymentMethod(

@@ -14,6 +14,12 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 		resetImportLog: async () => {},
 		runImportConverter: async () => {},
 		uploadImportSqlFiles: async () => ({ ok: true, files: ['courses.sql', 'profiles.sql'] }),
+		applyImportSettings: async () => ({
+			ok: true,
+			settings: { minAgreementEndDate: null, removeOutdatedStudents: false },
+			settingsPath: '/abs/import/source/settings.json',
+			missingFile: true,
+		}),
 		log: () => {},
 		error: () => {},
 		...overrides,
@@ -71,5 +77,18 @@ describe('runImportCli', () => {
 		);
 		expect(code).toBe(1);
 		expect(errors).toEqual(['boom']);
+	});
+
+	it('returns 1 when settings fail to load', async () => {
+		const errors: string[] = [];
+		const code = await runImportCli(
+			['bun', 'import/index.ts', 'import/source', 'import/out'],
+			baseDeps({
+				applyImportSettings: async () => ({ ok: false, error: 'bad settings' }),
+				error: (m) => errors.push(m),
+			}),
+		);
+		expect(code).toBe(1);
+		expect(errors).toEqual(['bad settings']);
 	});
 });

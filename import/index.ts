@@ -4,6 +4,10 @@
  * Usage:
  *   bun import <source> <out>
  *   bun import <source> <out> --upload
+ *
+ * Optional `<source>/settings.json` (see `import/settings.json`):
+ *   minAgreementEndDate — null | YYYY-MM-DD
+ *   removeOutdatedStudents — boolean
  */
 
 import { resolve } from 'node:path';
