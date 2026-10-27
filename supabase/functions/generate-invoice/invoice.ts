@@ -26,7 +26,7 @@ export async function verifyAdminAccess(
 	});
 	const {
 		data: { user },
-	} = await userClient.auth.getUser();
+	} = await userClient.auth.getUser(token);
 	if (!user) return jsonResponse(401, { error: 'Unauthenticated' });
 
 	const { data: roles } = await userClient.from('user_roles').select('role').eq('user_id', user.id);

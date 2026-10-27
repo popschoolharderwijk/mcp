@@ -1,5 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type * as XLSX from 'npm:xlsx@0.18.5';
+import { bearerTokenFromHeader } from '../_shared/authHeaderPure.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { getSafeErrorMessage } from '../_shared/errors.ts';
 import { createLegacyImportAdminClient, createLegacyImportUserClient } from './importClients.ts';
@@ -50,7 +51,7 @@ async function authenticateLegacyImportAdmin(
 	const {
 		data: { user },
 		error: authErr,
-	} = await userClient.auth.getUser();
+	} = await userClient.auth.getUser(bearerTokenFromHeader(authHeader));
 	if (!isAuthenticatedLegacyImportUser(user, authErr)) {
 		const err = resolveLegacyImportInvalidTokenError();
 		return { ok: false, response: json({ error: err.error }, err.status) };
