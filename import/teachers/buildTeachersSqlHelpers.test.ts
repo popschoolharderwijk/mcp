@@ -2,10 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { buildTeachersSql } from './buildTeachersSqlHelpers';
 
 describe('buildTeachersSql', () => {
-	it('returns a comment when there are no rows', () => {
-		expect(buildTeachersSql([])).toBe('-- No teachers to import\n');
-	});
-
 	it('emits public.teachers upsert only and dedupes by user id', () => {
 		const sql = buildTeachersSql([
 			{

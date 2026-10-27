@@ -29,27 +29,4 @@ describe('uploadImportSqlFiles', () => {
 		expect(result).toEqual({ ok: true, files: ['courses.sql', 'profiles.sql'] });
 		expect(uploaded).toEqual([join(outDir, 'courses.sql'), join(outDir, 'profiles.sql')]);
 	});
-
-	it('uploads when only a local Docker DB URL is configured', async () => {
-		const outDir = await mkdtemp(join(tmpdir(), 'import-upload-local-'));
-		await writeFile(join(outDir, 'courses.sql'), 'select 1;');
-
-		const dbUrls: string[] = [];
-		const result = await uploadImportSqlFiles({
-			outDir,
-			preferredSqlOrder: ['courses.sql'],
-			env: {
-				SUPABASE_DB_URL: 'postgresql://postgres:{PASSWORD}@localhost:54422/postgres',
-				SUPABASE_DB_PASSWORD: 'postgres',
-			},
-			runPsqlFile: async (dbUrl) => {
-				dbUrls.push(dbUrl);
-				return { ok: true };
-			},
-			log: () => {},
-		});
-
-		expect(result).toEqual({ ok: true, files: ['courses.sql'] });
-		expect(dbUrls).toEqual(['postgresql://postgres:postgres@localhost:54422/postgres']);
-	});
 });

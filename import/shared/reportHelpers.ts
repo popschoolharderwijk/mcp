@@ -55,7 +55,3 @@ export function formatImportReportIssues(report: ImportReport, converterName?: s
 	}
 	return `${lines.join('\n')}\n`;
 }
-
-export function formatImportReport(report: ImportReport): string {
-	return `${formatImportReportSummary(report)}\n${formatImportReportIssues(report).trimEnd()}`;
-}

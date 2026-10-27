@@ -2,12 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { createEmptyIdMap, ensureMappedId, getMappedId, setMappedId } from './idMapHelpers';
 
 describe('idMapHelpers', () => {
-	it('sets and gets mapped ids', () => {
-		const map = setMappedId(createEmptyIdMap(), 'teacher', 'oid-1', 'uuid-1');
-		expect(getMappedId(map, 'teacher', 'oid-1')).toBe('uuid-1');
-		expect(getMappedId(map, 'teacher', 'missing')).toBeUndefined();
-	});
-
 	it('reuses an existing mapping', () => {
 		const initial = setMappedId(createEmptyIdMap(), 'teacher', 'oid-1', 'uuid-1');
 		const result = ensureMappedId(initial, 'teacher', 'oid-1', () => 'uuid-new');

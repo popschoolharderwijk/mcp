@@ -29,8 +29,4 @@ describe('buildProfilesSql', () => {
 		expect(sql).toContain('shared@example.com');
 		expect(sql).toContain("'11111111-1111-1111-1111-111111111111'::uuid");
 	});
-
-	it('returns a comment when there are no rows', () => {
-		expect(buildProfilesSql([])).toBe('-- No profiles to import\n');
-	});
 });

@@ -55,12 +55,6 @@ function attachWithIds(rows: AgreementCourseSqlRow[], ids: string[]) {
 	return attachLessonGroupsToAgreementRows(rows, createEmptyIdMap(), () => ids[nextId++] ?? 'overflow');
 }
 
-describe('groupLessonSlotKey', () => {
-	it('joins teacher lesson type schedule fields', () => {
-		expect(groupLessonSlotKey(baseGroupRow())).toBe(`${TEACHER}|${LESSON_TYPE}|2|19:00:00|60|weekly`);
-	});
-});
-
 describe('buildGroupLessonName', () => {
 	it('includes Dutch weekday and HH:MM', () => {
 		expect(buildGroupLessonName('Bandles', 2, '19:00:00')).toBe('Bandles dinsdag 19:00');

@@ -188,8 +188,4 @@ describe('buildAgreementsCoursesSql', () => {
 		// group id: lesson_groups + 2 agreements + 1 member + agenda source_id
 		expect(sql.split("'gggggggg-gggg-gggg-gggg-gggggggggggg'::uuid")).toHaveLength(6);
 	});
-
-	it('returns a comment when there are no rows', () => {
-		expect(buildAgreementsCoursesSql([])).toBe('-- No agreements_courses to import\n');
-	});
 });

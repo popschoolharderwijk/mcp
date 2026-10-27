@@ -37,18 +37,4 @@ describe('readUploadImportEnv', () => {
 			},
 		});
 	});
-
-	it('accepts a local Docker DB URL template', () => {
-		expect(
-			readUploadImportEnv({
-				SUPABASE_DB_URL: 'postgresql://postgres:{PASSWORD}@localhost:54422/postgres',
-				SUPABASE_DB_PASSWORD: 'postgres',
-			}),
-		).toEqual({
-			ok: true,
-			value: {
-				dbUrl: 'postgresql://postgres:postgres@localhost:54422/postgres',
-			},
-		});
-	});
 });

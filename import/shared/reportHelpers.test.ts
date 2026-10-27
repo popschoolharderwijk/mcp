@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	createEmptyReport,
-	formatImportReport,
-	formatImportReportIssues,
-	formatImportReportSummary,
-} from './reportHelpers';
+import { createEmptyReport, formatImportReportIssues, formatImportReportSummary } from './reportHelpers';
 
 describe('formatImportReportSummary', () => {
 	it('formats counts without per-row issue lines', () => {
@@ -52,27 +47,6 @@ describe('formatImportReportIssues', () => {
 	it('notes when there are no issues', () => {
 		expect(formatImportReportIssues(createEmptyReport(), 'students')).toBe(
 			['=== students ===', '(no errors or warnings)', ''].join('\n'),
-		);
-	});
-});
-
-describe('formatImportReport', () => {
-	it('combines summary and issues', () => {
-		const report = createEmptyReport();
-		report.created = 1;
-		report.failed = 1;
-		report.failures.push({ oid: 'oid-1', reason: 'Missing email' });
-
-		expect(formatImportReport(report)).toBe(
-			[
-				'created: 1',
-				'updated: 0',
-				'failed: 1',
-				'warnings: 0',
-				'skipped: []',
-				'ignored: []',
-				'ERROR oid-1: Missing email',
-			].join('\n'),
 		);
 	});
 });

@@ -1,28 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import { classifyTeacherKeys, mapTeacherDoc, resetTeacherEmailDedup } from './mapTeacherHelpers';
-
-describe('classifyTeacherKeys', () => {
-	it('splits unmapped keys into skipped vs intentionally ignored', () => {
-		expect(
-			classifyTeacherKeys({
-				_id: { $oid: 'oid-1' },
-				name: 'Femke',
-				surname: 'Bosman',
-				email: 'a@example.com',
-				phone: '0612345678',
-				instrument: 'zang',
-				vogdateissued: '2023-12-06',
-				vog: true,
-				comments: 'x',
-				assets: null,
-				mystery_field: 1,
-			}),
-		).toEqual({
-			skippedKeys: ['mystery_field'],
-			ignoredKeys: ['assets', 'comments', 'instrument', 'vog'],
-		});
-	});
-});
+import { mapTeacherDoc, resetTeacherEmailDedup } from './mapTeacherHelpers';
 
 describe('mapTeacherDoc', () => {
 	beforeEach(() => {

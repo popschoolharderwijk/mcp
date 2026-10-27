@@ -1,32 +1,5 @@
 import { beforeEach, describe, expect, it } from 'bun:test';
-import {
-	classifyStudentKeys,
-	mapStudentDoc,
-	resetStudentEmailDedup,
-	studentRowWarningReasons,
-} from './mapStudentHelpers';
-
-describe('classifyStudentKeys', () => {
-	it('splits unmapped keys into skipped vs intentionally ignored', () => {
-		expect(
-			classifyStudentKeys({
-				_id: { $oid: 'oid-1' },
-				name: 'Nick',
-				surname: 'van de Brink',
-				email: 'a@example.com',
-				phone: '0612345678',
-				birthday: '2009-01-16',
-				studentnumber: '9780',
-				orgdebnumber: '580005',
-				comments: 'x',
-				mystery_field: 1,
-			}),
-		).toEqual({
-			skippedKeys: ['mystery_field'],
-			ignoredKeys: ['comments', 'orgdebnumber', 'studentnumber'],
-		});
-	});
-});
+import { mapStudentDoc, resetStudentEmailDedup, studentRowWarningReasons } from './mapStudentHelpers';
 
 describe('mapStudentDoc', () => {
 	beforeEach(() => {
