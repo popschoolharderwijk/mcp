@@ -7,6 +7,8 @@ const sampleRow: AgreementCourseSqlRow = {
 	agreementId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
 	studentUserId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
 	teacherUserId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+	studentMongoOid: 'student-oid',
+	teacherMongoOid: 'teacher-oid',
 	lessonTypeId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
 	courseOid: 'course-oid',
 	courseName: null,
@@ -28,6 +30,7 @@ const sampleRow: AgreementCourseSqlRow = {
 	optionWarning: null,
 	eventsMismatchWarning: null,
 	lessonGroupId: null,
+	phaseShiftDeviation: null,
 };
 
 const groupMemberA: AgreementCourseSqlRow = {
@@ -71,6 +74,35 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_groups: 0 row(s) inserted (no group lessons)'");
 		expect(sql).toContain(
 			"RAISE NOTICE 'public.agenda_events (lesson_group): 0 row(s) inserted (no group lessons)'",
+		);
+		expect(sql).toContain("RAISE NOTICE 'public.agenda_event_deviations (phase shift): 0 row(s) inserted'");
+	});
+
+	it('emits an idempotent spanning agenda_event_deviations insert for a phase shift', () => {
+		const sql = buildAgreementsCoursesSql([
+			{
+				...sampleRow,
+				phaseShiftDeviation: {
+					agreementId: sampleRow.agreementId,
+					originalDate: '2026-10-21',
+					actualDate: '2026-10-28',
+					startTime: '14:00:00',
+				},
+			},
+		]);
+
+		expect(sql).toContain('INSERT INTO public.agenda_event_deviations');
+		expect(sql).toContain('spans_future_occurrences');
+		expect(sql).toContain("'import: schedule phase shift'");
+		expect(sql).toContain("'2026-10-21'::date");
+		expect(sql).toContain("'2026-10-28'::date");
+		expect(sql).toContain("'14:00:00'::time");
+		expect(sql).toContain("ae.source_type = 'lesson_agreement'::public.agenda_event_source_type");
+		expect(sql).toContain(
+			"RAISE NOTICE 'public.agenda_event_deviations (phase shift): % row(s) inserted (existing skipped)'",
+		);
+		expect(sql.indexOf('INSERT INTO public.lesson_agreements')).toBeLessThan(
+			sql.indexOf('INSERT INTO public.agenda_event_deviations'),
 		);
 	});
 

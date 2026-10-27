@@ -9,6 +9,7 @@ describe('formatImportReportSummary', () => {
 		report.failed = 1;
 		report.failures.push({ oid: 'oid-1', reason: 'Missing email' });
 		report.warnings.push({ oid: 'oid-2', reason: 'Unmapped instrument "studio"' });
+		report.infos.push({ oid: 'oid-3', reason: '2 events fold into 1 deviation' });
 		report.skippedKeys = ['mystery'];
 		report.ignoredKeys = ['assets', 'vog'];
 
@@ -18,6 +19,7 @@ describe('formatImportReportSummary', () => {
 				'updated: 1',
 				'failed: 1',
 				'warnings: 1',
+				'infos: 1',
 				'skipped: [mystery]',
 				'ignored: [assets, vog]',
 			].join('\n'),
@@ -26,27 +28,29 @@ describe('formatImportReportSummary', () => {
 });
 
 describe('formatImportReportIssues', () => {
-	it('formats failure and warning lines for the log file', () => {
+	it('formats failure, warning, and info lines for the log file', () => {
 		const report = createEmptyReport();
 		report.failures.push({ oid: 'oid-1', reason: 'Missing email' });
 		report.warnings.push({ oid: 'oid-2', reason: 'Unmapped instrument "studio"' });
+		report.infos.push({
+			oid: 'oid-3',
+			reason: '2 events fold into 1 deviation (Ada / Bas): biweekly 2026-10-21 → 2026-10-28 (+7d, this and future)',
+		});
 
 		expect(formatImportReportIssues(report, 'teachers')).toBe(
-			['=== teachers ===', 'ERROR oid-1: Missing email', 'WARN oid-2: Unmapped instrument "studio"', ''].join(
-				'\n',
-			),
+			[
+				'=== teachers ===',
+				'ERROR oid-1: Missing email',
+				'WARN oid-2: Unmapped instrument "studio"',
+				'INFO oid-3: 2 events fold into 1 deviation (Ada / Bas): biweekly 2026-10-21 → 2026-10-28 (+7d, this and future)',
+				'',
+			].join('\n'),
 		);
 	});
 
-	it('uses placeholders when oid is missing', () => {
+	it('uses placeholders when oid is missing on errors', () => {
 		const report = createEmptyReport();
 		report.failures.push({ oid: null, reason: 'Document is not an object' });
 		expect(formatImportReportIssues(report)).toContain('ERROR (no oid): Document is not an object');
-	});
-
-	it('notes when there are no issues', () => {
-		expect(formatImportReportIssues(createEmptyReport(), 'students')).toBe(
-			['=== students ===', '(no errors or warnings)', ''].join('\n'),
-		);
 	});
 });

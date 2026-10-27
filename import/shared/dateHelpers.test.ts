@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'bun:test';
-import { formatYmd, normalizeIsoDate, toAmsterdamScheduleSlot } from './dateHelpers';
+import { formatYmd, normalizeIsoDate, toAmsterdamScheduleSlot, toAmsterdamYmd } from './dateHelpers';
 
 describe('formatYmd', () => {
 	it('formats a local Date as YYYY-MM-DD with zero-padded month and day', () => {
 		expect(formatYmd(new Date(2026, 0, 13, 12, 0, 0))).toBe('2026-01-13');
 		expect(formatYmd(new Date(2026, 8, 2, 12, 0, 0))).toBe('2026-09-02');
+	});
+});
+
+describe('toAmsterdamYmd', () => {
+	it('rolls the calendar date when conversion crosses midnight', () => {
+		expect(toAmsterdamYmd(new Date('2026-07-08T22:30:00Z'))).toBe('2026-07-09');
 	});
 });
 

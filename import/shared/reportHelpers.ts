@@ -1,9 +1,12 @@
+export type ImportReportIssue = { oid: string | null; reason: string };
+
 export type ImportReport = {
 	created: number;
 	updated: number;
 	failed: number;
-	failures: Array<{ oid: string | null; reason: string }>;
-	warnings: Array<{ oid: string | null; reason: string }>;
+	failures: ImportReportIssue[];
+	warnings: ImportReportIssue[];
+	infos: ImportReportIssue[];
 	/** Unexpected source keys (neither mapped nor intentionally ignored). */
 	skippedKeys: string[];
 	/** Known source keys that appeared and are intentionally not imported. */
@@ -17,6 +20,7 @@ export function createEmptyReport(): ImportReport {
 		failed: 0,
 		failures: [],
 		warnings: [],
+		infos: [],
 		skippedKeys: [],
 		ignoredKeys: [],
 	};
@@ -33,12 +37,13 @@ export function formatImportReportSummary(report: ImportReport): string {
 		`updated: ${report.updated}`,
 		`failed: ${report.failed}`,
 		`warnings: ${report.warnings.length}`,
+		`infos: ${report.infos.length}`,
 		`skipped: ${formatKeyList(report.skippedKeys)}`,
 		`ignored: ${formatKeyList(report.ignoredKeys)}`,
 	].join('\n');
 }
 
-/** Per-row failures and warnings for `import.log`. */
+/** Per-row failures, warnings, and infos for `import.log`. */
 export function formatImportReportIssues(report: ImportReport, converterName?: string): string {
 	const lines: string[] = [];
 	if (converterName) {
@@ -50,8 +55,11 @@ export function formatImportReportIssues(report: ImportReport, converterName?: s
 	for (const warning of report.warnings) {
 		lines.push(`WARN ${warning.oid ?? '(no oid)'}: ${warning.reason}`);
 	}
-	if (report.failures.length === 0 && report.warnings.length === 0) {
-		lines.push('(no errors or warnings)');
+	for (const info of report.infos) {
+		lines.push(info.oid == null ? `INFO: ${info.reason}` : `INFO ${info.oid}: ${info.reason}`);
+	}
+	if (report.failures.length === 0 && report.warnings.length === 0 && report.infos.length === 0) {
+		lines.push('(no errors, warnings, or infos)');
 	}
 	return `${lines.join('\n')}\n`;
 }

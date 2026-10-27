@@ -24,6 +24,7 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 				lessonTypeAliases: {},
 			},
 			settingsPath: '/abs/import/settings.json',
+			cutoffRemovals: { agreements: [], students: [] },
 		}),
 		log: () => {},
 		error: () => {},

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildAgreementDeleteDescription,
 	buildAgreementDeleteDialogOpenChangeHandler,
+	buildAgreementsNewPath,
 } from '../../../src/lib/agreements/agreementsPageShellHelpers';
 
 describe('buildAgreementDeleteDialogOpenChangeHandler', () => {
@@ -28,5 +29,16 @@ describe('buildAgreementDeleteDescription', () => {
 
 	it('returns empty profile when agreement is missing', () => {
 		expect(buildAgreementDeleteDescription(null)).toEqual({ first_name: null, last_name: null });
+	});
+});
+
+describe('buildAgreementsNewPath', () => {
+	it('returns the base new-agreement path without a student', () => {
+		expect(buildAgreementsNewPath()).toBe('/agreements/new');
+		expect(buildAgreementsNewPath(null)).toBe('/agreements/new');
+	});
+
+	it('includes studentUserId query when a student is provided', () => {
+		expect(buildAgreementsNewPath('student-1')).toBe('/agreements/new?studentUserId=student-1');
 	});
 });

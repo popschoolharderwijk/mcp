@@ -9,6 +9,7 @@ export default function TeacherInfo() {
 		pageGate,
 		targetTeacherUserId,
 		teacherProfile,
+		agreementsCount,
 		canAccess,
 		activeTab,
 		tabRedirectTo,
@@ -32,6 +33,7 @@ export default function TeacherInfo() {
 		<TeacherInfoPageContent
 			targetTeacherUserId={targetTeacherUserId}
 			teacherProfile={teacherProfile}
+			agreementsCount={agreementsCount}
 			canAccess={canAccess}
 			activeTab={activeTab}
 			onTabChange={onTabChange}

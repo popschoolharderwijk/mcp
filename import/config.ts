@@ -20,7 +20,14 @@ export const IMPORT_SOURCES = {
 	students: ['students.jsonl'],
 	teachers: ['teachers.jsonl'],
 	teacher_lesson_types: ['agreements_course.jsonl', 'teachers.jsonl', 'schedule_frequencies.jsonl'],
-	agreements_courses: ['agreements_course.jsonl', 'schedule_frequencies.jsonl', 'courses.json'],
+	agreements_courses: [
+		'agreements_course.jsonl',
+		'schedule_frequencies.jsonl',
+		'courses.json',
+		'c4s_agenda_events.jsonl',
+		'teachers.jsonl',
+		'students.jsonl',
+	],
 } as const;
 
 export const IMPORT_OUTPUTS = {
@@ -33,3 +40,13 @@ export const IMPORT_OUTPUTS = {
 } as const;
 
 export type ImportConverterName = keyof typeof IMPORT_SOURCES;
+
+type TupleTail<T extends readonly unknown[]> = T extends readonly [unknown, ...infer Rest] ? Rest : [];
+
+/** Source filenames after the primary file for a converter. */
+export type ImportExtraSourceFiles<N extends ImportConverterName> = TupleTail<(typeof IMPORT_SOURCES)[N]>;
+
+/** Parsed Mongo docs keyed by extra source filename from `IMPORT_SOURCES`. */
+export type ImportExtraDocs<N extends ImportConverterName> = {
+	readonly [K in ImportExtraSourceFiles<N>[number]]: unknown[];
+};

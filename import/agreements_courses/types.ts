@@ -1,9 +1,18 @@
 import type { LessonFrequency } from '../courses/types';
 import type { MapDocResult, MappedImportRow } from '../shared/converterTypes';
 
+export type SchedulePhaseShiftDeviationSql = {
+	agreementId: string;
+	originalDate: string;
+	actualDate: string;
+	startTime: string;
+};
+
 export type MappedAgreementCourseRow = MappedImportRow & {
 	studentUserId: string;
 	teacherUserId: string;
+	studentMongoOid: string;
+	teacherMongoOid: string;
 	lessonTypeId: string;
 	/** Mongo course oid — used to detect group courses and name lesson groups. */
 	courseOid: string;
@@ -40,6 +49,8 @@ export type AgreementCourseSqlRow = MappedAgreementCourseRow & {
 	agreementId: string;
 	/** Shared lesson_groups.id when isGroupLesson; assigned after mapping. */
 	lessonGroupId: string | null;
+	/** Spanning agenda deviation when Mongo lesson dates permanently left the recurrence grid. */
+	phaseShiftDeviation: SchedulePhaseShiftDeviationSql | null;
 };
 
 export type AgreementCourseMapResult = MapDocResult<MappedAgreementCourseRow>;

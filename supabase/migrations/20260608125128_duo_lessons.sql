@@ -607,6 +607,7 @@ BEGIN
     WHEN 'teacher' THEN 'teacher_display_name'
     WHEN 'lesson' THEN 'day_of_week'
     WHEN 'duration_minutes' THEN 'duration_minutes'
+    WHEN 'start_date' THEN 'start_date'
     WHEN 'end_date' THEN 'end_date'
     WHEN 'created_at' THEN 'created_at'
     ELSE 'created_at'

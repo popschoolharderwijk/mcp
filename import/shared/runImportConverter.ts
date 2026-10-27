@@ -1,9 +1,16 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import { IMPORT_ID_MAP_FILE, IMPORT_LOG_FILE, IMPORT_OUTPUTS, IMPORT_SOURCES } from '../config';
+import {
+	IMPORT_ID_MAP_FILE,
+	IMPORT_LOG_FILE,
+	IMPORT_OUTPUTS,
+	IMPORT_SOURCES,
+	type ImportConverterName,
+} from '../config';
 import { buildImportBatch } from './buildImportBatchHelpers';
 import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { loadIdMap, saveIdMap } from './idMapFile';
+import { buildImportExtraDocs } from './importExtraDocsHelpers';
 import { appendImportLog } from './importLogHelpers';
 import { parseMongoExportText } from './parseMongoExportHelpers';
 import { formatImportReportIssues, formatImportReportSummary } from './reportHelpers';
@@ -27,8 +34,8 @@ async function requireImportSourceFile(
 }
 
 /** Load source JSON/JSONL file(s), convert, write SQL + id-map, print report. */
-export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
-	converter: ImportConverter<TRow, TSqlRow>,
+export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, TName extends ImportConverterName>(
+	converter: ImportConverter<TRow, TSqlRow, TName>,
 	dirs: ImportConverterDirs,
 	resolvePath: (path: string) => string = resolve,
 ): Promise<void> {
@@ -49,7 +56,10 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow>(
 	}
 
 	const primaryDocs = parseMongoExportText(primary.text, primary.path);
-	const extraFileDocs = loaded.slice(1).map((file) => parseMongoExportText(file.text, file.path));
+	const extraFileDocs = buildImportExtraDocs(
+		converter.name,
+		loaded.slice(1).map((file) => parseMongoExportText(file.text, file.path)),
+	);
 	converter.prepareContext?.(extraFileDocs);
 
 	const idMap = await loadIdMap(mapPath);

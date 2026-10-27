@@ -173,6 +173,8 @@ function requireMappedId(
 type MappedParties = {
 	studentUserId: string;
 	teacherUserId: string;
+	studentMongoOid: string;
+	teacherMongoOid: string;
 	lessonTypeId: string;
 	courseOid: string;
 };
@@ -194,6 +196,8 @@ function resolveMappedParties(
 		parties: {
 			studentUserId: student.id,
 			teacherUserId: teacher.id,
+			studentMongoOid: student.mongoOid,
+			teacherMongoOid: teacher.mongoOid,
 			lessonTypeId: lessonType.id,
 			courseOid: lessonType.mongoOid,
 		},
@@ -341,6 +345,8 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		mongoOid,
 		studentUserId: parties.parties.studentUserId,
 		teacherUserId: parties.parties.teacherUserId,
+		studentMongoOid: parties.parties.studentMongoOid,
+		teacherMongoOid: parties.parties.teacherMongoOid,
 		lessonTypeId: parties.parties.lessonTypeId,
 		courseOid,
 		courseName: isGroupLesson ? (courseNameByOid.get(courseOid) ?? null) : null,

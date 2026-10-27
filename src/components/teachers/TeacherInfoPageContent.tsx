@@ -6,6 +6,7 @@ import type { Teacher } from '@/types/teachers';
 interface TeacherInfoPageContentProps {
 	targetTeacherUserId: string;
 	teacherProfile: Teacher;
+	agreementsCount: number;
 	canAccess: boolean;
 	activeTab: PersonDetailTabId;
 	onTabChange: (tab: PersonDetailTabId) => void;
@@ -15,6 +16,7 @@ interface TeacherInfoPageContentProps {
 export function TeacherInfoPageContent({
 	targetTeacherUserId,
 	teacherProfile,
+	agreementsCount,
 	canAccess,
 	activeTab,
 	onTabChange,
@@ -27,6 +29,7 @@ export function TeacherInfoPageContent({
 			<TeacherInfoTabs
 				targetTeacherUserId={targetTeacherUserId}
 				teacherProfile={teacherProfile}
+				agreementsCount={agreementsCount}
 				canAccess={canAccess}
 				activeTab={activeTab}
 				onTabChange={onTabChange}

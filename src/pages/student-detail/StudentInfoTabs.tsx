@@ -1,12 +1,14 @@
 import { AgendaView } from '@/components/agenda/AgendaView';
+import { ScopedAgreementsTable } from '@/components/agreements/ScopedAgreementsTable';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { SignupRequestItem } from '@/components/students/SignupRequestItem';
 import { StudentAddressSection } from '@/components/students/StudentAddressSection';
 import { StudentParentSection } from '@/components/students/StudentParentSection';
-import { StudentAgreementsCard, StudentSignupRequestsCard } from '@/components/students/StudentProfileCards';
+import { StudentSignupRequestsCard } from '@/components/students/StudentProfileCards';
 import { StudentProfileSection } from '@/components/students/StudentProfileSection';
 import { useStudentProfileForm } from '@/components/students/useStudentProfileForm';
 import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
+import { buildAgreementsTabLabel } from '@/lib/profile/personDetailTabsHelpers';
 import { isStudentInfoTabId, type StudentInfoTabId } from '@/lib/students/studentInfoTabsHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
@@ -48,23 +50,24 @@ function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Stud
 
 function StudentInfoSharedTabs({
 	userId,
-	agreements,
 	signupRequests,
 	canEditAgenda,
+	canMutateAgreements,
+	onAgreementsMutated,
 }: {
 	userId: string;
-	agreements: LessonAgreementWithTeacher[];
 	signupRequests: SignupRequestDetail[];
 	canEditAgenda: boolean;
+	canMutateAgreements: boolean;
+	onAgreementsMutated: () => void;
 }) {
 	return (
 		<>
-			<PageTabsContent value="agreements" panelWidth="1/2">
-				<StudentAgreementsCard
-					agreements={agreements}
-					description="Alle overeenkomsten van deze leerling"
-					emptyMessage="Geen lesovereenkomsten"
+			<PageTabsContent value="agreements">
+				<ScopedAgreementsTable
 					studentUserId={userId}
+					canMutate={canMutateAgreements}
+					onAgreementsMutated={onAgreementsMutated}
 				/>
 			</PageTabsContent>
 
@@ -103,7 +106,7 @@ export function StudentInfoTabs({
 					{ value: 'parent' as const, label: 'Ouder/voogd' },
 				]
 			: []),
-		{ value: 'agreements' as const, label: `Lesovereenkomsten (${agreements.length})` },
+		{ value: 'agreements' as const, label: buildAgreementsTabLabel(agreements.length) },
 		{ value: 'signups' as const, label: `Aanmeldingen (${signupRequests.length})` },
 		{ value: 'agenda' as const, label: 'Agenda' },
 	];
@@ -114,9 +117,10 @@ export function StudentInfoTabs({
 
 			<StudentInfoSharedTabs
 				userId={userId}
-				agreements={agreements}
 				signupRequests={signupRequests}
 				canEditAgenda={canEditAgenda}
+				canMutateAgreements={isPrivileged}
+				onAgreementsMutated={onProfileUpdate}
 			/>
 		</PageTabs>
 	);

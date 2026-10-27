@@ -11,3 +11,8 @@ export function buildAgreementDeleteDialogOpenChangeHandler(
 export function buildAgreementDeleteDescription(agreement: AgreementTableRow | null | undefined) {
 	return agreement?.student ?? { first_name: null, last_name: null };
 }
+
+export function buildAgreementsNewPath(studentUserId?: string | null): string {
+	if (!studentUserId) return '/agreements/new';
+	return `/agreements/new?studentUserId=${encodeURIComponent(studentUserId)}`;
+}

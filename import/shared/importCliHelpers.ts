@@ -2,6 +2,8 @@ import { join } from 'node:path';
 import { IMPORT_ID_MAP_FILE, IMPORT_LOG_FILE, type ImportConverterName } from '../config';
 import type { ImportConverter } from './converterTypes';
 import { formatImportConverterBanner } from './importConsoleHelpers';
+import { formatImportCutoffRemovalLog } from './importCutoffRemovalHelpers';
+import { appendImportLog } from './importLogHelpers';
 import type { ApplyImportSettingsResult } from './loadImportSettingsHelpers';
 import { applyImportSettingsFromSource } from './loadImportSettingsHelpers';
 import { parseImportCommand } from './parseImportCommandHelpers';
@@ -60,6 +62,10 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 
 	const mapPath = join(dirs.outDir, IMPORT_ID_MAP_FILE);
 	await deps.resetImportLog(logPath);
+	const cutoffLog = formatImportCutoffRemovalLog(settingsResult.settings, settingsResult.cutoffRemovals);
+	if (cutoffLog != null) {
+		await appendImportLog(logPath, cutoffLog);
+	}
 	await deps.resetIdMap(mapPath);
 	log(`Reset ${IMPORT_ID_MAP_FILE}`);
 	for (const [index, name] of deps.converterNames.entries()) {

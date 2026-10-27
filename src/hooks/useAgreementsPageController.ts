@@ -17,6 +17,9 @@ interface UseAgreementsPageControllerParams {
 	rowsPerPage: number;
 	setLoading: (loading: boolean) => void;
 	setTotalCount: (count: number) => void;
+	studentUserId?: string | null;
+	teacherUserId?: string | null;
+	onAgreementsMutated?: () => void;
 }
 
 export function useAgreementsPageController(params: UseAgreementsPageControllerParams) {
@@ -33,6 +36,9 @@ export function useAgreementsPageController(params: UseAgreementsPageControllerP
 		rowsPerPage,
 		setLoading,
 		setTotalCount,
+		studentUserId,
+		teacherUserId,
+		onAgreementsMutated,
 	} = params;
 	const [agreements, setAgreements] = useState<AgreementTableRow[]>([]);
 	const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; agreement: AgreementTableRow | null } | null>(
@@ -52,6 +58,8 @@ export function useAgreementsPageController(params: UseAgreementsPageControllerP
 				sortDirection,
 				currentPage,
 				rowsPerPage,
+				studentUserId,
+				teacherUserId,
 			}),
 			setAgreements,
 			setTotalCount,
@@ -69,6 +77,8 @@ export function useAgreementsPageController(params: UseAgreementsPageControllerP
 		sortDirection,
 		currentPage,
 		rowsPerPage,
+		studentUserId,
+		teacherUserId,
 		setLoading,
 		setTotalCount,
 	]);
@@ -81,7 +91,11 @@ export function useAgreementsPageController(params: UseAgreementsPageControllerP
 		runAgreementPageAction(action, deleteDialog, {
 			navigate,
 			setDeleteDialog,
-			reloadAgreements: loadAgreements,
+			reloadAgreements: () => {
+				void loadAgreements().then(() => {
+					onAgreementsMutated?.();
+				});
+			},
 		});
 
 	return {

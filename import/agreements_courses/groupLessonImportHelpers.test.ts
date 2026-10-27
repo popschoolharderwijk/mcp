@@ -25,6 +25,8 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		agreementId: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
 		studentUserId: STUDENT_1,
 		teacherUserId: TEACHER,
+		studentMongoOid: 'student-oid',
+		teacherMongoOid: 'teacher-oid',
 		lessonTypeId: LESSON_TYPE,
 		courseOid: 'course-group',
 		courseName: 'Bandles',
@@ -46,6 +48,7 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		optionWarning: null,
 		eventsMismatchWarning: null,
 		lessonGroupId: null,
+		phaseShiftDeviation: null,
 		...overrides,
 	};
 }

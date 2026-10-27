@@ -137,6 +137,8 @@ describe('mapAgreementCourseDoc', () => {
 			mongoOid: AGREEMENT_OID,
 			studentUserId: 'student-uuid',
 			teacherUserId: 'teacher-uuid',
+			studentMongoOid: STUDENT_OID,
+			teacherMongoOid: TEACHER_OID,
 			lessonTypeId: 'lesson-type-uuid',
 			courseOid: COURSE_OID,
 			courseName: null,
