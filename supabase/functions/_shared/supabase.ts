@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2';
+import { bearerTokenFromHeader } from './authHeaderPure.ts';
 import { jsonResponse } from './http.ts';
 
 export type SupabaseClients = {
@@ -17,7 +18,7 @@ export function createSupabaseClients(authHeader: string): SupabaseClients {
 		global: { headers: { Authorization: authHeader } },
 		auth: { autoRefreshToken: false, persistSession: false },
 	});
-	const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+	const token = bearerTokenFromHeader(authHeader);
 	if (token) accessTokens.set(userClient, token);
 
 	return {
