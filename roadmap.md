@@ -48,3 +48,4 @@
 - Klantmail en machtiging na opslaan nog zelf testen: externe Supabase zonder beschikbare klant-/beheerderssessie.
 
 - [x] 401 "Invalid token" in alle edge functions opgelost en opnieuw uitgerold (27-10-2026)
+- [x] Presentatie-screenshots Stripe-flow (docs/presentatie/screens)
