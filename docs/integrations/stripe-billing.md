@@ -1,6 +1,6 @@
-# Stripe direct debit (SEPA, per lesson agreement)
+# Stripe billing (per lesson agreement)
 
-One document for the full Stripe flow: from the invitation email to monthly SEPA collection, including schedule phases, webhooks, and admin.
+One document for the full Stripe flow: from the invitation email to monthly collection, including schedule phases, webhooks, and admin.
 
 > Replaces the older document `stripe-subscriptions.md` (removed 13 May 2026).
 
@@ -8,8 +8,8 @@ One document for the full Stripe flow: from the invitation email to monthly SEPA
 
 For each `lesson_agreements` row we attach **one Stripe `Subscription`** for monthly collection.
 
-- **First step (setup):** the customer picks a payment method via **iDEAL** in Stripe Checkout (required in NL to issue a SEPA mandate).
-- **After that:** monthly automatic collection via **SEPA Direct Debit** on the issued mandate.
+- **First step (setup):** the customer picks a payment method via **iDEAL** in Stripe Checkout (required in NL to create a reusable payment method).
+- **After that:** monthly automatic collection on that payment method (Stripe SEPA Direct Debit under the hood).
 - **Schedule phases:** a `SubscriptionSchedule` sets the exact amount per month so holidays and the correct age category (VAT) are folded into a fixed monthly instalment.
 - **Management:** the customer manages payment method/invoice/cancellation via the Stripe **Customer Portal**; an admin can open the portal on their behalf.
 
@@ -157,7 +157,7 @@ Stripe test cards / iDEAL simulator: see [Stripe testing docs](https://stripe.co
 ## 11. Related features
 
 - **Hours reporting** — `get_hours_report()` powers the hours report with VAT by age category and lesson date (agenda source data; thresholds from `app_settings.vat`).
-- **App mail templates** — all direct-debit related mail goes through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Instellingen → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
+- **App mail templates** — checkout-invite and agreement mail go through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Instellingen → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
 - **Cancellations** — `cancellation_type` (`'student' | 'teacher'`) determines whether a cancelled lesson counts in the calculation.
 
 ## 12. Known limitations / TODO

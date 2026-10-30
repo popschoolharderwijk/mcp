@@ -7,7 +7,7 @@ import { consumeMagicLinkFromUrl, getFunctionErrorMessage, readMagicLinkUrlError
 import { runStripeCheckoutStartFlow } from '@/lib/stripe/stripeCheckoutStartHelpers';
 
 /**
- * Landing page for the magic link from the Stripe direct-debit invitation email.
+ * Landing page for the magic link from the Stripe checkout invitation email.
  * 1. Consumes the magic link (PKCE or token_hash) when present in the URL.
  * 2. Calls create-subscription-checkout for the given agreement.
  * 3. Redirects the user to Stripe Checkout (mode `checkout`)

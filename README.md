@@ -1,12 +1,12 @@
 # Mplifi Community Portal
 
-Web app for running a music school: students and teachers, lesson agreements, a recurring-lesson agenda, projects, Stripe direct debit for tuition, email templates, and hours reporting.
+Web app for running a music school: students and teachers, lesson agreements, a recurring-lesson agenda, projects, Stripe billing for tuition, email templates, and hours reporting.
 
 ## Tech Stack
 
 - **Frontend**: React 18, Vite, TypeScript, Tailwind CSS, `react-icons/lu`
 - **Backend**: Supabase (Auth, Postgres + RLS, Edge Functions on Deno)
-- **Payments**: Stripe (SEPA Direct Debit via iDEAL setup)
+- **Payments**: Stripe (iDEAL setup → monthly collection)
 - **Email**: Resend (custom SMTP for Supabase Auth + transactional templates)
 - **Testing**: Bun test runner (unit + RLS against remote Supabase preview branches)
 - **Linting/format**: Biome
@@ -17,7 +17,7 @@ Web app for running a music school: students and teachers, lesson agreements, a 
 - Passwordless sign-in via Magic Link (OTP) — no passwords in production.
 - Lesson agreements with age-based rates (youth / adult), weekly/biweekly cadence, no-lesson periods with **shift logic** (lessons shift forward; August stays a pause).
 - Agenda with recurring events, deviations, cancellations (teacher vs student) and multi-participant projects.
-- Stripe SEPA direct debit per lesson agreement: setup via iDEAL, then a monthly `SubscriptionSchedule` over 11 months.
+- Stripe billing per lesson agreement: setup via iDEAL, then a monthly `SubscriptionSchedule` over 11 months.
 - Database-backed email templates with inline preview and test send.
 - Projects (domain → label → project), polymorphic agenda linking, cost centre.
 - Hours reports with VAT by age category and lesson date.
@@ -55,9 +55,9 @@ bun test --bail
 | Commands cheat sheet            | [docs/commands.md](docs/commands.md)                                                 |
 | Troubleshooting                 | [docs/troubleshooting.md](docs/troubleshooting.md)                                   |
 | Email templates & SMTP          | [docs/email-templates.md](docs/email-templates.md)                                   |
-| Stripe SEPA direct debit        | [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md) |
+| Stripe billing                  | [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md)           |
 
-> [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is a **historical planning document** (May 2026) and is no longer authoritative. The current Stripe flow is described in [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md).
+> [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is a **historical planning document** (May 2026) and is no longer authoritative. The current Stripe flow is described in [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md).
 
 ## License
 

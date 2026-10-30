@@ -43,7 +43,7 @@ Manage via **Supabase Dashboard → Project Settings → Edge Functions → Secr
 | `STRIPE_SECRET_KEY`     | All Stripe edge functions                                                                                                        | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
 | `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                                                                                 | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
 
-See [integrations/stripe-direct-debit.md §9](./integrations/stripe-direct-debit.md) for the Stripe Dashboard checklist and [deployment.md](./deployment.md) for the full edge-function table.
+See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for the Stripe Dashboard checklist and [deployment.md](./deployment.md) for the full edge-function table.
 
 ---
 

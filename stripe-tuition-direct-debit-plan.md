@@ -1,8 +1,8 @@
 # Plan: Stripe tuition direct debit (v2) — HISTORICAL DOCUMENT
 
-> 📌 **This is a historical planning document (12 May 2026).** It describes the original approach and contains outdated details. For the current technical description of the Stripe direct-debit flow, see:
+> 📌 **This is a historical planning document (12 May 2026).** It describes the original approach and contains outdated details. For the current technical description of the Stripe billing flow, see:
 >
-> **→ [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md)**
+> **→ [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md)**
 >
 > Main differences versus the current implementation:
 >
@@ -14,7 +14,7 @@
 
 ---
 
-_The content below is kept for historical context. Do not change it — update `docs/integrations/stripe-direct-debit.md` instead._
+_The content below is kept for historical context. Do not change it — update `docs/integrations/stripe-billing.md` instead._
 
 ## Goal
 

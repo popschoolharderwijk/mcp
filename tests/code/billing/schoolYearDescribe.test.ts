@@ -36,7 +36,7 @@ describe('nonBillingMonthLabels', () => {
 describe('describeMonthlyBillingCaption', () => {
 	it('includes single non-billing month for September through July', () => {
 		expect(describeMonthlyBillingCaption({ start_month: 9, end_month: 7 })).toBe(
-			'Maandbedrag (× 11, augustus geen incasso)',
+			'Maandbedrag (× 11, augustus geen afschrijving)',
 		);
 	});
 
@@ -46,13 +46,13 @@ describe('describeMonthlyBillingCaption', () => {
 
 	it('joins multiple gap months with en', () => {
 		expect(describeMonthlyBillingCaption({ start_month: 9, end_month: 6 })).toBe(
-			'Maandbedrag (× 10, juli en augustus geen incasso)',
+			'Maandbedrag (× 10, juli en augustus geen afschrijving)',
 		);
 	});
 
 	it('joins three or more gap months with commas and en', () => {
 		expect(describeMonthlyBillingCaption({ start_month: 9, end_month: 5 })).toBe(
-			'Maandbedrag (× 9, juni, juli en augustus geen incasso)',
+			'Maandbedrag (× 9, juni, juli en augustus geen afschrijving)',
 		);
 	});
 });

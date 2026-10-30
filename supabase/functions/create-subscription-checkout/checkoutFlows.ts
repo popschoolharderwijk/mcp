@@ -122,7 +122,7 @@ export async function handleDirectMode(
 	const defaultPmId = resolveDirectModePaymentMethodId(customer.invoice_settings?.default_payment_method);
 	if (!defaultPmId) {
 		return jsonResponse(409, {
-			error: 'Geen standaard betaalmethode op deze klant. Start eerst een checkout om een SEPA-mandaat te koppelen.',
+			error: 'Geen standaard betaalmethode op deze klant. Start eerst een checkout om een betaalmethode te koppelen.',
 		});
 	}
 

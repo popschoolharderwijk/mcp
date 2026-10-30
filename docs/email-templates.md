@@ -30,7 +30,7 @@ Both use the same SMTP provider (Resend).
 | `{{ .SiteURL }}`         | Configured Site URL          |
 | `{{ .Email }}`           | User email address           |
 
-The Stripe direct-debit flow uses its own variant with `token_hash` format — see [stripe-direct-debit.md §5](integrations/stripe-direct-debit.md).
+The Stripe checkout invite flow uses its own variant with `token_hash` format — see [stripe-billing.md §5](integrations/stripe-billing.md).
 
 ---
 

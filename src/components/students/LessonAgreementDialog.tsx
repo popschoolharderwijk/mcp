@@ -16,11 +16,7 @@ interface LessonAgreementDialogProps {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 	agreement: LessonAgreementWithTeacher | null;
-	/**
-	 * Optional: IDs needed to show a live direct-debit preview.
-	 * When provided, the "Incasso-preview" block appears with
-	 * yearly/monthly amount based on price per lesson × frequency.
-	 */
+	/** With both set (and privileged viewer), show the Stripe billing preview for this agreement. */
 	studentUserId?: string;
 	lessonTypeId?: string;
 }

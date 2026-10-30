@@ -12,7 +12,7 @@ export function resolveCheckoutInitiatorAuthorization(
 		return { status: 500, error: 'Kon rechten niet controleren' };
 	}
 	if (!canInitiateSubscriptionCheckout(callerUserId, studentUserId, isPrivileged === true)) {
-		return { status: 403, error: 'Geen rechten om incasso te starten voor deze overeenkomst.' };
+		return { status: 403, error: 'Geen rechten om betaling te starten voor deze overeenkomst.' };
 	}
 	return null;
 }

@@ -70,7 +70,7 @@ export function LessonAgreementPreviewBlock({ loading, error, preview }: LessonA
 
 	return (
 		<div className="rounded-md border bg-muted/30 p-4">
-			<p className="text-sm font-medium text-muted-foreground mb-3">Incasso-preview</p>
+			<p className="text-sm font-medium text-muted-foreground mb-3">Betaalpreview</p>
 			<LessonAgreementPreviewState viewState={viewState} error={error} preview={preview} />
 		</div>
 	);

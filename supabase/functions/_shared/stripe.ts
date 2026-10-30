@@ -28,7 +28,7 @@ export async function attachDefaultPaymentMethod(
 ): Promise<void> {
 	const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
 	if (pm.type === 'ideal') {
-		throw new Error('iDEAL kan niet als herbruikbare betaalmethode worden opgeslagen; SEPA-mandaat ontbreekt.');
+		throw new Error('iDEAL kan niet als herbruikbare betaalmethode worden opgeslagen; herbruikbare betaalmethode ontbreekt.');
 	}
 
 	const existingCustomerId = getStripeId(pm.customer);

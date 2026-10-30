@@ -136,8 +136,8 @@ export function nonBillingMonthLabels(bounds: SchoolYearBounds): string[] {
 }
 
 /**
- * Incasso preview caption for monthly amount, e.g.
- * `Maandbedrag (× 11, augustus geen incasso)` for Sep–Jul.
+ * Monthly billing caption for the agreement preview, e.g.
+ * `Maandbedrag (× 11, augustus geen afschrijving)` for Sep–Jul.
  */
 export function describeMonthlyBillingCaption(bounds: SchoolYearBounds): string {
 	const billingMonths = billingMonthsPerSchoolYear(bounds);
@@ -146,9 +146,9 @@ export function describeMonthlyBillingCaption(bounds: SchoolYearBounds): string 
 		return `Maandbedrag (× ${billingMonths})`;
 	}
 	if (gaps.length === 1) {
-		return `Maandbedrag (× ${billingMonths}, ${gaps[0]} geen incasso)`;
+		return `Maandbedrag (× ${billingMonths}, ${gaps[0]} geen afschrijving)`;
 	}
 	const last = gaps[gaps.length - 1];
 	const head = gaps.slice(0, -1).join(', ');
-	return `Maandbedrag (× ${billingMonths}, ${head} en ${last} geen incasso)`;
+	return `Maandbedrag (× ${billingMonths}, ${head} en ${last} geen afschrijving)`;
 }

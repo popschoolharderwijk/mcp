@@ -17,14 +17,14 @@ describe('resolveCheckoutInitiatorAuthorization', () => {
 	it('returns 403 for unrelated authenticated users', () => {
 		expect(resolveCheckoutInitiatorAuthorization(null, otherUserId, studentUserId, false)).toEqual({
 			status: 403,
-			error: 'Geen rechten om incasso te starten voor deze overeenkomst.',
+			error: 'Geen rechten om betaling te starten voor deze overeenkomst.',
 		});
 	});
 
 	it('returns 403 when privilege lookup returns null for an unrelated user', () => {
 		expect(resolveCheckoutInitiatorAuthorization(null, otherUserId, studentUserId, null)).toEqual({
 			status: 403,
-			error: 'Geen rechten om incasso te starten voor deze overeenkomst.',
+			error: 'Geen rechten om betaling te starten voor deze overeenkomst.',
 		});
 	});
 
