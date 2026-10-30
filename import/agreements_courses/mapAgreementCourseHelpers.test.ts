@@ -33,7 +33,7 @@ function validDoc(overrides: Record<string, unknown> = {}) {
 		course: { $oid: COURSE_OID },
 		student: { $oid: STUDENT_OID },
 		teacher: { $oid: TEACHER_OID },
-		agreementnumber: 'CA10663',
+		agreementnumber: 'AGR-1001',
 		description: 'Desc',
 		durationfreq: { $oid: DF_WEEKLY_30 },
 		paymenttype: 'incasso',
@@ -52,14 +52,32 @@ describe('pickLatestScheduleSlot', () => {
 				{ startdatetime: '2024-03-29T13:51:13Z' },
 				{ startdatetime: '2026-02-24T19:35:52Z' },
 			]),
-		).toEqual({ dayOfWeek: 2, startTime: '20:35:52' });
+		).toEqual({ dayOfWeek: 2, startTime: '20:35:52', slotDate: '2026-02-24' });
 	});
 
 	it('applies CEST for a summer UTC instant', () => {
 		expect(pickLatestScheduleSlot([{ startdatetime: '2026-07-08T18:00:00Z' }])).toEqual({
 			dayOfWeek: 3,
 			startTime: '20:00:00',
+			slotDate: '2026-07-08',
 		});
+	});
+
+	it('on the latest Amsterdam day prefers later processed_at over later UTC start', () => {
+		expect(
+			pickLatestScheduleSlot([
+				{ startdatetime: '2026-02-10T16:30:00Z' },
+				{ startdatetime: '2026-07-07T15:30:00Z' },
+				{
+					startdatetime: '2026-09-15T17:00:00Z',
+					processed_at: '2026-09-04T15:18:31Z',
+				},
+				{
+					startdatetime: '2026-09-15T16:00:00Z',
+					processed_at: '2026-09-04T15:20:35Z',
+				},
+			]),
+		).toEqual({ dayOfWeek: 2, startTime: '18:00:00', slotDate: '2026-09-15' });
 	});
 
 	it('returns null when no usable datetimes exist', () => {
@@ -148,9 +166,10 @@ describe('mapAgreementCourseDoc', () => {
 			dayOfWeek: 2,
 			startTime: '20:35:52',
 			startDate: '2024-08-26',
+			scheduleSlotDate: '2026-02-24',
 			endDate: null,
 			isActive: true,
-			notes: 'CA10663\nDesc\nNote',
+			notes: 'AGR-1001\nDesc\nNote',
 			signupSource: 'staff',
 			paymentMethod: 'sepa',
 			monthlyAmountCents: 4250,

@@ -16,7 +16,7 @@ function agreementDoc(overrides: Record<string, unknown> = {}): Record<string, u
 		teacher: { $oid: 'teacher-1' },
 		course: { $oid: 'course-1' },
 		durationfreq: { $oid: 'df-1' },
-		agreementnumber: 'CA10001',
+		agreementnumber: 'AGR-1001',
 		startdate: '2024-01-01',
 		enddate: '2024-01-31',
 		schedule: [{ startdatetime: '2024-01-02T18:00:00Z' }],
@@ -42,7 +42,7 @@ describe('buildImportCutoffRemovals', () => {
 			agreementDoc({
 				_id: { $oid: 'agreement-kept' },
 				student: { $oid: 'student-kept' },
-				agreementnumber: 'CA20002',
+				agreementnumber: 'AGR-2002',
 				enddate: '2025-01-01',
 			}),
 		];
@@ -61,7 +61,7 @@ describe('buildImportCutoffRemovals', () => {
 			keptStudentOids,
 		});
 
-		expect(removals.agreements).toEqual([{ oid: 'agreement-old', label: 'CA10001' }]);
+		expect(removals.agreements).toEqual([{ oid: 'agreement-old', label: 'AGR-1001' }]);
 		expect(removals.students).toEqual([
 			{ oid: 'student-old', label: 'old@example.com' },
 			{ oid: 'student-orphan', label: 'Orphan Student' },
@@ -82,19 +82,18 @@ describe('buildImportCutoffRemovals', () => {
 });
 
 describe('formatImportCutoffRemovalLog', () => {
-	it('formats one short import.log section', () => {
+	it('formats cutoff removals as info log body', () => {
 		const log = formatImportCutoffRemovalLog(settings(), {
-			agreements: [{ oid: 'agreement-old', label: 'CA10001' }],
+			agreements: [{ oid: 'agreement-old', label: 'AGR-1001' }],
 			students: [{ oid: '2343abed12', label: 'maartijn@gmail.co' }],
 		});
 
-		expect(log).toBe(
-			[
-				'=== import cutoff ===',
-				'INFO: skipped CA10001 (agreement-old)',
-				'INFO: skipped maartijn@gmail.co (2343abed12)',
-				'',
-			].join('\n'),
-		);
+		expect(log).toEqual({
+			error: null,
+			warning: null,
+			info: ['INFO: skipped AGR-1001 (agreement-old)', 'INFO: skipped maartijn@gmail.co (2343abed12)', ''].join(
+				'\n',
+			),
+		});
 	});
 });

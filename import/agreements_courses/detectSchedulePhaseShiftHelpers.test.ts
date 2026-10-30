@@ -12,7 +12,7 @@ describe('buildExpectedOccurrenceDates', () => {
 });
 
 describe('detectSchedulePhaseShift', () => {
-	it('detects a permanent +7d biweekly phase shift (Mike / CA11364 shape)', () => {
+	it('detects a permanent +7d biweekly phase shift', () => {
 		const actualDates = [
 			'2026-07-15',
 			'2026-09-09',
@@ -86,6 +86,60 @@ describe('detectSchedulePhaseShift', () => {
 				frequency: 'monthly',
 				endDate: null,
 				actualDates: ['2026-03-11', '2026-04-11', '2026-05-18', '2026-06-18'],
+			}),
+		).toBeNull();
+	});
+
+	it('keeps a historical shift when the forward window still follows that phase', () => {
+		const actualDates = [
+			'2025-10-14',
+			'2025-11-04',
+			'2025-11-18',
+			'2025-12-02',
+			'2026-11-03',
+			'2026-11-17',
+			'2026-12-01',
+		];
+		expect(
+			detectSchedulePhaseShift({
+				startDate: '2025-10-14',
+				dayOfWeek: 2,
+				frequency: 'biweekly',
+				endDate: null,
+				actualDates,
+				asOfYmd: '2026-10-28',
+			}),
+		).toEqual({
+			originalDate: '2025-10-28',
+			actualDate: '2025-11-04',
+			offsetDays: 7,
+			foldedEventCount: 6,
+			frequency: 'biweekly',
+		});
+	});
+
+	it('drops a stale historical shift when upcoming dates are back on the expected grid', () => {
+		// Bandcoaching shape: first flip in 2024, but Nov 2026 lessons match the 2021 grid again.
+		const actualDates = [
+			'2024-08-27',
+			'2024-11-12',
+			'2024-11-26',
+			'2025-09-02',
+			'2025-09-16',
+			'2025-10-14',
+			'2025-11-04',
+			'2026-11-03',
+			'2026-11-17',
+			'2026-12-01',
+		];
+		expect(
+			detectSchedulePhaseShift({
+				startDate: '2021-09-10',
+				dayOfWeek: 2,
+				frequency: 'biweekly',
+				endDate: null,
+				actualDates,
+				asOfYmd: '2026-10-28',
 			}),
 		).toBeNull();
 	});

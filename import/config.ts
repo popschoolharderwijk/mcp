@@ -1,7 +1,12 @@
 /** Filenames and converter wiring for legacy Mongo import. */
 
 export const IMPORT_ID_MAP_FILE = 'id-map.json';
-export const IMPORT_LOG_FILE = 'import.log';
+/** Relative directory under the import out dir for per-section severity logs. */
+export const IMPORT_LOG_DIR = 'log';
+/** Log section slug for agreement/student cutoff removals (`import_cutoff.info.log`). */
+export const IMPORT_CUTOFF_LOG_SECTION = 'import_cutoff';
+export const IMPORT_LOG_SEVERITIES = ['error', 'warning', 'info'] as const;
+export type ImportLogSeverity = (typeof IMPORT_LOG_SEVERITIES)[number];
 /** Tool options; loaded from `import/settings.json` next to this package. */
 export const IMPORT_SETTINGS_FILE = 'settings.json';
 
@@ -15,7 +20,7 @@ export const IMPORT_SETTINGS_FILE = 'settings.json';
  * 6. agreements_courses — needs student, teacher, lesson_type ids
  */
 export const IMPORT_SOURCES = {
-	courses: ['courses.json', 'schedule_frequencies.jsonl'],
+	courses: ['courses.jsonl', 'schedule_frequencies.jsonl'],
 	profiles: ['teachers.jsonl', 'students.jsonl'],
 	students: ['students.jsonl'],
 	teachers: ['teachers.jsonl'],
@@ -23,7 +28,7 @@ export const IMPORT_SOURCES = {
 	agreements_courses: [
 		'agreements_course.jsonl',
 		'schedule_frequencies.jsonl',
-		'courses.json',
+		'courses.jsonl',
 		'c4s_agenda_events.jsonl',
 		'teachers.jsonl',
 		'students.jsonl',

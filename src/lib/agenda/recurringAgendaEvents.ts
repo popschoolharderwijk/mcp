@@ -175,6 +175,32 @@ function evaluateLessonSourceOccurrenceVisibility(
 	return { shiftDays: nextShiftDays, shiftedDate, isShifted, skipOccurrence: outsideRenderWindow };
 }
 
+function resolveSpanningDeviationDate(
+	current: Date,
+	effective: AgendaEventDeviationRow,
+	frequency: LessonFrequency,
+): Date {
+	const originalDate = new Date(`${effective.original_date}T12:00:00`);
+	const occurrenceIndex = getOccurrenceIndex(originalDate, current, frequency);
+	return addNIntervals(new Date(`${effective.actual_date}T12:00:00`), occurrenceIndex, frequency);
+}
+
+function resolveDeviationOccurrenceDate(
+	current: Date,
+	effective: AgendaEventDeviationRow,
+	frequency: LessonFrequency,
+): Date {
+	if (effective.is_cancelled) return new Date(current);
+	if (effective.spans_future_occurrences) {
+		return resolveSpanningDeviationDate(current, effective, frequency);
+	}
+	return new Date(`${effective.actual_date}T12:00:00`);
+}
+
+function isOccurrenceOutsideRenderWindow(occurrenceDate: Date, rangeStart: Date, rangeEnd: Date): boolean {
+	return occurrenceDate < rangeStart || occurrenceDate > rangeEnd;
+}
+
 function evaluateOccurrenceVisibility(
 	current: Date,
 	shiftDays: number,
@@ -185,6 +211,7 @@ function evaluateOccurrenceVisibility(
 	rangeEnd: Date,
 	noLessonPeriods: NoLessonPeriod[] | undefined,
 	schoolYearBounds: SchoolYearBounds,
+	frequency: LessonFrequency,
 ): OccurrenceVisibility {
 	if (isLessonSource && !effective) {
 		return evaluateLessonSourceOccurrenceVisibility(
@@ -198,7 +225,8 @@ function evaluateOccurrenceVisibility(
 		);
 	}
 
-	if (current < rangeStart) {
+	const occurrenceDate = effective ? resolveDeviationOccurrenceDate(current, effective, frequency) : current;
+	if (isOccurrenceOutsideRenderWindow(occurrenceDate, rangeStart, rangeEnd)) {
 		return { shiftDays, shiftedDate: null, isShifted: false, skipOccurrence: true };
 	}
 
@@ -224,15 +252,8 @@ function buildDeviationEventTimes(
 	}
 
 	const [h, m] = effective.actual_start_time.split(':').map(Number);
-	let actualDate: Date;
-	if (effective.spans_future_occurrences) {
-		const frequency = resolveRecurringFrequency(ctx.ev, ctx.agreement);
-		const originalDate = new Date(`${effective.original_date}T12:00:00`);
-		const occurrenceIndex = getOccurrenceIndex(originalDate, current, frequency);
-		actualDate = addNIntervals(new Date(`${effective.actual_date}T12:00:00`), occurrenceIndex, frequency);
-	} else {
-		actualDate = new Date(`${effective.actual_date}T12:00:00`);
-	}
+	const frequency = resolveRecurringFrequency(ctx.ev, ctx.agreement);
+	const actualDate = resolveDeviationOccurrenceDate(current, effective, frequency);
 	actualDate.setHours(h, m ?? 0, 0, 0);
 	return { start: actualDate, end: addMinutes(actualDate, getDurationMs() / (60 * 1000)), isCancelled: false };
 }
@@ -440,6 +461,7 @@ function appendRecurringOccurrence(
 		rangeEnd,
 		ctx.noLessonPeriods,
 		ctx.schoolYearBounds,
+		schedule.frequency,
 	);
 
 	if (visibility.skipOccurrence) {

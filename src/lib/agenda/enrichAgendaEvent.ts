@@ -104,6 +104,7 @@ function enrichLessonGroupAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEventC
 			users,
 			isLesson: true,
 			cancelledParticipantIds: deviation?.cancelled_participant_ids ?? undefined,
+			notes: group.notes,
 		},
 	};
 }
@@ -155,6 +156,7 @@ function enrichLessonAgreementAgendaEvent(ev: CalendarEvent, ctx: EnrichAgendaEv
 			user: studentInfo.user ?? undefined,
 			users: resolveLessonAgreementUsers(studentInfo),
 			isLesson: true,
+			notes: agreement.notes,
 		},
 	};
 }

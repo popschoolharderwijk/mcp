@@ -10,7 +10,7 @@ import type { ProjectInfo } from '@/types/projects';
 import type { User } from '@/types/users';
 
 const LESSON_AGREEMENT_SELECT =
-	'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, lesson_types(id, name, icon, color, is_group_lesson), teachers(user_id)';
+	'id, day_of_week, start_time, start_date, end_date, is_active, student_user_id, lesson_type_id, duration_minutes, frequency, price_per_lesson, notes, lesson_types(id, name, icon, color, is_group_lesson), teachers(user_id)';
 
 const PROFILE_SELECT = 'user_id, first_name, last_name, email, avatar_url, phone_number';
 
@@ -193,6 +193,29 @@ async function fetchLessonGroups(ids: string[]): Promise<LessonGroupQueryRow[]> 
 	return (data ?? []) as LessonGroupQueryRow[];
 }
 
+/** Active member-agreement notes keyed by lesson_group_id (blank notes omitted). */
+async function fetchLessonGroupNotesByGroupId(groupIds: string[]): Promise<Map<string, string>> {
+	if (groupIds.length === 0) return new Map();
+
+	const { data } = await supabase
+		.from('lesson_agreements')
+		.select('lesson_group_id, notes')
+		.in('lesson_group_id', groupIds)
+		.eq('is_active', true);
+
+	const notesByGroupId = new Map<string, string[]>();
+	for (const row of data ?? []) {
+		const groupId = row.lesson_group_id;
+		const notes = row.notes?.trim();
+		if (groupId == null || !notes) continue;
+		const existing = notesByGroupId.get(groupId);
+		if (existing) existing.push(notes);
+		else notesByGroupId.set(groupId, [notes]);
+	}
+
+	return new Map([...notesByGroupId.entries()].map(([groupId, parts]) => [groupId, parts.join('\n\n')] as const));
+}
+
 function lessonTypeFromGroupRow(group: LessonGroupQueryRow) {
 	return Array.isArray(group.lesson_types) ? group.lesson_types[0] : group.lesson_types;
 }
@@ -203,7 +226,10 @@ function activeLessonGroupMemberUserIds(group: LessonGroupQueryRow): string[] {
 		.map((member) => member.student_user_id);
 }
 
-function buildLessonGroupsMap(rows: LessonGroupQueryRow[]): Map<string, LessonGroupInfo> {
+function buildLessonGroupsMap(
+	rows: LessonGroupQueryRow[],
+	notesByGroupId: Map<string, string> = new Map(),
+): Map<string, LessonGroupInfo> {
 	const lessonGroupsMap = new Map<string, LessonGroupInfo>();
 
 	for (const group of rows) {
@@ -215,6 +241,7 @@ function buildLessonGroupsMap(rows: LessonGroupQueryRow[]): Map<string, LessonGr
 			lessonTypeIcon: lessonType?.icon ?? null,
 			lessonTypeColor: lessonType?.color ?? null,
 			memberUserIds: activeLessonGroupMemberUserIds(group),
+			notes: notesByGroupId.get(group.id) ?? null,
 		});
 	}
 
@@ -222,17 +249,18 @@ function buildLessonGroupsMap(rows: LessonGroupQueryRow[]): Map<string, LessonGr
 }
 
 export async function fetchAgendaRelatedData(sourceIds: AgendaEventSourceIds): Promise<AgendaRelatedData> {
-	const [agreementsResult, projects, lessonGroupRows] = await Promise.all([
+	const [agreementsResult, projects, lessonGroupRows, notesByGroupId] = await Promise.all([
 		fetchLessonAgreements(sourceIds.lessonAgreementIds),
 		fetchProjects(sourceIds.projectIds),
 		fetchLessonGroups(sourceIds.lessonGroupIds),
+		fetchLessonGroupNotesByGroupId(sourceIds.lessonGroupIds),
 	]);
 
 	return {
 		agreements: agreementsResult.data,
 		agreementsError: agreementsResult.error,
 		projectsMap: new Map(projects.map((project) => [project.id, project])),
-		lessonGroupsMap: buildLessonGroupsMap(lessonGroupRows),
+		lessonGroupsMap: buildLessonGroupsMap(lessonGroupRows, notesByGroupId),
 	};
 }
 

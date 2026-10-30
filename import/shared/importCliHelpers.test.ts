@@ -11,7 +11,8 @@ function baseDeps(overrides: Partial<ImportCliDeps> = {}): ImportCliDeps {
 		converters: { courses: stubCourses, profiles: stubProfiles } as ImportCliDeps['converters'],
 		preferredSqlOrder: ['courses.sql', 'profiles.sql'],
 		resolvePath: (path) => `/abs/${path}`,
-		resetImportLog: async () => {},
+		cleanOutDir: async () => {},
+		resetImportLogs: async () => {},
 		resetIdMap: async () => {},
 		runImportConverter: async () => {},
 		uploadImportSqlFiles: async () => ({ ok: true, files: ['courses.sql', 'profiles.sql'] }),
@@ -49,7 +50,7 @@ describe('runImportCli', () => {
 		const code = await runImportCli(
 			['bun', 'import/index.ts', 'import/source', 'import/out', '--upload'],
 			baseDeps({
-				resetImportLog: async (path) => {
+				resetImportLogs: async (path) => {
 					ran.push(`reset-log:${path}`);
 				},
 				resetIdMap: async (path) => {
@@ -67,7 +68,7 @@ describe('runImportCli', () => {
 		);
 		expect(code).toBe(0);
 		expect(ran).toEqual([
-			'reset-log:/abs/import/out/import.log',
+			'reset-log:/abs/import/out/log',
 			'reset-id-map:/abs/import/out/id-map.json',
 			'convert:courses:/abs/import/source:/abs/import/out',
 			'convert:profiles:/abs/import/source:/abs/import/out',
@@ -75,6 +76,38 @@ describe('runImportCli', () => {
 		]);
 		expect(logs.some((line) => line.includes('Reset id-map.json'))).toBe(true);
 		expect(logs.some((line) => line.includes('Uploaded: courses.sql, profiles.sql'))).toBe(true);
+	});
+
+	it('cleans the out directory before the pipeline when --clean is set', async () => {
+		const ran: string[] = [];
+		const logs: string[] = [];
+		const code = await runImportCli(
+			['bun', 'import/index.ts', 'import/source', 'import/out', '--clean'],
+			baseDeps({
+				cleanOutDir: async (outDir) => {
+					ran.push(`clean:${outDir}`);
+				},
+				resetImportLogs: async (path) => {
+					ran.push(`reset-log:${path}`);
+				},
+				resetIdMap: async (path) => {
+					ran.push(`reset-id-map:${path}`);
+				},
+				runImportConverter: async (converter) => {
+					ran.push(`convert:${converter.name}`);
+				},
+				log: (m) => logs.push(m),
+			}),
+		);
+		expect(code).toBe(0);
+		expect(ran).toEqual([
+			'clean:/abs/import/out',
+			'reset-log:/abs/import/out/log',
+			'reset-id-map:/abs/import/out/id-map.json',
+			'convert:courses',
+			'convert:profiles',
+		]);
+		expect(logs.some((line) => line.includes('Cleaned /abs/import/out'))).toBe(true);
 	});
 
 	it('returns 1 when upload fails', async () => {

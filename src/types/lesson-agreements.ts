@@ -34,6 +34,7 @@ type LessonAgreementBaseFields = Pick<
 	| 'duration_minutes'
 	| 'frequency'
 	| 'price_per_lesson'
+	| 'notes'
 >;
 
 /** Agreement fields for table display (base + created_at, notes, teacher_user_id) */

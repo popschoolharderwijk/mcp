@@ -18,9 +18,10 @@ const sampleRow: AgreementCourseSqlRow = {
 	dayOfWeek: 2,
 	startTime: '19:35:52',
 	startDate: '2024-08-26',
+	scheduleSlotDate: '2024-08-26',
 	endDate: null,
 	isActive: true,
-	notes: 'CA10663\nDesc',
+	notes: 'AGR-1001\nDesc',
 	signupSource: 'staff',
 	paymentMethod: 'sepa',
 	monthlyAmountCents: 4250,
@@ -30,6 +31,7 @@ const sampleRow: AgreementCourseSqlRow = {
 	optionWarning: null,
 	eventsMismatchWarning: null,
 	lessonGroupId: null,
+	groupSlotKey: null,
 	phaseShiftDeviation: null,
 };
 
@@ -83,7 +85,8 @@ describe('buildAgreementsCoursesSql', () => {
 			{
 				...sampleRow,
 				phaseShiftDeviation: {
-					agreementId: sampleRow.agreementId,
+					sourceType: 'lesson_agreement',
+					sourceId: sampleRow.agreementId,
 					originalDate: '2026-10-21',
 					actualDate: '2026-10-28',
 					startTime: '14:00:00',
@@ -97,7 +100,8 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("'2026-10-21'::date");
 		expect(sql).toContain("'2026-10-28'::date");
 		expect(sql).toContain("'14:00:00'::time");
-		expect(sql).toContain("ae.source_type = 'lesson_agreement'::public.agenda_event_source_type");
+		expect(sql).toContain("'lesson_agreement'::public.agenda_event_source_type");
+		expect(sql).toContain('ae.source_type = v.source_type');
 		expect(sql).toContain(
 			"RAISE NOTICE 'public.agenda_event_deviations (phase shift): % row(s) inserted (existing skipped)'",
 		);

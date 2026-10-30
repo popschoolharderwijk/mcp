@@ -5,7 +5,12 @@ import type { ImportSettings } from './importSettingsHelpers';
 import { asOptionalString } from './mapPersonFieldHelpers';
 import { extractMongoOid } from './parseMongoExportHelpers';
 import { buildPersonDisplayNameByOid } from './personDisplayNameHelpers';
-import { createEmptyReport, formatImportReportIssues, type ImportReportIssue } from './reportHelpers';
+import {
+	createEmptyReport,
+	formatImportReportIssueSections,
+	type ImportReportIssue,
+	type ImportReportLogSections,
+} from './reportHelpers';
 
 export type CutoffRemovedAgreement = {
 	oid: string;
@@ -121,8 +126,11 @@ function formatSkippedReason(label: string, oid: string): string {
 	return `skipped ${label} (${oid})`;
 }
 
-/** One import.log section listing cutoff removals (agreements + students). */
-export function formatImportCutoffRemovalLog(settings: ImportSettings, removals: ImportCutoffRemovals): string | null {
+/** Info-log sections listing cutoff removals (agreements + students). */
+export function formatImportCutoffRemovalLog(
+	settings: ImportSettings,
+	removals: ImportCutoffRemovals,
+): ImportReportLogSections | null {
 	const infos: ImportReportIssue[] = [];
 	if (settings.minAgreementEndDate != null) {
 		for (const row of removals.agreements) {
@@ -137,5 +145,5 @@ export function formatImportCutoffRemovalLog(settings: ImportSettings, removals:
 	if (infos.length === 0) return null;
 	const report = createEmptyReport();
 	report.infos = infos;
-	return formatImportReportIssues(report, 'import cutoff');
+	return formatImportReportIssueSections(report);
 }

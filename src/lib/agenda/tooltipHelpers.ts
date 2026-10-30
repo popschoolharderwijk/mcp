@@ -85,3 +85,19 @@ export function buildTooltipStatusLines(resource: CalendarEventResource): string
 	}
 	return lines;
 }
+
+/** Import/debug notes stay off production and test builds; only localdev + mcp-dev. */
+function shouldShowAgendaTooltipNotes(mode: string): boolean {
+	return mode === 'development' || mode === 'localdev';
+}
+
+/** Agreement notes line(s); empty when notes are null/blank or the build is not a dev site. */
+export function buildTooltipNotesLines(
+	resource: CalendarEventResource,
+	mode: string = import.meta.env.MODE ?? '',
+): string[] {
+	if (!shouldShowAgendaTooltipNotes(mode)) return [];
+	const notes = resource.notes?.trim();
+	if (!notes) return [];
+	return [`Notities: ${notes}`];
+}

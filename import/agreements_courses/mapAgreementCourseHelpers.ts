@@ -255,7 +255,14 @@ function resolveScheduleAndStart(
 	record: Record<string, unknown>,
 	agreementOid: string,
 ):
-	| { ok: true; dayOfWeek: number; startTime: string; startDate: string; endDate: string | null }
+	| {
+			ok: true;
+			dayOfWeek: number;
+			startTime: string;
+			startDate: string;
+			scheduleSlotDate: string;
+			endDate: string | null;
+	  }
 	| { ok: false; result: AgreementCourseMapResult } {
 	const scheduleSlot = pickLatestScheduleSlot(record.schedule);
 	if (!scheduleSlot) {
@@ -284,6 +291,7 @@ function resolveScheduleAndStart(
 		dayOfWeek: scheduleSlot.dayOfWeek,
 		startTime: scheduleSlot.startTime,
 		startDate,
+		scheduleSlotDate: scheduleSlot.slotDate,
 		endDate,
 	};
 }
@@ -356,6 +364,7 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 		dayOfWeek: scheduleStart.dayOfWeek,
 		startTime: scheduleStart.startTime,
 		startDate: scheduleStart.startDate,
+		scheduleSlotDate: scheduleStart.scheduleSlotDate,
 		endDate,
 		isActive: true,
 		notes: buildNotes(

@@ -5,21 +5,59 @@ import type { AgreementCourseSqlRow } from './types';
 
 const DAY_NAMES_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'] as const;
 
+/**
+ * Biweekly phase for an anchor date on `dayOfWeek` (0–13 day-of-epoch bucket).
+ * Same wall-clock slot on opposite biweekly weeks must not share one lesson_group.
+ */
+function biweeklyPhaseKey(phaseAnchorDate: string, dayOfWeek: number): string {
+	const first = computeGroupAgendaStartDate(phaseAnchorDate, dayOfWeek);
+	const [year, month, day] = first.split('-').map(Number);
+	const utcDay = Math.floor(Date.UTC(year, month - 1, day) / 86_400_000);
+	return String(((utcDay % 14) + 14) % 14);
+}
+
+/**
+ * Prefer the latest Mongo lesson date when present; otherwise the schedule slot date.
+ * startDate alone splits classmates who joined on different calendar years of the same grid.
+ */
+function biweeklyPhaseAnchorDate(
+	row: Pick<AgreementCourseSqlRow, 'mongoOid' | 'scheduleSlotDate'>,
+	datesByAgreement?: ReadonlyMap<string, readonly string[]>,
+): string {
+	const dates = datesByAgreement?.get(row.mongoOid);
+	if (dates != null && dates.length > 0) {
+		return dates[dates.length - 1] ?? row.scheduleSlotDate;
+	}
+	return row.scheduleSlotDate;
+}
+
 /** Stable id-map key for a group slot (not a Mongo oid). */
 export function groupLessonSlotKey(
 	row: Pick<
 		AgreementCourseSqlRow,
-		'teacherUserId' | 'lessonTypeId' | 'dayOfWeek' | 'startTime' | 'durationMinutes' | 'frequency'
+		| 'teacherUserId'
+		| 'lessonTypeId'
+		| 'dayOfWeek'
+		| 'startTime'
+		| 'durationMinutes'
+		| 'frequency'
+		| 'mongoOid'
+		| 'scheduleSlotDate'
 	>,
+	datesByAgreement?: ReadonlyMap<string, readonly string[]>,
 ): string {
-	return [
+	const parts = [
 		row.teacherUserId,
 		row.lessonTypeId,
 		String(row.dayOfWeek),
 		row.startTime,
 		String(row.durationMinutes),
 		row.frequency,
-	].join('|');
+	];
+	if (row.frequency === 'biweekly') {
+		parts.push(biweeklyPhaseKey(biweeklyPhaseAnchorDate(row, datesByAgreement), row.dayOfWeek));
+	}
+	return parts.join('|');
 }
 
 export function buildGroupLessonName(courseName: string, dayOfWeek: number, startTime: string): string {
@@ -130,13 +168,14 @@ export function attachLessonGroupsToAgreementRows(
 	rows: AgreementCourseSqlRow[],
 	idMap: MongoIdMap,
 	createId: () => string,
+	datesByAgreement?: ReadonlyMap<string, readonly string[]>,
 ): { rows: AgreementCourseSqlRow[]; idMap: MongoIdMap; groups: ImportLessonGroupRow[] } {
 	let nextMap = idMap;
 	const membersBySlot = new Map<string, AgreementCourseSqlRow[]>();
 
 	for (const row of rows) {
 		if (!row.isGroupLesson) continue;
-		const key = groupLessonSlotKey(row);
+		const key = row.groupSlotKey ?? groupLessonSlotKey(row, datesByAgreement);
 		const existing = membersBySlot.get(key);
 		if (existing) existing.push(row);
 		else membersBySlot.set(key, [row]);
@@ -174,12 +213,13 @@ export function attachLessonGroupsToAgreementRows(
 
 	const nextRows = rows.map((row) => {
 		if (!row.isGroupLesson) {
-			return { ...row, lessonGroupId: null };
+			return { ...row, lessonGroupId: null, groupSlotKey: null };
 		}
-		const slotKey = groupLessonSlotKey(row);
+		const slotKey = row.groupSlotKey ?? groupLessonSlotKey(row, datesByAgreement);
 		return {
 			...row,
 			lessonGroupId: groupIdBySlot.get(slotKey) ?? null,
+			groupSlotKey: slotKey,
 		};
 	});
 

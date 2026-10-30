@@ -1,5 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { importConsoleLog } from './importConsoleHelpers';
 import { orderImportSqlFileNames, readUploadImportEnv } from './uploadImportEnvHelpers';
 
 async function defaultRunPsqlFile(
@@ -39,7 +40,7 @@ export async function uploadImportSqlFiles(params: {
 	}
 
 	const runPsqlFile = params.runPsqlFile ?? defaultRunPsqlFile;
-	const log = params.log ?? console.log;
+	const log = params.log ?? importConsoleLog;
 	log(`Uploading ${orderedNames.length} SQL file(s) via SUPABASE_DB_URL…`);
 	for (const name of orderedNames) {
 		const sqlPath = join(params.outDir, name);

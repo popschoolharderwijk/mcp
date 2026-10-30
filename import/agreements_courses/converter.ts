@@ -4,6 +4,7 @@ import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
 import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
 import { invertLessonTypeAliases } from '../shared/lessonTypeAliasHelpers';
+import { buildAgendaLessonDatesByAgreementOid } from './agendaEventIndexHelpers';
 import { applySchedulePhaseShiftsToAgreementRows } from './applySchedulePhaseShiftHelpers';
 import { buildAgreementsCoursesSql } from './buildAgreementsCoursesSqlHelpers';
 import { buildCoursePriceIndex } from './coursePriceIndexHelpers';
@@ -35,7 +36,7 @@ export const agreementsCoursesConverter: ImportConverter<
 	ignoredKeys: IGNORED_KEYS,
 	prepareContext(extraFileDocs) {
 		const scheduleDocs = extraFileDocs['schedule_frequencies.jsonl'];
-		const courseDocs = extraFileDocs['courses.json'];
+		const courseDocs = extraFileDocs['courses.jsonl'];
 		setAgreementScheduleFrequencyMap(buildScheduleFrequencyMap(scheduleDocs));
 		setAgreementCoursePriceIndex(buildCoursePriceIndex(courseDocs));
 		setAgreementDuoCourseOids(buildDuoCourseOidSet(courseDocs));
@@ -53,9 +54,11 @@ export const agreementsCoursesConverter: ImportConverter<
 		const settings = getImportSettings();
 		const docs = primaryDocs.filter((doc) => agreementDocPassesCutoff(doc, settings, scheduleMap));
 		const batch = buildImportBatch(docs, agreementsCoursesConverter, idMap, createId);
-		const attached = attachLessonGroupsToAgreementRows(batch.sqlRows, batch.idMap, createId);
+		const eventDocs = extraFileDocs['c4s_agenda_events.jsonl'];
+		const datesByAgreement = buildAgendaLessonDatesByAgreementOid(eventDocs);
+		const attached = attachLessonGroupsToAgreementRows(batch.sqlRows, batch.idMap, createId, datesByAgreement);
 		const withPhaseShifts = applySchedulePhaseShiftsToAgreementRows(attached.rows, batch.report, {
-			eventDocs: extraFileDocs['c4s_agenda_events.jsonl'],
+			eventDocs,
 			teacherDocs: extraFileDocs['teachers.jsonl'],
 			studentDocs: extraFileDocs['students.jsonl'],
 		});
@@ -63,6 +66,12 @@ export const agreementsCoursesConverter: ImportConverter<
 	},
 	mapDoc: mapAgreementCourseDoc,
 	warningsForRow: agreementCourseRowWarningReasons,
-	assignId: (row, id) => ({ ...row, agreementId: id, lessonGroupId: null, phaseShiftDeviation: null }),
+	assignId: (row, id) => ({
+		...row,
+		agreementId: id,
+		lessonGroupId: null,
+		groupSlotKey: null,
+		phaseShiftDeviation: null,
+	}),
 	buildSql: buildAgreementsCoursesSql,
 };

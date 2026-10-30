@@ -13,6 +13,13 @@ export type ImportReport = {
 	ignoredKeys: string[];
 };
 
+/** Per-severity text for `out/log/{section}.{error|warning|info}.log`. */
+export type ImportReportLogSections = {
+	error: string | null;
+	warning: string | null;
+	info: string | null;
+};
+
 export function createEmptyReport(): ImportReport {
 	return {
 		created: 0,
@@ -43,23 +50,23 @@ export function formatImportReportSummary(report: ImportReport): string {
 	].join('\n');
 }
 
-/** Per-row failures, warnings, and infos for `import.log`. */
-export function formatImportReportIssues(report: ImportReport, converterName?: string): string {
-	const lines: string[] = [];
-	if (converterName) {
-		lines.push(`=== ${converterName} ===`);
+function formatIssueLine(prefix: 'ERROR' | 'WARN' | 'INFO', issue: ImportReportIssue): string {
+	if (prefix === 'INFO' && issue.oid == null) {
+		return `INFO: ${issue.reason}`;
 	}
-	for (const failure of report.failures) {
-		lines.push(`ERROR ${failure.oid ?? '(no oid)'}: ${failure.reason}`);
-	}
-	for (const warning of report.warnings) {
-		lines.push(`WARN ${warning.oid ?? '(no oid)'}: ${warning.reason}`);
-	}
-	for (const info of report.infos) {
-		lines.push(info.oid == null ? `INFO: ${info.reason}` : `INFO ${info.oid}: ${info.reason}`);
-	}
-	if (report.failures.length === 0 && report.warnings.length === 0 && report.infos.length === 0) {
-		lines.push('(no errors, warnings, or infos)');
-	}
-	return `${lines.join('\n')}\n`;
+	return `${prefix} ${issue.oid ?? '(no oid)'}: ${issue.reason}`;
+}
+
+function formatIssueSection(prefix: 'ERROR' | 'WARN' | 'INFO', issues: ImportReportIssue[]): string | null {
+	if (issues.length === 0) return null;
+	return `${issues.map((issue) => formatIssueLine(prefix, issue)).join('\n')}\n`;
+}
+
+/** Split per-row failures, warnings, and infos into severity log bodies. */
+export function formatImportReportIssueSections(report: ImportReport): ImportReportLogSections {
+	return {
+		error: formatIssueSection('ERROR', report.failures),
+		warning: formatIssueSection('WARN', report.warnings),
+		info: formatIssueSection('INFO', report.infos),
+	};
 }

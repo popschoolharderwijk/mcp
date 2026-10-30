@@ -1,9 +1,9 @@
 import { join } from 'node:path';
-import { IMPORT_ID_MAP_FILE, IMPORT_LOG_FILE, type ImportConverterName } from '../config';
+import { IMPORT_CUTOFF_LOG_SECTION, IMPORT_ID_MAP_FILE, type ImportConverterName } from '../config';
 import type { ImportConverter } from './converterTypes';
-import { formatImportConverterBanner } from './importConsoleHelpers';
+import { formatImportConverterBanner, importConsoleError, importConsoleLog } from './importConsoleHelpers';
 import { formatImportCutoffRemovalLog } from './importCutoffRemovalHelpers';
-import { appendImportLog } from './importLogHelpers';
+import { resolveImportLogDir, writeImportSectionLogs } from './importLogHelpers';
 import type { ApplyImportSettingsResult } from './loadImportSettingsHelpers';
 import { applyImportSettingsFromSource } from './loadImportSettingsHelpers';
 import { parseImportCommand } from './parseImportCommandHelpers';
@@ -14,13 +14,16 @@ export type ImportCliDeps = {
 	converters: Record<ImportConverterName, ImportConverter>;
 	preferredSqlOrder: readonly string[];
 	resolvePath: (path: string) => string;
-	resetImportLog: (path: string) => Promise<void>;
+	/** Wipe and recreate the out directory when `--clean` is set. */
+	cleanOutDir: (outDir: string) => Promise<void>;
+	resetImportLogs: (logDir: string) => Promise<void>;
 	/** Clear `id-map.json` once at the start of a full pipeline (not between converters). */
 	resetIdMap: (path: string) => Promise<void>;
 	runImportConverter: (converter: ImportConverter, dirs: ImportConverterDirs) => Promise<void>;
 	uploadImportSqlFiles: (params: {
 		outDir: string;
 		preferredSqlOrder: readonly string[];
+		log?: (message: string) => void;
 	}) => Promise<{ ok: true; files: string[] } | { ok: false; error: string }>;
 	applyImportSettings?: (sourceDir: string) => Promise<ApplyImportSettingsResult>;
 	log?: (message: string) => void;
@@ -35,10 +38,10 @@ function formatSettingsLog(result: Extract<ApplyImportSettingsResult, { ok: true
 	return `Settings: minAgreementEndDate=${min}, removeOutdatedStudents=${settings.removeOutdatedStudents}, useLessonTypeAliases=${settings.useLessonTypeAliases}, lessonTypeAliases=${aliasCanonical}→${aliasSources} ← ${settingsPath}`;
 }
 
-/** Run `bun import <source> <out> [--upload]` (full pipeline) and return a process exit code. */
+/** Run `bun import <source> <out> [--clean] [--upload]` (full pipeline) and return a process exit code. */
 export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise<number> {
-	const log = deps.log ?? console.log;
-	const error = deps.error ?? console.error;
+	const log = deps.log ?? importConsoleLog;
+	const error = deps.error ?? importConsoleError;
 	const applySettings = deps.applyImportSettings ?? applyImportSettingsFromSource;
 
 	const parsed = parseImportCommand(argv);
@@ -51,7 +54,7 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 		sourceDir: deps.resolvePath(parsed.source),
 		outDir: deps.resolvePath(parsed.out),
 	};
-	const logPath = join(dirs.outDir, IMPORT_LOG_FILE);
+	const logDir = resolveImportLogDir(dirs.outDir);
 
 	const settingsResult = await applySettings(dirs.sourceDir);
 	if (!settingsResult.ok) {
@@ -60,11 +63,16 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 	}
 	log(formatSettingsLog(settingsResult));
 
+	if (parsed.clean) {
+		await deps.cleanOutDir(dirs.outDir);
+		log(`Cleaned ${dirs.outDir}`);
+	}
+
 	const mapPath = join(dirs.outDir, IMPORT_ID_MAP_FILE);
-	await deps.resetImportLog(logPath);
+	await deps.resetImportLogs(logDir);
 	const cutoffLog = formatImportCutoffRemovalLog(settingsResult.settings, settingsResult.cutoffRemovals);
 	if (cutoffLog != null) {
-		await appendImportLog(logPath, cutoffLog);
+		await writeImportSectionLogs(logDir, IMPORT_CUTOFF_LOG_SECTION, cutoffLog);
 	}
 	await deps.resetIdMap(mapPath);
 	log(`Reset ${IMPORT_ID_MAP_FILE}`);
@@ -80,6 +88,7 @@ export async function runImportCli(argv: string[], deps: ImportCliDeps): Promise
 	const result = await deps.uploadImportSqlFiles({
 		outDir: dirs.outDir,
 		preferredSqlOrder: deps.preferredSqlOrder,
+		log,
 	});
 	if (!result.ok) {
 		error(result.error);

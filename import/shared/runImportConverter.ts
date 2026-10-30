@@ -1,19 +1,14 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
-import {
-	IMPORT_ID_MAP_FILE,
-	IMPORT_LOG_FILE,
-	IMPORT_OUTPUTS,
-	IMPORT_SOURCES,
-	type ImportConverterName,
-} from '../config';
+import { IMPORT_ID_MAP_FILE, IMPORT_OUTPUTS, IMPORT_SOURCES, type ImportConverterName } from '../config';
 import { buildImportBatch } from './buildImportBatchHelpers';
 import type { ImportConverter, MappedImportRow } from './converterTypes';
 import { loadIdMap, saveIdMap } from './idMapFile';
+import { importConsoleError, importConsoleLog } from './importConsoleHelpers';
 import { buildImportExtraDocs } from './importExtraDocsHelpers';
-import { appendImportLog } from './importLogHelpers';
+import { resolveImportLogDir, writeImportSectionLogs } from './importLogHelpers';
 import { parseMongoExportText } from './parseMongoExportHelpers';
-import { formatImportReportIssues, formatImportReportSummary } from './reportHelpers';
+import { formatImportReportIssueSections, formatImportReportSummary } from './reportHelpers';
 
 export type ImportConverterDirs = {
 	sourceDir: string;
@@ -27,7 +22,7 @@ async function requireImportSourceFile(
 	const path = resolvePath(relativePath);
 	const file = Bun.file(path);
 	if (!(await file.exists())) {
-		console.error(`Input not found: ${path}`);
+		importConsoleError(`Input not found: ${path}`);
 		process.exit(1);
 	}
 	return { path, text: await file.text() };
@@ -42,7 +37,7 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, 
 	const sourceFiles = IMPORT_SOURCES[converter.name];
 	const outPath = resolvePath(join(dirs.outDir, IMPORT_OUTPUTS[converter.name]));
 	const mapPath = resolvePath(join(dirs.outDir, IMPORT_ID_MAP_FILE));
-	const logPath = resolvePath(join(dirs.outDir, IMPORT_LOG_FILE));
+	const logDir = resolveImportLogDir(resolvePath(dirs.outDir));
 
 	const loaded = [];
 	for (const fileName of sourceFiles) {
@@ -51,7 +46,7 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, 
 
 	const primary = loaded[0];
 	if (!primary) {
-		console.error(`No source files configured for converter: ${converter.name}`);
+		importConsoleError(`No source files configured for converter: ${converter.name}`);
 		process.exit(1);
 	}
 
@@ -71,10 +66,10 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, 
 	await mkdir(dirname(outPath), { recursive: true });
 	await Bun.write(outPath, sql);
 	await saveIdMap(mapPath, batch.idMap);
-	await appendImportLog(logPath, formatImportReportIssues(batch.report, converter.name));
+	await writeImportSectionLogs(logDir, converter.name, formatImportReportIssueSections(batch.report));
 
-	console.log(`Wrote ${outPath}`);
-	console.log(`Updated ${mapPath}`);
-	console.log(formatImportReportSummary(batch.report));
-	console.log(`Log: ${logPath}`);
+	importConsoleLog(`Wrote ${outPath}`);
+	importConsoleLog(`Updated ${mapPath}`);
+	importConsoleLog(formatImportReportSummary(batch.report));
+	importConsoleLog(`Logs: ${logDir}`);
 }

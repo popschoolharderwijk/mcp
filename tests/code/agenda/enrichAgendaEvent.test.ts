@@ -136,6 +136,7 @@ describe('enrichAgendaEvent', () => {
 						lessonTypeIcon: 'mic',
 						lessonTypeColor: '#123456',
 						memberUserIds: ['stu-1', 'stu-2'],
+						notes: null,
 					},
 				],
 			]),
@@ -209,6 +210,7 @@ describe('enrichAgendaEvent', () => {
 						lessonTypeIcon: 'mic',
 						lessonTypeColor: '#123456',
 						memberUserIds: ['stu-1'],
+						notes: null,
 					},
 				],
 			]),
@@ -242,6 +244,7 @@ describe('enrichAgendaEvent', () => {
 			duration_minutes: 60,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			notes: null,
 			profiles: studentProfile,
 			lesson_types: {
 				id: 'lt-1',
@@ -292,6 +295,7 @@ describe('enrichAgendaEvent', () => {
 			duration_minutes: 60,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			notes: null,
 			profiles: studentProfile,
 			lesson_types: {
 				id: 'lt-1',
@@ -348,6 +352,7 @@ describe('enrichAgendaEvent', () => {
 			duration_minutes: 60,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			notes: null,
 			profiles: studentProfile,
 			lesson_types: {
 				id: 'lt-1',

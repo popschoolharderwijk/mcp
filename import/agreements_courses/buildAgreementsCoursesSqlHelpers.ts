@@ -311,12 +311,16 @@ function buildPhaseShiftDeviationsInsert(deviations: SchedulePhaseShiftDeviation
 `;
 	}
 
-	const tuples = deviations
-		.map(
-			(deviation) =>
-				`  (${sqlUuid(deviation.agreementId)}, ${sqlDate(deviation.originalDate)}, ${sqlTime(deviation.startTime)}, ${sqlDate(deviation.actualDate)}, ${sqlTime(deviation.startTime)})`,
-		)
-		.join(',\n');
+	const seen = new Set<string>();
+	const tuples: string[] = [];
+	for (const deviation of deviations) {
+		const key = `${deviation.sourceType}|${deviation.sourceId}|${deviation.originalDate}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		tuples.push(
+			`  ('${deviation.sourceType}'::public.agenda_event_source_type, ${sqlUuid(deviation.sourceId)}, ${sqlDate(deviation.originalDate)}, ${sqlTime(deviation.startTime)}, ${sqlDate(deviation.actualDate)}, ${sqlTime(deviation.startTime)})`,
+		);
+	}
 
 	return `  INSERT INTO public.agenda_event_deviations (
     event_id,
@@ -340,11 +344,11 @@ function buildPhaseShiftDeviationsInsert(deviations: SchedulePhaseShiftDeviation
     NULL::date,
     'import: schedule phase shift'
   FROM (VALUES
-${tuples}
-  ) AS v(agreement_id, original_date, original_start_time, actual_date, actual_start_time)
+${tuples.join(',\n')}
+  ) AS v(source_type, source_id, original_date, original_start_time, actual_date, actual_start_time)
   JOIN public.agenda_events ae
-    ON ae.source_type = 'lesson_agreement'::public.agenda_event_source_type
-   AND ae.source_id = v.agreement_id
+    ON ae.source_type = v.source_type
+   AND ae.source_id = v.source_id
   WHERE NOT EXISTS (
     SELECT 1 FROM public.agenda_event_deviations d
     WHERE d.event_id = ae.id
@@ -381,7 +385,8 @@ function idMapFromAssignedLessonGroups(rows: AgreementCourseSqlRow[]): MongoIdMa
 	let idMap = createEmptyIdMap();
 	for (const row of rows) {
 		if (!row.isGroupLesson || row.lessonGroupId == null) continue;
-		idMap = setMappedId(idMap, 'lesson_group', groupLessonSlotKey(row), row.lessonGroupId);
+		const slotKey = row.groupSlotKey ?? groupLessonSlotKey(row);
+		idMap = setMappedId(idMap, 'lesson_group', slotKey, row.lessonGroupId);
 	}
 	return idMap;
 }

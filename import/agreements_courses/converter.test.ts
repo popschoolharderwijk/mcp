@@ -8,7 +8,7 @@ function prepareSoloCourseContext(): void {
 	agreementsCoursesConverter.prepareContext?.({
 		...emptyImportExtraDocs('agreements_courses'),
 		'schedule_frequencies.jsonl': [{ _id: { $oid: 'df-1' }, value: '1x30m/1wk' }],
-		'courses.json': [
+		'courses.jsonl': [
 			{
 				_id: { $oid: 'course-1' },
 				name: 'Piano',
@@ -23,7 +23,7 @@ function prepareGroupCourseContext(): void {
 	agreementsCoursesConverter.prepareContext?.({
 		...emptyImportExtraDocs('agreements_courses'),
 		'schedule_frequencies.jsonl': [{ _id: { $oid: 'df-1' }, value: '1x60m/1wk' }],
-		'courses.json': [
+		'courses.jsonl': [
 			{
 				_id: { $oid: 'course-group' },
 				name: 'Bandles',

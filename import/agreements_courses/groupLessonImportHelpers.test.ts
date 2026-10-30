@@ -36,6 +36,7 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		dayOfWeek: 2,
 		startTime: '19:00:00',
 		startDate: '2024-08-26',
+		scheduleSlotDate: '2024-08-26',
 		endDate: null,
 		isActive: true,
 		notes: null,
@@ -48,6 +49,7 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		optionWarning: null,
 		eventsMismatchWarning: null,
 		lessonGroupId: null,
+		groupSlotKey: null,
 		phaseShiftDeviation: null,
 		...overrides,
 	};
@@ -202,6 +204,91 @@ describe('attachLessonGroupsToAgreementRows different slots', () => {
 		expect(result.groups).toHaveLength(2);
 		expect(result.rows[0]?.lessonGroupId).toBe(GROUP_A);
 		expect(result.rows[1]?.lessonGroupId).toBe(GROUP_B);
+	});
+
+	it('splits biweekly members when latest agenda dates are on opposite phases', () => {
+		const rows = [
+			baseGroupRow({
+				mongoOid: 'phase-a',
+				agreementId: 'phase-a-uuid',
+				studentUserId: STUDENT_1,
+				frequency: 'biweekly',
+				startDate: '2026-02-10',
+				scheduleSlotDate: '2026-09-15',
+				dayOfWeek: 2,
+				startTime: '18:00:00',
+			}),
+			baseGroupRow({
+				mongoOid: 'phase-b',
+				agreementId: 'phase-b-uuid',
+				studentUserId: STUDENT_2,
+				frequency: 'biweekly',
+				startDate: '2026-10-27',
+				scheduleSlotDate: '2026-10-27',
+				dayOfWeek: 2,
+				startTime: '18:00:00',
+			}),
+			baseGroupRow({
+				mongoOid: 'phase-c',
+				agreementId: 'phase-c-uuid',
+				studentUserId: STUDENT_3,
+				frequency: 'biweekly',
+				startDate: '2026-02-10',
+				scheduleSlotDate: '2026-09-15',
+				dayOfWeek: 2,
+				startTime: '18:00:00',
+			}),
+		];
+		const datesByAgreement = new Map<string, readonly string[]>([
+			['phase-a', ['2026-09-15', '2027-07-06']],
+			['phase-c', ['2026-09-15', '2027-07-06']],
+			['phase-b', ['2026-10-27', '2027-07-13']],
+		]);
+		let nextId = 0;
+		const result = attachLessonGroupsToAgreementRows(
+			rows,
+			createEmptyIdMap(),
+			() => {
+				const id = [GROUP_A, GROUP_B][nextId++] ?? 'overflow';
+				return id;
+			},
+			datesByAgreement,
+		);
+
+		expect(result.groups).toHaveLength(2);
+		expect(result.rows[0]?.lessonGroupId).toBe(GROUP_A);
+		expect(result.rows[2]?.lessonGroupId).toBe(GROUP_A);
+		expect(result.rows[1]?.lessonGroupId).toBe(GROUP_B);
+	});
+
+	it('keeps biweekly members together when startDates differ but schedule slots share a phase', () => {
+		const rows = [
+			baseGroupRow({
+				mongoOid: 'member-a',
+				agreementId: 'member-a-uuid',
+				studentUserId: STUDENT_1,
+				frequency: 'biweekly',
+				startDate: '2026-02-10',
+				scheduleSlotDate: '2026-09-15',
+				dayOfWeek: 2,
+				startTime: '18:00:00',
+			}),
+			baseGroupRow({
+				mongoOid: 'member-b',
+				agreementId: 'member-b-uuid',
+				studentUserId: STUDENT_2,
+				frequency: 'biweekly',
+				startDate: '2026-09-15',
+				scheduleSlotDate: '2026-09-15',
+				dayOfWeek: 2,
+				startTime: '18:00:00',
+			}),
+		];
+		const result = attachWithIds(rows, [GROUP_A, GROUP_B]);
+
+		expect(result.groups).toHaveLength(1);
+		expect(result.rows[0]?.lessonGroupId).toBe(GROUP_A);
+		expect(result.rows[1]?.lessonGroupId).toBe(GROUP_A);
 	});
 });
 

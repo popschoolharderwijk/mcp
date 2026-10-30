@@ -55,7 +55,7 @@ function emptyCutoffRemovals(): ImportCutoffRemovals {
 
 /**
  * Load `import/settings.json`, set runtime state, and optionally build the student allowlist from source dumps.
- * Also collects cutoff removals for a single import.log section.
+ * Also collects cutoff removals for the info log section.
  */
 export async function applyImportSettingsFromSource(sourceDir: string): Promise<ApplyImportSettingsResult> {
 	resetImportRuntimeSettings();

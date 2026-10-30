@@ -13,6 +13,8 @@ export type SchedulePhaseShift = {
 
 const MAX_OFFSET_DAYS = 28;
 const MIN_SUFFIX_EVENTS = 2;
+/** How far ahead of `asOfYmd` to check that a historical shift still matches Mongo. */
+const DEFAULT_FORWARD_WINDOW_DAYS = 120;
 
 function intervalDays(frequency: LessonFrequency): number | null {
 	if (frequency === 'weekly') return 7;
@@ -26,6 +28,12 @@ function parseYmd(ymd: string): Date {
 
 function daysBetween(earlierYmd: string, laterYmd: string): number {
 	return Math.round((parseYmd(laterYmd).getTime() - parseYmd(earlierYmd).getTime()) / 86_400_000);
+}
+
+function addDaysYmd(ymd: string, days: number): string {
+	const date = parseYmd(ymd);
+	date.setDate(date.getDate() + days);
+	return formatYmd(date);
 }
 
 /** Expected occurrence dates from agreement recurrence through `untilYmd` inclusive. */
@@ -64,9 +72,87 @@ function longestIntervalAlignedPrefix(suffix: string[], interval: number): strin
 	return aligned;
 }
 
+function isOnShiftedPhase(ymd: string, shiftActualDate: string, step: number): boolean {
+	const delta = daysBetween(shiftActualDate, ymd);
+	return delta >= 0 && delta % step === 0;
+}
+
 /**
- * Detect a permanent schedule phase shift: actual lesson dates leave the expected
- * recurrence grid and continue on a parallel weekday grid (offset multiple of 7).
+ * Forward window used to reject stale historical phase flips (holiday-driven
+ * oscillations) that no longer match upcoming Mongo lesson dates.
+ */
+function resolveForwardWindowDates(actual: readonly string[], asOfYmd: string, forwardWindowDays: number): string[] {
+	const windowEnd = addDaysYmd(asOfYmd, forwardWindowDays);
+	const inWindow = actual.filter((ymd) => ymd >= asOfYmd && ymd <= windowEnd);
+	if (inWindow.length >= MIN_SUFFIX_EVENTS) return inWindow;
+	if (actual.length < MIN_SUFFIX_EVENTS) return [...actual];
+	return actual.slice(-Math.max(MIN_SUFFIX_EVENTS, Math.min(8, actual.length)));
+}
+
+function shiftMatchesForwardWindow(
+	shift: SchedulePhaseShift,
+	windowDates: readonly string[],
+	expectedSet: ReadonlySet<string>,
+	step: number,
+): boolean {
+	if (windowDates.length < MIN_SUFFIX_EVENTS) return false;
+
+	let onShift = 0;
+	let onExpected = 0;
+	for (const ymd of windowDates) {
+		if (isOnShiftedPhase(ymd, shift.actualDate, step)) onShift += 1;
+		if (expectedSet.has(ymd)) onExpected += 1;
+	}
+	return onShift >= MIN_SUFFIX_EVENTS && onShift >= onExpected;
+}
+
+function detectFirstPhaseShift(params: {
+	frequency: LessonFrequency;
+	step: number;
+	expectedSet: ReadonlySet<string>;
+	actual: readonly string[];
+}): SchedulePhaseShift | null {
+	let shiftActual: string | null = null;
+	for (const ymd of params.actual) {
+		if (!params.expectedSet.has(ymd)) {
+			shiftActual = ymd;
+			break;
+		}
+	}
+	if (shiftActual == null) return null;
+
+	const suffix = params.actual.filter((ymd) => ymd >= shiftActual);
+	const aligned = longestIntervalAlignedPrefix(suffix, params.step);
+	if (aligned.length < MIN_SUFFIX_EVENTS) {
+		return null;
+	}
+
+	for (let offsetDays = 7; offsetDays <= MAX_OFFSET_DAYS; offsetDays += 7) {
+		const original = parseYmd(shiftActual);
+		original.setDate(original.getDate() - offsetDays);
+		const originalDate = formatYmd(original);
+		if (!params.expectedSet.has(originalDate)) continue;
+		if (daysBetween(originalDate, shiftActual) !== offsetDays) continue;
+
+		return {
+			originalDate,
+			actualDate: shiftActual,
+			offsetDays,
+			foldedEventCount: aligned.length,
+			frequency: params.frequency,
+		};
+	}
+
+	return null;
+}
+
+/**
+ * Detect a schedule phase shift: actual lesson dates leave the expected recurrence
+ * grid and continue on a parallel weekday grid (offset multiple of 7).
+ *
+ * When `asOfYmd` is set, a candidate shift is kept only if upcoming Mongo dates in
+ * the forward window still follow that shifted phase — stale historical flips
+ * (common around holidays) are dropped so the recurrence matches current lessons.
  */
 export function detectSchedulePhaseShift(params: {
 	startDate: string;
@@ -74,6 +160,9 @@ export function detectSchedulePhaseShift(params: {
 	frequency: LessonFrequency;
 	endDate: string | null;
 	actualDates: readonly string[];
+	/** Inclusive start of the forward validation window (typically import "today"). */
+	asOfYmd?: string | null;
+	forwardWindowDays?: number;
 }): SchedulePhaseShift | null {
 	const step = intervalDays(params.frequency);
 	if (step == null) return null;
@@ -91,38 +180,34 @@ export function detectSchedulePhaseShift(params: {
 	);
 	const expectedSet = new Set(expected);
 
-	let shiftActual: string | null = null;
-	for (const ymd of actual) {
-		if (!expectedSet.has(ymd)) {
-			shiftActual = ymd;
-			break;
-		}
-	}
-	if (shiftActual == null) return null;
+	const candidate = detectFirstPhaseShift({
+		frequency: params.frequency,
+		step,
+		expectedSet,
+		actual,
+	});
 
-	const suffix = actual.filter((ymd) => ymd >= shiftActual);
-	const aligned = longestIntervalAlignedPrefix(suffix, step);
-	if (aligned.length < MIN_SUFFIX_EVENTS) {
-		return null;
+	const asOfYmd = params.asOfYmd ?? null;
+	if (asOfYmd == null) {
+		return candidate;
 	}
 
-	for (let offsetDays = 7; offsetDays <= MAX_OFFSET_DAYS; offsetDays += 7) {
-		const original = parseYmd(shiftActual);
-		original.setDate(original.getDate() - offsetDays);
-		const originalDate = formatYmd(original);
-		if (!expectedSet.has(originalDate)) continue;
-		if (daysBetween(originalDate, shiftActual) !== offsetDays) continue;
+	const windowDates = resolveForwardWindowDates(
+		actual,
+		asOfYmd,
+		params.forwardWindowDays ?? DEFAULT_FORWARD_WINDOW_DAYS,
+	);
 
-		return {
-			originalDate,
-			actualDate: shiftActual,
-			offsetDays,
-			foldedEventCount: aligned.length,
-			frequency: params.frequency,
-		};
+	if (candidate != null && shiftMatchesForwardWindow(candidate, windowDates, expectedSet, step)) {
+		return candidate;
 	}
 
-	return null;
+	return detectFirstPhaseShift({
+		frequency: params.frequency,
+		step,
+		expectedSet,
+		actual: windowDates,
+	});
 }
 
 export function formatSchedulePhaseShiftInfoReason(params: {
