@@ -65,6 +65,8 @@ export interface CalendarEventResource {
 	mergedSlotMembers?: MergedSlotMember[];
 	/** True when this card is a same-slot merge of separate lesson_agreement events */
 	isSameSlotMerge?: boolean;
+	/** Agreement notes (e.g. imported agreementnumber); omitted from tooltip when null/empty */
+	notes?: string | null;
 }
 
 export interface MergedSlotMember {

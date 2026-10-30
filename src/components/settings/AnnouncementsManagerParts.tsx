@@ -2,7 +2,7 @@ import type { ChangeEvent, RefObject } from 'react';
 import { LuImage, LuLink, LuPencil, LuPlus, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CrudFormDialogActions } from '@/components/ui/crud-form-dialog-actions';
+import { CrudFormDeleteConfirmDialog, CrudFormDialogActions } from '@/components/ui/crud-form-dialog-actions';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -286,40 +286,43 @@ export function AnnouncementsEditorDialog({ state }: { state: AnnouncementsManag
 	} = state;
 
 	return (
-		<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-			<DialogContent className="max-w-2xl">
-				<DialogHeader>
-					<DialogTitle>{editing ? 'Bericht bewerken' : 'Nieuw nieuwsbericht'}</DialogTitle>
-				</DialogHeader>
-				<div className="space-y-4 py-2">
-					<AnnouncementsEditorTitleField
-						title={form.title}
-						onTitleChange={(title) => setForm({ ...form, title })}
-					/>
-					<AnnouncementsEditorBodyField
-						body={form.body}
-						uploading={uploading}
-						bodyRef={bodyRef}
-						fileInputRef={fileInputRef}
-						onBodyChange={(body) => setForm({ ...form, body })}
-						onInsertLink={handleInsertLink}
-						onPickImage={handlePickImage}
-						onImageUpload={handleImageUpload}
-					/>
-					<AnnouncementsEditorAudienceField
-						audienceTeachers={form.audienceTeachers}
-						audienceStudents={form.audienceStudents}
-						hasAudience={audience.length > 0}
-						onTeachersChange={(audienceTeachers) => setForm({ ...form, audienceTeachers })}
-						onStudentsChange={(audienceStudents) => setForm({ ...form, audienceStudents })}
-					/>
-					<AnnouncementsEditorPublishField
-						publish={form.publish}
-						onPublishChange={(publish) => setForm({ ...form, publish })}
-					/>
-				</div>
-				<CrudFormDialogActions {...dialogActions} />
-			</DialogContent>
-		</Dialog>
+		<>
+			<Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+				<DialogContent className="max-w-2xl">
+					<DialogHeader>
+						<DialogTitle>{editing ? 'Bericht bewerken' : 'Nieuw nieuwsbericht'}</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4 py-2">
+						<AnnouncementsEditorTitleField
+							title={form.title}
+							onTitleChange={(title) => setForm({ ...form, title })}
+						/>
+						<AnnouncementsEditorBodyField
+							body={form.body}
+							uploading={uploading}
+							bodyRef={bodyRef}
+							fileInputRef={fileInputRef}
+							onBodyChange={(body) => setForm({ ...form, body })}
+							onInsertLink={handleInsertLink}
+							onPickImage={handlePickImage}
+							onImageUpload={handleImageUpload}
+						/>
+						<AnnouncementsEditorAudienceField
+							audienceTeachers={form.audienceTeachers}
+							audienceStudents={form.audienceStudents}
+							hasAudience={audience.length > 0}
+							onTeachersChange={(audienceTeachers) => setForm({ ...form, audienceTeachers })}
+							onStudentsChange={(audienceStudents) => setForm({ ...form, audienceStudents })}
+						/>
+						<AnnouncementsEditorPublishField
+							publish={form.publish}
+							onPublishChange={(publish) => setForm({ ...form, publish })}
+						/>
+					</div>
+					<CrudFormDialogActions {...dialogActions} />
+				</DialogContent>
+			</Dialog>
+			<CrudFormDeleteConfirmDialog {...dialogActions} />
+		</>
 	);
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
+import { countLessonAgreementsByTeacherUserId } from '@/lib/agreements/countLessonAgreements';
 import { getDisplayName } from '@/lib/display-name';
 import {
 	type PersonDetailTabId,
@@ -20,6 +21,7 @@ export function useTeacherInfoPage() {
 	const { isTeacher, teacherUserId, isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const [loading, setLoading] = useState(true);
 	const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null);
+	const [agreementsCount, setAgreementsCount] = useState(0);
 	const [profileVersion, setProfileVersion] = useState(0);
 
 	const basePath = resolveTeacherInfoBasePath(id);
@@ -38,8 +40,12 @@ export function useTeacherInfoPage() {
 		void profileVersion;
 
 		setLoading(true);
-		void fetchTeacherProfile(targetTeacherUserId).then((profile) => {
+		void Promise.all([
+			fetchTeacherProfile(targetTeacherUserId),
+			countLessonAgreementsByTeacherUserId(targetTeacherUserId),
+		]).then(([profile, count]) => {
 			setTeacherProfile(profile);
+			setAgreementsCount(count);
 			setLoading(false);
 		});
 	}, [targetTeacherUserId, profileVersion]);
@@ -78,6 +84,7 @@ export function useTeacherInfoPage() {
 		pageGate,
 		targetTeacherUserId,
 		teacherProfile,
+		agreementsCount,
 		canAccess,
 		activeTab,
 		tabRedirectTo,

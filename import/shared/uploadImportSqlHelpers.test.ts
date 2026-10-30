@@ -16,7 +16,6 @@ describe('uploadImportSqlFiles', () => {
 			outDir,
 			preferredSqlOrder: ['courses.sql', 'profiles.sql'],
 			env: {
-				SUPABASE_URL: 'https://exampledevref.supabase.co',
 				SUPABASE_DB_URL: 'postgresql://u:{PASSWORD}@h/db',
 				SUPABASE_DB_PASSWORD: 'secret',
 			},

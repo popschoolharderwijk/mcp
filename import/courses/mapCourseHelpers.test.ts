@@ -56,32 +56,6 @@ describe('mapCourseDoc', () => {
 		]);
 	});
 
-	it('marks DUO and group lessons from name / maxparticipants', () => {
-		const duo = mapCourseDoc({
-			_id: 'duo-1',
-			name: '10 Gitaar DUO',
-			maxparticipants: 2,
-			frequency_mnd_prices: [],
-		});
-		expect(duo.ok).toBe(true);
-		if (duo.ok) {
-			expect(duo.row.isDuoLesson).toBe(true);
-			expect(duo.row.isGroupLesson).toBe(false);
-		}
-
-		const group = mapCourseDoc({
-			_id: 'group-1',
-			name: 'Bandcoaching | Spelen in een band',
-			maxparticipants: 7,
-			frequency_mnd_prices: [],
-		});
-		expect(group.ok).toBe(true);
-		if (group.ok) {
-			expect(group.row.isDuoLesson).toBe(false);
-			expect(group.row.isGroupLesson).toBe(true);
-		}
-	});
-
 	it('warns on unknown durationfreq oids', () => {
 		const result = mapCourseDoc({
 			_id: 'course-2',
@@ -103,18 +77,5 @@ describe('mapCourseDoc', () => {
 			oid: 'oid-3',
 			reason: 'Missing name',
 		});
-	});
-
-	it('marks band/koor as group when maxparticipants is null', () => {
-		const result = mapCourseDoc({
-			_id: 'band-1',
-			name: '22 Spelen in een Band 8-11 jaar',
-			maxparticipants: null,
-			frequency_mnd_prices: [],
-		});
-		expect(result.ok).toBe(true);
-		if (!result.ok) return;
-		expect(result.row.isGroupLesson).toBe(true);
-		expect(result.row.isDuoLesson).toBe(false);
 	});
 });

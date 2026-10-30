@@ -7,6 +7,8 @@ const sampleRow: AgreementCourseSqlRow = {
 	agreementId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
 	studentUserId: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
 	teacherUserId: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+	studentMongoOid: 'student-oid',
+	teacherMongoOid: 'teacher-oid',
 	lessonTypeId: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
 	courseOid: 'course-oid',
 	courseName: null,
@@ -16,9 +18,10 @@ const sampleRow: AgreementCourseSqlRow = {
 	dayOfWeek: 2,
 	startTime: '19:35:52',
 	startDate: '2024-08-26',
+	scheduleSlotDate: '2024-08-26',
 	endDate: null,
 	isActive: true,
-	notes: 'CA10663\nDesc',
+	notes: 'AGR-1001\nDesc',
 	signupSource: 'staff',
 	paymentMethod: 'sepa',
 	monthlyAmountCents: 4250,
@@ -28,6 +31,8 @@ const sampleRow: AgreementCourseSqlRow = {
 	optionWarning: null,
 	eventsMismatchWarning: null,
 	lessonGroupId: null,
+	groupSlotKey: null,
+	phaseShiftDeviation: null,
 };
 
 const groupMemberA: AgreementCourseSqlRow = {
@@ -71,6 +76,37 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_groups: 0 row(s) inserted (no group lessons)'");
 		expect(sql).toContain(
 			"RAISE NOTICE 'public.agenda_events (lesson_group): 0 row(s) inserted (no group lessons)'",
+		);
+		expect(sql).toContain("RAISE NOTICE 'public.agenda_event_deviations (phase shift): 0 row(s) inserted'");
+	});
+
+	it('emits an idempotent spanning agenda_event_deviations insert for a phase shift', () => {
+		const sql = buildAgreementsCoursesSql([
+			{
+				...sampleRow,
+				phaseShiftDeviation: {
+					sourceType: 'lesson_agreement',
+					sourceId: sampleRow.agreementId,
+					originalDate: '2026-10-21',
+					actualDate: '2026-10-28',
+					startTime: '14:00:00',
+				},
+			},
+		]);
+
+		expect(sql).toContain('INSERT INTO public.agenda_event_deviations');
+		expect(sql).toContain('spans_future_occurrences');
+		expect(sql).toContain("'import: schedule phase shift'");
+		expect(sql).toContain("'2026-10-21'::date");
+		expect(sql).toContain("'2026-10-28'::date");
+		expect(sql).toContain("'14:00:00'::time");
+		expect(sql).toContain("'lesson_agreement'::public.agenda_event_source_type");
+		expect(sql).toContain('ae.source_type = v.source_type');
+		expect(sql).toContain(
+			"RAISE NOTICE 'public.agenda_event_deviations (phase shift): % row(s) inserted (existing skipped)'",
+		);
+		expect(sql.indexOf('INSERT INTO public.lesson_agreements')).toBeLessThan(
+			sql.indexOf('INSERT INTO public.agenda_event_deviations'),
 		);
 	});
 
@@ -187,9 +223,5 @@ describe('buildAgreementsCoursesSql', () => {
 		expect(membersSection).toContain("'2025-07-31'::date");
 		// group id: lesson_groups + 2 agreements + 1 member + agenda source_id
 		expect(sql.split("'gggggggg-gggg-gggg-gggg-gggggggggggg'::uuid")).toHaveLength(6);
-	});
-
-	it('returns a comment when there are no rows', () => {
-		expect(buildAgreementsCoursesSql([])).toBe('-- No agreements_courses to import\n');
 	});
 });

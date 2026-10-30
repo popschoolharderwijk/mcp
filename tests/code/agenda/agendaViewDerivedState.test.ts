@@ -39,6 +39,7 @@ function mockAgreement(overrides: Partial<AgendaLessonAgreement> = {}): AgendaLe
 		start_date: '2026-09-01',
 		end_date: '2027-07-31',
 		is_active: true,
+		notes: null,
 		student_user_id: 'stu-1',
 		lesson_type_id: 'lt-1',
 		duration_minutes: 60,

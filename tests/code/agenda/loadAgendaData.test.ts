@@ -131,6 +131,7 @@ function mockAgreement(overrides: Partial<LessonAgreementQuery> = {}): LessonAgr
 		duration_minutes: 60,
 		frequency: 'weekly',
 		price_per_lesson: 30,
+		notes: null,
 		lesson_types: { id: 'lt-1', name: 'Piano', icon: 'piano', color: '#000000', is_group_lesson: false },
 		teachers: [{ user_id: 'tea-1' }],
 		...overrides,
@@ -183,6 +184,7 @@ describe('loadAgendaData pure helpers', () => {
 					lessonTypeIcon: null,
 					lessonTypeColor: null,
 					memberUserIds: ['stu-3'],
+					notes: null,
 				},
 			],
 		]);
@@ -413,6 +415,7 @@ describe('loadAgendaData fetch helpers', () => {
 			lessonTypeIcon: 'piano',
 			lessonTypeColor: '#000000',
 			memberUserIds: ['stu-1'],
+			notes: null,
 		});
 	});
 
@@ -464,6 +467,7 @@ describe('loadAgendaData fetch helpers', () => {
 			lessonTypeIcon: 'guitar',
 			lessonTypeColor: '#ff0000',
 			memberUserIds: ['stu-3'],
+			notes: null,
 		});
 	});
 });

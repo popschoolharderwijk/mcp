@@ -13,6 +13,8 @@ export interface ExecuteAgreementsPageLoadParams {
 	sortDirection: 'asc' | 'desc' | null;
 	currentPage: number;
 	rowsPerPage: number;
+	studentUserId?: string | null;
+	teacherUserId?: string | null;
 }
 
 export type AgreementsPageLoadOutcome =
@@ -39,6 +41,8 @@ function buildAgreementsPageLoadRpcParams(params: ExecuteAgreementsPageLoadParam
 		p_is_active: resolveIsActiveFilter(params.statusFilter),
 		p_sort_column: mapAgreementSortColumn(params.sortColumn),
 		p_sort_direction: params.sortDirection || 'desc',
+		p_student_user_id: params.studentUserId ?? undefined,
+		p_teacher_user_id: params.teacherUserId ?? undefined,
 	};
 }
 

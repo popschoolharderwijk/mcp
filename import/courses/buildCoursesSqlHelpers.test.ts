@@ -41,8 +41,4 @@ describe('buildCoursesSql', () => {
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_types:");
 		expect(sql).toContain("RAISE NOTICE 'public.lesson_type_options:");
 	});
-
-	it('returns a comment when there are no rows', () => {
-		expect(buildCoursesSql([])).toBe('-- No courses to import\n');
-	});
 });

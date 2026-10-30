@@ -1,72 +1,16 @@
 import type { NavigateFunction } from 'react-router-dom';
+import { AgreementsDataTable, type AgreementsDataTableProps } from '@/components/agreements/AgreementsDataTable';
 import { AgreementsPageCreateButton } from '@/components/agreements/AgreementsPageDialogs';
-import { DataTable, type QuickFilterGroup } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
-import type { AgreementAction } from '@/lib/agreements/agreementsPageActionHelpers';
-import { AGREEMENT_COLUMNS } from '@/lib/agreements/agreementsTableColumns';
-import type { AgreementTableRow } from '@/types/lesson-agreements';
 
-interface AgreementsPageTableProps {
+interface AgreementsPageTableProps extends AgreementsDataTableProps {
 	navigate: NavigateFunction;
-	agreements: AgreementTableRow[];
-	searchQuery: string;
-	onSearchChange: (query: string) => void;
-	loading: boolean;
-	totalCount: number;
-	currentPage: number;
-	rowsPerPage: number;
-	onPageChange: (page: number) => void;
-	onRowsPerPageChange: (rows: number) => void;
-	sortColumn: string | null;
-	sortDirection: 'asc' | 'desc' | null;
-	onSortChange: (column: string | null, direction: 'asc' | 'desc' | null) => void;
-	quickFilterGroups: QuickFilterGroup[];
-	runAction: (action: AgreementAction) => void;
 }
 
-export function AgreementsPageTable({
-	navigate,
-	agreements,
-	searchQuery,
-	onSearchChange,
-	loading,
-	totalCount,
-	currentPage,
-	rowsPerPage,
-	onPageChange,
-	onRowsPerPageChange,
-	sortColumn,
-	sortDirection,
-	onSortChange,
-	quickFilterGroups,
-	runAction,
-}: AgreementsPageTableProps) {
+export function AgreementsPageTable({ navigate, ...tableProps }: AgreementsPageTableProps) {
 	return (
 		<NavPageShell item="agreements" actions={<AgreementsPageCreateButton navigate={navigate} />}>
-			<DataTable
-				data={agreements}
-				columns={AGREEMENT_COLUMNS}
-				searchQuery={searchQuery}
-				onSearchChange={onSearchChange}
-				loading={loading}
-				getRowKey={(row) => row.id}
-				emptyMessage="Geen overeenkomsten gevonden"
-				quickFilter={quickFilterGroups}
-				serverPagination={{
-					totalCount,
-					currentPage,
-					rowsPerPage,
-					onPageChange,
-					onRowsPerPageChange,
-				}}
-				initialSortColumn={sortColumn || undefined}
-				initialSortDirection={sortDirection || undefined}
-				onSortChange={onSortChange}
-				rowActions={{
-					onEdit: (agreement) => runAction({ kind: 'edit', agreement }),
-					onDelete: (agreement) => runAction({ kind: 'delete', agreement }),
-				}}
-			/>
+			<AgreementsDataTable {...tableProps} />
 		</NavPageShell>
 	);
 }

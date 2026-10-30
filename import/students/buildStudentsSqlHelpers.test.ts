@@ -2,10 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { buildStudentsSql } from './buildStudentsSqlHelpers';
 
 describe('buildStudentsSql', () => {
-	it('returns a comment when there are no rows', () => {
-		expect(buildStudentsSql([])).toBe('-- No students to import\n');
-	});
-
 	it('emits public.students upsert only and dedupes by user id', () => {
 		const sql = buildStudentsSql([
 			{

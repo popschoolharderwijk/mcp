@@ -38,6 +38,7 @@ export const APP_SETTINGS = {
 		default_payment_method: 'sepa' as const,
 	},
 	TIPS: {
+		enabled: false,
 		auto_interval_minutes: 10,
 	},
 } as const;
@@ -88,9 +89,9 @@ export const LESSON_GROUPS = {
  * no_lesson_periods rows from supabase/seeds/test.sql.
  */
 export const NO_LESSON_PERIODS = {
-	STUDY_DAYS_ID: '76000000-0001-0000-0000-000000000000',
+	CHRISTMAS_ID: '76000000-0001-0000-0000-000000000000',
 	/** Alphabetical order matching `.order('name')`. */
-	NAMES: ['Herfstvakantie', 'Studiedagen'] as const,
+	NAMES: ['Kerstvakantie'] as const,
 } as const;
 
 /**

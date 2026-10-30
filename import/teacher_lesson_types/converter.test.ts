@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import { createEmptyIdMap, setMappedId } from '../shared/idMapHelpers';
+import { emptyImportExtraDocs } from '../shared/importExtraDocsHelpers';
 import { teacherLessonTypesConverter } from './converter';
 
 describe('teacherLessonTypesConverter', () => {
 	it('builds unique links from agreements using teachers.jsonl and the id-map', () => {
-		teacherLessonTypesConverter.prepareContext?.([
-			[{ _id: { $oid: 'teacher-1' } }, { _id: { $oid: 'teacher-2' } }],
-		]);
+		teacherLessonTypesConverter.prepareContext?.({
+			...emptyImportExtraDocs('teacher_lesson_types'),
+			'teachers.jsonl': [{ _id: { $oid: 'teacher-1' } }, { _id: { $oid: 'teacher-2' } }],
+		});
 
 		let idMap = createEmptyIdMap();
 		idMap = setMappedId(idMap, 'teacher', 'teacher-1', 'teacher-uuid-1');

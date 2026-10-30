@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import type { MongoIdMap } from '../shared/idMapHelpers';
 import { createEmptyIdMap, setMappedId } from '../shared/idMapHelpers';
+import { emptyImportExtraDocs } from '../shared/importExtraDocsHelpers';
 import { agreementsCoursesConverter } from './converter';
 
 function prepareSoloCourseContext(): void {
-	agreementsCoursesConverter.prepareContext?.([
-		[{ _id: { $oid: 'df-1' }, value: '1x30m/1wk' }],
-		[
+	agreementsCoursesConverter.prepareContext?.({
+		...emptyImportExtraDocs('agreements_courses'),
+		'schedule_frequencies.jsonl': [{ _id: { $oid: 'df-1' }, value: '1x30m/1wk' }],
+		'courses.jsonl': [
 			{
 				_id: { $oid: 'course-1' },
 				name: 'Piano',
@@ -14,13 +16,14 @@ function prepareSoloCourseContext(): void {
 				frequency_mnd_prices: [{ durationfreq: { $oid: 'df-1' }, price: 50, startdate: '2026-01-01' }],
 			},
 		],
-	]);
+	});
 }
 
 function prepareGroupCourseContext(): void {
-	agreementsCoursesConverter.prepareContext?.([
-		[{ _id: { $oid: 'df-1' }, value: '1x60m/1wk' }],
-		[
+	agreementsCoursesConverter.prepareContext?.({
+		...emptyImportExtraDocs('agreements_courses'),
+		'schedule_frequencies.jsonl': [{ _id: { $oid: 'df-1' }, value: '1x60m/1wk' }],
+		'courses.jsonl': [
 			{
 				_id: { $oid: 'course-group' },
 				name: 'Bandles',
@@ -28,7 +31,7 @@ function prepareGroupCourseContext(): void {
 				frequency_mnd_prices: [{ durationfreq: { $oid: 'df-1' }, price: 20, startdate: '2026-01-01' }],
 			},
 		],
-	]);
+	});
 }
 
 function soloIdMap(): MongoIdMap {
@@ -98,7 +101,7 @@ describe('agreementsCoursesConverter solo mapping', () => {
 		prepareSoloCourseContext();
 		const batch = agreementsCoursesConverter.buildBatch?.(
 			[soloAgreementDoc],
-			[],
+			emptyImportExtraDocs('agreements_courses'),
 			soloIdMap(),
 			() => 'agreement-uuid',
 		);
@@ -118,7 +121,7 @@ describe('agreementsCoursesConverter solo mapping', () => {
 		prepareSoloCourseContext();
 		const batch = agreementsCoursesConverter.buildBatch?.(
 			[soloAgreementDoc],
-			[],
+			emptyImportExtraDocs('agreements_courses'),
 			soloIdMap(),
 			() => 'agreement-uuid',
 		);
@@ -144,7 +147,7 @@ describe('agreementsCoursesConverter group coalescing', () => {
 		const ids = ['agreement-uuid-1', 'agreement-uuid-2', 'lesson-group-uuid'];
 		const batch = agreementsCoursesConverter.buildBatch?.(
 			groupAgreementDocs,
-			[],
+			emptyImportExtraDocs('agreements_courses'),
 			groupIdMap(),
 			() => ids[nextId++] ?? 'overflow',
 		);
@@ -163,7 +166,7 @@ describe('agreementsCoursesConverter group coalescing', () => {
 		const ids = ['agreement-uuid-1', 'agreement-uuid-2', 'lesson-group-uuid'];
 		const batch = agreementsCoursesConverter.buildBatch?.(
 			groupAgreementDocs,
-			[],
+			emptyImportExtraDocs('agreements_courses'),
 			groupIdMap(),
 			() => ids[nextId++] ?? 'overflow',
 		);

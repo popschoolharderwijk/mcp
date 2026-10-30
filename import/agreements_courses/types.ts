@@ -1,9 +1,20 @@
 import type { LessonFrequency } from '../courses/types';
 import type { MapDocResult, MappedImportRow } from '../shared/converterTypes';
 
+export type SchedulePhaseShiftDeviationSql = {
+	/** `lesson_agreement` for 1:1 lessons; `lesson_group` for imported group slots. */
+	sourceType: 'lesson_agreement' | 'lesson_group';
+	sourceId: string;
+	originalDate: string;
+	actualDate: string;
+	startTime: string;
+};
+
 export type MappedAgreementCourseRow = MappedImportRow & {
 	studentUserId: string;
 	teacherUserId: string;
+	studentMongoOid: string;
+	teacherMongoOid: string;
 	lessonTypeId: string;
 	/** Mongo course oid — used to detect group courses and name lesson groups. */
 	courseOid: string;
@@ -15,6 +26,8 @@ export type MappedAgreementCourseRow = MappedImportRow & {
 	dayOfWeek: number;
 	startTime: string;
 	startDate: string;
+	/** Amsterdam YMD of the schedule slot used for day/time; biweekly group phase key. */
+	scheduleSlotDate: string;
 	endDate: string | null;
 	isActive: true;
 	notes: string | null;
@@ -40,6 +53,10 @@ export type AgreementCourseSqlRow = MappedAgreementCourseRow & {
 	agreementId: string;
 	/** Shared lesson_groups.id when isGroupLesson; assigned after mapping. */
 	lessonGroupId: string | null;
+	/** Slot key used to assign lessonGroupId; kept so SQL rebuild stays idempotent. */
+	groupSlotKey: string | null;
+	/** Spanning agenda deviation when Mongo lesson dates permanently left the recurrence grid. */
+	phaseShiftDeviation: SchedulePhaseShiftDeviationSql | null;
 };
 
 export type AgreementCourseMapResult = MapDocResult<MappedAgreementCourseRow>;

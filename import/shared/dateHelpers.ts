@@ -2,9 +2,13 @@ const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const AMSTERDAM_TZ = 'Europe/Amsterdam';
 
+/** Europe/Amsterdam wall-clock parts for schedule slot and calendar date. */
 const AMSTERDAM_PARTS = new Intl.DateTimeFormat('en-US', {
 	timeZone: AMSTERDAM_TZ,
 	weekday: 'short',
+	year: 'numeric',
+	month: '2-digit',
+	day: '2-digit',
 	hour: '2-digit',
 	minute: '2-digit',
 	second: '2-digit',
@@ -21,11 +25,24 @@ const WEEKDAY_TO_DOW: Record<string, number> = {
 	Sat: 6,
 };
 
+function amsterdamPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
+	return parts.find((part) => part.type === type)?.value ?? '';
+}
+
 /** Format a local `Date` as `YYYY-MM-DD`. */
 export function formatYmd(date: Date): string {
 	const year = date.getFullYear();
 	const month = String(date.getMonth() + 1).padStart(2, '0');
 	const day = String(date.getDate()).padStart(2, '0');
+	return `${year}-${month}-${day}`;
+}
+
+/** Instant → Europe/Amsterdam calendar `YYYY-MM-DD` (CET/CEST). */
+export function toAmsterdamYmd(instant: Date): string {
+	const parts = AMSTERDAM_PARTS.formatToParts(instant);
+	const year = amsterdamPart(parts, 'year');
+	const month = amsterdamPart(parts, 'month').padStart(2, '0');
+	const day = amsterdamPart(parts, 'day').padStart(2, '0');
 	return `${year}-${month}-${day}`;
 }
 
@@ -35,16 +52,15 @@ export function formatYmd(date: Date): string {
  */
 export function toAmsterdamScheduleSlot(instant: Date): { dayOfWeek: number; startTime: string } {
 	const parts = AMSTERDAM_PARTS.formatToParts(instant);
-	const value = (type: Intl.DateTimeFormatPartTypes): string => parts.find((part) => part.type === type)?.value ?? '';
 
-	const dayOfWeek = WEEKDAY_TO_DOW[value('weekday')];
+	const dayOfWeek = WEEKDAY_TO_DOW[amsterdamPart(parts, 'weekday')];
 	if (dayOfWeek === undefined) {
 		throw new Error(`Unexpected Amsterdam weekday for ${instant.toISOString()}`);
 	}
 
-	const hours = value('hour').padStart(2, '0');
-	const minutes = value('minute').padStart(2, '0');
-	const seconds = value('second').padStart(2, '0');
+	const hours = amsterdamPart(parts, 'hour').padStart(2, '0');
+	const minutes = amsterdamPart(parts, 'minute').padStart(2, '0');
+	const seconds = amsterdamPart(parts, 'second').padStart(2, '0');
 	return { dayOfWeek, startTime: `${hours}:${minutes}:${seconds}` };
 }
 

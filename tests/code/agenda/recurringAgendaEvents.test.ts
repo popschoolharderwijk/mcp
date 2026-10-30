@@ -165,6 +165,7 @@ describe('appendRecurringAgendaEvents', () => {
 			duration_minutes: 45,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			notes: null,
 			profiles: { first_name: 'Jan', last_name: 'Jansen', email: 'jan@example.com' },
 			lesson_types: {
 				id: 'lt-1',
@@ -285,5 +286,40 @@ describe('appendRecurringAgendaEvents', () => {
 		expect(events[0]?.title).toBe('Replacement lesson');
 		expect(events[0]?.resource.color).toBe('#ff0000');
 		expect(events[0]?.resource.hasTimeOrDateChange).toBe(false);
+	});
+
+	it('keeps biweekly phase-shift occurrences whose grid date falls before the visible range', () => {
+		const rangeStart = new Date('2026-11-01T00:00:00');
+		const rangeEnd = new Date('2026-11-30T23:59:59');
+		const recurringDeviation = mockDeviation({
+			id: 'dev-phase',
+			original_date: '2025-10-28',
+			actual_date: '2025-11-04',
+			original_start_time: '20:00:00',
+			actual_start_time: '20:00:00',
+			spans_future_occurrences: true,
+			reason: 'import: schedule phase shift',
+		});
+		const events = runAppend(
+			mockAgendaEvent({
+				title: 'Spelen in een Band 15-18 dinsdag 20:00',
+				start_date: '2025-10-14',
+				start_time: '20:00:00',
+				end_date: '2025-10-14',
+				end_time: '21:00:00',
+				recurring_frequency: 'biweekly',
+				recurring_end_date: null,
+				source_type: 'lesson_group',
+				source_id: 'group-1',
+			}),
+			rangeStart,
+			rangeEnd,
+			undefined,
+			[recurringDeviation],
+			null,
+			false,
+			true,
+		);
+		expect(events.map((event) => formatDateToDb(event.start as Date))).toEqual(['2026-11-03', '2026-11-17']);
 	});
 });

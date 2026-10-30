@@ -30,6 +30,7 @@ export const APP_SETTINGS_BOOTSTRAP: AppSettingsMap = {
 		default_payment_method: 'sepa',
 	},
 	tips: {
+		enabled: false,
 		auto_interval_minutes: 10,
 	},
 };

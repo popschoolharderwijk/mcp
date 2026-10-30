@@ -4,6 +4,7 @@ let rpcResult: { data: unknown; error: { message: string } | null } = {
 	data: null,
 	error: null,
 };
+let lastRpcArgs: Record<string, unknown> | undefined;
 
 mock.module('sonner', () => ({
 	toast: {
@@ -13,7 +14,10 @@ mock.module('sonner', () => ({
 
 mock.module('../../../src/integrations/supabase/client', () => ({
 	supabase: {
-		rpc: () => Promise.resolve(rpcResult),
+		rpc: (_name: string, args: Record<string, unknown>) => {
+			lastRpcArgs = args;
+			return Promise.resolve(rpcResult);
+		},
 	},
 }));
 
@@ -66,6 +70,7 @@ describe('agreementsPageLoadHelpers', () => {
 	});
 
 	beforeEach(() => {
+		lastRpcArgs = undefined;
 		rpcResult = {
 			data: {
 				data: [paginatedAgreement],
@@ -153,6 +158,41 @@ describe('agreementsPageLoadHelpers', () => {
 				],
 				totalCount: 1,
 			});
+			expect(lastRpcArgs?.p_student_user_id).toBeUndefined();
+		});
+
+		it('passes p_student_user_id when studentUserId is set', async () => {
+			await executeAgreementsPageLoad({
+				authLoading: false,
+				hasAccess: true,
+				statusFilter: 'active',
+				selectedLessonTypeId: null,
+				debouncedSearchQuery: '',
+				sortColumn: null,
+				sortDirection: null,
+				currentPage: 1,
+				rowsPerPage: 10,
+				studentUserId: 'student-1',
+			});
+			expect(lastRpcArgs?.p_student_user_id).toBe('student-1');
+			expect(lastRpcArgs?.p_is_active).toBe(true);
+		});
+
+		it('passes p_teacher_user_id when teacherUserId is set', async () => {
+			await executeAgreementsPageLoad({
+				authLoading: false,
+				hasAccess: true,
+				statusFilter: null,
+				selectedLessonTypeId: null,
+				debouncedSearchQuery: '',
+				sortColumn: null,
+				sortDirection: null,
+				currentPage: 1,
+				rowsPerPage: 10,
+				teacherUserId: 'teacher-1',
+			});
+			expect(lastRpcArgs?.p_teacher_user_id).toBe('teacher-1');
+			expect(lastRpcArgs?.p_student_user_id).toBeUndefined();
 		});
 
 		it('returns error when the RPC fails', async () => {

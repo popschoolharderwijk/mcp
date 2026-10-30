@@ -104,9 +104,14 @@ describe('parseAppSettingValue', () => {
 		expect(parseAppSettingValue('tips', APP_SETTINGS.TIPS)).toEqual(APP_SETTINGS.TIPS);
 	});
 
+	it('rejects tips when enabled is missing or not boolean', () => {
+		expect(parseAppSettingValue('tips', { auto_interval_minutes: 10 })).toBeNull();
+		expect(parseAppSettingValue('tips', { enabled: 'true', auto_interval_minutes: 10 })).toBeNull();
+	});
+
 	it('rejects tips when interval minutes are out of range', () => {
-		expect(parseAppSettingValue('tips', { auto_interval_minutes: -1 })).toBeNull();
-		expect(parseAppSettingValue('tips', { auto_interval_minutes: 24 * 60 + 1 })).toBeNull();
+		expect(parseAppSettingValue('tips', { enabled: false, auto_interval_minutes: -1 })).toBeNull();
+		expect(parseAppSettingValue('tips', { enabled: true, auto_interval_minutes: 24 * 60 + 1 })).toBeNull();
 	});
 });
 

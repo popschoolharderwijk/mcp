@@ -40,7 +40,7 @@ describe('RLS: no_lesson_periods anon', () => {
 				await db
 					.from('no_lesson_periods')
 					.update({ name: 'Anon' })
-					.eq('id', NO_LESSON_PERIODS.STUDY_DAYS_ID)
+					.eq('id', NO_LESSON_PERIODS.CHRISTMAS_ID)
 					.select(),
 			),
 		);
@@ -49,7 +49,7 @@ describe('RLS: no_lesson_periods anon', () => {
 	it('anon delete on no_lesson_periods is privilege-denied', async () => {
 		const db = createClientAnon();
 		expectInsufficientPrivilege(
-			unwrapError(await db.from('no_lesson_periods').delete().eq('id', NO_LESSON_PERIODS.STUDY_DAYS_ID).select()),
+			unwrapError(await db.from('no_lesson_periods').delete().eq('id', NO_LESSON_PERIODS.CHRISTMAS_ID).select()),
 		);
 	});
 });

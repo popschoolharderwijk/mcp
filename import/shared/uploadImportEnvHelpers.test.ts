@@ -13,18 +13,11 @@ describe('orderImportSqlFileNames', () => {
 });
 
 describe('readUploadImportEnv', () => {
-	it('rejects missing URL, DB URL, password, or missing {PASSWORD} placeholder', () => {
+	it('rejects missing DB URL, password, or missing {PASSWORD} placeholder', () => {
 		expect(readUploadImportEnv({}).ok).toBe(false);
-		expect(readUploadImportEnv({ SUPABASE_URL: 'https://exampledevref.supabase.co' }).ok).toBe(false);
+		expect(readUploadImportEnv({ SUPABASE_DB_URL: 'postgresql://u:{PASSWORD}@h/db' }).ok).toBe(false);
 		expect(
 			readUploadImportEnv({
-				SUPABASE_URL: 'https://exampledevref.supabase.co',
-				SUPABASE_DB_URL: 'postgresql://u:{PASSWORD}@h/db',
-			}).ok,
-		).toBe(false);
-		expect(
-			readUploadImportEnv({
-				SUPABASE_URL: 'https://exampledevref.supabase.co',
 				SUPABASE_DB_URL: 'postgresql://u:secret@h/db',
 				SUPABASE_DB_PASSWORD: 'secret',
 			}).ok,
@@ -34,14 +27,12 @@ describe('readUploadImportEnv', () => {
 	it('builds a DB URL with an encoded password', () => {
 		expect(
 			readUploadImportEnv({
-				SUPABASE_URL: 'https://exampledevref.supabase.co',
 				SUPABASE_DB_URL: 'postgresql://u:{PASSWORD}@h/db',
 				SUPABASE_DB_PASSWORD: 'p@ss:word',
 			}),
 		).toEqual({
 			ok: true,
 			value: {
-				supabaseUrl: 'https://exampledevref.supabase.co',
 				dbUrl: applyDbUrlPassword('postgresql://u:{PASSWORD}@h/db', 'p@ss:word'),
 			},
 		});

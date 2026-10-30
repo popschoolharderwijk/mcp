@@ -81,9 +81,10 @@ function parseAgreements(value: unknown): AgreementsSetting | null {
 
 function parseTips(value: unknown): TipsSetting | null {
 	if (!isRecord(value)) return null;
+	if (typeof value.enabled !== 'boolean') return null;
 	const auto_interval_minutes = asIntegerInRange(value.auto_interval_minutes, 0, 24 * 60);
 	if (auto_interval_minutes === null) return null;
-	return { auto_interval_minutes };
+	return { enabled: value.enabled, auto_interval_minutes };
 }
 
 const PARSERS: {

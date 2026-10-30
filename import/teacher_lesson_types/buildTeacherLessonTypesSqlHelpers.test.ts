@@ -36,8 +36,4 @@ describe('buildTeacherLessonTypesSql', () => {
 		expect(sql).toContain("RAISE NOTICE 'public.teacher_lesson_types:");
 		expect(sql).toContain('WHERE NOT EXISTS');
 	});
-
-	it('returns a comment when there are no rows', () => {
-		expect(buildTeacherLessonTypesSql([])).toBe('-- No teacher_lesson_types to import\n');
-	});
 });

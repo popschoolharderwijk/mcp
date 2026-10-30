@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { NAV_LABELS } from '@/config/nav-items';
 
 export function AccountTipsResetCard() {
-	const { resetProgress } = useTips();
+	const { tipsEnabled, resetProgress } = useTips();
 	const [resettingTips, setResettingTips] = useState(false);
 
 	const onResetTips = async () => {
@@ -20,6 +20,8 @@ export function AccountTipsResetCard() {
 		}
 		toast.success('Tips worden opnieuw getoond');
 	};
+
+	if (!tipsEnabled) return null;
 
 	return (
 		<Card>

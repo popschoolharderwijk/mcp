@@ -1,28 +1,42 @@
 import { afterEach, describe, expect, it } from 'bun:test';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { appendImportLog, resetImportLog } from './importLogHelpers';
+import { resetImportLogs, resolveImportLogDir, writeImportSectionLogs } from './importLogHelpers';
 
 describe('importLogHelpers', () => {
-	let dir: string | undefined;
+	const dirs: string[] = [];
 
 	afterEach(async () => {
-		if (dir) {
-			await rm(dir, { recursive: true, force: true });
-			dir = undefined;
-		}
+		await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 	});
 
-	it('overwrites existing content on reset and appends sections', async () => {
-		dir = await mkdtemp(join(tmpdir(), 'import-log-'));
-		const logPath = join(dir, 'out', 'import.log');
+	it('writes per-section severity files and clears them on reset', async () => {
+		const outDir = await mkdtemp(join(tmpdir(), 'import-log-'));
+		dirs.push(outDir);
+		const logDir = resolveImportLogDir(outDir);
 
-		await resetImportLog(logPath);
-		await appendImportLog(logPath, '=== teachers ===\nold\n');
-		await resetImportLog(logPath);
-		await appendImportLog(logPath, '=== students ===\nERROR oid: Missing email\n');
+		await writeImportSectionLogs(logDir, 'courses', {
+			error: 'ERROR oid-1: Missing name\n',
+			warning: 'WARN oid-2: Odd schedule\n',
+			info: null,
+		});
+		await writeImportSectionLogs(logDir, 'students', {
+			error: null,
+			warning: 'WARN oid-3: Phone skipped\n',
+			info: 'INFO: skipped student\n',
+		});
 
-		expect(await Bun.file(logPath).text()).toBe('=== students ===\nERROR oid: Missing email\n');
+		expect((await readdir(logDir)).toSorted()).toEqual([
+			'courses.error.log',
+			'courses.warning.log',
+			'students.info.log',
+			'students.warning.log',
+		]);
+		expect(await Bun.file(join(logDir, 'courses.error.log')).text()).toBe('ERROR oid-1: Missing name\n');
+		expect(await Bun.file(join(logDir, 'students.warning.log')).text()).toBe('WARN oid-3: Phone skipped\n');
+
+		await resetImportLogs(logDir);
+		expect(await readdir(logDir)).toEqual([]);
 	});
 });

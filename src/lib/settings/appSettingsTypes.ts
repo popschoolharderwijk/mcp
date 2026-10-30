@@ -46,6 +46,8 @@ export interface AgreementsSetting {
 }
 
 export interface TipsSetting {
+	/** When false, tips are off for every user (nav, auto-show, and browser). */
+	enabled: boolean;
 	/** Minimum minutes between consecutive automatic tip spotlights. */
 	auto_interval_minutes: number;
 }

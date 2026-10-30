@@ -16,6 +16,33 @@ function wrap(text: string, codes: string[], useColor: boolean): string {
 	return `${codes.join('')}${text}${ANSI.reset}`;
 }
 
+/** Local wall clock `HH:mm:ss` for import console lines. */
+function formatImportConsoleClock(now: Date = new Date()): string {
+	const hours = String(now.getHours()).padStart(2, '0');
+	const minutes = String(now.getMinutes()).padStart(2, '0');
+	const seconds = String(now.getSeconds()).padStart(2, '0');
+	return `${hours}:${minutes}:${seconds}`;
+}
+
+/** Prefix every non-empty line with `[HH:mm:ss]`. */
+export function prefixImportConsoleLines(message: string, now: Date = new Date()): string {
+	const stamp = `[${formatImportConsoleClock(now)}]`;
+	return message
+		.split('\n')
+		.map((line) => (line.length === 0 ? '' : `${stamp} ${line}`))
+		.join('\n');
+}
+
+/** Default stdout writer for `bun import` (timestamped). */
+export function importConsoleLog(message: string): void {
+	console.log(prefixImportConsoleLines(message));
+}
+
+/** Default stderr writer for `bun import` (timestamped). */
+export function importConsoleError(message: string): void {
+	console.error(prefixImportConsoleLines(message));
+}
+
 /** Colored banner so converters are visually separated in `bun import`. */
 export function formatImportConverterBanner(
 	name: string,

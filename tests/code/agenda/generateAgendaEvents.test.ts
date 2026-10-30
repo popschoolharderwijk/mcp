@@ -98,6 +98,7 @@ describe('generateAgendaEvents', () => {
 			duration_minutes: 60,
 			frequency: 'weekly',
 			price_per_lesson: 30,
+			notes: null,
 			profiles: { first_name: 'Jan', last_name: 'Jansen', email: 'jan@example.com' },
 			lesson_types: {
 				id: 'lt-1',

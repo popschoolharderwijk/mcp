@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildAgreementsTabLabel,
 	buildPersonDetailPath,
+	buildTeacherDetailTabItems,
 	parsePersonDetailTab,
 	resolvePersonDetailTabRedirect,
 	resolvePersonDetailTabRoute,
@@ -14,6 +16,7 @@ describe('parsePersonDetailTab', () => {
 
 	it('keeps valid tab ids', () => {
 		expect(parsePersonDetailTab('address')).toBe('address');
+		expect(parsePersonDetailTab('agreements')).toBe('agreements');
 		expect(parsePersonDetailTab('agenda')).toBe('agenda');
 	});
 });
@@ -29,5 +32,14 @@ describe('person detail tab routes', () => {
 		expect(resolvePersonDetailTabRedirect('/users/u-1', undefined)).toBe('/users/u-1/profile');
 		expect(resolvePersonDetailTabRedirect('/users/u-1', 'nope')).toBe('/users/u-1/profile');
 		expect(resolvePersonDetailTabRedirect('/users/u-1', 'profile')).toBeNull();
+	});
+});
+
+describe('teacher detail tab items', () => {
+	it('includes the agreements count in the Lesovereenkomsten label', () => {
+		expect(buildAgreementsTabLabel(3)).toBe('Lesovereenkomsten (3)');
+		expect(buildTeacherDetailTabItems(3).find((item) => item.value === 'agreements')?.label).toBe(
+			'Lesovereenkomsten (3)',
+		);
 	});
 });

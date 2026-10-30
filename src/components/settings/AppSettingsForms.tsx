@@ -423,15 +423,34 @@ export function TipsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps
 		<Card>
 			<CardHeader>
 				<CardTitle>{NAV_LABELS.tips}</CardTitle>
+				<CardDescription>
+					Of tips actief zijn voor alle gebruikers, en de minimale wachttijd tussen automatische tips.
+				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
+				<div className="max-w-xs space-y-2">
+					<Label>Status</Label>
+					<Select
+						disabled={!canEdit}
+						value={form.enabled ? 'on' : 'off'}
+						onValueChange={(value) => setForm((f) => ({ ...f, enabled: value === 'on' }))}
+					>
+						<SelectTrigger>
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="on">Aan</SelectItem>
+							<SelectItem value="off">Uit</SelectItem>
+						</SelectContent>
+					</Select>
+				</div>
 				<div className="max-w-xs space-y-2">
 					<Label>Minimale wachttijd (minuten)</Label>
 					<Input
 						type="number"
 						min={0}
 						max={24 * 60}
-						disabled={!canEdit}
+						disabled={!canEdit || !form.enabled}
 						value={form.auto_interval_minutes}
 						onChange={(e) => setForm((f) => ({ ...f, auto_interval_minutes: Number(e.target.value) }))}
 					/>

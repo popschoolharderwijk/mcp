@@ -5,6 +5,7 @@ import { ConfirmDeleteDialog } from '@/components/ui/confirm-delete-dialog';
 import {
 	buildAgreementDeleteDescription,
 	buildAgreementDeleteDialogOpenChangeHandler,
+	buildAgreementsNewPath,
 } from '@/lib/agreements/agreementsPageShellHelpers';
 import { getDisplayName } from '@/lib/display-name';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
@@ -39,9 +40,15 @@ export function AgreementsPageDialogs({ deleteDialog, setDeleteDialog, onConfirm
 	);
 }
 
-export function AgreementsPageCreateButton({ navigate }: { navigate: NavigateFunction }) {
+export function AgreementsPageCreateButton({
+	navigate,
+	studentUserId,
+}: {
+	navigate: NavigateFunction;
+	studentUserId?: string | null;
+}) {
 	return (
-		<Button onClick={() => navigate('/agreements/new')}>
+		<Button onClick={() => navigate(buildAgreementsNewPath(studentUserId))}>
 			<LuPlus className="mr-2 h-4 w-4" />
 			Overeenkomst toevoegen
 		</Button>

@@ -3,7 +3,7 @@ import { buildTeachersRoleBatch } from './buildRoleBatchHelpers';
 import { buildTeachersSql, type TeacherSqlRow } from './buildTeachersSqlHelpers';
 
 /** Teacher role rows only — requires profiles id-map entries. */
-export const teachersConverter: ImportConverter<MappedImportRow, TeacherSqlRow> = {
+export const teachersConverter: ImportConverter<MappedImportRow, TeacherSqlRow, 'teachers'> = {
 	name: 'teachers',
 	entityType: 'teacher',
 	mappedKeys: new Set(),

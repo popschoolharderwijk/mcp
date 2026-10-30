@@ -1,6 +1,6 @@
-export type PersonDetailTabId = 'profile' | 'address' | 'agenda';
+export type PersonDetailTabId = 'profile' | 'address' | 'agreements' | 'agenda';
 
-const PERSON_DETAIL_TABS = new Set<PersonDetailTabId>(['profile', 'address', 'agenda']);
+const PERSON_DETAIL_TABS = new Set<PersonDetailTabId>(['profile', 'address', 'agreements', 'agenda']);
 
 const DEFAULT_PERSON_DETAIL_TAB: PersonDetailTabId = 'profile';
 
@@ -32,3 +32,16 @@ export const PERSON_DETAIL_TAB_ITEMS = [
 	{ value: 'address' as const, label: 'Adres' },
 	{ value: 'agenda' as const, label: 'Agenda' },
 ];
+
+export function buildAgreementsTabLabel(agreementsCount: number): string {
+	return `Lesovereenkomsten (${agreementsCount})`;
+}
+
+export function buildTeacherDetailTabItems(agreementsCount: number) {
+	return [
+		{ value: 'profile' as const, label: 'Profiel' },
+		{ value: 'address' as const, label: 'Adres' },
+		{ value: 'agreements' as const, label: buildAgreementsTabLabel(agreementsCount) },
+		{ value: 'agenda' as const, label: 'Agenda' },
+	];
+}

@@ -10,6 +10,8 @@ export interface LessonGroupInfo {
 	lessonTypeIcon: string | null;
 	lessonTypeColor: string | null;
 	memberUserIds: string[];
+	/** Combined non-empty notes from active member agreements */
+	notes: string | null;
 }
 
 export interface EnrichAgendaEventContext {

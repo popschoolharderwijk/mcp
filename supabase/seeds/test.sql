@@ -1598,17 +1598,9 @@ INSERT INTO public.no_lesson_periods (id, name, start_date, end_date, descriptio
 VALUES
   (
     '76000000-0001-0000-0000-000000000000',
-    'Studiedagen',
-    CURRENT_DATE,
-    CURRENT_DATE + 1,
-    'Geen lessen tijdens de studiedagen.',
-    '10000000-0001-0000-0000-000000000000'
-  ),
-  (
-    '76000000-0002-0000-0000-000000000000',
-    'Herfstvakantie',
-    CURRENT_DATE + 30,
-    CURRENT_DATE + 44,
+    'Kerstvakantie',
+    '2026-12-21',
+    '2027-01-04',
     'Schoolvakantie, lessen hervatten daarna.',
     '10000000-0001-0000-0000-000000000000'
   );
