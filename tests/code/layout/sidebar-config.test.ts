@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	adminHrefs,
+	administrationHrefs,
+	administrationNavItems,
 	adminNavItems,
 	adminOperationalNavItems,
 	isPathInGroup,
@@ -15,12 +17,19 @@ describe('sidebar nav item constants', () => {
 		expect(adminHrefs).toEqual(adminNavItems.map((item) => item.href));
 	});
 
-	it('includes operational admin routes', () => {
+	it('includes operational admin routes without awaiting-mandate', () => {
 		expect(adminOperationalNavItems.map((item) => item.href)).toEqual([
 			'/agreements',
 			'/lesson-groups',
 			'/signup-requests',
 			'/trial-lessons',
+		]);
+	});
+
+	it('places awaiting-mandate under administration', () => {
+		expect(administrationHrefs).toEqual(['/awaiting-mandate']);
+		expect(administrationNavItems).toEqual([
+			{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
 		]);
 	});
 

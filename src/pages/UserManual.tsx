@@ -120,7 +120,7 @@ const sections: ManualSection[] = [
 			'Duo-flow: bij een duo-lessoort maakt de wizard automatisch twee gekoppelde overeenkomsten via een edge function. In de agenda zien beide leerlingen hetzelfde slot met een duo-badge.',
 			'Doorklikken: leerling- en docentnamen zijn klikbaar vanuit de wizard, de bevestigingspagina en het overzicht.',
 			'Bewerken / beëindigen: open een overeenkomst om gegevens aan te passen of een einddatum te zetten; toekomstige lessen verdwijnen dan uit de agenda.',
-			'Betaling: lesgeld loopt via Stripe (iDEAL-setup → maandelijkse betaling). Stuur vanuit de overeenkomst een betaaluitnodiging; de leerling koppelt een betaalmethode via Checkout.',
+			'Betaling: na de overeenkomst krijgt de betaler (ouder of leerling) een mail met betaalknop. Via die link (zonder inloggen) koppelt men iDEAL; daarna schrijft Stripe maandelijks af. Opvolging: Wacht op machtiging; opnieuw versturen vanaf de overeenkomst.',
 		],
 	},
 	{
@@ -245,7 +245,7 @@ const sections: ManualSection[] = [
 			'Agenda: polymorfe events met source_type + source_id (lesson_agreement, lesson_group, project, manual). Meerdere deelnemers via agenda_participants. Afwijkingen en annuleringen zitten in agenda_event_deviations, met onderscheid tussen docent- en leerling-annulering voor de urenrapportage.',
 			'Duo-lessen: aparte edge function create-duo-agreements maakt twee gekoppelde overeenkomsten in één transactie. Rapportage toont twee rijen (docentblok + les per leerling).',
 			'BTW-logica: leeftijd wordt berekend op basis van geboortedatum leerling versus lesdatum t.o.v. de leeftijdsgrens — jongeren vrijgesteld, volwassenen belast. Onbekende geboortedatum → categorie "unknown".',
-			'Betalingen: Stripe per lesovereenkomst (iDEAL-setup, SubscriptionSchedule, webhooks).',
+			'Betalingen: Stripe per lesovereenkomst (vaste /pay-link, iDEAL-setup, SubscriptionSchedule, catch-up bij late machtiging, catalog sync zonder cron).',
 			'E-mail: alle transactionele mails lopen via de edge function send-template-email (Resend). Templates staan in email_templates en zijn per project aanpasbaar. De helper sendTemplateEmail wordt hergebruikt vanuit meerdere functies (schedule-trial-lesson, submit-signup-request, create-duo-agreements, ...).',
 			'Migraties: elke schemawijziging staat als bestand in supabase/migrations/ (logische Nederlandse naam). Na een migratie: database resetten en TypeScript-types regenereren in src/integrations/supabase/types.ts (lokaal of linked).',
 			'CI/CD: aparte workflows voor formattering (Biome), linting, unit-tests en RLS-testsuite. RLS-tests draaien tegen een Supabase Preview branch met een impersonatie-helper (signInAs) om echte rolgedrag te verifiëren.',

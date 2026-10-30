@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnnouncementsSection } from '@/components/dashboard/AnnouncementsSection';
+import { AwaitingMandateNotice } from '@/components/dashboard/AwaitingMandateNotice';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { StatsGrid } from '@/components/dashboard/StatsGrid';
@@ -76,6 +77,7 @@ function PrivilegedDashboardPanels({
 }: Pick<DashboardAudiencePanelsProps, 'stats' | 'recentStudents' | 'teachers' | 'isLoading'>) {
 	return (
 		<>
+			<AwaitingMandateNotice />
 			<StatsGrid
 				items={stats ? buildDashboardStatItems(stats) : []}
 				isLoading={isLoading}

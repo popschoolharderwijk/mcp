@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 import { toast } from 'sonner';
+import { syncStripeCatalog } from '@/lib/billing/syncStripeCatalog';
 import {
 	buildOptionFormRow,
 	persistExistingOptionUpdate,
@@ -35,6 +36,12 @@ export async function runPersistExistingOptionFlow(params: RunPersistExistingOpt
 			prev.map((option) => (option.id === params.editing.id ? { ...option, ...dbPayload } : option)),
 		);
 		toast.success('Optie bijgewerkt');
+		void syncStripeCatalog({
+			lessonTypeId: params.lessonType.id,
+			lessonTypeOptionId: params.editing.id,
+			rebuild: true,
+			quiet: true,
+		});
 		return true;
 	} catch (error) {
 		console.error(error);
@@ -80,6 +87,12 @@ export async function runPersistNewOptionFlow(params: RunPersistNewOptionFlowPar
 			return next;
 		});
 		toast.success('Optie toegevoegd');
+		void syncStripeCatalog({
+			lessonTypeId: params.lessonType.id,
+			lessonTypeOptionId: inserted.id,
+			rebuild: false,
+			quiet: true,
+		});
 		return true;
 	} catch (error) {
 		console.error(error);

@@ -2,6 +2,7 @@ import { adminOperationalNavItems, teacherChildNavItems } from '@/components/lay
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 
 export const ADMIN_SECTION_KEY = 'admin-section';
+export const ADMINISTRATION_SECTION_KEY = 'administration-section';
 
 export interface SidebarNavLinkConfig {
 	key: string;

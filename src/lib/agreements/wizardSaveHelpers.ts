@@ -104,12 +104,13 @@ async function createAndNotifyDuoAgreements(params: {
 		return false;
 	}
 
-	const inviteResults = await Promise.all(
-		duoData.agreement_ids.map((aid) =>
-			supabase.functions.invoke('send-stripe-checkout-invite', { body: { lesson_agreement_id: aid } }),
-		),
+	const mailResults = await Promise.all(
+		duoData.agreement_ids.map(async (aid) => {
+			const result = await sendAgreementCreatedMails(aid);
+			return { error: result.studentSent ? null : new Error('mail failed') };
+		}),
 	);
-	const failedInvites = countFailedFunctionInvokes(inviteResults);
+	const failedInvites = countFailedFunctionInvokes(mailResults);
 	const notifyMessage = resolveDuoAgreementsNotifyMessage(failedInvites);
 	if (notifyMessage.type === 'warning') {
 		toast.warning(notifyMessage.message);

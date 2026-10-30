@@ -12,6 +12,7 @@ import Announcements from './pages/Announcements';
 import AppSettings from './pages/AppSettings';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
+import AwaitingMandate from './pages/AwaitingMandate';
 import Dashboard from './pages/Dashboard';
 import LessonGroups from './pages/LessonGroups';
 import LessonGroupWizard from './pages/LessonGroupWizard';
@@ -24,6 +25,7 @@ import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
 import MyTrial from './pages/MyTrial';
 import NotFound from './pages/NotFound';
+import Pay from './pages/Pay';
 import Projects from './pages/Projects';
 import PublicSignup from './pages/PublicSignup';
 import Reports from './pages/Reports';
@@ -54,6 +56,7 @@ const App = () => (
 					<Route path="/auth/callback" element={<AuthCallback />} />
 					<Route path="/auth/confirm" element={<AuthConfirm />} />
 					<Route path="/signup" element={<PublicSignup />} />
+					<Route path="/pay" element={<Pay />} />
 					<Route path="/stripe/checkout/start" element={<StripeCheckoutStart />} />
 
 					{/* Protected dashboard routes */}
@@ -73,6 +76,7 @@ const App = () => (
 						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />
 						<Route path="/lesson-types/:id" element={<LessonTypeInfo />} />
 						<Route path="/agreements" element={<Agreements />} />
+						<Route path="/awaiting-mandate" element={<AwaitingMandate />} />
 						<Route path="/lesson-groups" element={<LessonGroups />} />
 						<Route path="/lesson-groups/new" element={<LessonGroupWizard />} />
 						<Route path="/lesson-groups/:id" element={<LessonGroupWizard />} />

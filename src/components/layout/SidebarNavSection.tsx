@@ -1,30 +1,40 @@
+import type { ComponentType } from 'react';
 import { LuChevronDown } from 'react-icons/lu';
 import { useLocation } from 'react-router-dom';
 import { NavItem } from '@/components/layout/NavItem';
-import { adminHrefs, adminNavItems, isPathInGroup, NAV_GAP } from '@/components/layout/sidebar-config';
-import { ADMIN_SECTION_KEY } from '@/components/layout/sidebarMainNavHelpers';
+import { isPathInGroup, NAV_GAP } from '@/components/layout/sidebar-config';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
-import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import { usePersistedSidebarGroupOpen } from '@/hooks/usePersistedSidebarGroupOpen';
 import { cn } from '@/lib/utils';
 
-const AdminSectionIcon = NAV_ICONS.adminSection;
-
-interface SidebarAdminSectionProps {
-	collapsed: boolean;
+export interface SidebarNavSectionItem {
+	href: string;
+	label: string;
+	icon: ComponentType<{ className?: string }>;
 }
 
-export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
+interface SidebarNavSectionProps {
+	collapsed: boolean;
+	storageKey: string;
+	label: string;
+	icon: ComponentType<{ className?: string }>;
+	items: readonly SidebarNavSectionItem[];
+}
+
+export function SidebarNavSection({ collapsed, storageKey, label, icon: Icon, items }: SidebarNavSectionProps) {
 	const { pathname } = useLocation();
-	const forceOpen = isPathInGroup(pathname, adminHrefs);
-	const [adminSectionOpen, setAdminSectionOpen] = usePersistedSidebarGroupOpen(ADMIN_SECTION_KEY, forceOpen);
+	const forceOpen = isPathInGroup(
+		pathname,
+		items.map((item) => item.href),
+	);
+	const [open, setOpen] = usePersistedSidebarGroupOpen(storageKey, forceOpen);
 
 	if (collapsed) {
 		return (
 			<>
 				<Separator />
-				{adminNavItems.map((item) => (
+				{items.map((item) => (
 					<NavItem key={item.href} {...item} collapsed={collapsed} />
 				))}
 			</>
@@ -32,7 +42,7 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 	}
 
 	return (
-		<Collapsible open={adminSectionOpen} onOpenChange={setAdminSectionOpen}>
+		<Collapsible open={open} onOpenChange={setOpen}>
 			<CollapsibleTrigger asChild>
 				<button
 					type="button"
@@ -41,12 +51,12 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 						'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
 					)}
 				>
-					<AdminSectionIcon className="h-3.5 w-3.5" />
-					<span>{NAV_LABELS.adminSection}</span>
+					<Icon className="h-3.5 w-3.5" />
+					<span>{label}</span>
 					<LuChevronDown
 						className={cn(
 							'ml-auto h-3.5 w-3.5 transition-transform duration-200',
-							adminSectionOpen ? 'rotate-0' : '-rotate-90',
+							open ? 'rotate-0' : '-rotate-90',
 						)}
 					/>
 				</button>
@@ -55,7 +65,7 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 				className="flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 				style={{ gap: NAV_GAP } as React.CSSProperties}
 			>
-				{adminNavItems.map((item) => (
+				{items.map((item) => (
 					<NavItem key={item.href} {...item} collapsed={false} />
 				))}
 			</CollapsibleContent>

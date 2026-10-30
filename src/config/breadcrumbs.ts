@@ -43,6 +43,10 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	},
 	{ pattern: '/lesson-types', items: [{ label: NAV_LABELS.lessonTypes, href: '/lesson-types' }] },
 	{ pattern: '/agreements', items: [{ label: NAV_LABELS.agreements, href: '/agreements' }] },
+	{
+		pattern: '/awaiting-mandate',
+		items: [{ label: NAV_LABELS.awaitingMandate, href: '/awaiting-mandate' }],
+	},
 	{ pattern: '/projects', items: [{ label: NAV_LABELS.projects, href: '/projects' }] },
 	{
 		pattern: '/lesson-groups/new',

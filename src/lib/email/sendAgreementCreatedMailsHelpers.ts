@@ -60,6 +60,7 @@ export interface AgreementMailSharedVars {
 	tijd: string;
 	startdatum: string;
 	betaalmethode: string;
+	betaalblok: string;
 }
 
 function buildAgreementMailSharedVars(
@@ -78,7 +79,19 @@ function buildAgreementMailSharedVars(
 		tijd: formatAgreementMailTime(agreement.start_time),
 		startdatum: formatAgreementMailDate(agreement.start_date),
 		betaalmethode: STRIPE_PAYMENT_METHOD_LABEL,
+		betaalblok: '',
 	};
+}
+
+/** Parent e-mail when present, otherwise the student account e-mail. */
+export function resolveAgreementPayerEmail(
+	parentEmail: string | null | undefined,
+	accountEmail: string | null | undefined,
+): string | null {
+	const parent = parentEmail?.trim();
+	if (parent) return parent;
+	const account = accountEmail?.trim();
+	return account || null;
 }
 
 export interface AgreementMailProfile {

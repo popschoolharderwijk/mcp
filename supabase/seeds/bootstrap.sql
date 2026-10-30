@@ -80,7 +80,7 @@ Fijn dat je bij ons komt lessen! Je lesovereenkomst is aangemaakt met de volgend
 - **Prijs per les:** {{prijs_per_les}}
 - **Betaalmethode:** {{betaalmethode}}
 
-In het leerlingportaal vind je je agenda, facturen en overige informatie over je lessen.
+{{betaalblok}}
 
 Veel muziekplezier!
 Popschool Harderwijk'

@@ -1,166 +1,111 @@
 # Stripe billing (per lesson agreement)
 
-One document for the full Stripe flow: from the invitation email to monthly collection, including schedule phases, webhooks, and admin.
-
-> Replaces the older document `stripe-subscriptions.md` (removed 13 May 2026).
+Stripe is the sole payment source of truth. Each active `lesson_agreements` row can have one Subscription Schedule for monthly collection. There is no local SEPA/batch/invoice stack and no nightly billing cron.
 
 ## 1. What we do
 
-For each `lesson_agreements` row we attach **one Stripe `Subscription`** for monthly collection.
-
-- **First step (setup):** the customer picks a payment method via **iDEAL** in Stripe Checkout (required in NL to create a reusable payment method).
-- **After that:** monthly automatic collection on that payment method (Stripe SEPA Direct Debit under the hood).
-- **Schedule phases:** a `SubscriptionSchedule` sets the exact amount per month so holidays and the correct age category (VAT) are folded into a fixed monthly instalment.
-- **Management:** the customer manages payment method/invoice/cancellation via the Stripe **Customer Portal**; an admin can open the portal on their behalf.
+- **Setup:** the payer opens a fixed payment link (no login), completes **iDEAL** Checkout, and creates a reusable payment method.
+- **After mandate:** webhook creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause).
+- **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule.
+- **Catalog:** lesson-type option prices sync to Stripe Product/Price on write, or via `bun run stripe:sync-catalog` after `db reset`. Affected schedules rebuild on demand (no cron).
 
 ## 2. End-to-end flow
 
 ```text
-[Agreement (admin)]
+[Agreement wizard]
         │
-        │ 1. SubscriptionCard → "Stuur betaaluitnodiging"
+        │ 1. issue-payment-link (token) + agreement_created mail with {{betaalblok}}
         ▼
-[send-stripe-checkout-invite] ──► magic-link mail to student/parent
-                                │
-                                │ 2. click link
-                                ▼
-                       [/stripe/checkout/start]  (StripeCheckoutStart.tsx)
-                                │
-                                │ 3. magic-link → session (PKCE or token_hash)
-                                │ 4. POST create-subscription-checkout {mode:"checkout"}
-                                ▼
-                    [Stripe Checkout — iDEAL setup]
-                                │
-                                │ 5. setup_intent.succeeded (webhook)
-                                ▼
-                  [stripe-webhook] creates SubscriptionSchedule
-                                │
-                                │ 6. customer.subscription.created/updated
-                                ▼
-                       [subscriptions table]  (status: scheduled → active)
-                                │
-                                │ 7. monthly invoice.created → invoice.paid
-                                ▼
-                  [subscription_invoices table]
+[/pay?agreement=&t=]  (public Pay.tsx)
+        │
+        │ 2. payment-link-info → start-payment-checkout
+        ▼
+[Stripe Checkout — iDEAL setup]
+        │
+        │ 3. setup_intent.succeeded / checkout.session.completed (webhook)
+        ▼
+[createScheduleForAgreement] (+ optional catch-up invoice)
+        │
+        ▼
+[subscriptions / subscription_invoices] → monthly Stripe collection
 ```
+
+Ops: **Wacht op machtiging** lists agreements without an arranged mandate; **SubscriptionCard** on the agreement can resend the link, open Customer Portal, sync, or rebuild.
 
 ## 3. Data model
 
-| Table                         | Purpose                                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `stripe_customers`            | 1:1 link between `auth.users.id` and `stripe_customer_id`.                                                                                 |
-| `subscriptions`               | Mirror of Stripe Subscription. Contains `lesson_agreement_id`, status, period, default payment method (brand/last4), `stripe_schedule_id`. |
-| `subscription_invoices`       | Mirror of Stripe Invoices: amount, status, `hosted_invoice_url`, period.                                                                   |
-| `stripe_checkout_invitations` | Logs each sent invitation (timestamp, agreement, recipient).                                                                               |
-> ℹ️ Schedule phases are **not** mirrored in a separate DB table — they are built on every push from `_shared/billing.ts` based on the current `calculateYearlyAmount` output (including shift logic for `no_lesson_periods` and the August pause). Age/rate thresholds for VAT come from `app_settings.vat`.
+| Table                         | Purpose                                                           |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `stripe_customers`            | User ↔ Stripe customer                                            |
+| `subscriptions`               | Mirror of Stripe Subscription + schedule id                       |
+| `subscription_invoices`       | Mirror of Stripe invoices                                         |
+| `stripe_checkout_invitations` | Audit of payment-link mails (recipient, `sent_at`)                |
+| `agreement_payment_links`     | SHA-256 of current payment token (plaintext only at issue time)   |
+| `payment_link_requests`       | Rate-limit log for “stuur nieuwe link” (max 3 / hour / agreement) |
 
-All tables have **PERMISSIVE, consolidated** RLS. Writes are allowed only for the service role (webhook or edge function); reads are allowed for:
-- `is_privileged()` (admin/staff)
-- the linked student or teacher of the `lesson_agreement`
+`lesson_agreements.minimum_term_end` is set when a payment link is issued (first 6-month period end for the pay page).
 
 ## 4. Edge functions
 
-| Function                        | Auth                          | Purpose                                                                                                                                                 |
-| ------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `send-stripe-checkout-invite`   | JWT (admin/staff)             | Generates a server-side magic link, emails it to the student, logs in `stripe_checkout_invitations`.                                                    |
-| `create-subscription-checkout`  | JWT                           | Creates Stripe Checkout (`mode=checkout`) or activates immediately on an existing mandate (`mode=direct`) or completes a return flow (`mode=complete`). |
-| `create-customer-portal`        | JWT                           | Opens Stripe Customer Portal for the signed-in user (or for a given `user_id` if the caller is privileged).                                             |
-| `sync-stripe-subscription`      | JWT (admin/staff)             | Pulls subscription status from Stripe again and writes it to the DB.                                                                                    |
-| `rebuild-subscription-schedule` | JWT (admin/staff)             | Recalculates future schedule phases with current rates (after a price change).                                                                          |
-| `force-start-subscription`      | JWT (admin)                   | **Dev/test only.** Cancels the existing schedule and starts the subscription immediately. UI button is behind `import.meta.env.DEV`.                    |
-| `stripe-webhook`                | public (signature validation) | Receives and handles Stripe events.                                                                                                                     |
+| Function                        | Auth                | Purpose                                                          |
+| ------------------------------- | ------------------- | ---------------------------------------------------------------- |
+| `issue-payment-link`            | JWT                 | Rotate token; return `betaalblok`; optionally send mail          |
+| `payment-link-info`             | public (token)      | Validate token; return lesson form + preview amounts             |
+| `request-payment-link`          | public              | Rate-limited new link mail to known payer address                |
+| `start-payment-checkout`        | public (token)      | Checkout / complete without login                                |
+| `create-subscription-checkout`  | JWT                 | Logged-in checkout / direct / complete (staff or student)        |
+| `create-customer-portal`        | JWT                 | Stripe Customer Portal                                           |
+| `sync-stripe-subscription`      | JWT                 | Pull subscription from Stripe                                    |
+| `rebuild-subscription-schedule` | JWT                 | Recalculate future phases after rate change                      |
+| `force-start-subscription`      | JWT (admin, DEV UI) | Force-start schedule for testing                                 |
+| `sync-stripe-catalog`           | JWT / service role  | Sync active lesson-type option prices; optional rebuild affected |
+| `stripe-webhook`                | public (signature)  | Setup → schedule (+ catch-up); subscription/invoice mirrors      |
 
-Shared logic lives in `supabase/functions/_shared/`:
-- `billing.ts` — school year, occurrences, `calculateYearly` (including **shift logic** for `no_lesson_periods`), `pickAgeTariff`, schedule-phase builders. August stays a pure pause; other periods shift the cadence by exactly the period length.
-- `stripe.ts` — Stripe client constructor (npm:stripe).
-- `subscription-storage.ts` — DB upserts for `subscriptions`.
-- `email-events.ts` — register of app mail events (used by `send-template-email`).
-- `errors.ts` — `getSafeErrorMessage` (do not leak internal stack traces).
+Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `paymentLinkHelpers.ts`, `stripeCatalog.ts`.
 
-## 5. Magic link & email
+## 5. Payment link & mail
 
-The invitation email (`docs/email-templates/magic-link.html`) uses the custom `token_hash` format:
-
-```
-{{ .RedirectTo }}#token_hash={{ .TokenHash }}&type=email
-```
-
-Mail scanners (Outlook/SafeLinks) therefore do not consume the link in advance, because `verifyOtp` with token_hash requires an active browser session.
-
-`StripeCheckoutStart` (`src/pages/StripeCheckoutStart.tsx`) handles two link formats via `src/lib/auth/magicLink.ts`:
-
-1. **PKCE** — `?code=...` in the query string → `supabase.auth.exchangeCodeForSession`.
-2. **Custom token_hash** — `#token_hash=...&type=email` → `supabase.auth.verifyOtp`.
-
-The legacy implicit flow (`#access_token=...&refresh_token=...`) is **no longer** supported; the current template does not put access tokens in the hash.
+- Public URL: `/pay?agreement=<uuid>&t=<token>`.
+- Betaler = `students.parent_email` when set, otherwise the student account e-mail.
+- Template `agreement_created` includes `{{betaalblok}}` (HTML button to the fixed link).
+- “Opnieuw versturen” / public request reuse the same link + mail pattern (rate-limited on the public path).
 
 ## 6. Webhook events
 
-`stripe-webhook` handles:
+| Event                                | Effect                                                         |
+| ------------------------------------ | -------------------------------------------------------------- |
+| `checkout.session.completed` (setup) | Attach payment method → create schedule (+ catch-up if needed) |
+| `setup_intent.succeeded`             | Same schedule path when Checkout already finished              |
+| `customer.subscription.*`            | Upsert `subscriptions`                                         |
+| `invoice.*`                          | Upsert `subscription_invoices`                                 |
 
-| Event                                                       | Effect                                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `checkout.session.completed`                                | Logs completed Checkout, links `setup_intent` to the agreement.                        |
-| `setup_intent.succeeded`                                    | Mandate active → creates `SubscriptionSchedule` with phases from `_shared/billing.ts`. |
-| `customer.subscription.created` / `updated`                 | Upsert in `subscriptions` (status, period, default payment method).                    |
-| `customer.subscription.deleted`                             | Status → `canceled`.                                                                   |
-| `invoice.created` / `finalized` / `paid` / `payment_failed` | Upsert in `subscription_invoices`.                                                     |
+## 7. Catalog (no cron)
 
-Signing: use **`STRIPE_WEBHOOK_SECRET`** for signature validation. Failed validation returns 401 without leaking details.
-
-## 7. Edge cases
-
-- **Reuse an existing mandate** — `mode: 'direct'` skips Checkout and activates the subscription on the already linked `default_payment_method`.
-- **Price change** — admin clicks "Pas nieuwe tarieven toe" → `rebuild-subscription-schedule` recalculates only future phases (current phase stays so the running invoice is not touched).
-- **Failed payment** — `invoice.payment_failed` sets the subscription to `past_due`. UI shows a status badge; the customer resolves it via Customer Portal.
-- **Mandate revoked** — Stripe sends `payment_method.detached` / subscription becomes `unpaid`. Admin can send a new invitation.
-- **Student turns 21 mid-year** — `pickAgeTariff` (see `_shared/billing.ts`) picks the rate per `lessonDate`; schedule phases fold this in per month. VAT age thresholds come from `app_settings.vat`.
-- **No-lesson period in the school year** — `calculateYearlyAmount` applies **shift logic**: lessons that fall in a period shift by exactly the period length. Lessons that then pass `periodEnd` (31 July) are dropped. See `src/lib/billing/calculateYearlyAmount.ts` and `tests/code/billing/shiftNoLessonPeriod.test.ts`.
-- **August** — stays a pure skip (summer pause, no shift mutation).
-
-## 8. Stripe dashboard checklist
-
-1. Create **products + prices** per lesson variant (recurring `month`). Put the Stripe Price ID on the correct `lesson_agreements.stripe_price_id`.
-2. Enable **payment methods**: iDEAL and SEPA Direct Debit (Settings → Payment methods).
-3. Enable **Customer portal** (Settings → Billing → Customer portal). Allow at least: change payment method, view invoice history, cancel subscription.
-4. Register a **webhook endpoint**:
-   - URL: `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`
-   - Events: `checkout.session.completed`, `setup_intent.succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.created`, `invoice.finalized`, `invoice.paid`, `invoice.payment_failed`
-   - Copy the signing secret to `STRIPE_WEBHOOK_SECRET`.
-
-## 9. Secrets
-
-Available only in edge functions via `Deno.env.get(...)` — **never** with a `VITE_` prefix:
-
-- `STRIPE_SECRET_KEY` — server-side Stripe key (sk_live / sk_test).
-- `STRIPE_WEBHOOK_SECRET` — signing secret of the webhook endpoint.
-- `SUPABASE_SERVICE_ROLE_KEY` — for writing to the DB from the webhook.
-
-## 10. Local testing
-
-`stripe listen` runs on your machine only (Stripe CLI). It is **not** used in production. Production and hosted projects register a real HTTPS endpoint in the Stripe Dashboard (§8): `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`.
+- On lesson-type / option save the app invokes `sync-stripe-catalog` (fire-and-forget) and may rebuild schedules for that lesson type.
+- After `supabase db reset` (+ types regen), run:
 
 ```bash
-# Local Docker stack only — API port from supabase/config.toml (this project: 54421)
-stripe listen --forward-to http://127.0.0.1:54421/functions/v1/stripe-webhook
-
-# Optional: forward to a hosted project (mcp-dev / mcp-test) while developing locally
-stripe listen --forward-to https://<project-ref>.supabase.co/functions/v1/stripe-webhook
-
-# Billing unit tests (Bun, app-side — source of truth)
-bun test tests/code/billing/calculateYearlyAmount.test.ts
-bun test tests/code/billing/shiftNoLessonPeriod.test.ts
+bun run stripe:sync-catalog
 ```
 
-Stripe test cards / iDEAL simulator: see [Stripe testing docs](https://stripe.com/docs/testing).
+## 8. Secrets
 
-## 11. Related features
+Edge only (never `VITE_`):
 
-- **Hours reporting** — `get_hours_report()` powers the hours report with VAT by age category and lesson date (agenda source data; thresholds from `app_settings.vat`).
-- **App mail templates** — checkout-invite and agreement mail go through `send-template-email` with events from `_shared/email-events.ts`. Templates are managed in **Instellingen → E-mailtemplates** (see [email-templates.md](../email-templates.md)).
-- **Cancellations** — `cancellation_type` (`'student' | 'teacher'`) determines whether a cancelled lesson counts in the calculation.
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-## 12. Known limitations / TODO
+## 9. Local testing
 
-- **Price changes Stripe → DB** are not written back to `lesson_agreements.price_per_lesson`; admin changes the rate in the app and clicks "Pas nieuwe tarieven toe".
-- **`force-start-subscription`** is dev/test only (UI button behind `import.meta.env.DEV`).
+```bash
+stripe listen --forward-to http://127.0.0.1:54421/functions/v1/stripe-webhook
+
+bun test tests/code/billing/paymentLinkHelpers.test.ts
+bun test tests/code/billing/catchUpInvoiceHelpers.test.ts
+bun test tests/code/billing/calculateYearlyAmount.test.ts
+```
+
+## 10. Out of scope
+
+Local SEPA/XML, school invoices/PDF, Exact/accounting, legacy import, “op factuur”/fonds (Stripe-only).

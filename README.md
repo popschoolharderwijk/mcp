@@ -42,20 +42,20 @@ bun test --bail
 
 ## Documentation
 
-| Topic                           | File                                                                                 |
-| ------------------------------- | ------------------------------------------------------------------------------------ |
-| Architecture & data model       | [docs/architecture.md](docs/architecture.md)                                         |
-| Supabase server setup           | [docs/supabase-setup.md](docs/supabase-setup.md)                                     |
-| Git branching strategy          | [docs/git-branching.md](docs/git-branching.md)                                       |
-| CI/CD workflows                 | [docs/cicd-workflows.md](docs/cicd-workflows.md)                                     |
-| Database testing (RLS + Auth)   | [docs/database-testing.md](docs/database-testing.md)                                 |
-| Secrets configuration           | [docs/secrets.md](docs/secrets.md)                                                   |
-| Deployment                      | [docs/deployment.md](docs/deployment.md)                                             |
-| Merge workflow (Lovable → Main) | [docs/merge-workflow.md](docs/merge-workflow.md)                                     |
-| Commands cheat sheet            | [docs/commands.md](docs/commands.md)                                                 |
-| Troubleshooting                 | [docs/troubleshooting.md](docs/troubleshooting.md)                                   |
-| Email templates & SMTP          | [docs/email-templates.md](docs/email-templates.md)                                   |
-| Stripe billing                  | [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md)           |
+| Topic                           | File                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| Architecture & data model       | [docs/architecture.md](docs/architecture.md)                               |
+| Supabase server setup           | [docs/supabase-setup.md](docs/supabase-setup.md)                           |
+| Git branching strategy          | [docs/git-branching.md](docs/git-branching.md)                             |
+| CI/CD workflows                 | [docs/cicd-workflows.md](docs/cicd-workflows.md)                           |
+| Database testing (RLS + Auth)   | [docs/database-testing.md](docs/database-testing.md)                       |
+| Secrets configuration           | [docs/secrets.md](docs/secrets.md)                                         |
+| Deployment                      | [docs/deployment.md](docs/deployment.md)                                   |
+| Merge workflow (Lovable → Main) | [docs/merge-workflow.md](docs/merge-workflow.md)                           |
+| Commands cheat sheet            | [docs/commands.md](docs/commands.md)                                       |
+| Troubleshooting                 | [docs/troubleshooting.md](docs/troubleshooting.md)                         |
+| Email templates & SMTP          | [docs/email-templates.md](docs/email-templates.md)                         |
+| Stripe billing                  | [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md) |
 
 > [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is a **historical planning document** (May 2026) and is no longer authoritative. The current Stripe flow is described in [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md).
 

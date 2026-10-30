@@ -175,3 +175,19 @@ verify_jwt = false
 # Stripe webhook is publiek — signature wordt in de function geverifieerd
 [functions.stripe-webhook]
 verify_jwt = false
+
+# Payment link: token is verified in the function body
+[functions.payment-link-info]
+verify_jwt = false
+
+[functions.request-payment-link]
+verify_jwt = false
+
+[functions.start-payment-checkout]
+verify_jwt = false
+
+[functions.issue-payment-link]
+verify_jwt = false
+
+[functions.sync-stripe-catalog]
+verify_jwt = false

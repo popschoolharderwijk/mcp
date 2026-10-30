@@ -41,6 +41,7 @@ const EMAIL_EVENTS: Record<string, EmailEventDefinition> = {
 			'tijd',
 			'startdatum',
 			'betaalmethode',
+			'betaalblok',
 		],
 	},
 	agreement_created_teacher: {

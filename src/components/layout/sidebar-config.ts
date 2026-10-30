@@ -9,6 +9,10 @@ export const adminOperationalNavItems = [
 	{ href: '/trial-lessons', label: NAV_LABELS.trialLessons, icon: NAV_ICONS.trialLessons },
 ];
 
+export const administrationNavItems = [
+	{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
+];
+
 export const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },
 	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: NAV_ICONS.lessonTypes },
@@ -18,6 +22,7 @@ export const adminNavItems = [
 ];
 
 export const adminHrefs = adminNavItems.map((item) => item.href);
+export const administrationHrefs = administrationNavItems.map((item) => item.href);
 
 export const teacherChildNavItems = [
 	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },

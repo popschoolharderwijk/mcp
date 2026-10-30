@@ -16,6 +16,9 @@ import {
 	resolveStripeSubscriptionId,
 	type YearlyResult,
 } from './billingHelpers.ts';
+import { issueCatchUpInvoice, planCatchUpInvoice } from './catchUpInvoice.ts';
+import { filterPhasesAfterCatchUpMonth } from './catchUpInvoiceHelpers.ts';
+import { needsCatchUpInvoice } from './paymentLinkHelpers.ts';
 
 import {
 	alignFuturePhasePayloads,
@@ -197,21 +200,37 @@ async function persistCreatedSchedule(
 	return subscriptionId;
 }
 
+function resolveSchedulePhases(
+	billing: BillingComputation,
+	today: string,
+): { phases: BillingPhase[]; catchUpThroughMonth: string | null } {
+	const allPhases = buildPhases(
+		billing.periodStart,
+		billing.periodEnd,
+		billing.yearly.monthlyCents,
+		billing.yearly.leftoverCents,
+	);
+	if (!needsCatchUpInvoice(billing.agreement.start_date, today)) {
+		return { phases: allPhases, catchUpThroughMonth: null };
+	}
+	const catchUpThroughMonth = today.slice(0, 7);
+	return {
+		phases: filterPhasesAfterCatchUpMonth(allPhases, catchUpThroughMonth),
+		catchUpThroughMonth,
+	};
+}
+
 /** Create a Stripe Subscription Schedule with one phase per billing month. */
 export async function createScheduleForAgreement(
 	admin: SupabaseClient,
 	stripe: Stripe,
 	ctx: ScheduleContext,
 ): Promise<BuiltSchedule> {
+	const today = new Date().toISOString().slice(0, 10);
 	const billing = await computeBillingForAgreement(admin, ctx.lessonAgreementId);
 	assertPositiveYearlyCents(billing.yearly.yearlyCents);
 
-	const phases = buildPhases(
-		billing.periodStart,
-		billing.periodEnd,
-		billing.yearly.monthlyCents,
-		billing.yearly.leftoverCents,
-	);
+	const { phases, catchUpThroughMonth } = resolveSchedulePhases(billing, today);
 	assertHasBillingPhases(phases.length);
 
 	const stripePhases = await toStripePhasePayloads(stripe, phases, ctx.lessonAgreementId, ctx.defaultPaymentMethod);
@@ -227,6 +246,26 @@ export async function createScheduleForAgreement(
 	});
 
 	const subscriptionId = await persistCreatedSchedule(admin, ctx, schedule, phases, stripePhases);
+
+	if (catchUpThroughMonth) {
+		const plan = planCatchUpInvoice({
+			startDate: billing.agreement.start_date,
+			today,
+			monthlyCents: billing.yearly.monthlyCents,
+			leftoverCents: billing.yearly.leftoverCents,
+			periodStart: billing.periodStart,
+			periodEnd: billing.periodEnd,
+		});
+		if (plan) {
+			await issueCatchUpInvoice(stripe, {
+				lessonAgreementId: ctx.lessonAgreementId,
+				customerId: ctx.customerId,
+				defaultPaymentMethod: ctx.defaultPaymentMethod,
+				plan,
+			});
+		}
+	}
+
 	return {
 		scheduleId: schedule.id,
 		subscriptionId,

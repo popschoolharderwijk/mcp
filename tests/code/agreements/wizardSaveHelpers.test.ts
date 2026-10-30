@@ -72,7 +72,7 @@ const supabaseMock = {
 		invoke: (fn: string, body?: { body?: unknown }) => {
 			if (fn === 'send-template-email') return Promise.resolve({ data: null, error: null });
 			recordedCalls.push({ table: fn, op: 'insert', payload: body?.body ?? null, filters: {} });
-			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-stripe-checkout-invite';
+			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'issue-payment-link';
 			return Promise.resolve(tableResults[key] ?? { data: null, error: null });
 		},
 	},
@@ -84,6 +84,16 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 
 mock.module('@/integrations/supabase/client', () => ({
 	supabase: supabaseMock,
+}));
+
+let duoMailStudentSent = true;
+
+mock.module('../../../src/lib/email/sendAgreementCreatedMails', () => ({
+	sendAgreementCreatedMails: async () => ({ studentSent: duoMailStudentSent, teacherSent: true }),
+}));
+
+mock.module('@/lib/email/sendAgreementCreatedMails', () => ({
+	sendAgreementCreatedMails: async () => ({ studentSent: duoMailStudentSent, teacherSent: true }),
 }));
 
 function freeSlot(overrides: Partial<SlotWithStatus> = {}): SlotWithStatus {
@@ -169,6 +179,7 @@ describe('saveWizardAgreement', () => {
 		recordedCalls.length = 0;
 		tableResults = {};
 		navigateCalls.length = 0;
+		duoMailStudentSent = true;
 	});
 
 	it('returns false when required fields are missing', async () => {
@@ -312,7 +323,7 @@ describe('saveWizardAgreement', () => {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-stripe-checkout-invite'] = { data: null, error: null };
+		tableResults['issue-payment-link'] = { data: null, error: null };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,
@@ -343,11 +354,11 @@ describe('saveWizardAgreement', () => {
 	});
 
 	it('shows warning toast when duo invites fail', async () => {
+		duoMailStudentSent = false;
 		tableResults['create-duo-agreements'] = {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-stripe-checkout-invite'] = { data: null, error: { message: 'invite failed' } };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,

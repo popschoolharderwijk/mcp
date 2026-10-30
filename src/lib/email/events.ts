@@ -66,6 +66,7 @@ const EMAIL_EVENTS = {
 			'tijd',
 			'startdatum',
 			'betaalmethode',
+			'betaalblok',
 		],
 		previewData: {
 			leerling_naam: 'Sanne de Vries',
@@ -77,6 +78,7 @@ const EMAIL_EVENTS = {
 			tijd: '15:30',
 			startdatum: '2026-09-01',
 			betaalmethode: 'Stripe',
+			betaalblok: '[Betaalmethode koppelen](https://example.com/pay)',
 		},
 	},
 	agreement_created_teacher: {

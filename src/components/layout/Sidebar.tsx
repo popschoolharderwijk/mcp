@@ -1,10 +1,12 @@
 import { DevTools } from '@/components/DevTools';
-import { SidebarAdminSection } from '@/components/layout/SidebarAdminSection';
 import { SidebarLogo } from '@/components/layout/SidebarLogo';
 import { SidebarMainNav } from '@/components/layout/SidebarMainNav';
-import { NAV_GAP } from '@/components/layout/sidebar-config';
+import { SidebarNavSection } from '@/components/layout/SidebarNavSection';
+import { administrationNavItems, adminNavItems, NAV_GAP } from '@/components/layout/sidebar-config';
+import { ADMIN_SECTION_KEY, ADMINISTRATION_SECTION_KEY } from '@/components/layout/sidebarMainNavHelpers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 import { useSidebarNavVisibility } from '@/hooks/useSidebarNavVisibility';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +41,24 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 						<div className="w-full px-2 py-2">
 							<nav className="flex flex-col w-full" style={{ gap: NAV_GAP } as React.CSSProperties}>
 								<SidebarMainNav collapsed={collapsed} {...visibility} />
-								{visibility.showAdminNav && <SidebarAdminSection collapsed={collapsed} />}
+								{visibility.showAdminNav ? (
+									<>
+										<SidebarNavSection
+											collapsed={collapsed}
+											storageKey={ADMINISTRATION_SECTION_KEY}
+											label={NAV_LABELS.administrationSection}
+											icon={NAV_ICONS.administrationSection}
+											items={administrationNavItems}
+										/>
+										<SidebarNavSection
+											collapsed={collapsed}
+											storageKey={ADMIN_SECTION_KEY}
+											label={NAV_LABELS.adminSection}
+											icon={NAV_ICONS.adminSection}
+											items={adminNavItems}
+										/>
+									</>
+								) : null}
 							</nav>
 						</div>
 					</ScrollArea>

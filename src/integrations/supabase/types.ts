@@ -178,6 +178,35 @@ export type Database = {
 					},
 				];
 			};
+			agreement_payment_links: {
+				Row: {
+					created_at: string;
+					lesson_agreement_id: string;
+					rotated_at: string;
+					token_hash: string;
+				};
+				Insert: {
+					created_at?: string;
+					lesson_agreement_id: string;
+					rotated_at?: string;
+					token_hash: string;
+				};
+				Update: {
+					created_at?: string;
+					lesson_agreement_id?: string;
+					rotated_at?: string;
+					token_hash?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'agreement_payment_links_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: true;
+						referencedRelation: 'lesson_agreements';
+						referencedColumns: ['id'];
+					},
+				];
+			};
 			announcements: {
 				Row: {
 					audience: string[];
@@ -281,6 +310,7 @@ export type Database = {
 					is_active: boolean;
 					lesson_group_id: string | null;
 					lesson_type_id: string;
+					minimum_term_end: string | null;
 					notes: string | null;
 					price_per_lesson: number;
 					signup_source: string | null;
@@ -305,6 +335,7 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id: string;
+					minimum_term_end?: string | null;
 					notes?: string | null;
 					price_per_lesson: number;
 					signup_source?: string | null;
@@ -329,6 +360,7 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id?: string;
+					minimum_term_end?: string | null;
 					notes?: string | null;
 					price_per_lesson?: number;
 					signup_source?: string | null;
@@ -715,6 +747,32 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Relationships: [];
+			};
+			payment_link_requests: {
+				Row: {
+					created_at: string;
+					id: string;
+					lesson_agreement_id: string;
+				};
+				Insert: {
+					created_at?: string;
+					id?: string;
+					lesson_agreement_id: string;
+				};
+				Update: {
+					created_at?: string;
+					id?: string;
+					lesson_agreement_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'payment_link_requests_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
+						isOneToOne: false;
+						referencedRelation: 'lesson_agreements';
+						referencedColumns: ['id'];
+					},
+				];
 			};
 			profiles: {
 				Row: {
@@ -1451,6 +1509,10 @@ export type Database = {
 			cleanup_student_if_no_agreements: {
 				Args: { _user_id: string };
 				Returns: undefined;
+			};
+			compute_minimum_term_end: {
+				Args: { p_start_date: string };
+				Returns: string;
 			};
 			current_user_id: { Args: never; Returns: string };
 			end_recurring_deviation_from_week: {

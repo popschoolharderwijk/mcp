@@ -1,4 +1,22 @@
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
+import { isValidPhone } from '@/components/students/studentFormTypes';
+import { formatDbDateToUi } from '@/lib/date/date-format';
+import { frequencyLabels } from '@/lib/frequencies';
+import type { LessonFrequency } from '@/types/lesson-agreements';
+
+/** Individual lessons with no catalog options need an explicit Next on the choice step. */
+export function needsManualSignupChoiceNext(isGroupLesson: boolean, optionCount: number): boolean {
+	return !isGroupLesson && optionCount === 0;
+}
+
+/** Group row for the overview step; waitlist / unset → null. */
+export function resolveSelectedSignupGroup<T extends { id: string }>(
+	groups: readonly T[],
+	selectedGroupId: string | 'waitlist' | null,
+): T | null {
+	if (!selectedGroupId || selectedGroupId === 'waitlist') return null;
+	return groups.find((group) => group.id === selectedGroupId) ?? null;
+}
 
 export interface LessonTypeOptionMatch {
 	id: string;
@@ -86,6 +104,17 @@ export type PublicSignupSubmitOutcome =
 	| { kind: 'response-error'; message: string }
 	| { kind: 'success' };
 
+/** Null when optional phones are empty or exactly 10 digits. */
+export function getPublicSignupFormValidationError(form: SignupFormFields): string | null {
+	if (form.phone_number && !isValidPhone(form.phone_number)) {
+		return 'Telefoonnummer moet 10 cijfers bevatten';
+	}
+	if (form.parent_phone_number && !isValidPhone(form.parent_phone_number)) {
+		return 'Ouder telefoonnummer moet 10 cijfers bevatten';
+	}
+	return null;
+}
+
 export async function executePublicSignupSubmit(params: {
 	selectedType: SignupLessonType;
 	selectedGroupId: string | 'waitlist' | null;
@@ -98,6 +127,9 @@ export async function executePublicSignupSubmit(params: {
 	}>;
 	getInvokeErrorMessage: (error: unknown, options: { fallback: string }) => Promise<string>;
 }): Promise<PublicSignupSubmitOutcome> {
+	const validationError = getPublicSignupFormValidationError(params.form);
+	if (validationError) return { kind: 'response-error', message: validationError };
+
 	const body = resolvePublicSignupSubmitPayload({
 		selectedType: params.selectedType,
 		selectedGroupId: params.selectedGroupId,
@@ -134,12 +166,85 @@ export function applyPublicSignupSubmitOutcome(
 	onSuccess();
 }
 
-export function isStep2NextDisabled(
-	isGroupLesson: boolean,
-	selectedGroupId: string | 'waitlist' | null,
-	lessonTypeOptionsCount: number,
-	hasSelectedOption: boolean,
-): boolean {
-	if (isGroupLesson) return !selectedGroupId;
-	return lessonTypeOptionsCount > 0 && !hasSelectedOption;
+/** Stepper label for signup step 2 — depends on lesson type chosen in step 1. */
+export function resolveSignupChoiceStepLabel(isGroupLesson: boolean | null | undefined): string {
+	if (isGroupLesson) return 'Kies groep';
+	return 'Hoe vaak?';
+}
+
+export interface SignupOverviewRow {
+	label: string;
+	value: string;
+}
+
+const DAY_LABELS = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'] as const;
+
+function pushIfPresent(rows: SignupOverviewRow[], label: string, value: string | null | undefined): void {
+	const trimmed = value?.trim();
+	if (!trimmed) return;
+	rows.push({ label, value: trimmed });
+}
+
+function formatSignupOptionLine(option: OptionSnapshot): string {
+	const freq = frequencyLabels[option.frequency as LessonFrequency] ?? option.frequency;
+	return `${option.duration_minutes} min · ${freq} · €${Number(option.price_per_lesson).toFixed(2)} per les`;
+}
+
+function formatSignupGroupLine(group: {
+	name: string;
+	day_of_week: number;
+	start_time: string;
+	duration_minutes: number;
+	frequency: string;
+	price_per_lesson: number;
+	teacher_name: string | null;
+}): string {
+	const day = DAY_LABELS[group.day_of_week] ?? '';
+	const freq = frequencyLabels[group.frequency as LessonFrequency] ?? group.frequency;
+	const teacher = group.teacher_name ? ` · Docent: ${group.teacher_name}` : '';
+	return `${group.name} — ${day} ${group.start_time.slice(0, 5)} · ${group.duration_minutes} min · ${freq} · €${Number(group.price_per_lesson).toFixed(2)}${teacher}`;
+}
+
+/** Flat label/value rows for the public signup review step. */
+export function buildSignupOverviewRows(input: {
+	lessonTypeName: string;
+	isGroupLesson: boolean;
+	isWaitlist: boolean;
+	group: {
+		name: string;
+		day_of_week: number;
+		start_time: string;
+		duration_minutes: number;
+		frequency: string;
+		price_per_lesson: number;
+		teacher_name: string | null;
+	} | null;
+	option: OptionSnapshot | null;
+	form: SignupFormFields;
+}): SignupOverviewRow[] {
+	const rows: SignupOverviewRow[] = [{ label: 'Lessoort', value: input.lessonTypeName }];
+
+	if (input.isGroupLesson) {
+		let groupValue = 'Nog geen groep gekozen';
+		if (input.isWaitlist) groupValue = 'Wachtlijst';
+		else if (input.group) groupValue = formatSignupGroupLine(input.group);
+		rows.push({ label: 'Groep', value: groupValue });
+	} else if (input.option) {
+		rows.push({ label: 'Lesoptie', value: formatSignupOptionLine(input.option) });
+	}
+
+	rows.push({
+		label: 'Naam',
+		value: `${input.form.first_name} ${input.form.last_name}`.trim(),
+	});
+	rows.push({ label: 'E-mail', value: input.form.email });
+	pushIfPresent(rows, 'Telefoon', input.form.phone_number);
+	if (input.form.date_of_birth) {
+		rows.push({ label: 'Geboortedatum', value: formatDbDateToUi(input.form.date_of_birth) });
+	}
+	pushIfPresent(rows, 'Ouder/verzorger', input.form.parent_name);
+	pushIfPresent(rows, 'E-mail ouder', input.form.parent_email);
+	pushIfPresent(rows, 'Telefoon ouder', input.form.parent_phone_number);
+	pushIfPresent(rows, 'Opmerkingen', input.form.notes);
+	return rows;
 }

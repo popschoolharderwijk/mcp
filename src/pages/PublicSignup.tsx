@@ -3,7 +3,7 @@ import type { OptionSnapshot } from '@/components/lesson-type-options/LessonType
 import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import { PublicSignupDoneView } from './public-signup/PublicSignupDoneView';
 import { PublicSignupLayout } from './public-signup/PublicSignupLayout';
-import type { LessonType, SignupStep } from './public-signup/types';
+import type { LessonType } from './public-signup/types';
 import {
 	usePublicSignupGroups,
 	usePublicSignupLessonTypeOptions,
@@ -24,7 +24,8 @@ const EMPTY_FORM: SignupFormFields = {
 };
 
 export default function PublicSignup() {
-	const [step, setStep] = useState<SignupStep>(1);
+	const [step, setStep] = useState(1);
+	const [highestReachedStep, setHighestReachedStep] = useState(1);
 	const lessonTypes = usePublicSignupLessonTypes();
 	const [selectedType, setSelectedType] = useState<LessonType | null>(null);
 	const groups = usePublicSignupGroups(selectedType);
@@ -37,9 +38,17 @@ export default function PublicSignup() {
 	const [done, setDone] = useState(false);
 
 	const handleSelectType = (lessonType: LessonType) => {
+		const typeChanged = selectedType?.id !== lessonType.id;
 		setSelectedType(lessonType);
 		setSelectedGroupId(null);
 		setSelectedOption(null);
+		setStep(2);
+		setHighestReachedStep(typeChanged ? 2 : (highest) => Math.max(highest, 2));
+	};
+
+	const handleStepChange = (next: number) => {
+		setStep(next);
+		setHighestReachedStep((highest) => Math.max(next, highest));
 	};
 
 	const submit = usePublicSignupSubmit({
@@ -52,7 +61,6 @@ export default function PublicSignup() {
 		setError,
 		onSuccess: () => {
 			setDone(true);
-			setStep(4);
 		},
 	});
 
@@ -63,6 +71,7 @@ export default function PublicSignup() {
 	return (
 		<PublicSignupLayout
 			step={step}
+			highestReachedStep={highestReachedStep}
 			selectedType={selectedType}
 			lessonTypes={lessonTypes}
 			groups={groups}
@@ -76,7 +85,7 @@ export default function PublicSignup() {
 			onSelectGroupId={setSelectedGroupId}
 			onSelectOption={setSelectedOption}
 			onFormChange={setForm}
-			onStepChange={setStep}
+			onStepChange={handleStepChange}
 			onSubmit={submit}
 		/>
 	);

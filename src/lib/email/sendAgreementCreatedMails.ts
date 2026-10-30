@@ -1,4 +1,4 @@
-// Sends confirmation emails to student and teacher after creating a lesson
+// Sends confirmation emails to student/parent and teacher after creating a lesson
 // agreement. Called from the agreement wizard once the insert into
 // `lesson_agreements` succeeds. Errors are intentionally not rethrown: the
 // agreement is already saved; the UI may show a warning at most.
@@ -9,11 +9,23 @@ import {
 	buildAgreementMailContext,
 	buildAgreementMailInvokeBody,
 	buildAgreementMailTargets,
+	resolveAgreementPayerEmail,
 } from '@/lib/email/sendAgreementCreatedMailsHelpers';
 
 export interface SendAgreementCreatedMailsResult {
 	studentSent: boolean;
 	teacherSent: boolean;
+}
+
+async function issuePaymentLinkBetaalblok(agreementId: string): Promise<string> {
+	const { data, error } = await supabase.functions.invoke<{ betaalblok?: string }>('issue-payment-link', {
+		body: { lesson_agreement_id: agreementId, send: false },
+	});
+	if (error || !data?.betaalblok) {
+		console.error('issue-payment-link for agreement mail', error);
+		return '';
+	}
+	return data.betaalblok;
 }
 
 async function sendAgreementMail(
@@ -49,7 +61,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		return result;
 	}
 
-	const [studentProfile, teacherProfile] = await Promise.all([
+	const [studentProfile, teacherProfile, studentRow, betaalblok] = await Promise.all([
 		supabase
 			.from('profiles')
 			.select('email, first_name, last_name')
@@ -60,13 +72,18 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 			.select('email, first_name, last_name')
 			.eq('user_id', agreement.teacher_user_id)
 			.maybeSingle(),
+		supabase.from('students').select('parent_email').eq('user_id', agreement.student_user_id).maybeSingle(),
+		issuePaymentLinkBetaalblok(agreementId),
 	]);
 
 	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data);
-	const targets = buildAgreementMailTargets(studentProfile.data?.email, teacherProfile.data?.email);
+	const studentVars: AgreementMailSharedVars = { ...sharedVars, betaalblok };
+	const payerEmail = resolveAgreementPayerEmail(studentRow.data?.parent_email, studentProfile.data?.email);
+	const targets = buildAgreementMailTargets(payerEmail, teacherProfile.data?.email);
 
 	for (const target of targets) {
-		const sent = await sendAgreementMail(target.eventKey, target.email, sharedVars);
+		const vars = target.eventKey === 'agreement_created' ? studentVars : sharedVars;
+		const sent = await sendAgreementMail(target.eventKey, target.email, vars);
 		if (target.eventKey === 'agreement_created') {
 			result.studentSent = sent;
 		}

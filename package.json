@@ -12,6 +12,7 @@
 		"build": "vite build",
 		"build:dev": "vite build --mode development",
 		"create-user": "bun run scripts/createuser.ts",
+		"stripe:sync-catalog": "bun run scripts/sync-stripe-catalog.ts",
 		"import": "bun run import/index.ts",
 		"fix": "biome check --write",
 		"check": "biome check --error-on-warnings",

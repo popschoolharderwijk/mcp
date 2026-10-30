@@ -23,12 +23,12 @@ export interface GroupOption {
 	members_count: number;
 }
 
-export type SignupStep = 1 | 2 | 3 | 4;
-
 export const DAY_LABELS = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
 
 export interface PublicSignupFlowProps {
-	step: SignupStep;
+	/** 1-based step index; same scale as `Stepper`. */
+	step: number;
+	highestReachedStep: number;
 	selectedType: LessonType | null;
 	lessonTypes: LessonType[];
 	groups: GroupOption[];
@@ -42,6 +42,6 @@ export interface PublicSignupFlowProps {
 	onSelectGroupId: (groupId: string | 'waitlist') => void;
 	onSelectOption: (option: OptionSnapshot | null) => void;
 	onFormChange: (form: SignupFormFields) => void;
-	onStepChange: (step: SignupStep) => void;
+	onStepChange: (step: number) => void;
 	onSubmit: (event: FormEvent) => void;
 }

@@ -7,6 +7,11 @@ describe('NAV_LABELS and NAV_ICONS', () => {
 		expect(NAV_LABELS.lessonTypes).toBe('Lessoorten');
 	});
 
+	it('keeps Beheer and Administratie as separate section labels', () => {
+		expect(NAV_LABELS.adminSection).toBe('Beheer');
+		expect(NAV_LABELS.administrationSection).toBe('Administratie');
+	});
+
 	it('exposes the same keys on labels and icons', () => {
 		expect(Object.keys(NAV_LABELS)).toEqual(Object.keys(NAV_ICONS));
 	});
@@ -28,6 +33,7 @@ describe('NAV_DESCRIPTIONS', () => {
 			'agreements',
 			'announcements',
 			'availability',
+			'awaitingMandate',
 			'dashboard',
 			'lessonGroups',
 			'lessonTypes',

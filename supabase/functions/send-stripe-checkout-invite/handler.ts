@@ -28,14 +28,17 @@ async function prepareStripeCheckoutInvite(ctx: LessonAgreementPostContext): Pro
 	if (!auth.ok) return { ok: false, response: auth.response };
 
 	const role = await fetchUserRole(auth.userClient, auth.user.id);
-	const isPrivileged = isStripeCheckoutInvitePrivilegedRole(role);
-
 	const { data: agreement, error: agErr } = await auth.admin
 		.from('lesson_agreements')
 		.select('id, student_user_id, is_active')
 		.eq('id', ctx.lessonAgreementId)
 		.maybeSingle();
-	const access = resolveStripeCheckoutAgreementAccessError(agreement, agErr, isPrivileged, auth.user.id);
+	const access = resolveStripeCheckoutAgreementAccessError(
+		agreement,
+		agErr,
+		isStripeCheckoutInvitePrivilegedRole(role),
+		auth.user.id,
+	);
 	if (!access.ok) {
 		return { ok: false, response: jsonResponse(access.status, { error: access.error }) };
 	}

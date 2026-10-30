@@ -30,6 +30,15 @@ const supabaseMock = {
 				}),
 			};
 		}
+		if (table === 'students') {
+			return {
+				select: () => ({
+					eq: () => ({
+						maybeSingle: () => Promise.resolve({ data: { parent_email: null }, error: null }),
+					}),
+				}),
+			};
+		}
 		return {
 			select: () => ({
 				eq: () => ({
@@ -41,6 +50,14 @@ const supabaseMock = {
 	functions: {
 		invoke: (fn: string, opts: { body: unknown }) => {
 			recordedInvokes.push({ fn, body: opts.body });
+			if (fn === 'issue-payment-link') {
+				return Promise.resolve(
+					invokeResults[fn] ?? {
+						data: { betaalblok: '[Betaalmethode koppelen](https://x/pay)' },
+						error: null,
+					},
+				);
+			}
 			return Promise.resolve(invokeResults[fn] ?? { data: null, error: null });
 		},
 	},
@@ -94,8 +111,12 @@ describe('sendAgreementCreatedMails', () => {
 	it('sends student and teacher mails when both profiles have email', async () => {
 		const result = await sendAgreementCreatedMails('agr-1');
 		expect(result).toEqual({ studentSent: true, teacherSent: true });
-		expect(recordedInvokes).toHaveLength(2);
+		expect(recordedInvokes).toHaveLength(3);
 		expect(recordedInvokes[0]).toEqual({
+			fn: 'issue-payment-link',
+			body: { lesson_agreement_id: 'agr-1', send: false },
+		});
+		expect(recordedInvokes[1]).toEqual({
 			fn: 'send-template-email',
 			body: {
 				event_key: 'agreement_created',
@@ -104,10 +125,11 @@ describe('sendAgreementCreatedMails', () => {
 					leerling_naam: 'Jan Leerling',
 					docent_naam: 'Piet Docent',
 					les_type: 'Piano',
+					betaalblok: '[Betaalmethode koppelen](https://x/pay)',
 				}),
 			},
 		});
-		expect(recordedInvokes[1]?.body).toEqual(
+		expect(recordedInvokes[2]?.body).toEqual(
 			expect.objectContaining({
 				event_key: 'agreement_created_teacher',
 				to: 'piet@example.com',
@@ -126,6 +148,7 @@ describe('sendAgreementCreatedMails', () => {
 		teacherProfileResult = { data: { email: null, first_name: 'Piet', last_name: 'Docent' }, error: null };
 		const result = await sendAgreementCreatedMails('agr-1');
 		expect(result).toEqual({ studentSent: false, teacherSent: false });
-		expect(recordedInvokes).toHaveLength(0);
+		expect(recordedInvokes).toHaveLength(1);
+		expect(recordedInvokes[0]?.fn).toBe('issue-payment-link');
 	});
 });

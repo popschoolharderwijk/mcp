@@ -8,6 +8,7 @@ import {
 	LuFolderOpen,
 	LuGraduationCap,
 	LuInbox,
+	LuLandmark,
 	LuLayoutDashboard,
 	LuLightbulb,
 	LuMail,
@@ -19,6 +20,7 @@ import {
 	LuUser,
 	LuUserCog,
 	LuUsers,
+	LuWallet,
 } from 'react-icons/lu';
 
 /**
@@ -46,6 +48,7 @@ const NAV_ITEMS = {
 		description: 'Schooljaar, lesvrije periodes, agenda, tarieven, e-mailtemplates en overige siteconfiguratie',
 	},
 	adminSection: { label: 'Beheer', icon: LuShieldCheck },
+	administrationSection: { label: 'Administratie', icon: LuLandmark },
 	teachers: {
 		label: 'Docenten',
 		icon: LuGraduationCap,
@@ -86,6 +89,12 @@ const NAV_ITEMS = {
 		label: 'Overeenkomsten',
 		icon: LuClipboardList,
 		description: 'Beheer lesovereenkomsten tussen leerlingen en docenten',
+	},
+	awaitingMandate: {
+		label: 'Wacht op machtiging',
+		icon: LuWallet,
+		description:
+			'Actieve overeenkomsten waarvoor nog geen Stripe-machtiging is afgegeven.',
 	},
 	lessonGroups: {
 		label: 'Groepslessen',

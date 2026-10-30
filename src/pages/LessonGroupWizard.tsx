@@ -35,19 +35,20 @@ export default function LessonGroupWizard() {
 				/>
 			</div>
 
-			<WizardStepIndicator<LGStep>
-				step={wizard.step}
-				stepIndex={wizard.stepIndex}
-				highestReachedStepIndex={wizard.highestStep}
-				onStepChange={wizard.setStep}
-				steps={LG_STEPS}
-			/>
+			<div className="max-w-3xl">
+				<WizardStepIndicator<LGStep>
+					stepIndex={wizard.stepIndex}
+					highestReachedStepIndex={wizard.highestStep}
+					onStepChange={wizard.setStep}
+					steps={LG_STEPS}
+				/>
 
-			<div className="mt-6 max-w-3xl rounded-lg border bg-card p-6">
-				<LessonGroupStepBody wizard={wizard} />
+				<div className="mt-6 rounded-lg border bg-card p-6">
+					<LessonGroupStepBody wizard={wizard} />
+				</div>
+
+				<LessonGroupWizardNavigation wizard={wizard} />
 			</div>
-
-			<LessonGroupWizardNavigation wizard={wizard} />
 
 			<PartialSlotConfirmDialog
 				open={wizard.partialOpen}
