@@ -30,18 +30,7 @@ CREATE TABLE IF NOT EXISTS public.students (
   parent_phone_number TEXT
     CHECK (public.is_valid_phone_number(parent_phone_number))
     CHECK (parent_phone_number IS NULL OR parent_phone_number = public.normalize_trim_text(parent_phone_number)),
-  date_of_birth DATE,
-
-  -- Debtor information (for billing)
-  debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true,
-  debtor_name TEXT
-    CHECK (debtor_name IS NULL OR debtor_name = public.normalize_compact_text(debtor_name)),
-  debtor_address TEXT
-    CHECK (debtor_address IS NULL OR debtor_address = public.normalize_compact_text(debtor_address)),
-  debtor_postal_code TEXT
-    CHECK (debtor_postal_code IS NULL OR debtor_postal_code = public.normalize_compact_text(debtor_postal_code)),
-  debtor_city TEXT
-    CHECK (debtor_city IS NULL OR debtor_city = public.normalize_compact_text(debtor_city))
+  date_of_birth DATE
 );
 
 -- Add audit columns to students
@@ -98,10 +87,6 @@ BEGIN
   NEW.parent_name := public.normalize_compact_text(NEW.parent_name);
   NEW.parent_email := public.normalize_trim_text(NEW.parent_email);
   NEW.parent_phone_number := public.normalize_trim_text(NEW.parent_phone_number);
-  NEW.debtor_name := public.normalize_compact_text(NEW.debtor_name);
-  NEW.debtor_address := public.normalize_compact_text(NEW.debtor_address);
-  NEW.debtor_postal_code := public.normalize_compact_text(NEW.debtor_postal_code);
-  NEW.debtor_city := public.normalize_compact_text(NEW.debtor_city);
   RETURN NEW;
 END;
 $$;
@@ -180,26 +165,6 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'date_of_birth') THEN
     ALTER TABLE public.students ADD COLUMN date_of_birth DATE;
-  END IF;
-END $$;
-
--- Add debtor columns
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_info_same_as_student') THEN
-    ALTER TABLE public.students ADD COLUMN debtor_info_same_as_student BOOLEAN NOT NULL DEFAULT true;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_name') THEN
-    ALTER TABLE public.students ADD COLUMN debtor_name TEXT;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_address') THEN
-    ALTER TABLE public.students ADD COLUMN debtor_address TEXT;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_postal_code') THEN
-    ALTER TABLE public.students ADD COLUMN debtor_postal_code TEXT;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'debtor_city') THEN
-    ALTER TABLE public.students ADD COLUMN debtor_city TEXT;
   END IF;
 END $$;
 

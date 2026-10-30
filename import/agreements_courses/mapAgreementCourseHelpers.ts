@@ -21,8 +21,6 @@ export const MAPPED_KEYS = new Set([
 	'agreementnumber',
 	'description',
 	'durationfreq',
-	'paymenttype',
-	'monthlyprice',
 	'startdate',
 	'enddate',
 	'comments',
@@ -40,7 +38,9 @@ export const IGNORED_KEYS = new Set([
 	'custom_monthly_price',
 	'funding',
 	'haltbilling',
+	'monthlyprice',
 	'noscheduling',
+	'paymenttype',
 	'teacher_notes',
 ]);
 
@@ -128,17 +128,6 @@ function asOptionalString(value: unknown): string | null {
 	if (typeof value !== 'string') return null;
 	const trimmed = value.trim();
 	return trimmed.length > 0 ? trimmed : null;
-}
-
-function eurosToCents(euros: number): number {
-	return Math.round(euros * 100);
-}
-
-/** Mongo paymenttype → lesson_agreements.payment_method. */
-function mapPaymentType(paymentType: string | null): 'sepa' | 'manual' | null {
-	if (paymentType === 'incasso') return 'sepa';
-	if (paymentType === 'invoice') return 'manual';
-	return null;
 }
 
 function buildNotes(
@@ -296,24 +285,6 @@ function resolveScheduleAndStart(
 	};
 }
 
-function resolvePaymentMethod(
-	record: Record<string, unknown>,
-	agreementOid: string,
-): { ok: true; paymentMethod: 'sepa' | 'manual' } | { ok: false; result: AgreementCourseMapResult } {
-	const paymentType = asOptionalString(record.paymenttype);
-	const paymentMethod = mapPaymentType(paymentType);
-	if (paymentMethod == null) {
-		return {
-			ok: false,
-			result: mapFail(
-				agreementOid,
-				paymentType == null ? 'Missing paymenttype' : `Unsupported paymenttype "${paymentType}"`,
-			),
-		};
-	}
-	return { ok: true, paymentMethod };
-}
-
 /** Convert a Mongo agreements_course document into a mapped lesson_agreements row. */
 export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): AgreementCourseMapResult {
 	if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) {
@@ -335,10 +306,6 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 	const scheduleStart = resolveScheduleAndStart(record, mongoOid);
 	if (!scheduleStart.ok) return scheduleStart.result;
 
-	const payment = resolvePaymentMethod(record, mongoOid);
-	if (!payment.ok) return payment.result;
-
-	const monthlyPrice = asFiniteNumber(record.monthlyprice);
 	const courseOid = parties.parties.courseOid;
 	const isGroupLesson = groupCourseOids.has(courseOid);
 	const numberOfLessons = readPositiveLessonCount(record.numberoflessons);
@@ -373,8 +340,6 @@ export function mapAgreementCourseDoc(doc: unknown, idMap: MongoIdMap): Agreemen
 			asOptionalString(record.comments),
 		),
 		signupSource: 'staff',
-		paymentMethod: payment.paymentMethod,
-		monthlyAmountCents: monthlyPrice != null ? eurosToCents(monthlyPrice) : null,
 		duoPairId: !isGroupLesson && duoCourseOids.has(courseOid) ? crypto.randomUUID() : null,
 		isGroupLesson,
 		synthesizeLessonTypeOption: durationPrice.value.synthesizeLessonTypeOption,

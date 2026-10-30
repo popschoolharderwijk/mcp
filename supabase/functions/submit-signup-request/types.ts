@@ -11,15 +11,6 @@ export interface SignupRequest {
 	parent_email?: string | null;
 	parent_phone_number?: string | null;
 	notes?: string | null;
-	sepa_iban?: string | null;
-	sepa_account_holder?: string | null;
-	sepa_bic?: string | null;
-}
-
-export interface SepaFields {
-	sepaIban: string | null;
-	sepaHolder: string | null;
-	sepaBic: string | null;
 }
 
 export interface LessonTypeRow {

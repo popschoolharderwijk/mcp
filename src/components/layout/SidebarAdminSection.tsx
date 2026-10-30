@@ -1,9 +1,8 @@
 import { LuChevronDown } from 'react-icons/lu';
 import { useLocation } from 'react-router-dom';
 import { NavItem } from '@/components/layout/NavItem';
-import { SidebarNavBranch } from '@/components/layout/SidebarNavBranch';
 import { adminHrefs, adminNavItems, isPathInGroup, NAV_GAP } from '@/components/layout/sidebar-config';
-import { ADMIN_SECTION_KEY, buildFinanceNavGroup } from '@/components/layout/sidebarMainNavHelpers';
+import { ADMIN_SECTION_KEY } from '@/components/layout/sidebarMainNavHelpers';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Separator } from '@/components/ui/separator';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
@@ -18,7 +17,6 @@ interface SidebarAdminSectionProps {
 
 export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 	const { pathname } = useLocation();
-	const financeGroup = buildFinanceNavGroup();
 	const forceOpen = isPathInGroup(pathname, adminHrefs);
 	const [adminSectionOpen, setAdminSectionOpen] = usePersistedSidebarGroupOpen(ADMIN_SECTION_KEY, forceOpen);
 
@@ -26,7 +24,6 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 		return (
 			<>
 				<Separator />
-				<SidebarNavBranch item={financeGroup} collapsed={collapsed} />
 				{adminNavItems.map((item) => (
 					<NavItem key={item.href} {...item} collapsed={collapsed} />
 				))}
@@ -58,7 +55,6 @@ export function SidebarAdminSection({ collapsed }: SidebarAdminSectionProps) {
 				className="flex flex-col data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 				style={{ gap: NAV_GAP } as React.CSSProperties}
 			>
-				<SidebarNavBranch item={financeGroup} collapsed={false} />
 				{adminNavItems.map((item) => (
 					<NavItem key={item.href} {...item} collapsed={false} />
 				))}

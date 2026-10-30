@@ -202,9 +202,9 @@ describe('RLS: students automatic management via lesson agreements', () => {
 		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(0);
 	});
 
-	it('student is not auto-deleted when an invoice remains after agreements are removed', async () => {
+	it('student is not auto-deleted when a stripe customer remains after agreements are removed', async () => {
 		const db = await createClientAs(TestUsers.STAFF_ONE);
-		const invoiceNumber = `TEST-GUARD-${crypto.randomUUID()}`;
+		const stripeCustomerId = `cus_test_guard_${crypto.randomUUID().replace(/-/g, '')}`;
 
 		const agreement: LessonAgreementInsert = {
 			student_user_id: studentCUserId,
@@ -222,14 +222,9 @@ describe('RLS: students automatic management via lesson agreements', () => {
 		unwrap(await db.from('lesson_agreements').insert(agreement).select());
 
 		unwrap(
-			await dbNoRLS.from('invoices').insert({
-				invoice_number: invoiceNumber,
-				student_user_id: studentCUserId,
-				due_date: '2026-12-31',
-				amount_excl_vat_cents: 1000,
-				vat_amount_cents: 0,
-				amount_total_cents: 1000,
-				status: 'issued',
+			await dbNoRLS.from('stripe_customers').insert({
+				user_id: studentCUserId,
+				stripe_customer_id: stripeCustomerId,
 			}),
 		);
 
@@ -237,7 +232,7 @@ describe('RLS: students automatic management via lesson agreements', () => {
 
 		expect(unwrap(await dbNoRLS.from('students').select('*').eq('user_id', studentCUserId))).toHaveLength(1);
 
-		unwrap(await dbNoRLS.from('invoices').delete().eq('invoice_number', invoiceNumber).select('invoice_number'));
+		unwrap(await dbNoRLS.from('stripe_customers').delete().eq('user_id', studentCUserId).select('user_id'));
 
 		unwrap(await dbNoRLS.rpc('cleanup_student_if_no_agreements', { _user_id: studentCUserId }));
 

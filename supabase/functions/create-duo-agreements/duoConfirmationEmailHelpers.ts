@@ -1,5 +1,5 @@
 import { formatDate, formatPrice } from './formatHelpers.ts';
-import { type Body, DAY_NAMES_NL, FREQUENCY_LABELS, PAYMENT_METHOD_LABELS } from './types.ts';
+import { type Body, DAY_NAMES_NL, FREQUENCY_LABELS, STRIPE_PAYMENT_METHOD_LABEL } from './types.ts';
 
 export interface DuoProfileRow {
 	user_id: string;
@@ -30,7 +30,7 @@ export function buildDuoConfirmationBaseVars(
 		dag: DAY_NAMES_NL[body.day_of_week] ?? '',
 		tijd: body.start_time.slice(0, 5),
 		startdatum: formatDate(body.start_date),
-		betaalmethode: PAYMENT_METHOD_LABELS.stripe,
+		betaalmethode: STRIPE_PAYMENT_METHOD_LABEL,
 	};
 }
 

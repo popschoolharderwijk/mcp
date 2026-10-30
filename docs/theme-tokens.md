@@ -12,16 +12,14 @@ Hover/selection (`--accent`, including sidebar `hover:bg-accent`) is a `color-mi
 
 Some channels cannot use `hsl(var(--primary))` (mail HTML, PDF). For those:
 
-| File                                                                                                                  | Role                                          |
-| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts)                                                         | `PRIMARY_HEX` (web + HexColorPicker fallback) |
-| [`public/favicon.svg`](../public/favicon.svg)                                                                         | Production tab icon (gold / white)            |
-| [`public/favicon-local.svg`](../public/favicon-local.svg)                                                             | `bun dev` tab icon (white / gold)             |
-| [`public/favicon-localdev.svg`](../public/favicon-localdev.svg)                                                       | `bun run dev:local` tab icon (white / black)  |
-| [`supabase/functions/generate-invoice/invoiceHelpers.ts`](../supabase/functions/generate-invoice/invoiceHelpers.ts)   | Mirror for mail header                        |
-| [`supabase/functions/generate-invoice/buildPdfHelpers.ts`](../supabase/functions/generate-invoice/buildPdfHelpers.ts) | Mirror for PDF header (`PDF_RGB`)             |
+| File                                                            | Role                                          |
+| --------------------------------------------------------------- | --------------------------------------------- |
+| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts)   | `PRIMARY_HEX` (web + HexColorPicker fallback) |
+| [`public/favicon.svg`](../public/favicon.svg)                   | Production tab icon (gold / white)            |
+| [`public/favicon-local.svg`](../public/favicon-local.svg)       | `bun dev` tab icon (white / gold)             |
+| [`public/favicon-localdev.svg`](../public/favicon-localdev.svg) | `bun run dev:local` tab icon (white / black)  |
 
-When changing `--primary` / brand colour: update `favicon.svg`, invoice mail, and PDF mirrors plus mirror comments. Drift tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoiceHelpers.test.ts`, `tests/code/billing/buildPdfHelpers.test.ts`.
+When changing `--primary` / brand colour: update `favicon.svg` and mirror comments where present. Drift test: `tests/code/theme/theme-tokens.test.ts`.
 
 ## Agenda
 
@@ -40,10 +38,10 @@ Dialogs use `bg-black/80 dark:bg-black/60` (no `--overlay` token unless chosen d
 ## Rebrand checklist
 
 1. `theme-tokens.css` — primary, status, agenda mapping, group literal dark.
-2. `brand-hex.ts` + edge mirrors (invoiceHelpers, buildPdfHelpers).
+2. `brand-hex.ts` (+ any remaining edge mirrors of `PRIMARY_HEX`).
 3. `tailwind.config.ts` — only map what is needed as a Tailwind class (e.g. `text-agenda-*-foreground`).
 4. Visual: agenda defaults (lesson/manual are a different tint from the old hex by design), modals light/dark.
-5. `bun test tests/code/theme/theme-tokens.test.ts tests/code/billing/invoiceHelpers.test.ts tests/code/billing/buildPdfHelpers.test.ts tests/code/agenda/utils.test.ts`
+5. `bun test tests/code/theme/theme-tokens.test.ts tests/code/agenda/utils.test.ts`
 
 ## Not in this ship
 

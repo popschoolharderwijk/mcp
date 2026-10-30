@@ -6,9 +6,6 @@
 -- Lesson types live in lesson-types.sql (dev/test only).
 -- =============================================================================
 
--- Singleton accounting settings (from accounting_settings migration).
-INSERT INTO public.accounting_settings (id) VALUES (true) ON CONFLICT DO NOTHING;
-
 -- Application settings (key → jsonb). Values mirrored in tests/rls/seed-data-constants.ts APP_SETTINGS
 -- and src/lib/settings/appSettingsDefaults.ts.
 INSERT INTO public.app_settings (key, value) VALUES
@@ -17,7 +14,7 @@ INSERT INTO public.app_settings (key, value) VALUES
 	('vat', '{"age_threshold_years":21,"standard_rate_percent":21}'::jsonb),
 	('branding', '{"primary_hex":"#c4ab7c"}'::jsonb),
 	('trial_lessons', '{"horizon_days":30,"default_duration_minutes":30}'::jsonb),
-	('agreements', '{"default_start_offset_days":1,"default_payment_method":"sepa"}'::jsonb),
+	('agreements', '{"default_start_offset_days":1,"default_payment_method":"stripe"}'::jsonb),
 	('tips', '{"enabled":false,"auto_interval_minutes":10}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 

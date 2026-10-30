@@ -134,6 +134,7 @@ describe('agreementsCoursesConverter solo mapping', () => {
 			'funding',
 			'haltbilling',
 			'noscheduling',
+			'paymenttype',
 			'processed',
 			'teacher_notes',
 		]);

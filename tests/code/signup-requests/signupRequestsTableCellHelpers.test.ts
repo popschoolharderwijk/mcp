@@ -9,13 +9,11 @@ describe('buildSignupLessonTypeCellLines', () => {
 				groupLabel: 'Groep: Groep A',
 				showWaitlistBadge: false,
 				optionLabel: '45 min',
-				sepaIban: 'NL00TEST',
 			}),
 		).toEqual([
 			{ kind: 'text', text: 'Piano' },
 			{ kind: 'text', text: 'Groep: Groep A', muted: true },
 			{ kind: 'text', text: '45 min', muted: true },
-			{ kind: 'sepa-badge', iban: 'NL00TEST' },
 		]);
 	});
 
@@ -26,7 +24,6 @@ describe('buildSignupLessonTypeCellLines', () => {
 				groupLabel: null,
 				showWaitlistBadge: true,
 				optionLabel: null,
-				sepaIban: null,
 			}),
 		).toEqual([{ kind: 'text', text: 'Piano' }, { kind: 'waitlist-badge' }]);
 	});
@@ -38,7 +35,6 @@ describe('buildSignupLessonTypeCellLines', () => {
 				groupLabel: null,
 				showWaitlistBadge: false,
 				optionLabel: null,
-				sepaIban: null,
 			}),
 		).toEqual([{ kind: 'text', text: 'Gitaar' }]);
 	});

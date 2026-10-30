@@ -18,8 +18,6 @@ export type WizardSaveForm = {
 	} | null;
 	startDate: string;
 	endDate: string;
-	paymentMethod: 'stripe' | 'sepa' | 'manual';
-	sepaMandateId: string | null;
 };
 
 type ValidatedWizardSaveForm = WizardSaveForm & {
@@ -40,8 +38,6 @@ type AgreementUpsertPayload = {
 	start_time: string;
 	start_date: string;
 	end_date: string | null;
-	payment_method: WizardSaveForm['paymentMethod'];
-	sepa_mandate_id: string | null;
 };
 
 type AgreementUpsertResult = {
@@ -79,14 +75,6 @@ function validateDuoSaveForm(form: ValidatedWizardSaveForm): form is ValidatedDu
 	return true;
 }
 
-function validateSepaMandate(form: WizardSaveForm): boolean {
-	if (form.paymentMethod === 'sepa' && !form.sepaMandateId) {
-		toast.error('Kies een SEPA-mandaat of een andere betaalmethode');
-		return false;
-	}
-	return true;
-}
-
 function buildAgreementUpsertPayload(form: ValidatedWizardSaveForm, timeValue: string): AgreementUpsertPayload {
 	return {
 		teacher_user_id: form.teacherUserId,
@@ -94,8 +82,6 @@ function buildAgreementUpsertPayload(form: ValidatedWizardSaveForm, timeValue: s
 		start_time: timeValue,
 		start_date: form.startDate,
 		end_date: form.endDate || null,
-		payment_method: form.paymentMethod,
-		sepa_mandate_id: form.paymentMethod === 'sepa' ? form.sepaMandateId : null,
 	};
 }
 
@@ -120,7 +106,7 @@ async function createAndNotifyDuoAgreements(params: {
 
 	const inviteResults = await Promise.all(
 		duoData.agreement_ids.map((aid) =>
-			supabase.functions.invoke('send-direct-debit-invite', { body: { lesson_agreement_id: aid } }),
+			supabase.functions.invoke('send-stripe-checkout-invite', { body: { lesson_agreement_id: aid } }),
 		),
 	);
 	const failedInvites = countFailedFunctionInvokes(inviteResults);
@@ -193,21 +179,7 @@ async function handleNewAgreementSideEffects(params: {
 	await sendAgreementCreatedMails(agreementId);
 }
 
-function showAgreementSavedToast(params: {
-	isEdit: boolean;
-	isNew: boolean;
-	paymentMethod: WizardSaveForm['paymentMethod'];
-}): void {
-	const { isEdit, isNew, paymentMethod } = params;
-
-	if (isNew && paymentMethod === 'sepa') {
-		toast.success('Overeenkomst toegevoegd — SEPA-incasso gekoppeld');
-		return;
-	}
-	if (isNew && paymentMethod === 'manual') {
-		toast.success('Overeenkomst toegevoegd — handmatige facturatie');
-		return;
-	}
+function showAgreementSavedToast(isEdit: boolean): void {
 	toast.success(isEdit ? 'Overeenkomst bijgewerkt' : 'Overeenkomst toegevoegd');
 }
 
@@ -242,8 +214,6 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 		return createAndNotifyDuoAgreements({ form, fromRequestId, navigate });
 	}
 
-	if (!validateSepaMandate(form)) return false;
-
 	const payload = buildAgreementUpsertPayload(form, timeValue);
 	const insertResult = await upsertWizardAgreement(agreement, form, payload, fromRequestId);
 
@@ -258,7 +228,7 @@ export async function saveWizardAgreement(params: WizardAgreementSaveParams): Pr
 		await handleNewAgreementSideEffects({ agreementId, fromRequestId, fromTrialId });
 	}
 
-	showAgreementSavedToast({ isEdit: !isNew, isNew, paymentMethod: form.paymentMethod });
+	showAgreementSavedToast(!isNew);
 	navigate(getAgreementSavedNavigatePath(fromRequestId, fromTrialId));
 	return true;
 }

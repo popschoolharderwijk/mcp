@@ -43,11 +43,6 @@ export function buildStudentRecordUpdateFields(form: StudentFormState, scope: St
 	}
 	return {
 		date_of_birth: fields.date_of_birth,
-		debtor_info_same_as_student: fields.debtor_info_same_as_student,
-		debtor_name: fields.debtor_name,
-		debtor_address: fields.debtor_address,
-		debtor_postal_code: fields.debtor_postal_code,
-		debtor_city: fields.debtor_city,
 	};
 }
 

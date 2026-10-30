@@ -67,7 +67,7 @@ function parseTrialLessons(value: unknown): TrialLessonsSetting | null {
 }
 
 function parsePaymentMethod(value: unknown): AgreementPaymentMethod | null {
-	if (value === 'sepa' || value === 'stripe') return value;
+	if (value === 'stripe') return value;
 	return null;
 }
 

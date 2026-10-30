@@ -20,11 +20,6 @@ describe('buildCreateStudentPayload', () => {
 			parent_name: null,
 			parent_email: null,
 			parent_phone_number: null,
-			debtor_info_same_as_student: true,
-			debtor_name: null,
-			debtor_address: null,
-			debtor_postal_code: null,
-			debtor_city: null,
 		});
 	});
 
@@ -40,11 +35,6 @@ describe('buildCreateStudentPayload', () => {
 			parent_name: null,
 			parent_email: null,
 			parent_phone_number: null,
-			debtor_info_same_as_student: true,
-			debtor_name: null,
-			debtor_address: null,
-			debtor_postal_code: null,
-			debtor_city: null,
 		});
 	});
 });
@@ -106,28 +96,18 @@ describe('buildStudentProfileUpdateFields', () => {
 });
 
 describe('buildStudentRecordUpdateFields', () => {
-	it('returns date of birth and debtor fields on profile scope', () => {
+	it('returns date of birth on profile scope', () => {
 		expect(
 			buildStudentRecordUpdateFields(
 				{
 					...emptyStudentForm,
 					date_of_birth: '2010-02-14',
 					parent_name: 'Ouder',
-					debtor_info_same_as_student: false,
-					debtor_name: 'Debiteur BV',
-					debtor_address: 'Straat 1',
-					debtor_postal_code: '1234AB',
-					debtor_city: 'Amsterdam',
 				},
 				'profile',
 			),
 		).toEqual({
 			date_of_birth: '2010-02-14',
-			debtor_info_same_as_student: false,
-			debtor_name: 'Debiteur BV',
-			debtor_address: 'Straat 1',
-			debtor_postal_code: '1234AB',
-			debtor_city: 'Amsterdam',
 		});
 	});
 

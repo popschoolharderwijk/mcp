@@ -17,18 +17,6 @@ describe('getStudentProfileTabValidationError', () => {
 		expect(error).toBe('Ongeldig emailadres');
 	});
 
-	it('requires all debtor fields when debtor info differs from the student', () => {
-		const error = getStudentProfileTabValidationError({
-			...emptyStudentForm,
-			email: 'student@example.com',
-			debtor_info_same_as_student: false,
-			debtor_name: 'Debiteur BV',
-		});
-		expect(error).toBe(
-			'Alle debiteur NAW velden zijn verplicht als debiteurinformatie niet gelijk is aan leerlinginformatie',
-		);
-	});
-
 	it('ignores invalid parent phone on the profile tab', () => {
 		const error = getStudentProfileTabValidationError({
 			...emptyStudentForm,
@@ -43,11 +31,6 @@ describe('getStudentProfileTabValidationError', () => {
 			...emptyStudentForm,
 			email: 'student@example.com',
 			phone_number: '0612345678',
-			debtor_info_same_as_student: false,
-			debtor_name: 'Debiteur BV',
-			debtor_address: 'Straat 1',
-			debtor_postal_code: '1234AB',
-			debtor_city: 'Amsterdam',
 		});
 		expect(error).toBeNull();
 	});
@@ -61,16 +44,6 @@ describe('getStudentParentTabValidationError', () => {
 				parent_phone_number: '123',
 			}),
 		).toBe('Ouder telefoonnummer moet 10 cijfers bevatten');
-	});
-
-	it('ignores incomplete debtor fields on the parent tab', () => {
-		expect(
-			getStudentParentTabValidationError({
-				...emptyStudentForm,
-				debtor_info_same_as_student: false,
-				debtor_name: 'Debiteur BV',
-			}),
-		).toBeNull();
 	});
 });
 
@@ -107,14 +80,10 @@ describe('resolveStudentProfileSaveValidationError', () => {
 		).toBe('Geboortedatum is ongeldig');
 	});
 
-	it('ignores incomplete debtor fields on parent scope', () => {
+	it('returns null for valid parent scope', () => {
 		expect(
 			resolveStudentProfileSaveValidationError({
-				form: {
-					...emptyStudentForm,
-					debtor_info_same_as_student: false,
-					debtor_name: 'Debiteur BV',
-				},
+				form: emptyStudentForm,
 				scope: 'parent',
 			}),
 		).toBeNull();

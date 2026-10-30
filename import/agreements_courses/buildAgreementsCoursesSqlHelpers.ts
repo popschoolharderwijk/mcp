@@ -127,7 +127,7 @@ function buildLessonAgreementsInsert(rows: AgreementCourseSqlRow[]): string {
 		.map((row) => {
 			const duoPairId = row.duoPairId != null ? sqlUuid(row.duoPairId) : 'NULL::uuid';
 			const lessonGroupId = row.lessonGroupId != null ? sqlUuid(row.lessonGroupId) : 'NULL::uuid';
-			return `  (${sqlUuid(row.agreementId)}, ${sqlUuid(row.studentUserId)}, ${sqlUuid(row.teacherUserId)}, ${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(row.dayOfWeek)}, ${sqlTime(row.startTime)}, ${sqlDate(row.startDate)}, ${sqlDate(row.endDate)}, ${sqlBoolean(row.isActive)}, ${sqlString(row.notes)}, ${sqlString(row.signupSource)}, ${sqlString(row.paymentMethod)}, ${sqlInteger(row.monthlyAmountCents)}, ${duoPairId}, ${lessonGroupId})`;
+			return `  (${sqlUuid(row.agreementId)}, ${sqlUuid(row.studentUserId)}, ${sqlUuid(row.teacherUserId)}, ${sqlUuid(row.lessonTypeId)}, ${sqlInteger(row.durationMinutes)}, '${row.frequency}'::public.lesson_frequency, ${sqlNumber(row.pricePerLesson)}, ${sqlInteger(row.dayOfWeek)}, ${sqlTime(row.startTime)}, ${sqlDate(row.startDate)}, ${sqlDate(row.endDate)}, ${sqlBoolean(row.isActive)}, ${sqlString(row.notes)}, ${sqlString(row.signupSource)}, ${duoPairId}, ${lessonGroupId})`;
 		})
 		.join(',\n');
 
@@ -146,8 +146,6 @@ function buildLessonAgreementsInsert(rows: AgreementCourseSqlRow[]): string {
     is_active,
     notes,
     signup_source,
-    payment_method,
-    monthly_amount_cents,
     duo_pair_id,
     lesson_group_id
   )
@@ -166,8 +164,6 @@ function buildLessonAgreementsInsert(rows: AgreementCourseSqlRow[]): string {
     v.is_active,
     v.notes,
     v.signup_source,
-    v.payment_method,
-    v.monthly_amount_cents,
     v.duo_pair_id,
     v.lesson_group_id
   FROM (VALUES
@@ -187,8 +183,6 @@ ${tuples}
     is_active,
     notes,
     signup_source,
-    payment_method,
-    monthly_amount_cents,
     duo_pair_id,
     lesson_group_id
   )

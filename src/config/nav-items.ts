@@ -1,15 +1,10 @@
 import type { IconType } from 'react-icons';
 import {
 	LuBookOpen,
-	LuBuilding2,
-	LuCalculator,
 	LuCalendar,
 	LuCalendarOff,
 	LuChartBar,
 	LuClipboardList,
-	LuCreditCard,
-	LuFileSpreadsheet,
-	LuFileText,
 	LuFolderOpen,
 	LuGraduationCap,
 	LuInbox,
@@ -24,7 +19,6 @@ import {
 	LuUser,
 	LuUserCog,
 	LuUsers,
-	LuWallet,
 } from 'react-icons/lu';
 
 /**
@@ -117,38 +111,6 @@ const NAV_ITEMS = {
 		label: 'Rapportage',
 		icon: LuChartBar,
 		description: 'Urenrapportage per docent, lessoort en leeftijdscategorie',
-	},
-	accounting: {
-		label: 'Boekhouding',
-		icon: LuCalculator,
-		description: 'Boekhoudrapportage voor Exact Online',
-	},
-	accountingSettings: {
-		label: 'Boekhouding-instellingen',
-		icon: LuCalculator,
-		description: 'Rekeningen, BTW en kostenplaatsen voor Exact',
-	},
-	subscriptions: { label: 'Facturatie', icon: LuCreditCard },
-	finance: { label: 'Financiën', icon: LuWallet },
-	directDebit: {
-		label: 'Incasso',
-		icon: LuFileSpreadsheet,
-		description: 'Beheer SEPA-incassobatches',
-	},
-	mandates: {
-		label: 'Mandaten',
-		icon: LuBuilding2,
-		description: 'Beheer SEPA-mandaten van leerlingen',
-	},
-	invoices: {
-		label: 'Facturen',
-		icon: LuFileText,
-		description: 'Overzicht van alle facturen',
-	},
-	myInvoices: {
-		label: 'Mijn facturen',
-		icon: LuFileText,
-		description: 'Overzicht van al je facturen',
 	},
 	noLessonPeriods: { label: 'Lesvrije periodes', icon: LuCalendarOff },
 	emailTemplates: { label: 'E-mailtemplates', icon: LuMail },

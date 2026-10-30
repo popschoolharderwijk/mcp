@@ -1,6 +1,6 @@
 # Mplifi Community Portal
 
-Web app for running a music school: students and teachers, lesson agreements, a recurring-lesson agenda, projects, Stripe direct debit for tuition, email templates, and hours/financial reporting.
+Web app for running a music school: students and teachers, lesson agreements, a recurring-lesson agenda, projects, Stripe direct debit for tuition, email templates, and hours reporting.
 
 ## Tech Stack
 
@@ -20,7 +20,7 @@ Web app for running a music school: students and teachers, lesson agreements, a 
 - Stripe SEPA direct debit per lesson agreement: setup via iDEAL, then a monthly `SubscriptionSchedule` over 11 months.
 - Database-backed email templates with inline preview and test send.
 - Projects (domain → label → project), polymorphic agenda linking, cost centre.
-- Hours/accounting reports with VAT by age category and lesson date.
+- Hours reports with VAT by age category and lesson date.
 
 ## Quick Start
 

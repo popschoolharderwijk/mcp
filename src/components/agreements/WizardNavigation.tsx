@@ -15,8 +15,6 @@ export function WizardNavigation({ wizard }: WizardNavigationProps) {
 		slot: wizard.form.slot,
 		saving: wizard.saving,
 		isTeacherOwnStudent: wizard.isTeacherOwnStudent,
-		paymentMethod: wizard.form.paymentMethod,
-		sepaMandateId: wizard.form.sepaMandateId,
 		isEditMode: wizard.isEditMode,
 		hasChanges: wizard.hasChanges,
 	});

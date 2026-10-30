@@ -51,8 +51,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `stripe_customers`                                | 1:1 mapping `auth.users.id` ↔ `stripe_customer_id`.                                                                                                                                                                                                                                 |
 | `subscriptions`                                   | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`).                                                                                                                                                                     |
 | `subscription_invoices`                           | Mirror of Stripe Invoices (amount, status, hosted URL, period).                                                                                                                                                                                                                     |
-| `direct_debit_invitations`                        | Audit of sent SEPA-onboarding magic links.                                                                                                                                                                                                                                          |
-| `accounting_settings`                             | Per-organisation VAT/ledger settings (`account_vat_21`, `vat_code_21`, `vat_code_exempt`, …).                                                                                                                                                                                       |
+| `stripe_checkout_invitations`                     | Audit of sent Stripe Checkout onboarding magic links.                                                                                                                                                                                                                               |
 | `announcements`                                   | Dashboard news (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publicly readable once active and published; only staff/admin/site_admin can manage. Optional images in the `announcement-images` storage bucket (public, max 5 MB; only privileged users can upload). |
 
 ### Views
@@ -148,20 +147,20 @@ The application uses role-based access control (RBAC) with these roles:
 
 ## Helper Functions
 
-| Function                                                    | Description                                                                                                             | Security           |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `is_site_admin()`                                           | Whether the **signed-in** user is site_admin                                                                            | `SECURITY INVOKER` |
-| `is_admin()`                                                | Whether the signed-in user is admin                                                                                     | `SECURITY INVOKER` |
-| `is_staff()`                                                | Whether the signed-in user is staff                                                                                     | `SECURITY INVOKER` |
-| `is_privileged()`                                           | Staff, admin, or site_admin for the signed-in user (single query)                                                       | `SECURITY INVOKER` |
-| `_has_role(uuid, app_role)`                                 | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated`                               | `SECURITY DEFINER` |
-| `is_student(uuid)` / `is_teacher(uuid)`                     | Check for a student/teacher record                                                                                      | `SECURITY DEFINER` |
-| `get_teacher_user_id(uuid)`                                 | Resolve teacher user_id from user_id                                                                                    | `SECURITY DEFINER` |
-| `can_delete_user(uuid)`                                     | May the current session delete the given `user_id`?                                                                     | `SECURITY DEFINER` |
-| `can_manage_agenda_event(ev_id)`                            | May the current session manage a specific agenda event?                                                                 | `SECURITY DEFINER` |
-| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects                                                                                                | `SECURITY DEFINER` |
-| `get_hours_report(start_date, end_date, user_id)`           | Hours report plus financial breakdown per teacher/student, including VAT via `accounting_settings` and lesson-date age. | `SECURITY INVOKER` |
-| `is_valid_phone_number(text)`                               | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`                                   | —                  |
+| Function                                                    | Description                                                                                         | Security           |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
+| `is_site_admin()`                                           | Whether the **signed-in** user is site_admin                                                        | `SECURITY INVOKER` |
+| `is_admin()`                                                | Whether the signed-in user is admin                                                                 | `SECURITY INVOKER` |
+| `is_staff()`                                                | Whether the signed-in user is staff                                                                 | `SECURITY INVOKER` |
+| `is_privileged()`                                           | Staff, admin, or site_admin for the signed-in user (single query)                                   | `SECURITY INVOKER` |
+| `_has_role(uuid, app_role)`                                 | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated`           | `SECURITY DEFINER` |
+| `is_student(uuid)` / `is_teacher(uuid)`                     | Check for a student/teacher record                                                                  | `SECURITY DEFINER` |
+| `get_teacher_user_id(uuid)`                                 | Resolve teacher user_id from user_id                                                                | `SECURITY DEFINER` |
+| `can_delete_user(uuid)`                                     | May the current session delete the given `user_id`?                                                 | `SECURITY DEFINER` |
+| `can_manage_agenda_event(ev_id)`                            | May the current session manage a specific agenda event?                                             | `SECURITY DEFINER` |
+| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects                                                                            | `SECURITY DEFINER` |
+| `get_hours_report(start_date, end_date, user_id)`           | Hours report plus financial breakdown per teacher/student, including VAT by age on the lesson date. | `SECURITY INVOKER` |
+| `is_valid_phone_number(text)`                               | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`               | —                  |
 
 > Public role checks (`is_admin()`, `is_privileged()`, …) are **`SECURITY INVOKER`** with a single `EXISTS` on `user_roles`. `can_manage_agenda_event` is **`SECURITY DEFINER`** and uses **`current_user_id()`** + **`is_privileged()`**. `_has_role` is not for clients. `profiles.email` is `UNIQUE` and follows `auth.users.email`. Phone rules are centralised in **`is_valid_phone_number`**.
 

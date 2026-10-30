@@ -1,167 +1,8 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
-	// Allows to automatically instantiate createClient with right options
-	// instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-	__InternalSupabase: {
-		PostgrestVersion: '14.1';
-	};
-	graphql_public: {
-		Tables: {
-			[_ in never]: never;
-		};
-		Views: {
-			[_ in never]: never;
-		};
-		Functions: {
-			graphql: {
-				Args: {
-					extensions?: Json;
-					operationName?: string;
-					query?: string;
-					variables?: Json;
-				};
-				Returns: Json;
-			};
-		};
-		Enums: {
-			[_ in never]: never;
-		};
-		CompositeTypes: {
-			[_ in never]: never;
-		};
-	};
 	public: {
 		Tables: {
-			accounting_settings: {
-				Row: {
-					account_bank_sepa: string;
-					account_bank_stripe: string;
-					account_debtors: string;
-					account_revenue_adult: string;
-					account_revenue_youth: string;
-					account_vat_21: string;
-					company_address: string | null;
-					company_city: string | null;
-					company_email: string | null;
-					company_iban: string | null;
-					company_kvk_number: string | null;
-					company_logo_url: string | null;
-					company_name: string | null;
-					company_phone: string | null;
-					company_postcode: string | null;
-					company_vat_number: string | null;
-					created_at: string;
-					created_by: string | null;
-					currency: string;
-					description_template: string;
-					id: boolean;
-					invoice_footer_text: string | null;
-					invoice_number_next: number;
-					invoice_number_prefix: string;
-					invoice_payment_term_days: number;
-					journal_code_bank: string;
-					journal_code_memorial: string;
-					payment_provider: string;
-					sepa_collection_day: number;
-					sepa_creditor_bic: string | null;
-					sepa_creditor_iban: string | null;
-					sepa_creditor_id: string | null;
-					sepa_creditor_name: string | null;
-					sepa_mandate_next_seq: number;
-					sepa_mandate_prefix: string;
-					sepa_remittance_template: string;
-					updated_at: string;
-					updated_by: string | null;
-					vat_code_21: string;
-					vat_code_exempt: string;
-				};
-				Insert: {
-					account_bank_sepa?: string;
-					account_bank_stripe?: string;
-					account_debtors?: string;
-					account_revenue_adult?: string;
-					account_revenue_youth?: string;
-					account_vat_21?: string;
-					company_address?: string | null;
-					company_city?: string | null;
-					company_email?: string | null;
-					company_iban?: string | null;
-					company_kvk_number?: string | null;
-					company_logo_url?: string | null;
-					company_name?: string | null;
-					company_phone?: string | null;
-					company_postcode?: string | null;
-					company_vat_number?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					currency?: string;
-					description_template?: string;
-					id?: boolean;
-					invoice_footer_text?: string | null;
-					invoice_number_next?: number;
-					invoice_number_prefix?: string;
-					invoice_payment_term_days?: number;
-					journal_code_bank?: string;
-					journal_code_memorial?: string;
-					payment_provider?: string;
-					sepa_collection_day?: number;
-					sepa_creditor_bic?: string | null;
-					sepa_creditor_iban?: string | null;
-					sepa_creditor_id?: string | null;
-					sepa_creditor_name?: string | null;
-					sepa_mandate_next_seq?: number;
-					sepa_mandate_prefix?: string;
-					sepa_remittance_template?: string;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_code_21?: string;
-					vat_code_exempt?: string;
-				};
-				Update: {
-					account_bank_sepa?: string;
-					account_bank_stripe?: string;
-					account_debtors?: string;
-					account_revenue_adult?: string;
-					account_revenue_youth?: string;
-					account_vat_21?: string;
-					company_address?: string | null;
-					company_city?: string | null;
-					company_email?: string | null;
-					company_iban?: string | null;
-					company_kvk_number?: string | null;
-					company_logo_url?: string | null;
-					company_name?: string | null;
-					company_phone?: string | null;
-					company_postcode?: string | null;
-					company_vat_number?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					currency?: string;
-					description_template?: string;
-					id?: boolean;
-					invoice_footer_text?: string | null;
-					invoice_number_next?: number;
-					invoice_number_prefix?: string;
-					invoice_payment_term_days?: number;
-					journal_code_bank?: string;
-					journal_code_memorial?: string;
-					payment_provider?: string;
-					sepa_collection_day?: number;
-					sepa_creditor_bic?: string | null;
-					sepa_creditor_iban?: string | null;
-					sepa_creditor_id?: string | null;
-					sepa_creditor_name?: string | null;
-					sepa_mandate_next_seq?: number;
-					sepa_mandate_prefix?: string;
-					sepa_remittance_template?: string;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_code_21?: string;
-					vat_code_exempt?: string;
-				};
-				Relationships: [];
-			};
 			agenda_event_deviations: {
 				Row: {
 					actual_date: string;
@@ -397,203 +238,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			direct_debit_batch_items: {
-				Row: {
-					amount_cents: number;
-					batch_id: string;
-					created_at: string;
-					created_by: string | null;
-					currency: string;
-					end_to_end_id: string;
-					id: string;
-					kind: string;
-					lesson_agreement_id: string | null;
-					mandate_id: string;
-					reason_code: string | null;
-					remittance_info: string;
-					sequence_type: string;
-					status: string;
-					status_updated_at: string | null;
-					student_user_id: string;
-					updated_at: string;
-					updated_by: string | null;
-				};
-				Insert: {
-					amount_cents: number;
-					batch_id: string;
-					created_at?: string;
-					created_by?: string | null;
-					currency?: string;
-					end_to_end_id: string;
-					id?: string;
-					kind?: string;
-					lesson_agreement_id?: string | null;
-					mandate_id: string;
-					reason_code?: string | null;
-					remittance_info: string;
-					sequence_type?: string;
-					status?: string;
-					status_updated_at?: string | null;
-					student_user_id: string;
-					updated_at?: string;
-					updated_by?: string | null;
-				};
-				Update: {
-					amount_cents?: number;
-					batch_id?: string;
-					created_at?: string;
-					created_by?: string | null;
-					currency?: string;
-					end_to_end_id?: string;
-					id?: string;
-					kind?: string;
-					lesson_agreement_id?: string | null;
-					mandate_id?: string;
-					reason_code?: string | null;
-					remittance_info?: string;
-					sequence_type?: string;
-					status?: string;
-					status_updated_at?: string | null;
-					student_user_id?: string;
-					updated_at?: string;
-					updated_by?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'direct_debit_batch_items_batch_id_fkey';
-						columns: ['batch_id'];
-						isOneToOne: false;
-						referencedRelation: 'direct_debit_batches';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'direct_debit_batch_items_lesson_agreement_id_fkey';
-						columns: ['lesson_agreement_id'];
-						isOneToOne: false;
-						referencedRelation: 'lesson_agreements';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'direct_debit_batch_items_mandate_id_fkey';
-						columns: ['mandate_id'];
-						isOneToOne: false;
-						referencedRelation: 'sepa_mandates';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'direct_debit_batch_items_student_user_id_fkey';
-						columns: ['student_user_id'];
-						isOneToOne: false;
-						referencedRelation: 'profiles';
-						referencedColumns: ['user_id'];
-					},
-					{
-						foreignKeyName: 'direct_debit_batch_items_student_user_id_fkey';
-						columns: ['student_user_id'];
-						isOneToOne: false;
-						referencedRelation: 'view_profiles_with_display_name';
-						referencedColumns: ['user_id'];
-					},
-				];
-			};
-			direct_debit_batches: {
-				Row: {
-					approved_at: string | null;
-					approved_by: string | null;
-					batch_number: string;
-					closed_at: string | null;
-					collection_date: string;
-					created_at: string;
-					created_by: string | null;
-					id: string;
-					item_count: number;
-					message_id: string | null;
-					notes: string | null;
-					status: string;
-					submitted_at: string | null;
-					total_amount_cents: number;
-					updated_at: string;
-					updated_by: string | null;
-					xml_sha256: string | null;
-					xml_storage_path: string | null;
-				};
-				Insert: {
-					approved_at?: string | null;
-					approved_by?: string | null;
-					batch_number: string;
-					closed_at?: string | null;
-					collection_date: string;
-					created_at?: string;
-					created_by?: string | null;
-					id?: string;
-					item_count?: number;
-					message_id?: string | null;
-					notes?: string | null;
-					status?: string;
-					submitted_at?: string | null;
-					total_amount_cents?: number;
-					updated_at?: string;
-					updated_by?: string | null;
-					xml_sha256?: string | null;
-					xml_storage_path?: string | null;
-				};
-				Update: {
-					approved_at?: string | null;
-					approved_by?: string | null;
-					batch_number?: string;
-					closed_at?: string | null;
-					collection_date?: string;
-					created_at?: string;
-					created_by?: string | null;
-					id?: string;
-					item_count?: number;
-					message_id?: string | null;
-					notes?: string | null;
-					status?: string;
-					submitted_at?: string | null;
-					total_amount_cents?: number;
-					updated_at?: string;
-					updated_by?: string | null;
-					xml_sha256?: string | null;
-					xml_storage_path?: string | null;
-				};
-				Relationships: [];
-			};
-			direct_debit_invitations: {
-				Row: {
-					created_at: string;
-					id: string;
-					lesson_agreement_id: string;
-					recipient_email: string;
-					sent_at: string;
-					sent_by: string | null;
-				};
-				Insert: {
-					created_at?: string;
-					id?: string;
-					lesson_agreement_id: string;
-					recipient_email: string;
-					sent_at?: string;
-					sent_by?: string | null;
-				};
-				Update: {
-					created_at?: string;
-					id?: string;
-					lesson_agreement_id?: string;
-					recipient_email?: string;
-					sent_at?: string;
-					sent_by?: string | null;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'direct_debit_invitations_lesson_agreement_id_fkey';
-						columns: ['lesson_agreement_id'];
-						isOneToOne: false;
-						referencedRelation: 'lesson_agreements';
-						referencedColumns: ['id'];
-					},
-				];
-			};
 			email_templates: {
 				Row: {
 					body_markdown: string;
@@ -624,175 +268,6 @@ export type Database = {
 				};
 				Relationships: [];
 			};
-			invoice_lines: {
-				Row: {
-					amount_excl_vat_cents: number;
-					amount_total_cents: number;
-					batch_item_id: string | null;
-					created_at: string;
-					created_by: string | null;
-					description: string;
-					id: string;
-					invoice_id: string;
-					lesson_date: string | null;
-					quantity: number;
-					sort_order: number;
-					unit_price_cents: number;
-					updated_at: string;
-					updated_by: string | null;
-					vat_amount_cents: number;
-					vat_rate: number;
-				};
-				Insert: {
-					amount_excl_vat_cents?: number;
-					amount_total_cents?: number;
-					batch_item_id?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					description: string;
-					id?: string;
-					invoice_id: string;
-					lesson_date?: string | null;
-					quantity?: number;
-					sort_order?: number;
-					unit_price_cents?: number;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_amount_cents?: number;
-					vat_rate?: number;
-				};
-				Update: {
-					amount_excl_vat_cents?: number;
-					amount_total_cents?: number;
-					batch_item_id?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					description?: string;
-					id?: string;
-					invoice_id?: string;
-					lesson_date?: string | null;
-					quantity?: number;
-					sort_order?: number;
-					unit_price_cents?: number;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_amount_cents?: number;
-					vat_rate?: number;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'invoice_lines_batch_item_id_fkey';
-						columns: ['batch_item_id'];
-						isOneToOne: false;
-						referencedRelation: 'direct_debit_batch_items';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'invoice_lines_invoice_id_fkey';
-						columns: ['invoice_id'];
-						isOneToOne: false;
-						referencedRelation: 'invoices';
-						referencedColumns: ['id'];
-					},
-				];
-			};
-			invoices: {
-				Row: {
-					age_category: string;
-					amount_excl_vat_cents: number;
-					amount_total_cents: number;
-					batch_id: string | null;
-					created_at: string;
-					created_by: string | null;
-					due_date: string;
-					email_sent_to: string | null;
-					id: string;
-					invoice_number: string;
-					issue_date: string;
-					notes: string | null;
-					paid_at: string | null;
-					pdf_storage_path: string | null;
-					period_end: string | null;
-					period_start: string | null;
-					sent_at: string | null;
-					status: string;
-					student_user_id: string;
-					updated_at: string;
-					updated_by: string | null;
-					vat_amount_cents: number;
-				};
-				Insert: {
-					age_category?: string;
-					amount_excl_vat_cents?: number;
-					amount_total_cents?: number;
-					batch_id?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					due_date: string;
-					email_sent_to?: string | null;
-					id?: string;
-					invoice_number: string;
-					issue_date?: string;
-					notes?: string | null;
-					paid_at?: string | null;
-					pdf_storage_path?: string | null;
-					period_end?: string | null;
-					period_start?: string | null;
-					sent_at?: string | null;
-					status?: string;
-					student_user_id: string;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_amount_cents?: number;
-				};
-				Update: {
-					age_category?: string;
-					amount_excl_vat_cents?: number;
-					amount_total_cents?: number;
-					batch_id?: string | null;
-					created_at?: string;
-					created_by?: string | null;
-					due_date?: string;
-					email_sent_to?: string | null;
-					id?: string;
-					invoice_number?: string;
-					issue_date?: string;
-					notes?: string | null;
-					paid_at?: string | null;
-					pdf_storage_path?: string | null;
-					period_end?: string | null;
-					period_start?: string | null;
-					sent_at?: string | null;
-					status?: string;
-					student_user_id?: string;
-					updated_at?: string;
-					updated_by?: string | null;
-					vat_amount_cents?: number;
-				};
-				Relationships: [
-					{
-						foreignKeyName: 'invoices_batch_id_fkey';
-						columns: ['batch_id'];
-						isOneToOne: false;
-						referencedRelation: 'direct_debit_batches';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'invoices_student_user_id_fkey';
-						columns: ['student_user_id'];
-						isOneToOne: false;
-						referencedRelation: 'profiles';
-						referencedColumns: ['user_id'];
-					},
-					{
-						foreignKeyName: 'invoices_student_user_id_fkey';
-						columns: ['student_user_id'];
-						isOneToOne: false;
-						referencedRelation: 'view_profiles_with_display_name';
-						referencedColumns: ['user_id'];
-					},
-				];
-			};
 			lesson_agreements: {
 				Row: {
 					created_at: string;
@@ -806,11 +281,8 @@ export type Database = {
 					is_active: boolean;
 					lesson_group_id: string | null;
 					lesson_type_id: string;
-					monthly_amount_cents: number | null;
 					notes: string | null;
-					payment_method: string;
 					price_per_lesson: number;
-					sepa_mandate_id: string | null;
 					signup_source: string | null;
 					start_date: string;
 					start_time: string;
@@ -833,11 +305,8 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id: string;
-					monthly_amount_cents?: number | null;
 					notes?: string | null;
-					payment_method?: string;
 					price_per_lesson: number;
-					sepa_mandate_id?: string | null;
 					signup_source?: string | null;
 					start_date: string;
 					start_time: string;
@@ -860,11 +329,8 @@ export type Database = {
 					is_active?: boolean;
 					lesson_group_id?: string | null;
 					lesson_type_id?: string;
-					monthly_amount_cents?: number | null;
 					notes?: string | null;
-					payment_method?: string;
 					price_per_lesson?: number;
-					sepa_mandate_id?: string | null;
 					signup_source?: string | null;
 					start_date?: string;
 					start_time?: string;
@@ -888,13 +354,6 @@ export type Database = {
 						columns: ['lesson_type_id'];
 						isOneToOne: false;
 						referencedRelation: 'lesson_types';
-						referencedColumns: ['id'];
-					},
-					{
-						foreignKeyName: 'lesson_agreements_sepa_mandate_id_fkey';
-						columns: ['sepa_mandate_id'];
-						isOneToOne: false;
-						referencedRelation: 'sepa_mandates';
 						referencedColumns: ['id'];
 					},
 					{
@@ -1042,9 +501,6 @@ export type Database = {
 					phone_number: string | null;
 					processed_at: string | null;
 					processed_by: string | null;
-					sepa_account_holder: string | null;
-					sepa_bic: string | null;
-					sepa_iban: string | null;
 					status: Database['public']['Enums']['signup_request_status'];
 					updated_at: string;
 					updated_by: string | null;
@@ -1068,9 +524,6 @@ export type Database = {
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;
-					sepa_account_holder?: string | null;
-					sepa_bic?: string | null;
-					sepa_iban?: string | null;
 					status?: Database['public']['Enums']['signup_request_status'];
 					updated_at?: string;
 					updated_by?: string | null;
@@ -1094,9 +547,6 @@ export type Database = {
 					phone_number?: string | null;
 					processed_at?: string | null;
 					processed_by?: string | null;
-					sepa_account_holder?: string | null;
-					sepa_bic?: string | null;
-					sepa_iban?: string | null;
 					status?: Database['public']['Enums']['signup_request_status'];
 					updated_at?: string;
 					updated_by?: string | null;
@@ -1441,78 +891,38 @@ export type Database = {
 					},
 				];
 			};
-			sepa_mandates: {
+			stripe_checkout_invitations: {
 				Row: {
-					account_holder: string;
-					bic: string | null;
 					created_at: string;
-					created_by: string | null;
-					first_used_at: string | null;
-					iban: string;
 					id: string;
-					mandate_reference: string;
-					notes: string | null;
-					revoked_at: string | null;
-					sequence_type: string;
-					signature_method: string;
-					signed_at: string | null;
-					status: string;
-					student_user_id: string;
-					updated_at: string;
-					updated_by: string | null;
+					lesson_agreement_id: string;
+					recipient_email: string;
+					sent_at: string;
+					sent_by: string | null;
 				};
 				Insert: {
-					account_holder: string;
-					bic?: string | null;
 					created_at?: string;
-					created_by?: string | null;
-					first_used_at?: string | null;
-					iban: string;
 					id?: string;
-					mandate_reference: string;
-					notes?: string | null;
-					revoked_at?: string | null;
-					sequence_type?: string;
-					signature_method?: string;
-					signed_at?: string | null;
-					status?: string;
-					student_user_id: string;
-					updated_at?: string;
-					updated_by?: string | null;
+					lesson_agreement_id: string;
+					recipient_email: string;
+					sent_at?: string;
+					sent_by?: string | null;
 				};
 				Update: {
-					account_holder?: string;
-					bic?: string | null;
 					created_at?: string;
-					created_by?: string | null;
-					first_used_at?: string | null;
-					iban?: string;
 					id?: string;
-					mandate_reference?: string;
-					notes?: string | null;
-					revoked_at?: string | null;
-					sequence_type?: string;
-					signature_method?: string;
-					signed_at?: string | null;
-					status?: string;
-					student_user_id?: string;
-					updated_at?: string;
-					updated_by?: string | null;
+					lesson_agreement_id?: string;
+					recipient_email?: string;
+					sent_at?: string;
+					sent_by?: string | null;
 				};
 				Relationships: [
 					{
-						foreignKeyName: 'sepa_mandates_student_user_id_fkey';
-						columns: ['student_user_id'];
+						foreignKeyName: 'stripe_checkout_invitations_lesson_agreement_id_fkey';
+						columns: ['lesson_agreement_id'];
 						isOneToOne: false;
-						referencedRelation: 'profiles';
-						referencedColumns: ['user_id'];
-					},
-					{
-						foreignKeyName: 'sepa_mandates_student_user_id_fkey';
-						columns: ['student_user_id'];
-						isOneToOne: false;
-						referencedRelation: 'view_profiles_with_display_name';
-						referencedColumns: ['user_id'];
+						referencedRelation: 'lesson_agreements';
+						referencedColumns: ['id'];
 					},
 				];
 			};
@@ -1548,11 +958,6 @@ export type Database = {
 					created_at: string;
 					created_by: string | null;
 					date_of_birth: string | null;
-					debtor_address: string | null;
-					debtor_city: string | null;
-					debtor_info_same_as_student: boolean;
-					debtor_name: string | null;
-					debtor_postal_code: string | null;
 					parent_email: string | null;
 					parent_name: string | null;
 					parent_phone_number: string | null;
@@ -1564,11 +969,6 @@ export type Database = {
 					created_at?: string;
 					created_by?: string | null;
 					date_of_birth?: string | null;
-					debtor_address?: string | null;
-					debtor_city?: string | null;
-					debtor_info_same_as_student?: boolean;
-					debtor_name?: string | null;
-					debtor_postal_code?: string | null;
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
@@ -1580,11 +980,6 @@ export type Database = {
 					created_at?: string;
 					created_by?: string | null;
 					date_of_birth?: string | null;
-					debtor_address?: string | null;
-					debtor_city?: string | null;
-					debtor_info_same_as_student?: boolean;
-					debtor_name?: string | null;
-					debtor_postal_code?: string | null;
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
@@ -2049,10 +1444,6 @@ export type Database = {
 				Args: { p_regprocedure: string };
 				Returns: boolean;
 			};
-			build_direct_debit_batch_items: {
-				Args: { p_batch_id: string };
-				Returns: number;
-			};
 			can_delete_user: { Args: { _target_id: string }; Returns: boolean };
 			can_manage_agenda_event: { Args: { ev_id: string }; Returns: boolean };
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
@@ -2072,10 +1463,6 @@ export type Database = {
 				Returns: string;
 			};
 			function_exists: { Args: { p_regprocedure: string }; Returns: boolean };
-			get_accounting_report: {
-				Args: { p_end_date: string; p_start_date: string };
-				Returns: Json;
-			};
 			get_agenda_event_owner: { Args: { ev_id: string }; Returns: string };
 			get_duo_partner_display_name: {
 				Args: { _agreement_id: string };
@@ -2176,23 +1563,16 @@ export type Database = {
 			is_student: { Args: { _user_id: string }; Returns: boolean };
 			is_teacher: { Args: { _user_id: string }; Returns: boolean };
 			is_valid_country_code: { Args: { p_code: string }; Returns: boolean };
-			is_valid_iban: { Args: { p_iban: string }; Returns: boolean };
 			is_valid_phone_number: { Args: { p_phone: string }; Returns: boolean };
 			mark_trial_lesson_completed: {
 				Args: { _trial_id: string };
 				Returns: undefined;
 			};
-			next_invoice_number: { Args: never; Returns: string };
-			next_mandate_reference: { Args: never; Returns: string };
 			normalize_compact_text: { Args: { p_value: string }; Returns: string };
 			normalize_trim_text: { Args: { p_value: string }; Returns: string };
 			policy_exists: {
 				Args: { p_policy_name: string; p_table_name: string };
 				Returns: boolean;
-			};
-			recalc_direct_debit_batch: {
-				Args: { p_batch_id: string };
-				Returns: undefined;
 			};
 			shift_recurring_deviation_to_next_week: {
 				Args: { p_deviation_id: string };
@@ -2364,9 +1744,6 @@ export type CompositeTypes<
 		: never;
 
 export const Constants = {
-	graphql_public: {
-		Enums: {},
-	},
 	public: {
 		Enums: {
 			agenda_event_source_type: ['manual', 'lesson_agreement', 'project', 'lesson_group', 'trial_lesson'],

@@ -38,7 +38,7 @@ export interface TrialLessonsSetting {
 	default_duration_minutes: number;
 }
 
-export type AgreementPaymentMethod = 'sepa' | 'stripe';
+export type AgreementPaymentMethod = 'stripe';
 
 export interface AgreementsSetting {
 	default_start_offset_days: number;

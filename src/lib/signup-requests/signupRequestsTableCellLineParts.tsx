@@ -7,8 +7,7 @@ interface SignupLessonTypeCellLineItemProps {
 
 export function signupLessonTypeCellLineKey(line: SignupLessonTypeCellLine): string {
 	if (line.kind === 'text') return `text:${line.text}:${line.muted ? 'muted' : 'plain'}`;
-	if (line.kind === 'waitlist-badge') return 'waitlist-badge';
-	return `sepa:${line.iban}`;
+	return 'waitlist-badge';
 }
 
 export function SignupLessonTypeCellLineItem({ line }: SignupLessonTypeCellLineItemProps) {
@@ -21,18 +20,9 @@ export function SignupLessonTypeCellLineItem({ line }: SignupLessonTypeCellLineI
 			</div>
 		);
 	}
-	if (line.kind === 'waitlist-badge') {
-		return (
-			<Badge key={lineKey} variant="outline">
-				Wachtlijst
-			</Badge>
-		);
-	}
 	return (
-		<div key={lineKey} className="mt-1">
-			<Badge variant="secondary" className="font-mono text-[10px]">
-				SEPA · {line.iban}
-			</Badge>
-		</div>
+		<Badge key={lineKey} variant="outline">
+			Wachtlijst
+		</Badge>
 	);
 }

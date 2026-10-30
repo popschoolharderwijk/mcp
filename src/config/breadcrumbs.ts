@@ -75,21 +75,6 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		pattern: '/account/danger',
 		items: [{ label: NAV_LABELS.accountDanger, href: '/account/danger' }],
 	},
-	{ pattern: '/accounting', items: [{ label: NAV_LABELS.accounting, href: '/accounting' }] },
-	{
-		pattern: '/accounting/settings',
-		items: [
-			{ label: NAV_LABELS.accounting, href: '/accounting' },
-			{ label: 'Instellingen', href: '/accounting/settings' },
-		],
-	},
-	{
-		pattern: /^\/direct-debit\/batches\/[^/]+$/,
-		items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }],
-	},
-	{ pattern: '/direct-debit', items: [{ label: NAV_LABELS.directDebit, href: '/direct-debit' }] },
-	{ pattern: '/mandates', items: [{ label: NAV_LABELS.mandates, href: '/mandates' }] },
-	{ pattern: '/invoices', items: [{ label: NAV_LABELS.invoices, href: '/invoices' }] },
 	{
 		pattern: '/announcements',
 		items: [{ label: NAV_LABELS.announcements, href: '/announcements' }],

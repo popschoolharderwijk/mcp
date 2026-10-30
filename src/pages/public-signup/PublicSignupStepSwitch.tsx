@@ -39,11 +39,9 @@ function renderPublicSignupStep3(props: PublicSignupFlowProps) {
 	return (
 		<PublicSignupStep3
 			form={props.form}
-			sepa={props.sepa}
 			error={props.error}
 			submitting={props.submitting}
 			onFormChange={props.onFormChange}
-			onSepaChange={props.onSepaChange}
 			onPrevious={() => props.onStepChange(2)}
 			onSubmit={props.onSubmit}
 		/>

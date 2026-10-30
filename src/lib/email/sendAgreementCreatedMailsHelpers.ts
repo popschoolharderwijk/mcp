@@ -6,11 +6,7 @@ const FREQUENCY_LABELS: Record<string, string> = {
 	monthly: 'maandelijks',
 };
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-	stripe: 'Automatische incasso (SEPA)',
-	sepa: 'SEPA-incasso',
-	manual: 'Handmatige facturatie',
-};
+const STRIPE_PAYMENT_METHOD_LABEL = 'Stripe';
 
 function formatAgreementMailPrice(value: number | null | undefined): string {
 	if (value === null || value === undefined) return '';
@@ -52,7 +48,6 @@ export interface AgreementMailAgreement {
 	start_date: string;
 	frequency: string;
 	price_per_lesson: number | null;
-	payment_method: string;
 }
 
 export interface AgreementMailSharedVars {
@@ -82,7 +77,7 @@ function buildAgreementMailSharedVars(
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementMailTime(agreement.start_time),
 		startdatum: formatAgreementMailDate(agreement.start_date),
-		betaalmethode: PAYMENT_METHOD_LABELS[agreement.payment_method] ?? agreement.payment_method,
+		betaalmethode: STRIPE_PAYMENT_METHOD_LABEL,
 	};
 }
 

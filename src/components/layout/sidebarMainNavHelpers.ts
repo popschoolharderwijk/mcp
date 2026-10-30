@@ -1,4 +1,4 @@
-import { adminOperationalNavItems, financeNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
+import { adminOperationalNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
 
 export const ADMIN_SECTION_KEY = 'admin-section';
@@ -40,15 +40,6 @@ function toSidebarNavLinks(
 	}));
 }
 
-export function buildFinanceNavGroup(): SidebarNavItemConfig {
-	return {
-		key: 'finance',
-		label: NAV_LABELS.finance,
-		icon: NAV_ICONS.finance,
-		children: toSidebarNavLinks(financeNavItems),
-	};
-}
-
 export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): SidebarNavItemConfig[] {
 	const items: SidebarNavItemConfig[] = [];
 
@@ -58,7 +49,6 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 		items.push(
 			{ key: 'my-profile', href: '/students/my-profile', label: NAV_LABELS.myProfile, icon: NAV_ICONS.myProfile },
 			{ key: 'my-trial', href: '/my-trial', label: NAV_LABELS.myTrial, icon: NAV_ICONS.myTrial },
-			{ key: 'my-invoices', href: '/my-invoices', label: NAV_LABELS.myInvoices, icon: NAV_ICONS.myInvoices },
 		);
 	}
 

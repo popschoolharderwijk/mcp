@@ -1,5 +1,4 @@
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import { isValidIban, normalizeIban } from '@/lib/direct-debit/iban';
 
 export interface LessonTypeOptionMatch {
 	id: string;
@@ -23,22 +22,6 @@ export interface SignupFormFields {
 export interface SignupLessonType {
 	id: string;
 	is_group_lesson: boolean;
-}
-
-export interface SignupSepaFields {
-	enabled: boolean;
-	iban: string;
-	holder: string;
-	bic: string;
-	consent: boolean;
-}
-
-export function validateSepaFields(sepa: SignupSepaFields): string | null {
-	if (!sepa.enabled) return null;
-	if (!isValidIban(sepa.iban)) return 'Ongeldig IBAN';
-	if (!sepa.holder.trim()) return 'Vul de rekeninghouder in';
-	if (!sepa.consent) return 'Bevestig de SEPA-machtiging om door te gaan';
-	return null;
 }
 
 function resolveLessonTypeOptionId(
@@ -67,7 +50,6 @@ function resolveSignupGroupId(
 function buildSignupRequestBody(
 	selectedType: SignupLessonType,
 	form: SignupFormFields,
-	sepa: SignupSepaFields,
 	groupId: string | null,
 	optionId: string | null,
 ) {
@@ -76,9 +58,6 @@ function buildSignupRequestBody(
 		lesson_group_id: groupId,
 		lesson_type_option_id: optionId,
 		...form,
-		sepa_iban: sepa.enabled ? normalizeIban(sepa.iban) : null,
-		sepa_account_holder: sepa.enabled ? sepa.holder.trim() : null,
-		sepa_bic: sepa.enabled && sepa.bic.trim() ? sepa.bic.trim().toUpperCase() : null,
 	};
 }
 
@@ -94,13 +73,12 @@ function resolvePublicSignupSubmitPayload(params: {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionMatch[];
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
 }) {
 	const groupId = resolveSignupGroupId(params.selectedType, params.selectedGroupId);
 	const optionId = params.selectedType.is_group_lesson
 		? null
 		: resolveLessonTypeOptionId(params.lessonTypeOptions, params.selectedOption);
-	return buildSignupRequestBody(params.selectedType, params.form, params.sepa, groupId, optionId);
+	return buildSignupRequestBody(params.selectedType, params.form, groupId, optionId);
 }
 
 export type PublicSignupSubmitOutcome =
@@ -114,7 +92,6 @@ export async function executePublicSignupSubmit(params: {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionMatch[];
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
 	invoke: (body: ReturnType<typeof buildSignupRequestBody>) => Promise<{
 		data: unknown;
 		error: { message?: string } | null;
@@ -127,7 +104,6 @@ export async function executePublicSignupSubmit(params: {
 		selectedOption: params.selectedOption,
 		lessonTypeOptions: params.lessonTypeOptions,
 		form: params.form,
-		sepa: params.sepa,
 	});
 
 	const { data, error } = await params.invoke(body);

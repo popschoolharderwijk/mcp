@@ -69,7 +69,7 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 3. Fills variables (`{{name}}` → value).
 4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY_TRANSACTIONAL`.
 
-Other edge functions (`send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
+Other edge functions (`send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
 
 ### Testing from the UI
 

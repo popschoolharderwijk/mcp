@@ -13,7 +13,6 @@ const baseBody = {
 	email: 'student@example.com',
 	first_name: 'Anna',
 	last_name: 'Bakker',
-	debtor_info_same_as_student: true,
 };
 
 describe('validateCreateStudentBody', () => {
@@ -64,73 +63,27 @@ describe('validateCreateStudentBody', () => {
 });
 
 describe('buildStudentRowFields', () => {
-	it('clears debtor fields when debtor info matches the student', () => {
-		expect(
-			buildStudentRowFields({
-				...baseBody,
-				debtor_name: 'Other',
-				debtor_address: 'Street 1',
-				debtor_postal_code: '1234AB',
-				debtor_city: 'Utrecht',
-			}),
-		).toEqual({
+	it('maps parent contact fields and nulls empty values', () => {
+		expect(buildStudentRowFields(baseBody)).toEqual({
 			date_of_birth: null,
 			parent_name: null,
 			parent_email: null,
 			parent_phone_number: null,
-			debtor_info_same_as_student: true,
-			debtor_name: null,
-			debtor_address: null,
-			debtor_postal_code: null,
-			debtor_city: null,
 		});
 	});
 
-	it('keeps debtor fields when they differ from the student', () => {
-		expect(
-			buildStudentRowFields({
-				...baseBody,
-				debtor_info_same_as_student: false,
-				debtor_name: 'Other',
-				debtor_address: 'Street 1',
-				debtor_postal_code: '1234AB',
-				debtor_city: 'Utrecht',
-			}),
-		).toEqual({
-			date_of_birth: null,
-			parent_name: null,
-			parent_email: null,
-			parent_phone_number: null,
-			debtor_info_same_as_student: false,
-			debtor_name: 'Other',
-			debtor_address: 'Street 1',
-			debtor_postal_code: '1234AB',
-			debtor_city: 'Utrecht',
-		});
-	});
-
-	it('collapses parent and debtor text fields', () => {
+	it('collapses parent text fields', () => {
 		expect(
 			buildStudentRowFields({
 				...baseBody,
 				parent_name: '  Ouder   Anna ',
 				parent_email: '  ouder@example.com  ',
-				debtor_info_same_as_student: false,
-				debtor_name: 'Debiteur   BV',
-				debtor_address: 'Straat   1',
-				debtor_postal_code: ' 1234AB ',
-				debtor_city: 'Utrecht   Oost',
 			}),
 		).toEqual({
 			date_of_birth: null,
 			parent_name: 'Ouder Anna',
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,
-			debtor_info_same_as_student: false,
-			debtor_name: 'Debiteur BV',
-			debtor_address: 'Straat 1',
-			debtor_postal_code: '1234AB',
-			debtor_city: 'Utrecht Oost',
 		});
 	});
 });

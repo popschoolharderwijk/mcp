@@ -417,7 +417,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Billing and trial guards are added in 20260622162957_invoices.sql once those tables exist.
+  -- Stripe / trial guards are added in 20260622162957_invoices.sql once those tables exist.
 
   -- No agreements and no other dependencies found, safe to delete
   DELETE FROM public.students

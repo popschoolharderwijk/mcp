@@ -63,8 +63,6 @@ function mapPaginatedAgreementToTableRow(row: PaginatedAgreementsResponseRaw['da
 		frequency: row.frequency as LessonFrequency,
 		price_per_lesson: row.price_per_lesson,
 		duo_pair_id: row.duo_pair_id,
-		payment_method: 'stripe',
-		sepa_mandate_id: null,
 		student: {
 			first_name: row.student.first_name,
 			last_name: row.student.last_name,

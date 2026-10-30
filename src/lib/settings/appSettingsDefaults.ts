@@ -27,7 +27,7 @@ export const APP_SETTINGS_BOOTSTRAP: AppSettingsMap = {
 	},
 	agreements: {
 		default_start_offset_days: 1,
-		default_payment_method: 'sepa',
+		default_payment_method: 'stripe',
 	},
 	tips: {
 		enabled: false,

@@ -10,7 +10,7 @@ async function fetchStudentRecord(userId: string): Promise<StudentRecordFields |
 	const { data, error } = await supabase
 		.from('students')
 		.select(
-			'id, user_id, date_of_birth, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city, created_at, updated_at, created_by, updated_by',
+			'id, user_id, date_of_birth, parent_name, parent_email, parent_phone_number, created_at, updated_at, created_by, updated_by',
 		)
 		.eq('user_id', userId)
 		.single();

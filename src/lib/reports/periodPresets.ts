@@ -25,13 +25,6 @@ export const BASE_PRESET_LABELS: Record<BasePeriodPreset, string> = {
 	custom: 'Aangepast',
 };
 
-export const ACCOUNTING_PRESET_LABELS: Record<ExtendedPeriodPreset, string> = {
-	...BASE_PRESET_LABELS,
-	last_year: 'Vorig jaar',
-	this_school_year: 'Dit schooljaar',
-	last_school_year: 'Vorig schooljaar',
-};
-
 function schoolYearRange(now: Date, startMonth: number): { start: Date; end: Date } {
 	const month = now.getMonth() + 1;
 	const year = now.getFullYear();

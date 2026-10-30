@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import { PublicSignupDoneView } from './public-signup/PublicSignupDoneView';
 import { PublicSignupLayout } from './public-signup/PublicSignupLayout';
 import type { LessonType, SignupStep } from './public-signup/types';
@@ -23,14 +23,6 @@ const EMPTY_FORM: SignupFormFields = {
 	notes: '',
 };
 
-const EMPTY_SEPA: SignupSepaFields = {
-	enabled: false,
-	iban: '',
-	holder: '',
-	bic: '',
-	consent: false,
-};
-
 export default function PublicSignup() {
 	const [step, setStep] = useState<SignupStep>(1);
 	const lessonTypes = usePublicSignupLessonTypes();
@@ -40,7 +32,6 @@ export default function PublicSignup() {
 	const lessonTypeOptions = usePublicSignupLessonTypeOptions(selectedType);
 	const [selectedOption, setSelectedOption] = useState<OptionSnapshot | null>(null);
 	const [form, setForm] = useState(EMPTY_FORM);
-	const [sepa, setSepa] = useState(EMPTY_SEPA);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [done, setDone] = useState(false);
@@ -57,7 +48,6 @@ export default function PublicSignup() {
 		selectedOption,
 		lessonTypeOptions,
 		form,
-		sepa,
 		setSubmitting,
 		setError,
 		onSuccess: () => {
@@ -80,14 +70,12 @@ export default function PublicSignup() {
 			lessonTypeOptions={lessonTypeOptions}
 			selectedOption={selectedOption}
 			form={form}
-			sepa={sepa}
 			error={error}
 			submitting={submitting}
 			onSelectType={handleSelectType}
 			onSelectGroupId={setSelectedGroupId}
 			onSelectOption={setSelectedOption}
 			onFormChange={setForm}
-			onSepaChange={setSepa}
 			onStepChange={setStep}
 			onSubmit={submit}
 		/>

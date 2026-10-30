@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 
 export interface LessonType {
@@ -36,14 +36,12 @@ export interface PublicSignupFlowProps {
 	lessonTypeOptions: LessonTypeOptionRow[];
 	selectedOption: OptionSnapshot | null;
 	form: SignupFormFields;
-	sepa: SignupSepaFields;
 	error: string | null;
 	submitting: boolean;
 	onSelectType: (lessonType: LessonType) => void;
 	onSelectGroupId: (groupId: string | 'waitlist') => void;
 	onSelectOption: (option: OptionSnapshot | null) => void;
 	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
 	onStepChange: (step: SignupStep) => void;
 	onSubmit: (event: FormEvent) => void;
 }

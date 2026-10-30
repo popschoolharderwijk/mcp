@@ -38,28 +38,18 @@ describe('resolveStudentAgreementsCardView', () => {
 
 describe('studentDashboardPanelModel', () => {
 	it('returns empty lists without dashboard data', () => {
-		expect(studentDashboardPanelModel(null)).toEqual({ items: [], invoices: [], agreements: [] });
+		expect(studentDashboardPanelModel(null)).toEqual({ items: [], agreements: [] });
 	});
 
-	it('maps stats, invoices and agreements when data exists', () => {
+	it('maps stats and agreements when data exists', () => {
 		const studentDashboard: StudentDashboardData = {
 			stats: {
 				activeAgreements: 1,
 				inactiveAgreements: 1,
-				openInvoices: 2,
 				trialCount: 1,
 				trialStatus: 'scheduled',
 			},
 			agreements: [{ is_active: true }] as StudentDashboardData['agreements'],
-			invoices: [
-				{
-					id: 'inv-1',
-					invoice_number: 'F-1',
-					issue_date: '2026-09-01',
-					status: 'issued',
-					amount_total_cents: 2500,
-				},
-			],
 		};
 
 		expect(studentDashboardPanelModel(studentDashboard)).toEqual({
@@ -72,12 +62,6 @@ describe('studentDashboardPanelModel', () => {
 					description: '1 inactief',
 				},
 				{
-					key: 'myInvoices',
-					title: NAV_LABELS.myInvoices,
-					value: 2,
-					href: '/my-invoices',
-				},
-				{
 					key: 'myTrial',
 					title: NAV_LABELS.myTrial,
 					value: 1,
@@ -85,7 +69,6 @@ describe('studentDashboardPanelModel', () => {
 					description: 'Ingepland',
 				},
 			],
-			invoices: studentDashboard.invoices,
 			agreements: studentDashboard.agreements,
 		});
 	});

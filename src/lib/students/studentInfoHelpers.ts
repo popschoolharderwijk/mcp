@@ -7,11 +7,6 @@ export function formatPhoneNumber(phone: string | null): string {
 	return phone;
 }
 
-export function formatDebtorPostalCity(postalCode: string | null, city: string | null): string | null {
-	if (!postalCode && !city) return null;
-	return `${postalCode ?? ''} ${city ?? ''}`.trim();
-}
-
 export function hasParentContactInfo(
 	parentName: string | null,
 	parentEmail: string | null,

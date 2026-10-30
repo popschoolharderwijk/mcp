@@ -1,6 +1,5 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
-import { ensureSepaMandate } from './ensureSepaMandate.ts';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
@@ -67,7 +66,6 @@ async function upsertSignupStudentData(
 ): Promise<void> {
 	await upsertStudentRow(admin, studentUserId, reqRow);
 	await admin.from('user_roles').upsert({ user_id: studentUserId, role: 'student' }, { onConflict: 'user_id,role' });
-	await ensureSepaMandate(admin, studentUserId, reqRow);
 }
 
 export async function ensureStudentFromSignup(

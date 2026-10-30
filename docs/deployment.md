@@ -46,7 +46,7 @@ supabase db push --dry-run
 
 ## Step 2b: Bootstrap seed on production (optional)
 
-Migrations do not contain reference data. Email templates and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
+Migrations do not contain reference data. Email templates and app defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
 supabase link --project-ref bnagepkxryauifzyoxgo
@@ -89,7 +89,7 @@ supabase functions deploy
 | `approve-signup-request`        | Admin approves signup → user + welcome email.                                                  | Standard, `RESEND_API_KEY`                             |
 | `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                           | Standard, `RESEND_API_KEY`                             |
 | `send-template-email`           | Sends email from `email_templates` + variables.                                                | Standard, `RESEND_API_KEY`                             |
-| `send-direct-debit-invite`      | Generates a magic link for SEPA onboarding and emails it.                                      | Standard, `RESEND_API_KEY`                             |
+| `send-stripe-checkout-invite`   | Generates a magic link for Stripe Checkout onboarding and emails it.                           | Standard, `RESEND_API_KEY`                             |
 | `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.         | Standard, `STRIPE_SECRET_KEY`                          |
 | `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.                 | Standard, `STRIPE_SECRET_KEY`                          |
 | `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                              | Standard, `STRIPE_SECRET_KEY`                          |

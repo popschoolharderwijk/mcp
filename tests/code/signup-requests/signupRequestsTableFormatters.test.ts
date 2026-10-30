@@ -15,14 +15,12 @@ describe('getSignupLessonTypeCellContent', () => {
 				lesson_group_name: 'Groep A',
 				is_group_lesson: true,
 				option_label: '45 min',
-				sepa_iban: 'NL00TEST',
 			} as never),
 		).toEqual({
 			lessonTypeName: 'Piano',
 			groupLabel: 'Groep: Groep A',
 			showWaitlistBadge: false,
 			optionLabel: '45 min',
-			sepaIban: 'NL00TEST',
 		});
 	});
 
@@ -33,14 +31,12 @@ describe('getSignupLessonTypeCellContent', () => {
 				lesson_group_name: null,
 				is_group_lesson: true,
 				option_label: null,
-				sepa_iban: null,
 			} as never),
 		).toEqual({
 			lessonTypeName: 'Piano',
 			groupLabel: null,
 			showWaitlistBadge: true,
 			optionLabel: null,
-			sepaIban: null,
 		});
 	});
 
@@ -51,14 +47,12 @@ describe('getSignupLessonTypeCellContent', () => {
 				lesson_group_name: null,
 				is_group_lesson: false,
 				option_label: null,
-				sepa_iban: null,
 			} as never),
 		).toEqual({
 			lessonTypeName: 'Gitaar',
 			groupLabel: null,
 			showWaitlistBadge: false,
 			optionLabel: null,
-			sepaIban: null,
 		});
 	});
 });

@@ -37,11 +37,11 @@ Manage via **Supabase Dashboard → Project Settings → Edge Functions → Secr
 
 ### Project-specific secrets
 
-| Secret                  | Required for                                                                                                                  | Description                                                                 |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `RESEND_API_KEY`        | `send-template-email`, `send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | Resend.com API key for transactional email.                                 |
-| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                                                                                     | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
-| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                                                                              | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
+| Secret                  | Required for                                                                                                                     | Description                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `RESEND_API_KEY`        | `send-template-email`, `send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | Resend.com API key for transactional email.                                 |
+| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                                                                                        | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                                                                                 | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
 
 See [integrations/stripe-direct-debit.md §9](./integrations/stripe-direct-debit.md) for the Stripe Dashboard checklist and [deployment.md](./deployment.md) for the full edge-function table.
 

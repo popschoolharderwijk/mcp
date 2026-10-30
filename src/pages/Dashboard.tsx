@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { AnnouncementsSection } from '@/components/dashboard/AnnouncementsSection';
-import { DashboardInvoiceList } from '@/components/dashboard/DashboardInvoiceList';
 import { DashboardListCardSkeleton } from '@/components/dashboard/DashboardListCardSkeleton';
 import { RecentStudents } from '@/components/dashboard/RecentStudents';
 import { StatsGrid } from '@/components/dashboard/StatsGrid';
@@ -151,7 +150,6 @@ function StudentDashboardPanels({
 					agreements={model.agreements}
 					userId={userId}
 				/>
-				<DashboardInvoiceList invoices={model.invoices} isLoading={isLoading} />
 			</div>
 		</>
 	);

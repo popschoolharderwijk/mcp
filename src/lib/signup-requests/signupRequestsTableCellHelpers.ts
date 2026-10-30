@@ -1,9 +1,6 @@
 import type { SignupLessonTypeCellContent } from '@/lib/signup-requests/signupRequestsTableFormatters';
 
-export type SignupLessonTypeCellLine =
-	| { kind: 'text'; text: string; muted?: boolean }
-	| { kind: 'waitlist-badge' }
-	| { kind: 'sepa-badge'; iban: string };
+export type SignupLessonTypeCellLine = { kind: 'text'; text: string; muted?: boolean } | { kind: 'waitlist-badge' };
 
 export function buildSignupLessonTypeCellLines(content: SignupLessonTypeCellContent): SignupLessonTypeCellLine[] {
 	const lines: SignupLessonTypeCellLine[] = [{ kind: 'text', text: content.lessonTypeName ?? '' }];
@@ -16,9 +13,6 @@ export function buildSignupLessonTypeCellLines(content: SignupLessonTypeCellCont
 	}
 	if (content.optionLabel) {
 		lines.push({ kind: 'text', text: content.optionLabel, muted: true });
-	}
-	if (content.sepaIban) {
-		lines.push({ kind: 'sepa-badge', iban: content.sepaIban });
 	}
 
 	return lines;

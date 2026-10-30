@@ -1,5 +1,4 @@
 import { ConfirmStepContent } from '@/components/agreements/ConfirmStepContent';
-import { PaymentMethodSection } from '@/components/agreements/PaymentMethodSection';
 import type { SlotWithStatus } from '@/lib/agreementSlots';
 import { getConfirmStepHeading, getConfirmStepSubtitle } from '@/lib/agreements/confirmStepPanelHelpers';
 import type { AgreementTableRow, WizardLessonTypeInfo, WizardTeacherInfo } from '@/types/lesson-agreements';
@@ -17,11 +16,6 @@ interface ConfirmStepPanelProps {
 	selectedTeacherUserId: string | null;
 	selectedTeacher: WizardTeacherInfo | undefined;
 	effectiveSlot: SlotWithStatus | null;
-	paymentMethod: 'stripe' | 'sepa' | 'manual';
-	sepaMandateId: string | null;
-	studentUserId: string | null;
-	onPaymentMethodChange: (value: 'stripe' | 'sepa' | 'manual') => void;
-	onSepaMandateIdChange: (value: string | null) => void;
 }
 
 export function ConfirmStepPanel({
@@ -36,11 +30,6 @@ export function ConfirmStepPanel({
 	selectedTeacherUserId,
 	selectedTeacher,
 	effectiveSlot,
-	paymentMethod,
-	sepaMandateId,
-	studentUserId,
-	onPaymentMethodChange,
-	onSepaMandateIdChange,
 }: ConfirmStepPanelProps) {
 	const subtitle = getConfirmStepSubtitle(isEditMode, hasChanges);
 
@@ -62,13 +51,6 @@ export function ConfirmStepPanel({
 				selectedTeacherUserId={selectedTeacherUserId}
 				selectedTeacher={selectedTeacher}
 				effectiveSlot={effectiveSlot}
-			/>
-			<PaymentMethodSection
-				paymentMethod={paymentMethod}
-				sepaMandateId={sepaMandateId}
-				studentUserId={studentUserId}
-				onPaymentMethodChange={onPaymentMethodChange}
-				onSepaMandateIdChange={onSepaMandateIdChange}
 			/>
 		</div>
 	);

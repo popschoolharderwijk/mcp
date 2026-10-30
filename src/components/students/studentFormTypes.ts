@@ -17,11 +17,6 @@ export interface StudentFormState extends ProfileAddressFormState {
 	parent_name: string;
 	parent_email: string;
 	parent_phone_number: string;
-	debtor_info_same_as_student: boolean;
-	debtor_name: string;
-	debtor_address: string;
-	debtor_postal_code: string;
-	debtor_city: string;
 }
 
 export type StudentFormMode = 'new-user' | 'existing-user';
@@ -35,11 +30,6 @@ export const emptyStudentForm: StudentFormState = {
 	parent_name: '',
 	parent_email: '',
 	parent_phone_number: '',
-	debtor_info_same_as_student: true,
-	debtor_name: '',
-	debtor_address: '',
-	debtor_postal_code: '',
-	debtor_city: '',
 	...emptyProfileAddressForm,
 };
 
@@ -57,13 +47,6 @@ export function studentRecordFields(form: StudentFormState) {
 		parent_name: normalizeCompactTextOrNull(form.parent_name),
 		parent_email: normalizeTrimmedTextOrNull(form.parent_email),
 		parent_phone_number: normalizeTrimmedTextOrNull(form.parent_phone_number),
-		debtor_info_same_as_student: form.debtor_info_same_as_student,
-		debtor_name: form.debtor_info_same_as_student ? null : normalizeCompactTextOrNull(form.debtor_name),
-		debtor_address: form.debtor_info_same_as_student ? null : normalizeCompactTextOrNull(form.debtor_address),
-		debtor_postal_code: form.debtor_info_same_as_student
-			? null
-			: normalizeCompactTextOrNull(form.debtor_postal_code),
-		debtor_city: form.debtor_info_same_as_student ? null : normalizeCompactTextOrNull(form.debtor_city),
 	};
 }
 
@@ -77,11 +60,6 @@ export function studentFormFromStudent(student: Student): StudentFormState {
 		parent_name: normalizeCompactText(student.parent_name ?? ''),
 		parent_email: normalizeTrimmedText(student.parent_email ?? ''),
 		parent_phone_number: normalizeTrimmedText(student.parent_phone_number ?? ''),
-		debtor_info_same_as_student: student.debtor_info_same_as_student,
-		debtor_name: normalizeCompactText(student.debtor_name ?? ''),
-		debtor_address: normalizeCompactText(student.debtor_address ?? ''),
-		debtor_postal_code: normalizeCompactText(student.debtor_postal_code ?? ''),
-		debtor_city: normalizeCompactText(student.debtor_city ?? ''),
 		...profileAddressFormFromFields(student),
 	};
 }

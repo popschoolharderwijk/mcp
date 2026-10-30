@@ -14,7 +14,6 @@ describe('buildAgreementMailContext', () => {
 				start_date: '2026-09-07',
 				frequency: 'weekly',
 				price_per_lesson: 45,
-				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},
 			{ first_name: 'Jan', last_name: 'Docent' },
@@ -33,7 +32,6 @@ describe('buildAgreementMailContext', () => {
 				start_date: '2026-09-07',
 				frequency: 'weekly',
 				price_per_lesson: 45,
-				payment_method: 'stripe',
 				lesson_types: [{ name: 'Gitaar' }],
 			},
 			null,
@@ -50,7 +48,6 @@ describe('buildAgreementMailContext', () => {
 				start_date: '2026-09-07',
 				frequency: 'weekly',
 				price_per_lesson: 45,
-				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},
 			{ first_name: 'Jan', last_name: 'Leerling' },
@@ -64,7 +61,7 @@ describe('buildAgreementMailContext', () => {
 		expect(context.sharedVars.dag).toBe('maandag');
 		expect(context.sharedVars.tijd).toBe('14:30');
 		expect(context.sharedVars.startdatum).toBe('07-09-2026');
-		expect(context.sharedVars.betaalmethode).toBe('Automatische incasso (SEPA)');
+		expect(context.sharedVars.betaalmethode).toBe('Stripe');
 	});
 
 	it('returns empty price and date for nullish inputs', () => {
@@ -75,7 +72,6 @@ describe('buildAgreementMailContext', () => {
 				start_date: '',
 				frequency: 'custom',
 				price_per_lesson: null,
-				payment_method: 'manual',
 				lesson_types: null,
 			},
 			{ first_name: 'S', last_name: '' },
@@ -85,7 +81,7 @@ describe('buildAgreementMailContext', () => {
 		expect(context.sharedVars.tijd).toBe('');
 		expect(context.sharedVars.startdatum).toBe('');
 		expect(context.sharedVars.frequentie).toBe('custom');
-		expect(context.sharedVars.betaalmethode).toBe('Handmatige facturatie');
+		expect(context.sharedVars.betaalmethode).toBe('Stripe');
 	});
 });
 
@@ -98,7 +94,6 @@ describe('buildAgreementMailInvokeBody', () => {
 				start_date: '2026-09-07',
 				frequency: 'weekly',
 				price_per_lesson: 45,
-				payment_method: 'stripe',
 				lesson_types: { name: 'Piano' },
 			},
 			{ first_name: 'Jan', last_name: 'Leerling' },

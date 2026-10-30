@@ -98,6 +98,12 @@ describe('parseAppSettingValue', () => {
 				default_payment_method: 'cash',
 			}),
 		).toBeNull();
+		expect(
+			parseAppSettingValue('agreements', {
+				default_start_offset_days: 0,
+				default_payment_method: 'sepa',
+			}),
+		).toBeNull();
 	});
 
 	it('parses bootstrap tips', () => {

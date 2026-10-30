@@ -37,7 +37,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 	const { data: agreement, error } = await supabase
 		.from('lesson_agreements')
 		.select(
-			`id, day_of_week, start_time, start_date, frequency, price_per_lesson, payment_method,
+			`id, day_of_week, start_time, start_date, frequency, price_per_lesson,
 			 student_user_id, teacher_user_id,
 			 lesson_types(name)`,
 		)

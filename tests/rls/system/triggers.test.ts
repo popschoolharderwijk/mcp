@@ -134,15 +134,11 @@ describe('Triggers: profiles immutability', () => {
 });
 
 describe('Triggers: students text normalize', () => {
-	it('collapses parent/debtor text and nullifies blanks', async () => {
+	it('collapses parent text and nullifies blanks', async () => {
 		const db = await createClientAs(TestUsers.ADMIN_ONE);
 		const studentUserId = fixtures.requireStudentId(TestUsers.STUDENT_001);
 		const original = unwrapSingleRow(
-			await db
-				.from('students')
-				.select('parent_name, debtor_name, debtor_info_same_as_student')
-				.eq('user_id', studentUserId)
-				.single(),
+			await db.from('students').select('parent_name').eq('user_id', studentUserId).single(),
 		);
 
 		const collapsed = unwrapSingleRow(
@@ -150,37 +146,26 @@ describe('Triggers: students text normalize', () => {
 				.from('students')
 				.update({
 					parent_name: '\tOuder   Anna\n',
-					debtor_info_same_as_student: false,
-					debtor_name: '  Debiteur   BV  ',
 				})
 				.eq('user_id', studentUserId)
-				.select('parent_name, debtor_name')
+				.select('parent_name')
 				.single(),
 		);
 
 		expect(collapsed.parent_name).toBe('Ouder Anna');
-		expect(collapsed.debtor_name).toBe('Debiteur BV');
 
 		const blanked = unwrapSingleRow(
 			await db
 				.from('students')
-				.update({ parent_name: '\t\n', debtor_name: '   ' })
+				.update({ parent_name: '\t\n' })
 				.eq('user_id', studentUserId)
-				.select('parent_name, debtor_name')
+				.select('parent_name')
 				.single(),
 		);
 
 		expect(blanked.parent_name).toBeNull();
-		expect(blanked.debtor_name).toBeNull();
 
-		await db
-			.from('students')
-			.update({
-				parent_name: original.parent_name,
-				debtor_name: original.debtor_name,
-				debtor_info_same_as_student: original.debtor_info_same_as_student,
-			})
-			.eq('user_id', studentUserId);
+		await db.from('students').update({ parent_name: original.parent_name }).eq('user_id', studentUserId);
 	});
 });
 

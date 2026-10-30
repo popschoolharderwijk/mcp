@@ -27,8 +27,6 @@ function mockAgreementRow(overrides: Partial<AgreementTableRow> = {}): Agreement
 		price_per_lesson: 30,
 		created_at: '2026-01-01T00:00:00Z',
 		notes: null,
-		payment_method: 'stripe',
-		sepa_mandate_id: null,
 		teacher_user_id: 'tea-1',
 		student: {
 			first_name: 'Jan',
@@ -71,8 +69,6 @@ function baseForm(overrides: Partial<WizardFormState> = {}): WizardFormState {
 		slot: freeSlot(),
 		partnerStudentUserId: null,
 		partnerUser: null,
-		paymentMethod: 'stripe',
-		sepaMandateId: null,
 		...overrides,
 	};
 }
@@ -179,8 +175,6 @@ describe('computeHasChanges', () => {
 			startDate: agreement.start_date,
 			endDate: agreement.end_date ?? '',
 			teacherUserId: agreement.teacher_user_id,
-			paymentMethod: 'stripe',
-			sepaMandateId: null,
 		});
 		const slot = freeSlot({ day_of_week: agreement.day_of_week, start_time: '09:00' });
 		expect(computeHasChanges(agreement, form, slot)).toBe(false);
@@ -203,12 +197,6 @@ describe('computeHasChanges', () => {
 		const form = baseForm();
 		const slot = freeSlot({ day_of_week: 4, start_time: '11:00' });
 		expect(computeHasChanges(agreement, form, slot)).toBe(true);
-	});
-
-	it('detects sepa mandate changes when payment method is sepa', () => {
-		const agreement = mockAgreementRow({ payment_method: 'sepa', sepa_mandate_id: 'mandate-1' });
-		const form = baseForm({ paymentMethod: 'sepa', sepaMandateId: 'mandate-2' });
-		expect(computeHasChanges(agreement, form, freeSlot())).toBe(true);
 	});
 });
 

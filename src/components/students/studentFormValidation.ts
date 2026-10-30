@@ -20,18 +20,8 @@ function getParentContactValidationError(form: StudentFormState): string | null 
 	return null;
 }
 
-function getDebtorValidationError(form: StudentFormState): string | null {
-	if (form.debtor_info_same_as_student) return null;
-	if (form.debtor_name && form.debtor_address && form.debtor_postal_code && form.debtor_city) {
-		return null;
-	}
-	return 'Alle debiteur NAW velden zijn verplicht als debiteurinformatie niet gelijk is aan leerlinginformatie';
-}
-
 export function getStudentProfileTabValidationError(form: StudentFormState): string | null {
-	const contactError = getPersonalContactValidationError(form);
-	if (contactError) return contactError;
-	return getDebtorValidationError(form);
+	return getPersonalContactValidationError(form);
 }
 
 export function getStudentParentTabValidationError(form: StudentFormState): string | null {

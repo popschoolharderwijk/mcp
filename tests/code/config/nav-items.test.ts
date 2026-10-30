@@ -25,19 +25,13 @@ describe('NAV_DESCRIPTIONS', () => {
 	it('exposes only known page-description keys as a subset of NAV_LABELS', () => {
 		const descriptionKeys = Object.keys(NAV_DESCRIPTIONS).sort();
 		expect(descriptionKeys).toEqual([
-			'accounting',
-			'accountingSettings',
 			'agreements',
 			'announcements',
 			'availability',
 			'dashboard',
-			'directDebit',
-			'invoices',
 			'lessonGroups',
 			'lessonTypes',
-			'mandates',
 			'myAvailability',
-			'myInvoices',
 			'myProfile',
 			'myStatistics',
 			'myStudents',
