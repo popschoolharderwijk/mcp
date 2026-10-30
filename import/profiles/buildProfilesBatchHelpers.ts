@@ -6,6 +6,7 @@ import { createImportEmailDedupState, type ImportEmailDedupState } from '../shar
 import { assignSortedReportKeys, recordKeys } from '../shared/importKeySetHelpers';
 import { studentDocPassesAllowlist } from '../shared/importRuntimeSettingsHelpers';
 import { asOptionalString } from '../shared/mapPersonFieldHelpers';
+import type { MappedPersonImportRowBase } from '../shared/mappedPersonImportTypes';
 import { createEmptyReport } from '../shared/reportHelpers';
 import {
 	mapStudentDoc,
@@ -21,7 +22,7 @@ import {
 	teacherRowWarningReasons,
 } from '../teachers/mapTeacherHelpers';
 import type { MappedTeacherRow } from '../teachers/types';
-import type { ProfileSqlRow } from './types';
+import type { ProfileMergeIncoming, ProfileSqlRow } from './types';
 
 /** Trim + lowercase compare key for first+last name. */
 function nameKey(firstName: string | null, lastName: string | null): string {
@@ -38,24 +39,7 @@ function coalesceNull<T>(existing: T | null, incoming: T | null): T | null {
 }
 
 /** Merge roles and fill null profile fields from incoming data. */
-function mergeIntoPerson(
-	existing: ProfileSqlRow,
-	incoming: {
-		email: string;
-		firstName: string | null;
-		lastName: string | null;
-		phoneNumber: string | null;
-		streetName: string | null;
-		houseNumber: string | null;
-		postalCode: string | null;
-		city: string | null;
-		countryCode: string;
-		isTeacher?: boolean;
-		isStudent?: boolean;
-		cocIssuedOn?: string | null;
-		dateOfBirth?: string | null;
-	},
-): ProfileSqlRow {
+function mergeIntoPerson(existing: ProfileSqlRow, incoming: ProfileMergeIncoming): ProfileSqlRow {
 	return {
 		userId: existing.userId,
 		email: existing.email,
@@ -212,13 +196,35 @@ function bumpCreatedOrUpdated(state: ProfilesBatchState, created: boolean): void
 	}
 }
 
-function ingestTeacherDoc(state: ProfilesBatchState, doc: unknown): void {
-	classifyDocKeys(doc, TEACHER_MAPPED_KEYS, TEACHER_IGNORED_KEYS, state);
+type PersonMapResult<TRow extends MappedPersonImportRowBase> =
+	| { ok: true; row: TRow }
+	| { ok: false; oid: string | null; reason: string };
+
+type IngestPersonDocConfig<TRow extends MappedPersonImportRowBase> = {
+	mappedKeys: ReadonlySet<string>;
+	ignoredKeys: ReadonlySet<string>;
+	entityType: 'teacher' | 'student';
+	mapDoc: (
+		doc: unknown,
+		emailState: ImportEmailDedupState,
+		options?: { keepExistingEmail: true },
+	) => PersonMapResult<TRow>;
+	warningsForRow: (row: TRow) => string[];
+	mergeIncoming: (row: TRow) => ProfileMergeIncoming;
+	personFromRow: (userId: string, row: TRow) => ProfileSqlRow;
+};
+
+function ingestPersonDoc<TRow extends MappedPersonImportRowBase>(
+	state: ProfilesBatchState,
+	doc: unknown,
+	config: IngestPersonDocConfig<TRow>,
+): void {
+	classifyDocKeys(doc, config.mappedKeys, config.ignoredKeys, state);
 
 	const peek = peekPersonFields(doc);
 	const identityUserId = findIdentityUserId(state.identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
 
-	const mapped = mapTeacherDoc(
+	const mapped = config.mapDoc(
 		doc,
 		state.emailState,
 		identityUserId != null ? { keepExistingEmail: true } : undefined,
@@ -231,7 +237,7 @@ function ingestTeacherDoc(state: ProfilesBatchState, doc: unknown): void {
 
 	const resolved = resolveUserId({
 		idMap: state.idMap,
-		entityType: 'teacher',
+		entityType: config.entityType,
 		mongoOid: mapped.row.mongoOid,
 		identityUserId,
 		createId: state.createId,
@@ -240,70 +246,40 @@ function ingestTeacherDoc(state: ProfilesBatchState, doc: unknown): void {
 
 	const existing = state.people.get(resolved.userId);
 	if (existing) {
-		state.people.set(
-			resolved.userId,
-			mergeIntoPerson(existing, {
-				...mapped.row,
-				isTeacher: true,
-				cocIssuedOn: mapped.row.cocIssuedOn,
-			}),
-		);
+		state.people.set(resolved.userId, mergeIntoPerson(existing, config.mergeIncoming(mapped.row)));
 	} else {
-		state.people.set(resolved.userId, personFromTeacher(resolved.userId, mapped.row));
+		state.people.set(resolved.userId, config.personFromRow(resolved.userId, mapped.row));
 	}
 
 	registerIdentity(state.identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
 	bumpCreatedOrUpdated(state, resolved.created);
-	for (const reason of teacherRowWarningReasons(mapped.row)) {
+	for (const reason of config.warningsForRow(mapped.row)) {
 		state.report.warnings.push({ oid: mapped.row.mongoOid, reason });
 	}
 }
 
-function ingestStudentDoc(state: ProfilesBatchState, doc: unknown): void {
-	classifyDocKeys(doc, STUDENT_MAPPED_KEYS, STUDENT_IGNORED_KEYS, state);
-
-	const peek = peekPersonFields(doc);
-	const identityUserId = findIdentityUserId(state.identityIndex, peek.rawEmail, peek.firstName, peek.lastName);
-
-	const mapped = mapStudentDoc(
-		doc,
-		state.emailState,
-		identityUserId != null ? { keepExistingEmail: true } : undefined,
-	);
-	if (!mapped.ok) {
-		state.report.failed += 1;
-		state.report.failures.push({ oid: mapped.oid, reason: mapped.reason });
-		return;
-	}
-
-	const resolved = resolveUserId({
-		idMap: state.idMap,
-		entityType: 'student',
-		mongoOid: mapped.row.mongoOid,
-		identityUserId,
-		createId: state.createId,
+function ingestTeacherDoc(state: ProfilesBatchState, doc: unknown): void {
+	ingestPersonDoc(state, doc, {
+		mappedKeys: TEACHER_MAPPED_KEYS,
+		ignoredKeys: TEACHER_IGNORED_KEYS,
+		entityType: 'teacher',
+		mapDoc: mapTeacherDoc,
+		warningsForRow: teacherRowWarningReasons,
+		mergeIncoming: (row) => ({ ...row, isTeacher: true, cocIssuedOn: row.cocIssuedOn }),
+		personFromRow: personFromTeacher,
 	});
-	state.idMap = resolved.idMap;
+}
 
-	const existing = state.people.get(resolved.userId);
-	if (existing) {
-		state.people.set(
-			resolved.userId,
-			mergeIntoPerson(existing, {
-				...mapped.row,
-				isStudent: true,
-				dateOfBirth: mapped.row.dateOfBirth,
-			}),
-		);
-	} else {
-		state.people.set(resolved.userId, personFromStudent(resolved.userId, mapped.row));
-	}
-
-	registerIdentity(state.identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
-	bumpCreatedOrUpdated(state, resolved.created);
-	for (const reason of studentRowWarningReasons(mapped.row)) {
-		state.report.warnings.push({ oid: mapped.row.mongoOid, reason });
-	}
+function ingestStudentDoc(state: ProfilesBatchState, doc: unknown): void {
+	ingestPersonDoc(state, doc, {
+		mappedKeys: STUDENT_MAPPED_KEYS,
+		ignoredKeys: STUDENT_IGNORED_KEYS,
+		entityType: 'student',
+		mapDoc: mapStudentDoc,
+		warningsForRow: studentRowWarningReasons,
+		mergeIncoming: (row) => ({ ...row, isStudent: true, dateOfBirth: row.dateOfBirth }),
+		personFromRow: personFromStudent,
+	});
 }
 
 /**

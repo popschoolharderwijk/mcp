@@ -1,50 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { DataTable } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
+import { useInvoiceListPageState } from '@/hooks/useInvoiceListPageState';
 import { supabase } from '@/integrations/supabase/client';
-import { downloadInvoicePdf } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { buildMyInvoiceColumns, InvoicePdfDownloadButton } from '@/lib/invoices/invoiceTableColumns';
 import { INVOICE_STATUS_LABELS, type Invoice } from '@/lib/invoices/types';
 
 const MY_INVOICE_COLUMNS = buildMyInvoiceColumns();
 
 export default function MyInvoices() {
-	const [invoices, setInvoices] = useState<Invoice[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [downloading, setDownloading] = useState<string | null>(null);
-	const [search, setSearch] = useState('');
-
-	const load = useCallback(async () => {
-		setLoading(true);
-		const { data, error } = await supabase.from('invoices').select('*').order('issue_date', { ascending: false });
-		if (error) toast.error(error.message);
-		setInvoices((data ?? []) as unknown as Invoice[]);
-		setLoading(false);
-	}, []);
-
-	useEffect(() => {
-		load();
-	}, [load]);
-
-	const handleDownload = async (invoice: Invoice) => {
-		if (!invoice.pdf_storage_path) {
-			toast.error('Geen PDF beschikbaar.');
-			return;
-		}
-		if (downloading === invoice.id) return;
-		setDownloading(invoice.id);
-		const result = await downloadInvoicePdf(
-			(body) => supabase.functions.invoke('get-invoice-pdf', { body }),
-			invoice.id,
-		);
-		setDownloading(null);
-		if (result.ok === false) {
-			toast.error(result.message);
-			return;
-		}
-		window.open(result.url, '_blank');
-	};
+	const loadQuery = useCallback(
+		() => supabase.from('invoices').select('*').order('issue_date', { ascending: false }),
+		[],
+	);
+	const {
+		rows: invoices,
+		loading,
+		downloading,
+		handleDownload,
+		search,
+		setSearch,
+	} = useInvoiceListPageState<Invoice>(loadQuery);
 
 	return (
 		<NavPageShell item="myInvoices">

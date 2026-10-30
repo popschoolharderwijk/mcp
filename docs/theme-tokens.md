@@ -12,14 +12,14 @@ Hover/selection (`--accent`, including sidebar `hover:bg-accent`) is a `color-mi
 
 Some channels cannot use `hsl(var(--primary))` (mail HTML, PDF). For those:
 
-| File | Role |
-|------|------|
-| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts) | `PRIMARY_HEX` (web + HexColorPicker fallback) |
-| [`public/favicon.svg`](../public/favicon.svg) | Production tab icon (gold / white) |
-| [`public/favicon-local.svg`](../public/favicon-local.svg) | `bun dev` tab icon (white / gold) |
-| [`public/favicon-localdev.svg`](../public/favicon-localdev.svg) | `bun run dev:local` tab icon (white / black) |
-| [`supabase/functions/generate-invoice/invoiceHelpers.ts`](../supabase/functions/generate-invoice/invoiceHelpers.ts) | Mirror for mail header |
-| [`supabase/functions/generate-invoice/buildPdfHelpers.ts`](../supabase/functions/generate-invoice/buildPdfHelpers.ts) | Mirror for PDF header (`PDF_RGB`) |
+| File                                                                                                                  | Role                                          |
+| --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| [`src/lib/color/brand-hex.ts`](../src/lib/color/brand-hex.ts)                                                         | `PRIMARY_HEX` (web + HexColorPicker fallback) |
+| [`public/favicon.svg`](../public/favicon.svg)                                                                         | Production tab icon (gold / white)            |
+| [`public/favicon-local.svg`](../public/favicon-local.svg)                                                             | `bun dev` tab icon (white / gold)             |
+| [`public/favicon-localdev.svg`](../public/favicon-localdev.svg)                                                       | `bun run dev:local` tab icon (white / black)  |
+| [`supabase/functions/generate-invoice/invoiceHelpers.ts`](../supabase/functions/generate-invoice/invoiceHelpers.ts)   | Mirror for mail header                        |
+| [`supabase/functions/generate-invoice/buildPdfHelpers.ts`](../supabase/functions/generate-invoice/buildPdfHelpers.ts) | Mirror for PDF header (`PDF_RGB`)             |
 
 When changing `--primary` / brand colour: update `favicon.svg`, invoice mail, and PDF mirrors plus mirror comments. Drift tests: `tests/code/theme/theme-tokens.test.ts`, `tests/code/billing/invoiceHelpers.test.ts`, `tests/code/billing/buildPdfHelpers.test.ts`.
 

@@ -107,7 +107,7 @@ function UserStepDuoPartnerSection({
 	);
 }
 
-interface UserStepCreateContentProps {
+export interface UserStepCreateContentProps {
 	selectedStudentUserId: string | null;
 	selectedLessonTypeId: string | null;
 	lessonTypes: LessonTypeOption[];

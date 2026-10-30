@@ -1,33 +1,8 @@
-import type { FormEvent } from 'react';
 import { BrandLockup } from '@/components/layout/BrandLockup';
-import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
-import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 import { PublicSignupStepSwitch } from './PublicSignupStepSwitch';
-import type { GroupOption, LessonType, SignupStep } from './types';
+import type { PublicSignupFlowProps } from './types';
 
-interface PublicSignupLayoutProps {
-	step: SignupStep;
-	selectedType: LessonType | null;
-	lessonTypes: LessonType[];
-	groups: GroupOption[];
-	selectedGroupId: string | 'waitlist' | null;
-	lessonTypeOptions: LessonTypeOptionRow[];
-	selectedOption: OptionSnapshot | null;
-	form: SignupFormFields;
-	sepa: SignupSepaFields;
-	error: string | null;
-	submitting: boolean;
-	onSelectType: (lessonType: LessonType) => void;
-	onSelectGroupId: (groupId: string | 'waitlist') => void;
-	onSelectOption: (option: OptionSnapshot | null) => void;
-	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
-	onStepChange: (step: SignupStep) => void;
-	onSubmit: (event: FormEvent) => void;
-}
-
-export function PublicSignupLayout(props: PublicSignupLayoutProps) {
+export function PublicSignupLayout(props: PublicSignupFlowProps) {
 	return (
 		<div className="min-h-screen bg-background py-8 px-4">
 			<div className="max-w-2xl mx-auto">

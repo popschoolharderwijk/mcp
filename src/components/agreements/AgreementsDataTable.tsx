@@ -1,22 +1,10 @@
-import { DataTable, type DataTableColumn, type QuickFilterGroup } from '@/components/ui/data-table';
+import { DataTable, type DataTableColumn, type ServerSideDataTableControlProps } from '@/components/ui/data-table';
 import type { AgreementAction } from '@/lib/agreements/agreementsPageActionHelpers';
 import { AGREEMENT_COLUMNS } from '@/lib/agreements/agreementsTableColumns';
 import type { AgreementTableRow } from '@/types/lesson-agreements';
 
-export interface AgreementsDataTableProps {
+export interface AgreementsDataTableProps extends ServerSideDataTableControlProps {
 	agreements: AgreementTableRow[];
-	searchQuery: string;
-	onSearchChange: (query: string) => void;
-	loading: boolean;
-	totalCount: number;
-	currentPage: number;
-	rowsPerPage: number;
-	onPageChange: (page: number) => void;
-	onRowsPerPageChange: (rows: number) => void;
-	sortColumn: string | null;
-	sortDirection: 'asc' | 'desc' | null;
-	onSortChange: (column: string | null, direction: 'asc' | 'desc' | null) => void;
-	quickFilterGroups: QuickFilterGroup[];
 	runAction?: (action: AgreementAction) => void;
 	columns?: DataTableColumn<AgreementTableRow>[];
 }

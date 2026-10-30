@@ -2,8 +2,9 @@ import { mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { IMPORT_ID_MAP_FILE, IMPORT_OUTPUTS, IMPORT_SOURCES, type ImportConverterName } from '../config';
 import { buildImportBatch } from './buildImportBatchHelpers';
-import type { ImportConverter, MappedImportRow } from './converterTypes';
+import type { ImportBatch, ImportConverter, MappedImportRow } from './converterTypes';
 import { loadIdMap, saveIdMap } from './idMapFile';
+import type { MongoIdMap } from './idMapHelpers';
 import { importConsoleError, importConsoleLog } from './importConsoleHelpers';
 import { buildImportExtraDocs } from './importExtraDocsHelpers';
 import { resolveImportLogDir, writeImportSectionLogs } from './importLogHelpers';
@@ -15,10 +16,15 @@ export type ImportConverterDirs = {
 	outDir: string;
 };
 
-async function requireImportSourceFile(
+type LoadedImportSourceFile = {
+	path: string;
+	text: string;
+};
+
+async function loadImportSourceFile(
 	relativePath: string,
 	resolvePath: (path: string) => string,
-): Promise<{ path: string; text: string }> {
+): Promise<LoadedImportSourceFile> {
 	const path = resolvePath(relativePath);
 	const file = Bun.file(path);
 	if (!(await file.exists())) {
@@ -28,28 +34,50 @@ async function requireImportSourceFile(
 	return { path, text: await file.text() };
 }
 
+async function loadImportConverterSources(
+	converterName: ImportConverterName,
+	sourceDir: string,
+	resolvePath: (path: string) => string,
+): Promise<LoadedImportSourceFile[]> {
+	const sourceFiles = IMPORT_SOURCES[converterName];
+	const loaded: LoadedImportSourceFile[] = [];
+	for (const fileName of sourceFiles) {
+		loaded.push(await loadImportSourceFile(join(sourceDir, fileName), resolvePath));
+	}
+	return loaded;
+}
+
+/** Prefer converter.buildBatch when present; otherwise the generic batch builder. */
+export function resolveImportConverterBatch<TRow extends MappedImportRow, TSqlRow, TName extends ImportConverterName>(
+	converter: ImportConverter<TRow, TSqlRow, TName>,
+	primaryDocs: unknown[],
+	extraFileDocs: Record<string, unknown[]>,
+	idMap: MongoIdMap,
+	createId: () => string,
+): ImportBatch<TSqlRow> {
+	if (converter.buildBatch) {
+		return converter.buildBatch(primaryDocs, extraFileDocs, idMap, createId);
+	}
+	return buildImportBatch(primaryDocs, converter, idMap);
+}
+
 /** Load source JSON/JSONL file(s), convert, write SQL + id-map, print report. */
 export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, TName extends ImportConverterName>(
 	converter: ImportConverter<TRow, TSqlRow, TName>,
 	dirs: ImportConverterDirs,
 	resolvePath: (path: string) => string = resolve,
 ): Promise<void> {
-	const sourceFiles = IMPORT_SOURCES[converter.name];
 	const outPath = resolvePath(join(dirs.outDir, IMPORT_OUTPUTS[converter.name]));
 	const mapPath = resolvePath(join(dirs.outDir, IMPORT_ID_MAP_FILE));
 	const logDir = resolveImportLogDir(resolvePath(dirs.outDir));
 
-	const loaded = [];
-	for (const fileName of sourceFiles) {
-		loaded.push(await requireImportSourceFile(join(dirs.sourceDir, fileName), resolvePath));
-	}
-
-	const primary = loaded[0];
-	if (!primary) {
+	const loaded = await loadImportConverterSources(converter.name, dirs.sourceDir, resolvePath);
+	if (loaded.length === 0) {
 		importConsoleError(`No source files configured for converter: ${converter.name}`);
 		process.exit(1);
 	}
 
+	const primary = loaded[0];
 	const primaryDocs = parseMongoExportText(primary.text, primary.path);
 	const extraFileDocs = buildImportExtraDocs(
 		converter.name,
@@ -58,9 +86,7 @@ export async function runImportConverter<TRow extends MappedImportRow, TSqlRow, 
 	converter.prepareContext?.(extraFileDocs);
 
 	const idMap = await loadIdMap(mapPath);
-	const batch = converter.buildBatch
-		? converter.buildBatch(primaryDocs, extraFileDocs, idMap, () => crypto.randomUUID())
-		: buildImportBatch(primaryDocs, converter, idMap);
+	const batch = resolveImportConverterBatch(converter, primaryDocs, extraFileDocs, idMap, () => crypto.randomUUID());
 	const sql = converter.buildSql(batch.sqlRows);
 
 	await mkdir(dirname(outPath), { recursive: true });

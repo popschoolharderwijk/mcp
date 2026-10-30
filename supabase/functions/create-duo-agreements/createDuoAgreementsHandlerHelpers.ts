@@ -1,4 +1,4 @@
-import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
+import { beginAuthenticatedPostWithBodyValidation, jsonResponse } from '../_shared/http.ts';
 import { requireAuthenticatedClients, requireUserRole } from '../_shared/supabase.ts';
 import type { Body } from './types.ts';
 import { validateDuoBody } from './validation.ts';
@@ -6,16 +6,12 @@ import { verifyDuoLessonType } from './verifyDuoLessonType.ts';
 
 type AuthenticatedAdmin = Awaited<ReturnType<typeof requireAuthenticatedClients>>['admin'];
 
-async function beginCreateDuoRequest(
-	req: Request,
-): Promise<{ ok: true; body: Body; authHeader: string } | { ok: false; response: Response }> {
-	const begun = await beginAuthenticatedPostRequest<unknown>(req);
-	if (!begun.ok) return { ok: false, response: begun.response };
-
-	const parsed = validateDuoBody(begun.body);
-	if (!parsed.ok) return { ok: false, response: jsonResponse(400, { error: parsed.error }) };
-
-	return { ok: true, body: parsed.value, authHeader: begun.authHeader };
+function beginCreateDuoRequest(req: Request) {
+	return beginAuthenticatedPostWithBodyValidation<Body>(req, (body) => {
+		const parsed = validateDuoBody(body);
+		if (!parsed.ok) return { ok: false, response: jsonResponse(400, { error: parsed.error }) };
+		return { ok: true, body: parsed.value };
+	});
 }
 
 async function authenticateCreateDuoClients(

@@ -1,8 +1,6 @@
-import { buildScheduleFrequencyMap } from '../courses/parseScheduleFrequenciesHelpers';
-import { agreementDocPassesCutoff } from '../shared/agreementCutoffHelpers';
+import { filterPrimaryDocsByAgreementCutoff } from '../shared/agreementCutoffHelpers';
 import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
-import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
 import { buildTeacherLessonTypesSql } from './buildTeacherLessonTypesSqlHelpers';
 import {
 	buildKnownTeacherOidSet,
@@ -27,9 +25,7 @@ export const teacherLessonTypesConverter: ImportConverter<
 		setKnownTeacherOids(buildKnownTeacherOidSet(extraFileDocs['teachers.jsonl']));
 	},
 	buildBatch(primaryDocs, extraFileDocs, idMap, createId) {
-		const scheduleMap = buildScheduleFrequencyMap(extraFileDocs['schedule_frequencies.jsonl']);
-		const settings = getImportSettings();
-		const docs = primaryDocs.filter((doc) => agreementDocPassesCutoff(doc, settings, scheduleMap));
+		const docs = filterPrimaryDocsByAgreementCutoff(primaryDocs, extraFileDocs['schedule_frequencies.jsonl']);
 		return buildImportBatch(docs, teacherLessonTypesConverter, idMap, createId);
 	},
 	mapDoc: mapTeacherLessonTypeDoc,

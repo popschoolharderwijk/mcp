@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
+import type { PaginatedEntityPageControllerParams } from '@/hooks/paginatedEntityPageControllerTypes';
 import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import {
 	applyStudentsPageLoadOutcome,
@@ -11,22 +11,7 @@ import {
 import { buildStudentColumns } from '@/lib/students/studentsTableColumns';
 import type { StudentWithAgreements } from '@/types/students';
 
-interface UseStudentsPageControllerParams {
-	authLoading: boolean;
-	hasAccess: boolean;
-	navigate: NavigateFunction;
-	currentPage: number;
-	rowsPerPage: number;
-	debouncedSearchQuery: string;
-	statusFilter: 'active' | 'inactive' | 'all' | null;
-	selectedLessonTypeId: string | null;
-	sortColumn: string | null;
-	sortDirection: 'asc' | 'desc' | null;
-	setLoading: (loading: boolean) => void;
-	setTotalCount: (count: number) => void;
-}
-
-export function useStudentsPageController(params: UseStudentsPageControllerParams) {
+export function useStudentsPageController(params: PaginatedEntityPageControllerParams) {
 	const {
 		authLoading,
 		hasAccess,

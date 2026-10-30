@@ -1,3 +1,5 @@
+import { formatProfileFullName } from '@/lib/profile/profileDisplayNameHelpers';
+
 function extractInvoicePdfSignedUrl(data: unknown): string | null {
 	const url = (data as { signed_url?: string } | null)?.signed_url;
 	return url ?? null;
@@ -31,7 +33,5 @@ export function formatInvoiceStudentName(
 		email: string;
 	} | null,
 ): string {
-	if (!profile) return '—';
-	const fullName = `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim();
-	return fullName || profile.email;
+	return formatProfileFullName(profile);
 }

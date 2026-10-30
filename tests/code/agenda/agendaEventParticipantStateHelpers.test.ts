@@ -2,6 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildParticipantProfileMap,
 	extractParticipantUserIds,
+	resolveParticipantIdLoadPlan,
+	resolveParticipantProfileLoadPlan,
 	shouldClearParticipantProfiles,
 	shouldUseOccurrenceParticipantIds,
 } from '../../../src/components/agenda/agendaEventParticipantStateHelpers';
@@ -68,5 +70,70 @@ describe('shouldClearParticipantProfiles', () => {
 
 	it('keeps profiles when dialog is open with participants', () => {
 		expect(shouldClearParticipantProfiles(true, 2)).toBe(false);
+	});
+});
+
+describe('resolveParticipantIdLoadPlan', () => {
+	it('skips when dialog is closed or event id is missing', () => {
+		expect(
+			resolveParticipantIdLoadPlan({
+				open: false,
+				eventId: 'event-1',
+				occurrenceParticipantIds: ['user-1'],
+			}),
+		).toEqual({ type: 'skip' });
+		expect(
+			resolveParticipantIdLoadPlan({
+				open: true,
+				eventId: undefined,
+				occurrenceParticipantIds: ['user-1'],
+			}),
+		).toEqual({ type: 'skip' });
+	});
+
+	it('uses occurrence participant ids when provided', () => {
+		expect(
+			resolveParticipantIdLoadPlan({
+				open: true,
+				eventId: 'event-1',
+				occurrenceParticipantIds: ['user-1', 'user-2'],
+				occurrenceParticipantProfiles: {
+					'user-1': { first_name: 'Anna', last_name: null, email: 'anna@example.com' },
+				},
+			}),
+		).toEqual({
+			type: 'occurrence',
+			participantIds: ['user-1', 'user-2'],
+			profiles: {
+				'user-1': { first_name: 'Anna', last_name: null, email: 'anna@example.com' },
+			},
+		});
+	});
+
+	it('fetches from the database when occurrence ids are empty', () => {
+		expect(
+			resolveParticipantIdLoadPlan({
+				open: true,
+				eventId: 'event-42',
+				occurrenceParticipantIds: [],
+			}),
+		).toEqual({ type: 'fetch', eventId: 'event-42' });
+	});
+});
+
+describe('resolveParticipantProfileLoadPlan', () => {
+	it('skips profile loading when dialog is closed', () => {
+		expect(resolveParticipantProfileLoadPlan(false, ['user-1'])).toEqual({ type: 'skip' });
+	});
+
+	it('clears profiles when open with no participants', () => {
+		expect(resolveParticipantProfileLoadPlan(true, [])).toEqual({ type: 'clear' });
+	});
+
+	it('fetches profiles when open with participants', () => {
+		expect(resolveParticipantProfileLoadPlan(true, ['user-1', 'user-2'])).toEqual({
+			type: 'fetch',
+			participantIds: ['user-1', 'user-2'],
+		});
 	});
 });

@@ -1,8 +1,22 @@
 {
 	"$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
 	"ignorePatterns": ["src/integrations/supabase/types.ts"],
+	"rules": {
+		"unused-class-members": "error",
+		"unused-enum-members": "error",
+		"type-only-dependencies": "error",
+		"dev-dependencies-in-production": "error",
+		"re-export-cycle": "error",
+		"stale-suppressions": "error",
+		"weakened-tests": "error",
+		"test-only-branch": "error",
+		"deprecated-exports-in-use": "error",
+		"coverage-gaps": "warn",
+		"complexity-crap": "error"
+	},
 	"health": {
-		"ignore": ["src/components/ui/**"]
+		"ignore": ["src/components/ui/**"],
+		"suggestInlineSuppression": false
 	},
 	"overrides": [
 		{

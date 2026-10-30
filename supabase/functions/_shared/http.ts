@@ -51,6 +51,20 @@ export async function beginAuthenticatedPostRequest<T>(req: Request): Promise<Au
 	return { ok: true, authHeader, body };
 }
 
+type ValidatedPostBodyResult<T> = { ok: true; body: T } | { ok: false; response: Response };
+
+/** Authenticated POST with a caller-defined body validation step. */
+export async function beginAuthenticatedPostWithBodyValidation<T>(
+	req: Request,
+	validate: (body: unknown) => ValidatedPostBodyResult<T>,
+): Promise<AuthenticatedPostResult<T>> {
+	const begun = await beginAuthenticatedPostRequest<unknown>(req);
+	if (!begun.ok) return begun;
+	const validated = validate(begun.body);
+	if (!validated.ok) return validated;
+	return { ok: true, authHeader: begun.authHeader, body: validated.body };
+}
+
 export function requireValidUuidField(value: string | undefined, fieldLabel: string): Response | null {
 	if (!value || !UUID_RE.test(value)) {
 		return jsonResponse(400, { error: `Ongeldig ${fieldLabel}` });

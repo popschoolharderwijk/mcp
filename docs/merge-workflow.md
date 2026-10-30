@@ -48,10 +48,10 @@ git push --force-with-lease origin lovable
 
 ## Step 3: Wait for CI Checks
 
-| Check | Description |
-|-------|-------------|
-| **Biome Linting** | Code formatting and linting |
-| **Unit Tests** | Tests in `tests/code/` |
+| Check              | Description                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| **Biome Linting**  | Code formatting and linting                                                                                    |
+| **Unit Tests**     | Tests in `tests/code/`                                                                                         |
 | **Supabase Tests** | RLS + Auth + e2e against **mcp-test** in CI (on changes in `supabase/**` or `tests/**` except `tests/code/**`) |
 
 ---

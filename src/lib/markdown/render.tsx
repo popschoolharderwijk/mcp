@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react';
-import { parseMarkdownBlocks } from '@/lib/markdown/markdownBlockFormatters';
 import {
 	getMarkdownHeadingClass,
 	getMarkdownHeadingTag,
 	parseMarkdownInline,
 } from '@/lib/markdown/markdownInlineHelpers';
+import { parseMarkdownBlocks } from '../../../supabase/functions/_shared/markdownBlockParseHelpers.ts';
 
 /**
  * Minimal, safe markdown renderer for announcements.

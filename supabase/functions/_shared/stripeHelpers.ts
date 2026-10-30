@@ -7,6 +7,11 @@ function readStringProperty(value: Record<string, unknown> | null, key: string):
 	return typeof property === 'string' ? property : null;
 }
 
+export function getStripeId(value: unknown): string | null {
+	if (typeof value === 'string') return value;
+	return readStringProperty(asRecord(value), 'id');
+}
+
 export function readGeneratedSepaDebitFromDetails(details: Record<string, unknown> | null): string | null {
 	const direct = readStringProperty(details, 'generated_sepa_debit');
 	if (direct) return direct;

@@ -1,3 +1,5 @@
+import type { SignupRequestRowCore } from '../_shared/signupRequestRowTypes.ts';
+
 export interface Body {
 	signup_request_id?: string | null;
 	teacher_user_id: string;
@@ -31,17 +33,7 @@ export interface ResolvedStudentData {
 	signupReq: { id: string; status: string } | null;
 }
 
-export interface SignupRequestRow {
-	id: string;
-	status: string;
-	email: string;
-	first_name: string;
-	last_name: string;
-	phone_number: string | null;
-	date_of_birth: string | null;
-	parent_name: string | null;
-	parent_email: string | null;
-	parent_phone_number: string | null;
+export type SignupRequestRow = SignupRequestRowCore & {
 	lesson_type_id: string;
 	lesson_type_option_id: string | null;
-}
+};

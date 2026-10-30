@@ -1,5 +1,5 @@
 import { buildScheduleFrequencyMap } from '../courses/parseScheduleFrequenciesHelpers';
-import { agreementDocPassesCutoff } from '../shared/agreementCutoffHelpers';
+import { filterPrimaryDocsByAgreementCutoff } from '../shared/agreementCutoffHelpers';
 import { buildImportBatch } from '../shared/buildImportBatchHelpers';
 import type { ImportConverter } from '../shared/converterTypes';
 import { getImportSettings } from '../shared/importRuntimeSettingsHelpers';
@@ -50,9 +50,7 @@ export const agreementsCoursesConverter: ImportConverter<
 		setAgreementCourseNameByOid(buildCourseNameByOid(courseDocs, sourceToCanonical));
 	},
 	buildBatch(primaryDocs, extraFileDocs, idMap, createId) {
-		const scheduleMap = buildScheduleFrequencyMap(extraFileDocs['schedule_frequencies.jsonl']);
-		const settings = getImportSettings();
-		const docs = primaryDocs.filter((doc) => agreementDocPassesCutoff(doc, settings, scheduleMap));
+		const docs = filterPrimaryDocsByAgreementCutoff(primaryDocs, extraFileDocs['schedule_frequencies.jsonl']);
 		const batch = buildImportBatch(docs, agreementsCoursesConverter, idMap, createId);
 		const eventDocs = extraFileDocs['c4s_agenda_events.jsonl'];
 		const datesByAgreement = buildAgendaLessonDatesByAgreementOid(eventDocs);

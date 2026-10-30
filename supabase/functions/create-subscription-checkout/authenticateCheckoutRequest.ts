@@ -1,5 +1,5 @@
 import type { User } from 'https://esm.sh/@supabase/supabase-js@2';
-import { beginAuthenticatedPostRequest, jsonResponse } from '../_shared/http.ts';
+import { beginAuthenticatedPostWithBodyValidation, jsonResponse } from '../_shared/http.ts';
 import { createSupabaseClients, requireAuthenticatedUser } from '../_shared/supabase.ts';
 import { resolveCheckoutInitiatorAuthorization } from './checkoutAuthHandlerHelpers.ts';
 import { loadAgreementContext } from './loadAgreementContext.ts';
@@ -9,16 +9,12 @@ import { resolveCheckoutMode, validateCheckoutBody } from './validation.ts';
 type CheckoutClients = ReturnType<typeof createSupabaseClients>;
 type LoadedAgreement = Extract<Awaited<ReturnType<typeof loadAgreementContext>>, { ok: true }>;
 
-async function beginCheckoutRequest(
-	req: Request,
-): Promise<{ ok: true; body: Body; authHeader: string } | { ok: false; response: Response }> {
-	const begun = await beginAuthenticatedPostRequest<Body>(req);
-	if (!begun.ok) return { ok: false, response: begun.response };
-
-	const validationError = validateCheckoutBody(begun.body);
-	if (validationError) return { ok: false, response: validationError };
-
-	return { ok: true, body: begun.body, authHeader: begun.authHeader };
+function beginCheckoutRequest(req: Request) {
+	return beginAuthenticatedPostWithBodyValidation<Body>(req, (body) => {
+		const validationError = validateCheckoutBody(body as Body);
+		if (validationError) return { ok: false, response: validationError };
+		return { ok: true, body: body as Body };
+	});
 }
 
 async function authenticateCheckoutClients(

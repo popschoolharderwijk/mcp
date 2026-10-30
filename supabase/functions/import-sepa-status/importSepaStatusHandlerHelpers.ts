@@ -1,20 +1,16 @@
-import { beginAuthenticatedPostRequest } from '../_shared/http.ts';
+import { beginAuthenticatedPostWithBodyValidation } from '../_shared/http.ts';
 import { requireAuthenticatedClients, requireUserRole } from '../_shared/supabase.ts';
 import { validateImportBody } from './importSepaStatusValidationHelpers.ts';
 import type { Body } from './types.ts';
 
 type AuthenticatedAdmin = Awaited<ReturnType<typeof requireAuthenticatedClients>>['admin'];
 
-async function beginImportSepaStatusRequest(
-	req: Request,
-): Promise<{ ok: true; body: Body; authHeader: string } | { ok: false; response: Response }> {
-	const begun = await beginAuthenticatedPostRequest<Body>(req);
-	if (!begun.ok) return { ok: false, response: begun.response };
-
-	const validationError = validateImportBody(begun.body);
-	if (validationError) return { ok: false, response: validationError };
-
-	return { ok: true, body: begun.body, authHeader: begun.authHeader };
+function beginImportSepaStatusRequest(req: Request) {
+	return beginAuthenticatedPostWithBodyValidation<Body>(req, (body) => {
+		const validationError = validateImportBody(body as Body);
+		if (validationError) return { ok: false, response: validationError };
+		return { ok: true, body: body as Body };
+	});
 }
 
 async function authenticateImportSepaStatusClients(
