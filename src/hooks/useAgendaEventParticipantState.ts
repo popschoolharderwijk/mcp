@@ -2,16 +2,11 @@ import { useEffect, useState } from 'react';
 import {
 	buildParticipantProfileMap,
 	extractParticipantUserIds,
-	shouldClearParticipantProfiles,
-	shouldUseOccurrenceParticipantIds,
+	type ParticipantProfile,
+	resolveParticipantIdLoadPlan,
+	resolveParticipantProfileLoadPlan,
 } from '@/components/agenda/agendaEventParticipantStateHelpers';
 import { supabase } from '@/integrations/supabase/client';
-
-interface ParticipantProfile {
-	first_name: string | null;
-	last_name: string | null;
-	email: string | null;
-}
 
 export function useAgendaEventParticipantState(
 	open: boolean,
@@ -25,12 +20,18 @@ export function useAgendaEventParticipantState(
 	const [participantProfiles, setParticipantProfiles] = useState<Record<string, ParticipantProfile>>({});
 
 	useEffect(() => {
-		if (!open || !eventId) return;
-		if (shouldUseOccurrenceParticipantIds(occurrenceParticipantIds)) {
-			setParticipantIds(occurrenceParticipantIds);
-			setInitialParticipantIds(occurrenceParticipantIds);
-			if (occurrenceParticipantProfiles) {
-				setParticipantProfiles(occurrenceParticipantProfiles);
+		const plan = resolveParticipantIdLoadPlan({
+			open,
+			eventId,
+			occurrenceParticipantIds,
+			occurrenceParticipantProfiles,
+		});
+		if (plan.type === 'skip') return;
+		if (plan.type === 'occurrence') {
+			setParticipantIds(plan.participantIds);
+			setInitialParticipantIds(plan.participantIds);
+			if (plan.profiles) {
+				setParticipantProfiles(plan.profiles);
 			}
 			return;
 		}
@@ -38,7 +39,7 @@ export function useAgendaEventParticipantState(
 		void supabase
 			.from('agenda_participants')
 			.select('user_id')
-			.eq('event_id', eventId)
+			.eq('event_id', plan.eventId)
 			.then(({ data }) => {
 				if (!data) return;
 				const ids = extractParticipantUserIds(data);
@@ -48,7 +49,9 @@ export function useAgendaEventParticipantState(
 	}, [open, eventId, occurrenceParticipantIds, occurrenceParticipantProfiles]);
 
 	useEffect(() => {
-		if (shouldClearParticipantProfiles(open, participantIds.length)) {
+		const plan = resolveParticipantProfileLoadPlan(open, participantIds);
+		if (plan.type === 'skip') return;
+		if (plan.type === 'clear') {
 			setParticipantProfiles({});
 			return;
 		}
@@ -56,7 +59,7 @@ export function useAgendaEventParticipantState(
 		void supabase
 			.from('profiles')
 			.select('user_id, first_name, last_name, email')
-			.in('user_id', participantIds)
+			.in('user_id', plan.participantIds)
 			.then(({ data }) => {
 				const fetched = buildParticipantProfileMap(data);
 				setParticipantProfiles((current) => ({ ...current, ...fetched }));

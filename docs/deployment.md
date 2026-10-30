@@ -6,13 +6,13 @@ After merging a PR to `main`, migrations are applied automatically to the produc
 
 ## What to do when?
 
-| Change | Action |
-|--------|--------|
-| Database migrations (`supabase/migrations/`) | Automatic via Supabase GitHub Integration after merge to `main`. |
-| Auth/config changes (`supabase/config.toml`) | Manual: `supabase config push`. |
-| Edge Functions | Manual: `supabase functions deploy <name>`. |
-| Frontend code | Automatic (Lovable deploy). |
-| CSP (Content-Security-Policy) | Meta tag in `index.html` (ships with Lovable publish). No HTTP header: prod runs on Lovable hosting, not on your own Cloudflare/Vercel. |
+| Change                                       | Action                                                                                                                                  |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Database migrations (`supabase/migrations/`) | Automatic via Supabase GitHub Integration after merge to `main`.                                                                        |
+| Auth/config changes (`supabase/config.toml`) | Manual: `supabase config push`.                                                                                                         |
+| Edge Functions                               | Manual: `supabase functions deploy <name>`.                                                                                             |
+| Frontend code                                | Automatic (Lovable deploy).                                                                                                             |
+| CSP (Content-Security-Policy)                | Meta tag in `index.html` (ships with Lovable publish). No HTTP header: prod runs on Lovable hosting, not on your own Cloudflare/Vercel. |
 
 ---
 
@@ -81,21 +81,21 @@ supabase functions deploy
 
 ## Available Edge Functions
 
-| Function | Purpose | Required secrets |
-|----------|---------|------------------|
-| `delete-user` | GDPR: delete account (self or admin). | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
-| `create-user` | Admin-script only: create a user with optional password. | Standard |
-| `submit-signup-request` | Public signup forms (trial lesson, enrolment). | Standard, `RESEND_API_KEY` |
-| `approve-signup-request` | Admin approves signup → user + welcome email. | Standard, `RESEND_API_KEY` |
-| `schedule-trial-lesson` | Schedules a trial lesson on the agenda after intake. | Standard, `RESEND_API_KEY` |
-| `send-template-email` | Sends email from `email_templates` + variables. | Standard, `RESEND_API_KEY` |
-| `send-direct-debit-invite` | Generates a magic link for SEPA onboarding and emails it. | Standard, `RESEND_API_KEY` |
-| `create-subscription-checkout` | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate. | Standard, `STRIPE_SECRET_KEY` |
-| `create-customer-portal` | Opens Stripe Customer Portal for the customer or (privileged) on their behalf. | Standard, `STRIPE_SECRET_KEY` |
-| `sync-stripe-subscription` | Re-sync one subscription from Stripe into the DB. | Standard, `STRIPE_SECRET_KEY` |
-| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change. | Standard, `STRIPE_SECRET_KEY` |
-| `force-start-subscription` | Dev/test only: cancel current schedule and start immediately. UI behind `import.meta.env.DEV`. | Standard, `STRIPE_SECRET_KEY` |
-| `stripe-webhook` | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Function                        | Purpose                                                                                        | Required secrets                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `delete-user`                   | GDPR: delete account (self or admin).                                                          | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
+| `create-user`                   | Admin-script only: create a user with optional password.                                       | Standard                                               |
+| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                                 | Standard, `RESEND_API_KEY`                             |
+| `approve-signup-request`        | Admin approves signup → user + welcome email.                                                  | Standard, `RESEND_API_KEY`                             |
+| `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                           | Standard, `RESEND_API_KEY`                             |
+| `send-template-email`           | Sends email from `email_templates` + variables.                                                | Standard, `RESEND_API_KEY`                             |
+| `send-direct-debit-invite`      | Generates a magic link for SEPA onboarding and emails it.                                      | Standard, `RESEND_API_KEY`                             |
+| `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.         | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.                 | Standard, `STRIPE_SECRET_KEY`                          |
+| `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                              | Standard, `STRIPE_SECRET_KEY`                          |
+| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change.                                      | Standard, `STRIPE_SECRET_KEY`                          |
+| `force-start-subscription`      | Dev/test only: cancel current schedule and start immediately. UI behind `import.meta.env.DEV`. | Standard, `STRIPE_SECRET_KEY`                          |
+| `stripe-webhook`                | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required.       | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
 > 💡 "Standard" = the auto-injected Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md).
 

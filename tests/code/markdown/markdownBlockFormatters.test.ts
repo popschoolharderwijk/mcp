@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { parseMarkdownBlocks } from '../../../src/lib/markdown/markdownBlockFormatters';
+import { parseMarkdownBlocks } from '../../../supabase/functions/_shared/markdownBlockParseHelpers';
 
 describe('parseMarkdownBlocks', () => {
 	it('parses a single paragraph', () => {

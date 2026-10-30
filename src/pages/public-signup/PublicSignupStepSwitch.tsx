@@ -1,38 +1,13 @@
-import type { FormEvent } from 'react';
-import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
 import {
 	type PublicSignupRenderStep,
 	resolvePublicSignupRenderStep,
 } from '@/pages/public-signup/publicSignupStepSwitchHelpers';
-import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 import { PublicSignupStep1 } from './PublicSignupStep1';
 import { PublicSignupStep2 } from './PublicSignupStep2';
 import { PublicSignupStep3 } from './PublicSignupStep3';
-import type { GroupOption, LessonType, SignupStep } from './types';
+import type { PublicSignupFlowProps } from './types';
 
-interface PublicSignupStepSwitchProps {
-	step: SignupStep;
-	selectedType: LessonType | null;
-	lessonTypes: LessonType[];
-	groups: GroupOption[];
-	selectedGroupId: string | 'waitlist' | null;
-	lessonTypeOptions: LessonTypeOptionRow[];
-	selectedOption: OptionSnapshot | null;
-	form: SignupFormFields;
-	sepa: SignupSepaFields;
-	error: string | null;
-	submitting: boolean;
-	onSelectType: (lessonType: LessonType) => void;
-	onSelectGroupId: (groupId: string | 'waitlist') => void;
-	onSelectOption: (option: OptionSnapshot | null) => void;
-	onFormChange: (form: SignupFormFields) => void;
-	onSepaChange: (sepa: SignupSepaFields) => void;
-	onStepChange: (step: SignupStep) => void;
-	onSubmit: (event: FormEvent) => void;
-}
-
-function renderPublicSignupStep1(props: PublicSignupStepSwitchProps) {
+function renderPublicSignupStep1(props: PublicSignupFlowProps) {
 	return (
 		<PublicSignupStep1
 			lessonTypes={props.lessonTypes}
@@ -43,7 +18,7 @@ function renderPublicSignupStep1(props: PublicSignupStepSwitchProps) {
 	);
 }
 
-function renderPublicSignupStep2(props: PublicSignupStepSwitchProps) {
+function renderPublicSignupStep2(props: PublicSignupFlowProps) {
 	if (!props.selectedType) return null;
 	return (
 		<PublicSignupStep2
@@ -60,7 +35,7 @@ function renderPublicSignupStep2(props: PublicSignupStepSwitchProps) {
 	);
 }
 
-function renderPublicSignupStep3(props: PublicSignupStepSwitchProps) {
+function renderPublicSignupStep3(props: PublicSignupFlowProps) {
 	return (
 		<PublicSignupStep3
 			form={props.form}
@@ -77,14 +52,14 @@ function renderPublicSignupStep3(props: PublicSignupStepSwitchProps) {
 
 const publicSignupStepRenderers: Record<
 	Exclude<PublicSignupRenderStep, null>,
-	(props: PublicSignupStepSwitchProps) => JSX.Element | null
+	(props: PublicSignupFlowProps) => JSX.Element | null
 > = {
 	1: renderPublicSignupStep1,
 	2: renderPublicSignupStep2,
 	3: renderPublicSignupStep3,
 };
 
-export function PublicSignupStepSwitch(props: PublicSignupStepSwitchProps) {
+export function PublicSignupStepSwitch(props: PublicSignupFlowProps) {
 	const renderStep = resolvePublicSignupRenderStep(props.step, props.selectedType !== null);
 	if (!renderStep) return null;
 	return publicSignupStepRenderers[renderStep](props);

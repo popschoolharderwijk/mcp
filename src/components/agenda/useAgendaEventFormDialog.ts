@@ -1,4 +1,7 @@
-import type { AgendaEventFormPermissions } from '@/components/agenda/agenda-event-form-types';
+import type {
+	AgendaEventFormCoreOptions,
+	AgendaEventFormPermissions,
+} from '@/components/agenda/agenda-event-form-types';
 import { useAgendaEventFormActions } from '@/components/agenda/useAgendaEventFormActions';
 import {
 	assembleAgendaEventFormDialogContext,
@@ -9,29 +12,29 @@ import {
 	resolveAgendaEventFormDialogDefaults,
 } from '@/components/agenda/useAgendaEventFormDialogHelpers';
 import { useAgendaEventSourceSelection } from '@/components/agenda/useAgendaEventSourceSelection';
-import { type OccurrenceOverrides, useAgendaEventForm } from '@/hooks/useAgendaEventForm';
+import { useAgendaEventForm } from '@/hooks/useAgendaEventForm';
 import { useAuth } from '@/hooks/useAuth';
 import type { AgendaEventRow, CancellationType, DeleteScope, DeviationInfo } from '@/types/agenda-events';
 
-export interface AgendaEventFormDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
+export interface AgendaEventFormDialogProps
+	extends Pick<
+		AgendaEventFormCoreOptions,
+		| 'open'
+		| 'onOpenChange'
+		| 'occurrenceDate'
+		| 'occurrenceStartTime'
+		| 'occurrenceEndTime'
+		| 'occurrenceParticipantIds'
+		| 'occurrenceParticipantProfiles'
+		| 'occurrenceOverrides'
+		| 'readonlyParticipantIds'
+	> {
 	event?: AgendaEventRow | null;
 	initialSlot?: { start: Date; end: Date } | null;
 	onSuccess?: () => void;
 	onDelete?: (eventId: string, scope: DeleteScope, occurrenceDate?: string) => void | Promise<void>;
 	deviationInfo?: DeviationInfo | null;
 	onRevert?: () => void | Promise<void>;
-	occurrenceDate?: string | null;
-	occurrenceStartTime?: string | null;
-	occurrenceEndTime?: string | null;
-	occurrenceParticipantIds?: string[] | null;
-	occurrenceParticipantProfiles?: Record<
-		string,
-		{ first_name: string | null; last_name: string | null; email: string | null }
-	> | null;
-	occurrenceOverrides?: OccurrenceOverrides | null;
-	readonlyParticipantIds?: string[];
 	canAddParticipants?: boolean;
 	lessonType?: { name: string; icon?: string | null; color?: string | null } | null;
 	initialProjectId?: string | null;

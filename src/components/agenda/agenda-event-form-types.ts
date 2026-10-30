@@ -1,4 +1,22 @@
+import type { OccurrenceOverrides } from '@/lib/agenda/agendaEventFormHelpers';
 import type { AgendaEventSourceType } from '@/types/agenda-events';
+
+export type AgendaOccurrenceParticipantProfiles = Record<
+	string,
+	{ first_name: string | null; last_name: string | null; email: string | null }
+> | null;
+
+export interface AgendaEventFormCoreOptions {
+	open: boolean;
+	occurrenceDate?: string | null;
+	occurrenceStartTime?: string | null;
+	occurrenceEndTime?: string | null;
+	occurrenceParticipantIds?: string[] | null;
+	occurrenceParticipantProfiles?: AgendaOccurrenceParticipantProfiles;
+	occurrenceOverrides?: OccurrenceOverrides | null;
+	readonlyParticipantIds?: string[];
+	onOpenChange: (open: boolean) => void;
+}
 
 export interface ProjectOption {
 	id: string;

@@ -9,7 +9,7 @@ export function tipAutoIntervalRemainingMs(
 	if (lastShownAtMs === null) return 0;
 	const intervalMs = Math.max(0, intervalMinutes) * 60_000;
 	const remaining = intervalMs - (nowMs - lastShownAtMs);
-	return remaining > 0 ? remaining : 0;
+	return Math.max(remaining, 0);
 }
 
 function storageKey(userId: string): string {

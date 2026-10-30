@@ -1,4 +1,5 @@
 import type { DirectDebitBatch, DirectDebitBatchItem } from '@/lib/direct-debit/types';
+import { formatProfileFullName } from '@/lib/profile/profileDisplayNameHelpers';
 
 export type DirectDebitBatchDetailView = 'loading' | 'not-found' | 'content';
 
@@ -14,10 +15,7 @@ export function resolveDirectDebitBatchDetailView(
 export function formatBatchItemStudentName(
 	profile: { first_name: string | null; last_name: string | null; email: string } | null,
 ): string {
-	if (!profile) return '—';
-
-	const fullName = `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim();
-	return fullName || profile.email;
+	return formatProfileFullName(profile);
 }
 
 export function countInvoiceGenerationResults(results: Array<{ invoice_number?: string; error?: string }>): {

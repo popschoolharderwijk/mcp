@@ -5,6 +5,7 @@
 
 import { lastDayOfMonth, monthLabelNl } from '@/lib/date/month-labels';
 import type { SchoolYearSetting } from '@/lib/settings/appSettingsTypes';
+import { resolveSchoolYearStartAndEndYear } from '../../../supabase/functions/_shared/schoolYearStartYearHelpers.ts';
 
 export type SchoolYearBounds = SchoolYearSetting;
 
@@ -47,18 +48,7 @@ function getSchoolYearForDate(date: Date, bounds: SchoolYearBounds): SchoolYearW
 	// Compare against end of end_month using a non-leap reference year for ordinal only.
 	const endOrd = monthDayOrdinal(bounds.end_month, endDay(2024, bounds.end_month));
 
-	let startYear: number;
-	if (startOrd <= endOrd) {
-		startYear = asOf >= startOrd && asOf <= endOrd ? year : asOf > endOrd ? year : year - 1;
-	} else if (asOf >= startOrd) {
-		startYear = year;
-	} else if (asOf <= endOrd) {
-		startYear = year - 1;
-	} else {
-		startYear = year;
-	}
-
-	const endYear = startOrd <= endOrd ? startYear : startYear + 1;
+	const { startYear, endYear } = resolveSchoolYearStartAndEndYear(year, asOf, startOrd, endOrd);
 	return {
 		startYear,
 		start: `${startYear}-${pad(bounds.start_month)}-${pad(startDay())}`,

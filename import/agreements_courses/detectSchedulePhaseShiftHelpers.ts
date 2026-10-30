@@ -1,6 +1,6 @@
+import { addInterval } from '../../src/lib/lessonIntervalHelpers';
 import type { LessonFrequency } from '../courses/types';
 import { formatYmd } from '../shared/dateHelpers';
-import { addInterval } from '../shared/lessonIntervalHelpers';
 import { computeGroupAgendaStartDate } from './groupLessonImportHelpers';
 
 export type SchedulePhaseShift = {

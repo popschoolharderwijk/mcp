@@ -1,6 +1,8 @@
 /** Pure billing helpers shared by Deno edge functions (no Deno/Stripe/Supabase imports). */
 /** School-year bounds mirror src/lib/billing/schoolYear.ts + app_settings.school_year bootstrap. */
 
+import { resolveSchoolYearStartAndEndYear } from './schoolYearStartYearHelpers.ts';
+
 export type LessonFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
 export interface SchoolYearBounds {
@@ -51,18 +53,7 @@ export function getSchoolYearForDateString(
 	const startOrd = monthDayOrdinal(bounds.start_month, 1);
 	const endOrd = monthDayOrdinal(bounds.end_month, lastDayOfMonthUtc(2024, bounds.end_month));
 
-	let startYear: number;
-	if (startOrd <= endOrd) {
-		startYear = asOf >= startOrd && asOf <= endOrd ? year : asOf > endOrd ? year : year - 1;
-	} else if (asOf >= startOrd) {
-		startYear = year;
-	} else if (asOf <= endOrd) {
-		startYear = year - 1;
-	} else {
-		startYear = year;
-	}
-
-	const endYear = startOrd <= endOrd ? startYear : startYear + 1;
+	const { startYear, endYear } = resolveSchoolYearStartAndEndYear(year, asOf, startOrd, endOrd);
 	return {
 		startYear,
 		start: `${startYear}-${pad(bounds.start_month)}-01`,

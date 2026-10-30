@@ -1,3 +1,8 @@
+import type { FormEvent } from 'react';
+import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
+import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
+
 export interface LessonType {
 	id: string;
 	name: string;
@@ -21,3 +26,24 @@ export interface GroupOption {
 export type SignupStep = 1 | 2 | 3 | 4;
 
 export const DAY_LABELS = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+
+export interface PublicSignupFlowProps {
+	step: SignupStep;
+	selectedType: LessonType | null;
+	lessonTypes: LessonType[];
+	groups: GroupOption[];
+	selectedGroupId: string | 'waitlist' | null;
+	lessonTypeOptions: LessonTypeOptionRow[];
+	selectedOption: OptionSnapshot | null;
+	form: SignupFormFields;
+	sepa: SignupSepaFields;
+	error: string | null;
+	submitting: boolean;
+	onSelectType: (lessonType: LessonType) => void;
+	onSelectGroupId: (groupId: string | 'waitlist') => void;
+	onSelectOption: (option: OptionSnapshot | null) => void;
+	onFormChange: (form: SignupFormFields) => void;
+	onSepaChange: (sepa: SignupSepaFields) => void;
+	onStepChange: (step: SignupStep) => void;
+	onSubmit: (event: FormEvent) => void;
+}

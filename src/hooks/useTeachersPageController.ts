@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { NavigateFunction } from 'react-router-dom';
+import type { PaginatedEntityPageControllerParams } from '@/hooks/paginatedEntityPageControllerTypes';
 import { getDisplayName } from '@/lib/display-name';
 import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 import { applyTeachersPageLoadOutcome, executeTeachersPageLoad } from '@/lib/teachers/teachersPageControllerHelpers';
@@ -7,22 +7,7 @@ import { deleteTeacher } from '@/lib/teachers/teachersPageHelpers';
 import { buildTeachersColumns } from '@/lib/teachers/teachersTableColumns';
 import type { TeacherWithLessonTypes } from '@/types/teachers';
 
-interface UseTeachersPageControllerParams {
-	authLoading: boolean;
-	hasAccess: boolean;
-	navigate: NavigateFunction;
-	currentPage: number;
-	rowsPerPage: number;
-	debouncedSearchQuery: string;
-	statusFilter: 'active' | 'inactive' | 'all' | null;
-	selectedLessonTypeId: string | null;
-	sortColumn: string | null;
-	sortDirection: 'asc' | 'desc' | null;
-	setLoading: (loading: boolean) => void;
-	setTotalCount: (count: number) => void;
-}
-
-export function useTeachersPageController(params: UseTeachersPageControllerParams) {
+export function useTeachersPageController(params: PaginatedEntityPageControllerParams) {
 	const {
 		authLoading,
 		hasAccess,

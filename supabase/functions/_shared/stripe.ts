@@ -1,7 +1,8 @@
 import Stripe from 'npm:stripe@17.5.0';
-import { readGeneratedSepaDebitPaymentMethodId } from './stripeHelpers.ts';
+import { getStripeId, readGeneratedSepaDebitPaymentMethodId } from './stripeHelpers.ts';
 
 export { getSafeErrorMessage } from './errors.ts';
+export { getStripeId } from './stripeHelpers.ts';
 
 export function getStripe(): Stripe {
 	const key = Deno.env.get('STRIPE_SECRET_KEY');
@@ -10,20 +11,6 @@ export function getStripe(): Stripe {
 		apiVersion: '2024-11-20.acacia',
 		httpClient: Stripe.createFetchHttpClient(),
 	});
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-	return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
-}
-
-function readStringProperty(value: Record<string, unknown> | null, key: string): string | null {
-	const property = value?.[key];
-	return typeof property === 'string' ? property : null;
-}
-
-export function getStripeId(value: unknown): string | null {
-	if (typeof value === 'string') return value;
-	return readStringProperty(asRecord(value), 'id');
 }
 
 function getGeneratedSepaDebitPaymentMethodId(latestAttempt: unknown): string | null {

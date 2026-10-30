@@ -1,4 +1,4 @@
-import { isValidIban, normalizeIban } from './iban.ts';
+import { isValidIban, normalizeIban } from '../_shared/ibanHelpers.ts';
 import type { SepaFields, SignupRequest } from './types.ts';
 import { bad } from './validation.ts';
 

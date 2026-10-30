@@ -17,7 +17,8 @@
 		"check": "biome check --error-on-warnings",
 		"test:code": "bun test code --isolate",
 		"check:ci": "biome ci --error-on-warnings && tsc -b --noEmit && bun run test:code && rm -f *.tsbuildinfo && echo 'no errors'",
-		"check:fallow": "fallow --quiet --format json && fallow --quiet --fail-on-issues",
+		"check:fallow": "fallow --quiet --format json --fail-on-issues",
+		"check:fallow:audit": "fallow audit --quiet",
 		"supabase:types": "bun run scripts/gen-supabase-types.ts",
 		"supabase:types:local": "bun run scripts/gen-supabase-types.ts --local",
 		"lint:sql": "squawk supabase/migrations/*.sql",
@@ -57,7 +58,7 @@
 		"tailwindcss": "^3.4.17"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.13",
+		"@biomejs/biome": "^2.6.4",
 		"@types/bun": "^1.3.14",
 		"@types/node": "^22.20.1",
 		"@types/react": "^18.3.23",
@@ -65,7 +66,7 @@
 		"@types/react-dom": "^18.3.7",
 		"@vitejs/plugin-react-swc": "^3.11.0",
 		"autoprefixer": "^10.4.21",
-		"fallow": "^3.25.0",
+		"fallow": "^3.37.0",
 		"lovable-tagger": "^1.1.13",
 		"postcss": "^8.5.6",
 		"squawk-cli": "^2.40.1",

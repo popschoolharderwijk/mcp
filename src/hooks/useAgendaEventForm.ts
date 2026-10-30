@@ -1,36 +1,19 @@
 import { useCallback, useMemo, useState } from 'react';
+import type { AgendaEventFormCoreOptions } from '@/components/agenda/agenda-event-form-types';
 import type { RecurrenceScope } from '@/components/agenda/RecurrenceChoiceDialog';
 import { useAgendaEventFormInit } from '@/hooks/useAgendaEventFormInit';
 import { useAgendaEventParticipantState } from '@/hooks/useAgendaEventParticipantState';
-import {
-	buildInitialFormSnapshot,
-	hasAgendaFormChanges,
-	type OccurrenceOverrides,
-} from '@/lib/agenda/agendaEventFormHelpers';
+import { buildInitialFormSnapshot, hasAgendaFormChanges } from '@/lib/agenda/agendaEventFormHelpers';
 import { runPerformAgendaEventSave } from '@/lib/agenda/agendaEventFormPerformSaveHelpers';
 import type { AgendaEventRow, AgendaEventSourceType } from '@/types/agenda-events';
 
-export type { OccurrenceOverrides };
-
-export interface UseAgendaEventFormOptions {
-	open: boolean;
+export interface UseAgendaEventFormOptions extends AgendaEventFormCoreOptions {
 	event: AgendaEventRow | null | undefined;
 	initialSlot: { start: Date; end: Date } | null | undefined;
 	userId: string | undefined;
-	occurrenceDate?: string | null;
-	occurrenceStartTime?: string | null;
-	occurrenceEndTime?: string | null;
-	occurrenceParticipantIds?: string[] | null;
-	occurrenceParticipantProfiles?: Record<
-		string,
-		{ first_name: string | null; last_name: string | null; email: string | null }
-	> | null;
-	occurrenceOverrides?: OccurrenceOverrides | null;
-	readonlyParticipantIds?: string[];
 	sourceType?: AgendaEventSourceType;
 	sourceId?: string | null;
 	onSuccess?: () => void;
-	onOpenChange: (open: boolean) => void;
 }
 
 export function useAgendaEventForm(options: UseAgendaEventFormOptions) {

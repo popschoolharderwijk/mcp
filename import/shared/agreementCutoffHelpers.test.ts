@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import type { ScheduleFrequencyEntry } from '../courses/types';
-import { agreementDocPassesCutoff, collectStudentOidsWithKeptAgreements } from './agreementCutoffHelpers';
+import {
+	agreementDocPassesCutoff,
+	collectStudentOidsWithKeptAgreements,
+	filterPrimaryDocsByAgreementCutoff,
+} from './agreementCutoffHelpers';
 import type { ImportSettings } from './importSettingsHelpers';
 
 const WEEKLY_30: ScheduleFrequencyEntry = { durationMinutes: 30, frequency: 'weekly' };
@@ -78,5 +82,13 @@ describe('collectStudentOidsWithKeptAgreements', () => {
 			scheduleMap(),
 		);
 		expect([...oids].sort()).toEqual(['student-new', 'student-open']);
+	});
+});
+
+describe('filterPrimaryDocsByAgreementCutoff', () => {
+	it('returns every doc when minAgreementEndDate is null', () => {
+		const docs = [agreementDoc(), agreementDoc({ _id: { $oid: 'agreement-2' } })];
+		const filtered = filterPrimaryDocsByAgreementCutoff(docs, []);
+		expect(filtered).toEqual(docs);
 	});
 });

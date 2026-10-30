@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	getStripeId,
 	readGeneratedSepaDebitFromDetails,
 	readGeneratedSepaDebitPaymentMethodId,
 } from '../../../supabase/functions/_shared/stripeHelpers';
+
+describe('getStripeId', () => {
+	it('returns string ids unchanged', () => {
+		expect(getStripeId('sub_123')).toBe('sub_123');
+	});
+
+	it('reads id from expanded objects', () => {
+		expect(getStripeId({ id: 'pm_456' })).toBe('pm_456');
+	});
+
+	it('returns null for non-objects', () => {
+		expect(getStripeId(null)).toBeNull();
+	});
+});
 
 describe('readGeneratedSepaDebitFromDetails', () => {
 	it('reads direct generated sepa debit id', () => {

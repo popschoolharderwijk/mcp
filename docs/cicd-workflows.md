@@ -2,13 +2,13 @@
 
 ## Active Workflows
 
-| Workflow | File | Trigger | Purpose |
-|----------|------|---------|---------|
-| **PR CI** | `pull-request-ci.yml` | PRs to main | Biome CI, TypeScript, code tests, Fallow, Squawk |
-| **PR Tests** | `pull-request-test-code.yml` | All PRs | Unit tests (`tests/code/`) |
-| **PR Supabase** | `pull-request-supabase.yml` | `supabase/**`, `tests/**` except `tests/code/**` + manual | DB lint + RLS/auth/e2e |
-| **Formatting** | `formatting.yml` | Manual/callable | Auto-fix with Biome (`bun run fix`) |
-| **Linting** | `linting.yml` | Manual/callable | Lint + write errors to `.github/biome-errors.txt` |
+| Workflow        | File                         | Trigger                                                   | Purpose                                           |
+| --------------- | ---------------------------- | --------------------------------------------------------- | ------------------------------------------------- |
+| **PR CI**       | `pull-request-ci.yml`        | PRs to main                                               | Biome CI, TypeScript, code tests, Fallow, Squawk  |
+| **PR Tests**    | `pull-request-test-code.yml` | All PRs                                                   | Unit tests (`tests/code/`)                        |
+| **PR Supabase** | `pull-request-supabase.yml`  | `supabase/**`, `tests/**` except `tests/code/**` + manual | DB lint + RLS/auth/e2e                            |
+| **Formatting**  | `formatting.yml`             | Manual/callable                                           | Auto-fix with Biome (`bun run fix`)               |
+| **Linting**     | `linting.yml`                | Manual/callable                                           | Lint + write errors to `.github/biome-errors.txt` |
 
 ---
 
@@ -16,11 +16,11 @@
 
 Three linters run in this project:
 
-| Linter | What it checks | Where | Command |
-|--------|----------------|------|---------|
-| **Biome** | TypeScript/JS code style & errors | `pull-request-ci.yml` | `bun run check:ci` (Biome CI) |
-| **Squawk** | SQL migration safety (drops, locks, backward compat) | `pull-request-ci.yml` | `bun run lint:sql` |
-| **supabase db lint** | PL/pgSQL code quality, SQL injection | `pull-request-supabase.yml` | `bun run lint:db` |
+| Linter               | What it checks                                       | Where                       | Command                       |
+| -------------------- | ---------------------------------------------------- | --------------------------- | ----------------------------- |
+| **Biome**            | TypeScript/JS code style & errors                    | `pull-request-ci.yml`       | `bun run check:ci` (Biome CI) |
+| **Squawk**           | SQL migration safety (drops, locks, backward compat) | `pull-request-ci.yml`       | `bun run lint:sql`            |
+| **supabase db lint** | PL/pgSQL code quality, SQL injection                 | `pull-request-supabase.yml` | `bun run lint:db`             |
 
 ### Squawk (SQL migrations)
 
@@ -74,8 +74,8 @@ Runs RLS, auth, and e2e tests against **mcp-test** in GitHub Actions:
 
 Found in `.github/workflows-disabled/`:
 
-| Workflow | Why disabled |
-|----------|----------------|
-| `pull-request-database.yml` | Replaced by the workflow that runs against linked Supabase (no preview branches anymore) |
-| `reset-lovable-branch.yml` | Manual trigger; not needed in the normal flow |
-| `prevent-protected-folder-changes.yml` | Replaced by branch protection rules |
+| Workflow                               | Why disabled                                                                             |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `pull-request-database.yml`            | Replaced by the workflow that runs against linked Supabase (no preview branches anymore) |
+| `reset-lovable-branch.yml`             | Manual trigger; not needed in the normal flow                                            |
+| `prevent-protected-folder-changes.yml` | Replaced by branch protection rules                                                      |

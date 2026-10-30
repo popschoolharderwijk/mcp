@@ -1,6 +1,6 @@
 import { LuPlus } from 'react-icons/lu';
 import { Button } from '@/components/ui/button';
-import { DataTable } from '@/components/ui/data-table';
+import { DataTable, type ServerSideDataTableControlProps } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
 import type { buildUsersRowActions } from '@/components/users/UsersPageParts';
 import type { buildUsersColumns, buildUsersQuickFilterGroups, UserWithRole } from '@/lib/users/usersPageHelpers';
@@ -11,23 +11,12 @@ import {
 	shouldShowUsersCreateButton,
 } from '@/lib/users/usersPageTableHelpers';
 
-interface UsersPageTableProps {
+interface UsersPageTableProps extends ServerSideDataTableControlProps {
 	isSiteAdmin: boolean;
 	isAdmin: boolean;
 	userId: string | undefined;
 	users: UserWithRole[];
 	columns: ReturnType<typeof buildUsersColumns>;
-	searchQuery: string;
-	onSearchChange: (value: string) => void;
-	loading: boolean;
-	totalCount: number;
-	currentPage: number;
-	rowsPerPage: number;
-	onPageChange: (page: number) => void;
-	onRowsPerPageChange: (rows: number) => void;
-	sortColumn: string | null;
-	sortDirection: 'asc' | 'desc' | null;
-	onSortChange: (column: string, direction: 'asc' | 'desc') => void;
 	quickFilterGroups: ReturnType<typeof buildUsersQuickFilterGroups>;
 	rowActions: ReturnType<typeof buildUsersRowActions>;
 	onCreate: () => void;

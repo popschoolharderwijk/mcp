@@ -1,12 +1,13 @@
-# Finalize — diff review (comments + test theater + no-legacy)
+# Finalize — diff review (comments + test theater + no-legacy + single-caller)
 
-Mandatory before declaring **DONE**. Also re-check after any Fallow-driven edit that adds comments or tests.
+Mandatory before declaring **DONE**. Also re-check after any Fallow-driven edit that adds comments, tests, or new helper modules.
 
 Canonical rules:
 
 * Comments / diff narration → [`.cursor/rules/comments.mdc`](../../../.cursor/rules/comments.mdc)
 * Test theater → [`.cursor/rules/tests.mdc`](../../../.cursor/rules/tests.mdc) (“What to test”)
 * No-legacy → [`.cursor/rules/no-legacy.mdc`](../../../.cursor/rules/no-legacy.mdc)
+* Single-caller modules → [`.cursor/rules/no-single-caller-modules.mdc`](../../../.cursor/rules/no-single-caller-modules.mdc)
 
 ## 1. Diff-narration comments
 
@@ -49,3 +50,17 @@ Reject and fix:
 * Keeping a removed API alive “just in case”
 
 Fix by: one current contract; update **all** callers; no dual surfaces unless the user **explicitly** asked for compatibility. Comments must not narrate the removal either — see section 1 / `comments.mdc`.
+
+## 4. No single-caller modules
+
+Scan **every new or moved helper/module** in this finalize / this session (see `no-single-caller-modules.mdc`).
+
+Reject and fix:
+
+* A new file whose only real importer is one calling module (tests do not count as a second caller)
+* A thin re-export stub left “for compatibility” after an extract
+* A one-off pure helper dumped into its own `*Helpers.ts` solely to shrink the caller or paint coverage
+
+Fix by: keep a **named function** (or local component) **in the calling file**; delete the unused file; update imports. Create a separate module only when **two or more** production importers need it (or it is a clear ownership boundary / `useX` hook / public entry — see the rule).
+
+**Smell check:** *How many non-test files import this?* If exactly one → it does not get its own file.

@@ -22,13 +22,13 @@ Both use the same SMTP provider (Resend).
 
 ### Available variables
 
-| Variable | Description |
-|----------|-------------|
-| `{{ .ConfirmationURL }}` | Full Magic Link URL |
-| `{{ .Token }}` | OTP code |
-| `{{ .TokenHash }}` | Hash of the token (for URLs) |
-| `{{ .SiteURL }}` | Configured Site URL |
-| `{{ .Email }}` | User email address |
+| Variable                 | Description                  |
+| ------------------------ | ---------------------------- |
+| `{{ .ConfirmationURL }}` | Full Magic Link URL          |
+| `{{ .Token }}`           | OTP code                     |
+| `{{ .TokenHash }}`       | Hash of the token (for URLs) |
+| `{{ .SiteURL }}`         | Configured Site URL          |
+| `{{ .Email }}`           | User email address           |
 
 The Stripe direct-debit flow uses its own variant with `token_hash` format — see [stripe-direct-debit.md §5](integrations/stripe-direct-debit.md).
 
@@ -42,12 +42,12 @@ Manage via the UI: **Instellingen → E-mailtemplates** (`src/components/setting
 
 Table `email_templates` (migration `20260513101733_email_templates.sql`):
 
-| Column | Purpose |
-|--------|---------|
-| `event_key` | Unique event key (e.g. `signup_received`, `trial_scheduled`). |
-| `subject` | Subject line; supports `{{variable}}` interpolation. |
+| Column          | Purpose                                                                 |
+| --------------- | ----------------------------------------------------------------------- |
+| `event_key`     | Unique event key (e.g. `signup_received`, `trial_scheduled`).           |
+| `subject`       | Subject line; supports `{{variable}}` interpolation.                    |
 | `body_markdown` | Markdown body with the same variables (converted to HTML at send time). |
-| `updated_at` | Last changed. |
+| `updated_at`    | Last changed.                                                           |
 
 RLS: authenticated users may **SELECT**. Only `is_site_admin()` may **INSERT / UPDATE / DELETE**.
 
@@ -107,8 +107,8 @@ supabase config push  # review diff, type Y
 
 ## 4. Project IDs (where to set SMTP and templates)
 
-| Environment | Project ref |
-|-------------|-------------|
+| Environment | Project ref            |
+| ----------- | ---------------------- |
 | Development | `zdvscmogkfyddnnxzkdu` |
-| Test (CI) | `jserlqacarlgtdzrblic` |
-| Production | `bnagepkxryauifzyoxgo` |
+| Test (CI)   | `jserlqacarlgtdzrblic` |
+| Production  | `bnagepkxryauifzyoxgo` |

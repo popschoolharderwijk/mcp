@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type Dispatch, type ReactNode, type SetStateAction, useEffect, useState } from 'react';
 import { LuLoaderCircle } from 'react-icons/lu';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,32 @@ interface SaveProps<T> {
 
 function settingsValuesEqual<T>(left: T, right: T): boolean {
 	return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function useSyncedSettingsForm<T>(initial: T): [T, Dispatch<SetStateAction<T>>] {
+	const [form, setForm] = useState(initial);
+	useEffect(() => setForm(initial), [initial]);
+	return [form, setForm];
+}
+
+function SettingsFormCard({
+	title,
+	description,
+	children,
+}: {
+	title: string;
+	description?: string;
+	children: ReactNode;
+}) {
+	return (
+		<Card>
+			<CardHeader>
+				<CardTitle>{title}</CardTitle>
+				{description ? <CardDescription>{description}</CardDescription> : null}
+			</CardHeader>
+			<CardContent className="space-y-4">{children}</CardContent>
+		</Card>
+	);
 }
 
 type SettingsFormActionsProps = {
@@ -136,334 +162,289 @@ function MonthSelect({
 }
 
 export function SchoolYearSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<SchoolYearSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Schooljaar</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-2">
-					<MonthSelect
-						label="Startmaand"
-						value={form.start_month}
-						disabled={!canEdit}
-						onChange={(start_month) => setForm((f) => ({ ...f, start_month }))}
-					/>
-					<MonthSelect
-						label="Eindmaand"
-						value={form.end_month}
-						disabled={!canEdit}
-						onChange={(end_month) => setForm((f) => ({ ...f, end_month }))}
-					/>
-				</div>
-				<p className="text-sm text-muted-foreground">{describeSchoolYearBounds(form)}</p>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.school_year)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.school_year })}
-					onSave={() => void onSave(form)}
+		<SettingsFormCard title="Schooljaar">
+			<div className="grid gap-4 sm:grid-cols-2">
+				<MonthSelect
+					label="Startmaand"
+					value={form.start_month}
+					disabled={!canEdit}
+					onChange={(start_month) => setForm((f) => ({ ...f, start_month }))}
 				/>
-			</CardContent>
-		</Card>
+				<MonthSelect
+					label="Eindmaand"
+					value={form.end_month}
+					disabled={!canEdit}
+					onChange={(end_month) => setForm((f) => ({ ...f, end_month }))}
+				/>
+			</div>
+			<p className="text-sm text-muted-foreground">{describeSchoolYearBounds(form)}</p>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.school_year)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.school_year })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 
 export function AgendaSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<AgendaSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	const hourRangeValid = isAgendaHourRangeValid(form.start_hour, form.end_hour);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Agenda</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-3">
-					<NumberSelect
-						label="Startuur"
-						value={form.start_hour}
-						disabled={!canEdit}
-						options={withCurrentNumberOption(agendaStartHourOptionsForEnd(form.end_hour), form.start_hour)}
-						formatOption={formatAgendaHourOption}
-						onChange={(start_hour) => setForm((f) => ({ ...f, start_hour }))}
-					/>
-					<NumberSelect
-						label="Einduur"
-						value={form.end_hour}
-						disabled={!canEdit}
-						options={withCurrentNumberOption(agendaEndHourOptionsForStart(form.start_hour), form.end_hour)}
-						formatOption={formatAgendaHourOption}
-						onChange={(end_hour) => setForm((f) => ({ ...f, end_hour }))}
-					/>
-					<NumberSelect
-						label="Blokduur"
-						value={form.slot_minutes}
-						disabled={!canEdit}
-						options={withCurrentNumberOption(AGENDA_SLOT_MINUTE_OPTIONS, form.slot_minutes)}
-						formatOption={(minutes) => `${minutes} minuten`}
-						onChange={(slot_minutes) => setForm((f) => ({ ...f, slot_minutes }))}
-					/>
-				</div>
-				{hourRangeValid ? (
-					<p className="text-sm text-muted-foreground">{describeAgendaSetting(form)}</p>
-				) : (
-					<p className="text-sm text-destructive">Startuur moet vóór het einduur liggen.</p>
-				)}
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					saveDisabled={!hourRangeValid}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.agenda)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.agenda })}
-					onSave={() => void onSave(form)}
+		<SettingsFormCard title="Agenda">
+			<div className="grid gap-4 sm:grid-cols-3">
+				<NumberSelect
+					label="Startuur"
+					value={form.start_hour}
+					disabled={!canEdit}
+					options={withCurrentNumberOption(agendaStartHourOptionsForEnd(form.end_hour), form.start_hour)}
+					formatOption={formatAgendaHourOption}
+					onChange={(start_hour) => setForm((f) => ({ ...f, start_hour }))}
 				/>
-			</CardContent>
-		</Card>
+				<NumberSelect
+					label="Einduur"
+					value={form.end_hour}
+					disabled={!canEdit}
+					options={withCurrentNumberOption(agendaEndHourOptionsForStart(form.start_hour), form.end_hour)}
+					formatOption={formatAgendaHourOption}
+					onChange={(end_hour) => setForm((f) => ({ ...f, end_hour }))}
+				/>
+				<NumberSelect
+					label="Blokduur"
+					value={form.slot_minutes}
+					disabled={!canEdit}
+					options={withCurrentNumberOption(AGENDA_SLOT_MINUTE_OPTIONS, form.slot_minutes)}
+					formatOption={(minutes) => `${minutes} minuten`}
+					onChange={(slot_minutes) => setForm((f) => ({ ...f, slot_minutes }))}
+				/>
+			</div>
+			{hourRangeValid ? (
+				<p className="text-sm text-muted-foreground">{describeAgendaSetting(form)}</p>
+			) : (
+				<p className="text-sm text-destructive">Startuur moet vóór het einduur liggen.</p>
+			)}
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				saveDisabled={!hourRangeValid}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.agenda)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.agenda })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 
 export function VatSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<VatSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Tarieven</CardTitle>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="space-y-2">
-						<Label>Leeftijdsgrens voor jongeren tarief</Label>
-						<Input
-							type="number"
-							min={1}
-							max={100}
-							disabled={!canEdit}
-							value={form.age_threshold_years}
-							onChange={(e) => setForm((f) => ({ ...f, age_threshold_years: Number(e.target.value) }))}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Standaard BTW-percentage</Label>
-						<Input
-							type="number"
-							min={0}
-							max={100}
-							disabled={!canEdit}
-							value={form.standard_rate_percent}
-							onChange={(e) => setForm((f) => ({ ...f, standard_rate_percent: Number(e.target.value) }))}
-						/>
-					</div>
+		<SettingsFormCard title="Tarieven">
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2">
+					<Label>Leeftijdsgrens voor jongeren tarief</Label>
+					<Input
+						type="number"
+						min={1}
+						max={100}
+						disabled={!canEdit}
+						value={form.age_threshold_years}
+						onChange={(e) => setForm((f) => ({ ...f, age_threshold_years: Number(e.target.value) }))}
+					/>
 				</div>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.vat)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.vat })}
-					onSave={() => void onSave(form)}
-				/>
-			</CardContent>
-		</Card>
+				<div className="space-y-2">
+					<Label>Standaard BTW-percentage</Label>
+					<Input
+						type="number"
+						min={0}
+						max={100}
+						disabled={!canEdit}
+						value={form.standard_rate_percent}
+						onChange={(e) => setForm((f) => ({ ...f, standard_rate_percent: Number(e.target.value) }))}
+					/>
+				</div>
+			</div>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.vat)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.vat })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 
 export function BrandingSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<BrandingSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Huisstijl</CardTitle>
-				<CardDescription>Primaire merkkleur voor UI, PDF en e-mail.</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="space-y-2">
-					<Label>Primaire kleur</Label>
-					<ColorPicker
-						value={form.primary_hex}
-						disabled={!canEdit}
-						onChange={(hex) => setForm({ primary_hex: hex.toLowerCase() })}
-					/>
-				</div>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.branding)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.branding })}
-					onSave={() => void onSave(form)}
+		<SettingsFormCard title="Huisstijl" description="Primaire merkkleur voor UI, PDF en e-mail.">
+			<div className="space-y-2">
+				<Label>Primaire kleur</Label>
+				<ColorPicker
+					value={form.primary_hex}
+					disabled={!canEdit}
+					onChange={(hex) => setForm({ primary_hex: hex.toLowerCase() })}
 				/>
-			</CardContent>
-		</Card>
+			</div>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.branding)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.branding })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 
 export function TrialLessonsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<TrialLessonsSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Proeflessen</CardTitle>
-				<CardDescription>Standaard planhorizon en lesduur bij het inplannen van een proefles.</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="space-y-2">
-						<Label>Horizon (dagen)</Label>
-						<Input
-							type="number"
-							min={1}
-							max={365}
-							disabled={!canEdit}
-							value={form.horizon_days}
-							onChange={(e) => setForm((f) => ({ ...f, horizon_days: Number(e.target.value) }))}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Standaard duur (minuten)</Label>
-						<Input
-							type="number"
-							min={5}
-							max={240}
-							disabled={!canEdit}
-							value={form.default_duration_minutes}
-							onChange={(e) =>
-								setForm((f) => ({ ...f, default_duration_minutes: Number(e.target.value) }))
-							}
-						/>
-					</div>
+		<SettingsFormCard
+			title="Proeflessen"
+			description="Standaard planhorizon en lesduur bij het inplannen van een proefles."
+		>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2">
+					<Label>Horizon (dagen)</Label>
+					<Input
+						type="number"
+						min={1}
+						max={365}
+						disabled={!canEdit}
+						value={form.horizon_days}
+						onChange={(e) => setForm((f) => ({ ...f, horizon_days: Number(e.target.value) }))}
+					/>
 				</div>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.trial_lessons)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.trial_lessons })}
-					onSave={() => void onSave(form)}
-				/>
-			</CardContent>
-		</Card>
+				<div className="space-y-2">
+					<Label>Standaard duur (minuten)</Label>
+					<Input
+						type="number"
+						min={5}
+						max={240}
+						disabled={!canEdit}
+						value={form.default_duration_minutes}
+						onChange={(e) => setForm((f) => ({ ...f, default_duration_minutes: Number(e.target.value) }))}
+					/>
+				</div>
+			</div>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.trial_lessons)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.trial_lessons })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 
 export function AgreementsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<AgreementsSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
+	const [form, setForm] = useSyncedSettingsForm(initial);
 
 	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Overeenkomsten</CardTitle>
-				<CardDescription>
-					Standaard startdatum-offset en betaalmethode. De einddatum volgt het ingestelde schooljaareinde.
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="grid gap-4 sm:grid-cols-2">
-					<div className="space-y-2">
-						<Label>Start over (dagen)</Label>
-						<Input
-							type="number"
-							min={0}
-							max={365}
-							disabled={!canEdit}
-							value={form.default_start_offset_days}
-							onChange={(e) =>
-								setForm((f) => ({ ...f, default_start_offset_days: Number(e.target.value) }))
-							}
-						/>
-					</div>
-					<div className="space-y-2">
-						<Label>Betaalmethode</Label>
-						<Select
-							disabled={!canEdit}
-							value={form.default_payment_method}
-							onValueChange={(value) =>
-								setForm((f) => ({
-									...f,
-									default_payment_method: value as AgreementPaymentMethod,
-								}))
-							}
-						>
-							<SelectTrigger>
-								<SelectValue />
-							</SelectTrigger>
-							<SelectContent>
-								<SelectItem value="sepa">Incasso (SEPA)</SelectItem>
-								<SelectItem value="stripe">Stripe</SelectItem>
-							</SelectContent>
-						</Select>
-					</div>
+		<SettingsFormCard
+			title="Overeenkomsten"
+			description="Standaard startdatum-offset en betaalmethode. De einddatum volgt het ingestelde schooljaareinde."
+		>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<div className="space-y-2">
+					<Label>Start over (dagen)</Label>
+					<Input
+						type="number"
+						min={0}
+						max={365}
+						disabled={!canEdit}
+						value={form.default_start_offset_days}
+						onChange={(e) => setForm((f) => ({ ...f, default_start_offset_days: Number(e.target.value) }))}
+					/>
 				</div>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.agreements)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.agreements })}
-					onSave={() => void onSave(form)}
-				/>
-			</CardContent>
-		</Card>
-	);
-}
-
-export function TipsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<TipsSetting>) {
-	const [form, setForm] = useState(initial);
-	useEffect(() => setForm(initial), [initial]);
-
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{NAV_LABELS.tips}</CardTitle>
-				<CardDescription>
-					Of tips actief zijn voor alle gebruikers, en de minimale wachttijd tussen automatische tips.
-				</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-4">
-				<div className="max-w-xs space-y-2">
-					<Label>Status</Label>
+				<div className="space-y-2">
+					<Label>Betaalmethode</Label>
 					<Select
 						disabled={!canEdit}
-						value={form.enabled ? 'on' : 'off'}
-						onValueChange={(value) => setForm((f) => ({ ...f, enabled: value === 'on' }))}
+						value={form.default_payment_method}
+						onValueChange={(value) =>
+							setForm((f) => ({
+								...f,
+								default_payment_method: value as AgreementPaymentMethod,
+							}))
+						}
 					>
 						<SelectTrigger>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="on">Aan</SelectItem>
-							<SelectItem value="off">Uit</SelectItem>
+							<SelectItem value="sepa">Incasso (SEPA)</SelectItem>
+							<SelectItem value="stripe">Stripe</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
-				<div className="max-w-xs space-y-2">
-					<Label>Minimale wachttijd (minuten)</Label>
-					<Input
-						type="number"
-						min={0}
-						max={24 * 60}
-						disabled={!canEdit || !form.enabled}
-						value={form.auto_interval_minutes}
-						onChange={(e) => setForm((f) => ({ ...f, auto_interval_minutes: Number(e.target.value) }))}
-					/>
-				</div>
-				<SettingsFormActions
-					canEdit={canEdit}
-					saving={saving}
-					resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.tips)}
-					onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.tips })}
-					onSave={() => void onSave(form)}
+			</div>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.agreements)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.agreements })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
+	);
+}
+
+export function TipsSettingsForm({ canEdit, initial, saving, onSave }: SaveProps<TipsSetting>) {
+	const [form, setForm] = useSyncedSettingsForm(initial);
+
+	return (
+		<SettingsFormCard
+			title={NAV_LABELS.tips}
+			description="Of tips actief zijn voor alle gebruikers, en de minimale wachttijd tussen automatische tips."
+		>
+			<div className="max-w-xs space-y-2">
+				<Label>Status</Label>
+				<Select
+					disabled={!canEdit}
+					value={form.enabled ? 'on' : 'off'}
+					onValueChange={(value) => setForm((f) => ({ ...f, enabled: value === 'on' }))}
+				>
+					<SelectTrigger>
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<SelectItem value="on">Aan</SelectItem>
+						<SelectItem value="off">Uit</SelectItem>
+					</SelectContent>
+				</Select>
+			</div>
+			<div className="max-w-xs space-y-2">
+				<Label>Minimale wachttijd (minuten)</Label>
+				<Input
+					type="number"
+					min={0}
+					max={24 * 60}
+					disabled={!canEdit || !form.enabled}
+					value={form.auto_interval_minutes}
+					onChange={(e) => setForm((f) => ({ ...f, auto_interval_minutes: Number(e.target.value) }))}
 				/>
-			</CardContent>
-		</Card>
+			</div>
+			<SettingsFormActions
+				canEdit={canEdit}
+				saving={saving}
+				resetDisabled={settingsValuesEqual(form, APP_SETTINGS_BOOTSTRAP.tips)}
+				onReset={() => setForm({ ...APP_SETTINGS_BOOTSTRAP.tips })}
+				onSave={() => void onSave(form)}
+			/>
+		</SettingsFormCard>
 	);
 }
 

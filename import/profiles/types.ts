@@ -15,3 +15,18 @@ export type ProfileSqlRow = {
 	cocIssuedOn: string | null;
 	dateOfBirth: string | null;
 };
+
+/** Fields merged from a newly mapped teacher/student row into an existing profile. */
+export type ProfileMergeIncoming = Pick<
+	ProfileSqlRow,
+	| 'email'
+	| 'firstName'
+	| 'lastName'
+	| 'phoneNumber'
+	| 'streetName'
+	| 'houseNumber'
+	| 'postalCode'
+	| 'city'
+	| 'countryCode'
+> &
+	Partial<Pick<ProfileSqlRow, 'isTeacher' | 'isStudent' | 'cocIssuedOn' | 'dateOfBirth'>>;

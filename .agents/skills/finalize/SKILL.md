@@ -2,28 +2,28 @@
 name: finalize
 description: >
   Continuous quality fix loop in caveman mode. Regenerates Supabase types once, then
-  runs check → CI → Fallow until all three pass. Fallow failures retry fallow only,
-  then one verification pass from check. Complexity/CRAP: real fixes and
-  behavior-asserting tests only — never coverage theater. Before DONE, extra review
-  for diff-narration comments, test theater, and no-legacy. Use only when the user
-  explicitly asks to finalize, run the quality gates, clean up before a commit/PR,
-  or get the repo green.
+  runs check → CI → Fallow → Fallow audit until all four pass. Fallow failures retry
+  fallow only; audit failures retry audit (then verify from check). Complexity/CRAP:
+  real fixes and behavior-asserting tests only — never coverage theater. Before DONE,
+  extra review for diff-narration comments, test theater, no-legacy, and
+  no-single-caller modules. Use only when the user explicitly asks to finalize, run
+  the quality gates, clean up before a commit/PR, or get the repo green.
 ---
 
 # Finalize
 
-Get the repo green. Done only when `bun run check`, `bun run check:ci`, and
-`bun run check:fallow` all exit 0 in one consecutive outer pass, **and** the
-diff-narration / test-theater / no-legacy review in [`review.md`](review.md) is
-clean.
+Get the repo green. Done only when `bun run check`, `bun run check:ci`,
+`bun run check:fallow`, and `bun run check:fallow:audit` all exit 0 in one
+consecutive outer pass, **and** the review in [`review.md`](review.md) is clean
+(diff-narration / test theater / no-legacy / **no single-caller modules**).
 
 ## Load once
 
 1. **Caveman** — read and follow [`.agents/skills/caveman/SKILL.md`](../caveman/SKILL.md) for the whole run (default **full**). That skill is the only source of truth for communication style.
-2. **Fallow / CRAP** — read [`fallow.md`](fallow.md) before fixing any Fallow finding.
+2. **Fallow / CRAP** — read [`fallow.md`](fallow.md) before fixing any Fallow or Fallow-audit finding.
 3. **Language** — read [`language.md`](language.md); enforce before declaring success.
 4. **Quality loop details** — read [`quality-loop.md`](quality-loop.md) for fix priority, escalation, and scope.
-5. **Diff review** — read [`review.md`](review.md) (diff-narration comments + test theater + no-legacy). Apply on every edit that adds comments or tests; full pass before DONE.
+5. **Diff review** — read [`review.md`](review.md) (diff-narration + test theater + no-legacy + **single-caller modules**). Apply on every edit that adds comments, tests, or helper files; full pass before DONE.
 
 ## When to use
 
@@ -39,7 +39,8 @@ Do not start this workflow merely because the user asks to commit or create a PR
 | types | `bun run supabase:types` | Once at start (linked types regen — **not** a DB reset) |
 | check | `bun run check` | Biome verify (no write) |
 | ci | `bun run check:ci` | Biome CI + `tsc` + code tests |
-| fallow | `bun run check:fallow` | Dead code, duplication, complexity/CRAP |
+| fallow | `bun run check:fallow` | Full-project dead code, duplication, complexity/CRAP |
+| fallow-audit | `bun run check:fallow:audit` | Changed-file gate (`fallow audit`; matches PR CI) |
 
 Use these `package.json` scripts. `bun run fix` is the Biome write command; it is not a gate — only run it when `check` fails on auto-fixable issues. Never run `supabase db reset` (any variant). Do not run `tests/auth`, `tests/rls`, or `tests/e2e` (need Supabase; out of scope).
 
@@ -47,16 +48,16 @@ Use these `package.json` scripts. `bun run fix` is the Biome write command; it i
 
 1. Run **types**. If it fails, fix and retry types. After it passes, never run it
    again during this finalize run.
-2. Run **check**, then **ci**, then **fallow**.
+2. Run **check**, then **ci**, then **fallow**, then **fallow-audit**.
 3. If check fails, run `bun run fix` for auto-fixable Biome issues (or edit by hand), then restart at check.
 4. If ci fails, fix and restart at check.
-5. If fallow fails, fix and retry fallow only until it passes.
-6. After a repaired fallow pass first becomes green, run exactly one verification
-   pass: **check → ci → fallow**.
-7. If all three verification commands pass consecutively, run the
+5. If fallow fails, fix and retry fallow only until it passes; then continue to fallow-audit.
+6. If fallow-audit fails, fix and **retry fallow-audit only** until it passes.
+7. After a repaired fallow or fallow-audit pass first becomes green (having been red), run exactly one verification pass: **check → ci → fallow → fallow-audit**.
+8. If all four verification commands pass consecutively, run the
    [`review.md`](review.md) pass on the session diff (comments + tests +
-   no-legacy). Fix any hits, then re-verify from **check** if code/tests changed.
-8. Only then stop: **DONE**. Handle any verification failure using steps 3–6.
+   no-legacy + **single-caller modules**). Fix any hits, then re-verify from **check** if code/tests changed.
+9. Only then stop: **DONE**. Handle any verification failure using steps 3–6.
 
 **Restart points (single table):**
 
@@ -65,9 +66,10 @@ Use these `package.json` scripts. `bun run fix` is the Biome write command; it i
 | types | Fix; re-run types until green; then enter loop |
 | check | `bun run fix` or edit; restart at **check** |
 | ci | Fix; restart at **check** |
-| fallow | Fix; **retry fallow only** until green; then one verification pass from **check** |
+| fallow | Fix; **retry fallow only** until green; then **fallow-audit** |
+| fallow-audit | Fix; **retry fallow-audit only** until green; then one verification pass from **check** |
 
-Do not advance while the current step is failing. **Exception:** fallow uses its own inner retry (table above) so check/ci are not re-run after every fallow tweak.
+Do not advance while the current step is failing. **Exception:** fallow and fallow-audit each use their own inner retry (table above) so check/ci are not re-run after every fallow tweak.
 
 ## Preserve existing work
 
@@ -79,14 +81,15 @@ result is unclear, stop and ask the user.
 
 ## Fix size
 
-Prefer the **smallest change that genuinely resolves the finding**. A real refactor that removes complexity is valid; a tiny identity-helper + useless test is not — see [`fallow.md`](fallow.md).
+Prefer the **smallest change that genuinely resolves the finding**. A real refactor that removes complexity is valid; a tiny identity-helper + useless test is not — see [`fallow.md`](fallow.md). **Never** create a new helper file for a function with only one caller — keep a named function in the calling file ([`review.md`](review.md) §4 / `no-single-caller-modules.mdc`).
 
 ## Agent rules (short)
 
-1. Follow the state machine; do not skip check → ci → fallow in an outer pass.
+1. Follow the state machine; do not skip check → ci → fallow → fallow-audit in an outer pass.
 2. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
 3. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
 4. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
 5. No unsolicited legacy / dual-API shims — [`review.md`](review.md) / `.cursor/rules/no-legacy.mdc`.
-6. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
-7. Never `git add` or `git commit`. The user always stages and commits.
+6. No single-caller helper modules — [`review.md`](review.md) §4 / `.cursor/rules/no-single-caller-modules.mdc`.
+7. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
+8. Never `git add` or `git commit`. The user always stages and commits.

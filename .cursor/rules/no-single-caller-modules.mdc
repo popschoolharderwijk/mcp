@@ -1,0 +1,47 @@
+---
+description: Do not extract single-caller helpers into their own files — keep named functions in the caller
+alwaysApply: true
+---
+
+# No single-caller module splits
+
+Do **not** create a new file for code that only one module imports.
+
+Keep the logic as a **named function or local component in the calling file**. Do not paste the body into call sites; the function stays a function — only the file boundary goes away.
+
+## Forbidden
+
+- A helper module used by exactly one caller (`isActivationKey` in `registrationIconKey.ts`, focus flags, props-equal helpers, style-class helpers, narrowers, one-off modal fragments).
+- A thin UI wrapper (`.tsx`) used by exactly one parent when it exists only to shrink the parent file.
+
+## Allowed
+
+- A module with **two or more** real importers (shared code).
+- A substantial feature module or screen-level component that is a clear ownership boundary even if it currently has one parent.
+- A `useX` hook file paired with its UI, when the hook owns state/effects (not a place to dump one-caller pure helpers).
+- Entry points and package/public surfaces.
+
+## How to fix
+
+1. Move the named function/component into the calling file (non-exported local unless it must be exported).
+2. Update imports.
+3. Delete the now-unused file.
+4. Do **not** leave a re-export stub “for compatibility”.
+
+## Examples
+
+```typescript
+// ❌ BAD — own file, only RegistrationIcon imports it
+// registrationIconKey.ts
+export function isActivationKey(key: string): boolean {
+  if (key === 'Enter') return true;
+  return key === ' ';
+}
+
+// ✅ GOOD — same function, in the caller
+// RegistrationIcon.tsx
+function isActivationKey(key: string): boolean {
+  if (key === 'Enter') return true;
+  return key === ' ';
+}
+```

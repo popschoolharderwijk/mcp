@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import { useCallback } from 'react';
 import { AdminSiteGuard } from '@/components/auth/AdminSiteGuard';
 import { DataTable } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
+import { useInvoiceListPageState } from '@/hooks/useInvoiceListPageState';
 import { supabase } from '@/integrations/supabase/client';
-import { downloadInvoicePdf } from '@/lib/invoices/invoicePdfDownloadHelpers';
 import { invoiceSearchHaystack } from '@/lib/invoices/invoiceSearchHelpers';
 import {
 	buildInvoiceListColumns,
@@ -23,45 +22,17 @@ export default function Invoices() {
 }
 
 function List() {
-	const [rows, setRows] = useState<InvoiceListRow[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [downloading, setDownloading] = useState<string | null>(null);
-	const [search, setSearch] = useState('');
-
-	const load = useCallback(async () => {
-		setLoading(true);
-		const { data, error } = await supabase
-			.from('invoices')
-			.select('*, profiles!invoices_student_user_id_fkey(first_name,last_name,email,avatar_url)')
-			.order('issue_date', { ascending: false })
-			.limit(500);
-		if (error) toast.error(error.message);
-		setRows((data ?? []) as unknown as InvoiceListRow[]);
-		setLoading(false);
-	}, []);
-
-	useEffect(() => {
-		load();
-	}, [load]);
-
-	const handleDownload = async (invoice: InvoiceListRow) => {
-		if (!invoice.pdf_storage_path) {
-			toast.error('Geen PDF beschikbaar.');
-			return;
-		}
-		if (downloading === invoice.id) return;
-		setDownloading(invoice.id);
-		const result = await downloadInvoicePdf(
-			(body) => supabase.functions.invoke('get-invoice-pdf', { body }),
-			invoice.id,
-		);
-		setDownloading(null);
-		if (result.ok === false) {
-			toast.error(result.message);
-			return;
-		}
-		window.open(result.url, '_blank');
-	};
+	const loadQuery = useCallback(
+		() =>
+			supabase
+				.from('invoices')
+				.select('*, profiles!invoices_student_user_id_fkey(first_name,last_name,email,avatar_url)')
+				.order('issue_date', { ascending: false })
+				.limit(500),
+		[],
+	);
+	const { rows, loading, downloading, handleDownload, search, setSearch } =
+		useInvoiceListPageState<InvoiceListRow>(loadQuery);
 
 	return (
 		<NavPageShell item="invoices">

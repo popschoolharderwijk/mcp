@@ -1,28 +1,20 @@
-import { UserStepCreateContent, UserStepEditContent } from '@/components/agreements/UserStepSections';
-import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { LessonTypeOption } from '@/components/ui/lesson-type-select';
-import type { LessonTypeOptionSnapshot, WizardLessonTypeInfo } from '@/types/lesson-agreements';
+import {
+	UserStepCreateContent,
+	type UserStepCreateContentProps,
+	UserStepEditContent,
+} from '@/components/agreements/UserStepSections';
+import type { WizardLessonTypeInfo } from '@/types/lesson-agreements';
 import type { User } from '@/types/users';
 
-interface UserStepContentProps {
+type UserStepContentProps = {
 	isEditMode: boolean;
-	selectedStudentUserId: string | null;
 	selectedUser: User | null;
-	selectedLessonTypeId: string | null;
 	selectedLessonType: WizardLessonTypeInfo | undefined;
-	lessonTypes: LessonTypeOption[];
-	lessonTypeOptions: LessonTypeOptionSnapshot[];
-	selectedOptionSnapshot: OptionSnapshot | null;
-	onStudentUserIdChange: (userId: string | null) => void;
-	onUserChange: (user: User | null) => void;
-	onLessonTypeChange: (lessonTypeId: string | null) => void;
-	onOptionSnapshotChange: (snap: OptionSnapshot | null) => void;
-	isDuoLesson?: boolean;
-	partnerStudentUserId?: string | null;
-	partnerUser?: User | null;
-	onPartnerStudentUserIdChange?: (userId: string | null) => void;
-	onPartnerUserChange?: (user: User | null) => void;
-}
+} & Omit<UserStepCreateContentProps, 'isDuoLesson' | 'partnerStudentUserId' | 'partnerUser'> & {
+		isDuoLesson?: UserStepCreateContentProps['isDuoLesson'];
+		partnerStudentUserId?: UserStepCreateContentProps['partnerStudentUserId'];
+		partnerUser?: UserStepCreateContentProps['partnerUser'];
+	};
 
 export function UserStepContent({
 	isEditMode,

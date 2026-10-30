@@ -134,6 +134,51 @@ function deviationCancellationMeta(deviation: LessonAppointmentDeviationWithAgre
 	};
 }
 
+function buildDeviationCalendarEvent(
+	deviation: LessonAppointmentDeviationWithAgreement,
+	firstAgreement: LessonAgreementWithStudent,
+	eventId: string,
+	durationMinutes: number,
+	eventDate: Date,
+	resource: {
+		type: 'agreement' | 'deviation';
+		isDeviation: boolean;
+		isCancelled: boolean;
+		isRecurring: boolean;
+	},
+): CalendarEvent {
+	const lesson = deviation.lesson_agreement ?? firstAgreement;
+	const student = resolveDeviationStudent(lesson, firstAgreement);
+	const lessonType = resolveDeviationLessonType(lesson, deviation.agenda_event?.title, firstAgreement);
+	const meta = deviationCancellationMeta(deviation);
+	return {
+		title: `${lessonType.name} - ${student.studentName}`,
+		start: eventDate,
+		end: addMinutes(eventDate, durationMinutes),
+		resource: {
+			type: resource.type,
+			agreementId: firstAgreement.id,
+			eventId,
+			deviationId: deviation.id,
+			studentName: student.studentName,
+			user: student.userInfo,
+			lessonTypeName: lessonType.name,
+			lessonTypeColor: lessonType.color,
+			lessonTypeIcon: lessonType.icon,
+			isDeviation: resource.isDeviation,
+			hasTimeOrDateChange: hasActiveTimeOrDateChange(deviation),
+			isCancelled: resource.isCancelled,
+			isGroupLesson: false,
+			originalDate: deviation.original_date,
+			originalStartTime: deviation.original_start_time,
+			reason: deviation.reason,
+			isRecurring: resource.isRecurring,
+			cancellationType: meta.cancellationType,
+			needsReschedule: meta.needsReschedule,
+		},
+	};
+}
+
 function pushSingleDateDeviationEvent(
 	events: CalendarEvent[],
 	deviation: LessonAppointmentDeviationWithAgreement,
@@ -149,36 +194,14 @@ function pushSingleDateDeviationEvent(
 		!isCancelled &&
 		new Date(deviation.actual_date).getDay() === firstAgreement.day_of_week &&
 		deviation.actual_start_time.substring(0, 5) === firstAgreement.start_time.substring(0, 5);
-	const lesson = deviation.lesson_agreement ?? firstAgreement;
-	const student = resolveDeviationStudent(lesson, firstAgreement);
-	const lessonType = resolveDeviationLessonType(lesson, deviation.agenda_event?.title, firstAgreement);
-	const meta = deviationCancellationMeta(deviation);
-	events.push({
-		title: `${lessonType.name} - ${student.studentName}`,
-		start: eventDate,
-		end: addMinutes(eventDate, durationMinutes),
-		resource: {
+	events.push(
+		buildDeviationCalendarEvent(deviation, firstAgreement, eventId, durationMinutes, eventDate, {
 			type: isEffectivelyOriginal ? 'agreement' : 'deviation',
-			agreementId: firstAgreement.id,
-			eventId,
-			deviationId: deviation.id,
-			studentName: student.studentName,
-			user: student.userInfo,
-			lessonTypeName: lessonType.name,
-			lessonTypeColor: lessonType.color,
-			lessonTypeIcon: lessonType.icon,
 			isDeviation: !isCancelled && !isEffectivelyOriginal,
-			hasTimeOrDateChange: hasActiveTimeOrDateChange(deviation),
 			isCancelled,
-			isGroupLesson: false,
-			originalDate: deviation.original_date,
-			originalStartTime: deviation.original_start_time,
-			reason: deviation.reason,
 			isRecurring: !!deviation.spans_future_occurrences,
-			cancellationType: meta.cancellationType,
-			needsReschedule: meta.needsReschedule,
-		},
-	});
+		}),
+	);
 }
 
 function pushSpanningDeviationEvent(
@@ -193,36 +216,14 @@ function pushSpanningDeviationEvent(
 		getDateForDayOfWeek(new Date(deviation.actual_date).getDay(), currentLessonDate),
 		deviation.actual_start_time,
 	);
-	const lesson = deviation.lesson_agreement ?? firstAgreement;
-	const student = resolveDeviationStudent(lesson, firstAgreement);
-	const lessonType = resolveDeviationLessonType(lesson, deviation.agenda_event?.title, firstAgreement);
-	const meta = deviationCancellationMeta(deviation);
-	events.push({
-		title: `${lessonType.name} - ${student.studentName}`,
-		start: eventDate,
-		end: addMinutes(eventDate, durationMinutes),
-		resource: {
+	events.push(
+		buildDeviationCalendarEvent(deviation, firstAgreement, eventId, durationMinutes, eventDate, {
 			type: 'deviation',
-			agreementId: firstAgreement.id,
-			eventId,
-			deviationId: deviation.id,
-			studentName: student.studentName,
-			user: student.userInfo,
-			lessonTypeName: lessonType.name,
-			lessonTypeColor: lessonType.color,
-			lessonTypeIcon: lessonType.icon,
 			isDeviation: !deviation.is_cancelled,
-			hasTimeOrDateChange: hasActiveTimeOrDateChange(deviation),
 			isCancelled: deviation.is_cancelled,
-			isGroupLesson: false,
-			originalDate: deviation.original_date,
-			originalStartTime: deviation.original_start_time,
-			reason: deviation.reason,
 			isRecurring: true,
-			cancellationType: meta.cancellationType,
-			needsReschedule: meta.needsReschedule,
-		},
-	});
+		}),
+	);
 }
 
 function pushDefaultGroupedOccurrence(

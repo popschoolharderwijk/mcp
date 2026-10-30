@@ -1,4 +1,5 @@
 import type { MapDocResult } from '../shared/converterTypes';
+import type { MappedPersonImportRowBase } from '../shared/mappedPersonImportTypes';
 
 export type MongoStudentDoc = {
 	_id?: unknown;
@@ -19,22 +20,7 @@ export type MongoStudentDoc = {
 	[key: string]: unknown;
 };
 
-export type MappedStudentRow = {
-	mongoOid: string;
-	/** Real email, or `missing_<mongoOid>@example.com` / `duplicate_N_…` rewrite. */
-	email: string;
-	/** From shared `allocateImportEmail` (missing / duplicate); includes replacement address. */
-	emailWarning: string | null;
-	firstName: string | null;
-	lastName: string | null;
-	phoneNumber: string | null;
-	streetName: string | null;
-	/** House number including any addition (e.g. 12A). */
-	houseNumber: string | null;
-	postalCode: string | null;
-	city: string | null;
-	/** ISO 3166-1 alpha-2; defaults to NL. */
-	countryCode: string;
+export type MappedStudentRow = MappedPersonImportRowBase & {
 	/** Date of birth `YYYY-MM-DD`, or null. */
 	dateOfBirth: string | null;
 	/** Set when birthday was present but not a valid YYYY-MM-DD date. */

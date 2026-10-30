@@ -2,12 +2,12 @@
 
 ## Development Environments
 
-| Command | Environment | Env file | Use |
-|---------|-------------|----------|-----|
-| `bun dev` | Remote development | `.env.development` | Shared mcp-dev / Lovable (default `dev` script) |
-| `bun run dev:local` | Local | `.env.local` | Docker Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
-| `bun run dev:test` | Test database | `.env.test` | Remote mcp-test |
-| `bun prod` | Production | `.env.production` | Production server |
+| Command             | Environment        | Env file           | Use                                                                               |
+| ------------------- | ------------------ | ------------------ | --------------------------------------------------------------------------------- |
+| `bun dev`           | Remote development | `.env.development` | Shared mcp-dev / Lovable (default `dev` script)                                   |
+| `bun run dev:local` | Local              | `.env.local`       | Docker Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
+| `bun run dev:test`  | Test database      | `.env.test`        | Remote mcp-test                                                                   |
+| `bun prod`          | Production         | `.env.production`  | Production server                                                                 |
 
 Vite forbids **mode name** `local` (it would clash with the `.env.local` postfix). The script therefore uses mode **`localdev`**. The env file can still be normal **`.env.local`** (always loaded; gitignored). For `bun dev`, `.env.development` overrides the same keys so mcp-dev wins.
 
@@ -214,6 +214,7 @@ bun run fix                   # Fix (format + lint autofix)
 # Quality gates (CI)
 bun run check:ci              # Biome CI + tsc + code tests
 bun run check:fallow          # Fallow (dead code, duplication, complexity)
+bun run check:fallow:audit    # Fallow audit (changed-file gate; PR CI)
 
 # SQL migrations (Squawk)
 bun run lint:sql

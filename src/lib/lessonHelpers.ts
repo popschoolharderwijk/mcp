@@ -6,27 +6,9 @@
 import type { LessonFrequency } from '@/types/lesson-agreements';
 import { formatDateToDb, getDateForDayOfWeek } from './date/date-format';
 
-/**
- * Advance a date by one interval according to frequency (mutates the date).
- */
-export function addInterval(date: Date, frequency: LessonFrequency): void {
-	if (frequency === 'daily') {
-		date.setDate(date.getDate() + 1);
-		return;
-	}
-	if (frequency === 'weekly') {
-		date.setDate(date.getDate() + 7);
-		return;
-	}
-	if (frequency === 'biweekly') {
-		date.setDate(date.getDate() + 14);
-		return;
-	}
-	const dayOfMonth = date.getDate();
-	date.setMonth(date.getMonth() + 1);
-	const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-	date.setDate(Math.min(dayOfMonth, lastDay));
-}
+export { addInterval } from './lessonIntervalHelpers';
+
+import { addInterval } from './lessonIntervalHelpers';
 
 /**
  * First occurrence date in range for the given day_of_week and frequency.

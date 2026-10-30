@@ -20,22 +20,22 @@ Tests usually run against a **remote** Supabase project; you can also point env 
 
 On `supabase db reset --linked`, two seed files are applied (see `supabase/config.toml`):
 
-| File | Purpose |
-|------|---------|
-| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql) | Production-safe reference data: email templates, accounting singleton |
-| [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) | Default lesson types + options (dev/test only; not on production) |
-| [`supabase/seeds/test.sql`](../supabase/seeds/test.sql) | RLS test data: test users, roles, agreements, agenda, projects |
+| File                                                                    | Purpose                                                               |
+| ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql)       | Production-safe reference data: email templates, accounting singleton |
+| [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) | Default lesson types + options (dev/test only; not on production)     |
+| [`supabase/seeds/test.sql`](../supabase/seeds/test.sql)                 | RLS test data: test users, roles, agreements, agenda, projects        |
 
 `seeds/test.sql` includes:
 
-| Type | Users |
-|------|-------|
-| **site_admin** | `site-admin@test.nl` (1) |
-| **admin** | `admin-one@test.nl`, `admin-two@test.nl` (2) |
-| **staff** | `staff-one@test.nl` through `staff-five@test.nl` (5) |
-| **teachers** | `teacher-alice@test.nl` through `teacher-jack@test.nl` (10) |
-| **students** | `student-001@test.nl` through `student-060@test.nl` (60) |
-| **users (no role)** | `user-001@test.nl` through `user-010@test.nl` (10) |
+| Type                | Users                                                       |
+| ------------------- | ----------------------------------------------------------- |
+| **site_admin**      | `site-admin@test.nl` (1)                                    |
+| **admin**           | `admin-one@test.nl`, `admin-two@test.nl` (2)                |
+| **staff**           | `staff-one@test.nl` through `staff-five@test.nl` (5)        |
+| **teachers**        | `teacher-alice@test.nl` through `teacher-jack@test.nl` (10) |
+| **students**        | `student-001@test.nl` through `student-060@test.nl` (60)    |
+| **users (no role)** | `user-001@test.nl` through `user-010@test.nl` (10)          |
 
 `seeds/test.sql` also contains (lesson-types.sql supplies lesson types):
 - **Lesson types**: Reference data in `seeds/lesson-types.sql` (not in test.sql)
@@ -53,18 +53,18 @@ On `supabase db reset --linked`, two seed files are applied (see `supabase/confi
 All seed data is fetched once and cached in `fixtures.ts`:
 
 ```typescript
-fixtures.allProfiles         // All profiles
-fixtures.allStudents         // All student records
-fixtures.allTeachers         // All teacher records
-fixtures.allLessonTypes      // All lesson types
-fixtures.allLessonAgreements // All lesson agreements
+fixtures.allProfiles; // All profiles
+fixtures.allStudents; // All student records
+fixtures.allTeachers; // All teacher records
+fixtures.allLessonTypes; // All lesson types
+fixtures.allLessonAgreements; // All lesson agreements
 
-fixtures.requireUserId(email)                 // user_id from email
-fixtures.requireStudentId(email)              // student.id from email
-fixtures.requireTeacherId(email)              // teacher.id from email
-fixtures.requireLessonTypeId(name)            // lesson_type.id from name
-fixtures.requireAgreementId(student, teacher) // agreement.id from student+teacher
-fixtures.allProjectDomains / allProjectLabels / allProjects  // project reference data
+fixtures.requireUserId(email); // user_id from email
+fixtures.requireStudentId(email); // student.id from email
+fixtures.requireTeacherId(email); // teacher.id from email
+fixtures.requireLessonTypeId(name); // lesson_type.id from name
+fixtures.requireAgreementId(student, teacher); // agreement.id from student+teacher
+fixtures.allProjectDomains / allProjectLabels / allProjects; // project reference data
 ```
 
 ---

@@ -80,6 +80,16 @@ export interface ServerPaginationProps {
 	onRowsPerPageChange: (rowsPerPage: number) => void;
 }
 
+export interface ServerSideDataTableControlProps extends ServerPaginationProps {
+	searchQuery: string;
+	onSearchChange: (query: string) => void;
+	loading: boolean;
+	sortColumn: string | null;
+	sortDirection: SortDirection;
+	onSortChange: (column: string | null, direction: SortDirection) => void;
+	quickFilterGroups: QuickFilterGroup[];
+}
+
 interface DataTableProps<T> {
 	data: T[];
 	columns: DataTableColumn<T>[];

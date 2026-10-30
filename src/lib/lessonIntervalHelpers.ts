@@ -1,7 +1,11 @@
-import type { LessonFrequency } from '../courses/types';
+import type { LessonFrequency } from '@/types/lesson-agreements';
 
 /** Advance a date by one occurrence interval (mutates). Matches app lesson scheduling rules. */
 export function addInterval(date: Date, frequency: LessonFrequency): void {
+	if (frequency === 'daily') {
+		date.setDate(date.getDate() + 1);
+		return;
+	}
 	if (frequency === 'weekly') {
 		date.setDate(date.getDate() + 7);
 		return;
