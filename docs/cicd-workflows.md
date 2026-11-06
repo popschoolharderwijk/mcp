@@ -25,6 +25,7 @@ Three linters run in this project:
 ### Squawk (SQL migrations)
 
 [Squawk](https://squawkhq.com/) statically lints `.sql` files in `supabase/migrations/`. It catches e.g.:
+
 - Dangerous operations: `DROP TABLE`, `DROP DATABASE`, `TRUNCATE CASCADE`
 - Lock issues: indexes without `CONCURRENTLY`
 - Backward compatibility issues
@@ -40,19 +41,20 @@ bun run lint:sql
 ### supabase db lint (PL/pgSQL)
 
 Powered by [plpgsql_check](https://github.com/okbob/plpgsql_check). Checks against a **live database**:
+
 - Type errors in functions
 - Unused variables, dead code
 - SQL injection in `EXECUTE` statements
 
 ```bash
-# Against the linked database; warnings and errors fail (same as CI)
+# Against the linked hosted project (CLI v3: --remote); warnings and errors fail (same as CI)
 bun run lint:db
 
 # Emit errors only (does not fail: --fail-on default is none)
-supabase db lint --linked --level error
+supabase db lint --remote --level error
 
-# Specific schema
-supabase db lint --linked --schema public
+# Specific schema / explicit project
+supabase db lint --remote=<project-ref> --schema public
 ```
 
 `--level` controls what is **shown**. `--fail-on` controls the exit code. Default `--fail-on none` keeps the job green even on errors. CI uses `--fail-on warning`.
@@ -63,7 +65,7 @@ Runs RLS, auth, and e2e tests against **mcp-test** in GitHub Actions:
 
 - **Path filter**: Runs on changes in `supabase/**` or `tests/**`, excluding `tests/code/**` (`predicate-quantifier: some-with-excludes` — without that, `!` exclusions are ignored). Unit tests stay in the PR Tests / PR CI workflows.
 - **Manual trigger**: Can also be started via `workflow_dispatch`
-- **Project**: Link to **mcp-test** via secret `SUPABASE_PROJECT_REF` (see [secrets.md](./secrets.md)); then `supabase db reset --linked --yes` for a clean database with `seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql`
+- **Project**: Targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF` (see [secrets.md](./secrets.md)); `supabase db reset --remote=<ref> --yes` for a clean database with `seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql`
 - **Credentials**: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY` from GitHub secrets (must belong to the same mcp-test project)
 - **Required secret**: `RESEND_API_KEY` for email tests (SMTP)
 - **Command**: `bun test tests/rls tests/auth tests/e2e --bail --timeout 30000` (path prefixes — bare `auth` would also match `tests/code/auth/`)

@@ -4,17 +4,18 @@ alwaysApply: true
 
 ## Database reset — NEVER run yourself
 
-**NEVER run a database reset yourself** — not `supabase db reset`, not `supabase db reset --linked`, not any variant. The user always runs these commands themselves.
+**NEVER run a database reset yourself** — not `supabase db reset`, not `supabase db reset --remote=…`, not any variant. The user always runs these commands themselves.
 
 After migration or schema changes: **tell the user** to reset and regenerate types. Do not execute it.
 
+This repo assumes **Supabase CLI v3+**. Prefer `bun run db:*` with explicit `--remote=<ref>` and `--yes` on hosted mutating commands.
+
 * **Never hand-edit `src/integrations/supabase/types.ts`.** After schema/migration changes the user regenerates types (see below) so types stay codegen-only.
 * **Never commit “until types / after db reset” casts or comments.** If a new table/RPC is missing from generated types, tell the user to reset + regenerate; do not ship `as unknown as` table shims or pending-work comments (see `comments.mdc`).
-* **Local stack** (`supabase start`, default `bun dev`): user runs `supabase db reset` (no `--linked`), then optionally `supabase gen types typescript --local > src/integrations/supabase/types.ts`.
-* **Remote** (mcp-dev / mcp-test): use the `--linked` flag:
-  - `supabase db reset --linked`
-  - `supabase gen types typescript --linked > src/integrations/supabase/types.ts` (or `bun run supabase:types`)
-  - `supabase db push --linked`
-  - All other Supabase commands that work with a remote database must also use `--linked`
-* When documenting or planning Supabase DB commands for the user, match the target: local CLI without `--linked`, remote with `--linked`.
-* Default / Lovable UI uses remote mcp-dev via `bun dev`. Local Docker is opt-in: `supabase start` + `bun run dev:local`. CI uses mcp-test via `--linked`.
+* **Local stack** (`supabase start`, `bun run dev:local`): user runs `supabase db reset` (local is the CLI default), then `bun run db:types` (or `bun run db:types local`).
+* **Remote** (mcp-dev / mcp-test / prod): always pass an explicit remote target:
+  - `bun run db:reset <dev|test|prod>` / `bun run db:push:migrations <env>` (preferred)
+  - or raw: `supabase db reset --remote=<project-ref> --yes`, `supabase db push --remote=<project-ref> --yes`
+  - types: `bun run db:types <dev|test|prod>` (`--remote=<ref>` from the same env map)
+* Hosted mutating commands need `--yes` when unattended (CI / scripts).
+* Default / Lovable UI uses remote mcp-dev via `bun dev`. Local Docker is opt-in: `supabase start` + `bun run dev:local`. CI uses mcp-test via `--remote=$SUPABASE_PROJECT_REF`.

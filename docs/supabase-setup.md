@@ -20,14 +20,12 @@ How to get an empty Supabase project working with this application.
 ## Step 2: Apply Migrations
 
 ```bash
-# Link to the new project
-supabase link --project-ref <project-id>
-
-# Push all migrations
-supabase db push
+# Push all migrations (CLI v3: explicit remote)
+supabase db push --remote=<project-ref> --yes
+# or: bun run db:push:migrations <dev|test|prod>
 ```
 
-Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_stripe_billing`). Storage buckets (`avatars`, `announcement-images`, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `supabase db reset --linked` on remote) and regenerate types (`bun run supabase:types:local` or `bun run supabase:types`).
+Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_stripe_billing`). Storage buckets (`avatars`, `announcement-images`, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `bun run db:reset <env>` / `supabase db reset --remote=<ref> --yes` on remote) and regenerate types (`bun run db:types` / `bun run db:types <env>`).
 
 ---
 
@@ -53,14 +51,10 @@ Root `[auth]` is the base config (local Docker: Vite `:8080` / `:8081`). On `con
 After configuring `config.toml`, push settings to the remote project:
 
 ```bash
-# Link to the project (if not already done)
-supabase link --project-ref <project-id>
-
-# Push configuration to remote
-supabase config push
-
-# Review the changes that will be pushed
-# Type 'Y' to confirm
+# Review then push (CLI v3)
+supabase config diff --remote=<project-ref>
+supabase config push --remote=<project-ref> --yes
+# or: bun run db:push:config <dev|test|prod>
 ```
 
 > ⚠️ **Why are password requirements so strict?**
@@ -76,13 +70,14 @@ supabase config push
 > - Passwords without symbols, digits, or letters are rejected
 > - Only passwords that meet all requirements are accepted
 
-> 📝 **Important**: Changes in `config.toml` are **not** pushed to remote automatically. Always use `supabase config push` after changes and review the diff carefully before confirming.
+> 📝 **Important**: Changes in `config.toml` are **not** pushed to remote automatically. Always use `bun run db:push:config <env>` (or `config push --remote=<ref> --yes`) after changes; review with `config diff` first.
 
 ---
 
 ## Step 4: Email Templates & SMTP
 
 See [email-templates.md](email-templates.md) for:
+
 - Setting the Magic Link template
 - SMTP configuration via `config.toml` (Resend)
 
@@ -93,6 +88,7 @@ See [email-templates.md](email-templates.md) for:
 **Dashboard** → **Project Settings** → **API**
 
 Note:
+
 - **Project URL**: `https://<project-id>.supabase.co`
 - **Anon/Public Key**: For the frontend (`VITE_SUPABASE_ANON_KEY`)
 - **Service Role Key**: For backend/tests (⚠️ keep secret!)
@@ -131,6 +127,7 @@ RESEND_API_KEY=<resend-api-key>
 ## Step 7: Configure Secrets
 
 See [secrets.md](secrets.md) for:
+
 - GitHub Secrets (for CI/CD)
 - Edge Function Secrets
 
@@ -160,9 +157,8 @@ password_requirements = "lower_upper_letters_digits_symbols"
 **Push the configuration to remote:**
 
 ```bash
-supabase link --project-ref <new-project-id>
-supabase config push
-# Review the diff and type 'Y' to confirm
+supabase config diff --remote=<new-project-ref>
+supabase config push --remote=<new-project-ref> --yes
 ```
 
 ---
@@ -170,7 +166,7 @@ supabase config push
 ## Checklist
 
 - [ ] Project created
-- [ ] Migrations applied (`supabase db push` / `db reset`) — storage buckets via migrations
+- [ ] Migrations applied (`bun run db:push:migrations <env>` / `db reset`) — storage buckets via migrations
 - [ ] Email provider enabled (Dashboard)
 - [ ] `config.toml` updated with project ID
 - [ ] Auth settings configured in `config.toml`:
@@ -178,11 +174,11 @@ supabase config push
   - [ ] `password_requirements = "lower_upper_letters_digits_symbols"`
   - [ ] `otp_length = 8`
   - [ ] `site_url` and `additional_redirect_urls` correct
-- [ ] Config pushed to remote (`supabase config push`)
+- [ ] Config pushed to remote (`bun run db:push:config <env>`)
 - [ ] Password policy tests run (`bun test tests/auth/password-signup.test.ts`)
 - [ ] Email templates configured
 - [ ] SMTP configured in `config.toml` (Resend)
-- [ ] `RESEND_API_KEY` added to `.env`
-- [ ] Config pushed to remote (`supabase config push`)
+- [ ] Edge/Auth secrets via `supabase/functions/.env.*` + `bun run db:push:secrets <env>`
+- [ ] Config pushed to remote (`bun run db:push:config <env>`)
 - [ ] API keys fetched
-- [ ] Environment files created (`.env`)
+- [ ] Environment files created (root Vite `.env*` + `supabase/functions/.env.*`)

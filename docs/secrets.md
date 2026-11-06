@@ -4,15 +4,15 @@
 
 Required for CI workflows. Manage via **[GitHub Actions Secrets → popschoolharderwijk/mcp](https://github.com/popschoolharderwijk/mcp/settings/secrets/actions)**.
 
-| Secret                             | Value                                                           | Use                                                                                   |
-| ---------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | `supabase link` + `db reset --linked` in CI                                           |
-| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | `db reset --linked` / CLI DB connection (bypasses a broken `cli_login_postgres` flow) |
-| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI links here                                                                         |
-| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                                                          |
-| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                                                          |
-| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                                                          |
-| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email`                                        |
+| Secret                             | Value                                                           | Use                                            |
+| ---------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)             |
+| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | `db reset --remote=<ref>` / CLI DB connection  |
+| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`            |
+| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                   |
+| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                   |
+| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                   |
+| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email` |
 
 See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabase** / `pull-request-supabase.yml`) that uses these secrets.
 
@@ -22,7 +22,9 @@ See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabas
 
 ## Supabase Edge Function Secrets
 
-Manage via **Supabase Dashboard → Project Settings → Edge Functions → Secrets** (per environment).
+**Preferred:** `bun run db:push:secrets` + gitignored env files under `supabase/functions/` — see [edge-function-secrets.md](./edge-function-secrets.md). Do not use the Dashboard as source of truth.
+
+`db:push:secrets` on remotes **replaces** custom secrets from the env file (stale keys are dropped after confirm). Bare `supabase secrets unset` (no names) deletes **all** custom secrets — avoid.
 
 ### Available automatically
 
@@ -37,11 +39,13 @@ Manage via **Supabase Dashboard → Project Settings → Edge Functions → Secr
 
 ### Project-specific secrets
 
-| Secret                  | Required for                                                                                                                     | Description                                                                 |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `RESEND_API_KEY`        | `send-template-email`, `send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | Resend.com API key for transactional email.                                 |
-| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                                                                                        | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
-| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                                                                                 | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
+| Secret                         | Required for                                                                                                                     | Description                                                                 |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `RESEND_API_KEY`               | Auth SMTP (`config.toml` `env(RESEND_API_KEY)`)                                                                                  | Resend key for magic-link / Auth mail.                                      |
+| `RESEND_API_KEY_TRANSACTIONAL` | `send-template-email`, `send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | Resend.com API key for transactional email.                                 |
+| `RESEND_FROM_EMAIL`            | Edge transactional mail                                                                                                          | From-address for app mail.                                                  |
+| `STRIPE_SECRET_KEY`            | All Stripe edge functions                                                                                                        | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
+| `STRIPE_WEBHOOK_SECRET`        | `stripe-webhook`                                                                                                                 | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
 
 See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for the Stripe Dashboard checklist and [deployment.md](./deployment.md) for the full edge-function table.
 

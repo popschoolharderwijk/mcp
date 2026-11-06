@@ -8,9 +8,10 @@ Tests usually run against a **remote** Supabase project; you can also point env 
 - **mcp-dev** (`zdvscmogkfyddnnxzkdu`): shared remote; you can also test against mcp-dev or local if your env points there.
 
 **In CI** (`pull-request-supabase.yml`):
+
 - Runs only when `supabase/**` or `tests/**` changes, excluding `tests/code/**`
-- The workflow links to **mcp-test** (via secret `SUPABASE_PROJECT_REF`)
-- `supabase db reset --linked --yes` (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are applied)
+- The workflow targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`
+- `supabase db reset --remote=<ref> --yes` (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are applied)
 - Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
 - `bun test tests/rls tests/auth tests/e2e` runs against mcp-test
 
@@ -18,7 +19,7 @@ Tests usually run against a **remote** Supabase project; you can also point env 
 
 ## Seed Data for RLS Tests
 
-On `supabase db reset --linked`, two seed files are applied (see `supabase/config.toml`):
+On remote `db reset --remote=<ref>`, these seed files are applied (see `supabase/config.toml`):
 
 | File                                                                    | Purpose                                                               |
 | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
@@ -38,6 +39,7 @@ On `supabase db reset --linked`, two seed files are applied (see `supabase/confi
 | **users (no role)** | `user-001@test.nl` through `user-010@test.nl` (10)          |
 
 `seeds/test.sql` also contains (lesson-types.sql supplies lesson types):
+
 - **Lesson types**: Reference data in `seeds/lesson-types.sql` (not in test.sql)
 - **Students**: Link student users to student records
 - **Teachers**: Link teacher users to teacher records

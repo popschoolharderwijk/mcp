@@ -36,7 +36,7 @@ Do not start this workflow merely because the user asks to commit or create a PR
 
 | Step | Command | Role |
 |------|---------|------|
-| types | `bun run supabase:types` | Once at start (linked types regen — **not** a DB reset) |
+| types | `bun run db:types` | Once at start (types regen — **not** a DB reset; default local, or pass env) |
 | check | `bun run check` | Biome verify (no write) |
 | ci | `bun run check:ci` | Biome CI + `tsc` + code tests |
 | fallow | `bun run check:fallow` | Full-project dead code, duplication, complexity/CRAP |

@@ -27,6 +27,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					actual_date: string;
 					actual_start_time: string;
@@ -105,6 +106,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					color?: string | null;
 					created_at?: string;
@@ -156,6 +158,7 @@ export type Database = {
 					id: string;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					event_id: string;
@@ -185,6 +188,7 @@ export type Database = {
 					rotated_at: string;
 					token_hash: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					lesson_agreement_id: string;
@@ -220,6 +224,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					audience?: string[];
 					body: string;
@@ -251,19 +256,20 @@ export type Database = {
 					key: string;
 					updated_at: string;
 					updated_by: string | null;
-					value: Json;
+					value: NonNullable<Json>;
 				};
+				ComputedFields: never;
 				Insert: {
 					key: string;
 					updated_at?: string;
 					updated_by?: string | null;
-					value: Json;
+					value: NonNullable<Json>;
 				};
 				Update: {
 					key?: string;
 					updated_at?: string;
 					updated_by?: string | null;
-					value?: Json;
+					value?: NonNullable<Json>;
 				};
 				Relationships: [];
 			};
@@ -277,6 +283,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					body_markdown: string;
 					created_at?: string;
@@ -323,6 +330,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -409,6 +417,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -460,6 +469,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -537,6 +547,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_agreement_id?: string | null;
 					created_at?: string;
@@ -628,6 +639,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -680,6 +692,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					color: string;
 					cost_center?: string | null;
@@ -724,6 +737,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -754,6 +768,7 @@ export type Database = {
 					id: string;
 					lesson_agreement_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					id?: string;
@@ -792,6 +807,7 @@ export type Database = {
 					updated_by: string | null;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					avatar_url?: string | null;
 					city?: string | null;
@@ -838,6 +854,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -869,6 +886,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -913,6 +931,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					cost_center?: string | null;
 					created_at?: string;
@@ -958,6 +977,7 @@ export type Database = {
 					sent_at: string;
 					sent_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					id?: string;
@@ -993,6 +1013,7 @@ export type Database = {
 					updated_by: string | null;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -1023,6 +1044,7 @@ export type Database = {
 					updated_by: string | null;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -1066,6 +1088,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					amount_due: number;
 					amount_paid?: number;
@@ -1132,6 +1155,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					cancel_at?: string | null;
 					canceled_at?: string | null;
@@ -1192,6 +1216,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -1230,6 +1255,7 @@ export type Database = {
 					lesson_type_id: string;
 					teacher_user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					lesson_type_id: string;
@@ -1268,6 +1294,7 @@ export type Database = {
 					updated_by: string | null;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					bio?: string | null;
 					coc_issued_on?: string | null;
@@ -1313,6 +1340,7 @@ export type Database = {
 					updated_at: string;
 					updated_by: string | null;
 				};
+				ComputedFields: never;
 				Insert: {
 					admin_processed_at?: string | null;
 					admin_processed_by?: string | null;
@@ -1411,6 +1439,7 @@ export type Database = {
 					updated_by: string | null;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
@@ -1437,6 +1466,7 @@ export type Database = {
 					updated_at: string;
 					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					last_action_at?: string | null;
 					status: string;
@@ -1458,14 +1488,15 @@ export type Database = {
 			view_profiles_with_display_name: {
 				Row: {
 					avatar_url: string | null;
-					created_at: string | null;
+					created_at: string;
 					display_name: string | null;
-					email: string | null;
+					email: string;
 					first_name: string | null;
 					last_name: string | null;
 					phone_number: string | null;
-					user_id: string | null;
+					user_id: string;
 				};
+				ComputedFields: never;
 				Insert: {
 					avatar_url?: string | null;
 					created_at?: string | null;
@@ -1490,31 +1521,16 @@ export type Database = {
 			};
 		};
 		Functions: {
-			_has_role: {
-				Args: {
-					_role: Database['public']['Enums']['app_role'];
-					_user_id: string;
-				};
-				Returns: boolean;
-			};
+			_has_role: { Args: { _role: Database['public']['Enums']['app_role']; _user_id: string }; Returns: boolean };
 			apply_audit_trail: { Args: { p_table: unknown }; Returns: undefined };
-			authenticated_has_execute_on: {
-				Args: { p_regprocedure: string };
-				Returns: boolean;
-			};
+			authenticated_has_execute_on: { Args: { p_regprocedure: string }; Returns: boolean };
 			can_delete_user: { Args: { _target_id: string }; Returns: boolean };
 			can_manage_agenda_event: { Args: { ev_id: string }; Returns: boolean };
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
 			check_rls_forced: { Args: { p_table_name: string }; Returns: boolean };
-			cleanup_student_if_no_agreements: {
-				Args: { _user_id: string };
-				Returns: undefined;
-			};
-			compute_minimum_term_end: {
-				Args: { p_start_date: string };
-				Returns: string;
-			};
-			current_user_id: { Args: never; Returns: string };
+			cleanup_student_if_no_agreements: { Args: { _user_id: string }; Returns: undefined };
+			compute_minimum_term_end: { Args: { p_start_date: string }; Returns: string };
+			current_user_id: { Args: Record<PropertyKey, never>; Returns: string };
 			end_recurring_deviation_from_week: {
 				Args: { p_deviation_id: string; p_week_date: string };
 				Returns: string;
@@ -1534,11 +1550,7 @@ export type Database = {
 				}[];
 			};
 			get_hours_report: {
-				Args: {
-					p_end_date: string;
-					p_start_date: string;
-					p_teacher_user_id?: string;
-				};
+				Args: { p_end_date: string; p_start_date: string; p_teacher_user_id?: string };
 				Returns: Json;
 			};
 			get_lesson_agreements_paginated: {
@@ -1556,15 +1568,15 @@ export type Database = {
 				Returns: Json;
 			};
 			get_lesson_group_teacher: { Args: { _group_id: string }; Returns: string };
-			get_public_function_pronames: { Args: never; Returns: string[] };
+			get_public_function_pronames: { Args: Record<PropertyKey, never>; Returns: string[] };
 			get_public_table_names: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					table_name: string;
 				}[];
 			};
 			get_public_views_security_mode: {
-				Args: never;
+				Args: Record<PropertyKey, never>;
 				Returns: {
 					security_invoker: boolean;
 					view_name: string;
@@ -1610,36 +1622,21 @@ export type Database = {
 				};
 				Returns: Json;
 			};
-			is_admin: { Args: never; Returns: boolean };
-			is_agenda_participant: {
-				Args: { ev_id: string; uid: string };
-				Returns: boolean;
-			};
-			is_lesson_group_member: {
-				Args: { _group_id: string; _user_id: string };
-				Returns: boolean;
-			};
-			is_privileged: { Args: never; Returns: boolean };
-			is_site_admin: { Args: never; Returns: boolean };
-			is_staff: { Args: never; Returns: boolean };
+			is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+			is_agenda_participant: { Args: { ev_id: string; uid: string }; Returns: boolean };
+			is_lesson_group_member: { Args: { _group_id: string; _user_id: string }; Returns: boolean };
+			is_privileged: { Args: Record<PropertyKey, never>; Returns: boolean };
+			is_site_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
+			is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_student: { Args: { _user_id: string }; Returns: boolean };
 			is_teacher: { Args: { _user_id: string }; Returns: boolean };
 			is_valid_country_code: { Args: { p_code: string }; Returns: boolean };
 			is_valid_phone_number: { Args: { p_phone: string }; Returns: boolean };
-			mark_trial_lesson_completed: {
-				Args: { _trial_id: string };
-				Returns: undefined;
-			};
+			mark_trial_lesson_completed: { Args: { _trial_id: string }; Returns: undefined };
 			normalize_compact_text: { Args: { p_value: string }; Returns: string };
 			normalize_trim_text: { Args: { p_value: string }; Returns: string };
-			policy_exists: {
-				Args: { p_policy_name: string; p_table_name: string };
-				Returns: boolean;
-			};
-			shift_recurring_deviation_to_next_week: {
-				Args: { p_deviation_id: string };
-				Returns: string;
-			};
+			policy_exists: { Args: { p_policy_name: string; p_table_name: string }; Returns: boolean };
+			shift_recurring_deviation_to_next_week: { Args: { p_deviation_id: string }; Returns: string };
 			submit_trial_decision: {
 				Args: { p_decision: string; p_trial_id: string };
 				Returns: {
@@ -1671,10 +1668,7 @@ export type Database = {
 					isSetofReturn: false;
 				};
 			};
-			sync_lesson_group_event_participants: {
-				Args: { _event_id: string };
-				Returns: undefined;
-			};
+			sync_lesson_group_event_participants: { Args: { _event_id: string }; Returns: undefined };
 		};
 		Enums: {
 			agenda_event_source_type: 'manual' | 'lesson_agreement' | 'project' | 'lesson_group' | 'trial_lesson';
@@ -1710,9 +1704,7 @@ export type Tables<
 		? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
 				DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
 		: never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-	schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
 	? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
 			DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
 			Row: infer R;
@@ -1734,9 +1726,7 @@ export type TablesInsert<
 	}
 		? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
 		: never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-	schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
 	? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
 			Insert: infer I;
 		}
@@ -1757,9 +1747,7 @@ export type TablesUpdate<
 	}
 		? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
 		: never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-	schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
 	? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
 			Update: infer U;
 		}
@@ -1780,9 +1768,7 @@ export type Enums<
 	}
 		? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
 		: never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-	schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
 	? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
 	: DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
 		? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
@@ -1797,9 +1783,7 @@ export type CompositeTypes<
 	}
 		? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
 		: never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-	schema: keyof DatabaseWithoutInternals;
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
 	? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
 	: PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
 		? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]

@@ -3,7 +3,7 @@
 ## Database tests fail in CI (RLS/Auth)
 
 1. Check that all required GitHub secrets are present: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`
-2. Check that `supabase db reset --linked --yes` succeeded in the workflow (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are then applied)
+2. Check that `supabase db reset --remote=$SUPABASE_PROJECT_REF --yes` succeeded in the workflow (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are then applied)
 3. Verify that the `RESEND_API_KEY` secret is set in GitHub (for email tests)
 4. For Auth tests: check that the password policy in `config.toml` is correct
 
@@ -11,16 +11,16 @@
 
 ## Migrations not applied
 
-1. Check that you ran `supabase db push` locally
+1. Check that you ran `bun run db:push:migrations <env>` / `supabase db push --remote=<ref> --yes`
 2. Check that the migration files are in `supabase/migrations/`
-3. Verify that the Supabase project is linked correctly (`supabase link`)
+3. Verify the target ref (`--remote=<ref>`) matches the intended project
 
 ---
 
 ## Tests fail locally (RLS/Auth)
 
 1. Put credentials for the project you test against in your environment (or `.env.test`): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `VITE_DEV_LOGIN_PASSWORD` (seed users: password `password`). Use **mcp-test** credentials to match CI, **mcp-dev**, or local `http://127.0.0.1:54421`.
-2. Optional: reset for a clean database with seeds — local: `supabase db reset`; remote: `supabase db reset --linked`.
+2. Optional: reset for a clean database with seeds — local: `supabase db reset`; remote: `bun run db:reset test` / `supabase db reset --remote=<ref> --yes`.
 
 ---
 

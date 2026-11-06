@@ -179,6 +179,7 @@ Students are **managed automatically** via database triggers:
 **Design rationale**: Students are a **consequence** of lesson agreements, not a prerequisite. That avoids orphaned student records and keeps lifecycle automatic.
 
 **CASCADE behaviour**:
+
 - If an `auth.users` record is deleted, all related `lesson_agreements` are deleted (`ON DELETE CASCADE`).
 - When all `lesson_agreements` are gone, the `student` is removed by the trigger.
 
@@ -212,6 +213,7 @@ None. All views use `security_invoker = on` or have been removed; students see t
 ### Linter Warnings
 
 The Supabase linter reports warnings for SECURITY DEFINER views. For views on the whitelist these are **false positives** because:
+
 - Security is implemented explicitly via `auth.uid()` checks
 - Tests in `tests/rls/` verify that unauthorized access is blocked
 - A whitelist entry requires explicit approval
@@ -232,5 +234,5 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 1. **Lovable** and default `bun dev` use **mcp-dev** (`.env.development`, Vite mode `development` so `lovable-tagger` loads).
 2. **Local Docker** is opt-in: `bun run dev:local` (Vite mode `localdev` + keys in `.env.local`). Mode name `local` is forbidden by Vite; the file `.env.local` is fine.
 3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test` / shell (`SUPABASE_URL`, etc.).
-4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
-5. On **merge to main**, migrations are applied to production via `supabase db push`.
+4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`, runs `supabase db reset --remote=<ref> --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
+5. On **merge to main**, migrations are applied to production via the Supabase GitHub Integration / `db push --remote=…`.

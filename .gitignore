@@ -20,6 +20,9 @@ dist-ssr
 # Use .development and .production
 .env
 
+# Edge secrets under supabase/functions/ (.env and *.local already covered above)
+supabase/functions/.env.*
+!supabase/functions/.env.example
 
 # Editor directories and files
 .vscode/*

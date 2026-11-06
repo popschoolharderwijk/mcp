@@ -54,6 +54,7 @@ RLS: authenticated users may **SELECT**. Only `is_site_admin()` may **INSERT / U
 ### Which events exist
 
 Defined in `supabase/functions/_shared/email-events.ts` (mirrored in `src/lib/email/events.ts`). Each entry describes:
+
 - `eventKey` — link to `email_templates.event_key`
 - `label` + `description` — shown in the manager
 - `variables` — which placeholders are available
@@ -97,8 +98,9 @@ All SMTP settings live in `[auth.email.smtp]` and are pushed to remote projects 
 ### Push SMTP
 
 ```bash
-supabase link --project-ref <project-id>
-supabase config push  # review diff, type Y
+supabase config diff --remote=<project-ref>
+supabase config push --remote=<project-ref> --yes
+# or: bun run db:push:config <dev|test|prod>
 ```
 
 > ⚠️ The sender email (`admin_email`) must be a verified domain in Resend. For development, `xxx@resend.dev` (test domain) is allowed.
