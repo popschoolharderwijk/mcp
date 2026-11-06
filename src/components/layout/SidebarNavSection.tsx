@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { usePersistedSidebarGroupOpen } from '@/hooks/usePersistedSidebarGroupOpen';
 import { cn } from '@/lib/utils';
 
-export interface SidebarNavSectionItem {
+interface SidebarNavSectionItem {
 	href: string;
 	label: string;
 	icon: ComponentType<{ className?: string }>;

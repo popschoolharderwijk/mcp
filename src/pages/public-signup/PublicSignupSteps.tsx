@@ -356,56 +356,65 @@ function OverviewStep(props: {
 	);
 }
 
-export function PublicSignupSteps(props: PublicSignupFlowProps) {
-	const renderStep = resolvePublicSignupRenderStep(props.step, props.selectedType !== null);
-	if (renderStep === 1) {
-		return (
-			<LessonTypeStep
-				lessonTypes={props.lessonTypes}
-				selectedType={props.selectedType}
-				onSelectType={props.onSelectType}
-			/>
-		);
-	}
-	if (renderStep === 2 && props.selectedType) {
+function PublicSignupTypedStep(props: { step: 2 | 4; flow: PublicSignupFlowProps }) {
+	const { step, flow } = props;
+	if (!flow.selectedType) return null;
+	if (step === 2) {
 		return (
 			<ChoiceStep
-				selectedType={props.selectedType}
-				groups={props.groups}
-				selectedGroupId={props.selectedGroupId}
-				lessonTypeOptions={props.lessonTypeOptions}
-				selectedOption={props.selectedOption}
-				onSelectGroupId={props.onSelectGroupId}
-				onSelectOption={props.onSelectOption}
-				onPrevious={() => props.onStepChange(1)}
-				onNext={() => props.onStepChange(3)}
+				selectedType={flow.selectedType}
+				groups={flow.groups}
+				selectedGroupId={flow.selectedGroupId}
+				lessonTypeOptions={flow.lessonTypeOptions}
+				selectedOption={flow.selectedOption}
+				onSelectGroupId={flow.onSelectGroupId}
+				onSelectOption={flow.onSelectOption}
+				onPrevious={() => flow.onStepChange(1)}
+				onNext={() => flow.onStepChange(3)}
 			/>
 		);
 	}
-	if (renderStep === 3) {
+	return (
+		<OverviewStep
+			selectedType={flow.selectedType}
+			groups={flow.groups}
+			selectedGroupId={flow.selectedGroupId}
+			selectedOption={flow.selectedOption}
+			form={flow.form}
+			error={flow.error}
+			submitting={flow.submitting}
+			onPrevious={() => flow.onStepChange(3)}
+			onSubmit={flow.onSubmit}
+		/>
+	);
+}
+
+function PublicSignupStepPanel(props: { step: 1 | 2 | 3 | 4; flow: PublicSignupFlowProps }) {
+	const { step, flow } = props;
+	if (step === 1) {
+		return (
+			<LessonTypeStep
+				lessonTypes={flow.lessonTypes}
+				selectedType={flow.selectedType}
+				onSelectType={flow.onSelectType}
+			/>
+		);
+	}
+	if (step === 3) {
 		return (
 			<DetailsStep
-				form={props.form}
-				onFormChange={props.onFormChange}
-				onPrevious={() => props.onStepChange(2)}
-				onNext={() => props.onStepChange(4)}
+				form={flow.form}
+				onFormChange={flow.onFormChange}
+				onPrevious={() => flow.onStepChange(2)}
+				onNext={() => flow.onStepChange(4)}
 			/>
 		);
 	}
-	if (renderStep === 4 && props.selectedType) {
-		return (
-			<OverviewStep
-				selectedType={props.selectedType}
-				groups={props.groups}
-				selectedGroupId={props.selectedGroupId}
-				selectedOption={props.selectedOption}
-				form={props.form}
-				error={props.error}
-				submitting={props.submitting}
-				onPrevious={() => props.onStepChange(3)}
-				onSubmit={props.onSubmit}
-			/>
-		);
-	}
-	return null;
+	return <PublicSignupTypedStep step={step} flow={flow} />;
+}
+
+export function PublicSignupSteps(props: PublicSignupFlowProps) {
+	const renderStep = resolvePublicSignupRenderStep(props.step, props.selectedType !== null);
+	if (renderStep === null) return null;
+	return <PublicSignupStepPanel step={renderStep} flow={props} />;
 }

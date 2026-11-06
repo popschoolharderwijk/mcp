@@ -93,8 +93,7 @@ const NAV_ITEMS = {
 	awaitingMandate: {
 		label: 'Wacht op machtiging',
 		icon: LuWallet,
-		description:
-			'Actieve overeenkomsten waarvoor nog geen Stripe-machtiging is afgegeven.',
+		description: 'Actieve overeenkomsten waarvoor nog geen Stripe-machtiging is afgegeven.',
 	},
 	lessonGroups: {
 		label: 'Groepslessen',
