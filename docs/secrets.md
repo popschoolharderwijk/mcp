@@ -39,13 +39,12 @@ See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabas
 
 ### Project-specific secrets
 
-| Secret                         | Required for                                                                                                                     | Description                                                                 |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `RESEND_API_KEY`               | Auth SMTP (`config.toml` `env(RESEND_API_KEY)`)                                                                                  | Resend key for magic-link / Auth mail.                                      |
-| `RESEND_API_KEY_TRANSACTIONAL` | `send-template-email`, `send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, `submit-signup-request` | Resend.com API key for transactional email.                                 |
-| `RESEND_FROM_EMAIL`            | Edge transactional mail                                                                                                          | From-address for app mail.                                                  |
-| `STRIPE_SECRET_KEY`            | All Stripe edge functions                                                                                                        | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
-| `STRIPE_WEBHOOK_SECRET`        | `stripe-webhook`                                                                                                                 | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
+| Secret                  | Required for                                                            | Description                                                                 |
+| ----------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `RESEND_API_KEY`        | Auth SMTP + Edge (`send-template-email`, checkout/signup/trial mail, …) | Resend API key (SMTP password + HTTP API).                                  |
+| `RESEND_FROM_EMAIL`     | Edge transactional mail                                                 | From-address for app mail.                                                  |
+| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                               | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                        | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
 
 See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for the Stripe Dashboard checklist and [deployment.md](./deployment.md) for the full edge-function table.
 

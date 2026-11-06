@@ -1,50 +1,32 @@
 /**
  * Pure helpers for `bun run db:*` deploy scripts.
  * Env file paths live under supabase/functions/ (not root Vite .env*).
+ * Deploy targets + required secret names: edit config.json.
  */
 
-import requiredSecretNames from './required-secrets.json';
+import deployConfig from './config.json';
 
-export type DeployEnv = 'local' | 'dev' | 'test' | 'prod';
+export type DeployEnv = keyof typeof deployConfig.targets;
+
+/** `confirmYes` = simple Y/n; `confirmTarget` = must type project ref (or `local`). Omit = no prompt. */
+export type ConfirmMode = 'confirmYes' | 'confirmTarget';
 
 export type DeployTarget = {
 	env: DeployEnv;
 	/** null = local Docker stack */
 	projectRef: string | null;
-	secretsFileRelative: string;
+	envFile: string;
+	confirm: ConfirmMode | null;
 };
 
-/** Required non-empty keys in each secrets env file — edit required-secrets.json. */
-export const REQUIRED_SECRET_NAMES: readonly string[] = requiredSecretNames;
+/** Required non-empty keys in each secrets env file — edit config.json `secrets`. */
+export const REQUIRED_SECRET_NAMES: readonly string[] = deployConfig.secrets;
 
 export type PushAllStep = 'migrations' | 'secrets' | 'config' | 'functions';
 
 export const PUSH_ALL_STEPS: readonly PushAllStep[] = ['migrations', 'secrets', 'config', 'functions'] as const;
 
-const DEPLOY_ENVS: readonly DeployEnv[] = ['local', 'dev', 'test', 'prod'];
-
-const TARGETS: Record<DeployEnv, DeployTarget> = {
-	local: {
-		env: 'local',
-		projectRef: null,
-		secretsFileRelative: 'supabase/functions/.env.local',
-	},
-	dev: {
-		env: 'dev',
-		projectRef: 'zdvscmogkfyddnnxzkdu',
-		secretsFileRelative: 'supabase/functions/.env.development',
-	},
-	test: {
-		env: 'test',
-		projectRef: 'jserlqacarlgtdzrblic',
-		secretsFileRelative: 'supabase/functions/.env.test',
-	},
-	prod: {
-		env: 'prod',
-		projectRef: 'bnagepkxryauifzyoxgo',
-		secretsFileRelative: 'supabase/functions/.env.production',
-	},
-};
+const DEPLOY_ENVS = Object.keys(deployConfig.targets) as DeployEnv[];
 
 function isDeployEnv(value: string): value is DeployEnv {
 	return (DEPLOY_ENVS as readonly string[]).includes(value);
@@ -68,12 +50,39 @@ export function parseYesNoAnswer(raw: string, defaultYes: boolean): boolean {
 	return defaultYes;
 }
 
+export function parseConfirmMode(value: unknown): ConfirmMode | null {
+	if (value === 'confirmYes' || value === 'confirmTarget') return value;
+	return null;
+}
+
 export function resolveDeployTarget(env: DeployEnv): DeployTarget {
-	return TARGETS[env];
+	const row = deployConfig.targets[env];
+	return {
+		env,
+		projectRef: row.projectRef,
+		envFile: row.envFile,
+		confirm: 'confirm' in row ? parseConfirmMode(row.confirm) : null,
+	};
+}
+
+/** Single identity for logs/prompts: `local Docker` or `prod (bnage…)`. */
+export function formatTargetLabel(target: DeployTarget): string {
+	if (target.projectRef === null) return 'local Docker';
+	return `${target.env} (${target.projectRef})`;
+}
+
+/** Token the operator must type for `confirmTarget` (`local` or project ref). */
+export function confirmTargetToken(target: DeployTarget): string {
+	return target.projectRef ?? 'local';
+}
+
+/** Exact match after trim (case-sensitive; refs are lowercase ids). */
+export function matchesConfirmTargetToken(raw: string, expected: string): boolean {
+	return raw.trim() === expected;
 }
 
 export function deployEnvUsageHint(): string {
-	return 'Environment must be one of: local | dev | test | prod (default: local)';
+	return `Environment must be one of: ${DEPLOY_ENVS.join(' | ')} (default: local)`;
 }
 
 function forEachEnvAssignment(contents: string, onPair: (key: string, rawValue: string) => void): void {
@@ -176,4 +185,15 @@ export function buildLocalSupabaseDotEnv(entries: Record<string, string>): strin
 		'',
 	];
 	return lines.join('\n');
+}
+
+/** True when both maps have the same keys and values (order ignored). */
+export function envEntriesEqual(left: Record<string, string>, right: Record<string, string>): boolean {
+	const leftKeys = Object.keys(left);
+	const rightKeys = Object.keys(right);
+	if (leftKeys.length !== rightKeys.length) return false;
+	for (const key of leftKeys) {
+		if (!(key in right) || left[key] !== right[key]) return false;
+	}
+	return true;
 }

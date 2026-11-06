@@ -21,7 +21,7 @@ export function validateSendTemplateEmailBody(body: SendTemplateEmailBody): Resp
 
 export function validateMailConfig(resendKey: string, fromEmail: string): Response | null {
 	if (!resendKey || !fromEmail) {
-		console.error('Missing RESEND_API_KEY_TRANSACTIONAL or RESEND_FROM_EMAIL');
+		console.error('Missing RESEND_API_KEY or RESEND_FROM_EMAIL');
 		return jsonResponse(500, { error: 'Mail-configuratie ontbreekt' });
 	}
 	return null;

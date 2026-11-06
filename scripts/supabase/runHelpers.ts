@@ -6,9 +6,10 @@
 import { stdin as input, stdout as output } from 'node:process';
 import * as readline from 'node:readline/promises';
 import {
-	type DeployEnv,
+	confirmTargetToken,
 	type DeployTarget,
 	deployEnvUsageHint,
+	matchesConfirmTargetToken,
 	parseDeployEnv,
 	parseYesNoAnswer,
 	resolveDeployTarget,
@@ -32,15 +33,64 @@ export function resolveTargetFromArgv(argv: string[], verbLabel: string): Deploy
 	return resolveDeployTarget(env);
 }
 
-export function printProdBanner(env: DeployEnv): void {
-	if (env !== 'prod') return;
+function confirmBannerLine(label: string, value: string): string {
+	return `  ${label.padEnd(12)} ${value}`;
+}
+
+function printConfirmBanner(target: DeployTarget, action: string, destructive: boolean): void {
 	console.warn('');
-	console.warn('╔══════════════════════════════════════════════════════════╗');
-	console.warn('║  TARGET: PRODUCTION (bnagepkxryauifzyoxgo)               ║');
-	console.warn('╚══════════════════════════════════════════════════════════╝');
+	console.warn('══════════════════════════════════════');
+	console.warn(confirmBannerLine('ACTION:', action));
+	if (target.projectRef === null) {
+		console.warn(confirmBannerLine('DATABASE:', 'local Docker'));
+	} else {
+		console.warn(confirmBannerLine('DATABASE:', target.env));
+		console.warn(confirmBannerLine('PROJECT REF:', target.projectRef));
+	}
+	if (destructive) {
+		console.warn(confirmBannerLine('WARNING:', '⚠ DESTRUCTIVE — existing data will be wiped ⚠'));
+	}
+	console.warn('══════════════════════════════════════');
 	console.warn('');
 }
 
+async function questionLine(prompt: string): Promise<string> {
+	const rl = readline.createInterface({ input, output });
+	try {
+		return await rl.question(prompt);
+	} catch (error) {
+		if (isCtrlCAbort(error)) exitOnCtrlC();
+		throw error;
+	} finally {
+		rl.close();
+	}
+}
+
+async function confirmByTypingTarget(target: DeployTarget): Promise<void> {
+	const expected = confirmTargetToken(target);
+	if (!input.isTTY || !output.isTTY) {
+		fail('Non-interactive terminal: refusing confirmTarget without typed confirmation.');
+	}
+	const typed = await questionLine(`Type "${expected}" to confirm: `);
+	if (matchesConfirmTargetToken(typed, expected)) return;
+	fail('Aborted: confirmation did not match.');
+}
+
+/** Abort unless the operator confirms when `target.confirm` is set. Non-TTY → abort. */
+export async function confirmTargetIfRequired(
+	target: DeployTarget,
+	action: string,
+	options: { destructive?: boolean } = {},
+): Promise<void> {
+	if (target.confirm === null) return;
+	const destructive = options.destructive === true;
+	printConfirmBanner(target, action, destructive);
+	if (target.confirm === 'confirmYes') {
+		if (await confirmYes('Proceed?', { defaultYes: true })) return;
+		fail('Aborted.');
+	}
+	await confirmByTypingTarget(target);
+}
 export function requireAccessTokenForRemote(target: DeployTarget): void {
 	if (target.projectRef === null) return;
 	if (!process.env.SUPABASE_ACCESS_TOKEN?.trim()) {
@@ -54,20 +104,32 @@ export function remoteFlag(projectRef: string): string {
 	return `--remote=${projectRef}`;
 }
 
-/** Interactive confirm. Non-TTY → false (no prompt). Empty answer uses defaultYes. */
-export async function confirmYes(question: string, options: { defaultYes?: boolean } = {}): Promise<boolean> {
-	const defaultYes = options.defaultYes === true;
-	if (!input.isTTY || !output.isTTY) {
-		return false;
-	}
+function isCtrlCAbort(error: unknown): boolean {
+	return error instanceof Error && error.name === 'AbortError';
+}
 
+function exitOnCtrlC(): never {
+	output.write('\n');
+	process.exit(130);
+}
+
+async function questionYesNo(question: string, defaultYes: boolean): Promise<boolean> {
 	const hint = defaultYes ? '[Y/n]' : '[y/N]';
 	const rl = readline.createInterface({ input, output });
 	try {
 		return parseYesNoAnswer(await rl.question(`${question} ${hint} `), defaultYes);
+	} catch (error) {
+		if (isCtrlCAbort(error)) exitOnCtrlC();
+		throw error;
 	} finally {
 		rl.close();
 	}
+}
+
+/** Interactive confirm. Non-TTY → false (no prompt). Empty answer uses defaultYes. Ctrl+C → exit 130. */
+export async function confirmYes(question: string, options: { defaultYes?: boolean } = {}): Promise<boolean> {
+	if (!input.isTTY || !output.isTTY) return false;
+	return questionYesNo(question, options.defaultYes === true);
 }
 
 /** Confirm dropping remote secrets. Default No. Non-TTY without answer → false. */

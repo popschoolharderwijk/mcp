@@ -103,7 +103,7 @@ Prefer these over raw CLI. Missing env → **`local`**. Remotes use `--remote=<r
 
 | Command                            | `local`                                                                    | `dev` / `test` / `prod`                                                                                    |
 | ---------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `bun run db:reset [env]`           | `supabase db reset`                                                        | `db reset --remote=<ref> --yes` (prod: loud banner)                                                        |
+| `bun run db:reset [env]`           | `supabase db reset`                                                        | `db reset --remote=<ref> --yes` (`confirm` targets prompt first)                                           |
 | `bun run db:push:migrations [env]` | `migration up`                                                             | `db push --remote=<ref> --yes`                                                                             |
 | `bun run db:push:secrets [env]`    | Materialize `functions/.env` + `supabase/.env` from `functions/.env.local` | Replace custom secrets from `functions/.env.development` / `.test` / `.production` (drop confirm if stale) |
 | `bun run db:push:config [env]`     | No-op (uses `config.toml` via `supabase start`)                            | `config push --remote=<ref> --yes`                                                                         |

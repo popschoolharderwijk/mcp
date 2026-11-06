@@ -11,7 +11,7 @@ export function readTemplateEmailEnv(getEnv: (key: string) => string | undefined
 		supabaseUrl: getEnv('SUPABASE_URL') ?? '',
 		anonKey: getEnv('SUPABASE_ANON_KEY') ?? '',
 		serviceKey: getEnv('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-		resendKey: getEnv('RESEND_API_KEY_TRANSACTIONAL') ?? '',
+		resendKey: getEnv('RESEND_API_KEY') ?? '',
 		fromEmail: getEnv('RESEND_FROM_EMAIL') ?? '',
 	};
 }

@@ -5,10 +5,10 @@
  * Remotes: --remote=<ref> --yes (CLI v3).
  */
 
-import type { DeployTarget } from './envHelpers.ts';
+import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
+	confirmTargetIfRequired,
 	fail,
-	printProdBanner,
 	remoteFlag,
 	requireAccessTokenForRemote,
 	resolveTargetFromArgv,
@@ -16,7 +16,6 @@ import {
 } from './runHelpers.ts';
 
 export async function resetDatabase(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
 	requireAccessTokenForRemote(target);
 
 	if (target.projectRef === null) {
@@ -28,7 +27,6 @@ export async function resetDatabase(target: DeployTarget): Promise<void> {
 }
 
 export async function pushMigrations(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
 	requireAccessTokenForRemote(target);
 
 	if (target.projectRef === null) {
@@ -40,8 +38,8 @@ export async function pushMigrations(target: DeployTarget): Promise<void> {
 }
 
 const DB_VERBS = {
-	reset: { label: 'db:reset', run: resetDatabase },
-	push: { label: 'db:push:migrations', run: pushMigrations },
+	reset: { label: 'db:reset', run: resetDatabase, destructive: true },
+	push: { label: 'db:push:migrations', run: pushMigrations, destructive: false },
 } as const;
 
 function resolveDbVerb(verb: string | undefined): (typeof DB_VERBS)[keyof typeof DB_VERBS] | null {
@@ -57,7 +55,8 @@ async function main(): Promise<void> {
 	}
 
 	const target = resolveTargetFromArgv(process.argv.slice(3), entry.label);
-	console.log(`${entry.label} → ${target.env} (${target.projectRef ?? 'local Docker'})`);
+	console.log(`${entry.label} → ${formatTargetLabel(target)}`);
+	await confirmTargetIfRequired(target, entry.label, { destructive: entry.destructive });
 	await entry.run(target);
 	console.log('Done.');
 }

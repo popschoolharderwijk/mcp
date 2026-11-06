@@ -5,9 +5,9 @@
 
 import { pushConfig } from './config.ts';
 import { pushMigrations } from './db.ts';
-import { type DeployTarget, PUSH_ALL_STEPS, type PushAllStep } from './envHelpers.ts';
+import { type DeployTarget, formatTargetLabel, PUSH_ALL_STEPS, type PushAllStep } from './envHelpers.ts';
 import { pushFunctions } from './functions.ts';
-import { fail, printProdBanner, resolveTargetFromArgv } from './runHelpers.ts';
+import { confirmTargetIfRequired, fail, resolveTargetFromArgv } from './runHelpers.ts';
 import { pushSecrets } from './secrets.ts';
 
 const STEP_RUNNERS: Record<PushAllStep, (target: DeployTarget) => Promise<void>> = {
@@ -29,9 +29,9 @@ async function runPushAllStep(step: PushAllStep, target: DeployTarget): Promise<
 }
 
 async function runPushAll(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
-	console.log(`db:push:all → ${target.env} (${target.projectRef ?? 'local Docker'})`);
+	console.log(`db:push:all → ${formatTargetLabel(target)}`);
 	console.log(`Steps: ${PUSH_ALL_STEPS.join(' → ')}`);
+	await confirmTargetIfRequired(target, 'db:push:all');
 
 	for (const step of PUSH_ALL_STEPS) {
 		try {

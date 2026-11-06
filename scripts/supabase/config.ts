@@ -2,10 +2,10 @@
  * bun run db:push:config [env]
  */
 
-import type { DeployTarget } from './envHelpers.ts';
+import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
+	confirmTargetIfRequired,
 	fail,
-	printProdBanner,
 	remoteFlag,
 	requireAccessTokenForRemote,
 	resolveTargetFromArgv,
@@ -13,8 +13,6 @@ import {
 } from './runHelpers.ts';
 
 export async function pushConfig(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
-
 	if (target.projectRef === null) {
 		console.log('Local uses supabase/config.toml via `supabase start` — nothing to push.');
 		return;
@@ -30,7 +28,8 @@ async function main(): Promise<void> {
 		fail('Usage: bun run scripts/supabase/config.ts push [local|dev|test|prod]');
 	}
 	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:config');
-	console.log(`db:push:config → ${target.env} (${target.projectRef ?? 'local Docker'})`);
+	console.log(`db:push:config → ${formatTargetLabel(target)}`);
+	await confirmTargetIfRequired(target, 'db:push:config');
 	await pushConfig(target);
 	console.log('Done.');
 }

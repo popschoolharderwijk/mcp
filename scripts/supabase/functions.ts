@@ -2,10 +2,10 @@
  * bun run db:push:functions [env]
  */
 
-import type { DeployTarget } from './envHelpers.ts';
+import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
+	confirmTargetIfRequired,
 	fail,
-	printProdBanner,
 	remoteFlag,
 	requireAccessTokenForRemote,
 	resolveTargetFromArgv,
@@ -13,8 +13,6 @@ import {
 } from './runHelpers.ts';
 
 export async function pushFunctions(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
-
 	if (target.projectRef === null) {
 		console.log('Local edge runtime serves functions from the tree — nothing to deploy.');
 		return;
@@ -30,7 +28,8 @@ async function main(): Promise<void> {
 		fail('Usage: bun run scripts/supabase/functions.ts push [local|dev|test|prod]');
 	}
 	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:functions');
-	console.log(`db:push:functions → ${target.env} (${target.projectRef ?? 'local Docker'})`);
+	console.log(`db:push:functions → ${formatTargetLabel(target)}`);
+	await confirmTargetIfRequired(target, 'db:push:functions');
 	await pushFunctions(target);
 	console.log('Done.');
 }

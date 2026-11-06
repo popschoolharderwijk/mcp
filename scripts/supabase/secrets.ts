@@ -10,7 +10,9 @@ import { stdin as input, stdout as output } from 'node:process';
 import {
 	buildLocalSupabaseDotEnv,
 	type DeployTarget,
+	envEntriesEqual,
 	formatStaleSecretsSummary,
+	formatTargetLabel,
 	missingRequiredSecretNames,
 	parseEnvFileEntries,
 	parseEnvFileKeys,
@@ -19,9 +21,9 @@ import {
 } from './envHelpers.ts';
 import {
 	confirmSecretDrops,
+	confirmTargetIfRequired,
 	confirmYes,
 	fail,
-	printProdBanner,
 	projectRoot,
 	remoteFlag,
 	requireAccessTokenForRemote,
@@ -36,17 +38,17 @@ async function readSecretsFile(target: DeployTarget): Promise<{
 	entries: Record<string, string>;
 	keys: string[];
 }> {
-	const path = join(projectRoot, target.secretsFileRelative);
+	const path = join(projectRoot, target.envFile);
 	const file = Bun.file(path);
 	if (!(await file.exists())) {
-		fail(`Secrets file not found: ${target.secretsFileRelative}`);
+		fail(`Secrets file not found: ${target.envFile}`);
 	}
 	const contents = await file.text();
 	const entries = parseEnvFileEntries(contents);
 	const missing = missingRequiredSecretNames(entries);
 	if (missing.length > 0) {
 		fail(
-			`Missing or empty required secrets in ${target.secretsFileRelative}:\n${missing
+			`Missing or empty required secrets in ${target.envFile}:\n${missing
 				.map((name) => `  - ${name}`)
 				.join('\n')}`,
 		);
@@ -90,16 +92,37 @@ async function maybeRestartLocalStack(): Promise<void> {
 	await runSupabase(['start']);
 }
 
+async function readOptionalText(path: string): Promise<string | null> {
+	const file = Bun.file(path);
+	if (!(await file.exists())) return null;
+	return file.text();
+}
+
+function materializedSecretsChanged(previousContents: string | null, nextContents: string): boolean {
+	if (previousContents === null) return true;
+	return !envEntriesEqual(parseEnvFileEntries(previousContents), parseEnvFileEntries(nextContents));
+}
+
 async function pushSecretsLocal(target: DeployTarget): Promise<void> {
 	const { contents, entries } = await readSecretsFile(target);
+	const nextSupabaseDotEnv = buildLocalSupabaseDotEnv(entries);
 
 	const edgeEnvPath = join(projectRoot, 'supabase/functions/.env');
+	const supabaseDotEnvPath = join(projectRoot, 'supabase/.env');
+	const secretsChanged =
+		materializedSecretsChanged(await readOptionalText(edgeEnvPath), contents) ||
+		materializedSecretsChanged(await readOptionalText(supabaseDotEnvPath), nextSupabaseDotEnv);
+
 	await Bun.write(edgeEnvPath, contents);
 	console.log('Wrote supabase/functions/.env (edge runtime) from .env.local');
 
-	const supabaseDotEnvPath = join(projectRoot, 'supabase/.env');
-	await Bun.write(supabaseDotEnvPath, buildLocalSupabaseDotEnv(entries));
+	await Bun.write(supabaseDotEnvPath, nextSupabaseDotEnv);
 	console.log('Wrote supabase/.env (Auth SMTP env()) from .env.local');
+
+	if (!secretsChanged) {
+		console.log('Secrets unchanged — no local stack restart needed.');
+		return;
+	}
 
 	await maybeRestartLocalStack();
 }
@@ -142,7 +165,6 @@ async function pushSecretsRemote(target: DeployTarget): Promise<void> {
 }
 
 export async function pushSecrets(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
 	requireAccessTokenForRemote(target);
 
 	if (target.projectRef === null) {
@@ -159,7 +181,8 @@ async function main(): Promise<void> {
 		fail('Usage: bun run scripts/supabase/secrets.ts push [local|dev|test|prod]');
 	}
 	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:secrets');
-	console.log(`db:push:secrets → ${target.env} (${target.secretsFileRelative})`);
+	console.log(`db:push:secrets → ${formatTargetLabel(target)} — ${target.envFile}`);
+	await confirmTargetIfRequired(target, 'db:push:secrets');
 	await pushSecrets(target);
 	console.log('Done.');
 }

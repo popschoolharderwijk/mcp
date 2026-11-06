@@ -6,10 +6,10 @@
  */
 
 import { join } from 'node:path';
-import type { DeployTarget } from './envHelpers.ts';
+import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
+	confirmTargetIfRequired,
 	fail,
-	printProdBanner,
 	projectRoot,
 	remoteFlag,
 	requireAccessTokenForRemote,
@@ -51,16 +51,15 @@ async function formatTypesFile(): Promise<void> {
 }
 
 export async function generateTypes(target: DeployTarget): Promise<void> {
-	printProdBanner(target.env);
 	requireAccessTokenForRemote(target);
 
 	if (target.projectRef === null) {
 		const port = await localDbPort();
 		const dbUrl = `postgresql://postgres:postgres@localhost:${port}/postgres`;
-		console.log(`db:types → local (localhost:${port})`);
+		console.log(`db:types → ${formatTargetLabel(target)} (localhost:${port})`);
 		await runGenTypes(`--remote=${dbUrl}`);
 	} else {
-		console.log(`db:types → ${target.env} (${target.projectRef})`);
+		console.log(`db:types → ${formatTargetLabel(target)}`);
 		await runGenTypes(remoteFlag(target.projectRef));
 	}
 
@@ -69,6 +68,7 @@ export async function generateTypes(target: DeployTarget): Promise<void> {
 
 async function main(): Promise<void> {
 	const target = resolveTargetFromArgv(process.argv.slice(2), 'db:types');
+	await confirmTargetIfRequired(target, 'db:types');
 	await generateTypes(target);
 	console.log('Done.');
 }

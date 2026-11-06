@@ -68,7 +68,7 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 1. Receives `{ event_key, to, vars }` (JWT required; privileged or service-role only).
 2. Loads the template from `email_templates` where `event_key = ?`.
 3. Fills variables (`{{name}}` → value).
-4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY_TRANSACTIONAL`.
+4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY`.
 
 Other edge functions (`send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
 

@@ -12,7 +12,7 @@ describe('readTemplateEmailEnv', () => {
 					SUPABASE_URL: 'https://supabase.example',
 					SUPABASE_ANON_KEY: 'anon',
 					SUPABASE_SERVICE_ROLE_KEY: 'service',
-					RESEND_API_KEY_TRANSACTIONAL: 'resend',
+					RESEND_API_KEY: 'resend',
 					RESEND_FROM_EMAIL: 'mail@example.com',
 				};
 				return values[key];
