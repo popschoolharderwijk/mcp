@@ -233,6 +233,6 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 
 1. **Lovable** and default `bun dev` use **mcp-dev** (`.env.development`, Vite mode `development` so `lovable-tagger` loads).
 2. **Local Docker** is opt-in: `bun run dev:local` (Vite mode `localdev` + keys in `.env.local`). Mode name `local` is forbidden by Vite; the file `.env.local` is fine.
-3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test` / shell (`SUPABASE_URL`, etc.).
+3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test.local` / shell (`SUPABASE_URL`, etc.).
 4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`, runs `supabase db reset --remote=<ref> --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
 5. On **merge to main**, migrations are applied to production via the Supabase GitHub Integration / `db push --remote=…`.

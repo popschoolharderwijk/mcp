@@ -4,15 +4,15 @@
 
 Required for CI workflows. Manage via **[GitHub Actions Secrets → popschoolharderwijk/mcp](https://github.com/popschoolharderwijk/mcp/settings/secrets/actions)**.
 
-| Secret                             | Value                                                           | Use                                            |
-| ---------------------------------- | --------------------------------------------------------------- | ---------------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)             |
-| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | `db reset --remote=<ref>` / CLI DB connection  |
-| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`            |
-| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                   |
-| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                   |
-| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                   |
-| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email` |
+| Secret                             | Value                                                           | Use                                                                          |
+| ---------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)                                           |
+| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | CI + `bun run db:* test` (same plain name as `.env.test.local`)              |
+| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`                                          |
+| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                                                 |
+| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                                                 |
+| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                                                 |
+| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email`                               |
 
 See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabase** / `pull-request-supabase.yml`) that uses these secrets.
 
@@ -52,7 +52,7 @@ See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for t
 
 ## Dev Login Bypass (development/test only)
 
-For fast sign-in without Magic Link in development. Add to `.env.local` (local Docker) or `.env.development` (mcp-dev).
+For fast sign-in without Magic Link in development. Add to `.env.local` (local Docker) or `.env.development.local` (mcp-dev) — never to committed mode files.
 
 ### Frontend (Dev Login button)
 
@@ -70,14 +70,12 @@ For fast sign-in without Magic Link in development. Add to `.env.local` (local D
 | `DEV_LOGIN_EMAIL`, `DEV_LOGIN_PASSWORD`       | Credentials of the user to create.                              |
 | `DEV_LOGIN_FIRST_NAME`, `DEV_LOGIN_LAST_NAME` | Optional: profile fields.                                       |
 
-Example `.env.development`:
+Example `.env.development.local` (gitignored):
 
 ```env
-VITE_SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-RESEND_API_KEY=re_...
+SUPABASE_DB_PASSWORD=...
 
 VITE_DEV_LOGIN_PASSWORD=my-dev-password
 DEV_LOGIN_EMAIL=dev@example.com

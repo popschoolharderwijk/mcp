@@ -99,8 +99,8 @@ All SMTP settings live in `[auth.email.smtp]` and are pushed to remote projects 
 
 ```bash
 supabase config diff --remote=<project-ref>
-supabase config push --remote=<project-ref> --yes
-# or: bun run db:push:config <dev|test|prod>
+supabase config push --remote=<project-ref>
+# or: bun run db:push:config <development|test|production>
 ```
 
 > ⚠️ The sender email (`admin_email`) must be a verified domain in Resend. For development, `xxx@resend.dev` (test domain) is allowed.

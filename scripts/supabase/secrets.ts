@@ -26,7 +26,6 @@ import {
 	fail,
 	projectRoot,
 	remoteFlag,
-	requireAccessTokenForRemote,
 	resolveTargetFromArgv,
 	runSupabase,
 	runSupabaseCapture,
@@ -165,8 +164,6 @@ async function pushSecretsRemote(target: DeployTarget): Promise<void> {
 }
 
 export async function pushSecrets(target: DeployTarget): Promise<void> {
-	requireAccessTokenForRemote(target);
-
 	if (target.projectRef === null) {
 		await pushSecretsLocal(target);
 		return;
@@ -178,7 +175,7 @@ export async function pushSecrets(target: DeployTarget): Promise<void> {
 async function main(): Promise<void> {
 	const verb = process.argv[2];
 	if (verb !== 'push') {
-		fail('Usage: bun run scripts/supabase/secrets.ts push [local|dev|test|prod]');
+		fail('Usage: bun run scripts/supabase/secrets.ts push [local|development|test|production]');
 	}
 	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:secrets');
 	console.log(`db:push:secrets → ${formatTargetLabel(target)} — ${target.envFile}`);

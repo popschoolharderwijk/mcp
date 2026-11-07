@@ -54,6 +54,12 @@ sql_paths = ["./seeds/bootstrap.sql"]
 enabled = true
 file_size_limit = "50MiB"
 
+[storage.analytics]
+enabled = false
+
+[storage.image_transformation]
+enabled = false
+
 # -------------
 # Base config (local `supabase start` + merge source for remotes).
 # Remotes deep-merge over this block: nested objects merge, arrays/scalars replace
@@ -75,6 +81,9 @@ password_requirements= "lower_upper_letters_digits_symbols"
 [auth.mfa.totp]
 enroll_enabled = true
 verify_enabled = true
+
+[auth.sms]
+enable_confirmations = false
 
 [auth.email]
 enabled = true

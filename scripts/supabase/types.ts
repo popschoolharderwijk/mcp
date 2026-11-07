@@ -9,10 +9,10 @@ import { join } from 'node:path';
 import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
 	confirmTargetIfRequired,
+	ensureSupabaseUnlinked,
 	fail,
 	projectRoot,
-	remoteFlag,
-	requireAccessTokenForRemote,
+	remoteDbAuth,
 	resolveTargetFromArgv,
 	runSupabaseCapture,
 } from './runHelpers.ts';
@@ -29,9 +29,11 @@ async function localDbPort(): Promise<number> {
 	return Number(match[1]);
 }
 
-async function runGenTypes(remoteArg: string): Promise<void> {
+async function runGenTypes(remoteArg: string, env?: Record<string, string>): Promise<void> {
 	const outPath = join(projectRoot, TYPES_OUT);
-	const stdout = await runSupabaseCapture(['gen', 'types', 'typescript', remoteArg, '--schema', 'public']);
+	const stdout = await runSupabaseCapture(['gen', 'types', 'typescript', remoteArg, '--schema', 'public'], {
+		env,
+	});
 	await Bun.write(outPath, stdout);
 	console.log(`Wrote ${TYPES_OUT}`);
 }
@@ -51,8 +53,6 @@ async function formatTypesFile(): Promise<void> {
 }
 
 export async function generateTypes(target: DeployTarget): Promise<void> {
-	requireAccessTokenForRemote(target);
-
 	if (target.projectRef === null) {
 		const port = await localDbPort();
 		const dbUrl = `postgresql://postgres:postgres@localhost:${port}/postgres`;
@@ -60,7 +60,9 @@ export async function generateTypes(target: DeployTarget): Promise<void> {
 		await runGenTypes(`--remote=${dbUrl}`);
 	} else {
 		console.log(`db:types → ${formatTargetLabel(target)}`);
-		await runGenTypes(remoteFlag(target.projectRef));
+		await ensureSupabaseUnlinked();
+		const auth = remoteDbAuth(target, 'password-env');
+		await runGenTypes(auth.args[0], auth.env);
 	}
 
 	await formatTypesFile();

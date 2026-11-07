@@ -3,6 +3,8 @@
  * Remotes always use `--remote=<projectRef>` (CLI v3).
  */
 
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { stdin as input, stdout as output } from 'node:process';
 import * as readline from 'node:readline/promises';
 import {
@@ -10,12 +12,17 @@ import {
 	type DeployTarget,
 	deployEnvUsageHint,
 	matchesConfirmTargetToken,
+	mergeRuntimeEnv,
 	parseDeployEnv,
+	parseEnvFileEntries,
 	parseYesNoAnswer,
+	pickDbPassword,
 	resolveDeployTarget,
 } from './envHelpers.ts';
 
 export const projectRoot = `${import.meta.dir}/../..`;
+
+const DEPLOY_ENV_USAGE = 'local|development|test|production';
 
 export function fail(message: string): never {
 	console.error(`Error: ${message}`);
@@ -27,10 +34,22 @@ export function resolveTargetFromArgv(argv: string[], verbLabel: string): Deploy
 	const env = parseDeployEnv(envArg);
 	if (env === null) {
 		fail(
-			`Unknown environment "${envArg}". ${deployEnvUsageHint()}\nUsage: bun run ${verbLabel} [local|dev|test|prod]`,
+			`Unknown environment "${envArg}". ${deployEnvUsageHint()}\nUsage: bun run ${verbLabel} [${DEPLOY_ENV_USAGE}]`,
 		);
 	}
 	return resolveDeployTarget(env);
+}
+
+/**
+ * Process env + optional root runtime env file (file wins when present).
+ * CI sets `SUPABASE_DB_PASSWORD` in the job env without a file; locally prefer `.env.<target>.local`.
+ */
+export function loadRuntimeEnvMap(target: DeployTarget): Record<string, string | undefined> {
+	const path = join(projectRoot, target.runtimeEnvFile);
+	if (!existsSync(path)) {
+		return { ...process.env };
+	}
+	return mergeRuntimeEnv(process.env, parseEnvFileEntries(readFileSync(path, 'utf8')));
 }
 
 function confirmBannerLine(label: string, value: string): string {
@@ -91,17 +110,63 @@ export async function confirmTargetIfRequired(
 	}
 	await confirmByTypingTarget(target);
 }
-export function requireAccessTokenForRemote(target: DeployTarget): void {
-	if (target.projectRef === null) return;
-	if (!process.env.SUPABASE_ACCESS_TOKEN?.trim()) {
-		fail(
-			'SUPABASE_ACCESS_TOKEN is not set. Export an access token (Account → Access Tokens) before remote db:* commands.',
-		);
-	}
-}
 
 export function remoteFlag(projectRef: string): string {
 	return `--remote=${projectRef}`;
+}
+
+export type RemoteDbAuth = {
+	args: string[];
+	/** Merged into spawn env. `password-env` sets SUPABASE_DB_PASSWORD for CLI pooler path. */
+	env: Record<string, string>;
+};
+
+/**
+ * Hosted DB auth for `--remote=<ref>`.
+ * `password-flag` → `--password=` (e.g. `db push`); `password-env` → `SUPABASE_DB_PASSWORD` (e.g. `db reset`, `gen types`).
+ * Call `ensureSupabaseUnlinked` first when using `password-env`.
+ */
+export function remoteDbAuth(target: DeployTarget, mode: 'password-flag' | 'password-env'): RemoteDbAuth {
+	if (target.projectRef === null) {
+		fail('remoteDbAuth called for local');
+	}
+	const projectRef = target.projectRef;
+	const password = pickDbPassword(loadRuntimeEnvMap(target));
+	if (!password) {
+		fail(
+			`Missing SUPABASE_DB_PASSWORD for ${target.env} (${projectRef}). Set it in ${target.runtimeEnvFile} or the environment.`,
+		);
+	}
+
+	const env = { SUPABASE_DB_PASSWORD: password };
+	if (mode === 'password-env') {
+		return { args: [remoteFlag(projectRef)], env };
+	}
+	return { args: [remoteFlag(projectRef), `--password=${password}`], env };
+}
+
+/** `supabase unlink` when `supabase/.temp/project-ref` exists — required for cross-project `SUPABASE_DB_PASSWORD`. */
+export async function ensureSupabaseUnlinked(): Promise<void> {
+	const refPath = join(projectRoot, 'supabase/.temp/project-ref');
+	if (!existsSync(refPath)) return;
+	await runSupabase(['unlink']);
+}
+
+function formatSupabaseArgsForLog(args: string[]): string {
+	return args
+		.map((arg) => {
+			if (arg.startsWith('--password=')) return '--password=***';
+			if (arg.startsWith('--remote=postgresql://') || arg.startsWith('--remote=postgres://')) {
+				return '--remote=postgresql://***';
+			}
+			return arg;
+		})
+		.join(' ');
+}
+
+function spawnEnv(extra?: Record<string, string>): Record<string, string | undefined> {
+	if (!extra) return process.env;
+	return { ...process.env, ...extra };
 }
 
 function isCtrlCAbort(error: unknown): boolean {
@@ -149,33 +214,38 @@ export async function confirmSecretDrops(staleNames: string[]): Promise<boolean>
 	return confirmYes('Drop these secrets?');
 }
 
-export async function runSupabase(args: string[]): Promise<void> {
-	console.log(`→ supabase ${args.join(' ')}`);
+export async function runSupabase(args: string[], options: { env?: Record<string, string> } = {}): Promise<void> {
+	const logged = formatSupabaseArgsForLog(args);
+	console.log(`→ supabase ${logged}`);
 	const proc = Bun.spawn(['supabase', ...args], {
 		cwd: projectRoot,
 		stdout: 'inherit',
 		stderr: 'inherit',
-		env: process.env,
+		env: spawnEnv(options.env),
 	});
 	const code = await proc.exited;
 	if (code !== 0) {
-		fail(`supabase ${args.join(' ')} exited with code ${code}`);
+		fail(`supabase ${logged} exited with code ${code}`);
 	}
 }
 
 /** Run supabase and return stdout (stderr inherited). */
-export async function runSupabaseCapture(args: string[]): Promise<string> {
-	console.log(`→ supabase ${args.join(' ')}`);
+export async function runSupabaseCapture(
+	args: string[],
+	options: { env?: Record<string, string> } = {},
+): Promise<string> {
+	const logged = formatSupabaseArgsForLog(args);
+	console.log(`→ supabase ${logged}`);
 	const proc = Bun.spawn(['supabase', ...args], {
 		cwd: projectRoot,
 		stdout: 'pipe',
 		stderr: 'inherit',
-		env: process.env,
+		env: spawnEnv(options.env),
 	});
 	const code = await proc.exited;
 	const stdout = await new Response(proc.stdout).text();
 	if (code !== 0) {
-		fail(`supabase ${args.join(' ')} exited with code ${code}`);
+		fail(`supabase ${logged} exited with code ${code}`);
 	}
 	return stdout;
 }

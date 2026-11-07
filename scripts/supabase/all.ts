@@ -47,7 +47,7 @@ async function runPushAll(target: DeployTarget): Promise<void> {
 
 async function main(): Promise<void> {
 	if (process.argv[2] !== 'push') {
-		fail('Usage: bun run scripts/supabase/all.ts push [local|dev|test|prod]');
+		fail('Usage: bun run scripts/supabase/all.ts push [local|development|test|production]');
 	}
 	await runPushAll(resolveTargetFromArgv(process.argv.slice(3), 'db:push:all'));
 }

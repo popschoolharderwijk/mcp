@@ -7,35 +7,33 @@ Dashboard and CLI share the same secret store. Prefer one source of truth: the h
 
 ## Day-to-day: `bun run db:*`
 
-| Command                                            | What it does                                                                            |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `bun run db:push:secrets [local\|dev\|test\|prod]` | Validate env file; local materializes derived files; remotes **replace** custom secrets |
-| `bun run db:push:config [env]`                     | Push `config.toml` to that remote (local: no-op)                                        |
-| `bun run db:push:functions [env]`                  | Deploy all edge functions (local: no-op)                                                |
-| `bun run db:push:migrations [env]`                 | Apply migrations                                                                        |
-| `bun run db:push:all [env]`                        | Fail-fast: migrations → **secrets → config** → functions (no reset)                     |
-| `bun run db:reset [env]`                           | Full DB reset (prod allowed; loud banner; no confirm)                                   |
+| Command                                                          | What it does                                                                            |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `bun run db:push:secrets [local\|development\|test\|production]` | Validate env file; local materializes derived files; remotes **replace** custom secrets |
+| `bun run db:push:config [env]`                                   | Push `config.toml` to that remote (local: no-op)                                        |
+| `bun run db:push:functions [env]`                                | Deploy all edge functions (local: no-op)                                                |
+| `bun run db:push:migrations [env]`                               | Apply migrations                                                                        |
+| `bun run db:push:all [env]`                                      | Fail-fast: migrations → **secrets → config** → functions (no reset)                     |
+| `bun run db:reset [env]`                                         | Full DB reset (`confirm` targets prompt; production requires typing the project ref)    |
 
 Missing env arg → **`local`**. Invalid env → usage + exit `1`.
 
-Remotes always pass `--remote=<projectRef>` from a fixed map (CLI v3). Hosted mutating steps use `--yes`. Export `SUPABASE_ACCESS_TOKEN` for remote commands.
-
-Prod targets print a loud banner; there is no interactive prod confirm.
+Remotes always pass `--remote=<projectRef>` from a fixed map (CLI v3). Hosted mutating steps use `--yes`. Auth is left to the CLI (`supabase login` or `SUPABASE_ACCESS_TOKEN`). Hosted DB commands read plain `SUPABASE_DB_PASSWORD` from the root runtime file (`.env.<target>.local`) or the process env.
 
 See also [commands.md](./commands.md).
 
 ## Environments
 
-CLI args are short (`local` / `dev` / `test` / `prod`). Secret file names use the same suffixes as Vite root env files, but paths are **only** under `supabase/functions/` — never the root Vite `.env*`.
+CLI targets match Vite mode names (`local` / `development` / `test` / `production`). Paths are **inferred** from the target (see `scripts/supabase/config.json` for refs only): Edge/Auth → `supabase/functions/.env.<target>`; app/CLI → `.env.local` or `.env.<target>.local`. Missing files → hard fail.
 
-| CLI env | Target                             | Hand-edited secrets file (only SoT)   | Project ref            |
-| ------- | ---------------------------------- | ------------------------------------- | ---------------------- |
-| `local` | Local Docker (`supabase start`)    | `supabase/functions/.env.local`       | —                      |
-| `dev`   | mcp-dev (Lovable / `bun dev`)      | `supabase/functions/.env.development` | `zdvscmogkfyddnnxzkdu` |
-| `test`  | mcp-test (CI / `bun run dev:test`) | `supabase/functions/.env.test`        | `jserlqacarlgtdzrblic` |
-| `prod`  | Production                         | `supabase/functions/.env.production`  | `bnagepkxryauifzyoxgo` |
+| CLI env       | Target                             | Edge/Auth secrets file (SoT)          | Root runtime secrets (DB password, …) | Project ref            |
+| ------------- | ---------------------------------- | ------------------------------------- | ------------------------------------- | ---------------------- |
+| `local`       | Local Docker (`supabase start`)    | `supabase/functions/.env.local`       | `.env.local`                          | —                      |
+| `development` | mcp-dev (Lovable / `bun dev`)      | `supabase/functions/.env.development` | `.env.development.local`              | `zdvscmogkfyddnnxzkdu` |
+| `test`        | mcp-test (CI / `bun run dev:test`) | `supabase/functions/.env.test`        | `.env.test.local`                     | `jserlqacarlgtdzrblic` |
+| `production`  | Production                         | `supabase/functions/.env.production`  | `.env.production.local`               | `bnagepkxryauifzyoxgo` |
 
-Never put `SUPABASE_*` or `VITE_*` in these files (reserved / frontend-only). `SITE_URL` is optional.
+Never put `SUPABASE_*` or `VITE_*` in the **functions** secrets files (reserved / frontend-only). `SITE_URL` is optional.
 
 Committed template (names only): `supabase/functions/.env.example`.
 
@@ -64,7 +62,7 @@ Root Vite `.env.local` is **not** the Edge/Auth secret source of truth.
 ## Remote secrets = full replace
 
 `supabase secrets set` **upserts** listed keys only; orphans stay until `unset`.
-`bun run db:push:secrets` for `dev` / `test` / `prod` therefore:
+`bun run db:push:secrets` for `development` / `test` / `production` therefore:
 
 1. Validates the env file (required keys present and non-empty).
 2. Lists remote secret names (`--remote=<ref>`).
@@ -99,7 +97,7 @@ Same Resend key value may be copied into both `RESEND_API_KEY` and `RESEND_API_K
 
 ## Required keys per secrets file
 
-Validation list (edit without touching TypeScript): [`scripts/supabase/required-secrets.json`](../scripts/supabase/required-secrets.json).
+Validation list (edit without touching TypeScript): [`scripts/supabase/config.json`](../scripts/supabase/config.json) → `secrets`.
 
 ```env
 # Auth SMTP (config.toml env())
@@ -134,31 +132,32 @@ supabase/functions/.env.*
 3. `supabase start` (or restart if already running).
 4. Confirm with `bun run dev:local` and a function that reads Stripe/Resend.
 
-### 2. Each remote (dev / test / prod)
+### 2. Each remote (development / test / production)
 
 1. Fill `supabase/functions/.env.development` (or `.test` / `.production`) for that project.
-2. Export `SUPABASE_ACCESS_TOKEN`.
-3. Push secrets (replace + optional drop confirm):
+2. Put `SUPABASE_DB_PASSWORD` (and other app secrets) in the matching root `.env.<target>.local`.
+3. Be logged in (`supabase login`) or have `SUPABASE_ACCESS_TOKEN` available to the CLI.
+4. Push secrets (replace + optional drop confirm):
 
 ```bash
-bun run db:push:secrets dev
+bun run db:push:secrets development
 bun run db:push:secrets test
-bun run db:push:secrets prod
+bun run db:push:secrets production
 ```
 
-4. Verify names (values are hidden):
+5. Verify names (values are hidden):
 
 ```bash
 supabase secrets list --remote=zdvscmogkfyddnnxzkdu
 ```
 
-5. When Auth/config or functions changed:
+6. When Auth/config or functions changed:
 
 ```bash
-bun run db:push:config dev
-bun run db:push:functions dev
+bun run db:push:config development
+bun run db:push:functions development
 # or everything except reset:
-bun run db:push:all dev
+bun run db:push:all development
 ```
 
 ## Changing a secret

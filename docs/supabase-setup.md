@@ -22,7 +22,7 @@ How to get an empty Supabase project working with this application.
 ```bash
 # Push all migrations (CLI v3: explicit remote)
 supabase db push --remote=<project-ref> --yes
-# or: bun run db:push:migrations <dev|test|prod>
+# or: bun run db:push:migrations <development|test|production>
 ```
 
 Migrations live in `supabase/migrations/` as domain files (e.g. `_lesson_groups`, `_projects`, `_stripe_billing`). Storage buckets (`avatars`, `announcement-images`, …) are created in those migrations via `INSERT INTO storage.buckets`. Iterative GRANT/DROP patches are folded into those domain migrations. After schema changes: reset the DB (`supabase db reset` locally, or `bun run db:reset <env>` / `supabase db reset --remote=<ref> --yes` on remote) and regenerate types (`bun run db:types` / `bun run db:types <env>`).
@@ -53,8 +53,8 @@ After configuring `config.toml`, push settings to the remote project:
 ```bash
 # Review then push (CLI v3)
 supabase config diff --remote=<project-ref>
-supabase config push --remote=<project-ref> --yes
-# or: bun run db:push:config <dev|test|prod>
+supabase config push --remote=<project-ref>
+# or: bun run db:push:config <development|test|production>
 ```
 
 > ⚠️ **Why are password requirements so strict?**
@@ -70,7 +70,7 @@ supabase config push --remote=<project-ref> --yes
 > - Passwords without symbols, digits, or letters are rejected
 > - Only passwords that meet all requirements are accepted
 
-> 📝 **Important**: Changes in `config.toml` are **not** pushed to remote automatically. Always use `bun run db:push:config <env>` (or `config push --remote=<ref> --yes`) after changes; review with `config diff` first.
+> 📝 **Important**: Changes in `config.toml` are **not** pushed to remote automatically. Use `bun run db:push:config <env>` (or `config push --remote=<ref>`) after changes — the CLI shows the diff and asks before writing. Hosted settings that this file should own must appear as keys in `config.toml` — `config push` only updates those.
 
 ---
 
@@ -158,7 +158,7 @@ password_requirements = "lower_upper_letters_digits_symbols"
 
 ```bash
 supabase config diff --remote=<new-project-ref>
-supabase config push --remote=<new-project-ref> --yes
+supabase config push --remote=<new-project-ref>
 ```
 
 ---

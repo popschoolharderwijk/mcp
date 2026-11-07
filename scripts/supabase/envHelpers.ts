@@ -1,7 +1,8 @@
 /**
  * Pure helpers for `bun run db:*` deploy scripts.
- * Env file paths live under supabase/functions/ (not root Vite .env*).
- * Deploy targets + required secret names: edit config.json.
+ * Paths are inferred from the target name (not listed in config.json).
+ * Edge/Auth: supabase/functions/.env.<target>
+ * App/CLI runtime: .env.local | .env.<target>.local
  */
 
 import deployConfig from './config.json';
@@ -15,9 +16,23 @@ export type DeployTarget = {
 	env: DeployEnv;
 	/** null = local Docker stack */
 	projectRef: string | null;
+	/** Edge/Auth secrets under supabase/functions/ (inferred) */
 	envFile: string;
+	/** Root Vite-aligned secrets, e.g. SUPABASE_DB_PASSWORD (inferred) */
+	runtimeEnvFile: string;
 	confirm: ConfirmMode | null;
 };
+
+/** `supabase/functions/.env.local` | `.env.development` | … */
+export function edgeSecretsEnvFile(env: DeployEnv): string {
+	return `supabase/functions/.env.${env}`;
+}
+
+/** `.env.local` | `.env.development.local` | … */
+export function runtimeEnvFile(env: DeployEnv): string {
+	if (env === 'local') return '.env.local';
+	return `.env.${env}.local`;
+}
 
 /** Required non-empty keys in each secrets env file — edit config.json `secrets`. */
 export const REQUIRED_SECRET_NAMES: readonly string[] = deployConfig.secrets;
@@ -60,12 +75,13 @@ export function resolveDeployTarget(env: DeployEnv): DeployTarget {
 	return {
 		env,
 		projectRef: row.projectRef,
-		envFile: row.envFile,
+		envFile: edgeSecretsEnvFile(env),
+		runtimeEnvFile: runtimeEnvFile(env),
 		confirm: 'confirm' in row ? parseConfirmMode(row.confirm) : null,
 	};
 }
 
-/** Single identity for logs/prompts: `local Docker` or `prod (bnage…)`. */
+/** Single identity for logs/prompts: `local Docker` or `production (bnage…)`. */
 export function formatTargetLabel(target: DeployTarget): string {
 	if (target.projectRef === null) return 'local Docker';
 	return `${target.env} (${target.projectRef})`;
@@ -79,6 +95,23 @@ export function confirmTargetToken(target: DeployTarget): string {
 /** Exact match after trim (case-sensitive; refs are lowercase ids). */
 export function matchesConfirmTargetToken(raw: string, expected: string): boolean {
 	return raw.trim() === expected;
+}
+
+/**
+ * Merge process env with parsed runtime env file entries.
+ * File values win so `.env.test.local` overrides a shared root `.env`.
+ */
+export function mergeRuntimeEnv(
+	processEnv: Record<string, string | undefined>,
+	fileEntries: Record<string, string>,
+): Record<string, string | undefined> {
+	return { ...processEnv, ...fileEntries };
+}
+
+/** Hosted DB password from plain `SUPABASE_DB_PASSWORD` (runtime env file or process env). */
+export function pickDbPassword(envMap: Record<string, string | undefined>): string | null {
+	const value = envMap.SUPABASE_DB_PASSWORD?.trim();
+	return value ? value : null;
 }
 
 export function deployEnvUsageHint(): string {

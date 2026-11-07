@@ -2,9 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildLocalSupabaseDotEnv,
 	confirmTargetToken,
+	edgeSecretsEnvFile,
 	envEntriesEqual,
 	isReservedSecretName,
 	matchesConfirmTargetToken,
+	mergeRuntimeEnv,
 	missingRequiredSecretNames,
 	PUSH_ALL_STEPS,
 	parseConfirmMode,
@@ -13,8 +15,10 @@ import {
 	parseEnvFileKeys,
 	parseSecretsListJson,
 	parseYesNoAnswer,
+	pickDbPassword,
 	REQUIRED_SECRET_NAMES,
 	resolveDeployTarget,
+	runtimeEnvFile,
 	staleSecretNames,
 } from '../../../../scripts/supabase/envHelpers.ts';
 
@@ -26,39 +30,58 @@ describe('parseDeployEnv', () => {
 
 	it('accepts each known environment', () => {
 		expect(parseDeployEnv('local')).toBe('local');
-		expect(parseDeployEnv('dev')).toBe('dev');
+		expect(parseDeployEnv('development')).toBe('development');
 		expect(parseDeployEnv('test')).toBe('test');
-		expect(parseDeployEnv('prod')).toBe('prod');
+		expect(parseDeployEnv('production')).toBe('production');
 	});
 
 	it('returns null for invalid environments', () => {
 		expect(parseDeployEnv('staging')).toBeNull();
-		expect(parseDeployEnv('production')).toBeNull();
+		expect(parseDeployEnv('dev')).toBeNull();
+		expect(parseDeployEnv('prod')).toBeNull();
 		expect(parseDeployEnv('linked')).toBeNull();
 	});
 });
 
+describe('edgeSecretsEnvFile and runtimeEnvFile', () => {
+	it('infers paths from the target name', () => {
+		expect(edgeSecretsEnvFile('local')).toBe('supabase/functions/.env.local');
+		expect(edgeSecretsEnvFile('development')).toBe('supabase/functions/.env.development');
+		expect(edgeSecretsEnvFile('test')).toBe('supabase/functions/.env.test');
+		expect(edgeSecretsEnvFile('production')).toBe('supabase/functions/.env.production');
+		expect(runtimeEnvFile('local')).toBe('.env.local');
+		expect(runtimeEnvFile('development')).toBe('.env.development.local');
+		expect(runtimeEnvFile('test')).toBe('.env.test.local');
+		expect(runtimeEnvFile('production')).toBe('.env.production.local');
+	});
+});
+
 describe('resolveDeployTarget', () => {
-	it('maps CLI envs to functions secrets paths and remote refs', () => {
+	it('maps CLI envs to inferred paths, remote refs, and confirm modes', () => {
 		expect(resolveDeployTarget('local')).toMatchObject({
 			env: 'local',
 			projectRef: null,
 			envFile: 'supabase/functions/.env.local',
+			runtimeEnvFile: '.env.local',
 		});
-		expect(resolveDeployTarget('dev')).toMatchObject({
-			env: 'dev',
+		expect(resolveDeployTarget('development')).toMatchObject({
+			env: 'development',
 			projectRef: 'zdvscmogkfyddnnxzkdu',
 			envFile: 'supabase/functions/.env.development',
+			runtimeEnvFile: '.env.development.local',
+			confirm: 'confirmYes',
 		});
 		expect(resolveDeployTarget('test')).toMatchObject({
 			env: 'test',
 			projectRef: 'jserlqacarlgtdzrblic',
 			envFile: 'supabase/functions/.env.test',
+			runtimeEnvFile: '.env.test.local',
 		});
-		expect(resolveDeployTarget('prod')).toMatchObject({
-			env: 'prod',
+		expect(resolveDeployTarget('production')).toMatchObject({
+			env: 'production',
 			projectRef: 'bnagepkxryauifzyoxgo',
 			envFile: 'supabase/functions/.env.production',
+			runtimeEnvFile: '.env.production.local',
 			confirm: 'confirmTarget',
 		});
 	});
@@ -80,7 +103,7 @@ describe('parseConfirmMode', () => {
 describe('confirmTargetToken', () => {
 	it('uses local for Docker and the project ref for remotes', () => {
 		expect(confirmTargetToken(resolveDeployTarget('local'))).toBe('local');
-		expect(confirmTargetToken(resolveDeployTarget('prod'))).toBe('bnagepkxryauifzyoxgo');
+		expect(confirmTargetToken(resolveDeployTarget('production'))).toBe('bnagepkxryauifzyoxgo');
 	});
 });
 
@@ -90,6 +113,25 @@ describe('matchesConfirmTargetToken', () => {
 		expect(matchesConfirmTargetToken('local', 'local')).toBe(true);
 		expect(matchesConfirmTargetToken('LOCAL', 'local')).toBe(false);
 		expect(matchesConfirmTargetToken('bnage', 'bnagepkxryauifzyoxgo')).toBe(false);
+	});
+});
+
+describe('mergeRuntimeEnv', () => {
+	it('lets runtime file entries override process env', () => {
+		expect(
+			mergeRuntimeEnv(
+				{ SUPABASE_DB_PASSWORD: 'from-process', OTHER: 'keep' },
+				{ SUPABASE_DB_PASSWORD: 'from-file' },
+			),
+		).toEqual({ SUPABASE_DB_PASSWORD: 'from-file', OTHER: 'keep' });
+	});
+});
+
+describe('pickDbPassword', () => {
+	it('reads plain SUPABASE_DB_PASSWORD', () => {
+		expect(pickDbPassword({ SUPABASE_DB_PASSWORD: ' from-file ' })).toBe('from-file');
+		expect(pickDbPassword({ SUPABASE_DB_PASSWORD_TEST: 'ignored' })).toBeNull();
+		expect(pickDbPassword({})).toBeNull();
 	});
 });
 

@@ -2,21 +2,17 @@
 	"secrets": ["RESEND_API_KEY", "RESEND_FROM_EMAIL", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
 	"targets": {
 		"local": {
-			"projectRef": null,
-			"envFile": "supabase/functions/.env.local"
+			"projectRef": null
 		},
-		"dev": {
+		"development": {
 			"projectRef": "zdvscmogkfyddnnxzkdu",
-			"envFile": "supabase/functions/.env.development",
 			"confirm": "confirmYes"
 		},
 		"test": {
-			"projectRef": "jserlqacarlgtdzrblic",
-			"envFile": "supabase/functions/.env.test"
+			"projectRef": "jserlqacarlgtdzrblic"
 		},
-		"prod": {
+		"production": {
 			"projectRef": "bnagepkxryauifzyoxgo",
-			"envFile": "supabase/functions/.env.production",
 			"confirm": "confirmTarget"
 		}
 	}
