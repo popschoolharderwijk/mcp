@@ -30,6 +30,7 @@ dist-ssr
 !.vscode/settings.json
 .idea
 .temp
+.tmp
 .branches
 .DS_Store
 *.suo
@@ -43,3 +44,4 @@ coverage/*
 import/out/*
 import/source/*
 import_sources/
+.agent-home

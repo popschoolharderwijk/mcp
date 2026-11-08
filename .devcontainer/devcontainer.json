@@ -1,0 +1,20 @@
+{
+  "name": "mcp",
+  "build": {
+    "dockerfile": "../docker/Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
+  "remoteUser": "agent",
+  "overrideCommand": false,
+  "postCreateCommand": "test -x \"$HOME/.local/bin/agent\" || curl -fsSL https://cursor.com/install | bash",
+  "shutdownAction": "stopContainer",
+  "runArgs": [
+    "--name=mcp",
+    "--read-only",
+    "--tmpfs=/tmp:rw,nosuid,nodev,mode=1777",
+    "--tmpfs=/var/tmp:rw,nosuid,nodev,mode=1777",
+    "--cap-drop=ALL",
+    "--security-opt=no-new-privileges"
+  ]
+}
