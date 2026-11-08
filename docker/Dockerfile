@@ -13,7 +13,9 @@ RUN chmod +x /tmp/install-cli-tools.sh \
 	&& rm /tmp/install-cli-tools.sh
 
 # Passwd home is the workspace path. The native runtime resolves ~ from the
-# passwd entry, and the container root filesystem is read-only.
+# passwd entry, and the container root filesystem is read-only. The repo bind
+# mount hides image-layer skel files here; docker/seed-agent-home.sh writes
+# the interactive bash entrypoint onto the mounted HOME at container start.
 RUN useradd --create-home --home-dir /workspace/.agent-home --shell /bin/bash --uid 1000 --user-group agent
 
 ENV HOME=/workspace/.agent-home

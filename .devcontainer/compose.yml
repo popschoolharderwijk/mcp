@@ -50,5 +50,5 @@ services:
             [
                 "bash",
                 "-lc",
-                "supabase start --runtime native --eager && bash /workspace/docker/forward-native-ports.sh && exec sleep infinity",
+                "bash /workspace/docker/seed-agent-home.sh && supabase start --runtime native --eager && bash /workspace/docker/forward-native-ports.sh && exec sleep infinity",
             ]
