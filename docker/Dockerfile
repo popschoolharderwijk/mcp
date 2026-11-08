@@ -4,6 +4,7 @@ FROM debian:bookworm-slim
 ARG TARGETARCH
 ENV BUN_VERSION=1.4.4
 ENV SUPABASE_CLI_VERSION=3.0.0
+ENV CURSOR_AGENT_VERSION=2026.11.05-86047df
 
 COPY docker/install-cli-tools.sh /tmp/install-cli-tools.sh
 RUN chmod +x /tmp/install-cli-tools.sh \
@@ -20,8 +21,6 @@ ENV SUPABASE_HOME=/workspace/.agent-home/.supabase
 ENV TMPDIR=/workspace/.tmp
 ENV XDG_CONFIG_HOME=/workspace/.agent-home/.config
 ENV XDG_CACHE_HOME=/workspace/.agent-home/.cache
-# Runtime root is read-only. The Cursor CLI installs under HOME/.local.
-ENV PATH="/workspace/.agent-home/.local/bin:${PATH}"
 
 USER agent
 WORKDIR /workspace
