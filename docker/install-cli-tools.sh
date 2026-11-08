@@ -40,8 +40,11 @@ curl -fsSL -o /tmp/bun.zip \
 echo "${BUN_SHA256}  /tmp/bun.zip" | sha256sum -c -
 unzip -q /tmp/bun.zip -d /tmp
 install -m 755 "/tmp/bun-linux-${BUN_ARCH}/bun" /usr/local/bin/bun
+# bunx is the same binary; argv0 selects the package-runner entrypoint.
+ln -sf bun /usr/local/bin/bunx
 rm -rf /tmp/bun.zip "/tmp/bun-linux-${BUN_ARCH}"
 bun --version
+bunx --version
 
 curl -fsSL -o /tmp/supabase.tar.gz \
 	"https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_${TARGETARCH}.tar.gz"
