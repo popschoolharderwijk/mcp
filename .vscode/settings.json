@@ -8,5 +8,14 @@
 	"deno.enablePaths": ["supabase/functions"],
 	"deno.disablePaths": ["src", "tests", "scripts"],
 	"deno.lint": true,
-	"deno.unstable": true
+	"deno.unstable": true,
+	"files.exclude": {
+		"**/.agent-home": true
+	},
+	"search.exclude": {
+		"**/.agent-home": true
+	},
+	"files.watcherExclude": {
+		"**/.agent-home/**": true
+	}
 }
