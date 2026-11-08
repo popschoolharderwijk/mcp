@@ -86,14 +86,14 @@ We use [Resend](https://resend.com) for both Supabase Auth mail and app mail.
 
 All SMTP settings live in `[auth.email.smtp]` and are pushed to remote projects — **no manual Dashboard config needed**.
 
-> 📝 `pass = "env(RESEND_API_KEY)"` means the key is read from an environment variable. Ensure `RESEND_API_KEY` is in `.env.development`, GitHub Secrets, **and** Supabase Edge Function Secrets.
+> 📝 `pass = "env(RESEND_API_KEY)"` means the key is read from an environment variable. Ensure `RESEND_API_KEY` is in `$SECRETS_PATH/supabase/.env.*`, GitHub Secrets, **and** Supabase Edge Function Secrets (via `bun run db:push:secrets`).
 
 ### Setup
 
 1. Create an account at [resend.com](https://resend.com).
 2. **Settings → API Keys** → new key.
 3. **Settings → Domains** → verify domain (DNS records).
-4. Add `RESEND_API_KEY=re_xxx...` to `.env.development`.
+4. Add `RESEND_API_KEY=re_xxx...` to `$SECRETS_PATH/supabase/.env.local` (and remote SoT files), then `bun run db:push:secrets`.
 
 ### Push SMTP
 

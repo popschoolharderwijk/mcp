@@ -18,7 +18,10 @@ import {
 	pickDbPassword,
 	REQUIRED_SECRET_NAMES,
 	resolveDeployTarget,
+	resolveSecretsRoot,
 	runtimeEnvFile,
+	runtimeEnvFileForNodeEnv,
+	runtimeEnvFileForViteMode,
 	staleSecretNames,
 } from '../../../../scripts/supabase/envHelpers.ts';
 
@@ -44,15 +47,58 @@ describe('parseDeployEnv', () => {
 });
 
 describe('edgeSecretsEnvFile and runtimeEnvFile', () => {
-	it('infers paths from the target name', () => {
-		expect(edgeSecretsEnvFile('local')).toBe('supabase/functions/.env.local');
-		expect(edgeSecretsEnvFile('development')).toBe('supabase/functions/.env.development');
-		expect(edgeSecretsEnvFile('test')).toBe('supabase/functions/.env.test');
-		expect(edgeSecretsEnvFile('production')).toBe('supabase/functions/.env.production');
+	it('infers paths relative to SECRETS_PATH from the target name', () => {
+		expect(edgeSecretsEnvFile('local')).toBe('supabase/.env.local');
+		expect(edgeSecretsEnvFile('development')).toBe('supabase/.env.development');
+		expect(edgeSecretsEnvFile('test')).toBe('supabase/.env.test');
+		expect(edgeSecretsEnvFile('production')).toBe('supabase/.env.production');
 		expect(runtimeEnvFile('local')).toBe('.env.local');
 		expect(runtimeEnvFile('development')).toBe('.env.development.local');
 		expect(runtimeEnvFile('test')).toBe('.env.test.local');
 		expect(runtimeEnvFile('production')).toBe('.env.production.local');
+	});
+});
+
+describe('runtimeEnvFileForViteMode', () => {
+	it('maps localdev to the Docker overlay and the other modes to their own file', () => {
+		expect(runtimeEnvFileForViteMode('localdev')).toBe('.env.local');
+		expect(runtimeEnvFileForViteMode('development')).toBe('.env.development.local');
+		expect(runtimeEnvFileForViteMode('test')).toBe('.env.test.local');
+		expect(runtimeEnvFileForViteMode('production')).toBe('.env.production.local');
+	});
+
+	it('returns null for a mode without a secrets overlay', () => {
+		expect(runtimeEnvFileForViteMode('staging')).toBeNull();
+	});
+});
+
+describe('runtimeEnvFileForNodeEnv', () => {
+	it('maps test, production, and development onto their runtime files', () => {
+		expect(runtimeEnvFileForNodeEnv('test')).toBe('.env.test.local');
+		expect(runtimeEnvFileForNodeEnv('production')).toBe('.env.production.local');
+		expect(runtimeEnvFileForNodeEnv('development')).toBe('.env.development.local');
+	});
+
+	it('uses the local Docker file when NODE_ENV is unset', () => {
+		expect(runtimeEnvFileForNodeEnv(undefined)).toBe('.env.local');
+		expect(runtimeEnvFileForNodeEnv('')).toBe('.env.local');
+	});
+});
+
+describe('resolveSecretsRoot', () => {
+	it('prefers process SECRETS_PATH over the root .env file', () => {
+		expect(resolveSecretsRoot('/repo', { SECRETS_PATH: '/abs/secrets' }, 'SECRETS_PATH=../ignored')).toBe(
+			'/abs/secrets',
+		);
+	});
+
+	it('resolves a relative SECRETS_PATH from the root .env against projectRoot', () => {
+		expect(resolveSecretsRoot('/repo', {}, 'SECRETS_PATH=../mcp-secrets')).toBe('/mcp-secrets');
+	});
+
+	it('returns null when SECRETS_PATH is missing', () => {
+		expect(resolveSecretsRoot('/repo', {}, null)).toBeNull();
+		expect(resolveSecretsRoot('/repo', {}, 'OTHER=1')).toBeNull();
 	});
 });
 
@@ -61,26 +107,26 @@ describe('resolveDeployTarget', () => {
 		expect(resolveDeployTarget('local')).toMatchObject({
 			env: 'local',
 			projectRef: null,
-			envFile: 'supabase/functions/.env.local',
+			envFile: 'supabase/.env.local',
 			runtimeEnvFile: '.env.local',
 		});
 		expect(resolveDeployTarget('development')).toMatchObject({
 			env: 'development',
 			projectRef: 'zdvscmogkfyddnnxzkdu',
-			envFile: 'supabase/functions/.env.development',
+			envFile: 'supabase/.env.development',
 			runtimeEnvFile: '.env.development.local',
 			confirm: 'confirmYes',
 		});
 		expect(resolveDeployTarget('test')).toMatchObject({
 			env: 'test',
 			projectRef: 'jserlqacarlgtdzrblic',
-			envFile: 'supabase/functions/.env.test',
+			envFile: 'supabase/.env.test',
 			runtimeEnvFile: '.env.test.local',
 		});
 		expect(resolveDeployTarget('production')).toMatchObject({
 			env: 'production',
 			projectRef: 'bnagepkxryauifzyoxgo',
-			envFile: 'supabase/functions/.env.production',
+			envFile: 'supabase/.env.production',
 			runtimeEnvFile: '.env.production.local',
 			confirm: 'confirmTarget',
 		});

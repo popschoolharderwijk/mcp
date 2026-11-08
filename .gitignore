@@ -17,12 +17,12 @@ dist-ssr
 # Lovable files
 .lovable
 
-# Use .development and .production
-.env
-
-# Edge secrets under supabase/functions/ (.env and *.local already covered above)
-supabase/functions/.env.*
-!supabase/functions/.env.example
+# Every env file, anywhere in the tree. Tracked exceptions are repo-root only.
+.env*
+!/.env.example
+!/.env.development
+!/.env.test
+!/.env.production
 
 # Editor directories and files
 .vscode/*

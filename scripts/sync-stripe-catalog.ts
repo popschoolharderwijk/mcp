@@ -2,7 +2,7 @@
  * Push active lesson_type_options to Stripe Products/Prices via sync-stripe-catalog.
  * Use after `supabase db reset` (or when the catalog drifted).
  *
- * Requires in env:
+ * Requires in env (unset NODE_ENV: `$SECRETS_PATH/.env.local`):
  *   SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
  *   STRIPE_SECRET_KEY (on the edge function runtime / project secrets)

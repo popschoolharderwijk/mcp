@@ -1,7 +1,7 @@
 /**
  * bun run db:push:secrets [env]
  *
- * Local: materialize functions/.env + supabase/.env from functions/.env.local.
+ * Local: materialize functions/.env + supabase/.env from $SECRETS_PATH/supabase/.env.local.
  * Remote: replace custom secrets from env file (--remote=<ref> only).
  */
 
@@ -17,6 +17,8 @@ import {
 	parseEnvFileEntries,
 	parseEnvFileKeys,
 	parseSecretsListJson,
+	ROOT_ENV_POINTER_KEY,
+	secretsFilePath,
 	staleSecretNames,
 } from './envHelpers.ts';
 import {
@@ -25,6 +27,7 @@ import {
 	confirmYes,
 	fail,
 	projectRoot,
+	readSecretsRoot,
 	remoteFlag,
 	resolveTargetFromArgv,
 	runSupabase,
@@ -37,17 +40,17 @@ async function readSecretsFile(target: DeployTarget): Promise<{
 	entries: Record<string, string>;
 	keys: string[];
 }> {
-	const path = join(projectRoot, target.envFile);
+	const path = secretsFilePath(readSecretsRoot(), target.envFile);
 	const file = Bun.file(path);
 	if (!(await file.exists())) {
-		fail(`Secrets file not found: ${target.envFile}`);
+		fail(`Secrets file not found: $${ROOT_ENV_POINTER_KEY}/${target.envFile}`);
 	}
 	const contents = await file.text();
 	const entries = parseEnvFileEntries(contents);
 	const missing = missingRequiredSecretNames(entries);
 	if (missing.length > 0) {
 		fail(
-			`Missing or empty required secrets in ${target.envFile}:\n${missing
+			`Missing or empty required secrets in $${ROOT_ENV_POINTER_KEY}/${target.envFile}:\n${missing
 				.map((name) => `  - ${name}`)
 				.join('\n')}`,
 		);
@@ -113,10 +116,10 @@ async function pushSecretsLocal(target: DeployTarget): Promise<void> {
 		materializedSecretsChanged(await readOptionalText(supabaseDotEnvPath), nextSupabaseDotEnv);
 
 	await Bun.write(edgeEnvPath, contents);
-	console.log('Wrote supabase/functions/.env (edge runtime) from .env.local');
+	console.log(`Wrote supabase/functions/.env (edge runtime) from $${ROOT_ENV_POINTER_KEY}/${target.envFile}`);
 
 	await Bun.write(supabaseDotEnvPath, nextSupabaseDotEnv);
-	console.log('Wrote supabase/.env (Auth SMTP env()) from .env.local');
+	console.log(`Wrote supabase/.env (Auth SMTP env()) from $${ROOT_ENV_POINTER_KEY}/${target.envFile}`);
 
 	if (!secretsChanged) {
 		console.log('Secrets unchanged — no local stack restart needed.');

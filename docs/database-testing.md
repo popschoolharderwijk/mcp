@@ -4,7 +4,7 @@
 
 Tests usually run against a **remote** Supabase project; you can also point env at the **local** Docker stack (`http://127.0.0.1:54421`).
 
-- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun run dev:test` / `bun test tests/rls` (credentials in `.env.test.local` or env).
+- **mcp-test** (`jserlqacarlgtdzrblic`): used by **CI when `supabase/**` or non-code tests change**, and optionally locally via `bun run dev:test` / `bun test tests/rls` (credentials in `$SECRETS_PATH/.env.test.local` or env).
 - **mcp-dev** (`zdvscmogkfyddnnxzkdu`): shared remote; you can also test against mcp-dev or local if your env points there.
 
 **In CI** (`pull-request-supabase.yml`):
@@ -146,7 +146,7 @@ fixtures.allProjectDomains / allProjectLabels / allProjects; // project referenc
 
 ## Running tests locally
 
-Locally you can test against **mcp-test** or **mcp-dev**. Put the project credentials in `.env.test.local` (gitignored; Bun loads it when `NODE_ENV=test`):
+Locally you can test against **mcp-test** or **mcp-dev**. Put the project credentials in `$SECRETS_PATH/.env.test.local` (Bun preload loads it when `NODE_ENV=test`):
 
 - `SUPABASE_URL` — URL of the Supabase project
 - `SUPABASE_SERVICE_ROLE_KEY` — service role key (to bypass RLS in fixtures)

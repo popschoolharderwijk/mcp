@@ -1,18 +1,63 @@
 # Secrets Configuration
 
+## Local layout (`SECRETS_PATH`)
+
+Secret values do **not** live in the git repo. Copy the tracked template and point at your secrets folder:
+
+```bash
+cp .env.example .env
+```
+
+```env
+# .env.example (tracked) → .env (gitignored)
+SECRETS_PATH=../mcp-secrets
+```
+
+Resolve relative paths against the project root. Absolute paths are allowed. Override with a real `SECRETS_PATH` environment variable when needed.
+
+**CI** does not use `SECRETS_PATH` or `mcp-secrets`. Workflows inject `SUPABASE_*` / `RESEND_*` via GitHub Actions secrets into the job environment. Bun preload skips file loading when no local `.env` pointer is present.
+
+Typical sibling folder:
+
+```text
+../mcp-secrets/
+  .env                         # DEV_LOGIN_* for bun run create-user
+  .env.local                   # Vite local Docker + local runtime
+  .env.development.local
+  .env.test.local
+  .env.production.local
+  supabase/
+    .env.local                 # Edge/Auth SoT (local)
+    .env.development           # Edge/Auth SoT (mcp-dev) when used
+    .env.test
+    .env.production
+```
+
+Loaders:
+
+- **Vite** — committed `.env.development` / `.env.test` / `.env.production` supply public keys. One secrets overlay per mode: `localdev` → `$SECRETS_PATH/.env.local`; otherwise `$SECRETS_PATH/.env.<mode>.local`. `.env.local` is not applied to other modes.
+- **Bun** — preload loads `$SECRETS_PATH/.env` plus one runtime file (`NODE_ENV=test` → `.env.test.local`, `production` → `.env.production.local`, `development` → `.env.development.local`, unset → `.env.local`). Every key in those files is copied into `process.env`, including `VITE_*`.
+- **`bun run db:*`** — hosted `SUPABASE_DB_PASSWORD` comes from `$SECRETS_PATH/.env.<target>.local` when that file exists, otherwise from the process env (CI). A missing `SECRETS_PATH` does not block that lookup. `db:push:secrets` still requires the pointer and the Edge SoT file. Local materialize writes gitignored `supabase/functions/.env` and `supabase/.env`.
+
+Git ignores every `.env*` path. Tracked exceptions, repo root only: `.env.example`, `.env.development`, `.env.test`, `.env.production`.
+
+See [commands.md](./commands.md).
+
+---
+
 ## GitHub Secrets
 
 Required for CI workflows. Manage via **[GitHub Actions Secrets → popschoolharderwijk/mcp](https://github.com/popschoolharderwijk/mcp/settings/secrets/actions)**.
 
-| Secret                             | Value                                                           | Use                                                                          |
-| ---------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)                                           |
-| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | CI + `bun run db:* test` (same plain name as `.env.test.local`)              |
-| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`                                          |
-| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                                                 |
-| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                                                 |
-| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                                                 |
-| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email`                               |
+| Secret                             | Value                                                           | Use                                                             |
+| ---------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
+| `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)                              |
+| `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | CI + `bun run db:* test` (same plain name as `.env.test.local`) |
+| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`                             |
+| `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                                    |
+| `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                                    |
+| `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                                    |
+| `RESEND_API_KEY`                   | API key from Resend.com                                         | SMTP for Supabase Auth + `send-template-email`                  |
 
 See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabase** / `pull-request-supabase.yml`) that uses these secrets.
 
@@ -22,7 +67,7 @@ See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabas
 
 ## Supabase Edge Function Secrets
 
-**Preferred:** `bun run db:push:secrets` + gitignored env files under `supabase/functions/` — see [edge-function-secrets.md](./edge-function-secrets.md). Do not use the Dashboard as source of truth.
+**Preferred:** `bun run db:push:secrets` + env files under `$SECRETS_PATH/supabase/`. Do not use the Dashboard as source of truth.
 
 `db:push:secrets` on remotes **replaces** custom secrets from the env file (stale keys are dropped after confirm). Bare `supabase secrets unset` (no names) deletes **all** custom secrets — avoid.
 
@@ -52,7 +97,7 @@ See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for t
 
 ## Dev Login Bypass (development/test only)
 
-For fast sign-in without Magic Link in development. Add to `.env.local` (local Docker) or `.env.development.local` (mcp-dev) — never to committed mode files.
+For fast sign-in without Magic Link in development. Add to `$SECRETS_PATH/.env.local` (local Docker) or `$SECRETS_PATH/.env.development.local` (mcp-dev) — never to committed mode files.
 
 ### Frontend (Dev Login button)
 
@@ -70,7 +115,7 @@ For fast sign-in without Magic Link in development. Add to `.env.local` (local D
 | `DEV_LOGIN_EMAIL`, `DEV_LOGIN_PASSWORD`       | Credentials of the user to create.                              |
 | `DEV_LOGIN_FIRST_NAME`, `DEV_LOGIN_LAST_NAME` | Optional: profile fields.                                       |
 
-Example `.env.development.local` (gitignored):
+Example `$SECRETS_PATH/.env.development.local`:
 
 ```env
 SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
@@ -84,6 +129,6 @@ DEV_LOGIN_FIRST_NAME=Dev
 DEV_LOGIN_LAST_NAME=User
 ```
 
-Create the user with `bun run create-user`.
+Put shared `DEV_LOGIN_*` defaults in `$SECRETS_PATH/.env` if you prefer. Create the user with `bun run create-user`.
 
 > ⚠️ `VITE_DEV_LOGIN_*` are **never** used in production: Vite dead-code elimination removes the button.

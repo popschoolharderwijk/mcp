@@ -17,10 +17,31 @@ import {
 	parseEnvFileEntries,
 	parseYesNoAnswer,
 	pickDbPassword,
+	ROOT_ENV_POINTER_KEY,
 	resolveDeployTarget,
+	resolveSecretsRoot,
+	secretsFilePath,
 } from './envHelpers.ts';
 
 export const projectRoot = `${import.meta.dir}/../..`;
+
+/** Absolute SECRETS_PATH, or null when CI has only process env. */
+function lookupSecretsRoot(): string | null {
+	const pointerPath = join(projectRoot, '.env');
+	const contents = existsSync(pointerPath) ? readFileSync(pointerPath, 'utf8') : null;
+	return resolveSecretsRoot(projectRoot, process.env, contents);
+}
+
+/** Absolute SECRETS_PATH. Hard-fails when unset — copy `.env.example`. */
+export function readSecretsRoot(): string {
+	const root = lookupSecretsRoot();
+	if (root === null) {
+		fail(
+			`Missing ${ROOT_ENV_POINTER_KEY}: copy .env.example to .env (or set ${ROOT_ENV_POINTER_KEY} in the environment).`,
+		);
+	}
+	return root;
+}
 
 const DEPLOY_ENV_USAGE = 'local|development|test|production';
 
@@ -41,14 +62,14 @@ export function resolveTargetFromArgv(argv: string[], verbLabel: string): Deploy
 }
 
 /**
- * Process env + optional root runtime env file (file wins when present).
+ * Process env + optional runtime env file under SECRETS_PATH (file wins when present).
  * CI sets `SUPABASE_DB_PASSWORD` in the job env without a file; locally prefer `.env.<target>.local`.
  */
-export function loadRuntimeEnvMap(target: DeployTarget): Record<string, string | undefined> {
-	const path = join(projectRoot, target.runtimeEnvFile);
-	if (!existsSync(path)) {
-		return { ...process.env };
-	}
+function loadRuntimeEnvMap(target: DeployTarget): Record<string, string | undefined> {
+	const root = lookupSecretsRoot();
+	if (root === null) return { ...process.env };
+	const path = secretsFilePath(root, target.runtimeEnvFile);
+	if (!existsSync(path)) return { ...process.env };
 	return mergeRuntimeEnv(process.env, parseEnvFileEntries(readFileSync(path, 'utf8')));
 }
 
@@ -134,7 +155,7 @@ export function remoteDbAuth(target: DeployTarget, mode: 'password-flag' | 'pass
 	const password = pickDbPassword(loadRuntimeEnvMap(target));
 	if (!password) {
 		fail(
-			`Missing SUPABASE_DB_PASSWORD for ${target.env} (${projectRef}). Set it in ${target.runtimeEnvFile} or the environment.`,
+			`Missing SUPABASE_DB_PASSWORD for ${target.env} (${projectRef}). Set it in $${ROOT_ENV_POINTER_KEY}/${target.runtimeEnvFile} or the environment.`,
 		);
 	}
 

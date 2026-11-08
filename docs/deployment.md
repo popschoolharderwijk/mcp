@@ -33,7 +33,7 @@ For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewher
 
 ## Step 1: Target production (CLI v3)
 
-Prefer `bun run db:* production`. Raw CLI uses `--remote=bnagepkxryauifzyoxgo` (no ambient link required). Set `SUPABASE_DB_PASSWORD` in `.env.production.local`.
+Prefer `bun run db:* production`. Raw CLI uses `--remote=bnagepkxryauifzyoxgo` (no ambient link required). Set `SUPABASE_DB_PASSWORD` in `$SECRETS_PATH/.env.production.local`.
 
 ## Step 2: Check migrations
 

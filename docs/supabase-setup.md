@@ -178,7 +178,7 @@ supabase config push --remote=<new-project-ref>
 - [ ] Password policy tests run (`bun test tests/auth/password-signup.test.ts`)
 - [ ] Email templates configured
 - [ ] SMTP configured in `config.toml` (Resend)
-- [ ] Edge/Auth secrets via `supabase/functions/.env.*` + `bun run db:push:secrets <env>`
+- [ ] `cp .env.example .env` + Edge/Auth SoT under `$SECRETS_PATH/supabase/` + `bun run db:push:secrets <env>`
 - [ ] Config pushed to remote (`bun run db:push:config <env>`)
 - [ ] API keys fetched
-- [ ] Environment files created (root Vite `.env*` + `supabase/functions/.env.*`)
+- [ ] Environment files created (committed Vite `.env.*` + runtime/edge files under `SECRETS_PATH`)

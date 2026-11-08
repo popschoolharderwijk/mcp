@@ -3,7 +3,7 @@
  * bun run db:push:migrations [env]
  *
  * Remotes: --remote=<ref> --yes (CLI v3).
- * Hosted DB password: SUPABASE_DB_PASSWORD from root runtimeEnvFile (.env.<target>.local).
+ * Hosted DB password: SUPABASE_DB_PASSWORD from SECRETS_PATH runtimeEnvFile (.env.<target>.local).
  */
 
 import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';

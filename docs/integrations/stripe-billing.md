@@ -88,6 +88,8 @@ Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `
 bun run stripe:sync-catalog
 ```
 
+Unset `NODE_ENV` reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `$SECRETS_PATH/.env.local`. Use `NODE_ENV=development` to target mcp-dev (`.env.development.local`).
+
 ## 8. Secrets
 
 Edge only (never `VITE_`):
