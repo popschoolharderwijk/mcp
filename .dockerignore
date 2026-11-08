@@ -1,0 +1,25 @@
+# Build context is the repo root; the Dockerfile only COPY's docker/install-cli-tools.sh.
+.git
+.agent-home
+.tmp
+.temp
+.branches
+.lovable
+.idea
+node_modules
+dist
+dist-ssr
+coverage
+import/out
+import/source
+import_sources
+.env
+.env.*
+**/.env
+**/.env.*
+**/.ssh
+**/*.pem
+**/*.key
+*.local
+*.log
+logs

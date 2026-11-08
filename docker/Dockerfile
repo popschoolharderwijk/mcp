@@ -1,4 +1,5 @@
-FROM debian:bookworm-slim
+# Multi-arch index digest for bookworm-slim; BuildKit selects amd64/arm64.
+FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc
 
 # BuildKit sets this from --platform; do not default it.
 ARG TARGETARCH
