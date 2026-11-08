@@ -10,12 +10,15 @@
 	"deno.lint": true,
 	"deno.unstable": true,
 	"files.exclude": {
-		"**/.agent-home": true
+		"**/.agent-home": true,
+		"**/.tmp": true
 	},
 	"search.exclude": {
-		"**/.agent-home": true
+		"**/.agent-home": true,
+		"**/.tmp": true
 	},
 	"files.watcherExclude": {
-		"**/.agent-home/**": true
+		"**/.agent-home/**": true,
+		"**/.tmp/**": true
 	}
 }
