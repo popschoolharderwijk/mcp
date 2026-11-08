@@ -1,5 +1,8 @@
 project_id = "mcp"
 
+[experimental]
+stack = true
+
 # Non-default ports so this stack can run beside other `supabase start` instances
 # (defaults 54320–54329). Offset +100 → 5442x.
 [api]
@@ -93,9 +96,9 @@ max_frequency = "1s"
 otp_length = 8
 otp_expiry = 1800
 
+# Local experimental stack rejects content_path (supabase/cli#7200), so GoTrue's built-in magic-link body is used. Each remote magic-link table sets content_path to the custom HTML.
 [auth.email.template.magic_link]
 subject = "[DEV] Je inloglink voor de Mplify Community Portal"
-content_path = "./docs/email-templates/magic-link.html"
 
 [auth.email.smtp]
 enabled = true
@@ -135,6 +138,9 @@ additional_redirect_urls = [
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
 ]
 
+[remotes.test.auth.email.template.magic_link]
+content_path = "./docs/email-templates/magic-link.html"
+
 [remotes.dev.auth]
 site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
 additional_redirect_urls = [
@@ -145,6 +151,9 @@ additional_redirect_urls = [
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app/**",
   "https://id-preview*--098d4be4-b790-4fca-9806-d5dd653b8946.*.lovable.app/**",
 ]
+
+[remotes.dev.auth.email.template.magic_link]
+content_path = "./docs/email-templates/magic-link.html"
 
 [remotes.prod.auth]
 site_url = "https://mcp.mplifi.nl"
@@ -157,6 +166,7 @@ max_frequency = "60s"
 
 [remotes.prod.auth.email.template.magic_link]
 subject = "Je inloglink"
+content_path = "./docs/email-templates/magic-link.html"
 
 [remotes.prod.auth.rate_limit]
 email_sent = 100
@@ -166,11 +176,8 @@ token_verifications = 10
 # ---------
 # Edge function settings
 #
-# FIXME: verify_jwt = true returns 401 on POST requests, even with a valid JWT.
-# The JWT uses ES256 (asymmetric signing) but the Edge Runtime doesn't seem to
-# verify it correctly. Manual verification via supabase.auth.getUser() in the
-# function code works fine. Investigate later if this is a Supabase bug or
-# configuration issue.
+# Edge Runtime JWT check rejects ES256 tokens with 401 on POST. Functions verify
+# via supabase.auth.getUser() instead; verify_jwt stays false for that reason.
 
 [functions.delete-user]
 verify_jwt = false

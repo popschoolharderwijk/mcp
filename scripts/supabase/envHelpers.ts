@@ -40,11 +40,11 @@ export function runtimeEnvFile(env: DeployEnv): string {
 }
 
 /**
- * Vite mode → one secrets overlay.
- * `localdev` is the Docker file `.env.local`. Unknown modes get no overlay.
+ * Vite mode → one secrets overlay under SECRETS_PATH.
+ * `localdev` uses committed `.env.localdev` only (no secrets overlay).
+ * Unknown modes get no overlay.
  */
 export function runtimeEnvFileForViteMode(mode: string): string | null {
-	if (mode === 'localdev') return runtimeEnvFile('local');
 	if (mode === 'development' || mode === 'test' || mode === 'production') return runtimeEnvFile(mode);
 	return null;
 }

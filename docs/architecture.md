@@ -222,17 +222,17 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 
 ## Supabase Environments
 
-| Environment    | Project ID / host                                               | Use                                            |
-| -------------- | --------------------------------------------------------------- | ---------------------------------------------- |
-| **Local**      | Docker `127.0.0.1:54421` (non-default ports; see `config.toml`) | `supabase start` + `bun run dev:local`         |
-| **mcp-test**   | `jserlqacarlgtdzrblic`                                          | **CI/PR checks** + optional `bun run dev:test` |
-| **mcp-dev**    | `zdvscmogkfyddnnxzkdu`                                          | Default / Lovable: `bun dev`                   |
-| **Production** | `bnagepkxryauifzyoxgo`                                          | Production deployment (`bun prod`)             |
+| Environment    | Project ID / host                                                 | Use                                                             |
+| -------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Local**      | Native runtime `127.0.0.1:54421` (fixed ports; see `config.toml`) | `supabase start --runtime native --eager` + `bun run dev:local` |
+| **mcp-test**   | `jserlqacarlgtdzrblic`                                            | **CI/PR checks** + optional `bun run dev:test`                  |
+| **mcp-dev**    | `zdvscmogkfyddnnxzkdu`                                            | Default / Lovable: `bun dev`                                    |
+| **Production** | `bnagepkxryauifzyoxgo`                                            | Production deployment (`bun prod`)                              |
 
 ### How this works
 
 1. **Lovable** and default `bun dev` use **mcp-dev** (`.env.development`, Vite mode `development` so `lovable-tagger` loads).
-2. **Local Docker** is opt-in: `bun run dev:local` (Vite mode `localdev` + keys in `.env.local`). Mode name `local` is forbidden by Vite; the file `.env.local` is fine.
+2. **Local stack** comes up when the workspace container starts (`supabase start --runtime native --eager` plus loopback port forwards for Docker publishes), then `bun run dev:local` (Vite mode `localdev` + committed `.env.localdev`). Mode name `local` is forbidden by Vite. Stop that stack before switching git branches so the fixed ports stay free.
 3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test.local` / shell (`SUPABASE_URL`, etc.).
 4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`, runs `supabase db reset --remote=<ref> --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
 5. On **merge to main**, migrations are applied to production via the Supabase GitHub Integration / `db push --remote=…`.

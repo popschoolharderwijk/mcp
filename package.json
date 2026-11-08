@@ -31,9 +31,9 @@
 		"lint:db": "supabase db lint --remote --level warning --fail-on warning",
 		"reset-branch:lovable": "bun run scripts/reset-branch-lovable.ts",
 		"preview": "vite preview",
-		"docker:start": "docker start mcp",
-		"docker:shell": "docker start mcp && docker exec -it -u agent mcp bash",
-		"docker:agent": "docker start mcp && docker exec -it -u agent mcp agent"
+		"docker:start": "docker compose -f .devcontainer/compose.yml up -d --no-recreate",
+		"docker:shell": "docker compose -f .devcontainer/compose.yml up -d --no-recreate && docker compose -f .devcontainer/compose.yml exec -it -u agent workspace bash",
+		"docker:agent": "docker compose -f .devcontainer/compose.yml up -d --no-recreate && docker compose -f .devcontainer/compose.yml exec -it -u agent workspace agent"
 	},
 	"dependencies": {
 		"@radix-ui/react-alert-dialog": "^1.1.15",

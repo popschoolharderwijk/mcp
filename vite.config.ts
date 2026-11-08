@@ -37,21 +37,47 @@ function secretViteDefines(mode: string): Record<string, string> {
 	return Object.fromEntries(viteEntries.map(([key, value]) => [`import.meta.env.${key}`, JSON.stringify(value)]));
 }
 
+const LOCAL_SUPABASE_PROXY_TARGET = 'http://127.0.0.1:54421';
+
+/** Native stack binds loopback only; browser reaches it via the Vite dev server. */
+function localdevSupabaseProxy() {
+	const paths = ['/auth', '/rest', '/storage', '/functions', '/realtime', '/mcp'];
+	return Object.fromEntries(
+		paths.map((prefix) => [
+			prefix,
+			{
+				target: LOCAL_SUPABASE_PROXY_TARGET,
+				changeOrigin: true,
+				ws: prefix === '/realtime',
+			},
+		]),
+	);
+}
+
+function viteServerConfig(mode: string) {
+	return {
+		host: '::' as const,
+		port: mode === 'localdev' ? 8081 : 8080,
+		strictPort: true,
+		proxy: mode === 'localdev' ? localdevSupabaseProxy() : undefined,
+	};
+}
+
+function vitePlugins(mode: string) {
+	return [react(), mode === 'development' && componentTagger()].filter(Boolean);
+}
+
 // https://vitejs.dev/config/
 // localdev uses 8081 so `bun run dev:local` can run beside `bun dev` (8080).
-// One VITE_* overlay per mode from SECRETS_PATH (`localdev` → `.env.local`). Public keys stay in the repo mode files.
+// Public keys: committed `.env.<mode>` (incl. `.env.localdev`). Optional VITE_* overlay from SECRETS_PATH for remote modes only.
 export default defineConfig(({ mode }) => ({
 	define: {
 		'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion ?? ''),
 		'import.meta.env.VITE_CHANGELOG': JSON.stringify(changelogMarkdown),
 		...secretViteDefines(mode),
 	},
-	server: {
-		host: '::',
-		port: mode === 'localdev' ? 8081 : 8080,
-		strictPort: true,
-	},
-	plugins: [react(), mode === 'development' && componentTagger()].filter(Boolean),
+	server: viteServerConfig(mode),
+	plugins: vitePlugins(mode),
 	resolve: {
 		alias: {
 			'@': path.resolve(__dirname, './src'),

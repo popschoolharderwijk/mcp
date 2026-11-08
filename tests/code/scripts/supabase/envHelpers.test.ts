@@ -60,8 +60,8 @@ describe('edgeSecretsEnvFile and runtimeEnvFile', () => {
 });
 
 describe('runtimeEnvFileForViteMode', () => {
-	it('maps localdev to the Docker overlay and the other modes to their own file', () => {
-		expect(runtimeEnvFileForViteMode('localdev')).toBe('.env.local');
+	it('maps remote modes to their secrets overlay and skips localdev', () => {
+		expect(runtimeEnvFileForViteMode('localdev')).toBeNull();
 		expect(runtimeEnvFileForViteMode('development')).toBe('.env.development.local');
 		expect(runtimeEnvFileForViteMode('test')).toBe('.env.test.local');
 		expect(runtimeEnvFileForViteMode('production')).toBe('.env.production.local');

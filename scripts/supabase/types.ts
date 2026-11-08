@@ -2,7 +2,7 @@
  * bun run db:types [env]
  *
  * CLI v3: remotes use --remote=<ref>. Local uses --remote=postgresql://…@localhost
- * so multi-stack Docker does not rewrite to db:5432 (supabase/cli#5283).
+ * and the `[db] port` from supabase/config.toml.
  */
 
 import { join } from 'node:path';

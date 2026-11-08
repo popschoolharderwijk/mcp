@@ -22,7 +22,7 @@ Typical sibling folder:
 ```text
 ../mcp-secrets/
   .env                         # DEV_LOGIN_* for bun run create-user
-  .env.local                   # Vite local Docker + local runtime
+  .env.local                   # Bun scripts when NODE_ENV is unset (local stack)
   .env.development.local
   .env.test.local
   .env.production.local
@@ -35,11 +35,11 @@ Typical sibling folder:
 
 Loaders:
 
-- **Vite** — committed `.env.development` / `.env.test` / `.env.production` supply public keys. One secrets overlay per mode: `localdev` → `$SECRETS_PATH/.env.local`; otherwise `$SECRETS_PATH/.env.<mode>.local`. `.env.local` is not applied to other modes.
+- **Vite** — committed `.env.development` / `.env.localdev` / `.env.test` / `.env.production` supply public keys. Optional secrets overlay for remote modes only: `$SECRETS_PATH/.env.<mode>.local`. Mode `localdev` has no SECRETS_PATH overlay.
 - **Bun** — preload loads `$SECRETS_PATH/.env` plus one runtime file (`NODE_ENV=test` → `.env.test.local`, `production` → `.env.production.local`, `development` → `.env.development.local`, unset → `.env.local`). Every key in those files is copied into `process.env`, including `VITE_*`.
 - **`bun run db:*`** — hosted `SUPABASE_DB_PASSWORD` comes from `$SECRETS_PATH/.env.<target>.local` when that file exists, otherwise from the process env (CI). A missing `SECRETS_PATH` does not block that lookup. `db:push:secrets` still requires the pointer and the Edge SoT file. Local materialize writes gitignored `supabase/functions/.env` and `supabase/.env`.
 
-Git ignores every `.env*` path. Tracked exceptions, repo root only: `.env.example`, `.env.development`, `.env.test`, `.env.production`.
+Git ignores every `.env*` path. Tracked exceptions, repo root only: `.env.example`, `.env.development`, `.env.localdev`, `.env.test`, `.env.production`.
 
 See [commands.md](./commands.md).
 
@@ -97,7 +97,7 @@ See [integrations/stripe-billing.md §9](./integrations/stripe-billing.md) for t
 
 ## Dev Login Bypass (development/test only)
 
-For fast sign-in without Magic Link in development. Add to `$SECRETS_PATH/.env.local` (local Docker) or `$SECRETS_PATH/.env.development.local` (mcp-dev) — never to committed mode files.
+For fast sign-in without Magic Link in development. Add to `$SECRETS_PATH/.env.development.local` (mcp-dev) or `$SECRETS_PATH/.env.local` (Bun scripts / local stack tooling) — never to committed mode files.
 
 ### Frontend (Dev Login button)
 
