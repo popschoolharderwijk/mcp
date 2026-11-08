@@ -14,11 +14,11 @@ HISTSIZE=1000
 HISTFILESIZE=2000
 shopt -s checkwinsize
 
-# Agent prompt: orange username only; @host (green) and cwd (blue) stay the usual colors.
+# Agent prompt: diamond + orange username; @host (green) and cwd (blue) stay usual.
 if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	PS1='\[\033[01;38;5;166m\]\u\[\033[01;32m\]@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+	PS1='\[\033[01;38;5;166m\]◆\u\[\033[01;32m\]@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-	PS1='\u@\h:\w\$ '
+	PS1='◆\u@\h:\w\$ '
 fi
 
 case "$TERM" in
