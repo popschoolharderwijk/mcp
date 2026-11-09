@@ -75,8 +75,7 @@ export const NO_PASSKEY_SIGN_IN_MESSAGE =
 
 export const PASSKEY_UNSUPPORTED_MESSAGE = 'Passkeys worden niet ondersteund in deze browser of op dit adres.';
 
-export const PASSKEY_SESSION_REQUIRED_MESSAGE =
-	'Je bent niet (meer) ingelogd op dit adres. Log opnieuw in via http://localhost:8081 en probeer het opnieuw.';
+export const PASSKEY_SESSION_REQUIRED_MESSAGE = 'Je bent niet (meer) ingelogd. Log opnieuw in en probeer het opnieuw.';
 
 export const PASSKEY_INSECURE_ORIGIN_MESSAGE =
 	'Passkeys werken lokaal alleen op http://localhost:8081 (niet op 127.0.0.1). Open die URL en log opnieuw in.';

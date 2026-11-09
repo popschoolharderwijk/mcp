@@ -28,29 +28,6 @@ export function LoginMagicLinkForm({
 
 	return (
 		<div className="space-y-4">
-			<button
-				type="button"
-				onClick={onPasskeySignIn}
-				disabled={formDisabled}
-				className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 inline-flex items-center justify-center gap-2"
-			>
-				{passkeyBusy ? (
-					<LuLoaderCircle className="h-4 w-4 animate-spin" />
-				) : (
-					<LuFingerprint className="h-4 w-4" />
-				)}
-				{resolvePasskeySignInButtonLabel(passkeyBusy)}
-			</button>
-
-			<div className="relative py-1">
-				<div className="absolute inset-0 flex items-center">
-					<div className="w-full border-t border-border" />
-				</div>
-				<div className="relative flex justify-center text-xs uppercase">
-					<span className="bg-background px-2 text-muted-foreground">of</span>
-				</div>
-			</div>
-
 			<form onSubmit={onSubmit} className="space-y-4">
 				<div>
 					<label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -72,11 +49,34 @@ export function LoginMagicLinkForm({
 				<button
 					type="submit"
 					disabled={formDisabled}
-					className="w-full py-2 px-4 border border-input bg-background rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+					className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
 				>
 					{resolveMagicLinkSubmitLabel(state === 'sending')}
 				</button>
 			</form>
+
+			<div className="relative py-1">
+				<div className="absolute inset-0 flex items-center">
+					<div className="w-full border-t border-border" />
+				</div>
+				<div className="relative flex justify-center text-xs uppercase">
+					<span className="bg-background px-2 text-muted-foreground">of</span>
+				</div>
+			</div>
+
+			<button
+				type="button"
+				onClick={onPasskeySignIn}
+				disabled={formDisabled}
+				className="w-full py-2 px-4 border border-input bg-background rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 inline-flex items-center justify-center gap-2"
+			>
+				{passkeyBusy ? (
+					<LuLoaderCircle className="h-4 w-4 animate-spin" />
+				) : (
+					<LuFingerprint className="h-4 w-4" />
+				)}
+				{resolvePasskeySignInButtonLabel(passkeyBusy)}
+			</button>
 		</div>
 	);
 }

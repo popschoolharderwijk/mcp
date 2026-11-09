@@ -10,6 +10,7 @@ import {
 	resolveConditionalPasskeySignInOutcome,
 	resolveLoginStateAfterPasskeySignIn,
 	resolvePasskeySignInOutcome,
+	resolveUnknownPasskeyError,
 } from '@/lib/auth/passkeyHelpers';
 
 function toPasskeyError(error: { code?: string; message: string; name?: string } | null): PasskeyErrorLike | null {
@@ -85,12 +86,20 @@ export function useLoginPage() {
 		setState('passkey');
 		conditionalAbortRef.current?.abort();
 
-		const { error: passkeyError } = await supabase.auth.signInWithPasskey();
-		const outcome = resolvePasskeySignInOutcome(toPasskeyError(passkeyError));
-		if (outcome.kind === 'error') {
-			setError(outcome.message);
+		try {
+			const { error: passkeyError } = await supabase.auth.signInWithPasskey();
+			const outcome = resolvePasskeySignInOutcome(toPasskeyError(passkeyError));
+			if (outcome.kind === 'error') {
+				setError(outcome.message);
+			}
+			setState(resolveLoginStateAfterPasskeySignIn(outcome));
+		} catch (error) {
+			const outcome = resolvePasskeySignInOutcome(resolveUnknownPasskeyError(error));
+			if (outcome.kind === 'error') {
+				setError(outcome.message);
+			}
+			setState('idle');
 		}
-		setState(resolveLoginStateAfterPasskeySignIn(outcome));
 	};
 
 	const verifyOtp = async () => {
