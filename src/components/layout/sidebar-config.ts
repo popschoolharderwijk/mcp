@@ -9,9 +9,7 @@ export const adminOperationalNavItems = [
 	{ href: '/trial-lessons', label: NAV_LABELS.trialLessons, icon: NAV_ICONS.trialLessons },
 ];
 
-export const administrationNavItems = [
-	{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
-];
+export const administrationNavItems = [{ href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates }];
 
 export const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },

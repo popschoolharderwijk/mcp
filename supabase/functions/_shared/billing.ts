@@ -14,10 +14,11 @@ import {
 	buildLessonProductIdempotencyKey,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
-	buildStripeLesgeldProductName,
+	buildStripeTuitionPriceNickname,
+	buildStripeTuitionProductName,
 	isTerminalScheduleStatus,
 	type LessonFrequency,
-	mapStripeLesgeldLabelParts,
+	mapStripeTuitionLabelParts,
 	resolveStripeSubscriptionId,
 	type YearlyResult,
 } from './billingHelpers.ts';
@@ -91,7 +92,7 @@ async function createPhasePrice(
 			product: productId,
 			unit_amount: amountCents,
 			recurring: { interval: 'month', interval_count: 1 },
-			nickname: `Lesgeld ${label}`,
+			nickname: buildStripeTuitionPriceNickname(label),
 			metadata: { phase_label: label, lesson_agreement_id: lessonAgreementId },
 		},
 		{ idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonAgreementId, label) },
@@ -131,7 +132,7 @@ async function toStripePhasePayloads(
 	return payloads;
 }
 
-async function loadStripeLesgeldLabelParts(
+async function loadStripeTuitionLabelParts(
 	admin: SupabaseClient,
 	billing: BillingComputation,
 ): Promise<{
@@ -147,7 +148,7 @@ async function loadStripeLesgeldLabelParts(
 			.maybeSingle(),
 		admin.from('lesson_types').select('name').eq('id', billing.agreement.lesson_type_id).maybeSingle(),
 	]);
-	return mapStripeLesgeldLabelParts(profile, lessonType, billing.schoolYear.startYear);
+	return mapStripeTuitionLabelParts(profile, lessonType, billing.schoolYear.startYear);
 }
 
 type AgreementRow = BillingComputation['agreement'] & { is_active: boolean };
@@ -270,8 +271,8 @@ export async function createScheduleForAgreement(
 	const { phases, catchUpThroughMonth } = resolveSchedulePhases(billing, today);
 	assertHasBillingPhases(phases.length);
 
-	const labelParts = await loadStripeLesgeldLabelParts(admin, billing);
-	const productName = buildStripeLesgeldProductName(labelParts);
+	const labelParts = await loadStripeTuitionLabelParts(admin, billing);
+	const productName = buildStripeTuitionProductName(labelParts);
 	const stripePhases = await toStripePhasePayloads(
 		stripe,
 		phases,
@@ -310,7 +311,7 @@ export async function createScheduleForAgreement(
 				customerId: ctx.customerId,
 				defaultPaymentMethod: ctx.defaultPaymentMethod,
 				plan,
-				productName: buildStripeLesgeldProductName({ ...labelParts, catchUp: true }),
+				productName: buildStripeTuitionProductName({ ...labelParts, catchUp: true }),
 			});
 		}
 	}
@@ -377,7 +378,7 @@ async function updateFutureSchedulePhases(input: {
 	keptPayloads: Array<Record<string, unknown>>;
 	firstFutureIndex: number;
 }): Promise<RebuildResult | null> {
-	const productName = buildStripeLesgeldProductName(await loadStripeLesgeldLabelParts(input.admin, input.billing));
+	const productName = buildStripeTuitionProductName(await loadStripeTuitionLabelParts(input.admin, input.billing));
 	const futurePayloads = alignFuturePhasePayloads(
 		await toStripePhasePayloads(
 			input.stripe,

@@ -26,11 +26,20 @@ export interface AwaitingMandateInput {
 }
 
 /** True when an open subscription already has a schedule or subscription in Stripe. */
-export function hasArrangedMandate(subscriptions: ReadonlyArray<AwaitingMandateSubscriptionRef>): boolean {
+function hasCollectableMandate(subscriptions: ReadonlyArray<AwaitingMandateSubscriptionRef>): boolean {
 	return subscriptions.some(
 		(s) =>
 			OPEN_SUBSCRIPTION_STATUSES.has(s.status ?? '') && Boolean(s.stripe_schedule_id || s.stripe_subscription_id),
 	);
+}
+
+/** True when Stripe already has a schedule or subscription id for this agreement. */
+function hasMandateRecord(
+	stripeScheduleId: string | null | undefined,
+	subscriptions: ReadonlyArray<AwaitingMandateSubscriptionRef>,
+): boolean {
+	if (stripeScheduleId) return true;
+	return subscriptions.some((s) => Boolean(s.stripe_schedule_id || s.stripe_subscription_id));
 }
 
 /**
@@ -41,7 +50,87 @@ export function isAwaitingMandate(input: AwaitingMandateInput, today: string): b
 	if (!input.isActive) return false;
 	if (input.endDate && input.endDate < today) return false;
 	if (input.stripeScheduleId) return false;
-	return !hasArrangedMandate(input.subscriptions);
+	return !hasCollectableMandate(input.subscriptions);
+}
+
+export type MandateLifecycleStatus = 'pending' | 'active' | 'inactive';
+
+/**
+ * Maps local agreement/subscription state onto Stripe Mandate lifecycle buckets.
+ * pending = not yet usable; active = can collect; inactive = revoked/unusable history.
+ */
+export function resolveMandateLifecycleStatus(
+	input: AwaitingMandateInput,
+	today: string,
+): MandateLifecycleStatus | null {
+	if (isAwaitingMandate(input, today)) return 'pending';
+	if (!hasMandateRecord(input.stripeScheduleId, input.subscriptions)) return null;
+	if (hasCollectableMandate(input.subscriptions)) return 'active';
+	const agreementOpen = input.isActive && !(input.endDate && input.endDate < today);
+	if (input.stripeScheduleId && agreementOpen) return 'active';
+	return 'inactive';
+}
+
+export function pickPrimarySubscriptionStatus(
+	subscriptions: ReadonlyArray<AwaitingMandateSubscriptionRef>,
+): string | null {
+	const open = subscriptions.find(
+		(s) =>
+			OPEN_SUBSCRIPTION_STATUSES.has(s.status ?? '') && Boolean(s.stripe_schedule_id || s.stripe_subscription_id),
+	);
+	if (open?.status) return open.status;
+	const any = subscriptions.find((s) => Boolean(s.stripe_schedule_id || s.stripe_subscription_id));
+	return any?.status ?? null;
+}
+
+export interface MandateStatusRow {
+	lesson_agreement_id: string;
+	student_user_id: string;
+	student: AwaitingMandateStudent;
+	lesson_type_name: string;
+	start_date: string;
+	agreement_active: boolean;
+	subscription_status: string | null;
+	lifecycle_status: 'active' | 'inactive';
+}
+
+export function mapMandateStatusRow(input: {
+	lessonAgreementId: string;
+	studentUserId: string;
+	firstName: string | null | undefined;
+	lastName: string | null | undefined;
+	profileEmail: string | null | undefined;
+	avatarUrl: string | null | undefined;
+	lessonType: { name: string } | { name: string }[] | null | undefined;
+	startDate: string;
+	agreementActive: boolean;
+	subscriptionStatus: string | null;
+	lifecycleStatus: 'active' | 'inactive';
+}): MandateStatusRow {
+	return {
+		lesson_agreement_id: input.lessonAgreementId,
+		student_user_id: input.studentUserId,
+		student: {
+			user_id: input.studentUserId,
+			first_name: input.firstName ?? null,
+			last_name: input.lastName ?? null,
+			email: input.profileEmail ?? null,
+			avatar_url: input.avatarUrl ?? null,
+		},
+		lesson_type_name: unwrapJoinedName(input.lessonType),
+		start_date: input.startDate,
+		agreement_active: input.agreementActive,
+		subscription_status: input.subscriptionStatus,
+		lifecycle_status: input.lifecycleStatus,
+	};
+}
+
+export function sortMandateStatusRows<T extends { agreement_active: boolean; start_date: string }>(
+	rows: readonly T[],
+): T[] {
+	return [...rows].sort(
+		(a, b) => Number(b.agreement_active) - Number(a.agreement_active) || b.start_date.localeCompare(a.start_date),
+	);
 }
 
 export function daysWaiting(since: string | null | undefined, today: string): number {
@@ -54,8 +143,12 @@ export function sortByLongestWaiting<T extends { days_waiting: number; start_dat
 	return [...rows].sort((a, b) => b.days_waiting - a.days_waiting || a.start_date.localeCompare(b.start_date));
 }
 
-export function shouldShowAwaitingCounter(count: number | null | undefined): boolean {
-	return (count ?? 0) > 0;
+/** Split agreements that still need a mandate into invite-not-sent vs invite-sent (awaiting). */
+export function filterAwaitingByInviteSent<T extends { last_sent_at: string | null }>(
+	rows: readonly T[],
+	inviteSent: boolean,
+): T[] {
+	return rows.filter((row) => Boolean(row.last_sent_at) === inviteSent);
 }
 
 export function awaitingSentLabel(lastSentAt: string | null | undefined): string {
@@ -78,15 +171,7 @@ export interface AwaitingMandateRow {
 	days_waiting: number;
 }
 
-export function buildAwaitingMandateDisplayName(
-	firstName: string | null | undefined,
-	lastName: string | null | undefined,
-): string | null {
-	const name = [firstName, lastName].filter(Boolean).join(' ').trim();
-	return name || null;
-}
-
-export function unwrapJoinedName(value: { name: string } | { name: string }[] | null | undefined): string {
+function unwrapJoinedName(value: { name: string } | { name: string }[] | null | undefined): string {
 	if (!value) return 'Lessoort';
 	const row = Array.isArray(value) ? value[0] : value;
 	return row?.name ?? 'Lessoort';

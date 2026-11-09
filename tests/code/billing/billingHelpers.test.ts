@@ -8,15 +8,16 @@ import {
 	buildLessonProductIdempotencyKey,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
-	buildStripeLesgeldProductName,
 	buildStripePersonLabel,
+	buildStripeTuitionPriceNickname,
+	buildStripeTuitionProductName,
 	calculateYearly,
 	clampToSchoolYear,
 	formatBillingSchoolYearLabel,
 	getOccurrenceDates,
 	getSchoolYearForDateString,
 	isTerminalScheduleStatus,
-	mapStripeLesgeldLabelParts,
+	mapStripeTuitionLabelParts,
 	pickAgeTariff,
 	pickPriceCentsForTariff,
 	resolveBillingReferenceDate,
@@ -223,10 +224,10 @@ describe('buildBillingComputationFromLoadedData', () => {
 	});
 });
 
-describe('buildStripeLesgeldProductName', () => {
+describe('buildStripeTuitionProductName', () => {
 	it('builds a readable product title without agreement ids', () => {
 		expect(
-			buildStripeLesgeldProductName({
+			buildStripeTuitionProductName({
 				studentName: 'Anna Bakker',
 				lessonTypeName: 'Piano',
 				schoolYearLabel: '2026/2027',
@@ -236,7 +237,7 @@ describe('buildStripeLesgeldProductName', () => {
 
 	it('marks catch-up products and skips empty parts', () => {
 		expect(
-			buildStripeLesgeldProductName({
+			buildStripeTuitionProductName({
 				studentName: ' Anna Bakker ',
 				lessonTypeName: null,
 				schoolYearLabel: '2026/2027',
@@ -245,9 +246,10 @@ describe('buildStripeLesgeldProductName', () => {
 		).toBe('Lesgeld inhaal · Anna Bakker · 2026/2027');
 	});
 
-	it('falls back to the Lesgeld head when no details are known', () => {
-		expect(buildStripeLesgeldProductName({})).toBe('Lesgeld');
-		expect(buildStripeLesgeldProductName({ catchUp: true })).toBe('Lesgeld inhaal');
+	it('falls back to the tuition title when no details are known', () => {
+		expect(buildStripeTuitionProductName({})).toBe('Lesgeld');
+		expect(buildStripeTuitionProductName({ catchUp: true })).toBe('Lesgeld inhaal');
+		expect(buildStripeTuitionPriceNickname('2026-09')).toBe('Lesgeld 2026-09');
 	});
 });
 
@@ -259,16 +261,16 @@ describe('buildStripePersonLabel and formatBillingSchoolYearLabel', () => {
 	});
 });
 
-describe('mapStripeLesgeldLabelParts', () => {
+describe('mapStripeTuitionLabelParts', () => {
 	it('maps profile and lesson type into product label parts', () => {
 		expect(
-			mapStripeLesgeldLabelParts({ first_name: 'Anna', last_name: 'Bakker' }, { name: ' Piano ' }, 2026),
+			mapStripeTuitionLabelParts({ first_name: 'Anna', last_name: 'Bakker' }, { name: ' Piano ' }, 2026),
 		).toEqual({
 			studentName: 'Anna Bakker',
 			lessonTypeName: 'Piano',
 			schoolYearLabel: '2026/2027',
 		});
-		expect(mapStripeLesgeldLabelParts(null, null, 2025)).toEqual({
+		expect(mapStripeTuitionLabelParts(null, null, 2025)).toEqual({
 			studentName: null,
 			lessonTypeName: null,
 			schoolYearLabel: '2025/2026',

@@ -386,21 +386,25 @@ export function buildStripePersonLabel(
 	return name || null;
 }
 
+/** Dutch Stripe Dashboard title for tuition products (metadata holds agreement id). */
+const STRIPE_TUITION_PRODUCT_TITLE = 'Lesgeld';
+const STRIPE_TUITION_CATCH_UP_PRODUCT_TITLE = 'Lesgeld inhaal';
+
 /** Human-readable Stripe product title. Agreement id belongs in metadata only. */
-export function buildStripeLesgeldProductName(input: {
+export function buildStripeTuitionProductName(input: {
 	studentName?: string | null;
 	lessonTypeName?: string | null;
 	schoolYearLabel?: string | null;
 	catchUp?: boolean;
 }): string {
-	const head = input.catchUp ? 'Lesgeld inhaal' : 'Lesgeld';
+	const head = input.catchUp ? STRIPE_TUITION_CATCH_UP_PRODUCT_TITLE : STRIPE_TUITION_PRODUCT_TITLE;
 	const rest = [input.studentName, input.lessonTypeName, input.schoolYearLabel]
 		.map((part) => part?.trim())
 		.filter((part): part is string => Boolean(part));
 	return [head, ...rest].join(' · ');
 }
 
-export function mapStripeLesgeldLabelParts(
+export function mapStripeTuitionLabelParts(
 	profile: { first_name: string | null; last_name: string | null } | null | undefined,
 	lessonType: { name: string } | null | undefined,
 	schoolYearStart: number,
@@ -414,4 +418,8 @@ export function mapStripeLesgeldLabelParts(
 		lessonTypeName: lessonType?.name?.trim() || null,
 		schoolYearLabel: formatBillingSchoolYearLabel(schoolYearStart),
 	};
+}
+
+export function buildStripeTuitionPriceNickname(phaseLabel: string): string {
+	return `${STRIPE_TUITION_PRODUCT_TITLE} ${phaseLabel}`;
 }

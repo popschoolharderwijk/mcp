@@ -17,7 +17,7 @@ describe('sidebar nav item constants', () => {
 		expect(adminHrefs).toEqual(adminNavItems.map((item) => item.href));
 	});
 
-	it('includes operational admin routes without awaiting-mandate', () => {
+	it('includes operational admin routes without mandates', () => {
 		expect(adminOperationalNavItems.map((item) => item.href)).toEqual([
 			'/agreements',
 			'/lesson-groups',
@@ -26,10 +26,10 @@ describe('sidebar nav item constants', () => {
 		]);
 	});
 
-	it('places awaiting-mandate under administration', () => {
-		expect(administrationHrefs).toEqual(['/awaiting-mandate']);
+	it('places mandates under administration', () => {
+		expect(administrationHrefs).toEqual(['/mandates']);
 		expect(administrationNavItems).toEqual([
-			{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
+			{ href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates },
 		]);
 	});
 

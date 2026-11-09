@@ -30,7 +30,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 [subscriptions / subscription_invoices] → monthly Stripe collection
 ```
 
-Ops: **Wacht op machtiging** lists agreements without an arranged mandate; **SubscriptionCard** on the agreement can resend the link, open Customer Portal, sync, or rebuild.
+Ops: **Machtigingen** (`/mandates`) tabs: active → inactive → pending (invite sent) → unsent; **SubscriptionCard** on the agreement can resend the link, open Customer Portal, sync, or rebuild.
 
 ## 3. Data model
 

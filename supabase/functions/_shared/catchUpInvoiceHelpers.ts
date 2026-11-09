@@ -131,10 +131,14 @@ function formatMonthDisplay(month: string): string {
 	return `${month.slice(5, 7)}-${month.slice(0, 4)}`;
 }
 
+/** Dutch Stripe invoice copy (identifiers stay English). */
+const STRIPE_TUITION_LINE_PREFIX = 'Lesgeld';
+const STRIPE_CATCH_UP_INVOICE_SUFFIX = '(inhaalfactuur)';
+
 export function catchUpLineDescription(month: string): string {
-	return `Lesgeld ${formatMonthDisplay(month)}`;
+	return `${STRIPE_TUITION_LINE_PREFIX} ${formatMonthDisplay(month)}`;
 }
 
 export function catchUpInvoiceDescription(fromMonth: string, toMonth: string): string {
-	return `Lesgeld ${formatMonthDisplay(fromMonth)} t/m ${formatMonthDisplay(toMonth)} (inhaalfactuur)`;
+	return `${STRIPE_TUITION_LINE_PREFIX} ${formatMonthDisplay(fromMonth)} t/m ${formatMonthDisplay(toMonth)} ${STRIPE_CATCH_UP_INVOICE_SUFFIX}`;
 }

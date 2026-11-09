@@ -120,7 +120,7 @@ const sections: ManualSection[] = [
 			'Duo-flow: bij een duo-lessoort maakt de wizard automatisch twee gekoppelde overeenkomsten via een edge function. In de agenda zien beide leerlingen hetzelfde slot met een duo-badge.',
 			'Doorklikken: leerling- en docentnamen zijn klikbaar vanuit de wizard, de bevestigingspagina en het overzicht.',
 			'Bewerken / beëindigen: open een overeenkomst om gegevens aan te passen of een einddatum te zetten; toekomstige lessen verdwijnen dan uit de agenda.',
-			'Betaling: na de overeenkomst krijgt de betaler (ouder of leerling) een mail met betaalknop. Via die link (zonder inloggen) koppelt men iDEAL; daarna schrijft Stripe maandelijks af. Opvolging: Wacht op machtiging; opnieuw versturen vanaf de overeenkomst.',
+			'Betaling: na de overeenkomst krijgt de betaler (ouder of leerling) een mail met betaalknop. Via die link (zonder inloggen) koppelt men iDEAL; daarna schrijft Stripe maandelijks af. Opvolging: Machtigingen (actief / inactief / in afwachting / niet verstuurd); opnieuw versturen vanaf de overeenkomst.',
 		],
 	},
 	{

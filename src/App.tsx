@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './components/AuthProvider';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -12,13 +12,13 @@ import Announcements from './pages/Announcements';
 import AppSettings from './pages/AppSettings';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
-import AwaitingMandate from './pages/AwaitingMandate';
 import Dashboard from './pages/Dashboard';
 import LessonGroups from './pages/LessonGroups';
 import LessonGroupWizard from './pages/LessonGroupWizard';
 import LessonTypeInfo from './pages/LessonTypeInfo';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
+import Mandates from './pages/Mandates';
 import MyAvailability from './pages/MyAvailability';
 import MyStatistics from './pages/MyStatistics';
 import MyStudentProfile from './pages/MyStudentProfile';
@@ -76,7 +76,9 @@ const App = () => (
 						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />
 						<Route path="/lesson-types/:id" element={<LessonTypeInfo />} />
 						<Route path="/agreements" element={<Agreements />} />
-						<Route path="/awaiting-mandate" element={<AwaitingMandate />} />
+						<Route path="/mandates" element={<Mandates />} />
+						<Route path="/mandates/:tab" element={<Mandates />} />
+						<Route path="/awaiting-mandate" element={<Navigate to="/mandates/active" replace />} />
 						<Route path="/lesson-groups" element={<LessonGroups />} />
 						<Route path="/lesson-groups/new" element={<LessonGroupWizard />} />
 						<Route path="/lesson-groups/:id" element={<LessonGroupWizard />} />

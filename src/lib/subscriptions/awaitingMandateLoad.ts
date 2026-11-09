@@ -2,9 +2,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDateToDb, now } from '@/lib/date/date-format';
 import {
 	type AwaitingMandateRow,
+	filterAwaitingByInviteSent,
 	isAwaitingMandate,
+	type MandateLifecycleStatus,
+	type MandateStatusRow,
 	mapAwaitingMandateRow,
+	mapMandateStatusRow,
+	pickPrimarySubscriptionStatus,
+	resolveMandateLifecycleStatus,
+	sortMandateStatusRows,
 } from '@/lib/subscriptions/awaitingMandateHelpers';
+import type { MandatesTabCounts } from '@/lib/subscriptions/mandatesTabsHelpers';
 
 type AgreementQueryRow = {
 	id: string;
@@ -153,25 +161,95 @@ async function loadAwaitingSideData(candidates: AgreementQueryRow[]) {
 	};
 }
 
-/** Active agreements waiting on a Stripe mandate (+ last checkout invitation). */
-export async function fetchAwaitingMandates(): Promise<AwaitingMandateRow[]> {
-	const today = formatDateToDb(now());
-	const { data, error } = await supabase
-		.from('lesson_agreements')
-		.select(
-			`
+const AGREEMENT_MANDATE_SELECT = `
 			id, student_user_id, start_date, end_date, created_at, is_active, stripe_schedule_id,
 			lesson_types ( name ),
 			subscriptions ( status, stripe_schedule_id, stripe_subscription_id )
-		`,
-		)
-		.eq('is_active', true)
-		.is('stripe_schedule_id', null);
-	if (error) throw new Error(error.message);
-	const candidates = filterAwaitingCandidates((data ?? []) as AgreementQueryRow[], today);
+		`;
+
+function unwrapAgreementRows(result: { data: unknown; error: { message: string } | null }): AgreementQueryRow[] {
+	if (result.error) throw new Error(result.error.message);
+	return (result.data ?? []) as AgreementQueryRow[];
+}
+
+async function fetchActiveAgreementsWithoutSchedule(): Promise<AgreementQueryRow[]> {
+	return unwrapAgreementRows(
+		await supabase
+			.from('lesson_agreements')
+			.select(AGREEMENT_MANDATE_SELECT)
+			.eq('is_active', true)
+			.is('stripe_schedule_id', null),
+	);
+}
+
+async function fetchAgreementsWithSchedule(): Promise<AgreementQueryRow[]> {
+	return unwrapAgreementRows(
+		await supabase.from('lesson_agreements').select(AGREEMENT_MANDATE_SELECT).not('stripe_schedule_id', 'is', null),
+	);
+}
+
+/** Active agreements waiting on a Stripe mandate (+ last checkout invitation). */
+export async function fetchAwaitingMandates(): Promise<AwaitingMandateRow[]> {
+	const today = formatDateToDb(now());
+	const candidates = filterAwaitingCandidates(await fetchActiveAgreementsWithoutSchedule(), today);
 	if (candidates.length === 0) return [];
 	const side = await loadAwaitingSideData(candidates);
 	return mapCandidates(candidates, side.profiles, side.invites, today);
+}
+
+function toMandateInput(row: AgreementQueryRow) {
+	return {
+		isActive: row.is_active,
+		endDate: row.end_date,
+		stripeScheduleId: row.stripe_schedule_id,
+		subscriptions: row.subscriptions ?? [],
+	};
+}
+
+function filterLifecycleCandidates(
+	rows: AgreementQueryRow[],
+	lifecycle: Exclude<MandateLifecycleStatus, 'pending'>,
+	today: string,
+): AgreementQueryRow[] {
+	return rows.filter((row) => resolveMandateLifecycleStatus(toMandateInput(row), today) === lifecycle);
+}
+
+function mapLifecycleCandidates(
+	candidates: AgreementQueryRow[],
+	profiles: Map<string, ProfileRow>,
+	lifecycle: 'active' | 'inactive',
+): MandateStatusRow[] {
+	return candidates.map((row) => {
+		const fromProfile = profileFields(profiles.get(row.student_user_id));
+		return mapMandateStatusRow({
+			lessonAgreementId: row.id,
+			studentUserId: row.student_user_id,
+			firstName: fromProfile.firstName,
+			lastName: fromProfile.lastName,
+			profileEmail: fromProfile.profileEmail,
+			avatarUrl: fromProfile.avatarUrl,
+			lessonType: row.lesson_types,
+			startDate: row.start_date,
+			agreementActive: row.is_active,
+			subscriptionStatus: pickPrimarySubscriptionStatus(row.subscriptions ?? []),
+			lifecycleStatus: lifecycle,
+		});
+	});
+}
+
+/** Agreements with a collected Stripe mandate in the given lifecycle bucket. */
+export async function fetchMandatesByLifecycle(lifecycle: 'active' | 'inactive'): Promise<MandateStatusRow[]> {
+	const today = formatDateToDb(now());
+	const candidates = filterLifecycleCandidates(await fetchAgreementsWithSchedule(), lifecycle, today);
+	if (candidates.length === 0) return [];
+	const profilesRes = await supabase
+		.from('profiles')
+		.select('user_id, first_name, last_name, email, avatar_url')
+		.in('user_id', [...new Set(candidates.map((r) => r.student_user_id))]);
+	throwQueryError(profilesRes.error);
+	return sortMandateStatusRows(
+		mapLifecycleCandidates(candidates, toProfileMap(profilesRes.data as ProfileRow[] | null), lifecycle),
+	);
 }
 
 export async function countAwaitingMandates(): Promise<number> {
@@ -180,4 +258,19 @@ export async function countAwaitingMandates(): Promise<number> {
 	} catch {
 		return 0;
 	}
+}
+
+/** Counts for Mandates tab labels (`Label (n)`). */
+export async function fetchMandatesTabCounts(): Promise<MandatesTabCounts> {
+	const [active, inactive, awaiting] = await Promise.all([
+		fetchMandatesByLifecycle('active'),
+		fetchMandatesByLifecycle('inactive'),
+		fetchAwaitingMandates(),
+	]);
+	return {
+		active: active.length,
+		inactive: inactive.length,
+		pending: filterAwaitingByInviteSent(awaiting, true).length,
+		unsent: filterAwaitingByInviteSent(awaiting, false).length,
+	};
 }
