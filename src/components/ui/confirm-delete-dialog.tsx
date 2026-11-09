@@ -37,6 +37,8 @@ export function ConfirmDeleteDialog({
 		try {
 			await onConfirm();
 			onOpenChange(false);
+		} catch {
+			// Failure stays in the dialog; caller surfaces the error.
 		} finally {
 			setLoading(false);
 		}

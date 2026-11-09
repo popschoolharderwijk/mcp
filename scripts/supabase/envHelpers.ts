@@ -280,6 +280,16 @@ export function buildLocalSupabaseDotEnv(entries: Record<string, string>): strin
 	return lines.join('\n');
 }
 
+/**
+ * Process-env overlay for `supabase config push`.
+ * Resolves `pass = "env(RESEND_API_KEY)"` from the edge/Auth SoT file; null when missing/empty.
+ */
+export function configPushEnvFromSecrets(entries: Record<string, string>): Record<string, string> | null {
+	const key = entries.RESEND_API_KEY?.trim() ?? '';
+	if (!key) return null;
+	return { RESEND_API_KEY: key };
+}
+
 /** True when both maps have the same keys and values (order ignored). */
 export function envEntriesEqual(left: Record<string, string>, right: Record<string, string>): boolean {
 	const leftKeys = Object.keys(left);

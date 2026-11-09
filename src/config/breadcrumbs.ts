@@ -76,6 +76,10 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		items: [{ label: NAV_LABELS.accountAppearance, href: '/account/appearance' }],
 	},
 	{
+		pattern: '/account/security',
+		items: [{ label: NAV_LABELS.accountSecurity, href: '/account/security' }],
+	},
+	{
 		pattern: '/account/danger',
 		items: [{ label: NAV_LABELS.accountDanger, href: '/account/danger' }],
 	},

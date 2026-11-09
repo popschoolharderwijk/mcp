@@ -17,6 +17,7 @@ export type { AccountTab };
 export const TAB_TITLES: Record<AccountTab, string> = {
 	profile: 'Profiel',
 	appearance: 'Weergave',
+	security: 'Beveiliging',
 	danger: 'Account',
 };
 

@@ -12,7 +12,7 @@ export function LoginPageBody({ login }: { login: LoginPageState }) {
 			<div className="w-full max-w-sm space-y-6">
 				<div className="text-center">
 					<h1 className="text-2xl font-bold">Inloggen</h1>
-					<p className="text-muted-foreground mt-2">Geen wachtwoord nodig - we sturen je een link.</p>
+					<p className="text-muted-foreground mt-2">Log in met je passkey, of ontvang een link per e-mail.</p>
 				</div>
 
 				{login.error && <Alert variant="error">{login.error}</Alert>}
@@ -25,6 +25,9 @@ export function LoginPageBody({ login }: { login: LoginPageState }) {
 						onSubmit={(event) => {
 							event.preventDefault();
 							void login.sendMagicLink(login.email);
+						}}
+						onPasskeySignIn={() => {
+							void login.signInWithPasskey();
 						}}
 					/>
 				) : (

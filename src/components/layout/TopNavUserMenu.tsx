@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuLogOut, LuMoon, LuPalette, LuSearch, LuShieldAlert, LuSquareSlash, LuSun, LuUser } from 'react-icons/lu';
+import { LuLogOut, LuMoon, LuSearch, LuSettings, LuSquareSlash, LuSun } from 'react-icons/lu';
 import { ChangelogDialog } from '@/components/layout/ChangelogDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -21,9 +21,7 @@ interface TopNavUserMenuProps {
 	avatarUrl: string | null | undefined;
 	resolvedTheme: string;
 	showAppVersion: boolean;
-	onNavigateProfile: () => void;
-	onNavigateAppearance: () => void;
-	onNavigateAccount: () => void;
+	onNavigateSettings: () => void;
 	onSignOut: () => void;
 	onToggleTheme: () => void;
 }
@@ -132,9 +130,7 @@ export function TopNavUserMenu({
 	avatarUrl,
 	resolvedTheme,
 	showAppVersion,
-	onNavigateProfile,
-	onNavigateAppearance,
-	onNavigateAccount,
+	onNavigateSettings,
 	onSignOut,
 	onToggleTheme,
 }: TopNavUserMenuProps) {
@@ -158,17 +154,9 @@ export function TopNavUserMenu({
 				<DropdownMenuContent className="w-56" align="end">
 					<TopNavUserMenuHeader displayName={displayName} email={email} roleLabel={roleLabel} />
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onClick={onNavigateProfile}>
-						<LuUser className="mr-2 h-4 w-4" />
-						<span>Profiel</span>
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={onNavigateAppearance}>
-						<LuPalette className="mr-2 h-4 w-4" />
-						<span>Weergave</span>
-					</DropdownMenuItem>
-					<DropdownMenuItem onClick={onNavigateAccount}>
-						<LuShieldAlert className="mr-2 h-4 w-4" />
-						<span>Account</span>
+					<DropdownMenuItem onClick={onNavigateSettings}>
+						<LuSettings className="mr-2 h-4 w-4" />
+						<span>Instellingen</span>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={onSignOut}>

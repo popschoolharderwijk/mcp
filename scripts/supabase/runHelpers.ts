@@ -61,19 +61,37 @@ export function resolveTargetFromArgv(argv: string[], verbLabel: string): Deploy
 	return resolveDeployTarget(env);
 }
 
+function pushTargetDetail(
+	target: DeployTarget,
+	describeTarget: ((target: DeployTarget) => string) | undefined,
+): string {
+	if (describeTarget === undefined) return formatTargetLabel(target);
+	return describeTarget(target);
+}
+
+async function runPushPreflight(
+	preflight: ((target: DeployTarget) => void | Promise<void>) | undefined,
+	target: DeployTarget,
+): Promise<void> {
+	if (preflight === undefined) return;
+	await preflight(target);
+}
+
 /** Shared CLI entry for `*.ts push [env]` deploy scripts. */
 export async function runPushScriptMain(options: {
 	scriptFile: string;
 	verbLabel: string;
 	run: (target: DeployTarget) => Promise<void>;
 	describeTarget?: (target: DeployTarget) => string;
+	/** Runs before confirm so missing secrets fail without an interactive prompt. */
+	preflight?: (target: DeployTarget) => void | Promise<void>;
 }): Promise<void> {
 	if (process.argv[2] !== 'push') {
 		fail(`Usage: bun run scripts/supabase/${options.scriptFile} push [${DEPLOY_ENV_CLI_USAGE}]`);
 	}
 	const target = resolveTargetFromArgv(process.argv.slice(3), options.verbLabel);
-	const detail = options.describeTarget?.(target) ?? formatTargetLabel(target);
-	console.log(`${options.verbLabel} → ${detail}`);
+	console.log(`${options.verbLabel} → ${pushTargetDetail(target, options.describeTarget)}`);
+	await runPushPreflight(options.preflight, target);
 	await confirmTargetIfRequired(target, options.verbLabel);
 	await options.run(target);
 	console.log('Done.');
@@ -258,6 +276,7 @@ export async function runSupabase(args: string[], options: { env?: Record<string
 	console.log(`→ supabase ${logged}`);
 	const proc = Bun.spawn(['supabase', ...args], {
 		cwd: projectRoot,
+		stdin: 'inherit',
 		stdout: 'inherit',
 		stderr: 'inherit',
 		env: spawnEnv(options.env),

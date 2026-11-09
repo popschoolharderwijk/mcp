@@ -5,6 +5,7 @@ import {
 	LuCalendarOff,
 	LuChartBar,
 	LuClipboardList,
+	LuFingerprint,
 	LuFolderOpen,
 	LuGraduationCap,
 	LuInbox,
@@ -131,6 +132,7 @@ const NAV_ITEMS = {
 	tips: { label: 'Tips', icon: LuLightbulb },
 	accountProfile: { label: 'Profiel', icon: LuUser },
 	accountAppearance: { label: 'Weergave', icon: LuSettings },
+	accountSecurity: { label: 'Beveiliging', icon: LuFingerprint },
 	accountDanger: { label: 'Account', icon: LuShieldAlert },
 } as const satisfies Record<string, { label: string; icon: IconType; description?: string }>;
 

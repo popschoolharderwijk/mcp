@@ -165,6 +165,11 @@ async function pushSecretsRemote(target: DeployTarget): Promise<void> {
 	await replaceRemoteSecrets(target.projectRef, path, keys);
 }
 
+/** Fail before confirm when the edge/Auth SoT file is missing or incomplete. */
+export async function assertSecretsFileReady(target: DeployTarget): Promise<void> {
+	await readSecretsFile(target);
+}
+
 export async function pushSecrets(target: DeployTarget): Promise<void> {
 	if (target.projectRef === null) {
 		await pushSecretsLocal(target);
@@ -178,6 +183,7 @@ if (import.meta.main) {
 	await runPushScriptMain({
 		scriptFile: 'secrets.ts',
 		verbLabel: 'db:push:secrets',
+		preflight: assertSecretsFileReady,
 		run: pushSecrets,
 		describeTarget: (target) => `${formatTargetLabel(target)} — ${target.envFile}`,
 	});

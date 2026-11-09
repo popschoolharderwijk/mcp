@@ -27,7 +27,17 @@ consecutive outer pass, **and** the review in [`review.md`](review.md) is clean
 
 ## Progress UI (mandatory)
 
-Immediately after load-once (before types / git inspect), create a `TodoWrite` list with `merge: false` and exactly these items, then keep it in sync for the whole run:
+Immediately after load-once (before types / git inspect), **invoke** `TodoWrite` so the Progress UI list exists. Discovery alone does not count.
+
+**How to call (Cursor dynamic tools):**
+
+1. Optional: `GetDynamicTools` with `namespace: "cursor"`, `toolName: "TodoWrite"` — schema only.
+2. **Required:** `CallDynamicTool` with `namespace: "cursor"`, `toolName: "TodoWrite"`, and `arguments` (`merge` + `todos`). Wait until the tool result confirms the list updated.
+3. Same for every later status update: always `CallDynamicTool` → `TodoWrite`. Never treat a `GetDynamicTools` response as a todo write.
+
+**Forbidden:** skipping `CallDynamicTool`; only inspecting the schema; claiming the Progress UI exists without a successful `TodoWrite` result; running types/gates before that first successful invoke.
+
+Create the list with `merge: false` and exactly these items, then keep it in sync for the whole run:
 
 1. `bun run db:types (once)`
 2. `bun run check`
@@ -98,7 +108,7 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 
 ## Agent rules (short)
 
-1. Create and maintain the Progress UI `TodoWrite` list; do not run gates without it.
+1. Progress UI: **invoke** `TodoWrite` via `CallDynamicTool` (not schema discovery); do not run gates until the first successful write.
 2. Follow the state machine; do not skip check → ci → fallow → fallow-audit in an outer pass.
 3. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
 4. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).

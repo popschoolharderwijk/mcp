@@ -2,7 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { buildTopNavNavigationCallbacks } from '../../../src/lib/layout/topNavHookHelpers';
 
 describe('buildTopNavNavigationCallbacks', () => {
-	it('builds navigation callbacks with profile and account routes', async () => {
+	it('builds navigation callbacks with settings and sign-out routes', async () => {
 		const navigated: string[] = [];
 		const navigate = ((path: string) => {
 			navigated.push(path);
@@ -21,13 +21,11 @@ describe('buildTopNavNavigationCallbacks', () => {
 			},
 		);
 
-		callbacks.onNavigateProfile();
-		callbacks.onNavigateAppearance();
-		callbacks.onNavigateAccount();
+		callbacks.onNavigateSettings();
 		await callbacks.onSignOut();
 		callbacks.onToggleTheme();
 
-		expect(navigated).toEqual(['/account/profile', '/account/appearance', '/account/danger', '/login']);
+		expect(navigated).toEqual(['/account/profile', '/login']);
 		expect(signedOut).toBe(true);
 		expect(state.theme).toBe('dark');
 	});

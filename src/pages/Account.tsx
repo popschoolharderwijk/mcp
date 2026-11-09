@@ -2,7 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/components/ThemeProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type AccountTab, navigateToAccountTab, TAB_TITLES, useAccountPage } from '@/hooks/useAccountPage';
-import { AccountAppearanceTab, AccountDangerTab, AccountDeleteDialog, AccountProfileTab } from '@/pages/AccountTabs';
+import { isAccountTab } from '@/lib/account/accountPageControllerHelpers';
+import {
+	AccountAppearanceTab,
+	AccountDangerTab,
+	AccountDeleteDialog,
+	AccountProfileTab,
+	AccountSecurityTab,
+} from '@/pages/AccountTabs';
 
 interface AccountProps {
 	defaultTab?: AccountTab;
@@ -55,7 +62,7 @@ export default function Account({ defaultTab = 'profile' }: AccountProps) {
 			<Tabs
 				value={defaultTab}
 				onValueChange={(value) => {
-					if (value === 'profile' || value === 'appearance' || value === 'danger') {
+					if (isAccountTab(value)) {
 						navigateToAccountTab(navigate, value);
 					}
 				}}
@@ -63,6 +70,7 @@ export default function Account({ defaultTab = 'profile' }: AccountProps) {
 				<TabsList>
 					<TabsTrigger value="profile">Profiel</TabsTrigger>
 					<TabsTrigger value="appearance">Weergave</TabsTrigger>
+					<TabsTrigger value="security">Beveiliging</TabsTrigger>
 					<TabsTrigger value="danger">Account</TabsTrigger>
 				</TabsList>
 
@@ -85,6 +93,10 @@ export default function Account({ defaultTab = 'profile' }: AccountProps) {
 
 				<TabsContent value="appearance" className="space-y-6 mt-6">
 					<AccountAppearanceTab theme={theme} onThemeChange={setTheme} />
+				</TabsContent>
+
+				<TabsContent value="security" className="space-y-6 mt-6">
+					<AccountSecurityTab />
 				</TabsContent>
 
 				<TabsContent value="danger" className="space-y-6 mt-6">
