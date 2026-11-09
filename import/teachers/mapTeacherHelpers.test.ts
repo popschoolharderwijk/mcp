@@ -236,7 +236,7 @@ describe('mapTeacherDoc', () => {
 				_id: { $oid: 'oid-first' },
 				name: 'First',
 				surname: 'Teacher',
-				email: 'kevindegroot@gmail.com',
+				email: 'teacher@example.com',
 			}).ok,
 		).toBe(true);
 
@@ -245,14 +245,14 @@ describe('mapTeacherDoc', () => {
 				_id: { $oid: 'oid-second' },
 				name: 'Second',
 				surname: 'Teacher',
-				email: 'kevindegroot@gmail.com',
+				email: 'teacher@example.com',
 			}),
 		).toEqual({
 			ok: true,
 			row: {
 				mongoOid: 'oid-second',
-				email: 'duplicate_1_kevindegroot@gmail.com',
-				emailWarning: 'Duplicate email "kevindegroot@gmail.com"; using "duplicate_1_kevindegroot@gmail.com"',
+				email: 'duplicate_1_teacher@example.com',
+				emailWarning: 'Duplicate email "teacher@example.com"; using "duplicate_1_teacher@example.com"',
 				firstName: 'Second',
 				lastName: 'Teacher',
 				phoneNumber: null,

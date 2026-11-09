@@ -5,16 +5,16 @@ describe('parseCreateUsersFromEnv', () => {
 	it('parses a single user', () => {
 		expect(
 			parseCreateUsersFromEnv({
-				email: 'jordi@mplifi.nl',
-				firstName: 'Jordi',
-				lastName: 'van Putten',
+				email: 'ada@example.com',
+				firstName: 'Ada',
+				lastName: 'Lovelace',
 				role: 'site_admin',
 			}),
 		).toEqual([
 			{
-				email: 'jordi@mplifi.nl',
-				firstName: 'Jordi',
-				lastName: 'van Putten',
+				email: 'ada@example.com',
+				firstName: 'Ada',
+				lastName: 'Lovelace',
 				role: 'site_admin',
 			},
 		]);
