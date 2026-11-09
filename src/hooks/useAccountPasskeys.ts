@@ -101,14 +101,26 @@ export function useAccountPasskeys(enabled: boolean) {
 		if (!deleteTarget) return;
 		const passkeyId = deleteTarget.id;
 		setError(null);
-		const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId });
-		const outcome = resolvePasskeyManageOutcome(toPasskeyError(deleteError));
-		if (outcome.kind === 'error') {
-			setError(outcome.message);
-			throw new Error(outcome.message);
+		let failed = false;
+		try {
+			const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId });
+			if (!applyManageOutcome(toPasskeyError(deleteError), setError)) {
+				failed = true;
+			}
+		} catch (caught) {
+			applyManageOutcome(resolveUnknownPasskeyError(caught), setError);
+			failed = true;
+		}
+		if (failed) {
+			throw new Error('passkey-delete-failed');
 		}
 		setDeleteTarget(null);
 		await loadPasskeys();
+	};
+
+	const requestDelete = (passkey: AccountPasskeyItem | null) => {
+		if (passkey) setError(null);
+		setDeleteTarget(passkey);
 	};
 
 	return {
@@ -118,7 +130,7 @@ export function useAccountPasskeys(enabled: boolean) {
 		savingId,
 		error,
 		deleteTarget,
-		setDeleteTarget,
+		setDeleteTarget: requestDelete,
 		registerPasskey,
 		renamePasskey,
 		confirmDeletePasskey,

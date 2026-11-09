@@ -193,10 +193,12 @@ function PasskeyRegisterButton({
 
 function PasskeyDeleteDialog({
 	deleteTarget,
+	error,
 	onDeleteTargetChange,
 	onConfirmDelete,
 }: {
 	deleteTarget: AccountPasskeyItem | null;
+	error: string | null;
 	onDeleteTargetChange: (passkey: AccountPasskeyItem | null) => void;
 	onConfirmDelete: () => Promise<void>;
 }) {
@@ -214,6 +216,7 @@ function PasskeyDeleteDialog({
 					verwijderen? Je kunt daarna niet meer met deze passkey inloggen.
 				</p>
 			}
+			extraContent={error ? <Alert variant="error">{error}</Alert> : null}
 			onConfirm={onConfirmDelete}
 		/>
 	);
@@ -255,7 +258,7 @@ export function AccountSecurityPasskeysCard({
 					<PasskeyRegisterButton registering={registering} loading={loading} onRegister={onRegister} />
 				</CardHeader>
 				<CardContent className="space-y-4">
-					{error ? <Alert variant="error">{error}</Alert> : null}
+					{error && !deleteTarget ? <Alert variant="error">{error}</Alert> : null}
 					<PasskeysCardBody
 						loading={loading}
 						passkeys={passkeys}
@@ -267,6 +270,7 @@ export function AccountSecurityPasskeysCard({
 			</Card>
 			<PasskeyDeleteDialog
 				deleteTarget={deleteTarget}
+				error={error}
 				onDeleteTargetChange={onDeleteTargetChange}
 				onConfirmDelete={onConfirmDelete}
 			/>
