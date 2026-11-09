@@ -17,15 +17,15 @@ export interface SendAgreementCreatedMailsResult {
 	teacherSent: boolean;
 }
 
-async function issuePaymentLinkBetaalblok(agreementId: string): Promise<string> {
-	const { data, error } = await supabase.functions.invoke<{ betaalblok?: string }>('issue-payment-link', {
+async function issueAgreementPaymentCta(agreementId: string): Promise<string> {
+	const { data, error } = await supabase.functions.invoke<{ payment_cta?: string }>('issue-payment-link', {
 		body: { lesson_agreement_id: agreementId, send: false },
 	});
-	if (error || !data?.betaalblok) {
+	if (error || !data?.payment_cta) {
 		console.error('issue-payment-link for agreement mail', error);
 		return '';
 	}
-	return data.betaalblok;
+	return data.payment_cta;
 }
 
 async function sendAgreementMail(
@@ -61,7 +61,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		return result;
 	}
 
-	const [studentProfile, teacherProfile, studentRow, betaalblok] = await Promise.all([
+	const [studentProfile, teacherProfile, studentRow, paymentCtaMarkdown] = await Promise.all([
 		supabase
 			.from('profiles')
 			.select('email, first_name, last_name')
@@ -73,11 +73,11 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 			.eq('user_id', agreement.teacher_user_id)
 			.maybeSingle(),
 		supabase.from('students').select('parent_email').eq('user_id', agreement.student_user_id).maybeSingle(),
-		issuePaymentLinkBetaalblok(agreementId),
+		issueAgreementPaymentCta(agreementId),
 	]);
 
 	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data);
-	const studentVars: AgreementMailSharedVars = { ...sharedVars, betaalblok };
+	const studentVars: AgreementMailSharedVars = { ...sharedVars, betaalblok: paymentCtaMarkdown };
 	const payerEmail = resolveAgreementPayerEmail(studentRow.data?.parent_email, studentProfile.data?.email);
 	const targets = buildAgreementMailTargets(payerEmail, teacherProfile.data?.email);
 

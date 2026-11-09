@@ -2,23 +2,40 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import {
-	buildSubscriptionActionBody,
+	buildIssuePaymentLinkBody,
+	resolveIssuedPaymentUrl,
+	resolveIssuePaymentLinkSendError,
 	resolveSubscriptionActionError,
 	resolveSubscriptionActionSuccess,
 	SUBSCRIPTION_ACTION_FUNCTIONS,
 } from '@/lib/subscriptions/subscriptionCardHelpers';
 
-/** "Opnieuw versturen": issue payment link and send mail for one agreement. */
+export type PaymentInviteBusyKind = 'resend' | 'open';
+
+/** Issue payment link: resend mail (optional override address), or open the public pay page. */
 export function useResendPaymentInvite(onDone?: () => void) {
 	const [busyId, setBusyId] = useState<string | null>(null);
+	const [busyKind, setBusyKind] = useState<PaymentInviteBusyKind | null>(null);
 
-	const resend = async (agreementId: string) => {
+	const issuePaymentLink = async (
+		agreementId: string,
+		send: boolean,
+		kind: PaymentInviteBusyKind,
+		recipientEmail?: string,
+	) => {
 		setBusyId(agreementId);
+		setBusyKind(kind);
 		const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS['send-invite'], {
-			body: buildSubscriptionActionBody('send-invite', agreementId, '', ''),
+			body: buildIssuePaymentLinkBody(agreementId, send, recipientEmail),
 		});
 		setBusyId(null);
-		const message = resolveSubscriptionActionError('send-invite', data, error);
+		setBusyKind(null);
+		return { data, error };
+	};
+
+	const resend = async (agreementId: string, recipientEmail?: string) => {
+		const { data, error } = await issuePaymentLink(agreementId, true, 'resend', recipientEmail);
+		const message = await resolveIssuePaymentLinkSendError(data, error);
 		if (message) {
 			toast.error(message);
 			return;
@@ -27,5 +44,20 @@ export function useResendPaymentInvite(onDone?: () => void) {
 		onDone?.();
 	};
 
-	return { busyId, resend };
+	const openPayPage = async (agreementId: string) => {
+		const { data, error } = await issuePaymentLink(agreementId, false, 'open');
+		const message = resolveSubscriptionActionError('send-invite', data, error);
+		if (message) {
+			toast.error(message);
+			return;
+		}
+		const paymentUrl = resolveIssuedPaymentUrl(data);
+		if (!paymentUrl) {
+			toast.error('Geen betaallink ontvangen');
+			return;
+		}
+		window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+	};
+
+	return { busyId, busyKind, resend, openPayPage };
 }

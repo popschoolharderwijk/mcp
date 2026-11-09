@@ -137,19 +137,22 @@ function PayView(props: {
 	error: string | null;
 	onStart: () => void;
 }) {
-	if (props.view === 'loading') return <PageSkeleton variant="header-only" />;
-	if (props.view === 'completed') return <PaymentLinkArrangedPanel justCompleted />;
-	if (props.view === 'arranged') return <PaymentLinkArrangedPanel />;
-	if (props.view === 'invalid') return <PayInvalidView agreementId={props.agreementId} />;
-	return (
-		<PayDetailsView
-			agreementId={props.agreementId}
-			info={props.info}
-			starting={props.starting}
-			error={props.error}
-			onStart={props.onStart}
-		/>
-	);
+	const views = {
+		loading: () => <PageSkeleton variant="header-only" />,
+		completed: () => <PaymentLinkArrangedPanel justCompleted />,
+		arranged: () => <PaymentLinkArrangedPanel />,
+		invalid: () => <PayInvalidView agreementId={props.agreementId} />,
+		details: () => (
+			<PayDetailsView
+				agreementId={props.agreementId}
+				info={props.info}
+				starting={props.starting}
+				error={props.error}
+				onStart={props.onStart}
+			/>
+		),
+	};
+	return views[props.view]();
 }
 
 export default function Pay() {

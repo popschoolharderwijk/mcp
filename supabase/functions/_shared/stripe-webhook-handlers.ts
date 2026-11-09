@@ -7,7 +7,6 @@ import {
 	buildSubscriptionInvoiceUpsertRow,
 	extractCheckoutSubscriptionId,
 	extractStripeSubscriptionId,
-	hasScheduleSetupInput,
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
@@ -27,6 +26,86 @@ async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: str
 	return Boolean(data?.stripe_schedule_id);
 }
 
+async function skipWhenScheduleExists(
+	admin: SupabaseClient,
+	lessonAgreementId: string,
+	message: string,
+): Promise<boolean> {
+	if (!(await hasExistingSchedule(admin, lessonAgreementId))) return false;
+	console.log(message, lessonAgreementId);
+	return true;
+}
+
+async function tryAttachSetupPaymentMethod(
+	stripe: Stripe,
+	customerId: string,
+	paymentMethodId: string,
+): Promise<boolean> {
+	try {
+		await attachDefaultPaymentMethod(stripe, customerId, paymentMethodId);
+		return true;
+	} catch (e) {
+		console.error('attach payment method failed', e);
+		return false;
+	}
+}
+
+type ScheduleSetupIds = {
+	lessonAgreementId: string;
+	customerId: string;
+	paymentMethodId: string;
+};
+
+function resolveScheduleSetupIds(input: {
+	lessonAgreementId: string | null;
+	customerId: string | null;
+	paymentMethodId: string | null;
+}): ScheduleSetupIds | null {
+	const { lessonAgreementId, customerId, paymentMethodId } = input;
+	if (!lessonAgreementId || !customerId || !paymentMethodId) return null;
+	return { lessonAgreementId, customerId, paymentMethodId };
+}
+
+async function ensureReadyForScheduleCreate(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<boolean> {
+	if (await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule already exists for agreement')) {
+		return false;
+	}
+	if (!(await tryAttachSetupPaymentMethod(stripe, ready.customerId, ready.paymentMethodId))) {
+		return false;
+	}
+	// Re-check after attach: checkout.session.completed and setup_intent.succeeded often race.
+	if (await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule already exists for agreement')) {
+		return false;
+	}
+	return true;
+}
+
+async function createScheduleOrAbsorbRace(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<void> {
+	try {
+		await createScheduleForAgreement(admin, stripe, {
+			lessonAgreementId: ready.lessonAgreementId,
+			customerId: ready.customerId,
+			defaultPaymentMethod: ready.paymentMethodId,
+			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId),
+		});
+	} catch (e) {
+		if (
+			await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule created concurrently for agreement')
+		) {
+			return;
+		}
+		throw e;
+	}
+}
+
 async function createScheduleFromSetupPaymentMethod(
 	admin: SupabaseClient,
 	stripe: Stripe,
@@ -37,43 +116,13 @@ async function createScheduleFromSetupPaymentMethod(
 		sourceId: string;
 	},
 ): Promise<void> {
-	if (!hasScheduleSetupInput(input)) {
+	const ready = resolveScheduleSetupIds(input);
+	if (!ready) {
 		console.warn('setup event missing agreement/customer/payment_method', input.sourceId);
 		return;
 	}
-
-	if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
-		console.log('schedule already exists for agreement', input.lessonAgreementId);
-		return;
-	}
-
-	try {
-		await attachDefaultPaymentMethod(stripe, input.customerId, input.paymentMethodId);
-	} catch (e) {
-		console.error('attach payment method failed', e);
-		return;
-	}
-
-	// Re-check after attach: checkout.session.completed and setup_intent.succeeded often race.
-	if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
-		console.log('schedule already exists for agreement', input.lessonAgreementId);
-		return;
-	}
-
-	try {
-		await createScheduleForAgreement(admin, stripe, {
-			lessonAgreementId: input.lessonAgreementId,
-			customerId: input.customerId,
-			defaultPaymentMethod: input.paymentMethodId,
-			idempotencyKey: buildSetupScheduleIdempotencyKey(input.lessonAgreementId),
-		});
-	} catch (e) {
-		if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
-			console.log('schedule created concurrently for agreement', input.lessonAgreementId);
-			return;
-		}
-		throw e;
-	}
+	if (!(await ensureReadyForScheduleCreate(admin, stripe, ready))) return;
+	await createScheduleOrAbsorbRace(admin, stripe, ready);
 }
 
 async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {

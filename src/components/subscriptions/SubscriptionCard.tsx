@@ -143,7 +143,7 @@ async function executeSubscriptionAction(
 	const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS[action], {
 		body: buildSubscriptionActionBody(action, lessonAgreementId, studentUserId, window.location.href),
 	});
-	const outcome = resolveSubscriptionActionOutcome(action, data, error);
+	const outcome = await resolveSubscriptionActionOutcome(action, data, error);
 	if (outcome.kind === 'error') {
 		toast.error(outcome.message);
 		return;

@@ -5,7 +5,9 @@ import {
 	confirmTargetToken,
 	edgeSecretsEnvFile,
 	envEntriesEqual,
+	formatLocalSupabaseStartCommand,
 	isReservedSecretName,
+	LOCAL_SUPABASE_START_ARGS,
 	matchesConfirmTargetToken,
 	mergeRuntimeEnv,
 	missingRequiredSecretNames,
@@ -25,6 +27,13 @@ import {
 	runtimeEnvFileForViteMode,
 	staleSecretNames,
 } from '../../../../scripts/supabase/envHelpers.ts';
+
+describe('LOCAL_SUPABASE_START_ARGS', () => {
+	it('matches the workspace container start flags', () => {
+		expect([...LOCAL_SUPABASE_START_ARGS]).toEqual(['start', '--runtime', 'native', '--eager']);
+		expect(formatLocalSupabaseStartCommand()).toBe('supabase start --runtime native --eager');
+	});
+});
 
 describe('parseDeployEnv', () => {
 	it('defaults missing or empty arg to local', () => {

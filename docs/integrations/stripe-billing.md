@@ -14,7 +14,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 ```text
 [Agreement wizard]
         │
-        │ 1. issue-payment-link (token) + agreement_created mail with {{betaalblok}}
+        │ 1. issue-payment-link (token) + agreement_created mail with {{betaalblok}} CTA
         ▼
 [/pay?agreement=&t=]  (public Pay.tsx)
         │
@@ -49,7 +49,7 @@ Ops: **Wacht op machtiging** lists agreements without an arranged mandate; **Sub
 
 | Function                        | Auth                | Purpose                                                          |
 | ------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| `issue-payment-link`            | JWT                 | Rotate token; return `betaalblok`; optionally send mail          |
+| `issue-payment-link`            | JWT                 | Rotate token; return `payment_cta`; optionally send mail         |
 | `payment-link-info`             | public (token)      | Validate token; return lesson form + preview amounts             |
 | `request-payment-link`          | public              | Rate-limited new link mail to known payer address                |
 | `start-payment-checkout`        | public (token)      | Checkout / complete without login                                |

@@ -1,3 +1,4 @@
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import {
 	SUBSCRIPTION_STATUS_LABELS,
 	SUBSCRIPTION_STATUS_VARIANTS,
@@ -22,6 +23,19 @@ const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
 	'force-start': 'Kon het abonnement niet direct starten',
 };
 
+export function buildIssuePaymentLinkBody(
+	lessonAgreementId: string,
+	send: boolean,
+	recipientEmail?: string,
+): Record<string, unknown> {
+	const trimmed = recipientEmail?.trim();
+	return {
+		lesson_agreement_id: lessonAgreementId,
+		send,
+		...(trimmed ? { recipient_email: trimmed } : {}),
+	};
+}
+
 export function buildSubscriptionActionBody(
 	action: SubscriptionAction,
 	lessonAgreementId: string,
@@ -29,8 +43,14 @@ export function buildSubscriptionActionBody(
 	returnUrl: string,
 ): Record<string, unknown> {
 	if (action === 'open-portal') return { user_id: studentUserId, return_url: returnUrl };
-	if (action === 'send-invite') return { lesson_agreement_id: lessonAgreementId, send: true };
+	if (action === 'send-invite') return buildIssuePaymentLinkBody(lessonAgreementId, true);
 	return { lesson_agreement_id: lessonAgreementId };
+}
+
+export function resolveIssuedPaymentUrl(data: unknown): string | null {
+	const url = (data as { payment_url?: unknown } | null)?.payment_url;
+	if (typeof url !== 'string' || url.length === 0) return null;
+	return url;
 }
 
 export function shouldShowResendInvitation(
@@ -82,11 +102,24 @@ export function subscriptionInviteSentDay(
 export function resolveSubscriptionActionError(
 	action: SubscriptionAction,
 	data: unknown,
-	error: { message?: string } | null,
+	error: unknown,
 ): string | null {
 	const dataError = (data as { error?: unknown } | null)?.error;
 	if (typeof dataError === 'string') return dataError;
 	if (error) return ACTION_FALLBACK_ERRORS[action];
+	return null;
+}
+
+/** Transport/server error (incl. FunctionsHttpError body), or 200 without `sent: true`. */
+export async function resolveIssuePaymentLinkSendError(data: unknown, error: unknown): Promise<string | null> {
+	const dataError = (data as { error?: unknown } | null)?.error;
+	if (typeof dataError === 'string') return dataError;
+	if (error) {
+		return getInvokeErrorMessage(error, { fallback: ACTION_FALLBACK_ERRORS['send-invite'] });
+	}
+	if ((data as { sent?: unknown } | null)?.sent !== true) {
+		return ACTION_FALLBACK_ERRORS['send-invite'];
+	}
 	return null;
 }
 
@@ -142,12 +175,15 @@ export type SubscriptionActionOutcome =
 	| { kind: 'portal'; url: string | null }
 	| { kind: 'success'; message: string };
 
-export function resolveSubscriptionActionOutcome(
+export async function resolveSubscriptionActionOutcome(
 	action: SubscriptionAction,
 	data: unknown,
-	error: { message?: string } | null,
-): SubscriptionActionOutcome {
-	const message = resolveSubscriptionActionError(action, data, error);
+	error: unknown,
+): Promise<SubscriptionActionOutcome> {
+	const message =
+		action === 'send-invite'
+			? await resolveIssuePaymentLinkSendError(data, error)
+			: resolveSubscriptionActionError(action, data, error);
 	if (message) return { kind: 'error', message };
 	if (action === 'open-portal') return { kind: 'portal', url: extractPortalUrl(data) };
 	return { kind: 'success', message: resolveSubscriptionActionSuccess(action, data) };

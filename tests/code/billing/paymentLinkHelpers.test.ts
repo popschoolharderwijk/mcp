@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildAgreementCreatedPaymentMailVars,
+	buildAgreementPaymentMailDisplayName,
+	buildPaymentLinkEmailHtml,
 	buildPaymentLinkRequestResponse,
 	buildPaymentLinkUrl,
 	computeMinimumTermEnd,
+	extractAgreementPaymentMailLessonTypeName,
 	generatePaymentLinkToken,
 	hashPaymentLinkToken,
 	isPaymentLinkRequestAllowedAddress,
@@ -13,6 +17,7 @@ import {
 	PAYMENT_LINK_REQUEST_MESSAGE,
 	paymentLinkTokenMatches,
 	resolveBillingRecipient,
+	resolveIssuePaymentRecipient,
 } from '../../../supabase/functions/_shared/paymentLinkHelpers';
 
 describe('payment link tokens', () => {
@@ -27,6 +32,14 @@ describe('payment link tokens', () => {
 	it('builds the public /pay url', () => {
 		expect(buildPaymentLinkUrl('https://app.example.com/', 'agr-1', 'tok')).toBe(
 			'https://app.example.com/pay?agreement=agr-1&t=tok',
+		);
+	});
+
+	it('wraps both payment CTA lines as markdown links', () => {
+		expect(buildPaymentLinkEmailHtml('https://app.example.com/pay?t=1')).toBe(
+			`[Betaalmethode koppelen](https://app.example.com/pay?t=1)
+
+Of open deze link: [https://app.example.com/pay?t=1](https://app.example.com/pay?t=1)`,
 		);
 	});
 });
@@ -64,6 +77,27 @@ describe('billing recipient and request guards', () => {
 			message: PAYMENT_LINK_REQUEST_MESSAGE,
 		});
 	});
+
+	it('resolves issue-payment-link recipient overrides for privileged callers only', () => {
+		expect(resolveIssuePaymentRecipient(undefined, 'billing@ex.com', false)).toEqual({
+			ok: true,
+			recipient: 'billing@ex.com',
+		});
+		expect(resolveIssuePaymentRecipient('  test@ex.com ', 'billing@ex.com', true)).toEqual({
+			ok: true,
+			recipient: 'test@ex.com',
+		});
+		expect(resolveIssuePaymentRecipient('test@ex.com', 'billing@ex.com', false)).toEqual({
+			ok: false,
+			status: 403,
+			error: 'Geen rechten om de ontvanger te wijzigen',
+		});
+		expect(resolveIssuePaymentRecipient('bad', 'billing@ex.com', true)).toEqual({
+			ok: false,
+			status: 400,
+			error: 'Ongeldig e-mailadres',
+		});
+	});
 });
 
 describe('minimum term and catch-up', () => {
@@ -74,5 +108,38 @@ describe('minimum term and catch-up', () => {
 	it('needs catch-up when start month is before today month', () => {
 		expect(needsCatchUpInvoice('2026-10-01', '2026-10-20')).toBe(false);
 		expect(needsCatchUpInvoice('2026-10-01', '2026-12-01')).toBe(true);
+	});
+});
+
+describe('agreement_created payment mail vars', () => {
+	it('formats names, schedule, and price for the template', () => {
+		expect(buildAgreementPaymentMailDisplayName('Jan', 'Jansen', 'leerling')).toBe('Jan Jansen');
+		expect(extractAgreementPaymentMailLessonTypeName({ name: 'Gitaar' })).toBe('Gitaar');
+		expect(
+			buildAgreementCreatedPaymentMailVars({
+				agreement: {
+					day_of_week: 1,
+					start_time: '16:30:00',
+					start_date: '2026-11-10',
+					frequency: 'weekly',
+					price_per_lesson: 27.5,
+				},
+				student: { first_name: 'Sam', last_name: 'Student' },
+				teacher: { first_name: 'Tess', last_name: 'Teacher' },
+				lessonTypeName: 'Piano',
+				paymentCtaMarkdown: '[Betaal](https://x)',
+			}),
+		).toEqual({
+			leerling_naam: 'Sam Student',
+			docent_naam: 'Tess Teacher',
+			les_type: 'Piano',
+			frequentie: 'wekelijks',
+			prijs_per_les: '€ 27,50',
+			dag: 'maandag',
+			tijd: '16:30',
+			startdatum: '10-11-2026',
+			betaalmethode: 'Stripe',
+			betaalblok: '[Betaal](https://x)',
+		});
 	});
 });

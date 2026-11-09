@@ -55,14 +55,14 @@ SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
 VITE_DEV_LOGIN_PASSWORD=password
 ```
 
-This project uses **non-default** local ports (offset +100: API `54421`, DB `54422`, Studio `54423`, Mailpit `54424`, analytics `54427`/`54428`, pooler `54429`). The local stack is the CLI native runtime (`[experimental] stack = true`). The container command runs `supabase start --runtime native --eager`, then `docker/forward-native-ports.sh` (`socat`) so Docker-published host ports reach the loopback-only native listeners. `bun run dev:local` also proxies `/auth`, `/rest`, `/storage`, `/functions`, `/realtime`, and `/mcp` through Vite on **8081** to `127.0.0.1:54421`, so the browser does not need a working host→API publish. Docker runs that on every container start. After `supabase stop` inside a running container, start the stack again with that same command (include `--eager`). Stop the running stack before switching git branches: the branch is part of the project identity, and the next start uses the same fixed ports. If the committed local publishable key drifts, update `.env.localdev` from `supabase status`. Local magic-link mail is GoTrue's built-in template (`ConfirmationURL`). The custom HTML in `docs/email-templates/magic-link.html` is referenced from each `[remotes.*.auth.email.template.magic_link]`. For Auth SMTP + Edge secrets, use `$SECRETS_PATH/supabase/.env.local` and `bun run db:push:secrets` — not the Vite runtime files.
+This project uses **non-default** local ports (offset +100: API `54421`, DB `54422`, Studio `54423`, Mailpit `54424`, analytics `54427`/`54428`, pooler `54429`). The local stack is the CLI native runtime (`[experimental] stack = true`). The container command runs `supabase start --runtime native --eager`, then `docker/forward-native-ports.sh` (`socat`) so Docker-published host ports reach the loopback-only native listeners. `bun run dev:local` also proxies `/auth`, `/rest`, `/storage`, `/functions`, `/realtime`, and `/mcp` through Vite on **8081** to `127.0.0.1:54421`, so the browser does not need a working host→API publish. Docker runs that on every container start. After `supabase stop` inside a running container, use `bun run supabase:restart` (same flags, including `--eager`). Stop the running stack before switching git branches: the branch is part of the project identity, and the next start uses the same fixed ports. If the committed local publishable key drifts, update `.env.localdev` from `supabase status`. Local magic-link mail is GoTrue's built-in template (`ConfirmationURL`). The custom HTML in `docs/email-templates/magic-link.html` is referenced from each `[remotes.*.auth.email.template.magic_link]`. For Auth SMTP + Edge secrets, use `$SECRETS_PATH/supabase/.env.local` and `bun run db:push:secrets` — not the Vite runtime files.
 
 > 💡 Secret values live under `SECRETS_PATH`. Committed `.env.development` / `.env.localdev` / `.env.test` / `.env.production` must never hold service role keys or DB passwords.
 
 ### Local stack day-to-day
 
 ```bash
-supabase start --runtime native --eager
+bun run supabase:restart   # stop → start --runtime native --eager (reloads functions/.env)
 # optional: fill $SECRETS_PATH/supabase/.env.local (Resend/Stripe), then:
 bun run db:push:secrets
 bun run db:reset

@@ -27,6 +27,7 @@ type ProfileRow = {
 	first_name: string | null;
 	last_name: string | null;
 	email: string;
+	avatar_url: string | null;
 };
 
 type InviteRow = {
@@ -69,9 +70,15 @@ function profileFields(profile: ProfileRow | undefined): {
 	firstName: string | null;
 	lastName: string | null;
 	profileEmail: string | null;
+	avatarUrl: string | null;
 } {
-	if (!profile) return { firstName: null, lastName: null, profileEmail: null };
-	return { firstName: profile.first_name, lastName: profile.last_name, profileEmail: profile.email };
+	if (!profile) return { firstName: null, lastName: null, profileEmail: null, avatarUrl: null };
+	return {
+		firstName: profile.first_name,
+		lastName: profile.last_name,
+		profileEmail: profile.email,
+		avatarUrl: profile.avatar_url,
+	};
 }
 
 function inviteFields(invite: InviteRow | undefined): {
@@ -96,6 +103,7 @@ function mapOneCandidate(
 		firstName: fromProfile.firstName,
 		lastName: fromProfile.lastName,
 		profileEmail: fromProfile.profileEmail,
+		avatarUrl: fromProfile.avatarUrl,
 		inviteEmail: fromInvite.inviteEmail,
 		lessonType: row.lesson_types,
 		startDate: row.start_date,
@@ -127,7 +135,7 @@ async function loadAwaitingSideData(candidates: AgreementQueryRow[]) {
 	const [profilesRes, invitesRes] = await Promise.all([
 		supabase
 			.from('profiles')
-			.select('user_id, first_name, last_name, email')
+			.select('user_id, first_name, last_name, email, avatar_url')
 			.in('user_id', [...new Set(candidates.map((r) => r.student_user_id))]),
 		supabase
 			.from('stripe_checkout_invitations')

@@ -120,6 +120,7 @@ describe('dispatchDuoConfirmationEmailJobs', () => {
 			'https://app.example.com',
 			async ({ event_key, to }) => {
 				sent.push(`${event_key}:${to}`);
+				return { ok: true };
 			},
 		);
 		expect(sent).toEqual(['agreement_created:anna@example.com', 'agreement_created_teacher:teacher@example.com']);

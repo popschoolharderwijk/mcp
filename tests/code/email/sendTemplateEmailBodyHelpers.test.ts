@@ -4,10 +4,25 @@ import {
 	isValidTemplateRecipient,
 	normalizeTemplateVars,
 	renderTemplate,
+	resolveResendApiErrorMessage,
 	resolveSendTemplateEmailEventKeyError,
 	resolveSendTemplateEmailRecipientError,
 	validateSendTemplateEmailBodyInput,
 } from '../../../supabase/functions/_shared/send-template-email-helpers';
+
+describe('resolveResendApiErrorMessage', () => {
+	it('maps an unverified domain to a Dutch config hint', () => {
+		expect(
+			resolveResendApiErrorMessage(
+				'{"message":"The mplifi.nl domain is not verified. Please, add and verify your domain on https://resend.com/domains"}',
+			),
+		).toBe('Afzenderdomein is niet geverifieerd in Resend (controleer RESEND_FROM_EMAIL)');
+	});
+
+	it('falls back for unknown Resend bodies', () => {
+		expect(resolveResendApiErrorMessage('gateway boom')).toBe('Mail-verzending mislukt');
+	});
+});
 
 describe('isDefinedTemplateVar', () => {
 	it('returns true for string and number values', () => {

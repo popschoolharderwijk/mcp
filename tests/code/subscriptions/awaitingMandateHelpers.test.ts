@@ -106,6 +106,7 @@ describe('awaitingMandateHelpers', () => {
 				firstName: 'Ada',
 				lastName: 'Lovelace',
 				profileEmail: 'ada@ex.com',
+				avatarUrl: 'https://example.com/ada.png',
 				inviteEmail: 'ouder@ex.com',
 				lessonType: { name: 'Piano' },
 				startDate: '2026-09-01',
@@ -116,7 +117,13 @@ describe('awaitingMandateHelpers', () => {
 		).toEqual({
 			lesson_agreement_id: 'agr-1',
 			student_user_id: 'stu-1',
-			student_name: 'Ada Lovelace',
+			student: {
+				user_id: 'stu-1',
+				first_name: 'Ada',
+				last_name: 'Lovelace',
+				email: 'ada@ex.com',
+				avatar_url: 'https://example.com/ada.png',
+			},
 			recipient_email: 'ouder@ex.com',
 			lesson_type_name: 'Piano',
 			start_date: '2026-09-01',

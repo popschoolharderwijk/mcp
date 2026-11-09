@@ -153,6 +153,8 @@ export function DataTable<T>({
 	tableClassName,
 }: DataTableProps<T>) {
 	const hasExpandableRows = !!onExpandToggle && !!renderExpandedRow;
+	/** onEdit alone makes the row clickable; only delete/custom render need an actions column. */
+	const showActionsColumn = Boolean(rowActions?.onDelete || rowActions?.render);
 	const [sortColumn, setSortColumn] = useState<string | null>(() =>
 		resolveDataTableSortColumn(columns, initialSortColumn),
 	);
@@ -571,7 +573,9 @@ export function DataTable<T>({
 									</th>
 								);
 							})}
-							{rowActions && <th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />}
+							{showActionsColumn && (
+								<th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />
+							)}
 						</tr>
 					</thead>
 					<tbody className="text-sm">
@@ -596,14 +600,14 @@ export function DataTable<T>({
 											<Skeleton className="h-4 w-full" />
 										</td>
 									))}
-									{rowActions && <td className={compactRows ? 'py-2' : 'py-4'} />}
+									{showActionsColumn && <td className={compactRows ? 'py-2' : 'py-4'} />}
 								</tr>
 							))
 						) : paginatedData.length === 0 ? (
 							// Show empty message
 							<tr>
 								<td
-									colSpan={columns.length + (rowActions ? 1 : 0) + (hasExpandableRows ? 1 : 0)}
+									colSpan={columns.length + (showActionsColumn ? 1 : 0) + (hasExpandableRows ? 1 : 0)}
 									className={cn('text-center text-muted-foreground', compactRows ? 'py-6' : 'py-12')}
 								>
 									{emptyMessage}
@@ -681,7 +685,7 @@ export function DataTable<T>({
 													)}
 												</td>
 											))}
-											{rowActions && (
+											{showActionsColumn && (
 												<td
 													className={compactRows ? 'py-1.5' : 'py-4'}
 													onClick={(e) => {
@@ -693,11 +697,11 @@ export function DataTable<T>({
 														}
 													}}
 												>
-													{rowActions.render ? (
+													{rowActions?.render ? (
 														rowActions.render(item)
 													) : (
 														<div className="flex items-center gap-2">
-															{rowActions.onDelete && (
+															{rowActions?.onDelete && (
 																<Button
 																	variant="ghost"
 																	size="icon"
@@ -715,7 +719,7 @@ export function DataTable<T>({
 										{isExpanded && (
 											<tr key={`${rowKey}-expanded`} className="border-b last:border-0">
 												<td
-													colSpan={columns.length + (rowActions ? 1 : 0) + 1}
+													colSpan={columns.length + (showActionsColumn ? 1 : 0) + 1}
 													className="bg-muted/20 px-4 py-3"
 												>
 													{renderExpandedRow?.(item)}

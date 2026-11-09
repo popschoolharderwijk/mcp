@@ -25,9 +25,12 @@ import {
 	confirmSecretDrops,
 	confirmYes,
 	fail,
+	isLocalStackRunning,
+	localStackStartHint,
 	projectRoot,
 	readSecretsRoot,
 	remoteFlag,
+	restartLocalSupabaseStack,
 	runPushScriptMain,
 	runSupabase,
 	runSupabaseCapture,
@@ -57,27 +60,17 @@ async function readSecretsFile(target: DeployTarget): Promise<{
 	return { path, contents, entries, keys: parseEnvFileKeys(contents) };
 }
 
-async function isLocalStackRunning(): Promise<boolean> {
-	const proc = Bun.spawn(['supabase', 'status', '-o', 'json'], {
-		cwd: projectRoot,
-		stdout: 'pipe',
-		stderr: 'pipe',
-		env: process.env,
-	});
-	const code = await proc.exited;
-	return code === 0;
-}
-
 function localRestartSkipMessage(): string {
+	const hint = `Run \`bun run supabase:restart\` (or \`supabase stop\` then \`${localStackStartHint()}\`).`;
 	if (!input.isTTY || !output.isTTY) {
-		return 'Non-interactive terminal: restart skipped. Run `supabase stop` then `supabase start`.';
+		return `Non-interactive terminal: restart skipped. ${hint}`;
 	}
-	return 'Skipped restart. Run `supabase stop` then `supabase start` when ready.';
+	return `Skipped restart. ${hint}`;
 }
 
 async function maybeRestartLocalStack(): Promise<void> {
 	if (!(await isLocalStackRunning())) {
-		console.log('Local stack is not running — start later with `supabase start`.');
+		console.log(`Local stack is not running — start later with \`${localStackStartHint()}\`.`);
 		return;
 	}
 
@@ -89,8 +82,7 @@ async function maybeRestartLocalStack(): Promise<void> {
 		return;
 	}
 
-	await runSupabase(['stop']);
-	await runSupabase(['start']);
+	await restartLocalSupabaseStack();
 }
 
 async function readOptionalText(path: string): Promise<string | null> {

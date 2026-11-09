@@ -12,7 +12,9 @@ import {
 	DEPLOY_ENV_CLI_USAGE,
 	type DeployTarget,
 	deployEnvUsageHint,
+	formatLocalSupabaseStartCommand,
 	formatTargetLabel,
+	LOCAL_SUPABASE_START_ARGS,
 	matchesConfirmTargetToken,
 	mergeRuntimeEnv,
 	parseDeployEnv,
@@ -285,6 +287,30 @@ export async function runSupabase(args: string[], options: { env?: Record<string
 	if (code !== 0) {
 		fail(`supabase ${logged} exited with code ${code}`);
 	}
+}
+
+/** `supabase status --output-format json` exit 0 means the local stack is up. */
+export async function isLocalStackRunning(): Promise<boolean> {
+	const proc = Bun.spawn(['supabase', 'status', '--output-format', 'json'], {
+		cwd: projectRoot,
+		stdout: 'pipe',
+		stderr: 'pipe',
+		env: process.env,
+	});
+	const code = await proc.exited;
+	return code === 0;
+}
+
+/** Stop then start with compose-equivalent flags so `supabase/functions/.env` and config reload. */
+export async function restartLocalSupabaseStack(): Promise<void> {
+	if (await isLocalStackRunning()) {
+		await runSupabase(['stop']);
+	}
+	await runSupabase([...LOCAL_SUPABASE_START_ARGS]);
+}
+
+export function localStackStartHint(): string {
+	return formatLocalSupabaseStartCommand();
 }
 
 /** Run supabase and return stdout (stderr inherited). */

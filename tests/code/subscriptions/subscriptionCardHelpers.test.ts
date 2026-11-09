@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildIssuePaymentLinkBody,
 	buildSubscriptionActionBody,
 	extractPortalUrl,
 	isPortalActionDisabled,
 	isRebuildActionDisabled,
+	resolveIssuedPaymentUrl,
+	resolveIssuePaymentLinkSendError,
 	resolveSubscriptionActionError,
 	resolveSubscriptionActionOutcome,
 	resolveSubscriptionActionSuccess,
@@ -23,6 +26,19 @@ describe('subscriptionCardHelpers', () => {
 			lesson_agreement_id: 'agr-1',
 			send: true,
 		});
+		expect(buildIssuePaymentLinkBody('agr-1', false)).toEqual({
+			lesson_agreement_id: 'agr-1',
+			send: false,
+		});
+		expect(buildIssuePaymentLinkBody('agr-1', true, '  test@ex.com ')).toEqual({
+			lesson_agreement_id: 'agr-1',
+			send: true,
+			recipient_email: 'test@ex.com',
+		});
+		expect(resolveIssuedPaymentUrl({ payment_url: 'http://127.0.0.1:8081/pay?t=abc' })).toBe(
+			'http://127.0.0.1:8081/pay?t=abc',
+		);
+		expect(resolveIssuedPaymentUrl({})).toBeNull();
 	});
 
 	it('builds portal body with user_id and return_url', () => {
@@ -61,6 +77,19 @@ describe('subscriptionCardHelpers', () => {
 		);
 	});
 
+	it('treats missing sent flag as invite send failure', async () => {
+		expect(await resolveIssuePaymentLinkSendError({ recipient: 'a@b.nl', sent: true }, null)).toBeNull();
+		expect(await resolveIssuePaymentLinkSendError({ recipient: 'a@b.nl', sent: false }, null)).toBe(
+			'Kon de betaaluitnodiging niet versturen',
+		);
+		expect(await resolveIssuePaymentLinkSendError({ recipient: 'a@b.nl' }, null)).toBe(
+			'Kon de betaaluitnodiging niet versturen',
+		);
+		expect(await resolveIssuePaymentLinkSendError({ error: 'Mail-verzending mislukt' }, null)).toBe(
+			'Mail-verzending mislukt',
+		);
+	});
+
 	it('formats success messages for invite and rebuild', () => {
 		expect(resolveSubscriptionActionSuccess('send-invite', { recipient: 'a@b.nl' })).toBe(
 			'Betaaluitnodiging verstuurd naar a@b.nl',
@@ -82,18 +111,28 @@ describe('subscriptionCardHelpers', () => {
 		expect(shouldShowSubscriptionCard(false, true)).toBe(false);
 	});
 
-	it('resolves action outcomes for error, portal, and success', () => {
-		expect(resolveSubscriptionActionOutcome('sync', { error: 'x' }, null)).toEqual({
+	it('resolves action outcomes for error, portal, and success', async () => {
+		expect(await resolveSubscriptionActionOutcome('sync', { error: 'x' }, null)).toEqual({
 			kind: 'error',
 			message: 'x',
 		});
-		expect(resolveSubscriptionActionOutcome('open-portal', { url: 'https://p' }, null)).toEqual({
+		expect(await resolveSubscriptionActionOutcome('open-portal', { url: 'https://p' }, null)).toEqual({
 			kind: 'portal',
 			url: 'https://p',
 		});
-		expect(resolveSubscriptionActionOutcome('force-start', {}, null)).toEqual({
+		expect(await resolveSubscriptionActionOutcome('force-start', {}, null)).toEqual({
 			kind: 'success',
 			message: 'Abonnement direct gestart in Stripe',
+		});
+		expect(await resolveSubscriptionActionOutcome('send-invite', { recipient: 'a@b.nl' }, null)).toEqual({
+			kind: 'error',
+			message: 'Kon de betaaluitnodiging niet versturen',
+		});
+		expect(
+			await resolveSubscriptionActionOutcome('send-invite', { recipient: 'a@b.nl', sent: true }, null),
+		).toEqual({
+			kind: 'success',
+			message: 'Betaaluitnodiging verstuurd naar a@b.nl',
 		});
 	});
 });

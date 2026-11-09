@@ -6,6 +6,7 @@ import {
 	appendFooter,
 	buildPendingFooter,
 	buildPortalFooter,
+	resolveResendApiErrorMessage,
 	type SendTemplateEmailBody,
 	validateSendTemplateEmailBodyInput,
 } from './send-template-email-helpers.ts';
@@ -107,7 +108,7 @@ export async function sendEmailViaResend(input: {
 	if (!resendResp.ok) {
 		const errText = await resendResp.text();
 		console.error('Resend error', resendResp.status, errText);
-		return jsonResponse(502, { error: 'Mail-verzending mislukt', detail: errText });
+		return jsonResponse(502, { error: resolveResendApiErrorMessage(errText), detail: errText });
 	}
 
 	const result = await resendResp.json().catch(() => ({}));

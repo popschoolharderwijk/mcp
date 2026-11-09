@@ -94,7 +94,7 @@ export type DuoTemplateEmailSender = (args: {
 	to: string;
 	vars: Record<string, string>;
 	origin: string | null;
-}) => Promise<void>;
+}) => Promise<{ ok: boolean }>;
 
 export async function dispatchDuoConfirmationEmailJobs(
 	jobs: DuoConfirmationEmailJob[],

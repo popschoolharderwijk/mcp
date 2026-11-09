@@ -53,7 +53,7 @@ const supabaseMock = {
 			if (fn === 'issue-payment-link') {
 				return Promise.resolve(
 					invokeResults[fn] ?? {
-						data: { betaalblok: '[Betaalmethode koppelen](https://x/pay)' },
+						data: { payment_cta: '[Betaalmethode koppelen](https://x/pay)' },
 						error: null,
 					},
 				);

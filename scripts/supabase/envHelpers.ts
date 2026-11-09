@@ -28,6 +28,13 @@ export type DeployTarget = {
 /** Pointer key in local `.env` (from `.env.example`). */
 export const ROOT_ENV_POINTER_KEY = 'SECRETS_PATH';
 
+/** Matches `.devcontainer/compose.yml` workspace start (`--eager` keeps auth/API awake). */
+export const LOCAL_SUPABASE_START_ARGS = ['start', '--runtime', 'native', '--eager'] as const;
+
+export function formatLocalSupabaseStartCommand(): string {
+	return `supabase ${LOCAL_SUPABASE_START_ARGS.join(' ')}`;
+}
+
 /** `supabase/.env.local` | `supabase/.env.development` | … under SECRETS_PATH */
 export function edgeSecretsEnvFile(env: DeployEnv): string {
 	return `supabase/.env.${env}`;

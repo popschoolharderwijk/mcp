@@ -1,5 +1,6 @@
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { formatDbDateToUi } from '@/lib/date/date-format';
+import type { UserOptional } from '@/types/users';
 
 const OPEN_SUBSCRIPTION_STATUSES = new Set([
 	'scheduled',
@@ -61,10 +62,14 @@ export function awaitingSentLabel(lastSentAt: string | null | undefined): string
 	return lastSentAt ? `verstuurd op ${formatDbDateToUi(lastSentAt.slice(0, 10))}` : 'nog niet verstuurd';
 }
 
+export interface AwaitingMandateStudent extends UserOptional {
+	user_id: string;
+}
+
 export interface AwaitingMandateRow {
 	lesson_agreement_id: string;
 	student_user_id: string;
-	student_name: string | null;
+	student: AwaitingMandateStudent;
 	recipient_email: string | null;
 	lesson_type_name: string;
 	start_date: string;
@@ -93,6 +98,7 @@ export function mapAwaitingMandateRow(input: {
 	firstName: string | null | undefined;
 	lastName: string | null | undefined;
 	profileEmail: string | null | undefined;
+	avatarUrl: string | null | undefined;
 	inviteEmail: string | null | undefined;
 	lessonType: { name: string } | { name: string }[] | null | undefined;
 	startDate: string;
@@ -104,7 +110,13 @@ export function mapAwaitingMandateRow(input: {
 	return {
 		lesson_agreement_id: input.lessonAgreementId,
 		student_user_id: input.studentUserId,
-		student_name: buildAwaitingMandateDisplayName(input.firstName, input.lastName),
+		student: {
+			user_id: input.studentUserId,
+			first_name: input.firstName ?? null,
+			last_name: input.lastName ?? null,
+			email: input.profileEmail ?? null,
+			avatar_url: input.avatarUrl ?? null,
+		},
 		recipient_email: input.inviteEmail ?? input.profileEmail ?? null,
 		lesson_type_name: unwrapJoinedName(input.lessonType),
 		start_date: input.startDate,
