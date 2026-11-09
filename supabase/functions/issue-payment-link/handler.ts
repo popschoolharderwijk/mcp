@@ -7,7 +7,7 @@ import {
 	loadAgreementCreatedPaymentMailVars,
 	loadBillingRecipientForStudent,
 } from '../_shared/paymentLink.ts';
-import { resolveIssuePaymentRecipient } from '../_shared/paymentLinkHelpers.ts';
+import { resolveIssuedLinkRecipientGate, resolveIssuePaymentRecipient } from '../_shared/paymentLinkHelpers.ts';
 import { sendTemplateEmail } from '../_shared/sendTemplateEmail.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
 import {
@@ -89,12 +89,12 @@ async function deliverIssuedLink(
 	recipientOverride: string | undefined,
 ) {
 	const billing = await loadBillingRecipientForStudent(authorized.auth.admin, authorized.agreement.student_user_id);
-	const resolved = resolveIssuePaymentRecipient(recipientOverride, billing.recipient, authorized.isPrivileged);
-	if (!resolved.ok) {
-		return { ok: false as const, response: jsonResponse(resolved.status, { error: resolved.error }) };
-	}
-	if (send && !resolved.recipient) {
-		return { ok: false as const, response: jsonResponse(400, { error: 'Geen e-mailadres voor betaler' }) };
+	const gated = resolveIssuedLinkRecipientGate(
+		send,
+		resolveIssuePaymentRecipient(recipientOverride, billing.recipient, authorized.isPrivileged),
+	);
+	if (!gated.ok) {
+		return { ok: false as const, response: jsonResponse(gated.status, { error: gated.error }) };
 	}
 
 	const { paymentUrl } = await issueAgreementPaymentLink(
@@ -108,15 +108,15 @@ async function deliverIssuedLink(
 		authorized.auth.admin,
 		authorized.agreement.id,
 		send,
-		resolved.recipient,
+		gated.recipient,
 		paymentCtaMarkdown,
 	);
 	if (mailErr) return { ok: false as const, response: mailErr };
-	const sent = Boolean(send && resolved.recipient);
-	await recordIssuedInvite(authorized, resolved.recipient, send);
+	const sent = Boolean(send && gated.recipient);
+	await recordIssuedInvite(authorized, gated.recipient, send);
 	return {
 		ok: true as const,
-		payload: buildIssuedPayload(paymentUrl, paymentCtaMarkdown, resolved.recipient, sent),
+		payload: buildIssuedPayload(paymentUrl, paymentCtaMarkdown, gated.recipient, sent),
 	};
 }
 

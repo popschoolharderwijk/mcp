@@ -8,11 +8,15 @@ import {
 	buildLessonProductIdempotencyKey,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
+	buildStripeLesgeldProductName,
+	buildStripePersonLabel,
 	calculateYearly,
 	clampToSchoolYear,
+	formatBillingSchoolYearLabel,
 	getOccurrenceDates,
 	getSchoolYearForDateString,
 	isTerminalScheduleStatus,
+	mapStripeLesgeldLabelParts,
 	pickAgeTariff,
 	pickPriceCentsForTariff,
 	resolveBillingReferenceDate,
@@ -216,5 +220,58 @@ describe('buildBillingComputationFromLoadedData', () => {
 				today: '2026-09-15',
 			}),
 		).toThrow('Geen lesperiode');
+	});
+});
+
+describe('buildStripeLesgeldProductName', () => {
+	it('builds a readable product title without agreement ids', () => {
+		expect(
+			buildStripeLesgeldProductName({
+				studentName: 'Anna Bakker',
+				lessonTypeName: 'Piano',
+				schoolYearLabel: '2026/2027',
+			}),
+		).toBe('Lesgeld · Anna Bakker · Piano · 2026/2027');
+	});
+
+	it('marks catch-up products and skips empty parts', () => {
+		expect(
+			buildStripeLesgeldProductName({
+				studentName: ' Anna Bakker ',
+				lessonTypeName: null,
+				schoolYearLabel: '2026/2027',
+				catchUp: true,
+			}),
+		).toBe('Lesgeld inhaal · Anna Bakker · 2026/2027');
+	});
+
+	it('falls back to the Lesgeld head when no details are known', () => {
+		expect(buildStripeLesgeldProductName({})).toBe('Lesgeld');
+		expect(buildStripeLesgeldProductName({ catchUp: true })).toBe('Lesgeld inhaal');
+	});
+});
+
+describe('buildStripePersonLabel and formatBillingSchoolYearLabel', () => {
+	it('joins names and formats school years', () => {
+		expect(buildStripePersonLabel('Anna', 'Bakker')).toBe('Anna Bakker');
+		expect(buildStripePersonLabel(null, '  ')).toBeNull();
+		expect(formatBillingSchoolYearLabel(2026)).toBe('2026/2027');
+	});
+});
+
+describe('mapStripeLesgeldLabelParts', () => {
+	it('maps profile and lesson type into product label parts', () => {
+		expect(
+			mapStripeLesgeldLabelParts({ first_name: 'Anna', last_name: 'Bakker' }, { name: ' Piano ' }, 2026),
+		).toEqual({
+			studentName: 'Anna Bakker',
+			lessonTypeName: 'Piano',
+			schoolYearLabel: '2026/2027',
+		});
+		expect(mapStripeLesgeldLabelParts(null, null, 2025)).toEqual({
+			studentName: null,
+			lessonTypeName: null,
+			schoolYearLabel: '2025/2026',
+		});
 	});
 });

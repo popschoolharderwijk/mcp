@@ -14,8 +14,10 @@ import {
 	buildLessonProductIdempotencyKey,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
+	buildStripeLesgeldProductName,
 	isTerminalScheduleStatus,
 	type LessonFrequency,
+	mapStripeLesgeldLabelParts,
 	resolveStripeSubscriptionId,
 	type YearlyResult,
 } from './billingHelpers.ts';
@@ -62,14 +64,17 @@ interface StripePhasePayload {
 	default_payment_method?: string;
 }
 
-async function ensureLessonProduct(stripe: Stripe, lessonAgreementId: string): Promise<string> {
+async function ensureLessonProduct(stripe: Stripe, lessonAgreementId: string, productName: string): Promise<string> {
 	const product = await stripe.products.create(
 		{
-			name: `Lesgeld ${lessonAgreementId}`,
+			name: productName,
 			metadata: { lesson_agreement_id: lessonAgreementId },
 		},
 		{ idempotencyKey: buildLessonProductIdempotencyKey(lessonAgreementId) },
 	);
+	if (product.name !== productName) {
+		await stripe.products.update(product.id, { name: productName });
+	}
 	return product.id;
 }
 
@@ -114,15 +119,35 @@ async function toStripePhasePayloads(
 	stripe: Stripe,
 	phases: BillingPhase[],
 	lessonAgreementId: string,
+	productName: string,
 	defaultPm?: string,
 ): Promise<StripePhasePayload[]> {
-	const productId = await ensureLessonProduct(stripe, lessonAgreementId);
+	const productId = await ensureLessonProduct(stripe, lessonAgreementId, productName);
 	const payloads: StripePhasePayload[] = [];
 	for (const phase of phases) {
 		const priceId = await createPhasePrice(stripe, productId, phase.amountCents, phase.label, lessonAgreementId);
 		payloads.push(buildStripePhasePayload(priceId, phase.label, lessonAgreementId, defaultPm));
 	}
 	return payloads;
+}
+
+async function loadStripeLesgeldLabelParts(
+	admin: SupabaseClient,
+	billing: BillingComputation,
+): Promise<{
+	studentName: string | null;
+	lessonTypeName: string | null;
+	schoolYearLabel: string;
+}> {
+	const [{ data: profile }, { data: lessonType }] = await Promise.all([
+		admin
+			.from('profiles')
+			.select('first_name, last_name')
+			.eq('user_id', billing.agreement.student_user_id)
+			.maybeSingle(),
+		admin.from('lesson_types').select('name').eq('id', billing.agreement.lesson_type_id).maybeSingle(),
+	]);
+	return mapStripeLesgeldLabelParts(profile, lessonType, billing.schoolYear.startYear);
 }
 
 type AgreementRow = BillingComputation['agreement'] & { is_active: boolean };
@@ -245,7 +270,15 @@ export async function createScheduleForAgreement(
 	const { phases, catchUpThroughMonth } = resolveSchedulePhases(billing, today);
 	assertHasBillingPhases(phases.length);
 
-	const stripePhases = await toStripePhasePayloads(stripe, phases, ctx.lessonAgreementId, ctx.defaultPaymentMethod);
+	const labelParts = await loadStripeLesgeldLabelParts(admin, billing);
+	const productName = buildStripeLesgeldProductName(labelParts);
+	const stripePhases = await toStripePhasePayloads(
+		stripe,
+		phases,
+		ctx.lessonAgreementId,
+		productName,
+		ctx.defaultPaymentMethod,
+	);
 	const schedule = await stripe.subscriptionSchedules.create(
 		{
 			customer: ctx.customerId,
@@ -254,7 +287,7 @@ export async function createScheduleForAgreement(
 			phases: stripePhases,
 			metadata: {
 				lesson_agreement_id: ctx.lessonAgreementId,
-				school_year: `${billing.schoolYear.startYear}/${billing.schoolYear.startYear + 1}`,
+				school_year: labelParts.schoolYearLabel,
 			},
 		},
 		ctx.idempotencyKey ? { idempotencyKey: ctx.idempotencyKey } : undefined,
@@ -277,6 +310,7 @@ export async function createScheduleForAgreement(
 				customerId: ctx.customerId,
 				defaultPaymentMethod: ctx.defaultPaymentMethod,
 				plan,
+				productName: buildStripeLesgeldProductName({ ...labelParts, catchUp: true }),
 			});
 		}
 	}
@@ -333,6 +367,7 @@ async function loadScheduleForRebuild(
 }
 
 async function updateFutureSchedulePhases(input: {
+	admin: SupabaseClient;
 	stripe: Stripe;
 	lessonAgreementId: string;
 	scheduleId: string;
@@ -342,11 +377,13 @@ async function updateFutureSchedulePhases(input: {
 	keptPayloads: Array<Record<string, unknown>>;
 	firstFutureIndex: number;
 }): Promise<RebuildResult | null> {
+	const productName = buildStripeLesgeldProductName(await loadStripeLesgeldLabelParts(input.admin, input.billing));
 	const futurePayloads = alignFuturePhasePayloads(
 		await toStripePhasePayloads(
 			input.stripe,
 			input.newPhases.slice(input.firstFutureIndex),
 			input.lessonAgreementId,
+			productName,
 			inheritSchedulePaymentMethod(input.keptPayloads),
 		),
 		input.firstFutureIndex,
@@ -398,6 +435,7 @@ export async function rebuildScheduleForAgreement(
 	if (firstFutureIndex === -1) return skippedRebuildResult(scheduleId, keptPayloads.length, billing);
 
 	const updated = await updateFutureSchedulePhases({
+		admin,
 		stripe,
 		lessonAgreementId,
 		scheduleId,

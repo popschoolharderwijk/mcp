@@ -47,19 +47,19 @@ Ops: **Wacht op machtiging** lists agreements without an arranged mandate; **Sub
 
 ## 4. Edge functions
 
-| Function                        | Auth                | Purpose                                                          |
-| ------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| `issue-payment-link`            | JWT                 | Rotate token; return `payment_cta`; optionally send mail         |
-| `payment-link-info`             | public (token)      | Validate token; return lesson form + preview amounts             |
-| `request-payment-link`          | public              | Rate-limited new link mail to known payer address                |
-| `start-payment-checkout`        | public (token)      | Checkout / complete without login                                |
-| `create-subscription-checkout`  | JWT                 | Logged-in checkout / direct / complete (staff or student)        |
-| `create-customer-portal`        | JWT                 | Stripe Customer Portal                                           |
-| `sync-stripe-subscription`      | JWT                 | Pull subscription from Stripe                                    |
-| `rebuild-subscription-schedule` | JWT                 | Recalculate future phases after rate change                      |
-| `force-start-subscription`      | JWT (admin, DEV UI) | Force-start schedule for testing                                 |
-| `sync-stripe-catalog`           | JWT / service role  | Sync active lesson-type option prices; optional rebuild affected |
-| `stripe-webhook`                | public (signature)  | Setup → schedule (+ catch-up); subscription/invoice mirrors      |
+| Function                        | Auth               | Purpose                                                          |
+| ------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `issue-payment-link`            | JWT                | Rotate token; return `payment_cta`; optionally send mail         |
+| `payment-link-info`             | public (token)     | Validate token; return lesson form + preview amounts             |
+| `request-payment-link`          | public             | Rate-limited new link mail to known payer address                |
+| `start-payment-checkout`        | public (token)     | Checkout / complete without login                                |
+| `create-subscription-checkout`  | JWT                | Logged-in checkout / direct / complete (staff or student)        |
+| `create-customer-portal`        | JWT                | Stripe Customer Portal                                           |
+| `sync-stripe-subscription`      | JWT                | Pull subscription from Stripe                                    |
+| `rebuild-subscription-schedule` | JWT                | Recalculate future phases after rate change                      |
+| `force-start-subscription`      | JWT (admin)        | Force-start schedule (API / ops; no app UI)                      |
+| `sync-stripe-catalog`           | JWT / service role | Sync active lesson-type option prices; optional rebuild affected |
+| `stripe-webhook`                | public (signature) | Setup → schedule (+ catch-up); subscription/invoice mirrors      |
 
 Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `paymentLinkHelpers.ts`, `stripeCatalog.ts`.
 

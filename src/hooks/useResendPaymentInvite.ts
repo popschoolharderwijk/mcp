@@ -44,19 +44,19 @@ export function useResendPaymentInvite(onDone?: () => void) {
 		onDone?.();
 	};
 
-	const openPayPage = async (agreementId: string) => {
+	const openPayPage = async (agreementId: string): Promise<string | null> => {
 		const { data, error } = await issuePaymentLink(agreementId, false, 'open');
 		const message = resolveSubscriptionActionError('send-invite', data, error);
 		if (message) {
 			toast.error(message);
-			return;
+			return null;
 		}
 		const paymentUrl = resolveIssuedPaymentUrl(data);
 		if (!paymentUrl) {
 			toast.error('Geen betaallink ontvangen');
-			return;
+			return null;
 		}
-		window.open(paymentUrl, '_blank', 'noopener,noreferrer');
+		return paymentUrl;
 	};
 
 	return { busyId, busyKind, resend, openPayPage };

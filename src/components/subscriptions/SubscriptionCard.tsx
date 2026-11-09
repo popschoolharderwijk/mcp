@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { LuCreditCard, LuExternalLink, LuMail, LuRefreshCw, LuTags, LuZap } from 'react-icons/lu';
+import { LuCreditCard, LuMail, LuTags } from 'react-icons/lu';
 import { toast } from 'sonner';
+import { StripeButton } from '@/components/stripe/StripeButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,9 +27,6 @@ interface SubscriptionCardProps {
 	lessonAgreementId: string;
 	studentUserId: string;
 }
-
-const FORCE_START_CONFIRM =
-	'TEST: het bestaande schema wordt geannuleerd en het abonnement start direct met onmiddellijke incasso. Doorgaan?';
 
 function StatusLine(props: {
 	awaitingMandate: boolean;
@@ -81,20 +79,15 @@ function SubscriptionDetails(props: {
 	);
 }
 
-function ResendInviteButton(props: { visible: boolean; busy: boolean; onAction: (a: SubscriptionAction) => void }) {
+function ResendInviteButton(props: {
+	visible: boolean;
+	busy: boolean;
+	onAction: (a: SubscriptionAction) => void | Promise<void>;
+}) {
 	if (!props.visible) return null;
 	return (
-		<Button onClick={() => props.onAction('send-invite')} disabled={props.busy}>
+		<Button onClick={() => void props.onAction('send-invite')} disabled={props.busy}>
 			<LuMail className="mr-1.5 h-4 w-4" /> Opnieuw versturen
-		</Button>
-	);
-}
-
-function DevForceStartButton(props: { busy: boolean; onAction: (a: SubscriptionAction) => void }) {
-	if (!import.meta.env.DEV) return null;
-	return (
-		<Button variant="ghost" onClick={() => props.onAction('force-start')} disabled={props.busy}>
-			<LuZap className="mr-1.5 h-4 w-4" /> Test: start direct
 		</Button>
 	);
 }
@@ -103,7 +96,8 @@ function SubscriptionActions(props: {
 	loading: boolean;
 	busy: boolean;
 	subscription: SubscriptionRow | null;
-	onAction: (action: SubscriptionAction) => void;
+	onAction: (action: SubscriptionAction) => void | Promise<void>;
+	resolvePortalHref: () => Promise<string | null>;
 }) {
 	return (
 		<div className="flex flex-wrap gap-2">
@@ -112,26 +106,37 @@ function SubscriptionActions(props: {
 				busy={props.busy}
 				onAction={props.onAction}
 			/>
-			<Button
-				variant="outline"
-				onClick={() => props.onAction('open-portal')}
+			<StripeButton
 				disabled={isPortalActionDisabled(props.busy, props.subscription)}
+				resolveHref={props.resolvePortalHref}
 			>
-				<LuExternalLink className="mr-1.5 h-4 w-4" /> Open klantportaal
-			</Button>
+				Klantportaal
+			</StripeButton>
 			<Button
 				variant="outline"
-				onClick={() => props.onAction('rebuild')}
+				onClick={() => void props.onAction('rebuild')}
 				disabled={isRebuildActionDisabled(props.busy, props.subscription)}
 			>
 				<LuTags className="mr-1.5 h-4 w-4" /> Pas nieuwe tarieven toe
 			</Button>
-			<Button variant="outline" onClick={() => props.onAction('sync')} disabled={props.busy}>
-				<LuRefreshCw className="mr-1.5 h-4 w-4" /> Synchroniseer
-			</Button>
-			<DevForceStartButton busy={props.busy} onAction={props.onAction} />
+			<StripeButton disabled={props.busy} onClick={() => props.onAction('sync')}>
+				Synchroniseer
+			</StripeButton>
 		</div>
 	);
+}
+
+async function resolveCustomerPortalHref(studentUserId: string): Promise<string | null> {
+	const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS['open-portal'], {
+		body: buildSubscriptionActionBody('open-portal', '', studentUserId, window.location.href),
+	});
+	const outcome = await resolveSubscriptionActionOutcome('open-portal', data, error);
+	if (outcome.kind === 'error') {
+		toast.error(outcome.message);
+		return null;
+	}
+	if (outcome.kind !== 'portal') return null;
+	return outcome.url;
 }
 
 async function executeSubscriptionAction(
@@ -148,10 +153,7 @@ async function executeSubscriptionAction(
 		toast.error(outcome.message);
 		return;
 	}
-	if (outcome.kind === 'portal') {
-		if (outcome.url) window.open(outcome.url, '_blank', 'noopener,noreferrer');
-		return;
-	}
+	if (outcome.kind !== 'success') return;
 	toast.success(outcome.message);
 	refresh();
 }
@@ -162,10 +164,16 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 	const [busy, setBusy] = useState<SubscriptionAction | null>(null);
 
 	const runAction = async (action: SubscriptionAction) => {
-		if (action === 'force-start' && !window.confirm(FORCE_START_CONFIRM)) return;
 		setBusy(action);
 		await executeSubscriptionAction(action, lessonAgreementId, studentUserId, () => void refresh());
 		setBusy(null);
+	};
+
+	const resolvePortalHref = async () => {
+		setBusy('open-portal');
+		const url = await resolveCustomerPortalHref(studentUserId);
+		setBusy(null);
+		return url;
 	};
 
 	return (
@@ -192,7 +200,8 @@ export function SubscriptionCard({ lessonAgreementId, studentUserId }: Subscript
 					loading={loading}
 					busy={busy !== null}
 					subscription={subscription}
-					onAction={(action) => void runAction(action)}
+					onAction={runAction}
+					resolvePortalHref={resolvePortalHref}
 				/>
 			</CardContent>
 		</Card>

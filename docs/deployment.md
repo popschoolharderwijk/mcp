@@ -79,21 +79,21 @@ bun run db:push:functions production
 
 ## Available Edge Functions
 
-| Function                        | Purpose                                                                                        | Required secrets                                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `delete-user`                   | GDPR: delete account (self or admin).                                                          | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
-| `create-user`                   | Admin-script only: create a user with optional password.                                       | Standard                                               |
-| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                                 | Standard, `RESEND_API_KEY`                             |
-| `approve-signup-request`        | Admin approves signup → user + welcome email.                                                  | Standard, `RESEND_API_KEY`                             |
-| `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                           | Standard, `RESEND_API_KEY`                             |
-| `send-template-email`           | Sends email from `email_templates` + variables.                                                | Standard, `RESEND_API_KEY`                             |
-| `send-stripe-checkout-invite`   | Generates a magic link for Stripe Checkout onboarding and emails it.                           | Standard, `RESEND_API_KEY`                             |
-| `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.         | Standard, `STRIPE_SECRET_KEY`                          |
-| `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.                 | Standard, `STRIPE_SECRET_KEY`                          |
-| `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                              | Standard, `STRIPE_SECRET_KEY`                          |
-| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change.                                      | Standard, `STRIPE_SECRET_KEY`                          |
-| `force-start-subscription`      | Dev/test only: cancel current schedule and start immediately. UI behind `import.meta.env.DEV`. | Standard, `STRIPE_SECRET_KEY`                          |
-| `stripe-webhook`                | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required.       | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Function                        | Purpose                                                                                  | Required secrets                                       |
+| ------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `delete-user`                   | GDPR: delete account (self or admin).                                                    | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
+| `create-user`                   | Admin-script only: create a user with optional password.                                 | Standard                                               |
+| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                           | Standard, `RESEND_API_KEY`                             |
+| `approve-signup-request`        | Admin approves signup → user + welcome email.                                            | Standard, `RESEND_API_KEY`                             |
+| `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                     | Standard, `RESEND_API_KEY`                             |
+| `send-template-email`           | Sends email from `email_templates` + variables.                                          | Standard, `RESEND_API_KEY`                             |
+| `send-stripe-checkout-invite`   | Generates a magic link for Stripe Checkout onboarding and emails it.                     | Standard, `RESEND_API_KEY`                             |
+| `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.   | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.           | Standard, `STRIPE_SECRET_KEY`                          |
+| `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                        | Standard, `STRIPE_SECRET_KEY`                          |
+| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change.                                | Standard, `STRIPE_SECRET_KEY`                          |
+| `force-start-subscription`      | Ops/test: cancel current schedule and start immediately (no app UI).                     | Standard, `STRIPE_SECRET_KEY`                          |
+| `stripe-webhook`                | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
 > 💡 "Standard" = the auto-injected Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md).
 

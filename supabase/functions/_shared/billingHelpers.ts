@@ -370,3 +370,48 @@ export function buildLessonProductIdempotencyKey(lessonAgreementId: string): str
 export function buildLessonPhasePriceIdempotencyKey(lessonAgreementId: string, phaseLabel: string): string {
 	return `mcp_lesson_price_${lessonAgreementId}_${phaseLabel}`;
 }
+
+export function formatBillingSchoolYearLabel(startYear: number): string {
+	return `${startYear}/${startYear + 1}`;
+}
+
+export function buildStripePersonLabel(
+	firstName: string | null | undefined,
+	lastName: string | null | undefined,
+): string | null {
+	const name = [firstName, lastName]
+		.map((part) => part?.trim())
+		.filter((part): part is string => Boolean(part))
+		.join(' ');
+	return name || null;
+}
+
+/** Human-readable Stripe product title. Agreement id belongs in metadata only. */
+export function buildStripeLesgeldProductName(input: {
+	studentName?: string | null;
+	lessonTypeName?: string | null;
+	schoolYearLabel?: string | null;
+	catchUp?: boolean;
+}): string {
+	const head = input.catchUp ? 'Lesgeld inhaal' : 'Lesgeld';
+	const rest = [input.studentName, input.lessonTypeName, input.schoolYearLabel]
+		.map((part) => part?.trim())
+		.filter((part): part is string => Boolean(part));
+	return [head, ...rest].join(' · ');
+}
+
+export function mapStripeLesgeldLabelParts(
+	profile: { first_name: string | null; last_name: string | null } | null | undefined,
+	lessonType: { name: string } | null | undefined,
+	schoolYearStart: number,
+): {
+	studentName: string | null;
+	lessonTypeName: string | null;
+	schoolYearLabel: string;
+} {
+	return {
+		studentName: buildStripePersonLabel(profile?.first_name, profile?.last_name),
+		lessonTypeName: lessonType?.name?.trim() || null,
+		schoolYearLabel: formatBillingSchoolYearLabel(schoolYearStart),
+	};
+}

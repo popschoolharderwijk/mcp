@@ -10,9 +10,9 @@ import {
 	catchUpLineDescription,
 } from './catchUpInvoiceHelpers.ts';
 
-async function ensureCatchUpProduct(stripe: Stripe, lessonAgreementId: string): Promise<string> {
+async function ensureCatchUpProduct(stripe: Stripe, lessonAgreementId: string, productName: string): Promise<string> {
 	const product = await stripe.products.create({
-		name: `Lesgeld inhaal ${lessonAgreementId}`,
+		name: productName,
 		metadata: { lesson_agreement_id: lessonAgreementId, kind: 'catch_up' },
 	});
 	return product.id;
@@ -26,10 +26,11 @@ export async function issueCatchUpInvoice(
 		customerId: string;
 		defaultPaymentMethod?: string;
 		plan: CatchUpInvoicePlan;
+		productName: string;
 	},
 ): Promise<string> {
-	const { plan, lessonAgreementId, customerId } = input;
-	const productId = await ensureCatchUpProduct(stripe, lessonAgreementId);
+	const { plan, lessonAgreementId, customerId, productName } = input;
+	const productId = await ensureCatchUpProduct(stripe, lessonAgreementId, productName);
 	const metadata = {
 		lesson_agreement_id: lessonAgreementId,
 		kind: 'catch_up',

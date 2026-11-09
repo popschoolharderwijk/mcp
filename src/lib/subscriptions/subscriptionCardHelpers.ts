@@ -5,14 +5,13 @@ import {
 	type SubscriptionStatus,
 } from '@/types/subscriptions';
 
-export type SubscriptionAction = 'send-invite' | 'open-portal' | 'rebuild' | 'sync' | 'force-start';
+export type SubscriptionAction = 'send-invite' | 'open-portal' | 'rebuild' | 'sync';
 
 export const SUBSCRIPTION_ACTION_FUNCTIONS: Record<SubscriptionAction, string> = {
 	'send-invite': 'issue-payment-link',
 	'open-portal': 'create-customer-portal',
 	rebuild: 'rebuild-subscription-schedule',
 	sync: 'sync-stripe-subscription',
-	'force-start': 'force-start-subscription',
 };
 
 const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
@@ -20,7 +19,6 @@ const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
 	'open-portal': 'Kon het klantportaal niet openen',
 	rebuild: 'Kon de nieuwe tarieven niet toepassen',
 	sync: 'Kon niet synchroniseren met Stripe',
-	'force-start': 'Kon het abonnement niet direct starten',
 };
 
 export function buildIssuePaymentLinkBody(
@@ -145,8 +143,6 @@ export function resolveSubscriptionActionSuccess(action: SubscriptionAction, dat
 			return payload.synced
 				? `Gesynchroniseerd met Stripe (status: ${payload.status ?? 'onbekend'})`
 				: 'Stripe heeft nog geen actief abonnement';
-		case 'force-start':
-			return 'Abonnement direct gestart in Stripe';
 		default:
 			return 'Klaar';
 	}

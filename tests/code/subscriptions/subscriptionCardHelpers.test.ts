@@ -120,10 +120,6 @@ describe('subscriptionCardHelpers', () => {
 			kind: 'portal',
 			url: 'https://p',
 		});
-		expect(await resolveSubscriptionActionOutcome('force-start', {}, null)).toEqual({
-			kind: 'success',
-			message: 'Abonnement direct gestart in Stripe',
-		});
 		expect(await resolveSubscriptionActionOutcome('send-invite', { recipient: 'a@b.nl' }, null)).toEqual({
 			kind: 'error',
 			message: 'Kon de betaaluitnodiging niet versturen',

@@ -1,7 +1,7 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { LuExternalLink } from 'react-icons/lu';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { StripeButton } from '@/components/stripe/StripeButton';
 import { isValidEmail } from '@/components/students/studentFormTypes';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
@@ -109,24 +109,16 @@ function AwaitingMandateDialogDetails({ row }: { row: AwaitingMandateRow }) {
 function AwaitingMandateDialogLinkActions(props: {
 	row: AwaitingMandateRow;
 	busy: boolean;
-	busyKind: PaymentInviteBusyKind | null;
-	onOpenPayPage: () => void;
+	resolvePayHref: () => Promise<string | null>;
 }) {
 	return (
 		<div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-between">
 			<Button variant="outline" asChild>
 				<Link to={`/agreements/${props.row.lesson_agreement_id}`}>Bekijk overeenkomst</Link>
 			</Button>
-			<SubmitButton
-				variant="secondary"
-				loading={props.busy && props.busyKind === 'open'}
-				loadingLabel="Openen..."
-				onClick={props.onOpenPayPage}
-				disabled={props.busy}
-			>
-				<LuExternalLink className="mr-1.5 h-4 w-4" />
+			<StripeButton disabled={props.busy} resolveHref={props.resolvePayHref}>
 				Open betaalscherm
-			</SubmitButton>
+			</StripeButton>
 		</div>
 	);
 }
@@ -176,16 +168,11 @@ function AwaitingMandateDialogFooter(props: {
 	onRecipientEmailChange: (value: string) => void;
 	onOpenChange: (open: boolean) => void;
 	onResend: () => void;
-	onOpenPayPage: () => void;
+	resolvePayHref: () => Promise<string | null>;
 }) {
 	return (
 		<DialogFooter className="gap-3 sm:flex-col sm:space-x-0">
-			<AwaitingMandateDialogLinkActions
-				row={props.row}
-				busy={props.busy}
-				busyKind={props.busyKind}
-				onOpenPayPage={props.onOpenPayPage}
-			/>
+			<AwaitingMandateDialogLinkActions row={props.row} busy={props.busy} resolvePayHref={props.resolvePayHref} />
 			<AwaitingMandateDialogSendRow
 				busy={props.busy}
 				busyKind={props.busyKind}
@@ -214,7 +201,7 @@ function AwaitingMandateResendDialog(props: {
 	onRecipientEmailChange: (value: string) => void;
 	onOpenChange: (open: boolean) => void;
 	onResend: () => void;
-	onOpenPayPage: () => void;
+	resolvePayHref: () => Promise<string | null>;
 }) {
 	const row = props.row;
 	const canResend = Boolean(row) && !props.busy && isValidEmail(props.recipientEmail.trim());
@@ -224,8 +211,8 @@ function AwaitingMandateResendDialog(props: {
 				<DialogHeader>
 					<DialogTitle>Wacht op machtiging</DialogTitle>
 					<DialogDescription>
-						Stuur opnieuw een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of
-						bekijk de lesovereenkomst.
+						Stuur een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de
+						lesovereenkomst.
 					</DialogDescription>
 				</DialogHeader>
 				{row ? (
@@ -240,7 +227,7 @@ function AwaitingMandateResendDialog(props: {
 							onRecipientEmailChange={props.onRecipientEmailChange}
 							onOpenChange={props.onOpenChange}
 							onResend={props.onResend}
-							onOpenPayPage={props.onOpenPayPage}
+							resolvePayHref={props.resolvePayHref}
 						/>
 					</>
 				) : null}
@@ -322,9 +309,9 @@ export default function AwaitingMandate() {
 					if (!selected) return;
 					void resend(selected.lesson_agreement_id, recipientEmail);
 				}}
-				onOpenPayPage={() => {
-					if (!selected) return;
-					void openPayPage(selected.lesson_agreement_id);
+				resolvePayHref={async () => {
+					if (!selected) return null;
+					return openPayPage(selected.lesson_agreement_id);
 				}}
 			/>
 		</div>

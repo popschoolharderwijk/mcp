@@ -17,6 +17,7 @@ import {
 	PAYMENT_LINK_REQUEST_MESSAGE,
 	paymentLinkTokenMatches,
 	resolveBillingRecipient,
+	resolveIssuedLinkRecipientGate,
 	resolveIssuePaymentRecipient,
 } from '../../../supabase/functions/_shared/paymentLinkHelpers';
 
@@ -96,6 +97,33 @@ describe('billing recipient and request guards', () => {
 			ok: false,
 			status: 400,
 			error: 'Ongeldig e-mailadres',
+		});
+	});
+
+	it('gates send when resolved recipient is missing', () => {
+		expect(resolveIssuedLinkRecipientGate(true, { ok: true, recipient: null })).toEqual({
+			ok: false,
+			status: 400,
+			error: 'Geen e-mailadres voor betaler',
+		});
+		expect(resolveIssuedLinkRecipientGate(false, { ok: true, recipient: null })).toEqual({
+			ok: true,
+			recipient: null,
+		});
+		expect(
+			resolveIssuedLinkRecipientGate(true, {
+				ok: false,
+				status: 403,
+				error: 'Geen rechten om de ontvanger te wijzigen',
+			}),
+		).toEqual({
+			ok: false,
+			status: 403,
+			error: 'Geen rechten om de ontvanger te wijzigen',
+		});
+		expect(resolveIssuedLinkRecipientGate(true, { ok: true, recipient: 'a@b.nl' })).toEqual({
+			ok: true,
+			recipient: 'a@b.nl',
 		});
 	});
 });
