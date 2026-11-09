@@ -100,9 +100,15 @@ Edge only (never `VITE_`):
 
 ## 9. Local testing
 
-```bash
-stripe listen --forward-to http://127.0.0.1:54421/functions/v1/stripe-webhook
+Alongside `bun run dev:local`, forward Stripe events to the local edge function (keep the process running):
 
+```bash
+bun run stripe:webhook
+```
+
+Use the printed `whsec_…` as `STRIPE_WEBHOOK_SECRET` in `$SECRETS_PATH/supabase/.env.local`, then `bun run db:push:secrets` and `bun run supabase:restart` if that secret changed.
+
+```bash
 bun test tests/code/billing/paymentLinkHelpers.test.ts
 bun test tests/code/billing/catchUpInvoiceHelpers.test.ts
 bun test tests/code/billing/calculateYearlyAmount.test.ts

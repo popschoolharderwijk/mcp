@@ -67,6 +67,8 @@ bun run supabase:restart   # stop → start --runtime native --eager (reloads fu
 bun run db:push:secrets
 bun run db:reset
 bun run dev:local
+# Stripe webhooks (separate terminal; keep running):
+bun run stripe:webhook
 ```
 
 Types from the local stack (`supabase start` first):

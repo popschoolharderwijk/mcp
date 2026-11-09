@@ -13,6 +13,7 @@
 		"build:dev": "vite build --mode development",
 		"create-user": "bun run scripts/createuser.ts",
 		"stripe:sync-catalog": "bun run scripts/sync-stripe-catalog.ts",
+		"stripe:webhook": "stripe listen --all-snapshot --forward-to http://127.0.0.1:54421/functions/v1/stripe-webhook",
 		"import": "bun run import/index.ts",
 		"fix": "biome check --write",
 		"check": "biome check --error-on-warnings",
