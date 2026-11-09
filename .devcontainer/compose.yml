@@ -46,9 +46,31 @@ services:
         # Container entrypoint, not a devcontainer lifecycle hook. Docker runs this
         # on every start; the native stack owner stays up after the command returns.
         # --eager keeps auth/API up (no idle sleep) so the first browser request works.
+        # postmaster.pid records a container PID. After a new container that number
+        # can belong to another process, and Postgres then refuses to start.
         command:
-            [
-                "bash",
-                "-lc",
-                "bash /workspace/docker/seed-agent-home.sh && supabase start --runtime native --eager && bash /workspace/docker/forward-native-ports.sh && exec sleep infinity",
-            ]
+            - bash
+            - -lc
+            - |
+                bash /workspace/docker/seed-agent-home.sh
+                home="$${SUPABASE_HOME:-$$HOME/.supabase}"
+                if [ -d "$$home" ]; then
+                  find "$$home" -name postmaster.pid -type f | while read -r pidfile; do
+                    pid=$$(head -n 1 "$$pidfile" 2>/dev/null || true)
+                    case "$$pid" in
+                      ''|*[!0-9]*) rm -f "$$pidfile"; continue ;;
+                    esac
+                    if [ ! -d "/proc/$$pid" ]; then
+                      rm -f "$$pidfile"
+                      continue
+                    fi
+                    cmd=$$(tr '\0' ' ' < "/proc/$$pid/cmdline" 2>/dev/null || true)
+                    case "$$cmd" in
+                      *postgres*) ;;
+                      *) rm -f "$$pidfile" ;;
+                    esac
+                  done
+                fi
+                supabase start --runtime native --eager
+                bash /workspace/docker/forward-native-ports.sh
+                exec sleep infinity

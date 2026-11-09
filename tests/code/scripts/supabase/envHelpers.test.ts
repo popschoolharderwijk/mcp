@@ -38,10 +38,13 @@ describe('parseDeployEnv', () => {
 		expect(parseDeployEnv('production')).toBe('production');
 	});
 
+	it('accepts short aliases for development and production', () => {
+		expect(parseDeployEnv('dev')).toBe('development');
+		expect(parseDeployEnv('prod')).toBe('production');
+	});
+
 	it('returns null for invalid environments', () => {
 		expect(parseDeployEnv('staging')).toBeNull();
-		expect(parseDeployEnv('dev')).toBeNull();
-		expect(parseDeployEnv('prod')).toBeNull();
 		expect(parseDeployEnv('linked')).toBeNull();
 	});
 });

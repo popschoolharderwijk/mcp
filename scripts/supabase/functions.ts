@@ -2,8 +2,8 @@
  * bun run db:push:functions [env]
  */
 
-import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
-import { confirmTargetIfRequired, fail, remoteFlag, resolveTargetFromArgv, runSupabase } from './runHelpers.ts';
+import type { DeployTarget } from './envHelpers.ts';
+import { remoteFlag, runPushScriptMain, runSupabase } from './runHelpers.ts';
 
 export async function pushFunctions(target: DeployTarget): Promise<void> {
 	if (target.projectRef === null) {
@@ -14,18 +14,10 @@ export async function pushFunctions(target: DeployTarget): Promise<void> {
 	await runSupabase(['functions', 'deploy', remoteFlag(target.projectRef), '--yes']);
 }
 
-async function main(): Promise<void> {
-	const verb = process.argv[2];
-	if (verb !== 'push') {
-		fail('Usage: bun run scripts/supabase/functions.ts push [local|development|test|production]');
-	}
-	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:functions');
-	console.log(`db:push:functions → ${formatTargetLabel(target)}`);
-	await confirmTargetIfRequired(target, 'db:push:functions');
-	await pushFunctions(target);
-	console.log('Done.');
-}
-
 if (import.meta.main) {
-	await main();
+	await runPushScriptMain({
+		scriptFile: 'functions.ts',
+		verbLabel: 'db:push:functions',
+		run: pushFunctions,
+	});
 }

@@ -5,7 +5,13 @@
 
 import { pushConfig } from './config.ts';
 import { pushMigrations } from './db.ts';
-import { type DeployTarget, formatTargetLabel, PUSH_ALL_STEPS, type PushAllStep } from './envHelpers.ts';
+import {
+	DEPLOY_ENV_CLI_USAGE,
+	type DeployTarget,
+	formatTargetLabel,
+	PUSH_ALL_STEPS,
+	type PushAllStep,
+} from './envHelpers.ts';
 import { pushFunctions } from './functions.ts';
 import { confirmTargetIfRequired, fail, resolveTargetFromArgv } from './runHelpers.ts';
 import { pushSecrets } from './secrets.ts';
@@ -47,7 +53,7 @@ async function runPushAll(target: DeployTarget): Promise<void> {
 
 async function main(): Promise<void> {
 	if (process.argv[2] !== 'push') {
-		fail('Usage: bun run scripts/supabase/all.ts push [local|development|test|production]');
+		fail(`Usage: bun run scripts/supabase/all.ts push [${DEPLOY_ENV_CLI_USAGE}]`);
 	}
 	await runPushAll(resolveTargetFromArgv(process.argv.slice(3), 'db:push:all'));
 }

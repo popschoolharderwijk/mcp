@@ -93,14 +93,24 @@ export const PUSH_ALL_STEPS: readonly PushAllStep[] = ['migrations', 'secrets', 
 
 const DEPLOY_ENVS = Object.keys(deployConfig.targets) as DeployEnv[];
 
+/** Short CLI aliases → canonical DeployEnv (config / file names stay full). */
+const DEPLOY_ENV_ALIASES: Readonly<Record<string, DeployEnv>> = {
+	dev: 'development',
+	prod: 'production',
+};
+
+/** Bracket usage for `bun run db:* [env]` help lines. */
+export const DEPLOY_ENV_CLI_USAGE = 'local|development|dev|test|production|prod';
+
 function isDeployEnv(value: string): value is DeployEnv {
 	return (DEPLOY_ENVS as readonly string[]).includes(value);
 }
 
-/** Missing / empty → local. Invalid → null. */
+/** Missing / empty → local. Invalid → null. Accepts `dev` / `prod` aliases. */
 export function parseDeployEnv(arg: string | undefined): DeployEnv | null {
 	if (arg === undefined || arg === '') return 'local';
-	if (isDeployEnv(arg)) return arg;
+	const canonical = DEPLOY_ENV_ALIASES[arg] ?? arg;
+	if (isDeployEnv(canonical)) return canonical;
 	return null;
 }
 
@@ -165,7 +175,7 @@ export function pickDbPassword(envMap: Record<string, string | undefined>): stri
 }
 
 export function deployEnvUsageHint(): string {
-	return `Environment must be one of: ${DEPLOY_ENVS.join(' | ')} (default: local)`;
+	return `Environment must be one of: ${DEPLOY_ENV_CLI_USAGE.replaceAll('|', ' | ')} (default: local)`;
 }
 
 function forEachEnvAssignment(contents: string, onPair: (key: string, rawValue: string) => void): void {

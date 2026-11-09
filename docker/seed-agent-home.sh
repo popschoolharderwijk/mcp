@@ -11,6 +11,10 @@ mkdir -p \
 	"${XDG_CONFIG_HOME:-$HOME/.config}" \
 	"${XDG_CACHE_HOME:-$HOME/.cache}"
 
+# Dev Containers drops CommonJS helpers in TMPDIR. Node walks up to
+# /workspace/package.json ("type": "module") and would load those helpers as ESM.
+printf '%s\n' '{"type":"commonjs"}' >"${TMPDIR:-/workspace/.tmp}/package.json"
+
 # Thin entrypoint only — edit docker/agent.bashrc for prompt, aliases, and colors.
 cat >"$HOME/.bashrc" <<'EOF'
 # Managed entrypoint for the container agent user. Real config: docker/agent.bashrc.

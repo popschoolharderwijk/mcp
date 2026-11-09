@@ -6,7 +6,7 @@
  * Hosted DB password: SUPABASE_DB_PASSWORD from SECRETS_PATH runtimeEnvFile (.env.<target>.local).
  */
 
-import { type DeployTarget, formatTargetLabel } from './envHelpers.ts';
+import { DEPLOY_ENV_CLI_USAGE, type DeployTarget, formatTargetLabel } from './envHelpers.ts';
 import {
 	confirmTargetIfRequired,
 	ensureSupabaseUnlinked,
@@ -52,7 +52,7 @@ function resolveDbVerb(verb: string | undefined): (typeof DB_VERBS)[keyof typeof
 async function main(): Promise<void> {
 	const entry = resolveDbVerb(process.argv[2]);
 	if (entry === null) {
-		fail('Usage: bun run scripts/supabase/db.ts <reset|push> [local|development|test|production]');
+		fail(`Usage: bun run scripts/supabase/db.ts <reset|push> [${DEPLOY_ENV_CLI_USAGE}]`);
 	}
 
 	const target = resolveTargetFromArgv(process.argv.slice(3), entry.label);

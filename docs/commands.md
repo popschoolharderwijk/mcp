@@ -101,7 +101,7 @@ git push --force origin main
 
 ## Supabase DB deploy (`bun run db:*`)
 
-Prefer these over raw CLI. Missing env → **`local`**. Targets match Vite mode names: `local` | `development` | `test` | `production`. Remotes use `--remote=<ref>` from a fixed map (never ambient link). CLI auth: `supabase login` or `SUPABASE_ACCESS_TOKEN`. Hosted DB commands read plain `SUPABASE_DB_PASSWORD` from `$SECRETS_PATH/.env.<target>.local` (or the process env, e.g. CI). Remotes use `--remote=<ref>`; scripts run `supabase unlink` first when a link exists so the password applies to that ref. `db:push:migrations` also passes `--password`; `db:reset` / `db:types` pass the password via env. Edge/Auth SoT lives under `$SECRETS_PATH/supabase/`.
+Prefer these over raw CLI. Missing env → **`local`**. Targets: `local` | `development` (`dev`) | `test` | `production` (`prod`). Remotes use `--remote=<ref>` from a fixed map (never ambient link). CLI auth: `supabase login` or `SUPABASE_ACCESS_TOKEN`. Hosted DB commands read plain `SUPABASE_DB_PASSWORD` from `$SECRETS_PATH/.env.<target>.local` (or the process env, e.g. CI). Remotes use `--remote=<ref>`; scripts run `supabase unlink` first when a link exists so the password applies to that ref. `db:push:migrations` also passes `--password`; `db:reset` / `db:types` pass the password via env. Edge/Auth SoT lives under `$SECRETS_PATH/supabase/`.
 
 | Command                            | `local`                                                                                         | `development` / `test` / `production`                                                                                   |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
@@ -119,6 +119,8 @@ bun run db:push:all development         # mcp-dev
 bun run db:reset                        # local stack
 bun run db:types                        # after local reset / schema change
 bun run db:types development            # types from mcp-dev
+bun run db:types dev                    # same as development
+bun run db:types prod                   # same as production
 ```
 
 ## Supabase CLI (raw)

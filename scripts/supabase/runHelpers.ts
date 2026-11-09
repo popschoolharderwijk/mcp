@@ -9,8 +9,10 @@ import { stdin as input, stdout as output } from 'node:process';
 import * as readline from 'node:readline/promises';
 import {
 	confirmTargetToken,
+	DEPLOY_ENV_CLI_USAGE,
 	type DeployTarget,
 	deployEnvUsageHint,
+	formatTargetLabel,
 	matchesConfirmTargetToken,
 	mergeRuntimeEnv,
 	parseDeployEnv,
@@ -43,8 +45,6 @@ export function readSecretsRoot(): string {
 	return root;
 }
 
-const DEPLOY_ENV_USAGE = 'local|development|test|production';
-
 export function fail(message: string): never {
 	console.error(`Error: ${message}`);
 	process.exit(1);
@@ -55,10 +55,28 @@ export function resolveTargetFromArgv(argv: string[], verbLabel: string): Deploy
 	const env = parseDeployEnv(envArg);
 	if (env === null) {
 		fail(
-			`Unknown environment "${envArg}". ${deployEnvUsageHint()}\nUsage: bun run ${verbLabel} [${DEPLOY_ENV_USAGE}]`,
+			`Unknown environment "${envArg}". ${deployEnvUsageHint()}\nUsage: bun run ${verbLabel} [${DEPLOY_ENV_CLI_USAGE}]`,
 		);
 	}
 	return resolveDeployTarget(env);
+}
+
+/** Shared CLI entry for `*.ts push [env]` deploy scripts. */
+export async function runPushScriptMain(options: {
+	scriptFile: string;
+	verbLabel: string;
+	run: (target: DeployTarget) => Promise<void>;
+	describeTarget?: (target: DeployTarget) => string;
+}): Promise<void> {
+	if (process.argv[2] !== 'push') {
+		fail(`Usage: bun run scripts/supabase/${options.scriptFile} push [${DEPLOY_ENV_CLI_USAGE}]`);
+	}
+	const target = resolveTargetFromArgv(process.argv.slice(3), options.verbLabel);
+	const detail = options.describeTarget?.(target) ?? formatTargetLabel(target);
+	console.log(`${options.verbLabel} → ${detail}`);
+	await confirmTargetIfRequired(target, options.verbLabel);
+	await options.run(target);
+	console.log('Done.');
 }
 
 /**

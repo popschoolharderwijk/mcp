@@ -23,13 +23,12 @@ import {
 } from './envHelpers.ts';
 import {
 	confirmSecretDrops,
-	confirmTargetIfRequired,
 	confirmYes,
 	fail,
 	projectRoot,
 	readSecretsRoot,
 	remoteFlag,
-	resolveTargetFromArgv,
+	runPushScriptMain,
 	runSupabase,
 	runSupabaseCapture,
 } from './runHelpers.ts';
@@ -175,18 +174,11 @@ export async function pushSecrets(target: DeployTarget): Promise<void> {
 	await pushSecretsRemote(target);
 }
 
-async function main(): Promise<void> {
-	const verb = process.argv[2];
-	if (verb !== 'push') {
-		fail('Usage: bun run scripts/supabase/secrets.ts push [local|development|test|production]');
-	}
-	const target = resolveTargetFromArgv(process.argv.slice(3), 'db:push:secrets');
-	console.log(`db:push:secrets → ${formatTargetLabel(target)} — ${target.envFile}`);
-	await confirmTargetIfRequired(target, 'db:push:secrets');
-	await pushSecrets(target);
-	console.log('Done.');
-}
-
 if (import.meta.main) {
-	await main();
+	await runPushScriptMain({
+		scriptFile: 'secrets.ts',
+		verbLabel: 'db:push:secrets',
+		run: pushSecrets,
+		describeTarget: (target) => `${formatTargetLabel(target)} — ${target.envFile}`,
+	});
 }
