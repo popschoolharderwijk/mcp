@@ -156,7 +156,7 @@ export function TopNavUserMenu({
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={onNavigateSettings}>
 						<LuSettings className="mr-2 h-4 w-4" />
-						<span>Instellingen</span>
+						<span>Accountinstellingen</span>
 					</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={onSignOut}>

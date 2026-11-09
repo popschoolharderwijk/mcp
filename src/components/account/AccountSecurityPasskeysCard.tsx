@@ -249,7 +249,7 @@ export function AccountSecurityPasskeysCard({
 					<div className="space-y-1.5">
 						<CardTitle>Passkeys</CardTitle>
 						<CardDescription>
-							Log in zonder e-mailcode via Face ID, vingerafdruk of een beveiligingssleutel.
+							Log in zonder e-mail via Face ID, vingerafdruk of een beveiligingssleutel.
 						</CardDescription>
 					</div>
 					<PasskeyRegisterButton registering={registering} loading={loading} onRegister={onRegister} />
