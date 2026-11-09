@@ -181,6 +181,7 @@ const EXPECTED_FUNCTIONS = [
 	'check_rls_enabled',
 	'check_rls_forced',
 	'cleanup_student_if_no_agreements',
+	'compute_minimum_term_end',
 	'current_user_id',
 	'end_recurring_deviation_from_week',
 	'ensure_student_exists',

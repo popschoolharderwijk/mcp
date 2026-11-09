@@ -52,15 +52,17 @@ jobs:
                   fi
                   echo "All required secrets are present."
 
-            - name: Setup Bun
-              uses: oven-sh/setup-bun@v2
-              with:
-                  bun-version: latest
-
             - name: Setup Supabase CLI
               uses: supabase/setup-cli@v3
               with:
                   version: latest
+
+            # After setup-cli: that action pins its own Bun via .bun-version and would
+            # overwrite PATH. Restore latest for bun install / bun test below.
+            - name: Setup Bun
+              uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
 
             - name: Install dependencies
               run: bun install --frozen-lockfile
@@ -76,6 +78,9 @@ jobs:
 
             - name: Lint database (plpgsql_check)
               run: supabase db lint --remote=${{ secrets.SUPABASE_PROJECT_REF }} --level warning --fail-on warning
+
+            - name: Run RLS baseline (fail fast)
+              run: bun test tests/rls/system/baseline.security.test.ts --bail --timeout 30000
 
             - name: Run RLS, auth, and e2e tests
               run: bun test tests/rls tests/auth tests/e2e --bail --timeout 30000

@@ -13,7 +13,7 @@ Tests usually run against a **remote** Supabase project; you can also point env 
 - The workflow targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`
 - `supabase db reset --remote=<ref> --yes` (`seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql` are applied)
 - Credentials from GitHub secrets (must belong to mcp-test) → `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`
-- `bun test tests/rls tests/auth tests/e2e` runs against mcp-test
+- Baseline security checks run first (fail fast), then `tests/rls` / `tests/auth` / `tests/e2e` against mcp-test
 
 ---
 

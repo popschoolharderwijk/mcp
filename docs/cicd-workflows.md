@@ -68,7 +68,7 @@ Runs RLS, auth, and e2e tests against **mcp-test** in GitHub Actions:
 - **Project**: Targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF` (see [secrets.md](./secrets.md)); `supabase db reset --remote=<ref> --yes` for a clean database with `seeds/bootstrap.sql` + `seeds/lesson-types.sql` + `seeds/test.sql`
 - **Credentials**: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_DEFAULT_KEY`, `SUPABASE_SERVICE_ROLE_KEY` from GitHub secrets (must belong to the same mcp-test project)
 - **Required secret**: `RESEND_API_KEY` for email tests (SMTP)
-- **Command**: `bun test tests/rls tests/auth tests/e2e --bail --timeout 30000` (path prefixes — bare `auth` would also match `tests/code/auth/`)
+- **Commands**: baseline first (`bun test tests/rls/system/baseline.security.test.ts --bail --timeout 30000`), then `bun test tests/rls tests/auth tests/e2e --bail --timeout 30000 --path-ignore-patterns='**/baseline.security.test.ts'` (path prefixes — bare `auth` would also match `tests/code/auth/`)
 
 ---
 
