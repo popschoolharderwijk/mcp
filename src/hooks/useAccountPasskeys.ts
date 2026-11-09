@@ -27,6 +27,16 @@ function applyManageOutcome(error: PasskeyErrorLike | null, setError: (message: 
 	return false;
 }
 
+async function deleteAccountPasskey(passkeyId: string, setError: (message: string | null) => void): Promise<boolean> {
+	try {
+		const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId });
+		return applyManageOutcome(toPasskeyError(deleteError), setError);
+	} catch (caught) {
+		applyManageOutcome(resolveUnknownPasskeyError(caught), setError);
+		return false;
+	}
+}
+
 export function useAccountPasskeys(enabled: boolean) {
 	const [passkeys, setPasskeys] = useState<AccountPasskeyItem[]>([]);
 	const [loading, setLoading] = useState(enabled);
@@ -99,19 +109,8 @@ export function useAccountPasskeys(enabled: boolean) {
 
 	const confirmDeletePasskey = async () => {
 		if (!deleteTarget) return;
-		const passkeyId = deleteTarget.id;
 		setError(null);
-		let failed = false;
-		try {
-			const { error: deleteError } = await supabase.auth.passkey.delete({ passkeyId });
-			if (!applyManageOutcome(toPasskeyError(deleteError), setError)) {
-				failed = true;
-			}
-		} catch (caught) {
-			applyManageOutcome(resolveUnknownPasskeyError(caught), setError);
-			failed = true;
-		}
-		if (failed) {
+		if (!(await deleteAccountPasskey(deleteTarget.id, setError))) {
 			throw new Error('passkey-delete-failed');
 		}
 		setDeleteTarget(null);

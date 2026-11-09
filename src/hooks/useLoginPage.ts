@@ -56,6 +56,12 @@ export function useLoginPage() {
 		const controller = new AbortController();
 		conditionalAbortRef.current = controller;
 
+		const continueConditional = (error: PasskeyErrorLike | null) => {
+			if (controller.signal.aborted) return;
+			if (resolveConditionalPasskeySignInOutcome(error).kind !== 'retry') return;
+			void runConditional();
+		};
+
 		const runConditional = async () => {
 			try {
 				const { error: passkeyError } = await supabase.auth.signInWithPasskey({
@@ -64,19 +70,9 @@ export function useLoginPage() {
 						signal: controller.signal,
 					},
 				});
-				if (controller.signal.aborted) return;
-
-				const outcome = resolveConditionalPasskeySignInOutcome(toPasskeyError(passkeyError));
-				if (outcome.kind === 'retry') {
-					void runConditional();
-				}
+				continueConditional(toPasskeyError(passkeyError));
 			} catch (caught) {
-				if (controller.signal.aborted) return;
-
-				const outcome = resolveConditionalPasskeySignInOutcome(resolveUnknownPasskeyError(caught));
-				if (outcome.kind === 'retry') {
-					void runConditional();
-				}
+				continueConditional(resolveUnknownPasskeyError(caught));
 			}
 		};
 

@@ -17,14 +17,6 @@ export function isLoginSendingState(state: LoginState): boolean {
 	return state === 'idle' || state === 'sending' || state === 'passkey';
 }
 
-export function isPasskeySignInBusy(state: LoginState): boolean {
-	return state === 'passkey';
-}
-
-export function isLoginFormDisabled(state: LoginState): boolean {
-	return state === 'sending' || isPasskeySignInBusy(state);
-}
-
 export function resolvePasskeySignInButtonLabel(busy: boolean): string {
 	return busy ? 'Passkey controleren...' : 'Inloggen met passkey';
 }

@@ -1,8 +1,6 @@
 import { LuFingerprint, LuLoaderCircle } from 'react-icons/lu';
 import {
 	canSubmitOtp,
-	isLoginFormDisabled,
-	isPasskeySignInBusy,
 	type LoginState,
 	resolveMagicLinkSubmitLabel,
 	resolvePasskeySignInButtonLabel,
@@ -23,8 +21,8 @@ export function LoginMagicLinkForm({
 	onSubmit,
 	onPasskeySignIn,
 }: LoginMagicLinkFormProps) {
-	const passkeyBusy = isPasskeySignInBusy(state);
-	const formDisabled = isLoginFormDisabled(state);
+	const passkeyBusy = state === 'passkey';
+	const formDisabled = state === 'sending' || passkeyBusy;
 
 	return (
 		<div className="space-y-4">

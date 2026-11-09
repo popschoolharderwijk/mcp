@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	canSubmitOtp,
-	isLoginFormDisabled,
 	isLoginSendingState,
-	isPasskeySignInBusy,
 	sanitizeOtpInput,
 	shouldAutoSendMagicLink,
 	shouldRedirectLoggedInUser,
@@ -31,22 +29,6 @@ describe('isLoginSendingState', () => {
 		expect(isLoginSendingState('sending')).toBe(true);
 		expect(isLoginSendingState('passkey')).toBe(true);
 		expect(isLoginSendingState('sent')).toBe(false);
-	});
-});
-
-describe('isPasskeySignInBusy', () => {
-	it('is only true while the passkey ceremony is running', () => {
-		expect(isPasskeySignInBusy('passkey')).toBe(true);
-		expect(isPasskeySignInBusy('idle')).toBe(false);
-	});
-});
-
-describe('isLoginFormDisabled', () => {
-	it('disables the form while sending a magic link or running passkey sign-in', () => {
-		expect(isLoginFormDisabled('sending')).toBe(true);
-		expect(isLoginFormDisabled('passkey')).toBe(true);
-		expect(isLoginFormDisabled('idle')).toBe(false);
-		expect(isLoginFormDisabled('sent')).toBe(false);
 	});
 });
 
