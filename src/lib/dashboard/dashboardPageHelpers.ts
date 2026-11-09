@@ -1,10 +1,6 @@
 import type { LessonAgreement } from '@/components/students/LessonAgreementItem';
 import type { DashboardStatItem } from '@/lib/dashboard/dashboardStatsGridHelpers';
-import {
-	buildStudentDashboardStatItems,
-	type StudentDashboardData,
-	type StudentDashboardInvoice,
-} from '@/lib/dashboard/studentDashboardHelpers';
+import { buildStudentDashboardStatItems, type StudentDashboardData } from '@/lib/dashboard/studentDashboardHelpers';
 
 export async function fetchProfileFirstName(
 	loadRow: () => Promise<{ first_name: string | null } | null>,
@@ -21,15 +17,13 @@ export function resolveStudentAgreementsCardView(isLoading: boolean, hasDashboar
 
 export function studentDashboardPanelModel(studentDashboard: StudentDashboardData | null): {
 	items: DashboardStatItem[];
-	invoices: StudentDashboardInvoice[];
 	agreements: LessonAgreement[];
 } {
 	if (!studentDashboard) {
-		return { items: [], invoices: [], agreements: [] };
+		return { items: [], agreements: [] };
 	}
 	return {
 		items: buildStudentDashboardStatItems(studentDashboard.stats),
-		invoices: studentDashboard.invoices,
 		agreements: studentDashboard.agreements,
 	};
 }

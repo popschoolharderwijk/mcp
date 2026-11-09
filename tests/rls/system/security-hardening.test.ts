@@ -8,8 +8,6 @@
  * - get_duo_partner_display_name allow + deny (behavior + authz)
  * - public bucket listing: sentinel object visible to service_role, hidden from clients
  *
- * Note: next_mandate_reference stays EXECUTE-granted to authenticated (admin UI +
- * service_role edge); authz is inside the function (admin/site_admin or null session).
  */
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAnon, createClientAs, createClientBypassRLS } from '../../db';
@@ -33,20 +31,14 @@ const dbNoRLS = createClientBypassRLS();
 
 /** Tables that must have FORCE RLS (defense-in-depth; no owner bypass). */
 const TABLES_REQUIRING_FORCE_RLS = [
-	'accounting_settings',
 	'announcements',
 	'app_settings',
 	'email_templates',
-	'direct_debit_batch_items',
-	'direct_debit_batches',
-	'direct_debit_invitations',
-	'invoice_lines',
-	'invoices',
+	'stripe_checkout_invitations',
 	'lesson_group_members',
 	'lesson_groups',
 	'lesson_signup_requests',
 	'no_lesson_periods',
-	'sepa_mandates',
 	'trial_lessons',
 ] as const;
 
@@ -56,19 +48,13 @@ const TABLES_REQUIRING_FORCE_RLS = [
  * Intentional public reference data (lesson_types, lesson_type_options, announcements) excluded.
  */
 const TABLES_ANON_MUST_NOT_SELECT = [
-	'accounting_settings',
 	'app_settings',
 	'email_templates',
-	'direct_debit_batch_items',
-	'direct_debit_batches',
-	'direct_debit_invitations',
-	'invoice_lines',
-	'invoices',
+	'stripe_checkout_invitations',
 	'lesson_group_members',
 	'lesson_groups',
 	'lesson_signup_requests',
 	'no_lesson_periods',
-	'sepa_mandates',
 	'stripe_customers',
 	'subscription_invoices',
 	'subscriptions',
@@ -96,7 +82,6 @@ const AUTHENTICATED_MUST_NOT_EXECUTE: string[] = [
 	'public.prevent_owner_participant_removal()',
 	'public.prevent_profile_email_change()',
 	'public.prevent_user_id_change()',
-	'public.recalc_direct_debit_batch(uuid)',
 	'public.set_audit_fields()',
 	'public.set_no_lesson_periods_updated_at()',
 	'public.sync_group_member_to_agreement()',
@@ -132,8 +117,6 @@ const ANON_MUST_NOT_EXECUTE_RPCS: {
 		name: 'submit_trial_decision',
 		args: { p_trial_id: '00000000-0000-0000-0000-000000000001', p_decision: 'confirm' },
 	},
-	{ name: 'next_mandate_reference', args: {} },
-	{ name: 'recalc_direct_debit_batch', args: { p_batch_id: '00000000-0000-0000-0000-000000000001' } },
 	{ name: 'ensure_student_exists', args: { _user_id: '00000000-0000-0000-0000-000000000001' } },
 	{
 		name: 'cleanup_student_if_no_agreements',
@@ -313,10 +296,7 @@ describe('Security hardening: anon must not EXECUTE SECURITY DEFINER RPCs', () =
 	for (const rpc of ANON_MUST_NOT_EXECUTE_RPCS) {
 		it(`anon cannot call ${rpc.name}`, async () => {
 			const db = createClientAnon();
-			const result =
-				Object.keys(rpc.args).length === 0
-					? await db.rpc(rpc.name as 'next_mandate_reference')
-					: await db.rpc(rpc.name as 'get_duo_partner_display_name', rpc.args as never);
+			const result = await db.rpc(rpc.name as 'get_duo_partner_display_name', rpc.args as never);
 
 			expect(result.data).toBeNull();
 			expect(result.error).not.toBeNull();
@@ -332,7 +312,7 @@ describe('Security hardening: anon must not have SELECT privilege on sensitive t
 			expectInsufficientPrivilege(
 				unwrapError(
 					await db
-						.from(table as 'invoices')
+						.from(table as 'stripe_customers')
 						.select('*')
 						.limit(1),
 				),

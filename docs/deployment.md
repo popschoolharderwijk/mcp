@@ -9,8 +9,8 @@ After merging a PR to `main`, migrations are applied automatically to the produc
 | Change                                       | Action                                                                                                                                  |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | Database migrations (`supabase/migrations/`) | Automatic via Supabase GitHub Integration after merge to `main`.                                                                        |
-| Auth/config changes (`supabase/config.toml`) | Manual: `supabase config push`.                                                                                                         |
-| Edge Functions                               | Manual: `supabase functions deploy <name>`.                                                                                             |
+| Auth/config changes (`supabase/config.toml`) | Manual: `bun run db:push:config production`.                                                                                            |
+| Edge Functions                               | Manual: `bun run db:push:functions production`.                                                                                         |
 | Frontend code                                | Automatic (Lovable deploy).                                                                                                             |
 | CSP (Content-Security-Policy)                | Meta tag in `index.html` (ships with Lovable publish). No HTTP header: prod runs on Lovable hosting, not on your own Cloudflare/Vercel. |
 
@@ -31,38 +31,36 @@ For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewher
 
 ---
 
-## Step 1: Link to Production
+## Step 1: Target production (CLI v3)
 
-```bash
-supabase link --project-ref bnagepkxryauifzyoxgo
-```
+Prefer `bun run db:* production`. Raw CLI uses `--remote=bnagepkxryauifzyoxgo` (no ambient link required). Set `SUPABASE_DB_PASSWORD` in `$SECRETS_PATH/.env.production.local`.
 
 ## Step 2: Check migrations
 
 ```bash
-supabase db push --dry-run
+supabase db push --remote=bnagepkxryauifzyoxgo --dry-run
 # Migrations are normally applied automatically; use this only as a sanity check.
+# Or: bun run db:push:migrations production
 ```
 
 ## Step 2b: Bootstrap seed on production (optional)
 
-Migrations do not contain reference data. Email templates and accounting defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
+Migrations do not contain reference data. Email templates and app defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
-supabase link --project-ref bnagepkxryauifzyoxgo
-supabase db push --include-seed
+supabase db push --remote=bnagepkxryauifzyoxgo --include-seed --yes
 ```
 
-Only `bootstrap.sql` runs on prod (not `test.sql`). Idempotent — does not overwrite existing custom templates. **Never** run `db reset --linked` on production.
+Only `bootstrap.sql` runs on prod (not `test.sql`). Idempotent — does not overwrite existing custom templates. **Never** run `db reset --remote=…` on production.
 
 ## Step 3: Push config (if changed)
 
 ```bash
-supabase link --project-ref bnagepkxryauifzyoxgo
-supabase config push   # review diff, type Y
+bun run db:push:config production
+# or: supabase config push --remote=bnagepkxryauifzyoxgo
 ```
 
-> ⚠️ `config push` overwrites remote settings. Always review the diff!
+> ⚠️ `config push` shows a diff and asks before writing (default no). Review carefully — it overwrites remote Auth/Storage/… settings that the file declares.
 
 Production auth (`[remotes.prod.auth]` in `config.toml`):
 
@@ -72,9 +70,9 @@ Production auth (`[remotes.prod.auth]` in `config.toml`):
 ## Step 4: Deploy Edge Functions
 
 ```bash
-supabase functions deploy <function-name>
-# or everything at once:
-supabase functions deploy
+bun run db:push:functions production
+# or: supabase functions deploy --remote=bnagepkxryauifzyoxgo --yes
+# single function: supabase functions deploy <name> --remote=bnagepkxryauifzyoxgo --yes
 ```
 
 ---
@@ -89,7 +87,7 @@ supabase functions deploy
 | `approve-signup-request`        | Admin approves signup → user + welcome email.                                                  | Standard, `RESEND_API_KEY`                             |
 | `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                           | Standard, `RESEND_API_KEY`                             |
 | `send-template-email`           | Sends email from `email_templates` + variables.                                                | Standard, `RESEND_API_KEY`                             |
-| `send-direct-debit-invite`      | Generates a magic link for SEPA onboarding and emails it.                                      | Standard, `RESEND_API_KEY`                             |
+| `send-stripe-checkout-invite`   | Generates a magic link for Stripe Checkout onboarding and emails it.                           | Standard, `RESEND_API_KEY`                             |
 | `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.         | Standard, `STRIPE_SECRET_KEY`                          |
 | `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.                 | Standard, `STRIPE_SECRET_KEY`                          |
 | `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                              | Standard, `STRIPE_SECRET_KEY`                          |
@@ -132,6 +130,6 @@ verify_jwt = true   # or false for public endpoints (stripe-webhook)
 ## Checklist after merge to `main`
 
 - [ ] Supabase GitHub Integration applied migrations (check Dashboard → Database → Migrations).
-- [ ] `supabase config push` if `config.toml` changed.
-- [ ] `supabase functions deploy` for changed edge functions.
+- [ ] `bun run db:push:config production` if `config.toml` changed.
+- [ ] `bun run db:push:functions production` for changed edge functions.
 - [ ] Production smoke test: login, agenda, one Stripe flow.

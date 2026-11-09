@@ -32,8 +32,6 @@ export type MappedAgreementCourseRow = MappedImportRow & {
 	isActive: true;
 	notes: string | null;
 	signupSource: 'staff';
-	paymentMethod: 'sepa' | 'manual';
-	monthlyAmountCents: number | null;
 	/**
 	 * Required by DB when lesson type is duo. Import assigns a fresh UUID per agreement
 	 * (unpaired half is allowed; max two agreements share a pair).

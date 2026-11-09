@@ -41,8 +41,6 @@ function baseGroupRow(overrides: Partial<AgreementCourseSqlRow> = {}): Agreement
 		isActive: true,
 		notes: null,
 		signupSource: 'staff',
-		paymentMethod: 'sepa',
-		monthlyAmountCents: null,
 		duoPairId: null,
 		isGroupLesson: true,
 		synthesizeLessonTypeOption: false,

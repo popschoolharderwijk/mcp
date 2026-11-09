@@ -1,0 +1,2 @@
+# Load secrets from SECRETS_PATH before scripts and tests run.
+preload = ["./scripts/preloadSecrets.ts"]

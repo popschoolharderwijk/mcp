@@ -9,11 +9,8 @@ export const adminOperationalNavItems = [
 	{ href: '/trial-lessons', label: NAV_LABELS.trialLessons, icon: NAV_ICONS.trialLessons },
 ];
 
-export const financeNavItems = [
-	{ href: '/direct-debit', label: NAV_LABELS.directDebit, icon: NAV_ICONS.directDebit },
-	{ href: '/mandates', label: NAV_LABELS.mandates, icon: NAV_ICONS.mandates },
-	{ href: '/invoices', label: NAV_LABELS.invoices, icon: NAV_ICONS.invoices },
-	{ href: '/accounting', label: NAV_LABELS.accounting, icon: NAV_ICONS.accounting },
+export const administrationNavItems = [
+	{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
 ];
 
 export const adminNavItems = [
@@ -24,7 +21,8 @@ export const adminNavItems = [
 	{ href: '/settings', label: NAV_LABELS.settings, icon: NAV_ICONS.settings },
 ];
 
-export const adminHrefs = [...adminNavItems, ...financeNavItems].map((item) => item.href);
+export const adminHrefs = adminNavItems.map((item) => item.href);
+export const administrationHrefs = administrationNavItems.map((item) => item.href);
 
 export const teacherChildNavItems = [
 	{ href: '/teachers/availability', label: NAV_LABELS.availability, icon: NAV_ICONS.availability },

@@ -22,8 +22,6 @@ describe('isWizardSaveDisabled', () => {
 				slot: null,
 				saving: false,
 				isTeacherOwnStudent: false,
-				paymentMethod: 'sepa',
-				sepaMandateId: 'mandate-1',
 				isEditMode: false,
 				hasChanges: true,
 			}),
@@ -36,22 +34,18 @@ describe('isWizardSaveDisabled', () => {
 				slot: { ...freeSlot, status: 'occupied' },
 				saving: false,
 				isTeacherOwnStudent: false,
-				paymentMethod: 'sepa',
-				sepaMandateId: 'mandate-1',
 				isEditMode: false,
 				hasChanges: true,
 			}),
 		).toBe(true);
 	});
 
-	it('disables save when sepa is selected without a mandate', () => {
+	it('disables save when teacher is own student', () => {
 		expect(
 			isWizardSaveDisabled({
 				slot: freeSlot,
 				saving: false,
-				isTeacherOwnStudent: false,
-				paymentMethod: 'sepa',
-				sepaMandateId: null,
+				isTeacherOwnStudent: true,
 				isEditMode: false,
 				hasChanges: true,
 			}),
@@ -64,12 +58,22 @@ describe('isWizardSaveDisabled', () => {
 				slot: freeSlot,
 				saving: false,
 				isTeacherOwnStudent: false,
-				paymentMethod: 'manual',
-				sepaMandateId: null,
 				isEditMode: false,
 				hasChanges: false,
 			}),
 		).toBe(false);
+	});
+
+	it('disables save in edit mode without changes', () => {
+		expect(
+			isWizardSaveDisabled({
+				slot: freeSlot,
+				saving: false,
+				isTeacherOwnStudent: false,
+				isEditMode: true,
+				hasChanges: false,
+			}),
+		).toBe(true);
 	});
 });
 

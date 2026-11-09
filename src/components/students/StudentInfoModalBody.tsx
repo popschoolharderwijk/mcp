@@ -1,8 +1,7 @@
-import { LuCalendar, LuMail, LuPhone, LuUser, LuUsers, LuWallet } from 'react-icons/lu';
-import { Badge } from '@/components/ui/badge';
+import { LuCalendar, LuMail, LuPhone, LuUser, LuUsers } from 'react-icons/lu';
 import { Separator } from '@/components/ui/separator';
 import { formatDbDateToUi } from '@/lib/date/date-format';
-import { formatDebtorPostalCity, formatPhoneNumber, hasParentContactInfo } from '@/lib/students/studentInfoHelpers';
+import { formatPhoneNumber, hasParentContactInfo } from '@/lib/students/studentInfoHelpers';
 import { buildStudentInfoModalView } from '@/lib/students/studentInfoModalBodyHelpers';
 import type { Student } from '@/types/students';
 import type { User } from '@/types/users';
@@ -74,30 +73,6 @@ function ParentGuardianSection({ fullData }: { fullData: Student }) {
 	);
 }
 
-function DebtorSection({ fullData }: { fullData: Student }) {
-	return (
-		<>
-			<Separator />
-			<InfoSection title="Debiteurgegevens" icon={<LuWallet className="h-4 w-4" />}>
-				{fullData.debtor_info_same_as_student ? (
-					<Badge variant="secondary" className="text-xs">
-						Gelijk aan leerlinggegevens
-					</Badge>
-				) : (
-					<>
-						<InfoRow label="Naam" value={fullData.debtor_name} />
-						<InfoRow label="Adres" value={fullData.debtor_address} />
-						<InfoRow
-							label="Postcode en plaats"
-							value={formatDebtorPostalCity(fullData.debtor_postal_code, fullData.debtor_city)}
-						/>
-					</>
-				)}
-			</InfoSection>
-		</>
-	);
-}
-
 function MetadataSection({ fullData }: { fullData: Student }) {
 	return (
 		<>
@@ -126,7 +101,6 @@ function PrivilegedStudentSections({ fullData }: { fullData: Student | null }) {
 	return (
 		<>
 			<ParentGuardianSection fullData={fullData} />
-			<DebtorSection fullData={fullData} />
 			<MetadataSection fullData={fullData} />
 		</>
 	);

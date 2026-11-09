@@ -7,11 +7,6 @@ export interface StudentRecordFields {
 	parent_name: string | null;
 	parent_email: string | null;
 	parent_phone_number: string | null;
-	debtor_info_same_as_student: boolean;
-	debtor_name: string | null;
-	debtor_address: string | null;
-	debtor_postal_code: string | null;
-	debtor_city: string | null;
 	created_at: string;
 	updated_at: string;
 	created_by: string | null;

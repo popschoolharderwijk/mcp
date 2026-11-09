@@ -74,7 +74,7 @@ function WizardTeacherSlotStepPanel({ wizard, updaters, currentAgreementSlot }: 
 	);
 }
 
-function WizardConfirmStepPanel({ wizard, updaters }: WizardStepPanelProps) {
+function WizardConfirmStepPanel({ wizard }: WizardStepPanelProps) {
 	return (
 		<ConfirmStepPanel
 			isEditMode={wizard.isEditMode}
@@ -88,11 +88,6 @@ function WizardConfirmStepPanel({ wizard, updaters }: WizardStepPanelProps) {
 			selectedTeacherUserId={wizard.form.teacherUserId}
 			selectedTeacher={wizard.selectedTeacher}
 			effectiveSlot={wizard.effectiveSlot}
-			paymentMethod={wizard.form.paymentMethod}
-			sepaMandateId={wizard.form.sepaMandateId}
-			studentUserId={wizard.form.studentUserId}
-			onPaymentMethodChange={updaters.onPaymentMethodChange}
-			onSepaMandateIdChange={updaters.onSepaMandateIdChange}
 		/>
 	);
 }

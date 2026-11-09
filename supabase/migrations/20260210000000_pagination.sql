@@ -94,8 +94,7 @@ BEGIN
       WITH student_base AS (
         SELECT
           s.user_id, s.parent_name, s.parent_email, s.parent_phone_number,
-          s.debtor_info_same_as_student, s.debtor_name, s.debtor_address,
-          s.debtor_postal_code, s.debtor_city, s.created_at, s.updated_at,
+          s.created_at, s.updated_at,
           p.email, p.first_name, p.last_name, p.phone_number, p.avatar_url, p.display_name
         FROM students s
         INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
@@ -198,9 +197,6 @@ BEGIN
               'id', ps.user_id, 'user_id', ps.user_id,
               'parent_name', ps.parent_name, 'parent_email', ps.parent_email,
               'parent_phone_number', ps.parent_phone_number,
-              'debtor_info_same_as_student', ps.debtor_info_same_as_student,
-              'debtor_name', ps.debtor_name, 'debtor_address', ps.debtor_address,
-              'debtor_postal_code', ps.debtor_postal_code, 'debtor_city', ps.debtor_city,
               'created_at', ps.created_at, 'updated_at', ps.updated_at,
               'active_agreements_count', ps.active_agreements_count,
               'agreements_count', ps.agreements_count,
@@ -246,8 +242,7 @@ BEGIN
       WITH student_base AS (
         SELECT
           s.user_id, s.parent_name, s.parent_email, s.parent_phone_number,
-          s.debtor_info_same_as_student, s.debtor_name, s.debtor_address,
-          s.debtor_postal_code, s.debtor_city, s.created_at, s.updated_at,
+          s.created_at, s.updated_at,
           p.email, p.first_name, p.last_name, p.phone_number, p.avatar_url, p.display_name
         FROM students s
         INNER JOIN view_profiles_with_display_name p ON s.user_id = p.user_id
@@ -337,9 +332,6 @@ BEGIN
               'id', ps.user_id, 'user_id', ps.user_id,
               'parent_name', ps.parent_name, 'parent_email', ps.parent_email,
               'parent_phone_number', ps.parent_phone_number,
-              'debtor_info_same_as_student', ps.debtor_info_same_as_student,
-              'debtor_name', ps.debtor_name, 'debtor_address', ps.debtor_address,
-              'debtor_postal_code', ps.debtor_postal_code, 'debtor_city', ps.debtor_city,
               'created_at', ps.created_at, 'updated_at', ps.updated_at,
               'active_agreements_count', COALESCE(pc.active_count, 0),
               'agreements_count', COALESCE(pc.agreements_count, 0),

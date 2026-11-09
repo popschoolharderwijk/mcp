@@ -74,8 +74,6 @@ export type WizardFormUpdaters = {
 	onStartDateChange: (value: string) => void;
 	onEndDateChange: (value: string) => void;
 	onTeacherChange: (value: string | null) => void;
-	onPaymentMethodChange: (value: 'stripe' | 'sepa' | 'manual') => void;
-	onSepaMandateIdChange: (value: string | null) => void;
 };
 
 export function createWizardFormUpdaters(setForm: Dispatch<SetStateAction<WizardFormState>>): WizardFormUpdaters {
@@ -96,8 +94,6 @@ export function createWizardFormUpdaters(setForm: Dispatch<SetStateAction<Wizard
 		onStartDateChange: (value) => setForm((f) => ({ ...f, startDate: value })),
 		onEndDateChange: (value) => setForm((f) => ({ ...f, endDate: value })),
 		onTeacherChange: (value) => setForm((f) => ({ ...f, teacherUserId: value, slot: null })),
-		onPaymentMethodChange: (value) => setForm((f) => ({ ...f, paymentMethod: value })),
-		onSepaMandateIdChange: (value) => setForm((f) => ({ ...f, sepaMandateId: value })),
 	};
 }
 

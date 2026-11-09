@@ -265,11 +265,11 @@ export function pickPriceCentsForTariff(
 }
 
 export function assertPositiveYearlyCents(yearlyCents: number): void {
-	if (yearlyCents <= 0) throw new Error('Geen lessen in dit schooljaar; geen incasso aangemaakt.');
+	if (yearlyCents <= 0) throw new Error('Geen lessen in dit schooljaar; geen betaling aangemaakt.');
 }
 
 export function assertHasBillingPhases(phaseCount: number): void {
-	if (phaseCount === 0) throw new Error('Geen incassomaanden te plannen.');
+	if (phaseCount === 0) throw new Error('Geen betaalmaanden te plannen.');
 }
 
 export function isTerminalScheduleStatus(status: string): boolean {

@@ -1,0 +1,76 @@
+# Project name matches the devcontainer CLI for this repo folder (`mcp_devcontainer`).
+# Cursor and `bun run docker:*` share that one workspace container.
+name: mcp_devcontainer
+
+# Security boundary (intentional, not absolute isolation):
+# - Local Supabase runs as CLI native processes in this container. There is no
+#   Docker socket and no Docker daemon here.
+# - The only host path bind-mounted is this repository (`..:/workspace`).
+#   Secrets dirs, home, and other worktrees stay off this service.
+# - Host publishes bind 127.0.0.1 only (not the LAN). Local demo keys stay on
+#   the machine that runs Docker. The app uses the Vite :8081 proxy to the
+#   loopback API; Studio/Mailpit/tools can use the published localhost ports.
+services:
+    workspace:
+        build:
+            context: ..
+            dockerfile: docker/Dockerfile
+        shm_size: 1gb
+        ports:
+            # Host 127.0.0.1:<config port> → container proxy (0.0.0.0:<64xxx>) →
+            # native stack on 127.0.0.1:<config port>. Identity maps cannot reach a
+            # loopback-only listener across the Docker bridge.
+            - "127.0.0.1:54420:64420"
+            - "127.0.0.1:54421:64421"
+            - "127.0.0.1:54422:64422"
+            - "127.0.0.1:54423:64423"
+            - "127.0.0.1:54424:64424"
+            - "127.0.0.1:54425:64425"
+            - "127.0.0.1:54426:64426"
+            - "127.0.0.1:54427:64427"
+            - "127.0.0.1:54428:64428"
+            - "127.0.0.1:54429:64429"
+            - "127.0.0.1:8081:8081"
+            - "127.0.0.1:8183:18183"
+        volumes:
+            - ..:/workspace
+        user: "1000:1000"
+        read_only: true
+        tmpfs:
+            - /tmp:rw,nosuid,nodev,mode=1777
+            - /var/tmp:rw,nosuid,nodev,mode=1777
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        # Container entrypoint, not a devcontainer lifecycle hook. Docker runs this
+        # on every start; the native stack owner stays up after the command returns.
+        # --eager keeps auth/API up (no idle sleep) so the first browser request works.
+        # postmaster.pid records a container PID. After a new container that number
+        # can belong to another process, and Postgres then refuses to start.
+        command:
+            - bash
+            - -lc
+            - |
+                bash /workspace/docker/seed-agent-home.sh
+                home="$${SUPABASE_HOME:-$$HOME/.supabase}"
+                if [ -d "$$home" ]; then
+                  find "$$home" -name postmaster.pid -type f | while read -r pidfile; do
+                    pid=$$(head -n 1 "$$pidfile" 2>/dev/null || true)
+                    case "$$pid" in
+                      ''|*[!0-9]*) rm -f "$$pidfile"; continue ;;
+                    esac
+                    if [ ! -d "/proc/$$pid" ]; then
+                      rm -f "$$pidfile"
+                      continue
+                    fi
+                    cmd=$$(tr '\0' ' ' < "/proc/$$pid/cmdline" 2>/dev/null || true)
+                    case "$$cmd" in
+                      *postgres*) ;;
+                      *) rm -f "$$pidfile" ;;
+                    esac
+                  done
+                fi
+                supabase start --runtime native --eager
+                bash /workspace/docker/forward-native-ports.sh
+                exec sleep infinity

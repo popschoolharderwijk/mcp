@@ -4,9 +4,13 @@ import { WizardNavigation } from '@/components/agreements/WizardNavigation';
 import { WizardStepBody } from '@/components/agreements/WizardStepBody';
 import { type WizardStep, WizardStepIndicator } from '@/components/agreements/WizardStepIndicator';
 import { useAgreementWizard } from '@/components/agreements/wizard/useAgreementWizard';
+import { SubscriptionCard } from '@/components/subscriptions/SubscriptionCard';
+import { useAuth } from '@/hooks/useAuth';
+import { shouldShowSubscriptionCard } from '@/lib/subscriptions/subscriptionCardHelpers';
 
 export default function AgreementWizard() {
 	const wizard = useAgreementWizard();
+	const { isPrivileged } = useAuth();
 
 	if (wizard.loadingAgreement) {
 		return (
@@ -20,18 +24,26 @@ export default function AgreementWizard() {
 		<>
 			<AgreementWizardPageHeader isEditMode={wizard.isEditMode} agreement={wizard.agreement} />
 
-			<WizardStepIndicator<WizardStep>
-				step={wizard.step}
-				stepIndex={wizard.stepIndex}
-				highestReachedStepIndex={wizard.highestStep}
-				onStepChange={wizard.setStep}
-			/>
+			<div className="max-w-2xl">
+				<WizardStepIndicator<WizardStep>
+					stepIndex={wizard.stepIndex}
+					highestReachedStepIndex={wizard.highestStep}
+					onStepChange={wizard.setStep}
+				/>
 
-			<div className="mt-6 max-w-2xl rounded-lg border bg-card p-6">
-				<WizardStepBody wizard={wizard} />
+				<div className="mt-6 rounded-lg border bg-card p-6">
+					<WizardStepBody wizard={wizard} />
+				</div>
+
+				{shouldShowSubscriptionCard(wizard.isEditMode, isPrivileged) && wizard.agreement && (
+					<SubscriptionCard
+						lessonAgreementId={wizard.agreement.id}
+						studentUserId={wizard.agreement.student_user_id}
+					/>
+				)}
+
+				<WizardNavigation wizard={wizard} />
 			</div>
-
-			<WizardNavigation wizard={wizard} />
 
 			<PartialSlotConfirmDialog
 				open={wizard.partialConfirmOpen}

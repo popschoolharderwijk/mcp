@@ -52,7 +52,7 @@ jobs:
             - name: Get Branch Credentials
               if: steps.wait_for_preview.outputs.conclusion == 'success'
               run: |
-                  supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+                  supabase link ${{ secrets.SUPABASE_PROJECT_ID }}
                   echo "=== Raw CLI output (redacted) ==="
                   supabase --experimental branches get "$GITHUB_HEAD_REF" -o env | sed 's/=.*/=***/'
                   echo "=== End raw output ==="
@@ -95,14 +95,8 @@ jobs:
                     exit 1
                   fi
 
-                  # Link to preview branch (will fail if invalid)
-                  if ! supabase link --project-ref "$PREVIEW_REF"; then
-                    echo "::error::Failed to link to preview branch: $PREVIEW_REF"
-                    exit 1
-                  fi
-
-                  # Push and seed
-                  # supabase db push --include-seed --yes
+                  # Push and seed against preview (CLI v3: --remote=<ref>)
+                  # supabase db push --remote="$PREVIEW_REF" --include-seed --yes
 
             - name: Run RLS tests
               if: steps.wait_for_preview.outputs.conclusion == 'success'

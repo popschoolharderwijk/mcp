@@ -29,7 +29,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
 		const displayValue = value;
 
 		return (
-			<div className="space-y-2">
+			<div className="space-y-1.5">
 				{label && <Label htmlFor={id}>{label}</Label>}
 				<Input
 					ref={ref}

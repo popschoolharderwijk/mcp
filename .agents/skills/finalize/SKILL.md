@@ -25,6 +25,19 @@ consecutive outer pass, **and** the review in [`review.md`](review.md) is clean
 4. **Quality loop details** — read [`quality-loop.md`](quality-loop.md) for fix priority, escalation, and scope.
 5. **Diff review** — read [`review.md`](review.md) (diff-narration + test theater + no-legacy + **single-caller modules**). Apply on every edit that adds comments, tests, or helper files; full pass before DONE.
 
+## Progress UI (mandatory)
+
+Immediately after load-once (before types / git inspect), create a `TodoWrite` list with `merge: false` and exactly these items, then keep it in sync for the whole run:
+
+1. `bun run db:types (once)`
+2. `bun run check`
+3. `bun run check:ci`
+4. `bun run check:fallow`
+5. `bun run check:fallow:audit`
+6. `review.md pass on session diff`
+
+Mark the active gate `in_progress`, finished gates `completed`. Never skip the list; never leave a stale `in_progress` after moving on. On verification restart from check, set check → fallow-audit back to pending/in_progress as appropriate and leave review pending until that pass finishes.
+
 ## When to use
 
 - User explicitly asks to finalize, polish, run the quality gates, clean up before
@@ -36,7 +49,7 @@ Do not start this workflow merely because the user asks to commit or create a PR
 
 | Step | Command | Role |
 |------|---------|------|
-| types | `bun run supabase:types` | Once at start (linked types regen — **not** a DB reset) |
+| types | `bun run db:types` | Once at start (types regen — **not** a DB reset; default local, or pass env) |
 | check | `bun run check` | Biome verify (no write) |
 | ci | `bun run check:ci` | Biome CI + `tsc` + code tests |
 | fallow | `bun run check:fallow` | Full-project dead code, duplication, complexity/CRAP |
@@ -85,11 +98,12 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 
 ## Agent rules (short)
 
-1. Follow the state machine; do not skip check → ci → fallow → fallow-audit in an outer pass.
-2. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
-3. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
-4. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
-5. No unsolicited legacy / dual-API shims — [`review.md`](review.md) / `.cursor/rules/no-legacy.mdc`.
-6. No single-caller helper modules — [`review.md`](review.md) §4 / `.cursor/rules/no-single-caller-modules.mdc`.
-7. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
-8. Never `git add` or `git commit`. The user always stages and commits.
+1. Create and maintain the Progress UI `TodoWrite` list; do not run gates without it.
+2. Follow the state machine; do not skip check → ci → fallow → fallow-audit in an outer pass.
+3. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
+4. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
+5. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
+6. No unsolicited legacy / dual-API shims — [`review.md`](review.md) / `.cursor/rules/no-legacy.mdc`.
+7. No single-caller helper modules — [`review.md`](review.md) §4 / `.cursor/rules/no-single-caller-modules.mdc`.
+8. Escalate on no-progress / caps / out-of-scope — [`quality-loop.md`](quality-loop.md).
+9. Never `git add` or `git commit`. The user always stages and commits.

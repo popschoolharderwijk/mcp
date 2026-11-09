@@ -51,8 +51,7 @@ Agenda: `agenda_events` can be linked to a lesson agreement (`source_type = 'les
 | `stripe_customers`                                | 1:1 mapping `auth.users.id` ↔ `stripe_customer_id`.                                                                                                                                                                                                                                 |
 | `subscriptions`                                   | Mirror of Stripe Subscription per `lesson_agreement_id` (status, period, payment method, `stripe_schedule_id`).                                                                                                                                                                     |
 | `subscription_invoices`                           | Mirror of Stripe Invoices (amount, status, hosted URL, period).                                                                                                                                                                                                                     |
-| `direct_debit_invitations`                        | Audit of sent SEPA-onboarding magic links.                                                                                                                                                                                                                                          |
-| `accounting_settings`                             | Per-organisation VAT/ledger settings (`account_vat_21`, `vat_code_21`, `vat_code_exempt`, …).                                                                                                                                                                                       |
+| `stripe_checkout_invitations`                     | Audit of sent Stripe Checkout onboarding magic links.                                                                                                                                                                                                                               |
 | `announcements`                                   | Dashboard news (`title`, `body`, `audience[]`, `published_at`, `is_active`). Publicly readable once active and published; only staff/admin/site_admin can manage. Optional images in the `announcement-images` storage bucket (public, max 5 MB; only privileged users can upload). |
 
 ### Views
@@ -148,20 +147,20 @@ The application uses role-based access control (RBAC) with these roles:
 
 ## Helper Functions
 
-| Function                                                    | Description                                                                                                             | Security           |
-| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| `is_site_admin()`                                           | Whether the **signed-in** user is site_admin                                                                            | `SECURITY INVOKER` |
-| `is_admin()`                                                | Whether the signed-in user is admin                                                                                     | `SECURITY INVOKER` |
-| `is_staff()`                                                | Whether the signed-in user is staff                                                                                     | `SECURITY INVOKER` |
-| `is_privileged()`                                           | Staff, admin, or site_admin for the signed-in user (single query)                                                       | `SECURITY INVOKER` |
-| `_has_role(uuid, app_role)`                                 | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated`                               | `SECURITY DEFINER` |
-| `is_student(uuid)` / `is_teacher(uuid)`                     | Check for a student/teacher record                                                                                      | `SECURITY DEFINER` |
-| `get_teacher_user_id(uuid)`                                 | Resolve teacher user_id from user_id                                                                                    | `SECURITY DEFINER` |
-| `can_delete_user(uuid)`                                     | May the current session delete the given `user_id`?                                                                     | `SECURITY DEFINER` |
-| `can_manage_agenda_event(ev_id)`                            | May the current session manage a specific agenda event?                                                                 | `SECURITY DEFINER` |
-| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects                                                                                                | `SECURITY DEFINER` |
-| `get_hours_report(start_date, end_date, user_id)`           | Hours report plus financial breakdown per teacher/student, including VAT via `accounting_settings` and lesson-date age. | `SECURITY INVOKER` |
-| `is_valid_phone_number(text)`                               | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`                                   | —                  |
+| Function                                                    | Description                                                                                         | Security           |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
+| `is_site_admin()`                                           | Whether the **signed-in** user is site_admin                                                        | `SECURITY INVOKER` |
+| `is_admin()`                                                | Whether the signed-in user is admin                                                                 | `SECURITY INVOKER` |
+| `is_staff()`                                                | Whether the signed-in user is staff                                                                 | `SECURITY INVOKER` |
+| `is_privileged()`                                           | Staff, admin, or site_admin for the signed-in user (single query)                                   | `SECURITY INVOKER` |
+| `_has_role(uuid, app_role)`                                 | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated`           | `SECURITY DEFINER` |
+| `is_student(uuid)` / `is_teacher(uuid)`                     | Check for a student/teacher record                                                                  | `SECURITY DEFINER` |
+| `get_teacher_user_id(uuid)`                                 | Resolve teacher user_id from user_id                                                                | `SECURITY DEFINER` |
+| `can_delete_user(uuid)`                                     | May the current session delete the given `user_id`?                                                 | `SECURITY DEFINER` |
+| `can_manage_agenda_event(ev_id)`                            | May the current session manage a specific agenda event?                                             | `SECURITY DEFINER` |
+| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects                                                                            | `SECURITY DEFINER` |
+| `get_hours_report(start_date, end_date, user_id)`           | Hours report plus financial breakdown per teacher/student, including VAT by age on the lesson date. | `SECURITY INVOKER` |
+| `is_valid_phone_number(text)`                               | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`               | —                  |
 
 > Public role checks (`is_admin()`, `is_privileged()`, …) are **`SECURITY INVOKER`** with a single `EXISTS` on `user_roles`. `can_manage_agenda_event` is **`SECURITY DEFINER`** and uses **`current_user_id()`** + **`is_privileged()`**. `_has_role` is not for clients. `profiles.email` is `UNIQUE` and follows `auth.users.email`. Phone rules are centralised in **`is_valid_phone_number`**.
 
@@ -180,6 +179,7 @@ Students are **managed automatically** via database triggers:
 **Design rationale**: Students are a **consequence** of lesson agreements, not a prerequisite. That avoids orphaned student records and keeps lifecycle automatic.
 
 **CASCADE behaviour**:
+
 - If an `auth.users` record is deleted, all related `lesson_agreements` are deleted (`ON DELETE CASCADE`).
 - When all `lesson_agreements` are gone, the `student` is removed by the trigger.
 
@@ -213,6 +213,7 @@ None. All views use `security_invoker = on` or have been removed; students see t
 ### Linter Warnings
 
 The Supabase linter reports warnings for SECURITY DEFINER views. For views on the whitelist these are **false positives** because:
+
 - Security is implemented explicitly via `auth.uid()` checks
 - Tests in `tests/rls/` verify that unauthorized access is blocked
 - A whitelist entry requires explicit approval
@@ -221,17 +222,17 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 
 ## Supabase Environments
 
-| Environment    | Project ID / host                                               | Use                                            |
-| -------------- | --------------------------------------------------------------- | ---------------------------------------------- |
-| **Local**      | Docker `127.0.0.1:54421` (non-default ports; see `config.toml`) | `supabase start` + `bun run dev:local`         |
-| **mcp-test**   | `jserlqacarlgtdzrblic`                                          | **CI/PR checks** + optional `bun run dev:test` |
-| **mcp-dev**    | `zdvscmogkfyddnnxzkdu`                                          | Default / Lovable: `bun dev`                   |
-| **Production** | `bnagepkxryauifzyoxgo`                                          | Production deployment (`bun prod`)             |
+| Environment    | Project ID / host                                                 | Use                                                             |
+| -------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- |
+| **Local**      | Native runtime `127.0.0.1:54421` (fixed ports; see `config.toml`) | `supabase start --runtime native --eager` + `bun run dev:local` |
+| **mcp-test**   | `jserlqacarlgtdzrblic`                                            | **CI/PR checks** + optional `bun run dev:test`                  |
+| **mcp-dev**    | `zdvscmogkfyddnnxzkdu`                                            | Default / Lovable: `bun dev`                                    |
+| **Production** | `bnagepkxryauifzyoxgo`                                            | Production deployment (`bun prod`)                              |
 
 ### How this works
 
 1. **Lovable** and default `bun dev` use **mcp-dev** (`.env.development`, Vite mode `development` so `lovable-tagger` loads).
-2. **Local Docker** is opt-in: `bun run dev:local` (Vite mode `localdev` + keys in `.env.local`). Mode name `local` is forbidden by Vite; the file `.env.local` is fine.
-3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test` / shell (`SUPABASE_URL`, etc.).
-4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) links to **mcp-test** (GitHub secret `SUPABASE_PROJECT_REF`), runs `supabase db reset --linked --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
-5. On **merge to main**, migrations are applied to production via `supabase db push`.
+2. **Local stack** comes up when the workspace container starts (`supabase start --runtime native --eager` plus loopback port forwards for Docker publishes), then `bun run dev:local` (Vite mode `localdev` + committed `.env.localdev`). Mode name `local` is forbidden by Vite. Stop that stack before switching git branches so the fixed ports stay free.
+3. **RLS/auth tests** locally: mcp-test, mcp-dev, or local via `.env.test.local` / shell (`SUPABASE_URL`, etc.).
+4. **CI on a PR**: the **PR - Supabase** workflow (`pull-request-supabase.yml`) targets **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`, runs `supabase db reset --remote=<ref> --yes`, and runs RLS/auth/e2e there when `supabase/**` or non-code tests change. See [secrets.md](./secrets.md) and [cicd-workflows.md](./cicd-workflows.md).
+5. On **merge to main**, migrations are applied to production via the Supabase GitHub Integration / `db push --remote=…`.

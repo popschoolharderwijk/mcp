@@ -1,6 +1,6 @@
 // Create a Stripe billing flow for a lesson_agreement.
 // Two modes:
-//   - mode: 'checkout'  → Stripe Checkout in `setup` mode (iDEAL→SEPA mandate);
+//   - mode: 'checkout'  → Stripe Checkout in `setup` mode (iDEAL → reusable payment method);
 //                         the schedule is created by the webhook on completion.
 //   - mode: 'direct'    → Build the Subscription Schedule immediately on the
 //                         customer's existing default payment method.

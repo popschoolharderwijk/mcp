@@ -132,7 +132,7 @@ describe('billing pure helpers', () => {
 	it('asserts yearly cents and phase counts', () => {
 		expect(() => assertPositiveYearlyCents(0)).toThrow('Geen lessen in dit schooljaar');
 		expect(() => assertPositiveYearlyCents(100)).not.toThrow();
-		expect(() => assertHasBillingPhases(0)).toThrow('Geen incassomaanden');
+		expect(() => assertHasBillingPhases(0)).toThrow('Geen betaalmaanden');
 		expect(() => assertHasBillingPhases(1)).not.toThrow();
 	});
 

@@ -171,8 +171,6 @@ describe('mapAgreementCourseDoc', () => {
 			isActive: true,
 			notes: 'AGR-1001\nDesc\nNote',
 			signupSource: 'staff',
-			paymentMethod: 'sepa',
-			monthlyAmountCents: 4250,
 			duoPairId: null,
 			isGroupLesson: false,
 			synthesizeLessonTypeOption: false,
@@ -286,7 +284,7 @@ describe('mapAgreementCourseDoc', () => {
 		});
 	});
 
-	it('fails on unknown durationfreq missing price schedule startdate or paymenttype', () => {
+	it('fails on unknown durationfreq missing price schedule or startdate', () => {
 		expect(mapAgreementCourseDoc(validDoc({ durationfreq: { $oid: 'unknown' } }), baseIdMap())).toEqual({
 			ok: false,
 			oid: AGREEMENT_OID,
@@ -322,19 +320,6 @@ describe('mapAgreementCourseDoc', () => {
 			oid: AGREEMENT_OID,
 			reason: 'Missing or invalid startdate',
 		});
-
-		expect(mapAgreementCourseDoc(validDoc({ paymenttype: 'cash' }), baseIdMap())).toEqual({
-			ok: false,
-			oid: AGREEMENT_OID,
-			reason: 'Unsupported paymenttype "cash"',
-		});
-	});
-
-	it('maps invoice paymenttype to manual', () => {
-		const result = mapAgreementCourseDoc(validDoc({ paymenttype: 'invoice' }), baseIdMap());
-		expect(result.ok).toBe(true);
-		if (!result.ok) return;
-		expect(result.row.paymentMethod).toBe('manual');
 	});
 
 	it('derives endDate from numberoflessons and weekly frequency when autorenewal is false', () => {

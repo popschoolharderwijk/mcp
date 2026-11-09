@@ -1,20 +1,20 @@
 # Plan: Stripe tuition direct debit (v2) — HISTORICAL DOCUMENT
 
-> 📌 **This is a historical planning document (12 May 2026).** It describes the original approach and contains outdated details. For the current technical description of the Stripe direct-debit flow, see:
+> 📌 **This is a historical planning document (12 May 2026).** It describes the original approach and contains outdated details. For the current technical description of the Stripe billing flow, see:
 >
-> **→ [docs/integrations/stripe-direct-debit.md](docs/integrations/stripe-direct-debit.md)**
+> **→ [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md)**
 >
 > Main differences versus the current implementation:
 >
 > - **No-lesson periods**: the plan assumed "skip" (lessons dropped); the current implementation uses **shift logic** (`src/lib/billing/calculateYearlyAmount.ts`) — lessons shift by the length of the period. August still skips.
 > - **`subscription_schedule_phases` table**: never created; schedule phases are built directly from `_shared/billing.ts` and not mirrored separately.
 > - **Webhook trigger**: the schedule is created on `setup_intent.succeeded` (not `checkout.session.completed`).
-> - **Extra edge functions added**: `create-customer-portal`, `sync-stripe-subscription`, `rebuild-subscription-schedule`, `force-start-subscription`, `send-template-email`, `send-direct-debit-invite`.
-> - **Extra tables added**: `direct_debit_invitations`, `accounting_settings`, `email_templates`.
+> - **Extra edge functions added**: `create-customer-portal`, `sync-stripe-subscription`, `rebuild-subscription-schedule`, `force-start-subscription`, `send-template-email`, `send-stripe-checkout-invite`.
+> - **Extra tables added**: `stripe_checkout_invitations`, `email_templates`.
 
 ---
 
-_The content below is kept for historical context. Do not change it — update `docs/integrations/stripe-direct-debit.md` instead._
+_The content below is kept for historical context. Do not change it — update `docs/integrations/stripe-billing.md` instead._
 
 ## Goal
 

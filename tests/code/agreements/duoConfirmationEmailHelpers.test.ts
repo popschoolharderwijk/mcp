@@ -53,7 +53,7 @@ describe('buildDuoConfirmationBaseVars', () => {
 			dag: 'maandag',
 			tijd: '14:30',
 			startdatum: '01-09-2026',
-			betaalmethode: 'Automatische incasso via Stripe',
+			betaalmethode: 'Automatische betaling via Stripe',
 		});
 	});
 });

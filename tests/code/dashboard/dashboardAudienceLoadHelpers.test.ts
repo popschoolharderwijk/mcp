@@ -54,12 +54,10 @@ const studentDashboard: StudentDashboardData = {
 	stats: {
 		activeAgreements: 1,
 		inactiveAgreements: 0,
-		openInvoices: 2,
 		trialCount: 1,
 		trialStatus: 'scheduled',
 	},
 	agreements: [],
-	invoices: [],
 };
 
 const current = {

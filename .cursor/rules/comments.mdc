@@ -75,7 +75,7 @@ Unsolicited compatibility shims in **code** (dual names, old-shape fallbacks) ar
 // Local stack (`supabase start`). Each remote sets [remotes.*.auth] for its hosted URLs.
 
 // GOOD: standing invariant
-// Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see invoiceHelpers.test.ts
+// Deno edge mirror of src/lib/color/brand-hex.ts — keep PRIMARY_HEX in sync; see theme-tokens.test.ts
 
 // GOOD: omit — obvious
 const kind = resolveAgendaDefaultKind(resource) ?? 'lesson';

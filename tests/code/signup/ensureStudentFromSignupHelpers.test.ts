@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	buildSepaMandateInsertPayload,
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
 	buildSignupStudentUpdateFields,
-	hasSepaMandateReferenceFailure,
 	resolveExistingSignupStudentUserId,
 	resolveSignupStudentRowMutation,
-	shouldCreateSepaMandate,
-	shouldProceedWithSepaMandateCreate,
-	shouldSkipExistingSepaMandate,
 	shouldUpdateSignupPhoneOnCreate,
 } from '../../../supabase/functions/approve-signup-request/ensureStudentFromSignupHelpers';
 
@@ -25,9 +20,6 @@ const reqRow = {
 	parent_email: 'ouder@test.nl',
 	parent_phone_number: '0687654321',
 	lesson_group_id: null,
-	sepa_iban: 'NL91ABNA0417164300',
-	sepa_bic: 'ABNANL2A',
-	sepa_account_holder: 'Jan Leerling',
 };
 
 describe('resolveExistingSignupStudentUserId', () => {
@@ -76,46 +68,6 @@ describe('resolveSignupStudentRowMutation', () => {
 	});
 });
 
-describe('shouldCreateSepaMandate', () => {
-	it('returns true when iban and account holder are present', () => {
-		expect(shouldCreateSepaMandate(reqRow)).toBe(true);
-	});
-
-	it('returns false when sepa details are missing', () => {
-		expect(shouldCreateSepaMandate({ ...reqRow, sepa_iban: null })).toBe(false);
-	});
-});
-
-describe('shouldSkipExistingSepaMandate', () => {
-	it('returns true when mandate already exists', () => {
-		expect(shouldSkipExistingSepaMandate({ id: 'mandate-1' })).toBe(true);
-	});
-
-	it('returns false when mandate is missing', () => {
-		expect(shouldSkipExistingSepaMandate(null)).toBe(false);
-	});
-});
-
-describe('shouldProceedWithSepaMandateCreate', () => {
-	it('returns true when mandate should be created and none exists', () => {
-		expect(shouldProceedWithSepaMandateCreate(reqRow, null)).toBe(true);
-	});
-
-	it('returns false when mandate already exists', () => {
-		expect(shouldProceedWithSepaMandateCreate(reqRow, { id: 'mandate-1' })).toBe(false);
-	});
-});
-
-describe('hasSepaMandateReferenceFailure', () => {
-	it('returns true when reference lookup fails', () => {
-		expect(hasSepaMandateReferenceFailure({ message: 'rpc failed' }, null)).toBe(true);
-	});
-
-	it('returns false when reference is present', () => {
-		expect(hasSepaMandateReferenceFailure(null, 'MND-001')).toBe(false);
-	});
-});
-
 describe('buildSignupStudentUpdateFields', () => {
 	it('builds student update fields from signup request', () => {
 		expect(buildSignupStudentUpdateFields(reqRow)).toEqual({
@@ -124,13 +76,5 @@ describe('buildSignupStudentUpdateFields', () => {
 			parent_email: 'ouder@test.nl',
 			parent_phone_number: '0687654321',
 		});
-	});
-});
-
-describe('buildSepaMandateInsertPayload', () => {
-	it('builds sepa mandate insert payload', () => {
-		expect(buildSepaMandateInsertPayload('user-1', reqRow, 'MND-001', '2026-07-17').mandate_reference).toBe(
-			'MND-001',
-		);
 	});
 });

@@ -15,7 +15,9 @@ git rebase origin/main
 # --- Possible situation: rebase conflicts ---
 # If you get a conflict in src/integrations/supabase/types.ts:
 # 1. Resolve by regenerating types:
-#    supabase gen types typescript --linked > src/integrations/supabase/types.ts
+#    bun run db:types
+
+
 # 2. Let Biome format types
 #    biome check --write src/integrations/supabase/types.ts
 # 3. Stage the file and continue the rebase
@@ -24,7 +26,7 @@ git rebase origin/main
 # Repeat if multiple commits conflict
 
 # Regenerate types after other changes (never skip)
-bun run supabase:types
+bun run db:types
 
 # Run Biome fix for the rest of the code (format + lint autofix)
 bun run fix

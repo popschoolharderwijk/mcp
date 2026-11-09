@@ -39,7 +39,7 @@ type LessonAgreementBaseFields = Pick<
 
 /** Agreement fields for table display (base + created_at, notes, teacher_user_id) */
 type LessonAgreementTableFields = LessonAgreementBaseFields &
-	Pick<LessonAgreementRow, 'created_at' | 'notes' | 'payment_method' | 'sepa_mandate_id'> & {
+	Pick<LessonAgreementRow, 'created_at' | 'notes'> & {
 		teacher_user_id: string;
 		duo_pair_id?: string | null;
 	};

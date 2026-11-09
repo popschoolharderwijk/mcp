@@ -5,70 +5,77 @@
 | Command             | Environment        | Env file           | Use                                                                               |
 | ------------------- | ------------------ | ------------------ | --------------------------------------------------------------------------------- |
 | `bun dev`           | Remote development | `.env.development` | Shared mcp-dev / Lovable (default `dev` script)                                   |
-| `bun run dev:local` | Local              | `.env.local`       | Docker Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
+| `bun run dev:local` | Local              | `.env.localdev`    | Native Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
 | `bun run dev:test`  | Test database      | `.env.test`        | Remote mcp-test                                                                   |
 | `bun prod`          | Production         | `.env.production`  | Production server                                                                 |
 
-Vite forbids **mode name** `local` (it would clash with the `.env.local` postfix). The script therefore uses mode **`localdev`**. The env file can still be normal **`.env.local`** (always loaded; gitignored). For `bun dev`, `.env.development` overrides the same keys so mcp-dev wins.
+Vite forbids **mode name** `local` (it would clash with the `.env.local` postfix). The script therefore uses mode **`localdev`**. Committed `.env.localdev` holds the local public keys — no `SECRETS_PATH` needed for `bun run dev:local`. Remote modes can overlay from `$SECRETS_PATH/.env.<mode>.local` (see [secrets.md](./secrets.md)).
 
 ### Creating env files
 
-**`.env.development`** (remote mcp-dev — Lovable + `bun dev`):
-```env
-VITE_SUPABASE_URL=https://xyz-dev.supabase.co
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
+**Local pointer** (gitignored; copy from tracked `.env.example`):
 
-# Dev login bypass (optional, see "Dev Login Bypass")
-VITE_DEV_LOGIN_PASSWORD=your-dev-password
+```bash
+cp .env.example .env
 ```
 
-**`.env.local`** (local Docker — gitignored; used by `bun run dev:local`):
 ```env
+# .env
+SECRETS_PATH=../mcp-secrets
+```
+
+**Committed** mode files hold only public Vite values (URL + publishable key):
+
+```env
+# .env.development / .env.test / .env.production
+VITE_SUPABASE_URL=https://….supabase.co
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_…
+
+# .env.localdev (publishable key + fallback URL; the browser uses the Vite origin)
 VITE_SUPABASE_URL=http://127.0.0.1:54421
-VITE_SUPABASE_PUBLISHABLE_KEY=<publishable key from supabase status>
+VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_…
+```
+
+**Runtime secrets** under `SECRETS_PATH` — used by remote Vite overlays, `db:*`, and Bun preload (not required for `bun run dev:local`):
+
+```env
+# $SECRETS_PATH/.env.development.local / .env.test.local / .env.production.local
+SUPABASE_URL=https://….supabase.co
+SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_…
+SUPABASE_SERVICE_ROLE_KEY=…
+SUPABASE_DB_PASSWORD=…          # required for bun run db:* on that target
+VITE_DEV_LOGIN_PASSWORD=…       # optional; keep out of committed mode files
+```
+
+**`$SECRETS_PATH/.env.local`** (Bun scripts when `NODE_ENV` is unset — `create-user`, `stripe:sync-catalog`, etc.):
+
+```env
+SUPABASE_URL=http://127.0.0.1:54421
+SUPABASE_SERVICE_ROLE_KEY=<service_role key from supabase status>
 VITE_DEV_LOGIN_PASSWORD=password
 ```
 
-(`supabase status` prints `VITE_SUPABASE_PUBLISHABLE_KEY`. Remote `.env.development` / `.env.test` may still use `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` — the client accepts either.)
+This project uses **non-default** local ports (offset +100: API `54421`, DB `54422`, Studio `54423`, Mailpit `54424`, analytics `54427`/`54428`, pooler `54429`). The local stack is the CLI native runtime (`[experimental] stack = true`). The container command runs `supabase start --runtime native --eager`, then `docker/forward-native-ports.sh` (`socat`) so Docker-published host ports reach the loopback-only native listeners. `bun run dev:local` also proxies `/auth`, `/rest`, `/storage`, `/functions`, `/realtime`, and `/mcp` through Vite on **8081** to `127.0.0.1:54421`, so the browser does not need a working host→API publish. Docker runs that on every container start. After `supabase stop` inside a running container, start the stack again with that same command (include `--eager`). Stop the running stack before switching git branches: the branch is part of the project identity, and the next start uses the same fixed ports. If the committed local publishable key drifts, update `.env.localdev` from `supabase status`. Local magic-link mail is GoTrue's built-in template (`ConfirmationURL`). The custom HTML in `docs/email-templates/magic-link.html` is referenced from each `[remotes.*.auth.email.template.magic_link]`. For Auth SMTP + Edge secrets, use `$SECRETS_PATH/supabase/.env.local` and `bun run db:push:secrets` — not the Vite runtime files.
 
-This project uses **non-default** local ports (offset +100: API `54421`, DB `54422`, Studio `54423`, Mailpit `54424`, analytics `54427`/`54428`, pooler `54429`) so it can run beside other `supabase start` stacks. Copy keys from `supabase status` after `supabase start`. Set `RESEND_API_KEY` in the shell or root `.env` so `config.toml` SMTP substitution works.
+> 💡 Secret values live under `SECRETS_PATH`. Committed `.env.development` / `.env.localdev` / `.env.test` / `.env.production` must never hold service role keys or DB passwords.
 
-**`.env.test`** (remote mcp-test — `bun run dev:test`):
-```env
-VITE_SUPABASE_URL=https://jserlqacarlgtdzrblic.supabase.co
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
-VITE_DEV_LOGIN_PASSWORD=your-test-password
-```
-
-**`.env.production`** (production):
-```env
-VITE_SUPABASE_URL=https://xyz-prod.supabase.co
-VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
-```
-
-> 💡 `.env` and `*.local` are gitignored. Committed mode files (`.env.development`, `.env.test`, `.env.production`) hold non-secret URLs/keys for remote projects.
-
-### Local Docker day-to-day
+### Local stack day-to-day
 
 ```bash
-supabase start
-# fill .env.local from supabase status
-export RESEND_API_KEY=...   # if not already in .env
-supabase db reset
+supabase start --runtime native --eager
+# optional: fill $SECRETS_PATH/supabase/.env.local (Resend/Stripe), then:
+bun run db:push:secrets
+bun run db:reset
 bun run dev:local
 ```
 
 Types from the local stack (`supabase start` first):
 
 ```bash
-bun run supabase:types:local
+bun run db:types
 ```
 
-Plain `supabase gen types --local` often fails here with
-`password authentication failed` when another local stack is also running
-(CLI rewrites to Docker alias `db:5432` — see supabase/cli#5283). The script
-uses `postgresql://postgres:postgres@localhost:54422/postgres` instead
-(`localhost`, not `127.0.0.1`) so typegen stays on host networking (~2s).
+`db:types` uses `--remote=postgresql://postgres:postgres@localhost:54422/postgres`, the fixed `[db] port` from `config.toml`.
 
 ---
 
@@ -92,33 +99,45 @@ git push --force origin main
 
 ---
 
-## Supabase CLI
+## Supabase DB deploy (`bun run db:*`)
+
+Prefer these over raw CLI. Missing env → **`local`**. Targets: `local` | `development` (`dev`) | `test` | `production` (`prod`). Remotes use `--remote=<ref>` from a fixed map (never ambient link). CLI auth: `supabase login` or `SUPABASE_ACCESS_TOKEN`. Hosted DB commands read plain `SUPABASE_DB_PASSWORD` from `$SECRETS_PATH/.env.<target>.local` (or the process env, e.g. CI). Remotes use `--remote=<ref>`; scripts run `supabase unlink` first when a link exists so the password applies to that ref. `db:push:migrations` also passes `--password`; `db:reset` / `db:types` pass the password via env. Edge/Auth SoT lives under `$SECRETS_PATH/supabase/`.
+
+| Command                            | `local`                                                                                         | `development` / `test` / `production`                                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `bun run db:reset [env]`           | `supabase db reset`                                                                             | `db reset --remote=<ref> --yes` (`confirm` targets prompt first)                                                        |
+| `bun run db:push:migrations [env]` | `migration up`                                                                                  | `db push --remote=<ref> --yes`                                                                                          |
+| `bun run db:push:secrets [env]`    | Materialize in-repo `functions/.env` + `supabase/.env` from `$SECRETS_PATH/supabase/.env.local` | Replace custom secrets from `$SECRETS_PATH/supabase/.env.development` / `.test` / `.production` (drop confirm if stale) |
+| `bun run db:push:config [env]`     | No-op (uses `config.toml` via `supabase start`)                                                 | `config push --remote=<ref>` (prints diff; interactive confirm — no `--yes`)                                            |
+| `bun run db:push:functions [env]`  | No-op (serves from tree)                                                                        | `functions deploy --remote=<ref> --yes`                                                                                 |
+| `bun run db:push:all [env]`        | Fail-fast: migrations → secrets → config → functions                                            | Same order (no reset)                                                                                                   |
+| `bun run db:types [env]`           | `gen types` via localhost DB URL                                                                | `gen types --remote=<ref>`                                                                                              |
 
 ```bash
-# Local Docker (after supabase start)
-supabase db reset
-bun run supabase:types:local
-
-# Link to the remote dev project (mcp-dev)
-supabase link --project-ref zdvscmogkfyddnnxzkdu
-
-# Or use --linked for the currently linked project
-supabase <command> --linked
-
-# Push migrations to remote
-supabase db push --linked
-
-# Push config to remote
-supabase config push
-
-# Generate types (linked remote = default; local Docker = :local)
-bun run supabase:types
-bun run supabase:types:local
-# or: supabase gen types typescript --linked > src/integrations/supabase/types.ts
-# or: supabase gen types typescript --local > src/integrations/supabase/types.ts
+bun run db:push:secrets                 # local SoT → derived files
+bun run db:push:all development         # mcp-dev
+bun run db:reset                        # local stack
+bun run db:types                        # after local reset / schema change
+bun run db:types development            # types from mcp-dev
+bun run db:types dev                    # same as development
+bun run db:types prod                   # same as production
 ```
 
-> 💡 **Workflow**: Default UI / Lovable is **mcp-dev** (`bun dev`). Local Docker is `bun run dev:local`. **CI on a PR** uses **mcp-test** (link via secret `SUPABASE_PROJECT_REF`). For `bun test tests/rls`: put mcp-test or mcp-dev credentials in `.env.test` or the shell. See [secrets.md](./secrets.md) and [architecture.md](./architecture.md).
+## Supabase CLI (raw)
+
+```bash
+# Local stack (after supabase start)
+supabase db reset
+bun run db:types
+
+# Prefer bun run db:* above. Raw remotes need an explicit target, e.g.:
+supabase db push --remote=zdvscmogkfyddnnxzkdu --yes
+supabase config push --remote=zdvscmogkfyddnnxzkdu
+supabase secrets list --remote=zdvscmogkfyddnnxzkdu
+supabase gen types typescript --remote=zdvscmogkfyddnnxzkdu --schema public
+```
+
+> 💡 **Workflow**: Default UI / Lovable is **mcp-dev** (`bun dev`). The local stack is `bun run dev:local`. **CI on a PR** uses **mcp-test** via `--remote=$SUPABASE_PROJECT_REF`. For `bun test tests/rls`: put credentials in `$SECRETS_PATH/.env.test.local` (or the shell). See [secrets.md](./secrets.md) and [architecture.md](./architecture.md). Requires **Supabase CLI v3+**.
 
 ---
 
@@ -126,7 +145,9 @@ bun run supabase:types:local
 
 ```bash
 # Create a new user (or update an existing one)
-# Configure in .env.local / .env.development / shell:
+# Local stack (NODE_ENV unset): $SECRETS_PATH/.env.local
+# mcp-dev: NODE_ENV=development and $SECRETS_PATH/.env.development.local
+# Shared defaults: $SECRETS_PATH/.env or the shell
 #   SUPABASE_URL=https://...supabase.co          (required, API URL; local: http://127.0.0.1:54421)
 #   SUPABASE_SERVICE_ROLE_KEY=eyJ...             (required, service role key)
 #   DEV_LOGIN_EMAIL=user@example.com             (required, for create-user script)
@@ -137,6 +158,7 @@ bun run create-user
 ```
 
 **Two modes:**
+
 - **With password**: User can sign in via the Dev Login button and Magic Link/OTP
 - **Without password**: User can only sign in via Magic Link/OTP
 
@@ -151,6 +173,7 @@ In non-production environments a "Dev Login" button appears on the login page. U
 ### Role selection
 
 The Dev Login button has a dropdown to choose a role:
+
 - **Site Admin** (`site-admin@test.nl`) - Selected by default
 - **Admin** (`admin-one@test.nl`)
 - **Teacher** (`teacher-alice@test.nl`)
@@ -162,7 +185,7 @@ These users come from the test seed (`supabase/seeds/test.sql`) and are availabl
 
 ### Configuration
 
-**Optional** — add to `.env.local` or `.env.development` if you want a custom password:
+**Optional** — add to `$SECRETS_PATH/.env.local` or `$SECRETS_PATH/.env.development.local` if you want a custom password:
 
 ```env
 VITE_DEV_LOGIN_PASSWORD=your-custom-password

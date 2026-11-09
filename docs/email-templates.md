@@ -30,7 +30,7 @@ Both use the same SMTP provider (Resend).
 | `{{ .SiteURL }}`         | Configured Site URL          |
 | `{{ .Email }}`           | User email address           |
 
-The Stripe direct-debit flow uses its own variant with `token_hash` format — see [stripe-direct-debit.md §5](integrations/stripe-direct-debit.md).
+The Stripe checkout invite flow uses its own variant with `token_hash` format — see [stripe-billing.md §5](integrations/stripe-billing.md).
 
 ---
 
@@ -54,6 +54,7 @@ RLS: authenticated users may **SELECT**. Only `is_site_admin()` may **INSERT / U
 ### Which events exist
 
 Defined in `supabase/functions/_shared/email-events.ts` (mirrored in `src/lib/email/events.ts`). Each entry describes:
+
 - `eventKey` — link to `email_templates.event_key`
 - `label` + `description` — shown in the manager
 - `variables` — which placeholders are available
@@ -67,9 +68,9 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 1. Receives `{ event_key, to, vars }` (JWT required; privileged or service-role only).
 2. Loads the template from `email_templates` where `event_key = ?`.
 3. Fills variables (`{{name}}` → value).
-4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY_TRANSACTIONAL`.
+4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY`.
 
-Other edge functions (`send-direct-debit-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
+Other edge functions (`send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
 
 ### Testing from the UI
 
@@ -85,20 +86,21 @@ We use [Resend](https://resend.com) for both Supabase Auth mail and app mail.
 
 All SMTP settings live in `[auth.email.smtp]` and are pushed to remote projects — **no manual Dashboard config needed**.
 
-> 📝 `pass = "env(RESEND_API_KEY)"` means the key is read from an environment variable. Ensure `RESEND_API_KEY` is in `.env.development`, GitHub Secrets, **and** Supabase Edge Function Secrets.
+> 📝 `pass = "env(RESEND_API_KEY)"` means the key is read from an environment variable. Ensure `RESEND_API_KEY` is in `$SECRETS_PATH/supabase/.env.*`, GitHub Secrets, **and** Supabase Edge Function Secrets (via `bun run db:push:secrets`).
 
 ### Setup
 
 1. Create an account at [resend.com](https://resend.com).
 2. **Settings → API Keys** → new key.
 3. **Settings → Domains** → verify domain (DNS records).
-4. Add `RESEND_API_KEY=re_xxx...` to `.env.development`.
+4. Add `RESEND_API_KEY=re_xxx...` to `$SECRETS_PATH/supabase/.env.local` (and remote SoT files), then `bun run db:push:secrets`.
 
 ### Push SMTP
 
 ```bash
-supabase link --project-ref <project-id>
-supabase config push  # review diff, type Y
+supabase config diff --remote=<project-ref>
+supabase config push --remote=<project-ref>
+# or: bun run db:push:config <development|test|production>
 ```
 
 > ⚠️ The sender email (`admin_email`) must be a verified domain in Resend. For development, `xxx@resend.dev` (test domain) is allowed.

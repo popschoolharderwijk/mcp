@@ -63,7 +63,7 @@ afterAll(async () => {
 	await verifyState(initialState);
 });
 
-describe('RLS: teachers cannot see subscription / incasso data', () => {
+describe('RLS: teachers cannot see subscription / billing data', () => {
 	it('teacher of the agreement sees zero subscription rows', async () => {
 		const db = await createClientAs(TestUsers.TEACHER_ALICE);
 		const rows = unwrap(

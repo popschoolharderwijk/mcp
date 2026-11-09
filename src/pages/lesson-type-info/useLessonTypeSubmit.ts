@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { syncStripeCatalog } from '@/lib/billing/syncStripeCatalog';
 import { persistLessonTypeWithOptions } from '@/pages/lesson-type-info/lessonTypeSubmit';
 import {
 	resolveLessonTypeCanSubmit,
@@ -50,6 +51,11 @@ export function useLessonTypeSubmit({
 			});
 			if (!saveResult.ok) return;
 
+			void syncStripeCatalog({
+				lessonTypeId: saveResult.lessonTypeId,
+				rebuild: isEditMode,
+				quiet: true,
+			});
 			toast.success(labels.successMessage);
 			navigate('/lesson-types');
 		} catch (error) {

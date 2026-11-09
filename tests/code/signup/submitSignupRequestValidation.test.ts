@@ -1,15 +1,11 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	buildInsertPayload,
-	parseSepaFields,
-} from '../../../supabase/functions/submit-signup-request/lessonValidation';
+import { buildInsertPayload } from '../../../supabase/functions/submit-signup-request/lessonValidation';
 import type { SignupRequest } from '../../../supabase/functions/submit-signup-request/types';
 import { validateBasicFields } from '../../../supabase/functions/submit-signup-request/validation';
 
 const LESSON_TYPE_ID = '11111111-1111-1111-1111-111111111111';
 const LESSON_GROUP_ID = '22222222-2222-2222-2222-222222222222';
 const LESSON_OPTION_ID = '33333333-3333-3333-3333-333333333333';
-const VALID_IBAN = 'NL91 ABNA 0417 1643 00';
 
 async function readError(response: Response): Promise<string> {
 	const body = (await response.json()) as { error: string };
@@ -49,52 +45,6 @@ describe('validateBasicFields', () => {
 	});
 });
 
-describe('parseSepaFields', () => {
-	it('returns empty sepa fields when SEPA is omitted', () => {
-		expect(parseSepaFields({ ...baseBody } as SignupRequest)).toEqual({
-			ok: true,
-			sepa: { sepaIban: null, sepaHolder: null, sepaBic: null },
-		});
-	});
-
-	it('parses valid SEPA fields', () => {
-		const result = parseSepaFields({
-			...baseBody,
-			sepa_iban: VALID_IBAN,
-			sepa_account_holder: 'Anna Bakker',
-			sepa_bic: 'abnanl2a',
-		} as SignupRequest);
-		expect(result).toEqual({
-			ok: true,
-			sepa: {
-				sepaIban: 'NL91ABNA0417164300',
-				sepaHolder: 'Anna Bakker',
-				sepaBic: 'ABNANL2A',
-			},
-		});
-	});
-
-	it('rejects invalid IBAN and missing account holder', async () => {
-		const ibanResult = parseSepaFields({
-			...baseBody,
-			sepa_iban: 'INVALID',
-			sepa_account_holder: 'Anna Bakker',
-		} as SignupRequest);
-		expect(ibanResult.ok).toBe(false);
-		expect(await readError((ibanResult as { ok: false; response: Response }).response)).toBe('Ongeldig IBAN');
-
-		const holderResult = parseSepaFields({
-			...baseBody,
-			sepa_iban: VALID_IBAN,
-			sepa_account_holder: ' ',
-		} as SignupRequest);
-		expect(holderResult.ok).toBe(false);
-		expect(await readError((holderResult as { ok: false; response: Response }).response)).toBe(
-			'Rekeninghouder is verplicht bij SEPA',
-		);
-	});
-});
-
 describe('buildInsertPayload', () => {
 	it('normalizes signup request fields for insert', () => {
 		const payload = buildInsertPayload(
@@ -109,7 +59,6 @@ describe('buildInsertPayload', () => {
 				date_of_birth: '2010-05-01',
 			} as SignupRequest,
 			LESSON_OPTION_ID,
-			{ sepaIban: 'NL91ABNA0417164300', sepaHolder: 'Anna Bakker', sepaBic: null },
 		);
 		expect(payload).toEqual({
 			lesson_type_id: LESSON_TYPE_ID,
@@ -124,9 +73,6 @@ describe('buildInsertPayload', () => {
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,
 			notes: 'Voorkeur maandag',
-			sepa_iban: 'NL91ABNA0417164300',
-			sepa_account_holder: 'Anna Bakker',
-			sepa_bic: null,
 			status: 'pending',
 		});
 	});

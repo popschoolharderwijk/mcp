@@ -18,8 +18,6 @@ function mockRow(overrides: Partial<AgreementTableRow> = {}): AgreementTableRow 
 		price_per_lesson: 30,
 		created_at: '2026-01-01T00:00:00Z',
 		notes: null,
-		payment_method: 'sepa',
-		sepa_mandate_id: 'mandate-1',
 		teacher_user_id: 'tea-1',
 		student: {
 			first_name: 'Jan',
@@ -63,7 +61,7 @@ describe('wizardInitFromAgreement', () => {
 	});
 
 	it('maps agreement fields into the wizard form patch', () => {
-		const agreement = mockRow({ end_date: '2027-06-30', payment_method: 'stripe' });
+		const agreement = mockRow({ end_date: '2027-06-30' });
 		const result = wizardInitFromAgreement(false, true, agreement, '2027-07-31');
 		expect(result?.formPatch).toEqual({
 			studentUserId: 'stu-1',
@@ -92,8 +90,6 @@ describe('wizardInitFromAgreement', () => {
 				totalOccurrences: 0,
 				occupiedOccurrences: 0,
 			},
-			paymentMethod: 'stripe',
-			sepaMandateId: 'mandate-1',
 		});
 	});
 });

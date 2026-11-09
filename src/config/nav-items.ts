@@ -1,18 +1,14 @@
 import type { IconType } from 'react-icons';
 import {
 	LuBookOpen,
-	LuBuilding2,
-	LuCalculator,
 	LuCalendar,
 	LuCalendarOff,
 	LuChartBar,
 	LuClipboardList,
-	LuCreditCard,
-	LuFileSpreadsheet,
-	LuFileText,
 	LuFolderOpen,
 	LuGraduationCap,
 	LuInbox,
+	LuLandmark,
 	LuLayoutDashboard,
 	LuLightbulb,
 	LuMail,
@@ -52,6 +48,7 @@ const NAV_ITEMS = {
 		description: 'Schooljaar, lesvrije periodes, agenda, tarieven, e-mailtemplates en overige siteconfiguratie',
 	},
 	adminSection: { label: 'Beheer', icon: LuShieldCheck },
+	administrationSection: { label: 'Administratie', icon: LuLandmark },
 	teachers: {
 		label: 'Docenten',
 		icon: LuGraduationCap,
@@ -93,6 +90,11 @@ const NAV_ITEMS = {
 		icon: LuClipboardList,
 		description: 'Beheer lesovereenkomsten tussen leerlingen en docenten',
 	},
+	awaitingMandate: {
+		label: 'Wacht op machtiging',
+		icon: LuWallet,
+		description: 'Actieve overeenkomsten waarvoor nog geen Stripe-machtiging is afgegeven.',
+	},
 	lessonGroups: {
 		label: 'Groepslessen',
 		icon: LuUsers,
@@ -117,38 +119,6 @@ const NAV_ITEMS = {
 		label: 'Rapportage',
 		icon: LuChartBar,
 		description: 'Urenrapportage per docent, lessoort en leeftijdscategorie',
-	},
-	accounting: {
-		label: 'Boekhouding',
-		icon: LuCalculator,
-		description: 'Boekhoudrapportage voor Exact Online',
-	},
-	accountingSettings: {
-		label: 'Boekhouding-instellingen',
-		icon: LuCalculator,
-		description: 'Rekeningen, BTW en kostenplaatsen voor Exact',
-	},
-	subscriptions: { label: 'Facturatie', icon: LuCreditCard },
-	finance: { label: 'Financiën', icon: LuWallet },
-	directDebit: {
-		label: 'Incasso',
-		icon: LuFileSpreadsheet,
-		description: 'Beheer SEPA-incassobatches',
-	},
-	mandates: {
-		label: 'Mandaten',
-		icon: LuBuilding2,
-		description: 'Beheer SEPA-mandaten van leerlingen',
-	},
-	invoices: {
-		label: 'Facturen',
-		icon: LuFileText,
-		description: 'Overzicht van alle facturen',
-	},
-	myInvoices: {
-		label: 'Mijn facturen',
-		icon: LuFileText,
-		description: 'Overzicht van al je facturen',
 	},
 	noLessonPeriods: { label: 'Lesvrije periodes', icon: LuCalendarOff },
 	emailTemplates: { label: 'E-mailtemplates', icon: LuMail },

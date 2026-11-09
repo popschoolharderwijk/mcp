@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	formatDebtorPostalCity,
-	formatPhoneNumber,
-	hasParentContactInfo,
-} from '../../../src/lib/students/studentInfoHelpers';
+import { formatPhoneNumber, hasParentContactInfo } from '../../../src/lib/students/studentInfoHelpers';
 
 describe('formatPhoneNumber', () => {
 	it('returns dash for missing phone', () => {
@@ -16,16 +12,6 @@ describe('formatPhoneNumber', () => {
 
 	it('returns original value for other lengths', () => {
 		expect(formatPhoneNumber('+31612345678')).toBe('+31612345678');
-	});
-});
-
-describe('formatDebtorPostalCity', () => {
-	it('returns null when both values are missing', () => {
-		expect(formatDebtorPostalCity(null, null)).toBeNull();
-	});
-
-	it('combines postal code and city', () => {
-		expect(formatDebtorPostalCity('1234 AB', 'Amsterdam')).toBe('1234 AB Amsterdam');
 	});
 });
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	adminHrefs,
+	administrationHrefs,
+	administrationNavItems,
 	adminNavItems,
 	adminOperationalNavItems,
-	financeNavItems,
 	isPathInGroup,
 	isSidebarParentActive,
 	nextSidebarGroupOpen,
@@ -13,26 +14,22 @@ import { NAV_ICONS, NAV_LABELS } from '../../../src/config/nav-items';
 
 describe('sidebar nav item constants', () => {
 	it('maps admin nav items to hrefs', () => {
-		expect(adminHrefs).toEqual(
-			adminNavItems.map((item) => item.href).concat(financeNavItems.map((item) => item.href)),
-		);
+		expect(adminHrefs).toEqual(adminNavItems.map((item) => item.href));
 	});
 
-	it('maps finance nav items to hrefs', () => {
-		expect(financeNavItems.map((item) => item.href)).toEqual([
-			'/direct-debit',
-			'/mandates',
-			'/invoices',
-			'/accounting',
-		]);
-	});
-
-	it('includes operational admin routes', () => {
+	it('includes operational admin routes without awaiting-mandate', () => {
 		expect(adminOperationalNavItems.map((item) => item.href)).toEqual([
 			'/agreements',
 			'/lesson-groups',
 			'/signup-requests',
 			'/trial-lessons',
+		]);
+	});
+
+	it('places awaiting-mandate under administration', () => {
+		expect(administrationHrefs).toEqual(['/awaiting-mandate']);
+		expect(administrationNavItems).toEqual([
+			{ href: '/awaiting-mandate', label: NAV_LABELS.awaitingMandate, icon: NAV_ICONS.awaitingMandate },
 		]);
 	});
 
@@ -79,9 +76,6 @@ describe('isSidebarParentActive', () => {
 	});
 
 	it('does not highlight a parent when a child is active', () => {
-		const financeChildHrefs = financeNavItems.map((item) => item.href);
-		expect(isSidebarParentActive('/mandates', undefined, financeChildHrefs)).toBe(false);
-		expect(isSidebarParentActive('/direct-debit', undefined, financeChildHrefs)).toBe(false);
 		expect(isSidebarParentActive('/teachers/availability', '/teachers', teacherChildHrefs)).toBe(false);
 	});
 
@@ -96,8 +90,8 @@ describe('isSidebarParentActive', () => {
 
 describe('nextSidebarGroupOpen', () => {
 	it('toggles a parent that has no own page', () => {
-		expect(nextSidebarGroupOpen('/mandates', undefined, true)).toBe(false);
-		expect(nextSidebarGroupOpen('/mandates', undefined, false)).toBe(true);
+		expect(nextSidebarGroupOpen('/users', undefined, true)).toBe(false);
+		expect(nextSidebarGroupOpen('/users', undefined, false)).toBe(true);
 	});
 
 	it('toggles when already on the parent page', () => {

@@ -35,7 +35,7 @@ export const APP_SETTINGS = {
 	},
 	AGREEMENTS: {
 		default_start_offset_days: 1,
-		default_payment_method: 'sepa' as const,
+		default_payment_method: 'stripe' as const,
 	},
 	TIPS: {
 		enabled: false,
@@ -58,23 +58,6 @@ export const EMAIL_TEMPLATES = {
 		'trial_scheduled_teacher',
 	] as const,
 	BY_KEY: EMAIL_TEMPLATE_BOOTSTRAP,
-} as const;
-
-/**
- * accounting_settings singleton defaults from migration + bootstrap.sql INSERT (id).
- */
-export const ACCOUNTING_SETTINGS = {
-	JOURNAL_CODE_MEMORIAL: '90',
-	JOURNAL_CODE_BANK: '20',
-	ACCOUNT_DEBTORS: '1300',
-	ACCOUNT_REVENUE_YOUTH: '8000',
-	ACCOUNT_REVENUE_ADULT: '8010',
-	ACCOUNT_VAT_21: '1500',
-	ACCOUNT_BANK_STRIPE: '1100',
-	VAT_CODE_21: 'VH',
-	VAT_CODE_EXEMPT: '0',
-	CURRENCY: 'EUR',
-	DESCRIPTION_TEMPLATE: 'Lesgeld {periode} - {leerling}',
 } as const;
 
 /**

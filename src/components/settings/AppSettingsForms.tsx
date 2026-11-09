@@ -22,7 +22,6 @@ import {
 import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type {
 	AgendaSetting,
-	AgreementPaymentMethod,
 	AgreementsSetting,
 	BrandingSetting,
 	SchoolYearSetting,
@@ -355,7 +354,7 @@ export function AgreementsSettingsForm({ canEdit, initial, saving, onSave }: Sav
 	return (
 		<SettingsFormCard
 			title="Overeenkomsten"
-			description="Standaard startdatum-offset en betaalmethode. De einddatum volgt het ingestelde schooljaareinde."
+			description="Standaard startdatum-offset. De einddatum volgt het ingestelde schooljaareinde. Betaling verloopt via Stripe."
 		>
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="space-y-2">
@@ -368,27 +367,6 @@ export function AgreementsSettingsForm({ canEdit, initial, saving, onSave }: Sav
 						value={form.default_start_offset_days}
 						onChange={(e) => setForm((f) => ({ ...f, default_start_offset_days: Number(e.target.value) }))}
 					/>
-				</div>
-				<div className="space-y-2">
-					<Label>Betaalmethode</Label>
-					<Select
-						disabled={!canEdit}
-						value={form.default_payment_method}
-						onValueChange={(value) =>
-							setForm((f) => ({
-								...f,
-								default_payment_method: value as AgreementPaymentMethod,
-							}))
-						}
-					>
-						<SelectTrigger>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent>
-							<SelectItem value="sepa">Incasso (SEPA)</SelectItem>
-							<SelectItem value="stripe">Stripe</SelectItem>
-						</SelectContent>
-					</Select>
 				</div>
 			</div>
 			<SettingsFormActions

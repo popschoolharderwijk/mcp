@@ -1,9 +1,8 @@
 import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
-import { DatePicker } from '@/components/ui/date-picker';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { pastDatePickerRange } from '@/lib/date/datePickerHelpers';
 
 interface StudentFormPersonalSectionProps {
 	vm: StudentFormFieldsViewModel;
@@ -54,19 +53,12 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 						onChange={(value) => setForm({ ...form, phone_number: value })}
 					/>
 				</div>
-				<div className="space-y-1.5">
-					<Label htmlFor="student-dob">Geboortedatum</Label>
-					<DatePicker
-						variant="input"
-						id="student-dob"
-						value={form.date_of_birth}
-						onChange={(value) => setForm({ ...form, date_of_birth: value })}
-						onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
-						{...pastDatePickerRange()}
-						autoComplete="bday"
-						calendarAriaLabel="Kies geboortedatum"
-					/>
-				</div>
+				<DateOfBirthField
+					id="student-dob"
+					value={form.date_of_birth}
+					onChange={(value) => setForm({ ...form, date_of_birth: value })}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+				/>
 			</div>
 		</div>
 	);

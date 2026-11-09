@@ -66,6 +66,7 @@ const EMAIL_EVENTS = {
 			'tijd',
 			'startdatum',
 			'betaalmethode',
+			'betaalblok',
 		],
 		previewData: {
 			leerling_naam: 'Sanne de Vries',
@@ -76,7 +77,8 @@ const EMAIL_EVENTS = {
 			dag: 'dinsdag',
 			tijd: '15:30',
 			startdatum: '2026-09-01',
-			betaalmethode: 'Automatische incasso (SEPA)',
+			betaalmethode: 'Stripe',
+			betaalblok: '[Betaalmethode koppelen](https://example.com/pay)',
 		},
 	},
 	agreement_created_teacher: {
@@ -103,7 +105,7 @@ const EMAIL_EVENTS = {
 			dag: 'dinsdag',
 			tijd: '15:30',
 			startdatum: '2026-09-01',
-			betaalmethode: 'Automatische incasso (SEPA)',
+			betaalmethode: 'Stripe',
 		},
 	},
 } as const satisfies Record<string, EmailEventDefinition>;

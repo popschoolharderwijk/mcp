@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	applyPublicSignupSubmitOutcome,
+	buildSignupOverviewRows,
 	executePublicSignupSubmit,
-	isStep2NextDisabled,
-	validateSepaFields,
+	getPublicSignupFormValidationError,
+	needsManualSignupChoiceNext,
+	resolveSelectedSignupGroup,
+	resolveSignupChoiceStepLabel,
 } from '../../../src/lib/signup/publicSignupHelpers';
-
-const VALID_IBAN = 'NL91ABNA0417164300';
 
 const baseForm = {
 	first_name: 'Anna',
@@ -20,85 +21,124 @@ const baseForm = {
 	notes: 'Voorkeur maandag',
 };
 
-describe('validateSepaFields', () => {
-	it('returns null when SEPA is disabled', () => {
-		expect(
-			validateSepaFields({
-				enabled: false,
-				iban: '',
-				holder: '',
-				bic: '',
-				consent: false,
-			}),
-		).toBeNull();
-	});
-
-	it('returns IBAN error for invalid IBAN', () => {
-		expect(
-			validateSepaFields({
-				enabled: true,
-				iban: 'INVALID',
-				holder: 'Anna Bakker',
-				bic: '',
-				consent: true,
-			}),
-		).toBe('Ongeldig IBAN');
-	});
-
-	it('returns holder error when holder is blank', () => {
-		expect(
-			validateSepaFields({
-				enabled: true,
-				iban: VALID_IBAN,
-				holder: '   ',
-				bic: '',
-				consent: true,
-			}),
-		).toBe('Vul de rekeninghouder in');
-	});
-
-	it('returns consent error when consent is missing', () => {
-		expect(
-			validateSepaFields({
-				enabled: true,
-				iban: VALID_IBAN,
-				holder: 'Anna Bakker',
-				bic: '',
-				consent: false,
-			}),
-		).toBe('Bevestig de SEPA-machtiging om door te gaan');
-	});
-
-	it('returns null for valid SEPA fields', () => {
-		expect(
-			validateSepaFields({
-				enabled: true,
-				iban: VALID_IBAN,
-				holder: 'Anna Bakker',
-				bic: 'ABNANL2A',
-				consent: true,
-			}),
-		).toBeNull();
+describe('resolveSignupChoiceStepLabel', () => {
+	it('uses group wording for group lessons and frequency wording otherwise', () => {
+		expect(resolveSignupChoiceStepLabel(true)).toBe('Kies groep');
+		expect(resolveSignupChoiceStepLabel(false)).toBe('Hoe vaak?');
+		expect(resolveSignupChoiceStepLabel(undefined)).toBe('Hoe vaak?');
 	});
 });
 
-describe('isStep2NextDisabled', () => {
-	it('requires group selection for group lessons', () => {
-		expect(isStep2NextDisabled(true, null, 0, false)).toBe(true);
-		expect(isStep2NextDisabled(true, 'group-1', 0, false)).toBe(false);
+describe('needsManualSignupChoiceNext', () => {
+	it('is true only for individual lessons with an empty option catalog', () => {
+		expect(needsManualSignupChoiceNext(false, 0)).toBe(true);
+		expect(needsManualSignupChoiceNext(false, 2)).toBe(false);
+		expect(needsManualSignupChoiceNext(true, 0)).toBe(false);
+	});
+});
+
+describe('resolveSelectedSignupGroup', () => {
+	const groups = [
+		{ id: 'g1', name: 'Maandag' },
+		{ id: 'g2', name: 'Dinsdag' },
+	];
+
+	it('returns null for waitlist, unset, or unknown ids', () => {
+		expect(resolveSelectedSignupGroup(groups, null)).toBeNull();
+		expect(resolveSelectedSignupGroup(groups, 'waitlist')).toBeNull();
+		expect(resolveSelectedSignupGroup(groups, 'missing')).toBeNull();
 	});
 
-	it('requires option selection when options exist for individual lessons', () => {
-		expect(isStep2NextDisabled(false, null, 2, false)).toBe(true);
-		expect(isStep2NextDisabled(false, null, 2, true)).toBe(false);
+	it('returns the matching group when selected', () => {
+		expect(resolveSelectedSignupGroup(groups, 'g2')).toEqual({ id: 'g2', name: 'Dinsdag' });
+	});
+});
+
+describe('buildSignupOverviewRows', () => {
+	it('includes lesson option and personal fields for individual signup', () => {
+		expect(
+			buildSignupOverviewRows({
+				lessonTypeName: 'Gitaar',
+				isGroupLesson: false,
+				isWaitlist: false,
+				group: null,
+				option: { duration_minutes: 30, frequency: 'weekly', price_per_lesson: 25 },
+				form: baseForm,
+			}),
+		).toEqual([
+			{ label: 'Lessoort', value: 'Gitaar' },
+			{ label: 'Lesoptie', value: '30 min · Wekelijks · €25.00 per les' },
+			{ label: 'Naam', value: 'Anna Bakker' },
+			{ label: 'E-mail', value: 'anna@example.com' },
+			{ label: 'Telefoon', value: '0612345678' },
+			{ label: 'Geboortedatum', value: '01-05-2010' },
+			{ label: 'Opmerkingen', value: 'Voorkeur maandag' },
+		]);
 	});
 
-	it('allows next when no options exist for individual lessons', () => {
-		expect(isStep2NextDisabled(false, null, 0, false)).toBe(false);
+	it('shows waitlist for group signup without selected group', () => {
+		expect(
+			buildSignupOverviewRows({
+				lessonTypeName: 'Band',
+				isGroupLesson: true,
+				isWaitlist: true,
+				group: null,
+				option: null,
+				form: { ...baseForm, phone_number: '', date_of_birth: '', notes: '' },
+			}),
+		).toEqual([
+			{ label: 'Lessoort', value: 'Band' },
+			{ label: 'Groep', value: 'Wachtlijst' },
+			{ label: 'Naam', value: 'Anna Bakker' },
+			{ label: 'E-mail', value: 'anna@example.com' },
+		]);
+	});
+});
+
+describe('getPublicSignupFormValidationError', () => {
+	it('allows empty optional phones', () => {
+		expect(getPublicSignupFormValidationError(baseForm)).toBeNull();
+		expect(
+			getPublicSignupFormValidationError({
+				...baseForm,
+				phone_number: '',
+				parent_phone_number: '',
+			}),
+		).toBeNull();
+	});
+
+	it('rejects incomplete student or parent phone numbers', () => {
+		expect(getPublicSignupFormValidationError({ ...baseForm, phone_number: '061234567' })).toBe(
+			'Telefoonnummer moet 10 cijfers bevatten',
+		);
+		expect(getPublicSignupFormValidationError({ ...baseForm, parent_phone_number: '0612' })).toBe(
+			'Ouder telefoonnummer moet 10 cijfers bevatten',
+		);
 	});
 });
 
 describe('executePublicSignupSubmit', () => {
+	it('blocks invoke when phone validation fails', async () => {
+		let invoked = false;
+		const outcome = await executePublicSignupSubmit({
+			selectedType: { id: 'lt-1', is_group_lesson: false },
+			selectedGroupId: null,
+			selectedOption: null,
+			lessonTypeOptions: [],
+			form: { ...baseForm, phone_number: '06' },
+			invoke: async () => {
+				invoked = true;
+				return { data: { success: true }, error: null };
+			},
+			getInvokeErrorMessage: async () => 'invoke failed',
+		});
+		expect(outcome).toEqual({
+			kind: 'response-error',
+			message: 'Telefoonnummer moet 10 cijfers bevatten',
+		});
+		expect(invoked).toBe(false);
+	});
+
 	it('returns success when invoke succeeds', async () => {
 		const outcome = await executePublicSignupSubmit({
 			selectedType: { id: 'lt-1', is_group_lesson: false },
@@ -106,7 +146,6 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
-			sepa: { enabled: false, iban: '', holder: '', bic: '', consent: false },
 			invoke: async () => ({ data: { success: true }, error: null }),
 			getInvokeErrorMessage: async () => 'invoke failed',
 		});
@@ -120,7 +159,6 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
-			sepa: { enabled: false, iban: '', holder: '', bic: '', consent: false },
 			invoke: async () => ({ data: null, error: { message: 'network' } }),
 			getInvokeErrorMessage: async () => 'network error',
 		});
@@ -134,14 +172,13 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
-			sepa: { enabled: false, iban: '', holder: '', bic: '', consent: false },
 			invoke: async () => ({ data: { error: 'duplicate email' }, error: null }),
 			getInvokeErrorMessage: async () => 'invoke failed',
 		});
 		expect(outcome).toEqual({ kind: 'response-error', message: 'duplicate email' });
 	});
 
-	it('builds group lesson payload with normalized SEPA fields', async () => {
+	it('builds group lesson payload', async () => {
 		const invokedBodies: unknown[] = [];
 		await executePublicSignupSubmit({
 			selectedType: { id: 'lt-1', is_group_lesson: true },
@@ -149,13 +186,6 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
-			sepa: {
-				enabled: true,
-				iban: 'nl91 abna 0417 1643 00',
-				holder: ' Anna Bakker ',
-				bic: ' abnanl2a ',
-				consent: true,
-			},
 			invoke: async (body) => {
 				invokedBodies.push(body);
 				return { data: { success: true }, error: null };
@@ -168,9 +198,6 @@ describe('executePublicSignupSubmit', () => {
 				lesson_group_id: 'group-1',
 				lesson_type_option_id: null,
 				...baseForm,
-				sepa_iban: 'NL91ABNA0417164300',
-				sepa_account_holder: 'Anna Bakker',
-				sepa_bic: 'ABNANL2A',
 			},
 		]);
 	});
@@ -194,7 +221,6 @@ describe('executePublicSignupSubmit', () => {
 				},
 			],
 			form: baseForm,
-			sepa: { enabled: false, iban: '', holder: '', bic: '', consent: false },
 			invoke: async (body) => {
 				invokedBodies.push(body);
 				return { data: { success: true }, error: null };
@@ -207,9 +233,6 @@ describe('executePublicSignupSubmit', () => {
 				lesson_group_id: null,
 				lesson_type_option_id: 'opt-1',
 				...baseForm,
-				sepa_iban: null,
-				sepa_account_holder: null,
-				sepa_bic: null,
 			},
 		]);
 	});

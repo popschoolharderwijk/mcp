@@ -72,7 +72,7 @@ const supabaseMock = {
 		invoke: (fn: string, body?: { body?: unknown }) => {
 			if (fn === 'send-template-email') return Promise.resolve({ data: null, error: null });
 			recordedCalls.push({ table: fn, op: 'insert', payload: body?.body ?? null, filters: {} });
-			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'send-direct-debit-invite';
+			const key = fn === 'create-duo-agreements' ? 'create-duo-agreements' : 'issue-payment-link';
 			return Promise.resolve(tableResults[key] ?? { data: null, error: null });
 		},
 	},
@@ -84,6 +84,16 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 
 mock.module('@/integrations/supabase/client', () => ({
 	supabase: supabaseMock,
+}));
+
+let duoMailStudentSent = true;
+
+mock.module('../../../src/lib/email/sendAgreementCreatedMails', () => ({
+	sendAgreementCreatedMails: async () => ({ studentSent: duoMailStudentSent, teacherSent: true }),
+}));
+
+mock.module('@/lib/email/sendAgreementCreatedMails', () => ({
+	sendAgreementCreatedMails: async () => ({ studentSent: duoMailStudentSent, teacherSent: true }),
 }));
 
 function freeSlot(overrides: Partial<SlotWithStatus> = {}): SlotWithStatus {
@@ -108,8 +118,6 @@ function baseForm(overrides: Partial<WizardSaveForm> = {}): WizardSaveForm {
 		selectedOptionSnapshot: null,
 		startDate: '2026-09-01',
 		endDate: '2027-07-31',
-		paymentMethod: 'stripe',
-		sepaMandateId: null,
 		...overrides,
 	};
 }
@@ -137,8 +145,6 @@ function mockAgreementRow(overrides: Partial<AgreementTableRow> = {}): Agreement
 		price_per_lesson: 30,
 		created_at: '2026-01-01T00:00:00Z',
 		notes: null,
-		payment_method: 'stripe',
-		sepa_mandate_id: null,
 		teacher_user_id: 'tea-1',
 		student: {
 			first_name: 'Jan',
@@ -173,6 +179,7 @@ describe('saveWizardAgreement', () => {
 		recordedCalls.length = 0;
 		tableResults = {};
 		navigateCalls.length = 0;
+		duoMailStudentSent = true;
 	});
 
 	it('returns false when required fields are missing', async () => {
@@ -226,21 +233,6 @@ describe('saveWizardAgreement', () => {
 		});
 		expect(result).toBe(false);
 		expect(toastMessages).toEqual([{ type: 'error', message: 'Selecteer een lesoptie' }]);
-	});
-
-	it('returns false for sepa save without a mandate id', async () => {
-		const result = await saveWizardAgreement({
-			form: baseForm({ paymentMethod: 'sepa', sepaMandateId: null }),
-			agreement: null,
-			isDuoLesson: false,
-			fromRequestId: null,
-			fromTrialId: null,
-			navigate: recordNavigate,
-		});
-		expect(result).toBe(false);
-		expect(toastMessages).toEqual([
-			{ type: 'error', message: 'Kies een SEPA-mandaat of een andere betaalmethode' },
-		]);
 	});
 
 	it('saves a new agreement and navigates to agreements', async () => {
@@ -297,21 +289,6 @@ describe('saveWizardAgreement', () => {
 		expect(navigateCalls).toEqual(['/trial-lessons']);
 	});
 
-	it('shows the sepa toast for a new agreement', async () => {
-		const result = await saveWizardAgreement({
-			form: baseForm({ paymentMethod: 'sepa', sepaMandateId: 'mandate-1' }),
-			agreement: null,
-			isDuoLesson: false,
-			fromRequestId: null,
-			fromTrialId: null,
-			navigate: recordNavigate,
-		});
-		expect(result).toBe(true);
-		expect(toastMessages).toEqual([
-			{ type: 'success', message: 'Overeenkomst toegevoegd — SEPA-incasso gekoppeld' },
-		]);
-	});
-
 	it('returns false when upsert fails with a unique constraint error', async () => {
 		tableResults['lesson_agreements:insert'] = { data: null, error: { message: 'duplicate key unique violation' } };
 		const result = await saveWizardAgreement({
@@ -346,7 +323,7 @@ describe('saveWizardAgreement', () => {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-direct-debit-invite'] = { data: null, error: null };
+		tableResults['issue-payment-link'] = { data: null, error: null };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,
@@ -377,11 +354,11 @@ describe('saveWizardAgreement', () => {
 	});
 
 	it('shows warning toast when duo invites fail', async () => {
+		duoMailStudentSent = false;
 		tableResults['create-duo-agreements'] = {
 			data: { agreement_ids: ['agr-1', 'agr-2'], duo_pair_id: 'pair-1' },
 			error: null,
 		};
-		tableResults['send-direct-debit-invite'] = { data: null, error: { message: 'invite failed' } };
 		const result = await saveWizardAgreement({
 			form: duoForm(),
 			agreement: null,

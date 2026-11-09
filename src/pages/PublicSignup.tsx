@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
-import type { SignupFormFields, SignupSepaFields } from '@/lib/signup/publicSignupHelpers';
+import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import { PublicSignupDoneView } from './public-signup/PublicSignupDoneView';
 import { PublicSignupLayout } from './public-signup/PublicSignupLayout';
-import type { LessonType, SignupStep } from './public-signup/types';
+import type { LessonType } from './public-signup/types';
 import {
 	usePublicSignupGroups,
 	usePublicSignupLessonTypeOptions,
@@ -23,16 +23,9 @@ const EMPTY_FORM: SignupFormFields = {
 	notes: '',
 };
 
-const EMPTY_SEPA: SignupSepaFields = {
-	enabled: false,
-	iban: '',
-	holder: '',
-	bic: '',
-	consent: false,
-};
-
 export default function PublicSignup() {
-	const [step, setStep] = useState<SignupStep>(1);
+	const [step, setStep] = useState(1);
+	const [highestReachedStep, setHighestReachedStep] = useState(1);
 	const lessonTypes = usePublicSignupLessonTypes();
 	const [selectedType, setSelectedType] = useState<LessonType | null>(null);
 	const groups = usePublicSignupGroups(selectedType);
@@ -40,15 +33,22 @@ export default function PublicSignup() {
 	const lessonTypeOptions = usePublicSignupLessonTypeOptions(selectedType);
 	const [selectedOption, setSelectedOption] = useState<OptionSnapshot | null>(null);
 	const [form, setForm] = useState(EMPTY_FORM);
-	const [sepa, setSepa] = useState(EMPTY_SEPA);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [done, setDone] = useState(false);
 
 	const handleSelectType = (lessonType: LessonType) => {
+		const typeChanged = selectedType?.id !== lessonType.id;
 		setSelectedType(lessonType);
 		setSelectedGroupId(null);
 		setSelectedOption(null);
+		setStep(2);
+		setHighestReachedStep(typeChanged ? 2 : (highest) => Math.max(highest, 2));
+	};
+
+	const handleStepChange = (next: number) => {
+		setStep(next);
+		setHighestReachedStep((highest) => Math.max(next, highest));
 	};
 
 	const submit = usePublicSignupSubmit({
@@ -57,12 +57,10 @@ export default function PublicSignup() {
 		selectedOption,
 		lessonTypeOptions,
 		form,
-		sepa,
 		setSubmitting,
 		setError,
 		onSuccess: () => {
 			setDone(true);
-			setStep(4);
 		},
 	});
 
@@ -73,6 +71,7 @@ export default function PublicSignup() {
 	return (
 		<PublicSignupLayout
 			step={step}
+			highestReachedStep={highestReachedStep}
 			selectedType={selectedType}
 			lessonTypes={lessonTypes}
 			groups={groups}
@@ -80,15 +79,13 @@ export default function PublicSignup() {
 			lessonTypeOptions={lessonTypeOptions}
 			selectedOption={selectedOption}
 			form={form}
-			sepa={sepa}
 			error={error}
 			submitting={submitting}
 			onSelectType={handleSelectType}
 			onSelectGroupId={setSelectedGroupId}
 			onSelectOption={setSelectedOption}
 			onFormChange={setForm}
-			onSepaChange={setSepa}
-			onStepChange={setStep}
+			onStepChange={handleStepChange}
 			onSubmit={submit}
 		/>
 	);

@@ -14,8 +14,6 @@ describe('createInitialWizardForm', () => {
 			slot: null,
 			partnerStudentUserId: null,
 			partnerUser: null,
-			paymentMethod: 'sepa',
-			sepaMandateId: null,
 		});
 	});
 });

@@ -1,0 +1,10 @@
+{
+	"name": "mcp",
+	"dockerComposeFile": "compose.yml",
+	"service": "workspace",
+	"workspaceFolder": "/workspace",
+	"remoteUser": "agent",
+	"overrideCommand": false,
+	"postCreateCommand": "bash /workspace/docker/seed-agent-home.sh",
+	"shutdownAction": "stopCompose"
+}

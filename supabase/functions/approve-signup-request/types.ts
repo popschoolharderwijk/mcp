@@ -8,7 +8,4 @@ export interface Body {
 
 export type SignupRequestRow = SignupRequestRowCore & {
 	lesson_group_id: string | null;
-	sepa_iban: string | null;
-	sepa_bic: string | null;
-	sepa_account_holder: string | null;
 };

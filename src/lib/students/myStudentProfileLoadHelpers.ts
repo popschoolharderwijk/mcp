@@ -16,11 +16,6 @@ export interface MyStudentProfileData {
 		parent_name: string | null;
 		parent_email: string | null;
 		parent_phone_number: string | null;
-		debtor_info_same_as_student: boolean;
-		debtor_name: string | null;
-		debtor_address: string | null;
-		debtor_postal_code: string | null;
-		debtor_city: string | null;
 	};
 }
 
@@ -33,8 +28,7 @@ export type MyStudentProfileLoadOutcome =
 	  }
 	| { kind: 'error' };
 
-const STUDENT_SELECT =
-	'user_id, parent_name, parent_email, parent_phone_number, debtor_info_same_as_student, debtor_name, debtor_address, debtor_postal_code, debtor_city';
+const STUDENT_SELECT = 'user_id, parent_name, parent_email, parent_phone_number';
 const PROFILE_SELECT = 'email, first_name, last_name, phone_number, avatar_url';
 
 function reportMyStudentProfileLoadError(error: unknown): MyStudentProfileLoadOutcome {

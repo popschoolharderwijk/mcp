@@ -7,7 +7,6 @@ export interface SignupLessonTypeCellContent {
 	groupLabel: string | null;
 	showWaitlistBadge: boolean;
 	optionLabel: string | null;
-	sepaIban: string | null;
 }
 
 function getSignupLessonTypeSecondary(
@@ -33,7 +32,6 @@ export function getSignupLessonTypeCellContent(row: SignupRequestRowBase): Signu
 		groupLabel: secondary?.kind === 'group' ? formatSignupGroupLabel(secondary.groupName) : null,
 		showWaitlistBadge: secondary?.kind === 'waitlist',
 		optionLabel: row.option_label,
-		sepaIban: row.sepa_iban,
 	};
 }
 

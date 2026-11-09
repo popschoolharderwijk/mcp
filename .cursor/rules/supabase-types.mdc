@@ -15,11 +15,11 @@ After **any** migration or schema change, ask the **user** to regenerate types (
 ```bash
 # Local Docker stack
 supabase db reset
-supabase gen types typescript --local > src/integrations/supabase/types.ts
+bun run db:types
 
-# Or remote (linked project)
-supabase db reset --linked
-bun run supabase:types
+# Or remote (prefer bun run db:reset <env>)
+bun run db:reset test   # example: mcp-test via --remote=<ref> --yes
+bun run db:types test
 ```
 
 Reset applies migrations + seeds (`bootstrap.sql`, `lesson-types.sql`, `test.sql` on local/dev/test). Prefer that over editing `types.ts` in the editor or in agent diffs.
@@ -122,6 +122,6 @@ export type { StudentInfoCardData };
 
 1. **Type safety**: Types are auto-generated from the database schema
 2. **Consistency**: No drift between database and TypeScript types
-3. **Maintainability**: Changes to the database schema are reflected after regenerating types (`--local` or `--linked` / `bun run supabase:types`)
+3. **Maintainability**: Changes to the database schema are reflected after regenerating types (`bun run db:types` / `bun run db:types <env>`)
 4. **Less code**: Avoid duplicating type definitions
 5. **Discoverability**: All entity types in one place (`src/types/`)

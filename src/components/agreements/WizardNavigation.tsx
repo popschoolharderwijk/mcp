@@ -15,8 +15,6 @@ export function WizardNavigation({ wizard }: WizardNavigationProps) {
 		slot: wizard.form.slot,
 		saving: wizard.saving,
 		isTeacherOwnStudent: wizard.isTeacherOwnStudent,
-		paymentMethod: wizard.form.paymentMethod,
-		sepaMandateId: wizard.form.sepaMandateId,
 		isEditMode: wizard.isEditMode,
 		hasChanges: wizard.hasChanges,
 	});
@@ -24,7 +22,7 @@ export function WizardNavigation({ wizard }: WizardNavigationProps) {
 	const primaryLabel = getWizardPrimaryButtonLabel(wizard.isLastStep, wizard.saving, wizard.isEditMode);
 
 	return (
-		<div className="mt-6 max-w-2xl flex justify-between gap-2">
+		<div className="mt-6 flex justify-between gap-2">
 			{!wizard.isFirstStep && (
 				<Button variant="outline" onClick={wizard.prevStep}>
 					Vorige

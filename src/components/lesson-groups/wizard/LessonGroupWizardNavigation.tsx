@@ -31,7 +31,7 @@ export function LessonGroupWizardNavigation({ wizard }: LessonGroupWizardNavigat
 	const rightAction = resolveWizardNavRightAction(isLast);
 
 	return (
-		<div className="mt-6 max-w-3xl flex justify-between gap-2">
+		<div className="mt-6 flex justify-between gap-2">
 			{leftAction === 'prev' ? (
 				<Button variant="outline" onClick={goPrev}>
 					Vorige

@@ -10,7 +10,10 @@
  * Password (if set) applies to every user. Empty role entry = no role for that user.
  * If the user already exists, only the role is updated.
  *
- * Configure in .env:
+ * Configure under SECRETS_PATH (copy `.env.example` → `.env`).
+ * Unset NODE_ENV reads `$SECRETS_PATH/.env.local` (local Docker).
+ * `NODE_ENV=development` reads `$SECRETS_PATH/.env.development.local`.
+ * Shared defaults can live in secrets `.env`:
  *   SUPABASE_URL=https://xxx.supabase.co
  *   SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
  *   DEV_LOGIN_EMAIL=dev@example.com,other@example.com

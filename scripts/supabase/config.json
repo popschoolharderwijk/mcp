@@ -1,0 +1,19 @@
+{
+	"secrets": ["RESEND_API_KEY", "RESEND_FROM_EMAIL", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"],
+	"targets": {
+		"local": {
+			"projectRef": null
+		},
+		"development": {
+			"projectRef": "zdvscmogkfyddnnxzkdu",
+			"confirm": "confirmYes"
+		},
+		"test": {
+			"projectRef": "jserlqacarlgtdzrblic"
+		},
+		"production": {
+			"projectRef": "bnagepkxryauifzyoxgo",
+			"confirm": "confirmTarget"
+		}
+	}
+}

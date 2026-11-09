@@ -5,8 +5,6 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { ThemedToaster } from './components/ThemedToaster';
 import { ThemeProvider } from './components/ThemeProvider';
 import Account from './pages/Account';
-import AccountingReport from './pages/AccountingReport';
-import AccountingSettingsPage from './pages/AccountingSettingsPage';
 import Agenda from './pages/Agenda';
 import Agreements from './pages/Agreements';
 import AgreementWizard from './pages/AgreementWizard';
@@ -14,28 +12,25 @@ import Announcements from './pages/Announcements';
 import AppSettings from './pages/AppSettings';
 import AuthCallback from './pages/AuthCallback';
 import AuthConfirm from './pages/AuthConfirm';
+import AwaitingMandate from './pages/AwaitingMandate';
 import Dashboard from './pages/Dashboard';
-import DirectDebit from './pages/DirectDebit';
-import DirectDebitBatchDetail from './pages/DirectDebitBatchDetail';
-import DirectDebitStart from './pages/DirectDebitStart';
-import Invoices from './pages/Invoices';
 import LessonGroups from './pages/LessonGroups';
 import LessonGroupWizard from './pages/LessonGroupWizard';
 import LessonTypeInfo from './pages/LessonTypeInfo';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
-import Mandates from './pages/Mandates';
 import MyAvailability from './pages/MyAvailability';
-import MyInvoices from './pages/MyInvoices';
 import MyStatistics from './pages/MyStatistics';
 import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
 import MyTrial from './pages/MyTrial';
 import NotFound from './pages/NotFound';
+import Pay from './pages/Pay';
 import Projects from './pages/Projects';
 import PublicSignup from './pages/PublicSignup';
 import Reports from './pages/Reports';
 import SignupRequests from './pages/SignupRequests';
+import StripeCheckoutStart from './pages/StripeCheckoutStart';
 import StudentDetail from './pages/StudentDetail';
 import Students from './pages/Students';
 
@@ -61,7 +56,8 @@ const App = () => (
 					<Route path="/auth/callback" element={<AuthCallback />} />
 					<Route path="/auth/confirm" element={<AuthConfirm />} />
 					<Route path="/signup" element={<PublicSignup />} />
-					<Route path="/direct-debit/start" element={<DirectDebitStart />} />
+					<Route path="/pay" element={<Pay />} />
+					<Route path="/stripe/checkout/start" element={<StripeCheckoutStart />} />
 
 					{/* Protected dashboard routes */}
 					<Route
@@ -80,6 +76,7 @@ const App = () => (
 						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />
 						<Route path="/lesson-types/:id" element={<LessonTypeInfo />} />
 						<Route path="/agreements" element={<Agreements />} />
+						<Route path="/awaiting-mandate" element={<AwaitingMandate />} />
 						<Route path="/lesson-groups" element={<LessonGroups />} />
 						<Route path="/lesson-groups/new" element={<LessonGroupWizard />} />
 						<Route path="/lesson-groups/:id" element={<LessonGroupWizard />} />
@@ -110,13 +107,6 @@ const App = () => (
 						<Route path="/students/:userId/:tab" element={<StudentDetail />} />
 						<Route path="/students/:userId" element={<StudentDetail />} />
 						<Route path="/reports" element={<Reports />} />
-						<Route path="/accounting" element={<AccountingReport />} />
-						<Route path="/accounting/settings" element={<AccountingSettingsPage />} />
-						<Route path="/direct-debit" element={<DirectDebit />} />
-						<Route path="/direct-debit/batches/:id" element={<DirectDebitBatchDetail />} />
-						<Route path="/mandates" element={<Mandates />} />
-						<Route path="/invoices" element={<Invoices />} />
-						<Route path="/my-invoices" element={<MyInvoices />} />
 						<Route path="/announcements" element={<Announcements />} />
 						<Route path="/manual" element={<UserManual />} />
 					</Route>
