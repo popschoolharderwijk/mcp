@@ -4,7 +4,10 @@ import {
 	assertPositiveYearlyCents,
 	BILLING_MONTHS_PER_YEAR,
 	buildBillingComputationFromLoadedData,
+	buildLessonPhasePriceIdempotencyKey,
+	buildLessonProductIdempotencyKey,
 	buildPhases,
+	buildSetupScheduleIdempotencyKey,
 	calculateYearly,
 	clampToSchoolYear,
 	getOccurrenceDates,
@@ -141,6 +144,15 @@ describe('billing pure helpers', () => {
 		expect(isTerminalScheduleStatus('completed')).toBe(true);
 		expect(isTerminalScheduleStatus('released')).toBe(true);
 		expect(isTerminalScheduleStatus('active')).toBe(false);
+	});
+
+	it('builds stable Stripe idempotency keys for setup schedules', () => {
+		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
+		expect(buildSetupScheduleIdempotencyKey(agreementId)).toBe(`mcp_setup_schedule_${agreementId}`);
+		expect(buildLessonProductIdempotencyKey(agreementId)).toBe(`mcp_lesson_product_${agreementId}`);
+		expect(buildLessonPhasePriceIdempotencyKey(agreementId, '2026-09')).toBe(
+			`mcp_lesson_price_${agreementId}_2026-09`,
+		);
 	});
 });
 

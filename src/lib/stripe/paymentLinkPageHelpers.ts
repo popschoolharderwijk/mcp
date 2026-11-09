@@ -27,7 +27,7 @@ export function formatTermText(minimumTermEnd: string | null | undefined): strin
 	return `Eerste periode tot en met ${formatDbDateToUi(minimumTermEnd)}; ${base}`;
 }
 
-export type PayPageView = 'loading' | 'arranged' | 'invalid' | 'details';
+export type PayPageView = 'loading' | 'completed' | 'arranged' | 'invalid' | 'details';
 
 export function resolvePayPageView(input: {
 	loadingInfo: boolean;
@@ -35,7 +35,8 @@ export function resolvePayPageView(input: {
 	info: PaymentLinkInfo | null;
 }): PayPageView {
 	if (input.loadingInfo) return 'loading';
-	if (input.completed || input.info?.arranged) return 'arranged';
+	if (input.completed) return 'completed';
+	if (input.info?.arranged) return 'arranged';
 	if (!input.info?.valid) return 'invalid';
 	return 'details';
 }

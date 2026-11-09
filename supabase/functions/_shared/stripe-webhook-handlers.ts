@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { createScheduleForAgreement } from './billing.ts';
+import { buildSetupScheduleIdempotencyKey, createScheduleForAgreement } from './billing.ts';
 import { attachDefaultPaymentMethod, getReusablePaymentMethodIdFromSetupIntent, getStripeId } from './stripe.ts';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import {
@@ -54,11 +54,26 @@ async function createScheduleFromSetupPaymentMethod(
 		return;
 	}
 
-	await createScheduleForAgreement(admin, stripe, {
-		lessonAgreementId: input.lessonAgreementId,
-		customerId: input.customerId,
-		defaultPaymentMethod: input.paymentMethodId,
-	});
+	// Re-check after attach: checkout.session.completed and setup_intent.succeeded often race.
+	if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
+		console.log('schedule already exists for agreement', input.lessonAgreementId);
+		return;
+	}
+
+	try {
+		await createScheduleForAgreement(admin, stripe, {
+			lessonAgreementId: input.lessonAgreementId,
+			customerId: input.customerId,
+			defaultPaymentMethod: input.paymentMethodId,
+			idempotencyKey: buildSetupScheduleIdempotencyKey(input.lessonAgreementId),
+		});
+	} catch (e) {
+		if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
+			console.log('schedule created concurrently for agreement', input.lessonAgreementId);
+			return;
+		}
+		throw e;
+	}
 }
 
 async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {

@@ -19,7 +19,14 @@ describe('paymentLinkPageHelpers', () => {
 
 	it('resolves pay page view branches', () => {
 		expect(resolvePayPageView({ loadingInfo: true, completed: false, info: null })).toBe('loading');
-		expect(resolvePayPageView({ loadingInfo: false, completed: true, info: null })).toBe('arranged');
+		expect(resolvePayPageView({ loadingInfo: false, completed: true, info: null })).toBe('completed');
+		expect(
+			resolvePayPageView({
+				loadingInfo: false,
+				completed: true,
+				info: { valid: true, arranged: true },
+			}),
+		).toBe('completed');
 		expect(
 			resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: true, arranged: true } }),
 		).toBe('arranged');

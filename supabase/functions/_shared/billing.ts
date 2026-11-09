@@ -10,7 +10,10 @@ import {
 	type BillingComputation,
 	type BillingPhase,
 	buildBillingComputationFromLoadedData,
+	buildLessonPhasePriceIdempotencyKey,
+	buildLessonProductIdempotencyKey,
 	buildPhases,
+	buildSetupScheduleIdempotencyKey,
 	isTerminalScheduleStatus,
 	type LessonFrequency,
 	resolveStripeSubscriptionId,
@@ -28,11 +31,14 @@ import {
 import { writeSubscriptionState } from './subscription-storage.ts';
 
 export type { AgeTariff, YearlyResult };
+export { buildSetupScheduleIdempotencyKey };
 
 export interface ScheduleContext {
 	lessonAgreementId: string;
 	customerId: string;
 	defaultPaymentMethod?: string;
+	/** When set (setup/checkout flows), concurrent creates share one Stripe schedule. */
+	idempotencyKey?: string;
 }
 
 export interface BuiltSchedule {
@@ -57,10 +63,13 @@ interface StripePhasePayload {
 }
 
 async function ensureLessonProduct(stripe: Stripe, lessonAgreementId: string): Promise<string> {
-	const product = await stripe.products.create({
-		name: `Lesgeld ${lessonAgreementId}`,
-		metadata: { lesson_agreement_id: lessonAgreementId },
-	});
+	const product = await stripe.products.create(
+		{
+			name: `Lesgeld ${lessonAgreementId}`,
+			metadata: { lesson_agreement_id: lessonAgreementId },
+		},
+		{ idempotencyKey: buildLessonProductIdempotencyKey(lessonAgreementId) },
+	);
 	return product.id;
 }
 
@@ -71,14 +80,17 @@ async function createPhasePrice(
 	label: string,
 	lessonAgreementId: string,
 ): Promise<string> {
-	const price = await stripe.prices.create({
-		currency: 'eur',
-		product: productId,
-		unit_amount: amountCents,
-		recurring: { interval: 'month', interval_count: 1 },
-		nickname: `Lesgeld ${label}`,
-		metadata: { phase_label: label, lesson_agreement_id: lessonAgreementId },
-	});
+	const price = await stripe.prices.create(
+		{
+			currency: 'eur',
+			product: productId,
+			unit_amount: amountCents,
+			recurring: { interval: 'month', interval_count: 1 },
+			nickname: `Lesgeld ${label}`,
+			metadata: { phase_label: label, lesson_agreement_id: lessonAgreementId },
+		},
+		{ idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonAgreementId, label) },
+	);
 	return price.id;
 }
 
@@ -234,16 +246,19 @@ export async function createScheduleForAgreement(
 	assertHasBillingPhases(phases.length);
 
 	const stripePhases = await toStripePhasePayloads(stripe, phases, ctx.lessonAgreementId, ctx.defaultPaymentMethod);
-	const schedule = await stripe.subscriptionSchedules.create({
-		customer: ctx.customerId,
-		start_date: phases[0].startUnix,
-		end_behavior: 'release',
-		phases: stripePhases,
-		metadata: {
-			lesson_agreement_id: ctx.lessonAgreementId,
-			school_year: `${billing.schoolYear.startYear}/${billing.schoolYear.startYear + 1}`,
+	const schedule = await stripe.subscriptionSchedules.create(
+		{
+			customer: ctx.customerId,
+			start_date: phases[0].startUnix,
+			end_behavior: 'release',
+			phases: stripePhases,
+			metadata: {
+				lesson_agreement_id: ctx.lessonAgreementId,
+				school_year: `${billing.schoolYear.startYear}/${billing.schoolYear.startYear + 1}`,
+			},
 		},
-	});
+		ctx.idempotencyKey ? { idempotencyKey: ctx.idempotencyKey } : undefined,
+	);
 
 	const subscriptionId = await persistCreatedSchedule(admin, ctx, schedule, phases, stripePhases);
 

@@ -138,6 +138,7 @@ function PayView(props: {
 	onStart: () => void;
 }) {
 	if (props.view === 'loading') return <PageSkeleton variant="header-only" />;
+	if (props.view === 'completed') return <PaymentLinkArrangedPanel justCompleted />;
 	if (props.view === 'arranged') return <PaymentLinkArrangedPanel />;
 	if (props.view === 'invalid') return <PayInvalidView agreementId={props.agreementId} />;
 	return (

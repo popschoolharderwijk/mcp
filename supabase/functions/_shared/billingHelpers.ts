@@ -357,3 +357,16 @@ export function buildBillingComputationFromLoadedData(input: {
 		schoolYear,
 	};
 }
+
+/** Shared by checkout complete + setup webhooks so concurrent creates collapse to one schedule. */
+export function buildSetupScheduleIdempotencyKey(lessonAgreementId: string): string {
+	return `mcp_setup_schedule_${lessonAgreementId}`;
+}
+
+export function buildLessonProductIdempotencyKey(lessonAgreementId: string): string {
+	return `mcp_lesson_product_${lessonAgreementId}`;
+}
+
+export function buildLessonPhasePriceIdempotencyKey(lessonAgreementId: string, phaseLabel: string): string {
+	return `mcp_lesson_price_${lessonAgreementId}_${phaseLabel}`;
+}

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { createScheduleForAgreement } from '../_shared/billing.ts';
+import { buildSetupScheduleIdempotencyKey, createScheduleForAgreement } from '../_shared/billing.ts';
 import { jsonResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
 	attachDefaultPaymentMethod,
@@ -92,6 +92,7 @@ async function finalizeCompleteModeSchedule(
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: paymentMethodId,
+		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id),
 	});
 	return buildCompleteModeSuccessResponse(built);
 }
@@ -130,6 +131,7 @@ export async function handleDirectMode(
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: defaultPmId,
+		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id),
 	});
 
 	return buildDirectModeSuccessResponse(built);

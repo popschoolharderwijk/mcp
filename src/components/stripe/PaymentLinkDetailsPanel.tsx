@@ -10,12 +10,16 @@ interface Props {
 	onStart: () => void;
 }
 
-export function PaymentLinkArrangedPanel() {
+export function PaymentLinkArrangedPanel({ justCompleted = false }: { justCompleted?: boolean }) {
 	return (
 		<StandaloneCenteredPage narrow>
-			<h1 className="font-bold text-2xl">Je machtiging is al geregeld</h1>
+			<h1 className="font-bold text-2xl">
+				{justCompleted ? 'Je machtiging is geregeld' : 'Je machtiging is al geregeld'}
+			</h1>
 			<p className="text-muted-foreground">
-				Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.
+				{justCompleted
+					? 'Bedankt. Het lesgeld wordt maandelijks afgeschreven.'
+					: 'Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.'}
 			</p>
 		</StandaloneCenteredPage>
 	);
