@@ -18,7 +18,7 @@ supabase db reset
 bun run db:types
 
 # Or remote (prefer bun run db:reset <env>)
-bun run db:reset test   # example: mcp-test via --remote=<ref> --yes
+bun run db:reset test   # example: mcp-test via --remote=<ref> (interactive CLI confirm)
 bun run db:types test
 ```
 

@@ -11,7 +11,7 @@ export async function pushFunctions(target: DeployTarget): Promise<void> {
 		return;
 	}
 
-	await runSupabase(['functions', 'deploy', remoteFlag(target.projectRef), '--yes']);
+	await runSupabase(['functions', 'deploy', remoteFlag(target.projectRef)]);
 }
 
 if (import.meta.main) {

@@ -145,14 +145,14 @@ async function confirmStaleDropsOrAbort(stale: string[]): Promise<void> {
 
 async function unsetStaleSecrets(projectRef: string, stale: string[]): Promise<void> {
 	for (const name of stale) {
-		await runSupabase(['secrets', 'unset', name, remoteFlag(projectRef), '--yes']);
+		await runSupabase(['secrets', 'unset', name, remoteFlag(projectRef)]);
 	}
 }
 
 async function replaceRemoteSecrets(projectRef: string, path: string, keys: string[]): Promise<void> {
 	const stale = staleSecretNames(await listRemoteSecretNames(projectRef), keys);
 	await confirmStaleDropsOrAbort(stale);
-	await runSupabase(['secrets', 'set', '--env-file', path, remoteFlag(projectRef), '--yes']);
+	await runSupabase(['secrets', 'set', '--env-file', path, remoteFlag(projectRef)]);
 	await unsetStaleSecrets(projectRef, stale);
 	console.log(formatStaleSecretsSummary(stale));
 }
