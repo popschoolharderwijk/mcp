@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install Bun, the Supabase CLI, Cursor agent, and socat into the image.
+# Install Bun, the Supabase CLI, Stripe CLI, Cursor agent, and socat into the image.
 # Local Supabase is the CLI native runtime. socat proxies Docker publishes to
 # loopback-only native listeners. Image has no Docker CLI or dockerd.
 # Cursor publishes no checksum sidecar; SHA-256 values are pinned at bump time.
@@ -8,21 +8,26 @@ set -euo pipefail
 : "${TARGETARCH:?TARGETARCH is required (amd64|arm64)}"
 : "${BUN_VERSION:?}"
 : "${SUPABASE_CLI_VERSION:?}"
+: "${STRIPE_CLI_VERSION:?}"
 : "${CURSOR_AGENT_VERSION:?}"
 
 case "${TARGETARCH}" in
 	amd64)
 		BUN_ARCH=x64
+		STRIPE_ARCH=x86_64
 		CURSOR_AGENT_ARCH=x64
 		BUN_SHA256=bf8ccbfb2b0b80159e0f9a6d15c55317add8077534dbc6130a3edb52fccb395c
 		SUPABASE_SHA256=eeb61edcd59a4735fcb5e58596574f25d03d420efca779f43ddb307e1cc5c754
+		STRIPE_SHA256=a5ee5994bc87f1e9a5557dfb25f6f34d52fc7081756efa4da2d695581c671aec
 		CURSOR_AGENT_SHA256=170b77786cbf4c93064d64fff12b71a178b968730561c64afc2e8e752535442e
 		;;
 	arm64)
 		BUN_ARCH=aarch64
+		STRIPE_ARCH=arm64
 		CURSOR_AGENT_ARCH=arm64
 		BUN_SHA256=baa6bb36f51d6e58561e02bbea825038a9df454f673d6d776e8bbf86f8c7850e
 		SUPABASE_SHA256=243474fb5b491a0df04682fc1941cc5519559a1178ae01c225c633eda2e8acb8
+		STRIPE_SHA256=55bf211b2fcd5f58d751f238b518a8f661b4be612d68595d30db420dad961fe7
 		CURSOR_AGENT_SHA256=131554bfdbf683d8ebfef83a2bb46ac4e5d060f198711040b07ed063c2471871
 		;;
 	*)
@@ -59,6 +64,14 @@ tar -xzf /tmp/supabase.tar.gz -C /tmp
 install -m 755 /tmp/supabase /usr/local/bin/supabase
 rm -rf /tmp/supabase /tmp/supabase.tar.gz
 supabase --version
+
+curl -fsSL -o /tmp/stripe.tar.gz \
+	"https://github.com/stripe/stripe-cli/releases/download/v${STRIPE_CLI_VERSION}/stripe_${STRIPE_CLI_VERSION}_linux_${STRIPE_ARCH}.tar.gz"
+echo "${STRIPE_SHA256}  /tmp/stripe.tar.gz" | sha256sum -c -
+tar -xzf /tmp/stripe.tar.gz -C /tmp
+install -m 755 /tmp/stripe /usr/local/bin/stripe
+rm -rf /tmp/stripe /tmp/stripe.tar.gz
+stripe --version
 
 CURSOR_AGENT_DIR="/opt/cursor-agent/versions/${CURSOR_AGENT_VERSION}"
 curl -fsSL -o /tmp/cursor-agent.tar.gz \
