@@ -2,7 +2,7 @@
  * bun run db:reset [env]
  * bun run db:push:migrations [env]
  *
- * Remotes: --remote=<ref> --yes (CLI v3).
+ * Remotes: --remote=<ref> (CLI v3). Interactive CLI confirm via inherited TTY.
  * Hosted DB password: SUPABASE_DB_PASSWORD from SECRETS_PATH runtimeEnvFile (.env.<target>.local).
  */
 
@@ -24,7 +24,7 @@ export async function resetDatabase(target: DeployTarget): Promise<void> {
 
 	await ensureSupabaseUnlinked();
 	const auth = remoteDbAuth(target, 'password-env');
-	await runSupabase(['db', 'reset', ...auth.args, '--yes'], { env: auth.env });
+	await runSupabase(['db', 'reset', ...auth.args], { env: auth.env });
 }
 
 export async function pushMigrations(target: DeployTarget): Promise<void> {
@@ -35,7 +35,7 @@ export async function pushMigrations(target: DeployTarget): Promise<void> {
 
 	await ensureSupabaseUnlinked();
 	const auth = remoteDbAuth(target, 'password-flag');
-	await runSupabase(['db', 'push', ...auth.args, '--yes'], { env: auth.env });
+	await runSupabase(['db', 'push', ...auth.args], { env: auth.env });
 }
 
 const DB_VERBS = {

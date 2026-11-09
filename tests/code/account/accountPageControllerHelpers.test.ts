@@ -3,6 +3,7 @@ import {
 	applyAccountProfileLoadResult,
 	buildAccountPageUserInitials,
 	createInitialAccountFormData,
+	isAccountTab,
 	resolveAccountTabRoute,
 } from '../../../src/lib/account/accountPageControllerHelpers';
 
@@ -20,7 +21,15 @@ describe('resolveAccountTabRoute', () => {
 	it('maps account tabs to routes', () => {
 		expect(resolveAccountTabRoute('profile')).toBe('/account/profile');
 		expect(resolveAccountTabRoute('appearance')).toBe('/account/appearance');
+		expect(resolveAccountTabRoute('security')).toBe('/account/security');
 		expect(resolveAccountTabRoute('danger')).toBe('/account/danger');
+	});
+});
+
+describe('isAccountTab', () => {
+	it('accepts known account tabs and rejects others', () => {
+		expect(isAccountTab('security')).toBe(true);
+		expect(isAccountTab('billing')).toBe(false);
 	});
 });
 

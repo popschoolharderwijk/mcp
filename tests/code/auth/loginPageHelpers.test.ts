@@ -15,9 +15,10 @@ describe('buildMagicLinkSignInOptions', () => {
 });
 
 describe('resolveLoginViewMode', () => {
-	it('returns magic-link mode for idle and sending states', () => {
+	it('returns magic-link mode for idle, sending, and passkey states', () => {
 		expect(resolveLoginViewMode('idle')).toBe('magic-link');
 		expect(resolveLoginViewMode('sending')).toBe('magic-link');
+		expect(resolveLoginViewMode('passkey')).toBe('magic-link');
 	});
 
 	it('returns otp mode after the link is sent', () => {

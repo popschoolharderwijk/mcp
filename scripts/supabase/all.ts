@@ -3,7 +3,7 @@
  * Fail-fast: migrations → secrets → config → functions (no reset).
  */
 
-import { pushConfig } from './config.ts';
+import { assertConfigPushSecrets, pushConfig } from './config.ts';
 import { pushMigrations } from './db.ts';
 import {
 	DEPLOY_ENV_CLI_USAGE,
@@ -14,7 +14,7 @@ import {
 } from './envHelpers.ts';
 import { pushFunctions } from './functions.ts';
 import { confirmTargetIfRequired, fail, resolveTargetFromArgv } from './runHelpers.ts';
-import { pushSecrets } from './secrets.ts';
+import { assertSecretsFileReady, pushSecrets } from './secrets.ts';
 
 const STEP_RUNNERS: Record<PushAllStep, (target: DeployTarget) => Promise<void>> = {
 	migrations: pushMigrations,
@@ -37,6 +37,8 @@ async function runPushAllStep(step: PushAllStep, target: DeployTarget): Promise<
 async function runPushAll(target: DeployTarget): Promise<void> {
 	console.log(`db:push:all → ${formatTargetLabel(target)}`);
 	console.log(`Steps: ${PUSH_ALL_STEPS.join(' → ')}`);
+	await assertSecretsFileReady(target);
+	assertConfigPushSecrets(target);
 	await confirmTargetIfRequired(target, 'db:push:all');
 
 	for (const step of PUSH_ALL_STEPS) {

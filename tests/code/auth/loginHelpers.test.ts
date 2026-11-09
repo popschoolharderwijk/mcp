@@ -24,9 +24,10 @@ describe('shouldRedirectLoggedInUser', () => {
 });
 
 describe('isLoginSendingState', () => {
-	it('returns true for idle and sending states', () => {
+	it('returns true for idle, sending, and passkey states', () => {
 		expect(isLoginSendingState('idle')).toBe(true);
 		expect(isLoginSendingState('sending')).toBe(true);
+		expect(isLoginSendingState('passkey')).toBe(true);
 		expect(isLoginSendingState('sent')).toBe(false);
 	});
 });

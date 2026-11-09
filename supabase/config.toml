@@ -85,6 +85,15 @@ password_requirements= "lower_upper_letters_digits_symbols"
 enroll_enabled = true
 verify_enabled = true
 
+[auth.passkey]
+enabled = true
+
+# Local WebAuthn RP hostname is localhost (HTTP secure context). App: http://localhost:8081
+[auth.webauthn]
+rp_display_name = "Mplify Community Portal"
+rp_id = "localhost"
+rp_origins = ["http://localhost:8081", "http://localhost:8080"]
+
 [auth.sms]
 enable_confirmations = false
 
@@ -141,6 +150,14 @@ additional_redirect_urls = [
 [remotes.test.auth.email.template.magic_link]
 content_path = "./docs/email-templates/magic-link.html"
 
+[remotes.test.auth.passkey]
+enabled = true
+
+[remotes.test.auth.webauthn]
+rp_display_name = "Mplify Community Portal"
+rp_id = "098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+rp_origins = ["https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"]
+
 [remotes.dev.auth]
 site_url = "https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
 additional_redirect_urls = [
@@ -155,10 +172,26 @@ additional_redirect_urls = [
 [remotes.dev.auth.email.template.magic_link]
 content_path = "./docs/email-templates/magic-link.html"
 
+[remotes.dev.auth.passkey]
+enabled = true
+
+[remotes.dev.auth.webauthn]
+rp_display_name = "Mplify Community Portal"
+rp_id = "098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"
+rp_origins = ["https://098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com"]
+
 [remotes.prod.auth]
 site_url = "https://mcp.mplifi.nl"
 additional_redirect_urls = ["https://mcp.mplifi.nl/**"]
 enable_signup = false
+
+[remotes.prod.auth.passkey]
+enabled = true
+
+[remotes.prod.auth.webauthn]
+rp_display_name = "Mplify Community Portal"
+rp_id = "mcp.mplifi.nl"
+rp_origins = ["https://mcp.mplifi.nl"]
 
 # Tighter than test/dev: stop inbox spam and cheap login DoS. Magic links stay valid 30m.
 [remotes.prod.auth.email]

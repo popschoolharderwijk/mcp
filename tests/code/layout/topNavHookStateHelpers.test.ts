@@ -3,7 +3,7 @@ import { buildTopNavHookState } from '../../../src/lib/layout/topNavHookStateHel
 
 describe('buildTopNavHookState', () => {
 	it('merges base state with navigation callbacks', () => {
-		const onNavigateProfile = () => {};
+		const onNavigateSettings = () => {};
 		const state = buildTopNavHookState(
 			{
 				open: false,
@@ -18,9 +18,7 @@ describe('buildTopNavHookState', () => {
 				showAppVersion: true,
 			},
 			{
-				onNavigateProfile,
-				onNavigateAppearance: () => {},
-				onNavigateAccount: () => {},
+				onNavigateSettings,
 				onSignOut: async () => {},
 				onToggleTheme: () => {},
 				onNavigate: (() => {}) as never,
@@ -28,7 +26,7 @@ describe('buildTopNavHookState', () => {
 		);
 
 		expect(state.displayName).toBe('Anna Bakker');
-		expect(state.onNavigateProfile).toBe(onNavigateProfile);
+		expect(state.onNavigateSettings).toBe(onNavigateSettings);
 		expect(state.breadcrumbItems).toEqual([{ label: 'Dashboard', href: '/' }]);
 	});
 });

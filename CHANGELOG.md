@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 — 2026-11-09
+
+- Inloggen met **passkey**; beheer onder Account → **Beveiliging**
+- Gebruikersmenu: één knop **Instellingen** (profiel, weergave, beveiliging)
+
 ## 1.2.0 — 2026-10-24
 
 - **Tips** in de topbalk: geel lampje bij ongezien tips, klik toont de volgende tip

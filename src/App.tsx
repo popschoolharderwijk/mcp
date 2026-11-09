@@ -91,6 +91,7 @@ const App = () => (
 						<Route path="/account" element={<Account defaultTab="profile" />} />
 						<Route path="/account/profile" element={<Account defaultTab="profile" />} />
 						<Route path="/account/appearance" element={<Account defaultTab="appearance" />} />
+						<Route path="/account/security" element={<Account defaultTab="security" />} />
 						<Route path="/account/danger" element={<Account defaultTab="danger" />} />
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/teachers" element={<Teachers />} />

@@ -1,6 +1,7 @@
 import { LuMonitor, LuMoon, LuSun, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
 import { AccountProfileAvatarSection } from '@/components/account/AccountProfileAvatarSection';
 import { AccountProfileFormFields } from '@/components/account/AccountProfileFormFields';
+import { AccountSecurityPasskeysCard } from '@/components/account/AccountSecurityPasskeysCard';
 import { AccountTipsResetCard } from '@/components/tips/AccountTipsResetCard';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAccountPasskeys } from '@/hooks/useAccountPasskeys';
 import { canConfirmAccountDelete } from '@/lib/account/accountPageHelpers';
 import type { AccountFormData, AccountFormErrors, AccountProfileState } from '@/lib/account/persistence';
 import { cn } from '@/lib/utils';
@@ -112,6 +114,27 @@ export function AccountAppearanceTab({
 
 			<AccountTipsResetCard />
 		</div>
+	);
+}
+
+export function AccountSecurityTab() {
+	const passkeys = useAccountPasskeys(true);
+
+	return (
+		<AccountSecurityPasskeysCard
+			passkeys={passkeys.passkeys}
+			loading={passkeys.loading}
+			registering={passkeys.registering}
+			savingId={passkeys.savingId}
+			error={passkeys.error}
+			deleteTarget={passkeys.deleteTarget}
+			onRegister={() => {
+				void passkeys.registerPasskey();
+			}}
+			onRename={passkeys.renamePasskey}
+			onDeleteTargetChange={passkeys.setDeleteTarget}
+			onConfirmDelete={passkeys.confirmDeletePasskey}
+		/>
 	);
 }
 

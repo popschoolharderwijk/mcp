@@ -25,9 +25,7 @@ export function TopNav() {
 					avatarUrl={topNav.avatarUrl}
 					resolvedTheme={topNav.resolvedTheme}
 					showAppVersion={topNav.showAppVersion}
-					onNavigateProfile={topNav.onNavigateProfile}
-					onNavigateAppearance={topNav.onNavigateAppearance}
-					onNavigateAccount={topNav.onNavigateAccount}
+					onNavigateSettings={topNav.onNavigateSettings}
 					onSignOut={topNav.onSignOut}
 					onToggleTheme={topNav.onToggleTheme}
 				/>

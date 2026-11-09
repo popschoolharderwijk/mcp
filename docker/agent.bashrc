@@ -16,9 +16,9 @@ shopt -s checkwinsize
 
 # Agent prompt: diamond + orange username; @host (green) and cwd (blue) stay usual.
 if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-	PS1='\[\033[01;38;5;166m\]◆\u\[\033[01;32m\]\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+	PS1='\[\033[01;38;5;166m\]◆ \u\[\033[01;32m\]\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-	PS1='◆\u:\w\$ '
+	PS1='◆ \u:\w\$ '
 fi
 
 case "$TERM" in

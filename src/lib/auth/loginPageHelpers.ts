@@ -12,7 +12,7 @@ export function buildMagicLinkSignInOptions(origin: string) {
 }
 
 export function resolveLoginViewMode(state: LoginState): 'magic-link' | 'otp' {
-	return state === 'idle' || state === 'sending' ? 'magic-link' : 'otp';
+	return state === 'idle' || state === 'sending' || state === 'passkey' ? 'magic-link' : 'otp';
 }
 
 export type LoginPageContent = 'redirect' | 'loading' | 'form';

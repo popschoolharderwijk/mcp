@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildLocalSupabaseDotEnv,
+	configPushEnvFromSecrets,
 	confirmTargetToken,
 	edgeSecretsEnvFile,
 	envEntriesEqual,
@@ -271,6 +272,19 @@ describe('buildLocalSupabaseDotEnv', () => {
 		expect(parseEnvFileEntries(buildLocalSupabaseDotEnv({ RESEND_API_KEY: ' re_local ' }))).toEqual({
 			RESEND_API_KEY: 're_local',
 		});
+	});
+});
+
+describe('configPushEnvFromSecrets', () => {
+	it('returns a trimmed RESEND_API_KEY overlay for config push', () => {
+		expect(configPushEnvFromSecrets({ RESEND_API_KEY: ' re_prod ', RESEND_FROM_EMAIL: 'x@y.z' })).toEqual({
+			RESEND_API_KEY: 're_prod',
+		});
+	});
+
+	it('returns null when RESEND_API_KEY is missing or blank', () => {
+		expect(configPushEnvFromSecrets({})).toBeNull();
+		expect(configPushEnvFromSecrets({ RESEND_API_KEY: '   ' })).toBeNull();
 	});
 });
 
