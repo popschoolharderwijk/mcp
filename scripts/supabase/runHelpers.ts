@@ -60,19 +60,27 @@ export type ResolveTargetFromArgvOptions = {
 	refuseEnvs?: readonly DeployEnv[];
 };
 
+function unknownEnvironmentMessage(
+	envArg: string | undefined,
+	verbLabel: string,
+	usageEnvs: string,
+	includeDeployHint: boolean,
+): string {
+	const hint = includeDeployHint ? `${deployEnvUsageHint()}\n` : '';
+	return `Unknown environment "${envArg}". ${hint}Usage: bun run ${verbLabel} [${usageEnvs}]`;
+}
+
 export function resolveTargetFromArgv(
 	argv: string[],
 	verbLabel: string,
 	options: ResolveTargetFromArgvOptions = {},
 ): DeployTarget {
 	const usageEnvs = options.usageEnvs ?? DEPLOY_ENV_CLI_USAGE;
-	const envArg = argv[0];
-	const env = parseDeployEnv(envArg);
+	const env = parseDeployEnv(argv[0]);
 	if (env === null) {
-		const hint = options.usageEnvs === undefined ? `${deployEnvUsageHint()}\n` : '';
-		fail(`Unknown environment "${envArg}". ${hint}Usage: bun run ${verbLabel} [${usageEnvs}]`);
+		fail(unknownEnvironmentMessage(argv[0], verbLabel, usageEnvs, options.usageEnvs === undefined));
 	}
-	if (options.refuseEnvs?.includes(env)) {
+	if (options.refuseEnvs?.includes(env) === true) {
 		fail(`${verbLabel} refuses ${env}. Usage: bun run ${verbLabel} [${usageEnvs}]`);
 	}
 	return resolveDeployTarget(env);

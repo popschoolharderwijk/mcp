@@ -97,7 +97,20 @@ describe('awaitingMandateHelpers', () => {
 				},
 				'2026-10-30',
 			),
-		).toBe('canceled');
+		).toBeNull();
+		expect(
+			resolveMandateLifecycleStatus(
+				{
+					isActive: true,
+					endDate: '2026-09-01',
+					stripeScheduleId: null,
+					subscriptions: [
+						{ status: 'canceled', stripe_schedule_id: 'sub_sched_1', stripe_subscription_id: 'sub_1' },
+					],
+				},
+				'2026-10-30',
+			),
+		).toBeNull();
 	});
 
 	it('prefers an open subscription status over canceled history', () => {

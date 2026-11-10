@@ -3,12 +3,12 @@ import {
 	buildCanceledSubscriptionUpdate,
 	buildSubscriptionInvoiceUpsertRow,
 	extractStripeSubscriptionId,
-	hasScheduleSetupInput,
 	isScheduleSetupCheckoutSession,
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
 	isStripeWebhookScheduleCancelAction,
+	resolveScheduleSetupIds,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
 	resolveSubscriptionScheduleCancelTarget,
@@ -97,25 +97,40 @@ describe('isScheduleSetupIntent', () => {
 	});
 });
 
-describe('hasScheduleSetupInput', () => {
-	it('returns true when all setup fields are present', () => {
+describe('resolveScheduleSetupIds', () => {
+	it('returns setup ids when agreement, customer, payment method, and attempt are present', () => {
 		expect(
-			hasScheduleSetupInput({
+			resolveScheduleSetupIds({
 				lessonAgreementId: 'agr-1',
 				customerId: 'cus-1',
 				paymentMethodId: 'pm-1',
+				attemptId: 'seti_1',
 			}),
-		).toBe(true);
+		).toEqual({
+			lessonAgreementId: 'agr-1',
+			customerId: 'cus-1',
+			paymentMethodId: 'pm-1',
+			attemptId: 'seti_1',
+		});
 	});
 
-	it('returns false when any setup field is missing', () => {
+	it('returns null when any setup id is missing', () => {
 		expect(
-			hasScheduleSetupInput({
+			resolveScheduleSetupIds({
 				lessonAgreementId: 'agr-1',
 				customerId: null,
 				paymentMethodId: 'pm-1',
+				attemptId: 'seti_1',
 			}),
-		).toBe(false);
+		).toBeNull();
+		expect(
+			resolveScheduleSetupIds({
+				lessonAgreementId: 'agr-1',
+				customerId: 'cus-1',
+				paymentMethodId: 'pm-1',
+				attemptId: null,
+			}),
+		).toBeNull();
 	});
 });
 

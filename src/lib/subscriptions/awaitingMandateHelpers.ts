@@ -58,7 +58,8 @@ export type MandateLifecycleStatus = 'pending' | 'active' | 'canceled';
 
 /**
  * Maps local agreement/subscription state onto Stripe Mandate lifecycle buckets.
- * pending = not yet usable; active = can collect; canceled = revoked/unusable history.
+ * pending = not yet usable; active = can collect;
+ * canceled = revoked/unusable history while the agreement is still open (closed agreements are omitted).
  */
 export function resolveMandateLifecycleStatus(
 	input: AwaitingMandateInput,
@@ -69,6 +70,7 @@ export function resolveMandateLifecycleStatus(
 	if (hasCollectableMandate(input.subscriptions)) return 'active';
 	const agreementOpen = input.isActive && !(input.endDate && input.endDate < today);
 	if (input.stripeScheduleId && agreementOpen) return 'active';
+	if (!agreementOpen) return null;
 	return 'canceled';
 }
 

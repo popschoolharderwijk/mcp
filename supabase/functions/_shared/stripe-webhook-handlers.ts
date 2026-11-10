@@ -11,8 +11,10 @@ import {
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
 	isStripeWebhookScheduleCancelAction,
+	resolveScheduleSetupIds,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
+	type ScheduleSetupIds,
 	shouldClearAgreementScheduleForSubscriptionStatus,
 	shouldHandleSubscriptionCheckout,
 	shouldProcessSetupCheckoutSession,
@@ -51,24 +53,6 @@ async function tryAttachSetupPaymentMethod(
 		console.error('attach payment method failed', e);
 		return false;
 	}
-}
-
-type ScheduleSetupIds = {
-	lessonAgreementId: string;
-	customerId: string;
-	paymentMethodId: string;
-	attemptId: string;
-};
-
-function resolveScheduleSetupIds(input: {
-	lessonAgreementId: string | null;
-	customerId: string | null;
-	paymentMethodId: string | null;
-	attemptId: string | null;
-}): ScheduleSetupIds | null {
-	const { lessonAgreementId, customerId, paymentMethodId, attemptId } = input;
-	if (!lessonAgreementId || !customerId || !paymentMethodId || !attemptId) return null;
-	return { lessonAgreementId, customerId, paymentMethodId, attemptId };
 }
 
 async function ensureReadyForScheduleCreate(

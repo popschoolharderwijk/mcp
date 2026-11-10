@@ -59,6 +59,46 @@ async function loadExistingCompleteScheduleResponse(
 	return resolveExistingScheduleResponse(existingAgreement?.stripe_schedule_id);
 }
 
+type CompleteModeReadyIds = {
+	customerId: string;
+	paymentMethodId: string;
+	setupIntentId: string;
+};
+
+function resolveCompleteModeReadyIds(
+	session: {
+		mode: string;
+		metadata?: { lesson_agreement_id?: string } | null;
+		customer: unknown;
+		setup_intent: Parameters<typeof getReusablePaymentMethodIdFromSetupIntent>[0] | string | null | undefined;
+	},
+	agreementId: string,
+): { ready: CompleteModeReadyIds } | { error: Response } {
+	const sessionMatchError = validateCompleteCheckoutSessionMatch(session, agreementId);
+	if (sessionMatchError) return { error: sessionMatchError };
+
+	const customerId = getStripeId(session.customer);
+	const paymentMethodId = resolveSetupIntentPaymentMethodId(
+		session.setup_intent,
+		getReusablePaymentMethodIdFromSetupIntent,
+	);
+	const paymentReadyError = validateCompleteModePaymentReady(customerId, paymentMethodId);
+	if (paymentReadyError) return { error: paymentReadyError };
+
+	const setupIntentId = getStripeId(session.setup_intent);
+	if (!setupIntentId) {
+		return { error: jsonResponse(409, { error: 'SetupIntent ontbreekt op checkout sessie' }) };
+	}
+
+	return {
+		ready: {
+			customerId: customerId as string,
+			paymentMethodId: paymentMethodId as string,
+			setupIntentId,
+		},
+	};
+}
+
 async function finalizeCompleteModeSchedule(
 	admin: SupabaseClient,
 	stripe: Stripe,
@@ -68,17 +108,10 @@ async function finalizeCompleteModeSchedule(
 	const session = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
 		expand: ['setup_intent.latest_attempt'],
 	});
-	const sessionMatchError = validateCompleteCheckoutSessionMatch(session, agreement.id);
-	if (sessionMatchError) return sessionMatchError;
+	const resolved = resolveCompleteModeReadyIds(session, agreement.id);
+	if ('error' in resolved) return resolved.error;
 
-	const customerId = getStripeId(session.customer);
-	const paymentMethodId = resolveSetupIntentPaymentMethodId(
-		session.setup_intent,
-		getReusablePaymentMethodIdFromSetupIntent,
-	);
-	const paymentReadyError = validateCompleteModePaymentReady(customerId, paymentMethodId);
-	if (paymentReadyError) return paymentReadyError;
-
+	const { customerId, paymentMethodId, setupIntentId } = resolved.ready;
 	try {
 		await attachDefaultPaymentMethod(stripe, customerId, paymentMethodId);
 	} catch (e) {
@@ -86,11 +119,6 @@ async function finalizeCompleteModeSchedule(
 		return jsonResponse(409, {
 			error: getSafeErrorMessage(e, 'Kon betaalmethode niet koppelen aan klant'),
 		});
-	}
-
-	const setupIntentId = getStripeId(session.setup_intent);
-	if (!setupIntentId) {
-		return jsonResponse(409, { error: 'SetupIntent ontbreekt op checkout sessie' });
 	}
 
 	const built = await createScheduleForAgreement(admin, stripe, {

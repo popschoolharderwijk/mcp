@@ -47,12 +47,23 @@ export function isScheduleSetupIntent(setupIntent: { metadata?: { flow?: string 
 	return setupIntent.metadata?.flow === 'schedule_setup';
 }
 
-export function hasScheduleSetupInput(input: {
+export type ScheduleSetupIds = {
+	lessonAgreementId: string;
+	customerId: string;
+	paymentMethodId: string;
+	attemptId: string;
+};
+
+/** Requires agreement, customer, payment method, and SetupIntent/attempt id before schedule create. */
+export function resolveScheduleSetupIds(input: {
 	lessonAgreementId: string | null;
 	customerId: string | null;
 	paymentMethodId: string | null;
-}): boolean {
-	return Boolean(input.lessonAgreementId && input.customerId && input.paymentMethodId);
+	attemptId: string | null;
+}): ScheduleSetupIds | null {
+	const { lessonAgreementId, customerId, paymentMethodId, attemptId } = input;
+	if (!lessonAgreementId || !customerId || !paymentMethodId || !attemptId) return null;
+	return { lessonAgreementId, customerId, paymentMethodId, attemptId };
 }
 
 export type StripeWebhookAction =
