@@ -1,8 +1,8 @@
 import Stripe from 'npm:stripe@17.5.0';
 import {
 	getStripeId,
+	paymentMethodListTypeForFingerprintDedupe,
 	readGeneratedSepaDebitPaymentMethodId,
-	readPaymentMethodFingerprint,
 	selectDuplicateFingerprintPaymentMethodIds,
 } from './stripeHelpers.ts';
 
@@ -26,23 +26,28 @@ export function getReusablePaymentMethodIdFromSetupIntent(setupIntent: Stripe.Se
 	return getGeneratedSepaDebitPaymentMethodId(setupIntent.latest_attempt) ?? getStripeId(setupIntent.payment_method);
 }
 
+async function detachPaymentMethodBestEffort(stripe: Stripe, paymentMethodId: string): Promise<void> {
+	try {
+		await stripe.paymentMethods.detach(paymentMethodId);
+	} catch (e) {
+		console.error('detach duplicate payment method failed', paymentMethodId, e);
+	}
+}
+
 async function detachDuplicateFingerprintPaymentMethods(
 	stripe: Stripe,
 	customerId: string,
 	kept: Stripe.PaymentMethod,
 ): Promise<void> {
-	if (!kept.type || !readPaymentMethodFingerprint(kept)) return;
+	const type = paymentMethodListTypeForFingerprintDedupe(kept);
+	if (!type) return;
 	const listed = await stripe.paymentMethods.list({
 		customer: customerId,
-		type: kept.type,
+		type,
 		limit: 100,
 	});
 	for (const duplicateId of selectDuplicateFingerprintPaymentMethodIds(kept, listed.data)) {
-		try {
-			await stripe.paymentMethods.detach(duplicateId);
-		} catch (e) {
-			console.error('detach duplicate payment method failed', duplicateId, e);
-		}
+		await detachPaymentMethodBestEffort(stripe, duplicateId);
 	}
 }
 

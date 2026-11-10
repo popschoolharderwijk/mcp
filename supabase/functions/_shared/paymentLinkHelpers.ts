@@ -302,7 +302,12 @@ export function buildPaymentLinkParties(
 export interface PaymentLinkPreviewAmounts {
 	monthlyCents: number;
 	yearlyCents: number;
+	/** monthly + leftover when leftover > 0; otherwise null (same as maandtermijn). */
+	finalMonthCents: number | null;
 	catchUp: boolean;
+	catchUpCents: number | null;
+	catchUpFromMonth: string | null;
+	catchUpToMonth: string | null;
 }
 
 export function resolveLessonFormName(lessonTypes: { name?: string } | null | undefined): string {
@@ -322,15 +327,27 @@ export function buildArrangedPaymentLinkInfo(agreement: PaymentLinkInfoAgreement
 }
 
 export function buildPaymentLinkPreview(
-	startDate: string,
-	today: string,
-	yearly: { monthlyCents: number; yearlyCents: number } | null,
+	yearly: {
+		monthlyCents: number;
+		yearlyCents: number;
+		leftoverCents: number;
+	} | null,
+	catchUpPlan: {
+		amountCents: number;
+		fromMonth: string;
+		toMonth: string;
+	} | null,
 ): PaymentLinkPreviewAmounts | null {
 	if (!yearly) return null;
+	const leftoverCents = yearly.leftoverCents;
 	return {
 		monthlyCents: yearly.monthlyCents,
 		yearlyCents: yearly.yearlyCents,
-		catchUp: needsCatchUpInvoice(startDate, today),
+		finalMonthCents: leftoverCents > 0 ? yearly.monthlyCents + leftoverCents : null,
+		catchUp: catchUpPlan != null,
+		catchUpCents: catchUpPlan?.amountCents ?? null,
+		catchUpFromMonth: catchUpPlan?.fromMonth ?? null,
+		catchUpToMonth: catchUpPlan?.toMonth ?? null,
 	};
 }
 

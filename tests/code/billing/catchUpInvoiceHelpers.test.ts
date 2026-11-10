@@ -6,12 +6,12 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpLineItems,
-	buildCatchUpProductIdempotencyKey,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	filterPhasesAfterCatchUpMonth,
 	listBillingMonthLabels,
 	needsCatchUpPaymentMethodUpdate,
+	pickActiveGlobalCatchUpProductId,
 	pickReusableCatchUpInvoice,
 	resolveExistingCatchUpSettleKind,
 	stripeExpandableId,
@@ -172,8 +172,7 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(catchUpInvoiceDescription('2026-10', '2026-12')).toBe('Lesgeld 10-2026 t/m 12-2026 (inhaalfactuur)');
 	});
 
-	it('builds deterministic attempt-scoped idempotency keys', () => {
-		expect(buildCatchUpProductIdempotencyKey('a1')).toBe('mcp_catchup_product_a1');
+	it('builds attempt-scoped catch-up invoice idempotency keys', () => {
 		expect(buildCatchUpInvoiceIdempotencyKey('a1', '2026-10', '2026-12', 'seti_1')).toBe(
 			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1',
 		);
@@ -183,6 +182,31 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(buildCatchUpLineIdempotencyKey('a1', '2026-10', '2026-12', '2026-11', 'seti_1')).toBe(
 			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1_item_2026-11',
 		);
+	});
+
+	it('picks only an active global catch-up product', () => {
+		expect(
+			pickActiveGlobalCatchUpProductId([
+				{
+					id: 'prod_legacy',
+					active: true,
+					metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' },
+				},
+				{
+					id: 'prod_inactive',
+					active: false,
+					metadata: { kind: 'catch_up', scope: 'global' },
+				},
+				{
+					id: 'prod_global',
+					active: true,
+					metadata: { kind: 'catch_up', scope: 'global' },
+				},
+			]),
+		).toBe('prod_global');
+		expect(
+			pickActiveGlobalCatchUpProductId([{ id: 'prod_legacy', active: true, metadata: { kind: 'catch_up' } }]),
+		).toBeNull();
 	});
 });
 

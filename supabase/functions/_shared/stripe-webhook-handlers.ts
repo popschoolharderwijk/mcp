@@ -1,6 +1,10 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { buildSetupScheduleIdempotencyKey, createScheduleForAgreement } from './billing.ts';
+import {
+	buildSetupScheduleIdempotencyKey,
+	createScheduleForAgreement,
+	ensureCatchUpInvoiceForAgreement,
+} from './billing.ts';
 import { attachDefaultPaymentMethod, getReusablePaymentMethodIdFromSetupIntent, getStripeId } from './stripe.ts';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import {
@@ -31,49 +35,30 @@ async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: str
 	return Boolean(data?.stripe_schedule_id);
 }
 
-async function skipWhenScheduleExists(
-	admin: SupabaseClient,
-	lessonAgreementId: string,
-	message: string,
-): Promise<boolean> {
-	if (!(await hasExistingSchedule(admin, lessonAgreementId))) return false;
-	console.log(message, lessonAgreementId);
-	return true;
-}
-
-async function tryAttachSetupPaymentMethod(
-	stripe: Stripe,
-	customerId: string,
-	paymentMethodId: string,
-): Promise<boolean> {
-	try {
-		await attachDefaultPaymentMethod(stripe, customerId, paymentMethodId);
-		return true;
-	} catch (e) {
-		console.error('attach payment method failed', e);
-		return false;
-	}
-}
-
-async function ensureReadyForScheduleCreate(
+async function ensureCatchUpForReadySetup(
 	admin: SupabaseClient,
 	stripe: Stripe,
 	ready: ScheduleSetupIds,
-): Promise<boolean> {
-	if (await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule already exists for agreement')) {
-		return false;
-	}
-	if (!(await tryAttachSetupPaymentMethod(stripe, ready.customerId, ready.paymentMethodId))) {
-		return false;
-	}
-	// Re-check after attach: checkout.session.completed and setup_intent.succeeded often race.
-	if (await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule already exists for agreement')) {
-		return false;
-	}
-	return true;
+): Promise<void> {
+	await ensureCatchUpInvoiceForAgreement(admin, stripe, {
+		lessonAgreementId: ready.lessonAgreementId,
+		customerId: ready.customerId,
+		defaultPaymentMethod: ready.paymentMethodId,
+		attemptId: ready.attemptId,
+	});
 }
 
-async function createScheduleOrAbsorbRace(
+/** Attach + catch-up when a schedule already exists. Failures throw (webhook → 500 / Stripe retry). */
+async function settleSetupWhenScheduleExists(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<void> {
+	await attachDefaultPaymentMethod(stripe, ready.customerId, ready.paymentMethodId);
+	await ensureCatchUpForReadySetup(admin, stripe, ready);
+}
+
+async function createScheduleOrRetryCatchUp(
 	admin: SupabaseClient,
 	stripe: Stripe,
 	ready: ScheduleSetupIds,
@@ -87,12 +72,9 @@ async function createScheduleOrAbsorbRace(
 			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId, ready.attemptId),
 		});
 	} catch (e) {
-		if (
-			await skipWhenScheduleExists(admin, ready.lessonAgreementId, 'schedule created concurrently for agreement')
-		) {
-			return;
-		}
-		throw e;
+		if (!(await hasExistingSchedule(admin, ready.lessonAgreementId))) throw e;
+		// Concurrent create may have persisted the schedule; catch-up must still succeed.
+		await ensureCatchUpForReadySetup(admin, stripe, ready);
 	}
 }
 
@@ -112,8 +94,20 @@ async function createScheduleFromSetupPaymentMethod(
 		console.warn('setup event missing agreement/customer/payment_method/attempt', input.sourceId);
 		return;
 	}
-	if (!(await ensureReadyForScheduleCreate(admin, stripe, ready))) return;
-	await createScheduleOrAbsorbRace(admin, stripe, ready);
+
+	if (await hasExistingSchedule(admin, ready.lessonAgreementId)) {
+		await settleSetupWhenScheduleExists(admin, stripe, ready);
+		return;
+	}
+
+	await attachDefaultPaymentMethod(stripe, ready.customerId, ready.paymentMethodId);
+
+	if (await hasExistingSchedule(admin, ready.lessonAgreementId)) {
+		await ensureCatchUpForReadySetup(admin, stripe, ready);
+		return;
+	}
+
+	await createScheduleOrRetryCatchUp(admin, stripe, ready);
 }
 
 async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {

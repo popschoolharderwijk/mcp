@@ -1,27 +1,27 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	assembleBillingContextFromLoadedRows,
 	assertHasBillingPhases,
 	assertPositiveYearlyCents,
 	BILLING_MONTHS_PER_YEAR,
 	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
 	buildLessonProductIdempotencyKey,
+	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
-	buildStripePersonLabel,
-	buildStripeTuitionPriceNickname,
 	buildStripeTuitionProductName,
 	calculateYearly,
 	clampToSchoolYear,
-	formatBillingSchoolYearLabel,
 	getOccurrenceDates,
 	getSchoolYearForDateString,
 	isTerminalScheduleStatus,
-	mapStripeTuitionLabelParts,
 	pickAgeTariff,
 	pickPriceCentsForTariff,
+	pickSharedRecurringMonthlyPriceId,
 	resolveBillingReferenceDate,
 	resolveStripeSubscriptionId,
+	resolveStripeTuitionPriceKind,
 } from '../../../supabase/functions/_shared/billingHelpers';
 
 describe('getSchoolYearForDateString', () => {
@@ -151,15 +151,17 @@ describe('billing pure helpers', () => {
 		expect(isTerminalScheduleStatus('active')).toBe(false);
 	});
 
-	it('builds stable Stripe idempotency keys for setup schedules', () => {
+	it('builds stable Stripe idempotency keys for setup schedules and shared products', () => {
 		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
 		const attemptId = 'seti_1UaCGS8GrwT7wj0BChaoxfVI';
+		const optionId = 'opt-gitaar-30-weekly';
 		expect(buildSetupScheduleIdempotencyKey(agreementId, attemptId)).toBe(
 			`mcp_setup_schedule_${agreementId}_${attemptId}`,
 		);
-		expect(buildLessonProductIdempotencyKey(agreementId)).toBe(`mcp_lesson_product_${agreementId}`);
-		expect(buildLessonPhasePriceIdempotencyKey(agreementId, '2026-09')).toBe(
-			`mcp_lesson_price_${agreementId}_2026-09`,
+		expect(buildLessonProductIdempotencyKey(optionId)).toBe(`mcp_lesson_product_${optionId}`);
+		expect(buildLessonPhasePriceIdempotencyKey(optionId, 7338)).toBe(`mcp_lesson_price_${optionId}_7338`);
+		expect(buildLessonTypeOptionProductSearchQuery(optionId)).toBe(
+			`metadata['lesson_type_option_id']:'${optionId}'`,
 		);
 	});
 });
@@ -227,56 +229,119 @@ describe('buildBillingComputationFromLoadedData', () => {
 	});
 });
 
+describe('assembleBillingContextFromLoadedRows', () => {
+	const baseAgreement = {
+		id: 'agr-1',
+		student_user_id: 'stu-1',
+		lesson_type_id: 'lt-1',
+		frequency: 'weekly' as const,
+		duration_minutes: 45,
+		day_of_week: 3,
+		start_date: '2026-09-01',
+		end_date: null,
+		is_active: true,
+	};
+
+	it('maps option id and trims lesson type name from loaded rows', () => {
+		const result = assembleBillingContextFromLoadedRows({
+			agreement: baseAgreement,
+			option: {
+				id: 'opt-1',
+				price_per_lesson_youth_cents: 2000,
+				price_per_lesson_adult_cents: 2500,
+			},
+			student: { date_of_birth: '2010-01-01' },
+			noLessonPeriods: null,
+			lessonType: { name: '  Piano  ' },
+			today: '2026-09-15',
+		});
+		expect(result.lessonTypeOptionId).toBe('opt-1');
+		expect(result.lessonTypeName).toBe('Piano');
+		expect(result.billing.tariff).toBe('youth');
+		expect(result.billing.pricePerLessonCents).toBe(2000);
+	});
+
+	it('treats missing student and blank lesson type as nulls', () => {
+		const result = assembleBillingContextFromLoadedRows({
+			agreement: baseAgreement,
+			option: {
+				id: 'opt-2',
+				price_per_lesson_youth_cents: 2000,
+				price_per_lesson_adult_cents: 2500,
+			},
+			student: undefined,
+			noLessonPeriods: undefined,
+			lessonType: { name: '   ' },
+			today: '2026-09-15',
+		});
+		expect(result.lessonTypeOptionId).toBe('opt-2');
+		expect(result.lessonTypeName).toBeNull();
+		expect(result.billing.tariff).toBe('adult');
+	});
+});
+
 describe('buildStripeTuitionProductName', () => {
-	it('builds a readable product title without agreement ids', () => {
+	it('builds a shared option product title without student names', () => {
 		expect(
 			buildStripeTuitionProductName({
-				studentName: 'Anna Bakker',
-				lessonTypeName: 'Piano',
-				schoolYearLabel: '2026/2027',
+				lessonTypeName: 'Gitaarles',
+				durationMinutes: 30,
+				frequency: 'weekly',
 			}),
-		).toBe('Lesgeld · Anna Bakker · Piano · 2026/2027');
-	});
-
-	it('marks catch-up products and skips empty parts', () => {
-		expect(
-			buildStripeTuitionProductName({
-				studentName: ' Anna Bakker ',
-				lessonTypeName: null,
-				schoolYearLabel: '2026/2027',
-				catchUp: true,
-			}),
-		).toBe('Lesgeld inhaal · Anna Bakker · 2026/2027');
-	});
-
-	it('falls back to the tuition title when no details are known', () => {
-		expect(buildStripeTuitionProductName({})).toBe('Lesgeld');
-		expect(buildStripeTuitionProductName({ catchUp: true })).toBe('Lesgeld inhaal');
-		expect(buildStripeTuitionPriceNickname('2026-09')).toBe('Lesgeld 2026-09');
+		).toBe('Lesgeld · Gitaarles · 30 min · wekelijks');
 	});
 });
 
-describe('buildStripePersonLabel and formatBillingSchoolYearLabel', () => {
-	it('joins names and formats school years', () => {
-		expect(buildStripePersonLabel('Anna', 'Bakker')).toBe('Anna Bakker');
-		expect(buildStripePersonLabel(null, '  ')).toBeNull();
-		expect(formatBillingSchoolYearLabel(2026)).toBe('2026/2027');
+describe('resolveStripeTuitionPriceKind', () => {
+	it('treats leftover amount as the final installment kind', () => {
+		expect(resolveStripeTuitionPriceKind(5318, 5318, 2)).toBe('monthly');
+		expect(resolveStripeTuitionPriceKind(5320, 5318, 2)).toBe('final');
+		expect(resolveStripeTuitionPriceKind(5318, 5318, 0)).toBe('monthly');
 	});
 });
 
-describe('mapStripeTuitionLabelParts', () => {
-	it('maps profile and lesson type into product label parts', () => {
+describe('pickSharedRecurringMonthlyPriceId', () => {
+	it('reuses an active monthly price with the same unit amount', () => {
 		expect(
-			mapStripeTuitionLabelParts({ first_name: 'Anna', last_name: 'Bakker' }, { name: ' Piano ' }, 2026),
-		).toEqual({
-			studentName: 'Anna Bakker',
-			lessonTypeName: 'Piano',
-			schoolYearLabel: '2026/2027',
-		});
-		expect(mapStripeTuitionLabelParts(null, null, 2025)).toEqual({
-			studentName: null,
-			lessonTypeName: null,
-			schoolYearLabel: '2025/2026',
-		});
+			pickSharedRecurringMonthlyPriceId(
+				[
+					{
+						id: 'price_old',
+						active: true,
+						unit_amount: 7000,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+					{
+						id: 'price_match',
+						active: true,
+						unit_amount: 7338,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+				],
+				7338,
+			),
+		).toBe('price_match');
+	});
+
+	it('ignores inactive or non-monthly prices', () => {
+		expect(
+			pickSharedRecurringMonthlyPriceId(
+				[
+					{
+						id: 'price_inactive',
+						active: false,
+						unit_amount: 7338,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+					{
+						id: 'price_yearly',
+						active: true,
+						unit_amount: 7338,
+						recurring: { interval: 'year', interval_count: 1 },
+					},
+				],
+				7338,
+			),
+		).toBeNull();
 	});
 });

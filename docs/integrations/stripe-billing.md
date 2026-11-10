@@ -7,7 +7,8 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 - **Setup:** the payer opens a fixed payment link (no login), completes **iDEAL** Checkout, and creates a reusable payment method.
 - **After mandate:** webhook creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause).
 - **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule. Rematch after cancel reuses an existing draft/open/paid catch-up (updates the payment method and retries collection) so the payer is never charged twice for the same catch-up.
-- **Tariff changes:** rebuild future schedule phases on demand via `rebuild-subscription-schedule` (per agreement or per lesson type).
+- **Tariff changes:** rebuild future schedule phases on demand via `rebuild-subscription-schedule` (per agreement or per lesson type). New amounts create a new Price under the same shared Product; youth/adult are Prices, not separate Products.
+- **Catalog:** Products are created lazily and shared. Tuition is one Product per `lesson_type_option` (metadata `lesson_type_option_id`); catch-up is one global Product named **Inhalen lesgeld** (metadata `kind=catch_up`). There is no catalog sync job.
 
 ## 2. End-to-end flow
 
@@ -61,7 +62,8 @@ Where they are written:
 - **Schedule** metadata: agreement keys + `school_year`; rebuild also sets `last_rebuild_at`
 - **Every phase** metadata: agreement keys + `phase_label` (Stripe copies phase metadata onto the Subscription when the phase starts)
 - **Forced subscription**: agreement keys + `forced_start` + `original_schedule_id`
-- **Product / phase Price**: `lesson_agreement_id` (prices also have `phase_label`)
+- **Tuition Product / recurring Price**: `lesson_type_option_id` (prices also store `amount_cents`; same amount → same Price)
+- **Catch-up Product**: `kind=catch_up` (single global Product)
 - **Checkout / SetupIntent**: `lesson_agreement_id` + `flow=schedule_setup`
 - **Catch-up invoice**: `lesson_agreement_id` + `kind=catch_up` (+ `line_month` per line)
 
@@ -128,7 +130,7 @@ Edge only (never `VITE_`):
 
 Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Destructive for **Stripe test mode** (`sk_test_…`) against the matching non-production database. **Production is never allowed.**
 
-Deletes all Stripe Customers and clears local subscriptions / customers / payment links / invites plus `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Agreement Products (metadata `lesson_agreement_id`) may remain archived/orphaned in the Stripe Dashboard; they are not used after customers are wiped.
+Deletes all Stripe Customers and clears local subscriptions / customers / payment links / invites plus `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Shared Products (`lesson_type_option_id` / catch-up) stay in the Stripe Dashboard and are reused on the next mandate.
 
 ```bash
 bun run stripe:reset:customers              # local Docker

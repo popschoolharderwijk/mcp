@@ -57,22 +57,19 @@ describe('paymentLinkInfoHelpers', () => {
 	});
 
 	it('builds open payload with catch-up preview and party profiles', () => {
-		const preview = buildPaymentLinkPreview('2026-09-01', '2026-12-01', {
-			monthlyCents: 5000,
-			yearlyCents: 55000,
-		});
-		expect(preview).toEqual({ monthlyCents: 5000, yearlyCents: 55000, catchUp: true });
-		expect(buildOpenPaymentLinkInfo(agreement, preview, parties)).toEqual({
-			valid: true,
-			arranged: false,
-			lesson_form: 'Piano',
-			student: parties.student,
-			teacher: parties.teacher,
-			start_date: '2026-09-01',
-			minimum_term_end: '2027-02-28',
-			preview,
-		});
-		expect(buildPaymentLinkPreview('2026-09-01', '2026-09-15', null)).toBeNull();
+		const preview = buildPaymentLinkPreview(
+			{ monthlyCents: 5000, yearlyCents: 55000, leftoverCents: 50 },
+			{ amountCents: 15000, fromMonth: '2026-09', toMonth: '2026-11' },
+		);
+		expect(preview?.finalMonthCents).toBe(5050);
+		expect(preview?.catchUp).toBe(true);
+		expect(preview?.catchUpCents).toBe(15000);
+		expect(buildOpenPaymentLinkInfo(agreement, preview, parties).preview).toEqual(preview);
+		expect(buildPaymentLinkPreview(null, null)).toBeNull();
+		expect(
+			buildPaymentLinkPreview({ monthlyCents: 5000, yearlyCents: 55000, leftoverCents: 0 }, null)
+				?.finalMonthCents,
+		).toBeNull();
 	});
 
 	it('maps party profiles and nulls missing avatar fields', () => {

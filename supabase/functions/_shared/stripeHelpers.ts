@@ -43,6 +43,12 @@ export function readPaymentMethodFingerprint(pm: PaymentMethodFingerprintSource)
 	return null;
 }
 
+/** Stripe list `type` when the kept method has a fingerprint worth deduping; otherwise skip the list. */
+export function paymentMethodListTypeForFingerprintDedupe(kept: PaymentMethodFingerprintSource): string | null {
+	if (!kept.type || !readPaymentMethodFingerprint(kept)) return null;
+	return kept.type;
+}
+
 /**
  * Older payment methods to detach after a rematch: same type + fingerprint as the kept method,
  * never a different instrument.

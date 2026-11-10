@@ -1,5 +1,6 @@
 // Public: validate payment-link token and return agreement + billing preview for /pay.
 import { buildBillingComputationFromLoadedData } from '../_shared/billingHelpers.ts';
+import { buildCatchUpInvoicePlan } from '../_shared/catchUpInvoiceHelpers.ts';
 import { jsonResponse } from '../_shared/http.ts';
 import { verifyAgreementPaymentLink } from '../_shared/paymentLink.ts';
 import {
@@ -45,14 +46,22 @@ function previewFromLoadedParts(
 	periods: Array<{ start_date: string; end_date: string }> | null,
 ) {
 	if (!option) return null;
-	const yearly = buildBillingComputationFromLoadedData({
+	const billing = buildBillingComputationFromLoadedData({
 		agreement,
 		option,
 		dateOfBirth: studentDob(student),
 		noLessonPeriods: periods == null ? [] : periods,
 		today,
-	}).yearly;
-	return buildPaymentLinkPreview(agreement.start_date, today, yearly);
+	});
+	const catchUpPlan = buildCatchUpInvoicePlan({
+		startDate: agreement.start_date,
+		today,
+		monthlyCents: billing.yearly.monthlyCents,
+		leftoverCents: billing.yearly.leftoverCents,
+		periodStart: billing.periodStart,
+		periodEnd: billing.periodEnd,
+	});
+	return buildPaymentLinkPreview(billing.yearly, catchUpPlan);
 }
 
 async function computePreview(

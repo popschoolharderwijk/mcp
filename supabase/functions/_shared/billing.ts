@@ -5,22 +5,25 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import {
 	type AgeTariff,
+	assembleBillingContextFromLoadedRows,
 	assertHasBillingPhases,
 	assertPositiveYearlyCents,
 	type BillingComputation,
 	type BillingPhase,
 	buildAgreementStripeMetadata,
-	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
 	buildLessonProductIdempotencyKey,
+	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
 	buildStripeTuitionPriceNickname,
 	buildStripeTuitionProductName,
+	formatBillingSchoolYearLabel,
 	isTerminalScheduleStatus,
 	type LessonFrequency,
-	mapStripeTuitionLabelParts,
+	pickSharedRecurringMonthlyPriceId,
 	resolveStripeSubscriptionId,
+	resolveStripeTuitionPriceKind,
 	type YearlyResult,
 } from './billingHelpers.ts';
 import { issueCatchUpInvoice, planCatchUpInvoice } from './catchUpInvoice.ts';
@@ -68,37 +71,53 @@ interface StripePhasePayload {
 	default_payment_method?: string;
 }
 
-async function ensureLessonProduct(stripe: Stripe, lessonAgreementId: string, productName: string): Promise<string> {
-	const product = await stripe.products.create(
+async function ensureLessonProduct(stripe: Stripe, lessonTypeOptionId: string, productName: string): Promise<string> {
+	const found = await stripe.products.search({
+		query: buildLessonTypeOptionProductSearchQuery(lessonTypeOptionId),
+		limit: 1,
+	});
+	const existing = found.data[0];
+	if (existing) {
+		if (existing.name !== productName) {
+			await stripe.products.update(existing.id, { name: productName });
+		}
+		return existing.id;
+	}
+
+	const created = await stripe.products.create(
 		{
 			name: productName,
-			metadata: { lesson_agreement_id: lessonAgreementId },
+			metadata: { lesson_type_option_id: lessonTypeOptionId },
 		},
-		{ idempotencyKey: buildLessonProductIdempotencyKey(lessonAgreementId) },
+		{ idempotencyKey: buildLessonProductIdempotencyKey(lessonTypeOptionId) },
 	);
-	if (product.name !== productName) {
-		await stripe.products.update(product.id, { name: productName });
-	}
-	return product.id;
+	return created.id;
 }
 
-async function createPhasePrice(
+async function ensureRecurringMonthlyPrice(
 	stripe: Stripe,
 	productId: string,
+	lessonTypeOptionId: string,
 	amountCents: number,
-	label: string,
-	lessonAgreementId: string,
+	nickname: string,
 ): Promise<string> {
+	const listed = await stripe.prices.list({ product: productId, active: true, limit: 100 });
+	const existingId = pickSharedRecurringMonthlyPriceId(listed.data, amountCents);
+	if (existingId) return existingId;
+
 	const price = await stripe.prices.create(
 		{
 			currency: 'eur',
 			product: productId,
 			unit_amount: amountCents,
 			recurring: { interval: 'month', interval_count: 1 },
-			nickname: buildStripeTuitionPriceNickname(label),
-			metadata: { phase_label: label, lesson_agreement_id: lessonAgreementId },
+			nickname,
+			metadata: {
+				lesson_type_option_id: lessonTypeOptionId,
+				amount_cents: String(amountCents),
+			},
 		},
-		{ idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonAgreementId, label) },
+		{ idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId, amountCents) },
 	);
 	return price.id;
 }
@@ -123,37 +142,33 @@ async function toStripePhasePayloads(
 	stripe: Stripe,
 	phases: BillingPhase[],
 	agreement: BillingComputation['agreement'],
-	productName: string,
+	tuition: {
+		lessonTypeOptionId: string;
+		productName: string;
+		tariff: AgeTariff;
+		monthlyCents: number;
+		leftoverCents: number;
+	},
 	defaultPm?: string,
 ): Promise<StripePhasePayload[]> {
-	const lessonAgreementId = agreement.id;
 	const agreementMetadata = buildAgreementStripeMetadata(agreement);
-	const productId = await ensureLessonProduct(stripe, lessonAgreementId, productName);
+	const productId = await ensureLessonProduct(stripe, tuition.lessonTypeOptionId, tuition.productName);
 	const payloads: StripePhasePayload[] = [];
 	for (const phase of phases) {
-		const priceId = await createPhasePrice(stripe, productId, phase.amountCents, phase.label, lessonAgreementId);
+		const nickname = buildStripeTuitionPriceNickname({
+			kind: resolveStripeTuitionPriceKind(phase.amountCents, tuition.monthlyCents, tuition.leftoverCents),
+			tariff: tuition.tariff,
+		});
+		const priceId = await ensureRecurringMonthlyPrice(
+			stripe,
+			productId,
+			tuition.lessonTypeOptionId,
+			phase.amountCents,
+			nickname,
+		);
 		payloads.push(buildStripePhasePayload(priceId, phase.label, agreementMetadata, defaultPm));
 	}
 	return payloads;
-}
-
-async function loadStripeTuitionLabelParts(
-	admin: SupabaseClient,
-	billing: BillingComputation,
-): Promise<{
-	studentName: string | null;
-	lessonTypeName: string | null;
-	schoolYearLabel: string;
-}> {
-	const [{ data: profile }, { data: lessonType }] = await Promise.all([
-		admin
-			.from('profiles')
-			.select('first_name, last_name')
-			.eq('user_id', billing.agreement.student_user_id)
-			.maybeSingle(),
-		admin.from('lesson_types').select('name').eq('id', billing.agreement.lesson_type_id).maybeSingle(),
-	]);
-	return mapStripeTuitionLabelParts(profile, lessonType, billing.schoolYear.startYear);
 }
 
 type AgreementRow = BillingComputation['agreement'] & { is_active: boolean };
@@ -170,16 +185,17 @@ async function loadAgreementRow(admin: SupabaseClient, lessonAgreementId: string
 	return { ...agreement, frequency: agreement.frequency as LessonFrequency };
 }
 
-async function loadLessonTypeOptionPrices(
+async function loadLessonTypeOptionRow(
 	admin: SupabaseClient,
 	agreement: AgreementRow,
 ): Promise<{
+	id: string;
 	price_per_lesson_youth_cents: number | null;
 	price_per_lesson_adult_cents: number | null;
 }> {
 	const { data: option, error } = await admin
 		.from('lesson_type_options')
-		.select('price_per_lesson_youth_cents, price_per_lesson_adult_cents')
+		.select('id, price_per_lesson_youth_cents, price_per_lesson_adult_cents')
 		.eq('lesson_type_id', agreement.lesson_type_id)
 		.eq('frequency', agreement.frequency)
 		.eq('duration_minutes', agreement.duration_minutes)
@@ -189,31 +205,53 @@ async function loadLessonTypeOptionPrices(
 	return option;
 }
 
-async function loadBillingLookups(admin: SupabaseClient, agreement: AgreementRow) {
-	const [option, studentResult, noPeriodsResult] = await Promise.all([
-		loadLessonTypeOptionPrices(admin, agreement),
-		admin.from('students').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
-		admin.from('no_lesson_periods').select('start_date, end_date'),
-	]);
-	return {
-		option,
-		dateOfBirth: studentResult.data?.date_of_birth ?? null,
-		noLessonPeriods: noPeriodsResult.data ?? [],
-	};
-}
-
-/** Pure DB lookup + math: returns the current billing computation for an agreement. */
-async function computeBillingForAgreement(
+async function loadBillingContext(
 	admin: SupabaseClient,
 	lessonAgreementId: string,
-): Promise<BillingComputation> {
+): Promise<{
+	billing: BillingComputation;
+	lessonTypeOptionId: string;
+	lessonTypeName: string | null;
+}> {
 	const agreement = await loadAgreementRow(admin, lessonAgreementId);
-	const lookups = await loadBillingLookups(admin, agreement);
-	return buildBillingComputationFromLoadedData({
+	const [option, studentResult, noPeriodsResult, lessonTypeResult] = await Promise.all([
+		loadLessonTypeOptionRow(admin, agreement),
+		admin.from('students').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
+		admin.from('no_lesson_periods').select('start_date, end_date'),
+		admin.from('lesson_types').select('name').eq('id', agreement.lesson_type_id).maybeSingle(),
+	]);
+	return assembleBillingContextFromLoadedRows({
 		agreement,
-		...lookups,
+		option,
+		student: studentResult.data,
+		noLessonPeriods: noPeriodsResult.data,
+		lessonType: lessonTypeResult.data,
 		today: new Date().toISOString().slice(0, 10),
 	});
+}
+
+function buildTuitionProductContext(
+	billing: BillingComputation,
+	lessonTypeOptionId: string,
+	lessonTypeName: string | null,
+): {
+	lessonTypeOptionId: string;
+	productName: string;
+	tariff: AgeTariff;
+	monthlyCents: number;
+	leftoverCents: number;
+} {
+	return {
+		lessonTypeOptionId,
+		productName: buildStripeTuitionProductName({
+			lessonTypeName,
+			durationMinutes: billing.agreement.duration_minutes,
+			frequency: billing.agreement.frequency,
+		}),
+		tariff: billing.tariff,
+		monthlyCents: billing.yearly.monthlyCents,
+		leftoverCents: billing.yearly.leftoverCents,
+	};
 }
 
 function firstPhasePriceId(stripePhases: StripePhasePayload[]): string {
@@ -270,20 +308,20 @@ export async function createScheduleForAgreement(
 	ctx: ScheduleContext,
 ): Promise<BuiltSchedule> {
 	const today = new Date().toISOString().slice(0, 10);
-	const billing = await computeBillingForAgreement(admin, ctx.lessonAgreementId);
+	const { billing, lessonTypeOptionId, lessonTypeName } = await loadBillingContext(admin, ctx.lessonAgreementId);
 	assertPositiveYearlyCents(billing.yearly.yearlyCents);
 
 	const { phases, catchUpThroughMonth } = resolveSchedulePhases(billing, today);
 	assertHasBillingPhases(phases.length);
 
-	const labelParts = await loadStripeTuitionLabelParts(admin, billing);
-	const productName = buildStripeTuitionProductName(labelParts);
+	const tuition = buildTuitionProductContext(billing, lessonTypeOptionId, lessonTypeName);
 	const agreementMetadata = buildAgreementStripeMetadata(billing.agreement);
+	const schoolYearLabel = formatBillingSchoolYearLabel(billing.schoolYear.startYear);
 	const stripePhases = await toStripePhasePayloads(
 		stripe,
 		phases,
 		billing.agreement,
-		productName,
+		tuition,
 		ctx.defaultPaymentMethod,
 	);
 	const schedule = await stripe.subscriptionSchedules.create(
@@ -294,7 +332,7 @@ export async function createScheduleForAgreement(
 			phases: stripePhases,
 			metadata: {
 				...agreementMetadata,
-				school_year: labelParts.schoolYearLabel,
+				school_year: schoolYearLabel,
 			},
 		},
 		ctx.idempotencyKey ? { idempotencyKey: ctx.idempotencyKey } : undefined,
@@ -303,24 +341,7 @@ export async function createScheduleForAgreement(
 	const subscriptionId = await persistCreatedSchedule(admin, ctx, schedule, phases, stripePhases);
 
 	if (catchUpThroughMonth) {
-		const plan = planCatchUpInvoice({
-			startDate: billing.agreement.start_date,
-			today,
-			monthlyCents: billing.yearly.monthlyCents,
-			leftoverCents: billing.yearly.leftoverCents,
-			periodStart: billing.periodStart,
-			periodEnd: billing.periodEnd,
-		});
-		if (plan) {
-			await issueCatchUpInvoice(stripe, {
-				lessonAgreementId: ctx.lessonAgreementId,
-				customerId: ctx.customerId,
-				defaultPaymentMethod: ctx.defaultPaymentMethod,
-				plan,
-				productName: buildStripeTuitionProductName({ ...labelParts, catchUp: true }),
-				attemptId: ctx.attemptId,
-			});
-		}
+		await ensureCatchUpInvoiceForAgreement(admin, stripe, ctx);
 	}
 
 	return {
@@ -332,6 +353,38 @@ export async function createScheduleForAgreement(
 		periodStart: billing.periodStart,
 		periodEnd: billing.periodEnd,
 	};
+}
+
+/**
+ * Create or settle the catch-up invoice when the mandate arrives after the start month.
+ * Safe to call again after a schedule already exists (fills empty drafts / retries collection).
+ */
+export async function ensureCatchUpInvoiceForAgreement(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ctx: Pick<ScheduleContext, 'lessonAgreementId' | 'customerId' | 'defaultPaymentMethod' | 'attemptId'>,
+): Promise<void> {
+	const today = new Date().toISOString().slice(0, 10);
+	const { billing } = await loadBillingContext(admin, ctx.lessonAgreementId);
+	if (!needsCatchUpInvoice(billing.agreement.start_date, today)) return;
+
+	const plan = planCatchUpInvoice({
+		startDate: billing.agreement.start_date,
+		today,
+		monthlyCents: billing.yearly.monthlyCents,
+		leftoverCents: billing.yearly.leftoverCents,
+		periodStart: billing.periodStart,
+		periodEnd: billing.periodEnd,
+	});
+	if (!plan) return;
+
+	await issueCatchUpInvoice(stripe, {
+		lessonAgreementId: ctx.lessonAgreementId,
+		customerId: ctx.customerId,
+		defaultPaymentMethod: ctx.defaultPaymentMethod,
+		plan,
+		attemptId: ctx.attemptId,
+	});
 }
 
 export interface RebuildResult {
@@ -375,25 +428,27 @@ async function loadScheduleForRebuild(
 }
 
 async function updateFutureSchedulePhases(input: {
-	admin: SupabaseClient;
 	stripe: Stripe;
-	lessonAgreementId: string;
 	scheduleId: string;
-	schedule: Stripe.SubscriptionSchedule;
 	billing: BillingComputation;
+	tuition: {
+		lessonTypeOptionId: string;
+		productName: string;
+		tariff: AgeTariff;
+		monthlyCents: number;
+		leftoverCents: number;
+	};
 	newPhases: BillingPhase[];
 	keptPayloads: Array<Record<string, unknown>>;
 	firstFutureIndex: number;
 }): Promise<RebuildResult | null> {
-	const labelParts = await loadStripeTuitionLabelParts(input.admin, input.billing);
-	const productName = buildStripeTuitionProductName(labelParts);
 	const agreementMetadata = buildAgreementStripeMetadata(input.billing.agreement);
 	const futurePayloads = alignFuturePhasePayloads(
 		await toStripePhasePayloads(
 			input.stripe,
 			input.newPhases.slice(input.firstFutureIndex),
 			input.billing.agreement,
-			productName,
+			input.tuition,
 			inheritSchedulePaymentMethod(input.keptPayloads),
 		),
 		input.firstFutureIndex,
@@ -406,7 +461,7 @@ async function updateFutureSchedulePhases(input: {
 		proration_behavior: 'none',
 		metadata: {
 			...agreementMetadata,
-			school_year: labelParts.schoolYearLabel,
+			school_year: formatBillingSchoolYearLabel(input.billing.schoolYear.startYear),
 			last_rebuild_at: new Date().toISOString(),
 		},
 	});
@@ -431,7 +486,7 @@ export async function rebuildScheduleForAgreement(
 	lessonAgreementId: string,
 ): Promise<RebuildResult> {
 	const { scheduleId, schedule } = await loadScheduleForRebuild(admin, stripe, lessonAgreementId);
-	const billing = await computeBillingForAgreement(admin, lessonAgreementId);
+	const { billing, lessonTypeOptionId, lessonTypeName } = await loadBillingContext(admin, lessonAgreementId);
 	const newPhases = buildPhases(
 		billing.periodStart,
 		billing.periodEnd,
@@ -445,12 +500,10 @@ export async function rebuildScheduleForAgreement(
 	if (firstFutureIndex === -1) return skippedRebuildResult(scheduleId, keptPayloads.length, billing);
 
 	const updated = await updateFutureSchedulePhases({
-		admin,
 		stripe,
-		lessonAgreementId,
 		scheduleId,
-		schedule,
 		billing,
+		tuition: buildTuitionProductContext(billing, lessonTypeOptionId, lessonTypeName),
 		newPhases,
 		keptPayloads,
 		firstFutureIndex,

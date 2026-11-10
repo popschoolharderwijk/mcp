@@ -7,27 +7,67 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpProductIdempotencyKey,
+	buildCatchUpProductSearchQuery,
 	type CatchUpInvoicePlan,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	needsCatchUpPaymentMethodUpdate,
+	catchUpDraftNeedsLineItems,
+	pickActiveGlobalCatchUpProductId,
+	pickAdoptableLegacyCatchUpProductId,
 	pickReusableCatchUpInvoice,
 	resolveExistingCatchUpSettleKind,
+	STRIPE_CATCH_UP_PRODUCT_NAME,
+	STRIPE_CATCH_UP_PRODUCT_SCOPE,
 	stripeExpandableId,
 } from './catchUpInvoiceHelpers.ts';
 
-async function ensureCatchUpProduct(stripe: Stripe, lessonAgreementId: string, productName: string): Promise<string> {
-	const product = await stripe.products.create(
+async function renameCatchUpProductIfNeeded(stripe: Stripe, productId: string, currentName: string | null): Promise<void> {
+	if (currentName === STRIPE_CATCH_UP_PRODUCT_NAME) return;
+	await stripe.products.update(productId, { name: STRIPE_CATCH_UP_PRODUCT_NAME });
+}
+
+async function adoptLegacyCatchUpProduct(stripe: Stripe, productId: string): Promise<string> {
+	await stripe.products.update(productId, {
+		name: STRIPE_CATCH_UP_PRODUCT_NAME,
+		metadata: { kind: 'catch_up', scope: STRIPE_CATCH_UP_PRODUCT_SCOPE },
+	});
+	return productId;
+}
+
+async function useExistingGlobalCatchUpProduct(
+	stripe: Stripe,
+	products: Array<{ id: string; name?: string | null }>,
+	productId: string,
+): Promise<string> {
+	const existing = products.find((product) => product.id === productId);
+	await renameCatchUpProductIfNeeded(stripe, productId, existing?.name ?? null);
+	return productId;
+}
+
+async function ensureCatchUpProduct(stripe: Stripe): Promise<string> {
+	const found = await stripe.products.search({
+		query: buildCatchUpProductSearchQuery(),
+		limit: 10,
+	});
+	const existingId = pickActiveGlobalCatchUpProductId(found.data);
+	if (existingId) return useExistingGlobalCatchUpProduct(stripe, found.data, existingId);
+
+	const legacy = await stripe.products.search({
+		query: `metadata['kind']:'catch_up'`,
+		limit: 20,
+	});
+	const adoptableId = pickAdoptableLegacyCatchUpProductId(legacy.data);
+	if (adoptableId) return adoptLegacyCatchUpProduct(stripe, adoptableId);
+
+	const created = await stripe.products.create(
 		{
-			name: productName,
-			metadata: { lesson_agreement_id: lessonAgreementId, kind: 'catch_up' },
+			name: STRIPE_CATCH_UP_PRODUCT_NAME,
+			metadata: { kind: 'catch_up', scope: STRIPE_CATCH_UP_PRODUCT_SCOPE },
 		},
-		{ idempotencyKey: buildCatchUpProductIdempotencyKey(lessonAgreementId) },
+		{ idempotencyKey: buildCatchUpProductIdempotencyKey() },
 	);
-	if (product.name !== productName) {
-		await stripe.products.update(product.id, { name: productName });
-	}
-	return product.id;
+	return created.id;
 }
 
 async function listCustomerInvoices(stripe: Stripe, customerId: string): Promise<Stripe.Invoice[]> {
@@ -129,7 +169,6 @@ type ExistingCatchUpSettleInput = {
 	lessonAgreementId: string;
 	attemptId: string;
 	plan: CatchUpInvoicePlan;
-	productName: string;
 	defaultPaymentMethod?: string;
 };
 
@@ -139,7 +178,7 @@ async function fillEmptyDraftCatchUpLines(
 	input: ExistingCatchUpSettleInput,
 ): Promise<void> {
 	if ((invoice.lines?.data?.length ?? 0) > 0) return;
-	const productId = await ensureCatchUpProduct(stripe, input.lessonAgreementId, input.productName);
+	const productId = await ensureCatchUpProduct(stripe);
 	await addCatchUpLineItems(stripe, {
 		customerId: input.customerId,
 		invoiceId: invoice.id,
@@ -183,12 +222,11 @@ async function createAndFinalizeCatchUpInvoice(
 		customerId: string;
 		defaultPaymentMethod?: string;
 		plan: CatchUpInvoicePlan;
-		productName: string;
 		attemptId: string;
 	},
 ): Promise<string> {
-	const { plan, lessonAgreementId, customerId, productName, attemptId } = input;
-	const productId = await ensureCatchUpProduct(stripe, lessonAgreementId, productName);
+	const { plan, lessonAgreementId, customerId, attemptId } = input;
+	const productId = await ensureCatchUpProduct(stripe);
 	const metadata = {
 		lesson_agreement_id: lessonAgreementId,
 		kind: 'catch_up',
@@ -216,21 +254,23 @@ async function createAndFinalizeCatchUpInvoice(
 		},
 	);
 
-	// Create idempotency returns the cached draft body; retrieve for live status on retries/races.
-	const invoice = await stripe.invoices.retrieve(created.id);
+	// Create idempotency returns the cached draft body; retrieve for live status/lines on retries/races.
+	const invoice = await stripe.invoices.retrieve(created.id, { expand: ['lines'] });
 	if (invoice.status !== 'draft') {
 		return invoice.id;
 	}
 
-	await addCatchUpLineItems(stripe, {
-		customerId,
-		invoiceId: invoice.id,
-		productId,
-		lessonAgreementId,
-		attemptId,
-		plan,
-		metadata,
-	});
+	if (catchUpDraftNeedsLineItems(invoice)) {
+		await addCatchUpLineItems(stripe, {
+			customerId,
+			invoiceId: invoice.id,
+			productId,
+			lessonAgreementId,
+			attemptId,
+			plan,
+			metadata,
+		});
+	}
 
 	return finalizeCatchUpDraft(stripe, invoice.id, lessonAgreementId, plan, attemptId);
 }
@@ -246,7 +286,6 @@ export async function issueCatchUpInvoice(
 		customerId: string;
 		defaultPaymentMethod?: string;
 		plan: CatchUpInvoicePlan;
-		productName: string;
 		attemptId: string;
 	},
 ): Promise<string> {
@@ -261,7 +300,6 @@ export async function issueCatchUpInvoice(
 			lessonAgreementId: input.lessonAgreementId,
 			attemptId: input.attemptId,
 			plan: input.plan,
-			productName: input.productName,
 			defaultPaymentMethod: input.defaultPaymentMethod,
 		});
 	}

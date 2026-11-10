@@ -114,9 +114,57 @@ export function filterPhasesAfterCatchUpMonth(phases: BillingPhase[], catchUpThr
 	return phases.filter((phase) => phase.label > catchUpThroughMonth);
 }
 
-/** One catch-up Product per agreement so retries share the same product id in line price_data. */
-export function buildCatchUpProductIdempotencyKey(agreementId: string): string {
-	return `mcp_catchup_product_${agreementId}`;
+/** Single global catch-up Product for all agreements. */
+export const STRIPE_CATCH_UP_PRODUCT_NAME = 'Inhalen lesgeld';
+export const STRIPE_CATCH_UP_PRODUCT_SCOPE = 'global';
+
+export function buildCatchUpProductIdempotencyKey(): string {
+	return 'mcp_catchup_product_global';
+}
+
+/** Prefer the shared catalog product; ignore legacy per-agreement catch-up products. */
+export function buildCatchUpProductSearchQuery(): string {
+	return `metadata['kind']:'catch_up' AND metadata['scope']:'${STRIPE_CATCH_UP_PRODUCT_SCOPE}'`;
+}
+
+export type CatchUpProductCandidate = {
+	id: string;
+	active?: boolean | null;
+	name?: string | null;
+	metadata?: Record<string, string> | null;
+};
+
+/** Active global catch-up product, or null when search only returned legacy/inactive rows. */
+export function pickActiveGlobalCatchUpProductId(products: CatchUpProductCandidate[]): string | null {
+	for (const product of products) {
+		if (product.active === false) continue;
+		if (product.metadata?.kind !== 'catch_up') continue;
+		if (product.metadata?.scope !== STRIPE_CATCH_UP_PRODUCT_SCOPE) continue;
+		return product.id;
+	}
+	return null;
+}
+
+/**
+ * Shared catch-up product created before scope=global existed: active, kind=catch_up,
+ * and not pinned to one lesson agreement.
+ */
+export function pickAdoptableLegacyCatchUpProductId(products: CatchUpProductCandidate[]): string | null {
+	for (const product of products) {
+		if (product.active === false) continue;
+		if (product.metadata?.kind !== 'catch_up') continue;
+		if (product.metadata?.lesson_agreement_id) continue;
+		return product.id;
+	}
+	return null;
+}
+
+/** Draft catch-up invoices need line items before finalize; non-draft means another attempt finished. */
+export function catchUpDraftNeedsLineItems(invoice: {
+	status?: string | null;
+	lines?: { data?: readonly unknown[] | null } | null;
+}): boolean {
+	return invoice.status === 'draft' && (invoice.lines?.data?.length ?? 0) === 0;
 }
 
 /** Includes attemptId so same-attempt retries share the key; new attempts create only when none are reusable. */

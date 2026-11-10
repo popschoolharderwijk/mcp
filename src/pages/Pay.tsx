@@ -169,7 +169,7 @@ export default function Pay() {
 
 	return (
 		<PayView
-			view={resolvePayPageView({ loadingInfo, completed, info })}
+			view={resolvePayPageView({ loadingInfo, completed, info, error })}
 			agreementId={agreementId}
 			info={info}
 			starting={starting}

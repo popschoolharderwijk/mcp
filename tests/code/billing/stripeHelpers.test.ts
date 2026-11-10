@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	getStripeId,
+	paymentMethodListTypeForFingerprintDedupe,
 	readGeneratedSepaDebitFromDetails,
 	readGeneratedSepaDebitPaymentMethodId,
 	readPaymentMethodFingerprint,
@@ -113,5 +114,23 @@ describe('payment method fingerprint duplicates', () => {
 				[{ id: 'pm_old', type: 'sepa_debit', sepa_debit: { fingerprint: 'fp' } }],
 			),
 		).toEqual([]);
+	});
+
+	it('lists by type only when the kept method has a fingerprint', () => {
+		expect(
+			paymentMethodListTypeForFingerprintDedupe({
+				id: 'pm_new',
+				type: 'sepa_debit',
+				sepa_debit: { fingerprint: 'fp' },
+			}),
+		).toBe('sepa_debit');
+		expect(
+			paymentMethodListTypeForFingerprintDedupe({
+				id: 'pm_new',
+				type: 'sepa_debit',
+				sepa_debit: { fingerprint: null },
+			}),
+		).toBeNull();
+		expect(paymentMethodListTypeForFingerprintDedupe({ id: 'pm_new', type: null })).toBeNull();
 	});
 });

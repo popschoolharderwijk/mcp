@@ -30,6 +30,14 @@ describe('paymentLinkPageHelpers', () => {
 		expect(
 			resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: true, arranged: true } }),
 		).toBe('arranged');
+		expect(
+			resolvePayPageView({
+				loadingInfo: false,
+				completed: false,
+				info: { valid: true, arranged: true },
+				error: 'Inhaalfactuur mislukte',
+			}),
+		).toBe('details');
 		expect(resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: false } })).toBe('invalid');
 		expect(resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: true } })).toBe('details');
 	});
