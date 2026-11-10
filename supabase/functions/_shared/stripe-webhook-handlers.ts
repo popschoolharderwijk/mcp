@@ -10,12 +10,15 @@ import {
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
+	isStripeWebhookScheduleCancelAction,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
+	shouldClearAgreementScheduleForSubscriptionStatus,
 	shouldHandleSubscriptionCheckout,
 	shouldProcessSetupCheckoutSession,
 } from './stripeWebhookHandlersHelpers.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
+import { applyCanceledScheduleLocally, clearAgreementScheduleId } from './subscriptionScheduleCancel.ts';
 
 async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: string): Promise<boolean> {
 	const { data } = await admin
@@ -132,6 +135,19 @@ async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscriptio
 		return;
 	}
 	await writeSubscriptionState(admin, state);
+	if (shouldClearAgreementScheduleForSubscriptionStatus(state.status)) {
+		await clearAgreementScheduleId(admin, state.lesson_agreement_id);
+	}
+}
+
+async function handleSubscriptionScheduleCanceled(
+	admin: SupabaseClient,
+	schedule: Stripe.SubscriptionSchedule,
+): Promise<void> {
+	const { lessonAgreementId } = await applyCanceledScheduleLocally(admin, schedule);
+	if (!lessonAgreementId) {
+		console.warn('schedule cancel without local subscription or agreement metadata', schedule.id);
+	}
 }
 
 async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
@@ -223,13 +239,12 @@ async function handleSetupIntentSucceeded(
 	});
 }
 
-export async function handleStripeWebhookEvent(
+async function dispatchStripeWebhookNonCancelAction(
 	admin: SupabaseClient,
 	stripe: Stripe,
 	event: Stripe.Event,
+	action: Exclude<ReturnType<typeof resolveStripeWebhookAction>, 'noop' | 'cancel_schedule'>,
 ): Promise<void> {
-	const action = resolveStripeWebhookAction(event.type);
-	if (action === 'noop') return;
 	if (isStripeWebhookDataAction(action)) {
 		await dispatchStripeWebhookDataAction(admin, stripe, event, action);
 		return;
@@ -237,6 +252,20 @@ export async function handleStripeWebhookEvent(
 	if (isStripeWebhookCheckoutAction(action)) {
 		await dispatchStripeWebhookCheckoutAction(admin, stripe, event, action);
 	}
+}
+
+export async function handleStripeWebhookEvent(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	event: Stripe.Event,
+): Promise<void> {
+	const action = resolveStripeWebhookAction(event.type);
+	if (action === 'noop') return;
+	if (isStripeWebhookScheduleCancelAction(action)) {
+		await handleSubscriptionScheduleCanceled(admin, event.data.object as Stripe.SubscriptionSchedule);
+		return;
+	}
+	await dispatchStripeWebhookNonCancelAction(admin, stripe, event, action);
 }
 
 async function dispatchStripeWebhookDataAction(

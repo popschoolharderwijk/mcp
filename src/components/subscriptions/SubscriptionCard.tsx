@@ -82,12 +82,13 @@ function SubscriptionDetails(props: {
 function ResendInviteButton(props: {
 	visible: boolean;
 	busy: boolean;
+	label: string;
 	onAction: (a: SubscriptionAction) => void | Promise<void>;
 }) {
 	if (!props.visible) return null;
 	return (
 		<Button onClick={() => void props.onAction('send-invite')} disabled={props.busy}>
-			<LuMail className="mr-1.5 h-4 w-4" /> Opnieuw versturen
+			<LuMail className="mr-1.5 h-4 w-4" /> {props.label}
 		</Button>
 	);
 }
@@ -104,6 +105,7 @@ function SubscriptionActions(props: {
 			<ResendInviteButton
 				visible={shouldShowResendAction(props.loading, props.subscription)}
 				busy={props.busy}
+				label={props.subscription?.status === 'canceled' ? 'Opnieuw aanbieden' : 'Opnieuw versturen'}
 				onAction={props.onAction}
 			/>
 			<StripeButton

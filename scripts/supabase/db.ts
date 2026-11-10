@@ -6,15 +6,8 @@
  * Hosted DB password: SUPABASE_DB_PASSWORD from SECRETS_PATH runtimeEnvFile (.env.<target>.local).
  */
 
-import { DEPLOY_ENV_CLI_USAGE, type DeployTarget, formatTargetLabel } from './envHelpers.ts';
-import {
-	confirmTargetIfRequired,
-	ensureSupabaseUnlinked,
-	fail,
-	remoteDbAuth,
-	resolveTargetFromArgv,
-	runSupabase,
-} from './runHelpers.ts';
+import { DEPLOY_ENV_CLI_USAGE, type DeployTarget } from './envHelpers.ts';
+import { ensureSupabaseUnlinked, fail, remoteDbAuth, runSupabase, runTargetScriptMain } from './runHelpers.ts';
 
 export async function resetDatabase(target: DeployTarget): Promise<void> {
 	if (target.projectRef === null) {
@@ -55,11 +48,12 @@ async function main(): Promise<void> {
 		fail(`Usage: bun run scripts/supabase/db.ts <reset|push> [${DEPLOY_ENV_CLI_USAGE}]`);
 	}
 
-	const target = resolveTargetFromArgv(process.argv.slice(3), entry.label);
-	console.log(`${entry.label} → ${formatTargetLabel(target)}`);
-	await confirmTargetIfRequired(target, entry.label, { destructive: entry.destructive });
-	await entry.run(target);
-	console.log('Done.');
+	await runTargetScriptMain({
+		verbLabel: entry.label,
+		envArgv: process.argv.slice(3),
+		destructive: entry.destructive,
+		run: entry.run,
+	});
 }
 
 if (import.meta.main) {

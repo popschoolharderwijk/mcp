@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildCanceledSubscriptionUpdate,
 	buildSubscriptionInvoiceUpsertRow,
 	extractStripeSubscriptionId,
 	hasScheduleSetupInput,
@@ -7,8 +8,11 @@ import {
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
+	isStripeWebhookScheduleCancelAction,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
+	resolveSubscriptionScheduleCancelTarget,
+	shouldClearAgreementScheduleForSubscriptionStatus,
 	shouldHandleSubscriptionCheckout,
 	shouldProcessSetupCheckoutSession,
 	stripeUnixTimestampToIso,
@@ -118,6 +122,7 @@ describe('hasScheduleSetupInput', () => {
 describe('resolveStripeWebhookAction', () => {
 	it('maps subscription events to upsert_subscription', () => {
 		expect(resolveStripeWebhookAction('customer.subscription.updated')).toBe('upsert_subscription');
+		expect(resolveStripeWebhookAction('customer.subscription.deleted')).toBe('upsert_subscription');
 	});
 
 	it('maps checkout and setup events', () => {
@@ -129,8 +134,53 @@ describe('resolveStripeWebhookAction', () => {
 		expect(resolveStripeWebhookAction('invoice.paid')).toBe('upsert_invoice');
 	});
 
+	it('maps schedule cancel events to cancel_schedule', () => {
+		expect(resolveStripeWebhookAction('subscription_schedule.canceled')).toBe('cancel_schedule');
+	});
+
 	it('returns noop for unknown events', () => {
 		expect(resolveStripeWebhookAction('customer.created')).toBe('noop');
+	});
+});
+
+describe('resolveSubscriptionScheduleCancelTarget', () => {
+	it('reads schedule id, agreement metadata, and canceled_at', () => {
+		expect(
+			resolveSubscriptionScheduleCancelTarget({
+				id: 'sub_sched_1',
+				metadata: { lesson_agreement_id: 'agr-1' },
+				canceled_at: 1_700_000_000,
+			}),
+		).toEqual({
+			scheduleId: 'sub_sched_1',
+			lessonAgreementId: 'agr-1',
+			canceledAtIso: '2023-11-14T22:13:20.000Z',
+		});
+	});
+
+	it('allows missing agreement metadata and canceled_at', () => {
+		expect(resolveSubscriptionScheduleCancelTarget({ id: 'sub_sched_2', metadata: null })).toEqual({
+			scheduleId: 'sub_sched_2',
+			lessonAgreementId: null,
+			canceledAtIso: null,
+		});
+	});
+});
+
+describe('buildCanceledSubscriptionUpdate', () => {
+	it('sets canceled status and canceled_at', () => {
+		expect(buildCanceledSubscriptionUpdate('2026-11-10T09:14:31.000Z')).toEqual({
+			status: 'canceled',
+			canceled_at: '2026-11-10T09:14:31.000Z',
+		});
+	});
+});
+
+describe('shouldClearAgreementScheduleForSubscriptionStatus', () => {
+	it('clears only when the subscription is canceled', () => {
+		expect(shouldClearAgreementScheduleForSubscriptionStatus('canceled')).toBe(true);
+		expect(shouldClearAgreementScheduleForSubscriptionStatus('active')).toBe(false);
+		expect(shouldClearAgreementScheduleForSubscriptionStatus('scheduled')).toBe(false);
 	});
 });
 
@@ -185,5 +235,13 @@ describe('isStripeWebhookCheckoutAction', () => {
 
 	it('returns false for subscription actions', () => {
 		expect(isStripeWebhookCheckoutAction('upsert_subscription')).toBe(false);
+	});
+});
+
+describe('isStripeWebhookScheduleCancelAction', () => {
+	it('returns true only for cancel_schedule', () => {
+		expect(isStripeWebhookScheduleCancelAction('cancel_schedule')).toBe(true);
+		expect(isStripeWebhookScheduleCancelAction('upsert_subscription')).toBe(false);
+		expect(isStripeWebhookScheduleCancelAction('noop')).toBe(false);
 	});
 });

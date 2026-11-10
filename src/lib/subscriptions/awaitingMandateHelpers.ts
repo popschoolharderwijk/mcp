@@ -44,20 +44,21 @@ function hasMandateRecord(
 
 /**
  * Active agreement waiting on a Stripe mandate: no schedule on the agreement
- * and no open subscription with a schedule/subscription id.
+ * and no prior mandate history (including canceled).
  */
 export function isAwaitingMandate(input: AwaitingMandateInput, today: string): boolean {
 	if (!input.isActive) return false;
 	if (input.endDate && input.endDate < today) return false;
 	if (input.stripeScheduleId) return false;
+	if (hasMandateRecord(null, input.subscriptions)) return false;
 	return !hasCollectableMandate(input.subscriptions);
 }
 
-export type MandateLifecycleStatus = 'pending' | 'active' | 'inactive';
+export type MandateLifecycleStatus = 'pending' | 'active' | 'canceled';
 
 /**
  * Maps local agreement/subscription state onto Stripe Mandate lifecycle buckets.
- * pending = not yet usable; active = can collect; inactive = revoked/unusable history.
+ * pending = not yet usable; active = can collect; canceled = revoked/unusable history.
  */
 export function resolveMandateLifecycleStatus(
 	input: AwaitingMandateInput,
@@ -68,7 +69,7 @@ export function resolveMandateLifecycleStatus(
 	if (hasCollectableMandate(input.subscriptions)) return 'active';
 	const agreementOpen = input.isActive && !(input.endDate && input.endDate < today);
 	if (input.stripeScheduleId && agreementOpen) return 'active';
-	return 'inactive';
+	return 'canceled';
 }
 
 export function pickPrimarySubscriptionStatus(
@@ -91,7 +92,7 @@ export interface MandateStatusRow {
 	start_date: string;
 	agreement_active: boolean;
 	subscription_status: string | null;
-	lifecycle_status: 'active' | 'inactive';
+	lifecycle_status: 'active' | 'canceled';
 }
 
 export function mapMandateStatusRow(input: {
@@ -105,7 +106,7 @@ export function mapMandateStatusRow(input: {
 	startDate: string;
 	agreementActive: boolean;
 	subscriptionStatus: string | null;
-	lifecycleStatus: 'active' | 'inactive';
+	lifecycleStatus: 'active' | 'canceled';
 }): MandateStatusRow {
 	return {
 		lesson_agreement_id: input.lessonAgreementId,
@@ -122,6 +123,21 @@ export function mapMandateStatusRow(input: {
 		agreement_active: input.agreementActive,
 		subscription_status: input.subscriptionStatus,
 		lifecycle_status: input.lifecycleStatus,
+	};
+}
+
+/** Shape a canceled mandate row for the shared payment-invite dialog. */
+export function mandateStatusRowToInviteTarget(row: MandateStatusRow): AwaitingMandateRow {
+	return {
+		lesson_agreement_id: row.lesson_agreement_id,
+		student_user_id: row.student_user_id,
+		student: row.student,
+		recipient_email: row.student.email ?? null,
+		lesson_type_name: row.lesson_type_name,
+		start_date: row.start_date,
+		created_at: row.start_date,
+		last_sent_at: null,
+		days_waiting: 0,
 	};
 }
 

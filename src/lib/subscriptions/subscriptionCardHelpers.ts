@@ -51,15 +51,59 @@ export function resolveIssuedPaymentUrl(data: unknown): string | null {
 	return url;
 }
 
+/** Stripe Checkout session URL from `create-subscription-checkout` (does not rotate pay-link tokens). */
+export function resolveCheckoutSessionUrl(data: unknown): string | null {
+	const url = (data as { url?: unknown } | null)?.url;
+	if (typeof url !== 'string' || url.length === 0) return null;
+	return url;
+}
+
+export function buildStaffCheckoutBody(lessonAgreementId: string): Record<string, unknown> {
+	return { lesson_agreement_id: lessonAgreementId, mode: 'checkout' };
+}
+
+export type StaffCheckoutOpenDecision =
+	| { kind: 'ok'; url: string }
+	| { kind: 'data_error'; message: string }
+	| { kind: 'invoke_error' }
+	| { kind: 'missing_url' };
+
+/** Classify staff checkout invoke result before toast / navigation side effects. */
+export function decideStaffCheckoutOpen(data: unknown, hasInvokeError: boolean): StaffCheckoutOpenDecision {
+	const dataError = (data as { error?: unknown } | null)?.error;
+	if (typeof dataError === 'string') return { kind: 'data_error', message: dataError };
+	if (hasInvokeError) return { kind: 'invoke_error' };
+	const url = resolveCheckoutSessionUrl(data);
+	if (!url) return { kind: 'missing_url' };
+	return { kind: 'ok', url };
+}
+
 export function shouldShowResendInvitation(
-	subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined,
+	subscription:
+		| {
+				status?: string | null;
+				stripe_schedule_id?: string | null;
+				stripe_subscription_id?: string | null;
+		  }
+		| null
+		| undefined,
 ): boolean {
-	return !subscription?.stripe_schedule_id && !subscription?.stripe_subscription_id;
+	if (!subscription) return true;
+	if (subscription.stripe_schedule_id) return false;
+	if (subscription.status === 'canceled') return true;
+	return !subscription.stripe_subscription_id;
 }
 
 export function shouldShowResendAction(
 	loading: boolean,
-	subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined,
+	subscription:
+		| {
+				status?: string | null;
+				stripe_schedule_id?: string | null;
+				stripe_subscription_id?: string | null;
+		  }
+		| null
+		| undefined,
 ): boolean {
 	if (loading) return false;
 	return shouldShowResendInvitation(subscription);

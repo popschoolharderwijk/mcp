@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildIssuePaymentLinkBody,
+	buildStaffCheckoutBody,
 	buildSubscriptionActionBody,
+	decideStaffCheckoutOpen,
 	extractPortalUrl,
 	isPortalActionDisabled,
 	isRebuildActionDisabled,
+	resolveCheckoutSessionUrl,
 	resolveIssuedPaymentUrl,
 	resolveIssuePaymentLinkSendError,
 	resolveSubscriptionActionError,
@@ -39,6 +42,26 @@ describe('subscriptionCardHelpers', () => {
 			'http://127.0.0.1:8081/pay?t=abc',
 		);
 		expect(resolveIssuedPaymentUrl({})).toBeNull();
+		expect(buildStaffCheckoutBody('agr-1')).toEqual({
+			lesson_agreement_id: 'agr-1',
+			mode: 'checkout',
+		});
+		expect(resolveCheckoutSessionUrl({ url: 'https://checkout.stripe.com/c/pay/cs_test' })).toBe(
+			'https://checkout.stripe.com/c/pay/cs_test',
+		);
+		expect(resolveCheckoutSessionUrl({ mode: 'complete' })).toBeNull();
+		expect(decideStaffCheckoutOpen({ error: 'Geen toegang' }, false)).toEqual({
+			kind: 'data_error',
+			message: 'Geen toegang',
+		});
+		expect(decideStaffCheckoutOpen({ url: 'https://checkout.stripe.com/c/pay/cs_test' }, true)).toEqual({
+			kind: 'invoke_error',
+		});
+		expect(decideStaffCheckoutOpen({}, false)).toEqual({ kind: 'missing_url' });
+		expect(decideStaffCheckoutOpen({ url: 'https://checkout.stripe.com/c/pay/cs_ok' }, false)).toEqual({
+			kind: 'ok',
+			url: 'https://checkout.stripe.com/c/pay/cs_ok',
+		});
 	});
 
 	it('builds portal body with user_id and return_url', () => {
@@ -48,9 +71,30 @@ describe('subscriptionCardHelpers', () => {
 		});
 	});
 
-	it('shows resend only when no schedule or subscription exists', () => {
+	it('shows resend when no live schedule, including canceled subscriptions', () => {
 		expect(shouldShowResendInvitation(null)).toBe(true);
 		expect(shouldShowResendInvitation({ stripe_schedule_id: 'sched', stripe_subscription_id: null })).toBe(false);
+		expect(
+			shouldShowResendInvitation({
+				status: 'canceled',
+				stripe_schedule_id: null,
+				stripe_subscription_id: 'sub_old',
+			}),
+		).toBe(true);
+		expect(
+			shouldShowResendInvitation({
+				status: 'canceled',
+				stripe_schedule_id: 'sched',
+				stripe_subscription_id: 'sub_old',
+			}),
+		).toBe(false);
+		expect(
+			shouldShowResendInvitation({
+				status: 'active',
+				stripe_schedule_id: null,
+				stripe_subscription_id: 'sub_1',
+			}),
+		).toBe(false);
 	});
 
 	it('hides resend while loading and disables portal/rebuild without schedule', () => {

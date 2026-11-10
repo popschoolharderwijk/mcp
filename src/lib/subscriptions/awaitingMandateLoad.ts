@@ -188,6 +188,28 @@ async function fetchAgreementsWithSchedule(): Promise<AgreementQueryRow[]> {
 	);
 }
 
+async function fetchAgreementsByIds(ids: string[]): Promise<AgreementQueryRow[]> {
+	if (ids.length === 0) return [];
+	return unwrapAgreementRows(await supabase.from('lesson_agreements').select(AGREEMENT_MANDATE_SELECT).in('id', ids));
+}
+
+/** Agreements with a live schedule and/or any subscription mirror (including canceled). */
+async function fetchAgreementsWithMandateHistory(): Promise<AgreementQueryRow[]> {
+	const withSchedule = await fetchAgreementsWithSchedule();
+	const knownIds = new Set(withSchedule.map((row) => row.id));
+	const { data: subscriptionLinks, error } = await supabase.from('subscriptions').select('lesson_agreement_id');
+	throwQueryError(error);
+	const missingIds = [
+		...new Set(
+			(subscriptionLinks ?? [])
+				.map((row) => row.lesson_agreement_id as string)
+				.filter((id) => id && !knownIds.has(id)),
+		),
+	];
+	const extras = await fetchAgreementsByIds(missingIds);
+	return [...withSchedule, ...extras];
+}
+
 /** Active agreements waiting on a Stripe mandate (+ last checkout invitation). */
 export async function fetchAwaitingMandates(): Promise<AwaitingMandateRow[]> {
 	const today = formatDateToDb(now());
@@ -217,7 +239,7 @@ function filterLifecycleCandidates(
 function mapLifecycleCandidates(
 	candidates: AgreementQueryRow[],
 	profiles: Map<string, ProfileRow>,
-	lifecycle: 'active' | 'inactive',
+	lifecycle: 'active' | 'canceled',
 ): MandateStatusRow[] {
 	return candidates.map((row) => {
 		const fromProfile = profileFields(profiles.get(row.student_user_id));
@@ -238,9 +260,9 @@ function mapLifecycleCandidates(
 }
 
 /** Agreements with a collected Stripe mandate in the given lifecycle bucket. */
-export async function fetchMandatesByLifecycle(lifecycle: 'active' | 'inactive'): Promise<MandateStatusRow[]> {
+export async function fetchMandatesByLifecycle(lifecycle: 'active' | 'canceled'): Promise<MandateStatusRow[]> {
 	const today = formatDateToDb(now());
-	const candidates = filterLifecycleCandidates(await fetchAgreementsWithSchedule(), lifecycle, today);
+	const candidates = filterLifecycleCandidates(await fetchAgreementsWithMandateHistory(), lifecycle, today);
 	if (candidates.length === 0) return [];
 	const profilesRes = await supabase
 		.from('profiles')
@@ -252,24 +274,16 @@ export async function fetchMandatesByLifecycle(lifecycle: 'active' | 'inactive')
 	);
 }
 
-export async function countAwaitingMandates(): Promise<number> {
-	try {
-		return (await fetchAwaitingMandates()).length;
-	} catch {
-		return 0;
-	}
-}
-
 /** Counts for Mandates tab labels (`Label (n)`). */
 export async function fetchMandatesTabCounts(): Promise<MandatesTabCounts> {
-	const [active, inactive, awaiting] = await Promise.all([
+	const [active, canceled, awaiting] = await Promise.all([
 		fetchMandatesByLifecycle('active'),
-		fetchMandatesByLifecycle('inactive'),
+		fetchMandatesByLifecycle('canceled'),
 		fetchAwaitingMandates(),
 	]);
 	return {
 		active: active.length,
-		inactive: inactive.length,
+		canceled: canceled.length,
 		pending: filterAwaitingByInviteSent(awaiting, true).length,
 		unsent: filterAwaitingByInviteSent(awaiting, false).length,
 	};

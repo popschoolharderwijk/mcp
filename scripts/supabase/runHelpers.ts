@@ -10,6 +10,7 @@ import * as readline from 'node:readline/promises';
 import {
 	confirmTargetToken,
 	DEPLOY_ENV_CLI_USAGE,
+	type DeployEnv,
 	type DeployTarget,
 	deployEnvUsageHint,
 	formatLocalSupabaseStartCommand,
@@ -52,31 +53,66 @@ export function fail(message: string): never {
 	process.exit(1);
 }
 
-export function resolveTargetFromArgv(argv: string[], verbLabel: string): DeployTarget {
+export type ResolveTargetFromArgvOptions = {
+	/** Override `[local|…]` usage fragment (default: all deploy envs). */
+	usageEnvs?: string;
+	/** Fail before confirm when the resolved env is listed (e.g. production for stripe:reset). */
+	refuseEnvs?: readonly DeployEnv[];
+};
+
+export function resolveTargetFromArgv(
+	argv: string[],
+	verbLabel: string,
+	options: ResolveTargetFromArgvOptions = {},
+): DeployTarget {
+	const usageEnvs = options.usageEnvs ?? DEPLOY_ENV_CLI_USAGE;
 	const envArg = argv[0];
 	const env = parseDeployEnv(envArg);
 	if (env === null) {
-		fail(
-			`Unknown environment "${envArg}". ${deployEnvUsageHint()}\nUsage: bun run ${verbLabel} [${DEPLOY_ENV_CLI_USAGE}]`,
-		);
+		const hint = options.usageEnvs === undefined ? `${deployEnvUsageHint()}\n` : '';
+		fail(`Unknown environment "${envArg}". ${hint}Usage: bun run ${verbLabel} [${usageEnvs}]`);
+	}
+	if (options.refuseEnvs?.includes(env)) {
+		fail(`${verbLabel} refuses ${env}. Usage: bun run ${verbLabel} [${usageEnvs}]`);
 	}
 	return resolveDeployTarget(env);
 }
 
-function pushTargetDetail(
-	target: DeployTarget,
-	describeTarget: ((target: DeployTarget) => string) | undefined,
-): string {
+function targetDetail(target: DeployTarget, describeTarget: ((target: DeployTarget) => string) | undefined): string {
 	if (describeTarget === undefined) return formatTargetLabel(target);
 	return describeTarget(target);
 }
 
-async function runPushPreflight(
+async function runOptionalPreflight(
 	preflight: ((target: DeployTarget) => void | Promise<void>) | undefined,
 	target: DeployTarget,
 ): Promise<void> {
 	if (preflight === undefined) return;
 	await preflight(target);
+}
+
+/** Shared CLI entry: resolve env → log → optional preflight → confirm → run. */
+export async function runTargetScriptMain(options: {
+	verbLabel: string;
+	envArgv: string[];
+	usageEnvs?: string;
+	refuseEnvs?: readonly DeployEnv[];
+	destructive?: boolean;
+	describeTarget?: (target: DeployTarget) => string;
+	/** Runs before confirm so missing secrets / guards fail without an interactive prompt. */
+	preflight?: (target: DeployTarget) => void | Promise<void>;
+	run: (target: DeployTarget) => Promise<void>;
+	doneMessage?: string;
+}): Promise<void> {
+	const target = resolveTargetFromArgv(options.envArgv, options.verbLabel, {
+		usageEnvs: options.usageEnvs,
+		refuseEnvs: options.refuseEnvs,
+	});
+	console.log(`${options.verbLabel} → ${targetDetail(target, options.describeTarget)}`);
+	await runOptionalPreflight(options.preflight, target);
+	await confirmTargetIfRequired(target, options.verbLabel, { destructive: options.destructive });
+	await options.run(target);
+	console.log(options.doneMessage ?? 'Done.');
 }
 
 /** Shared CLI entry for `*.ts push [env]` deploy scripts. */
@@ -91,12 +127,28 @@ export async function runPushScriptMain(options: {
 	if (process.argv[2] !== 'push') {
 		fail(`Usage: bun run scripts/supabase/${options.scriptFile} push [${DEPLOY_ENV_CLI_USAGE}]`);
 	}
-	const target = resolveTargetFromArgv(process.argv.slice(3), options.verbLabel);
-	console.log(`${options.verbLabel} → ${pushTargetDetail(target, options.describeTarget)}`);
-	await runPushPreflight(options.preflight, target);
-	await confirmTargetIfRequired(target, options.verbLabel);
-	await options.run(target);
-	console.log('Done.');
+	await runTargetScriptMain({
+		verbLabel: options.verbLabel,
+		envArgv: process.argv.slice(3),
+		describeTarget: options.describeTarget,
+		preflight: options.preflight,
+		run: options.run,
+	});
+}
+
+function overlaySecretsFiles(
+	base: Record<string, string | undefined>,
+	root: string | null,
+	relativePaths: readonly string[],
+): Record<string, string | undefined> {
+	if (root === null) return { ...base };
+	let env: Record<string, string | undefined> = { ...base };
+	for (const relative of relativePaths) {
+		const path = secretsFilePath(root, relative);
+		if (!existsSync(path)) continue;
+		env = mergeRuntimeEnv(env, parseEnvFileEntries(readFileSync(path, 'utf8')));
+	}
+	return env;
 }
 
 /**
@@ -104,11 +156,19 @@ export async function runPushScriptMain(options: {
  * CI sets `SUPABASE_DB_PASSWORD` in the job env without a file; locally prefer `.env.<target>.local`.
  */
 function loadRuntimeEnvMap(target: DeployTarget): Record<string, string | undefined> {
-	const root = lookupSecretsRoot();
-	if (root === null) return { ...process.env };
-	const path = secretsFilePath(root, target.runtimeEnvFile);
-	if (!existsSync(path)) return { ...process.env };
-	return mergeRuntimeEnv(process.env, parseEnvFileEntries(readFileSync(path, 'utf8')));
+	return overlaySecretsFiles(process.env, lookupSecretsRoot(), [target.runtimeEnvFile]);
+}
+
+/**
+ * Runtime overlay + edge/Auth secrets overlay (file wins) so keys like STRIPE_SECRET_KEY are available.
+ */
+export function loadRuntimeAndEdgeEnvMap(target: DeployTarget): Record<string, string | undefined> {
+	return overlaySecretsFiles(process.env, lookupSecretsRoot(), [target.runtimeEnvFile, target.envFile]);
+}
+
+export function warnIfSecretsPointerMissing(): void {
+	if (lookupSecretsRoot() !== null) return;
+	console.warn(`Note: ${ROOT_ENV_POINTER_KEY} unset; using process env only.`);
 }
 
 function confirmBannerLine(label: string, value: string): string {

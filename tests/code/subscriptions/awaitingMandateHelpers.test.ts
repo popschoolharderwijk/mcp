@@ -2,7 +2,9 @@ import { describe, expect, it } from 'bun:test';
 import {
 	awaitingSentLabel,
 	daysWaiting,
+	mandateStatusRowToInviteTarget,
 	mapAwaitingMandateRow,
+	mapMandateStatusRow,
 	pickPrimarySubscriptionStatus,
 	resolveMandateLifecycleStatus,
 	sortByLongestWaiting,
@@ -10,7 +12,7 @@ import {
 } from '../../../src/lib/subscriptions/awaitingMandateHelpers';
 
 describe('awaitingMandateHelpers', () => {
-	it('maps agreement state onto pending, active, and inactive lifecycle buckets', () => {
+	it('maps agreement state onto pending, active, and canceled lifecycle buckets', () => {
 		expect(
 			resolveMandateLifecycleStatus(
 				{
@@ -52,11 +54,37 @@ describe('awaitingMandateHelpers', () => {
 					isActive: true,
 					endDate: null,
 					stripeScheduleId: 'sub_sched_1',
+					subscriptions: [
+						{ status: 'scheduled', stripe_schedule_id: 'sub_sched_1', stripe_subscription_id: null },
+					],
+				},
+				'2026-10-30',
+			),
+		).toBe('active');
+		expect(
+			resolveMandateLifecycleStatus(
+				{
+					isActive: true,
+					endDate: null,
+					stripeScheduleId: 'sub_sched_1',
 					subscriptions: [],
 				},
 				'2026-10-30',
 			),
 		).toBe('active');
+		expect(
+			resolveMandateLifecycleStatus(
+				{
+					isActive: true,
+					endDate: null,
+					stripeScheduleId: null,
+					subscriptions: [
+						{ status: 'canceled', stripe_schedule_id: 'sub_sched_1', stripe_subscription_id: 'sub_1' },
+					],
+				},
+				'2026-10-30',
+			),
+		).toBe('canceled');
 		expect(
 			resolveMandateLifecycleStatus(
 				{
@@ -69,7 +97,7 @@ describe('awaitingMandateHelpers', () => {
 				},
 				'2026-10-30',
 			),
-		).toBe('inactive');
+		).toBe('canceled');
 	});
 
 	it('prefers an open subscription status over canceled history', () => {
@@ -136,5 +164,38 @@ describe('awaitingMandateHelpers', () => {
 		expect(row.recipient_email).toBe('ouder@ex.com');
 		expect(row.lesson_type_name).toBe('Lessoort');
 		expect(row.days_waiting).toBe(10);
+	});
+
+	it('maps a canceled status row into the payment-invite dialog target', () => {
+		const statusRow = mapMandateStatusRow({
+			lessonAgreementId: 'agr-9',
+			studentUserId: 'stu-9',
+			firstName: 'Tess',
+			lastName: 'Zee',
+			profileEmail: 'tess@ex.com',
+			avatarUrl: null,
+			lessonType: { name: 'Piano' },
+			startDate: '2026-01-01',
+			agreementActive: true,
+			subscriptionStatus: 'canceled',
+			lifecycleStatus: 'canceled',
+		});
+		expect(mandateStatusRowToInviteTarget(statusRow)).toEqual({
+			lesson_agreement_id: 'agr-9',
+			student_user_id: 'stu-9',
+			student: {
+				user_id: 'stu-9',
+				first_name: 'Tess',
+				last_name: 'Zee',
+				email: 'tess@ex.com',
+				avatar_url: null,
+			},
+			recipient_email: 'tess@ex.com',
+			lesson_type_name: 'Piano',
+			start_date: '2026-01-01',
+			created_at: '2026-01-01',
+			last_sent_at: null,
+			days_waiting: 0,
+		});
 	});
 });

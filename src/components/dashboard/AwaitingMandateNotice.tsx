@@ -4,16 +4,28 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { NAV_LABELS } from '@/config/nav-items';
-import { countAwaitingMandates } from '@/lib/subscriptions/awaitingMandateLoad';
-import { resolveMandatesTabRoute } from '@/lib/subscriptions/mandatesTabsHelpers';
+import { fetchMandatesTabCounts } from '@/lib/subscriptions/awaitingMandateLoad';
+import {
+	countAwaitingMandatesFromTabs,
+	resolveAwaitingMandatesNoticeTab,
+	resolveMandatesTabRoute,
+} from '@/lib/subscriptions/mandatesTabsHelpers';
 
 /** Admin dashboard: counter with link, hidden at 0. */
 export function AwaitingMandateNotice() {
-	const [count, setCount] = useState<number | null>(null);
+	const [count, setCount] = useState(0);
+	const [href, setHref] = useState(resolveMandatesTabRoute('pending'));
 	useEffect(() => {
-		void countAwaitingMandates().then(setCount);
+		void fetchMandatesTabCounts()
+			.then((counts) => {
+				setCount(countAwaitingMandatesFromTabs(counts));
+				setHref(resolveMandatesTabRoute(resolveAwaitingMandatesNoticeTab(counts)));
+			})
+			.catch(() => {
+				setCount(0);
+			});
 	}, []);
-	if ((count ?? 0) === 0) return null;
+	if (count === 0) return null;
 	return (
 		<Card>
 			<CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
@@ -25,7 +37,7 @@ export function AwaitingMandateNotice() {
 					</span>
 				</div>
 				<Button asChild size="sm" variant="outline">
-					<Link to={resolveMandatesTabRoute('unsent')}>Bekijk {NAV_LABELS.mandates.toLowerCase()}</Link>
+					<Link to={href}>Bekijk {NAV_LABELS.mandates.toLowerCase()}</Link>
 				</Button>
 			</CardContent>
 		</Card>

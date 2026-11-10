@@ -1,40 +1,33 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import {
 	buildIssuePaymentLinkBody,
-	resolveIssuedPaymentUrl,
+	buildStaffCheckoutBody,
+	decideStaffCheckoutOpen,
 	resolveIssuePaymentLinkSendError,
-	resolveSubscriptionActionError,
 	resolveSubscriptionActionSuccess,
 	SUBSCRIPTION_ACTION_FUNCTIONS,
 } from '@/lib/subscriptions/subscriptionCardHelpers';
 
 export type PaymentInviteBusyKind = 'resend' | 'open';
 
-/** Issue payment link: resend mail (optional override address), or open the public pay page. */
+const STAFF_CHECKOUT_FUNCTION = 'create-subscription-checkout';
+
+/** Resend payment-link mail, or open Stripe Checkout for staff without rotating the mailed token. */
 export function useResendPaymentInvite(onDone?: () => void) {
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [busyKind, setBusyKind] = useState<PaymentInviteBusyKind | null>(null);
 
-	const issuePaymentLink = async (
-		agreementId: string,
-		send: boolean,
-		kind: PaymentInviteBusyKind,
-		recipientEmail?: string,
-	) => {
+	const resend = async (agreementId: string, recipientEmail?: string) => {
 		setBusyId(agreementId);
-		setBusyKind(kind);
+		setBusyKind('resend');
 		const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS['send-invite'], {
-			body: buildIssuePaymentLinkBody(agreementId, send, recipientEmail),
+			body: buildIssuePaymentLinkBody(agreementId, true, recipientEmail),
 		});
 		setBusyId(null);
 		setBusyKind(null);
-		return { data, error };
-	};
-
-	const resend = async (agreementId: string, recipientEmail?: string) => {
-		const { data, error } = await issuePaymentLink(agreementId, true, 'resend', recipientEmail);
 		const message = await resolveIssuePaymentLinkSendError(data, error);
 		if (message) {
 			toast.error(message);
@@ -45,18 +38,21 @@ export function useResendPaymentInvite(onDone?: () => void) {
 	};
 
 	const openPayPage = async (agreementId: string): Promise<string | null> => {
-		const { data, error } = await issuePaymentLink(agreementId, false, 'open');
-		const message = resolveSubscriptionActionError('send-invite', data, error);
-		if (message) {
-			toast.error(message);
+		setBusyId(agreementId);
+		setBusyKind('open');
+		const { data, error } = await supabase.functions.invoke(STAFF_CHECKOUT_FUNCTION, {
+			body: buildStaffCheckoutBody(agreementId),
+		});
+		setBusyId(null);
+		setBusyKind(null);
+		const decision = decideStaffCheckoutOpen(data, Boolean(error));
+		if (decision.kind === 'ok') return decision.url;
+		if (decision.kind === 'invoke_error') {
+			toast.error(await getInvokeErrorMessage(error, { fallback: 'Kon het betaalscherm niet openen' }));
 			return null;
 		}
-		const paymentUrl = resolveIssuedPaymentUrl(data);
-		if (!paymentUrl) {
-			toast.error('Geen betaallink ontvangen');
-			return null;
-		}
-		return paymentUrl;
+		toast.error(decision.kind === 'data_error' ? decision.message : 'Geen betaalscherm-URL ontvangen');
+		return null;
 	};
 
 	return { busyId, busyKind, resend, openPayPage };

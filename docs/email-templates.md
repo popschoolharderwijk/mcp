@@ -109,8 +109,4 @@ supabase config push --remote=<project-ref>
 
 ## 4. Project IDs (where to set SMTP and templates)
 
-| Environment | Project ref            |
-| ----------- | ---------------------- |
-| Development | `zdvscmogkfyddnnxzkdu` |
-| Test (CI)   | `jserlqacarlgtdzrblic` |
-| Production  | `bnagepkxryauifzyoxgo` |
+Remote project refs live in root [`supabase.json`](../supabase.json) (`targets.development` / `targets.test` / `targets.production`).

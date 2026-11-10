@@ -60,6 +60,7 @@ export type StripeWebhookAction =
 	| 'checkout_session_completed'
 	| 'setup_intent_succeeded'
 	| 'upsert_invoice'
+	| 'cancel_schedule'
 	| 'noop';
 
 export function resolveStripeWebhookAction(eventType: string): StripeWebhookAction {
@@ -79,9 +80,43 @@ export function resolveStripeWebhookAction(eventType: string): StripeWebhookActi
 		case 'invoice.payment_failed':
 		case 'invoice.payment_succeeded':
 			return 'upsert_invoice';
+		case 'subscription_schedule.canceled':
+			return 'cancel_schedule';
 		default:
 			return 'noop';
 	}
+}
+
+export interface SubscriptionScheduleCancelTarget {
+	scheduleId: string;
+	lessonAgreementId: string | null;
+	canceledAtIso: string | null;
+}
+
+export function resolveSubscriptionScheduleCancelTarget(schedule: {
+	id: string;
+	metadata?: { lesson_agreement_id?: string } | null;
+	canceled_at?: number | null;
+}): SubscriptionScheduleCancelTarget {
+	return {
+		scheduleId: schedule.id,
+		lessonAgreementId: schedule.metadata?.lesson_agreement_id ?? null,
+		canceledAtIso: stripeUnixTimestampToIso(schedule.canceled_at),
+	};
+}
+
+export function buildCanceledSubscriptionUpdate(canceledAtIso: string): {
+	status: 'canceled';
+	canceled_at: string;
+} {
+	return {
+		status: 'canceled',
+		canceled_at: canceledAtIso,
+	};
+}
+
+export function shouldClearAgreementScheduleForSubscriptionStatus(status: string): boolean {
+	return status === 'canceled';
 }
 
 export function extractCheckoutSubscriptionId(subscription: string | { id: string } | null | undefined): string | null {
@@ -118,4 +153,8 @@ export function isStripeWebhookCheckoutAction(
 	action: StripeWebhookAction,
 ): action is 'checkout_session_completed' | 'setup_intent_succeeded' {
 	return action === 'checkout_session_completed' || action === 'setup_intent_succeeded';
+}
+
+export function isStripeWebhookScheduleCancelAction(action: StripeWebhookAction): action is 'cancel_schedule' {
+	return action === 'cancel_schedule';
 }

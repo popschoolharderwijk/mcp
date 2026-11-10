@@ -222,12 +222,14 @@ The Supabase linter reports warnings for SECURITY DEFINER views. For views on th
 
 ## Supabase Environments
 
-| Environment    | Project ID / host                                                 | Use                                                             |
+Project refs for remote targets live in root [`supabase.json`](../supabase.json) (`targets.*.projectRef`). `supabase/config.toml` `[remotes.*].project_id` must match those refs (`dev` → development, `test` → test, `prod` → production).
+
+| Environment    | Target / host                                                     | Use                                                             |
 | -------------- | ----------------------------------------------------------------- | --------------------------------------------------------------- |
 | **Local**      | Native runtime `127.0.0.1:54421` (fixed ports; see `config.toml`) | `supabase start --runtime native --eager` + `bun run dev:local` |
-| **mcp-test**   | `jserlqacarlgtdzrblic`                                            | **CI/PR checks** + optional `bun run dev:test`                  |
-| **mcp-dev**    | `zdvscmogkfyddnnxzkdu`                                            | Default / Lovable: `bun dev`                                    |
-| **Production** | `bnagepkxryauifzyoxgo`                                            | Production deployment (`bun prod`)                              |
+| **mcp-test**   | `targets.test` / `[remotes.test]`                                 | **CI/PR checks** + optional `bun run dev:test`                  |
+| **mcp-dev**    | `targets.development` / `[remotes.dev]`                           | Default / Lovable: `bun dev`                                    |
+| **Production** | `targets.production` / `[remotes.prod]`                           | Production deployment (`bun prod`)                              |
 
 ### How this works
 

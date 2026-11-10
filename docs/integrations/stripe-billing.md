@@ -30,7 +30,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 [subscriptions / subscription_invoices] → monthly Stripe collection
 ```
 
-Ops: **Machtigingen** (`/mandates`) tabs: active → inactive → pending (invite sent) → unsent; **SubscriptionCard** on the agreement can resend the link, open Customer Portal, sync, or rebuild.
+Ops: **Machtigingen** (`/mandates`) tabs: active → canceled → pending (invite sent) → unsent; header **Synchroniseer met Stripe** runs a thin reconcile (pull status / apply canceled schedules). Canceled rows can be re-offered with the same payment-invite dialog as unsent. **SubscriptionCard** on the agreement can resend / re-offer the link, open Customer Portal, sync one row, or rebuild.
 
 ## 3. Data model
 
@@ -55,7 +55,8 @@ Ops: **Machtigingen** (`/mandates`) tabs: active → inactive → pending (invit
 | `start-payment-checkout`        | public (token)     | Checkout / complete without login                                |
 | `create-subscription-checkout`  | JWT                | Logged-in checkout / direct / complete (staff or student)        |
 | `create-customer-portal`        | JWT                | Stripe Customer Portal                                           |
-| `sync-stripe-subscription`      | JWT                | Pull subscription from Stripe                                    |
+| `sync-stripe-subscription`      | JWT                | Pull one subscription from Stripe                                |
+| `reconcile-stripe-mandates`     | JWT (privileged)   | Thin bulk reconcile of local mandate mirrors from Stripe         |
 | `rebuild-subscription-schedule` | JWT                | Recalculate future phases after rate change                      |
 | `force-start-subscription`      | JWT (admin)        | Force-start schedule (API / ops; no app UI)                      |
 | `sync-stripe-catalog`           | JWT / service role | Sync active lesson-type option prices; optional rebuild affected |
@@ -72,12 +73,13 @@ Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `
 
 ## 6. Webhook events
 
-| Event                                | Effect                                                         |
-| ------------------------------------ | -------------------------------------------------------------- |
-| `checkout.session.completed` (setup) | Attach payment method → create schedule (+ catch-up if needed) |
-| `setup_intent.succeeded`             | Same schedule path when Checkout already finished              |
-| `customer.subscription.*`            | Upsert `subscriptions`                                         |
-| `invoice.*`                          | Upsert `subscription_invoices`                                 |
+| Event                                | Effect                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------- |
+| `checkout.session.completed` (setup) | Attach payment method → create schedule (+ catch-up if needed)                      |
+| `setup_intent.succeeded`             | Same schedule path when Checkout already finished                                   |
+| `customer.subscription.*`            | Upsert `subscriptions`; clear agreement schedule id when status is `canceled`       |
+| `subscription_schedule.canceled`     | Mark local subscription `canceled` and clear `lesson_agreements.stripe_schedule_id` |
+| `invoice.*`                          | Upsert `subscription_invoices`                                                      |
 
 ## 7. Catalog (no cron)
 
@@ -99,6 +101,18 @@ Edge only (never `VITE_`):
 - `SUPABASE_SERVICE_ROLE_KEY`
 
 ## 9. Local testing
+
+### Wipe sandbox billing (`stripe:reset`)
+
+Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Destructive reset for **Stripe test mode** (`sk_test_…`) plus the matching non-production database mirrors (subscriptions, customers, payment links, invites; clears `lesson_agreements.stripe_schedule_id` / `minimum_term_end`). Catalog Products/Prices stay. **Production is never allowed.**
+
+```bash
+bun run stripe:reset              # local Docker
+bun run stripe:reset development  # mcp-dev
+bun run stripe:reset test
+```
+
+Guards: refuses `production` / prod Supabase URL and any `sk_live_…` key. Confirmation follows `supabase.json` `targets.*.confirm` (same as `db:reset`). Loads `SUPABASE_*` from the target runtime env and `STRIPE_SECRET_KEY` from that target’s edge secrets file.
 
 Alongside `bun run dev:local`, forward Stripe events to the local edge function (keep the process running):
 

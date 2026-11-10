@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './components/AuthProvider';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -78,7 +78,6 @@ const App = () => (
 						<Route path="/agreements" element={<Agreements />} />
 						<Route path="/mandates" element={<Mandates />} />
 						<Route path="/mandates/:tab" element={<Mandates />} />
-						<Route path="/awaiting-mandate" element={<Navigate to="/mandates/active" replace />} />
 						<Route path="/lesson-groups" element={<LessonGroups />} />
 						<Route path="/lesson-groups/new" element={<LessonGroupWizard />} />
 						<Route path="/lesson-groups/:id" element={<LessonGroupWizard />} />

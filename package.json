@@ -13,6 +13,7 @@
 		"build:dev": "vite build --mode development",
 		"create-user": "bun run scripts/createuser.ts",
 		"stripe:sync-catalog": "bun run scripts/sync-stripe-catalog.ts",
+		"stripe:reset": "bun run scripts/stripe-reset.ts",
 		"stripe:webhook": "bun run scripts/stripe-webhook.ts -- --log-level debug --log-exclude ping-pong",
 		"import": "bun run import/index.ts",
 		"fix": "biome check --write",

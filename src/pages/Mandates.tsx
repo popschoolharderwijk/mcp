@@ -24,6 +24,8 @@ import { UserDisplay } from '@/components/ui/user-display';
 import { NAV_DESCRIPTIONS, NAV_LABELS } from '@/config/nav-items';
 import { useAuth } from '@/hooks/useAuth';
 import { type PaymentInviteBusyKind, useResendPaymentInvite } from '@/hooks/useResendPaymentInvite';
+import { supabase } from '@/integrations/supabase/client';
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 import { getDisplayName } from '@/lib/display-name';
 import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
@@ -32,6 +34,7 @@ import {
 	awaitingSentLabel,
 	filterAwaitingByInviteSent,
 	type MandateStatusRow,
+	mandateStatusRowToInviteTarget,
 	sortByLongestWaiting,
 } from '@/lib/subscriptions/awaitingMandateHelpers';
 import {
@@ -41,9 +44,15 @@ import {
 } from '@/lib/subscriptions/awaitingMandateLoad';
 import {
 	buildMandatesTabItems,
+	fetchMandateRowsKeepingUnchanged,
+	formatMandatesReconcileToast,
 	isMandatesTabId,
+	keepIfUnchanged,
+	MANDATES_VISIBLE_POLL_MS,
 	type MandatesTabCounts,
 	type MandatesTabId,
+	mandateOverviewLoadErrorMessage,
+	parseMandatesReconcileSummary,
 	parseMandatesTab,
 	resolveMandatesAccess,
 	resolveMandatesTabRedirect,
@@ -161,14 +170,67 @@ function DetailRow({ label, value }: { label: string; value: ReactNode }) {
 	);
 }
 
-function WaitingMandateDialogDetails({ row }: { row: AwaitingMandateRow }) {
+type MandateInviteDialogMode = 'awaiting' | 'reoffer' | 'active';
+
+const MANDATE_DIALOG_COPY: Record<MandateInviteDialogMode, { title: string; description: string }> = {
+	awaiting: {
+		title: 'Wacht op machtiging',
+		description:
+			'Stuur een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de lesovereenkomst.',
+	},
+	reoffer: {
+		title: 'Opnieuw abonnement aanbieden',
+		description:
+			'Stuur opnieuw een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de lesovereenkomst.',
+	},
+	active: {
+		title: 'Actieve machtiging',
+		description: 'Bekijk de status of open de lesovereenkomst.',
+	},
+};
+
+function MandateDialogModeRows(props: {
+	row: AwaitingMandateRow;
+	mode: MandateInviteDialogMode;
+	subscriptionStatus: string | null;
+	agreementActive: boolean | null;
+}) {
+	if (props.mode === 'awaiting') {
+		return (
+			<>
+				<DetailRow label="Betaalverzoek" value={awaitingSentLabel(props.row.last_sent_at)} />
+				<DetailRow label="Dagen wachten" value={String(props.row.days_waiting)} />
+			</>
+		);
+	}
+	if (props.mode === 'reoffer') {
+		return <DetailRow label="Status" value={<Badge variant="destructive">Geannuleerd</Badge>} />;
+	}
+	return (
+		<>
+			<DetailRow label="Abonnement" value={<SubscriptionStatusBadge status={props.subscriptionStatus} />} />
+			<DetailRow label="Overeenkomst" value={<AgreementActiveBadge active={Boolean(props.agreementActive)} />} />
+		</>
+	);
+}
+
+function WaitingMandateDialogDetails(props: {
+	row: AwaitingMandateRow;
+	mode: MandateInviteDialogMode;
+	subscriptionStatus: string | null;
+	agreementActive: boolean | null;
+}) {
 	return (
 		<div className="space-y-3 py-2">
-			<DetailRow label="Leerling" value={<ClickableStudentDisplay student={row.student} />} />
-			<DetailRow label="Lesvorm" value={row.lesson_type_name} />
-			<DetailRow label="Startdatum" value={formatDbDateToUi(row.start_date)} />
-			<DetailRow label="Betaalverzoek" value={awaitingSentLabel(row.last_sent_at)} />
-			<DetailRow label="Dagen wachten" value={String(row.days_waiting)} />
+			<DetailRow label="Leerling" value={<ClickableStudentDisplay student={props.row.student} />} />
+			<DetailRow label="Lesvorm" value={props.row.lesson_type_name} />
+			<DetailRow label="Startdatum" value={formatDbDateToUi(props.row.start_date)} />
+			<MandateDialogModeRows
+				row={props.row}
+				mode={props.mode}
+				subscriptionStatus={props.subscriptionStatus}
+				agreementActive={props.agreementActive}
+			/>
 		</div>
 	);
 }
@@ -176,6 +238,7 @@ function WaitingMandateDialogDetails({ row }: { row: AwaitingMandateRow }) {
 function WaitingMandateDialogLinkActions(props: {
 	row: AwaitingMandateRow;
 	busy: boolean;
+	showPayLink: boolean;
 	resolvePayHref: () => Promise<string | null>;
 }) {
 	return (
@@ -183,9 +246,11 @@ function WaitingMandateDialogLinkActions(props: {
 			<Button variant="outline" asChild>
 				<Link to={`/agreements/${props.row.lesson_agreement_id}`}>Bekijk overeenkomst</Link>
 			</Button>
-			<StripeButton disabled={props.busy} resolveHref={props.resolvePayHref}>
-				Open betaalscherm
-			</StripeButton>
+			{props.showPayLink ? (
+				<StripeButton disabled={props.busy} resolveHref={props.resolvePayHref}>
+					Open betaalscherm
+				</StripeButton>
+			) : null}
 		</div>
 	);
 }
@@ -226,8 +291,11 @@ function WaitingMandateDialogSendRow(props: {
 	);
 }
 
-function WaitingMandateResendDialog(props: {
-	row: AwaitingMandateRow | null;
+function canSendMandateInvite(hasRow: boolean, allowSend: boolean, busy: boolean, recipientEmail: string): boolean {
+	return hasRow && allowSend && !busy && isValidEmail(recipientEmail.trim());
+}
+
+type MandateInviteDialogHandlers = {
 	busy: boolean;
 	busyKind: PaymentInviteBusyKind | null;
 	recipientEmail: string;
@@ -235,46 +303,136 @@ function WaitingMandateResendDialog(props: {
 	onOpenChange: (open: boolean) => void;
 	onResend: () => void;
 	resolvePayHref: () => Promise<string | null>;
+};
+
+function useMandateInviteSelection<T extends { lesson_agreement_id: string }>(
+	emailFromRow: (row: T) => string,
+	reload: () => void,
+): {
+	selected: T | null;
+	setSelected: (row: T | null) => void;
+	handlers: MandateInviteDialogHandlers;
+} {
+	const [selected, setSelected] = useState<T | null>(null);
+	const [recipientEmail, setRecipientEmail] = useState('');
+	const { busyId, busyKind, resend, openPayPage } = useResendPaymentInvite(() => {
+		setSelected(null);
+		reload();
+	});
+
+	useEffect(() => {
+		setRecipientEmail(selected ? emailFromRow(selected) : '');
+	}, [selected, emailFromRow]);
+
+	return {
+		selected,
+		setSelected,
+		handlers: {
+			busy: busyId !== null,
+			busyKind,
+			recipientEmail,
+			onRecipientEmailChange: setRecipientEmail,
+			onOpenChange: (open) => {
+				if (!open) setSelected(null);
+			},
+			onResend: () => {
+				if (!selected) return;
+				void resend(selected.lesson_agreement_id, recipientEmail);
+			},
+			resolvePayHref: async () => {
+				if (!selected) return null;
+				return openPayPage(selected.lesson_agreement_id);
+			},
+		},
+	};
+}
+
+function emailFromAwaitingRow(row: AwaitingMandateRow): string {
+	return row.recipient_email ?? row.student.email ?? '';
+}
+
+function emailFromStatusRow(row: MandateStatusRow): string {
+	return row.student.email ?? '';
+}
+
+function WaitingMandateDialogBody(props: {
+	row: AwaitingMandateRow;
+	mode: MandateInviteDialogMode;
+	allowSend: boolean;
+	showSend: boolean;
+	showPayLink: boolean;
+	subscriptionStatus: string | null;
+	agreementActive: boolean | null;
+	handlers: MandateInviteDialogHandlers;
 }) {
-	const row = props.row;
-	const canResend = Boolean(row) && !props.busy && isValidEmail(props.recipientEmail.trim());
+	const canResend = canSendMandateInvite(true, props.allowSend, props.handlers.busy, props.handlers.recipientEmail);
 	return (
-		<Dialog open={row !== null} onOpenChange={props.onOpenChange}>
+		<>
+			<WaitingMandateDialogDetails
+				row={props.row}
+				mode={props.mode}
+				subscriptionStatus={props.subscriptionStatus}
+				agreementActive={props.agreementActive}
+			/>
+			<DialogFooter className="gap-3 sm:flex-col sm:space-x-0">
+				<WaitingMandateDialogLinkActions
+					row={props.row}
+					busy={props.handlers.busy}
+					showPayLink={props.showPayLink}
+					resolvePayHref={props.handlers.resolvePayHref}
+				/>
+				{props.showSend ? (
+					<WaitingMandateDialogSendRow
+						busy={props.handlers.busy}
+						busyKind={props.handlers.busyKind}
+						recipientEmail={props.handlers.recipientEmail}
+						canResend={canResend}
+						onRecipientEmailChange={props.handlers.onRecipientEmailChange}
+						onResend={props.handlers.onResend}
+					/>
+				) : null}
+				<Button
+					variant="outline"
+					className="w-full sm:w-auto sm:self-start"
+					disabled={props.handlers.busy}
+					onClick={() => props.handlers.onOpenChange(false)}
+				>
+					Sluiten
+				</Button>
+			</DialogFooter>
+		</>
+	);
+}
+
+function WaitingMandateResendDialog(props: {
+	row: AwaitingMandateRow | null;
+	mode: MandateInviteDialogMode;
+	allowSend: boolean;
+	showSend: boolean;
+	showPayLink: boolean;
+	subscriptionStatus: string | null;
+	agreementActive: boolean | null;
+	handlers: MandateInviteDialogHandlers;
+}) {
+	const copy = MANDATE_DIALOG_COPY[props.mode];
+	return (
+		<Dialog open={props.row !== null} onOpenChange={props.handlers.onOpenChange}>
 			<DialogContent className="max-w-xl">
 				<DialogHeader>
-					<DialogTitle>Wacht op machtiging</DialogTitle>
-					<DialogDescription>
-						Stuur een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de
-						lesovereenkomst.
-					</DialogDescription>
+					<DialogTitle>{copy.title}</DialogTitle>
+					<DialogDescription>{copy.description}</DialogDescription>
 				</DialogHeader>
-				{row ? (
-					<>
-						<WaitingMandateDialogDetails row={row} />
-						<DialogFooter className="gap-3 sm:flex-col sm:space-x-0">
-							<WaitingMandateDialogLinkActions
-								row={row}
-								busy={props.busy}
-								resolvePayHref={props.resolvePayHref}
-							/>
-							<WaitingMandateDialogSendRow
-								busy={props.busy}
-								busyKind={props.busyKind}
-								recipientEmail={props.recipientEmail}
-								canResend={canResend}
-								onRecipientEmailChange={props.onRecipientEmailChange}
-								onResend={props.onResend}
-							/>
-							<Button
-								variant="outline"
-								className="w-full sm:w-auto sm:self-start"
-								disabled={props.busy}
-								onClick={() => props.onOpenChange(false)}
-							>
-								Annuleren
-							</Button>
-						</DialogFooter>
-					</>
+				{props.row ? (
+					<WaitingMandateDialogBody
+						row={props.row}
+						mode={props.mode}
+						allowSend={props.allowSend}
+						showSend={props.showSend}
+						showPayLink={props.showPayLink}
+						subscriptionStatus={props.subscriptionStatus}
+						agreementActive={props.agreementActive}
+						handlers={props.handlers}
+					/>
 				) : null}
 			</DialogContent>
 		</Dialog>
@@ -287,146 +445,279 @@ function filterBySearch<T>(rows: T[], search: string, values: (row: T) => Array<
 	return rows.filter((row) => values(row).some((v) => v?.toLowerCase().includes(q)));
 }
 
-function MandatesAwaitingPanel({ inviteSent }: { inviteSent: boolean }) {
-	const [rows, setRows] = useState<AwaitingMandateRow[]>([]);
+type MandateRowsSetter<T> = (update: T[] | ((previous: T[]) => T[])) => void;
+
+function setMandateLoadingVisible(silent: boolean, setLoading: (loading: boolean) => void, loading: boolean): void {
+	if (!silent) setLoading(loading);
+}
+
+function toastMandateLoadFailureIfVisible(silent: boolean, error: unknown): void {
+	if (silent) return;
+	toast.error(mandateOverviewLoadErrorMessage(error));
+}
+
+async function loadMandateRowsIntoState<T>(
+	fetchRows: () => Promise<T[]>,
+	setRows: MandateRowsSetter<T>,
+	setLoading: (loading: boolean) => void,
+	options?: { silent?: boolean },
+): Promise<void> {
+	const silent = options?.silent === true;
+	setMandateLoadingVisible(silent, setLoading, true);
+	const result = await fetchMandateRowsKeepingUnchanged(fetchRows, setRows);
+	if (result.ok === false) {
+		toastMandateLoadFailureIfVisible(silent, result.error);
+	}
+	setMandateLoadingVisible(silent, setLoading, false);
+}
+
+function lifecycleEmptyMessage(lifecycle: 'active' | 'canceled'): string {
+	return lifecycle === 'active' ? 'Geen actieve machtigingen.' : 'Geen geannuleerde machtigingen.';
+}
+
+function lifecycleInviteDialogConfig(
+	lifecycle: 'active' | 'canceled',
+	selected: MandateStatusRow | null,
+): {
+	mode: MandateInviteDialogMode;
+	allowSend: boolean;
+	showSend: boolean;
+	showPayLink: boolean;
+} {
+	if (lifecycle === 'canceled') {
+		return {
+			mode: 'reoffer',
+			allowSend: Boolean(selected?.agreement_active),
+			showSend: true,
+			showPayLink: true,
+		};
+	}
+	return { mode: 'active', allowSend: false, showSend: false, showPayLink: false };
+}
+
+function mandatePersonSearchValues(row: MandateTablePerson): Array<string | null | undefined> {
+	return [getDisplayName(row.student), row.student.email, row.lesson_type_name];
+}
+
+function MandateAgreementsTable<T extends MandateTablePerson & { lesson_agreement_id: string }>(props: {
+	rows: T[];
+	search: string;
+	onSearchChange: (value: string) => void;
+	columns: DataTableColumn<T>[];
+	loading: boolean;
+	emptyMessage: string;
+	initialSortColumn: string;
+	searchValues: (row: T) => Array<string | null | undefined>;
+	onSelect: (row: T) => void;
+}) {
+	return (
+		<DataTable
+			data={filterBySearch(props.rows, props.search, props.searchValues)}
+			columns={props.columns}
+			loading={props.loading}
+			searchQuery={props.search}
+			onSearchChange={props.onSearchChange}
+			getRowKey={(r) => r.lesson_agreement_id}
+			emptyMessage={props.emptyMessage}
+			initialSortColumn={props.initialSortColumn}
+			initialSortDirection="desc"
+			rowActions={{
+				onEdit: props.onSelect,
+			}}
+		/>
+	);
+}
+
+type MandatePanelLoadOptions = { silent?: boolean };
+
+function useMandatePanelRows<T>(
+	fetchRows: () => Promise<T[]>,
+	refreshToken: number,
+): {
+	rows: T[];
+	loading: boolean;
+	search: string;
+	setSearch: (value: string) => void;
+	load: (options?: MandatePanelLoadOptions) => Promise<void>;
+} {
+	const [rows, setRows] = useState<T[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [search, setSearch] = useState('');
-	const [selected, setSelected] = useState<AwaitingMandateRow | null>(null);
-	const [recipientEmail, setRecipientEmail] = useState('');
-	const columns = useMemo(() => buildPendingColumns(), []);
-	const emptyMessage = inviteSent ? 'Geen machtigingen in afwachting.' : 'Geen onverzonden betaalverzoeken.';
-
-	const load = useCallback(async () => {
-		setLoading(true);
-		try {
-			setRows(sortByLongestWaiting(filterAwaitingByInviteSent(await fetchAwaitingMandates(), inviteSent)));
-		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Kon het overzicht niet laden');
-		}
-		setLoading(false);
-	}, [inviteSent]);
-	const { busyId, busyKind, resend, openPayPage } = useResendPaymentInvite(() => {
-		setSelected(null);
-		void load();
-	});
+	const load = useCallback(
+		async (options?: MandatePanelLoadOptions) => {
+			await loadMandateRowsIntoState(fetchRows, setRows, setLoading, options);
+		},
+		[fetchRows],
+	);
 
 	useEffect(() => {
 		void load();
 	}, [load]);
 
 	useEffect(() => {
-		setRecipientEmail(selected?.recipient_email ?? selected?.student.email ?? '');
-	}, [selected]);
+		if (refreshToken === 0) return;
+		void load({ silent: true });
+	}, [refreshToken, load]);
+
+	return { rows, loading, search, setSearch, load };
+}
+
+function MandatesAwaitingPanel({ inviteSent, refreshToken }: { inviteSent: boolean; refreshToken: number }) {
+	const columns = useMemo(() => buildPendingColumns(), []);
+	const fetchRows = useCallback(
+		async () => sortByLongestWaiting(filterAwaitingByInviteSent(await fetchAwaitingMandates(), inviteSent)),
+		[inviteSent],
+	);
+	const { rows, loading, search, setSearch, load } = useMandatePanelRows(fetchRows, refreshToken);
+	const { selected, setSelected, handlers } = useMandateInviteSelection(emailFromAwaitingRow, () => {
+		void load();
+	});
+	const emptyMessage = inviteSent ? 'Geen machtigingen in afwachting.' : 'Geen onverzonden betaalverzoeken.';
 
 	return (
 		<>
-			<DataTable
-				data={filterBySearch(rows, search, (r) => [
-					getDisplayName(r.student),
-					r.student.email,
-					r.recipient_email,
-					r.lesson_type_name,
-				])}
+			<MandateAgreementsTable
+				rows={rows}
+				search={search}
+				onSearchChange={setSearch}
 				columns={columns}
 				loading={loading}
-				searchQuery={search}
-				onSearchChange={setSearch}
-				getRowKey={(r) => r.lesson_agreement_id}
 				emptyMessage={emptyMessage}
 				initialSortColumn="days_waiting"
-				initialSortDirection="desc"
-				rowActions={{
-					onEdit: (row) => setSelected(row),
-				}}
+				searchValues={(r) => [...mandatePersonSearchValues(r), r.recipient_email]}
+				onSelect={setSelected}
 			/>
 			<WaitingMandateResendDialog
 				row={selected}
-				busy={busyId !== null}
-				busyKind={busyKind}
-				recipientEmail={recipientEmail}
-				onRecipientEmailChange={setRecipientEmail}
-				onOpenChange={(open) => {
-					if (!open) setSelected(null);
-				}}
-				onResend={() => {
-					if (!selected) return;
-					void resend(selected.lesson_agreement_id, recipientEmail);
-				}}
-				resolvePayHref={async () => {
-					if (!selected) return null;
-					return openPayPage(selected.lesson_agreement_id);
-				}}
+				mode="awaiting"
+				allowSend={true}
+				showSend={true}
+				showPayLink={true}
+				subscriptionStatus={null}
+				agreementActive={null}
+				handlers={handlers}
 			/>
 		</>
 	);
 }
 
-function MandatesLifecyclePanel({ lifecycle }: { lifecycle: 'active' | 'inactive' }) {
-	const navigate = useNavigate();
-	const [rows, setRows] = useState<MandateStatusRow[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [search, setSearch] = useState('');
-	const columns = useMemo(() => buildLifecycleColumns(), []);
-	const emptyMessage = lifecycle === 'active' ? 'Geen actieve machtigingen.' : 'Geen inactieve machtigingen.';
+function inviteTargetFromStatus(selected: MandateStatusRow | null): AwaitingMandateRow | null {
+	if (!selected) return null;
+	return mandateStatusRowToInviteTarget(selected);
+}
 
-	useEffect(() => {
-		let cancelled = false;
-		setLoading(true);
-		void fetchMandatesByLifecycle(lifecycle)
-			.then((data) => {
-				if (!cancelled) setRows(data);
-			})
-			.catch((e) => {
-				if (!cancelled) toast.error(e instanceof Error ? e.message : 'Kon het overzicht niet laden');
-			})
-			.finally(() => {
-				if (!cancelled) setLoading(false);
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [lifecycle]);
+function statusFieldsFromSelected(selected: MandateStatusRow | null): {
+	subscriptionStatus: string | null;
+	agreementActive: boolean | null;
+} {
+	if (!selected) return { subscriptionStatus: null, agreementActive: null };
+	return {
+		subscriptionStatus: selected.subscription_status,
+		agreementActive: selected.agreement_active,
+	};
+}
 
+function LifecycleMandateInviteDialog(props: {
+	lifecycle: 'active' | 'canceled';
+	selected: MandateStatusRow | null;
+	handlers: MandateInviteDialogHandlers;
+}) {
+	const config = lifecycleInviteDialogConfig(props.lifecycle, props.selected);
+	const statusFields = statusFieldsFromSelected(props.selected);
 	return (
-		<DataTable
-			data={filterBySearch(rows, search, (r) => [getDisplayName(r.student), r.student.email, r.lesson_type_name])}
-			columns={columns}
-			loading={loading}
-			searchQuery={search}
-			onSearchChange={setSearch}
-			getRowKey={(r) => r.lesson_agreement_id}
-			emptyMessage={emptyMessage}
-			initialSortColumn="agreement_active"
-			initialSortDirection="desc"
-			rowActions={{
-				onEdit: (row) => navigate(`/agreements/${row.lesson_agreement_id}`),
-			}}
+		<WaitingMandateResendDialog
+			row={inviteTargetFromStatus(props.selected)}
+			mode={config.mode}
+			allowSend={config.allowSend}
+			showSend={config.showSend}
+			showPayLink={config.showPayLink}
+			subscriptionStatus={statusFields.subscriptionStatus}
+			agreementActive={statusFields.agreementActive}
+			handlers={props.handlers}
 		/>
 	);
 }
 
+function MandatesLifecyclePanel({
+	lifecycle,
+	refreshToken,
+}: {
+	lifecycle: 'active' | 'canceled';
+	refreshToken: number;
+}) {
+	const columns = useMemo(() => buildLifecycleColumns(), []);
+	const fetchRows = useCallback(() => fetchMandatesByLifecycle(lifecycle), [lifecycle]);
+	const { rows, loading, search, setSearch, load } = useMandatePanelRows(fetchRows, refreshToken);
+	const { selected, setSelected, handlers } = useMandateInviteSelection(emailFromStatusRow, () => {
+		void load();
+	});
+
+	return (
+		<>
+			<MandateAgreementsTable
+				rows={rows}
+				search={search}
+				onSearchChange={setSearch}
+				columns={columns}
+				loading={loading}
+				emptyMessage={lifecycleEmptyMessage(lifecycle)}
+				initialSortColumn="agreement_active"
+				searchValues={mandatePersonSearchValues}
+				onSelect={setSelected}
+			/>
+			<LifecycleMandateInviteDialog lifecycle={lifecycle} selected={selected} handlers={handlers} />
+		</>
+	);
+}
+
 export default function Mandates() {
-	const { isPrivileged, isLoading } = useAuth();
+	const { isPrivileged, isLoading, isSiteAdmin } = useAuth();
 	const { tab: tabParam } = useParams<{ tab?: string }>();
 	const navigate = useNavigate();
 	const access = resolveMandatesAccess(isLoading, isPrivileged, resolveMandatesTabRedirect(tabParam));
 	const activeTab = parseMandatesTab(tabParam);
 	const [tabCounts, setTabCounts] = useState<MandatesTabCounts | null>(null);
+	const [refreshKey, setRefreshKey] = useState(0);
+	const [reconciling, setReconciling] = useState(false);
+
+	const bumpRefresh = useCallback(() => {
+		setRefreshKey((key) => key + 1);
+	}, []);
+
+	const loadTabCounts = useCallback(async () => {
+		if (access.kind !== 'ok') return;
+		try {
+			const next = await fetchMandatesTabCounts();
+			setTabCounts((previous) => keepIfUnchanged(previous, next));
+		} catch {
+			setTabCounts((previous) => keepIfUnchanged(previous, null));
+		}
+	}, [access.kind]);
+
+	useEffect(() => {
+		if (refreshKey < 0) return;
+		void loadTabCounts();
+	}, [loadTabCounts, refreshKey]);
 
 	useEffect(() => {
 		if (access.kind !== 'ok') return;
-		let cancelled = false;
-		void fetchMandatesTabCounts()
-			.then((counts) => {
-				if (!cancelled) setTabCounts(counts);
-			})
-			.catch(() => {
-				if (!cancelled) setTabCounts(null);
-			});
-		return () => {
-			cancelled = true;
+
+		const onVisibilityOrFocus = () => {
+			if (!document.hidden) bumpRefresh();
 		};
-	}, [access.kind]);
+
+		window.addEventListener('focus', onVisibilityOrFocus);
+		document.addEventListener('visibilitychange', onVisibilityOrFocus);
+		const pollId = window.setInterval(() => {
+			if (!document.hidden) bumpRefresh();
+		}, MANDATES_VISIBLE_POLL_MS);
+
+		return () => {
+			window.removeEventListener('focus', onVisibilityOrFocus);
+			document.removeEventListener('visibilitychange', onVisibilityOrFocus);
+			window.clearInterval(pollId);
+		};
+	}, [access.kind, bumpRefresh]);
 
 	if (access.kind === 'auth-loading') return <PageSkeleton variant="header-and-tabs" />;
 	if (access.kind === 'forbidden') return <Navigate to="/" replace />;
@@ -436,9 +727,41 @@ export default function Mandates() {
 		navigate(resolveMandatesTabRoute(tab));
 	};
 
+	const onReconcile = async () => {
+		setReconciling(true);
+		try {
+			const { data, error } = await supabase.functions.invoke('reconcile-stripe-mandates', { body: {} });
+			if (error) {
+				toast.error(await getInvokeErrorMessage(error, { isSiteAdmin }));
+				return;
+			}
+			const summary = parseMandatesReconcileSummary(data);
+			if (!summary) {
+				toast.error('Kon het sync-resultaat niet lezen');
+				return;
+			}
+			if (summary.error) {
+				toast.error(summary.error);
+				return;
+			}
+			toast.success(formatMandatesReconcileToast(summary));
+			bumpRefresh();
+		} finally {
+			setReconciling(false);
+		}
+	};
+
 	return (
 		<div className="space-y-6">
-			<PageHeader title={NAV_LABELS.mandates} subtitle={NAV_DESCRIPTIONS.mandates} />
+			<PageHeader
+				title={NAV_LABELS.mandates}
+				subtitle={NAV_DESCRIPTIONS.mandates}
+				actions={
+					<StripeButton disabled={reconciling} onClick={() => void onReconcile()}>
+						Synchroniseer met Stripe
+					</StripeButton>
+				}
+			/>
 			<PageTabs
 				value={activeTab}
 				onValueChange={onTabChange}
@@ -446,16 +769,16 @@ export default function Mandates() {
 				items={buildMandatesTabItems(tabCounts)}
 			>
 				<PageTabsContent value="active" className="space-y-4">
-					<MandatesLifecyclePanel lifecycle="active" />
+					<MandatesLifecyclePanel lifecycle="active" refreshToken={refreshKey} />
 				</PageTabsContent>
-				<PageTabsContent value="inactive" className="space-y-4">
-					<MandatesLifecyclePanel lifecycle="inactive" />
+				<PageTabsContent value="canceled" className="space-y-4">
+					<MandatesLifecyclePanel lifecycle="canceled" refreshToken={refreshKey} />
 				</PageTabsContent>
 				<PageTabsContent value="pending" className="space-y-4">
-					<MandatesAwaitingPanel inviteSent={true} />
+					<MandatesAwaitingPanel inviteSent={true} refreshToken={refreshKey} />
 				</PageTabsContent>
 				<PageTabsContent value="unsent" className="space-y-4">
-					<MandatesAwaitingPanel inviteSent={false} />
+					<MandatesAwaitingPanel inviteSent={false} refreshToken={refreshKey} />
 				</PageTabsContent>
 			</PageTabs>
 		</div>

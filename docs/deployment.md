@@ -2,6 +2,8 @@
 
 After merging a PR to `main`, migrations are applied automatically to the production project via the Supabase GitHub Integration. Edge functions and config pushes stay manual (or via CLI).
 
+Remote project refs live in root [`supabase.json`](../supabase.json).
+
 ---
 
 ## What to do when?
@@ -33,12 +35,12 @@ For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewher
 
 ## Step 1: Target production (CLI v3)
 
-Prefer `bun run db:* production`. Raw CLI uses `--remote=bnagepkxryauifzyoxgo` (no ambient link required). Set `SUPABASE_DB_PASSWORD` in `$SECRETS_PATH/.env.production.local`.
+Prefer `bun run db:* production`. Raw CLI uses `--remote=<production projectRef from supabase.json>` (no ambient link required). Set `SUPABASE_DB_PASSWORD` in `$SECRETS_PATH/.env.production.local`.
 
 ## Step 2: Check migrations
 
 ```bash
-supabase db push --remote=bnagepkxryauifzyoxgo --dry-run
+supabase db push --remote=<production-project-ref> --dry-run
 # Migrations are normally applied automatically; use this only as a sanity check.
 # Or: bun run db:push:migrations production
 ```
@@ -48,7 +50,7 @@ supabase db push --remote=bnagepkxryauifzyoxgo --dry-run
 Migrations do not contain reference data. Email templates and app defaults live in [`supabase/seeds/bootstrap.sql`](../supabase/seeds/bootstrap.sql). Default lesson types live in [`supabase/seeds/lesson-types.sql`](../supabase/seeds/lesson-types.sql) (dev/test only). Production seed applies **bootstrap only**; apply bootstrap **manually** after new bootstrap events:
 
 ```bash
-supabase db push --remote=bnagepkxryauifzyoxgo --include-seed --yes
+supabase db push --remote=<production-project-ref> --include-seed --yes
 ```
 
 Only `bootstrap.sql` runs on prod (not `test.sql`). Idempotent — does not overwrite existing custom templates. **Never** run `db reset --remote=…` on production.
@@ -57,7 +59,7 @@ Only `bootstrap.sql` runs on prod (not `test.sql`). Idempotent — does not over
 
 ```bash
 bun run db:push:config production
-# or: supabase config push --remote=bnagepkxryauifzyoxgo
+# or: supabase config push --remote=<production-project-ref>
 ```
 
 > ⚠️ `config push` shows a diff and asks before writing (default no). Review carefully — it overwrites remote Auth/Storage/… settings that the file declares.
@@ -71,8 +73,8 @@ Production auth (`[remotes.prod.auth]` in `config.toml`):
 
 ```bash
 bun run db:push:functions production
-# or: supabase functions deploy --remote=bnagepkxryauifzyoxgo --yes
-# single function: supabase functions deploy <name> --remote=bnagepkxryauifzyoxgo --yes
+# or: supabase functions deploy --remote=<production-project-ref> --yes
+# single function: supabase functions deploy <name> --remote=<production-project-ref> --yes
 ```
 
 ---
@@ -91,6 +93,7 @@ bun run db:push:functions production
 | `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.   | Standard, `STRIPE_SECRET_KEY`                          |
 | `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.           | Standard, `STRIPE_SECRET_KEY`                          |
 | `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                        | Standard, `STRIPE_SECRET_KEY`                          |
+| `reconcile-stripe-mandates`     | Privileged bulk reconcile of mandate mirrors from Stripe (Machtigingen button).          | Standard, `STRIPE_SECRET_KEY`                          |
 | `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change.                                | Standard, `STRIPE_SECRET_KEY`                          |
 | `force-start-subscription`      | Ops/test: cancel current schedule and start immediately (no app UI).                     | Standard, `STRIPE_SECRET_KEY`                          |
 | `stripe-webhook`                | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
