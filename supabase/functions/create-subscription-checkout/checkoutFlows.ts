@@ -88,11 +88,16 @@ async function finalizeCompleteModeSchedule(
 		});
 	}
 
+	const setupIntentId = getStripeId(session.setup_intent);
+	if (!setupIntentId) {
+		return jsonResponse(409, { error: 'SetupIntent ontbreekt op checkout sessie' });
+	}
+
 	const built = await createScheduleForAgreement(admin, stripe, {
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: paymentMethodId,
-		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id),
+		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, setupIntentId),
 	});
 	return buildCompleteModeSuccessResponse(built);
 }
@@ -131,7 +136,7 @@ export async function handleDirectMode(
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: defaultPmId,
-		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id),
+		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, `direct_${crypto.randomUUID()}`),
 	});
 
 	return buildDirectModeSuccessResponse(built);

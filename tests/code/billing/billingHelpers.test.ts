@@ -153,7 +153,10 @@ describe('billing pure helpers', () => {
 
 	it('builds stable Stripe idempotency keys for setup schedules', () => {
 		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
-		expect(buildSetupScheduleIdempotencyKey(agreementId)).toBe(`mcp_setup_schedule_${agreementId}`);
+		const attemptId = 'seti_1UaCGS8GrwT7wj0BChaoxfVI';
+		expect(buildSetupScheduleIdempotencyKey(agreementId, attemptId)).toBe(
+			`mcp_setup_schedule_${agreementId}_${attemptId}`,
+		);
 		expect(buildLessonProductIdempotencyKey(agreementId)).toBe(`mcp_lesson_product_${agreementId}`);
 		expect(buildLessonPhasePriceIdempotencyKey(agreementId, '2026-09')).toBe(
 			`mcp_lesson_price_${agreementId}_2026-09`,

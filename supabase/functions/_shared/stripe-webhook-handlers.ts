@@ -57,16 +57,18 @@ type ScheduleSetupIds = {
 	lessonAgreementId: string;
 	customerId: string;
 	paymentMethodId: string;
+	attemptId: string;
 };
 
 function resolveScheduleSetupIds(input: {
 	lessonAgreementId: string | null;
 	customerId: string | null;
 	paymentMethodId: string | null;
+	attemptId: string | null;
 }): ScheduleSetupIds | null {
-	const { lessonAgreementId, customerId, paymentMethodId } = input;
-	if (!lessonAgreementId || !customerId || !paymentMethodId) return null;
-	return { lessonAgreementId, customerId, paymentMethodId };
+	const { lessonAgreementId, customerId, paymentMethodId, attemptId } = input;
+	if (!lessonAgreementId || !customerId || !paymentMethodId || !attemptId) return null;
+	return { lessonAgreementId, customerId, paymentMethodId, attemptId };
 }
 
 async function ensureReadyForScheduleCreate(
@@ -97,7 +99,7 @@ async function createScheduleOrAbsorbRace(
 			lessonAgreementId: ready.lessonAgreementId,
 			customerId: ready.customerId,
 			defaultPaymentMethod: ready.paymentMethodId,
-			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId),
+			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId, ready.attemptId),
 		});
 	} catch (e) {
 		if (
@@ -116,12 +118,13 @@ async function createScheduleFromSetupPaymentMethod(
 		lessonAgreementId: string | null;
 		customerId: string | null;
 		paymentMethodId: string | null;
+		attemptId: string | null;
 		sourceId: string;
 	},
 ): Promise<void> {
 	const ready = resolveScheduleSetupIds(input);
 	if (!ready) {
-		console.warn('setup event missing agreement/customer/payment_method', input.sourceId);
+		console.warn('setup event missing agreement/customer/payment_method/attempt', input.sourceId);
 		return;
 	}
 	if (!(await ensureReadyForScheduleCreate(admin, stripe, ready))) return;
@@ -195,6 +198,7 @@ async function handleSetupCheckoutCompleted(
 		lessonAgreementId: session.metadata?.lesson_agreement_id ?? null,
 		customerId: getStripeId(session.customer),
 		paymentMethodId,
+		attemptId: resolveSetupIntentId(session.setup_intent),
 		sourceId: session.id,
 	});
 }
@@ -235,6 +239,7 @@ async function handleSetupIntentSucceeded(
 		lessonAgreementId: expandedSetupIntent.metadata.lesson_agreement_id ?? null,
 		customerId: getStripeId(expandedSetupIntent.customer),
 		paymentMethodId: getReusablePaymentMethodIdFromSetupIntent(expandedSetupIntent),
+		attemptId: setupIntent.id,
 		sourceId: setupIntent.id,
 	});
 }

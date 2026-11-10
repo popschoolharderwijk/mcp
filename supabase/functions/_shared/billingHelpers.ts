@@ -358,9 +358,13 @@ export function buildBillingComputationFromLoadedData(input: {
 	};
 }
 
-/** Shared by checkout complete + setup webhooks so concurrent creates collapse to one schedule. */
-export function buildSetupScheduleIdempotencyKey(lessonAgreementId: string): string {
-	return `mcp_setup_schedule_${lessonAgreementId}`;
+/**
+ * Shared by checkout complete + setup webhooks so concurrent creates collapse to one schedule.
+ * `attemptId` is stable within one mandate attempt (SetupIntent id) so racing handlers share a key,
+ * and differs between attempts so Stripe's 24h idempotency window does not reuse a prior create.
+ */
+export function buildSetupScheduleIdempotencyKey(lessonAgreementId: string, attemptId: string): string {
+	return `mcp_setup_schedule_${lessonAgreementId}_${attemptId}`;
 }
 
 export function buildLessonProductIdempotencyKey(lessonAgreementId: string): string {
