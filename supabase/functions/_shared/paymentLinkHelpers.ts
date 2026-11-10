@@ -258,10 +258,46 @@ export interface PaymentLinkInfoAgreement {
 	day_of_week: number;
 	minimum_term_end: string | null;
 	student_user_id: string;
+	teacher_user_id: string;
 	lesson_type_id: string;
 	is_active: boolean;
 	stripe_schedule_id: string | null;
 	lesson_types: { name?: string } | null;
+}
+
+export interface PaymentLinkPartyProfile {
+	first_name: string | null;
+	last_name: string | null;
+	avatar_url: string | null;
+}
+
+export interface PaymentLinkParties {
+	student: PaymentLinkPartyProfile;
+	teacher: PaymentLinkPartyProfile;
+}
+
+type PaymentLinkNameProfile = {
+	first_name: string | null;
+	last_name: string | null;
+	avatar_url: string | null;
+} | null;
+
+function toPaymentLinkPartyProfile(profile: PaymentLinkNameProfile): PaymentLinkPartyProfile {
+	return {
+		first_name: profile?.first_name ?? null,
+		last_name: profile?.last_name ?? null,
+		avatar_url: profile?.avatar_url ?? null,
+	};
+}
+
+export function buildPaymentLinkParties(
+	student: PaymentLinkNameProfile,
+	teacher: PaymentLinkNameProfile,
+): PaymentLinkParties {
+	return {
+		student: toPaymentLinkPartyProfile(student),
+		teacher: toPaymentLinkPartyProfile(teacher),
+	};
 }
 
 export interface PaymentLinkPreviewAmounts {
@@ -274,11 +310,13 @@ export function resolveLessonFormName(lessonTypes: { name?: string } | null | un
 	return lessonTypes?.name ?? 'Les';
 }
 
-export function buildArrangedPaymentLinkInfo(agreement: PaymentLinkInfoAgreement) {
+export function buildArrangedPaymentLinkInfo(agreement: PaymentLinkInfoAgreement, parties: PaymentLinkParties) {
 	return {
 		valid: true as const,
 		arranged: true as const,
 		lesson_form: resolveLessonFormName(agreement.lesson_types),
+		student: parties.student,
+		teacher: parties.teacher,
 		start_date: agreement.start_date,
 		minimum_term_end: agreement.minimum_term_end,
 	};
@@ -300,11 +338,14 @@ export function buildPaymentLinkPreview(
 export function buildOpenPaymentLinkInfo(
 	agreement: PaymentLinkInfoAgreement,
 	preview: PaymentLinkPreviewAmounts | null,
+	parties: PaymentLinkParties,
 ) {
 	return {
 		valid: true as const,
 		arranged: false as const,
 		lesson_form: resolveLessonFormName(agreement.lesson_types),
+		student: parties.student,
+		teacher: parties.teacher,
 		start_date: agreement.start_date,
 		minimum_term_end: agreement.minimum_term_end,
 		preview,

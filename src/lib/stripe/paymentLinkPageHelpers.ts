@@ -8,10 +8,18 @@ export interface PaymentLinkPreview {
 	catchUp: boolean;
 }
 
+export interface PaymentLinkPartyProfile {
+	first_name: string | null;
+	last_name: string | null;
+	avatar_url: string | null;
+}
+
 export interface PaymentLinkInfo {
 	valid: boolean;
 	arranged?: boolean;
 	lesson_form?: string;
+	student?: PaymentLinkPartyProfile;
+	teacher?: PaymentLinkPartyProfile;
 	start_date?: string;
 	minimum_term_end?: string | null;
 	preview?: PaymentLinkPreview | null;

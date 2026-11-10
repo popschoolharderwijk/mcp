@@ -5,6 +5,7 @@ import { verifyAgreementPaymentLink } from '../_shared/paymentLink.ts';
 import {
 	buildArrangedPaymentLinkInfo,
 	buildOpenPaymentLinkInfo,
+	buildPaymentLinkParties,
 	buildPaymentLinkPreview,
 	type PaymentLinkInfoAgreement,
 } from '../_shared/paymentLinkHelpers.ts';
@@ -73,7 +74,7 @@ async function loadActiveAgreement(
 		.from('lesson_agreements')
 		.select(
 			`id, start_date, end_date, frequency, duration_minutes, day_of_week, minimum_term_end,
-			 student_user_id, lesson_type_id, is_active, stripe_schedule_id, lesson_types(name)`,
+			 student_user_id, teacher_user_id, lesson_type_id, is_active, stripe_schedule_id, lesson_types(name)`,
 		)
 		.eq('id', agreementId)
 		.maybeSingle();
@@ -81,17 +82,37 @@ async function loadActiveAgreement(
 	return data as PaymentLinkInfoAgreement;
 }
 
+async function loadPaymentLinkParties(
+	admin: ReturnType<typeof createPaymentLinkAdminClient>,
+	agreement: PaymentLinkInfoAgreement,
+) {
+	const [{ data: student }, { data: teacher }] = await Promise.all([
+		admin
+			.from('profiles')
+			.select('first_name, last_name, avatar_url')
+			.eq('user_id', agreement.student_user_id)
+			.maybeSingle(),
+		admin
+			.from('profiles')
+			.select('first_name, last_name, avatar_url')
+			.eq('user_id', agreement.teacher_user_id)
+			.maybeSingle(),
+	]);
+	return buildPaymentLinkParties(student, teacher);
+}
+
 async function respondPaymentLinkInfo(agreementId: string, token: string): Promise<Response> {
 	const admin = createPaymentLinkAdminClient();
 	const row = await loadActiveAgreement(admin, agreementId, token);
 	if (!row) return jsonResponse(200, { valid: false });
-	if (row.stripe_schedule_id) return jsonResponse(200, buildArrangedPaymentLinkInfo(row));
+	const parties = await loadPaymentLinkParties(admin, row);
+	if (row.stripe_schedule_id) return jsonResponse(200, buildArrangedPaymentLinkInfo(row, parties));
 	const today = new Date().toISOString().slice(0, 10);
 	try {
-		return jsonResponse(200, buildOpenPaymentLinkInfo(row, await computePreview(admin, row, today)));
+		return jsonResponse(200, buildOpenPaymentLinkInfo(row, await computePreview(admin, row, today), parties));
 	} catch (e) {
 		console.error('payment-link-info preview', e);
-		return jsonResponse(200, buildOpenPaymentLinkInfo(row, null));
+		return jsonResponse(200, buildOpenPaymentLinkInfo(row, null, parties));
 	}
 }
 

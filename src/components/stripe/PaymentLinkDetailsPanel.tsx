@@ -1,7 +1,13 @@
 import { StandaloneCenteredPage } from '@/components/auth/StandalonePageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { formatCentsNl, formatTermText, type PaymentLinkInfo } from '@/lib/stripe/paymentLinkPageHelpers';
+import { UserDisplay } from '@/components/ui/user-display';
+import {
+	formatCentsNl,
+	formatTermText,
+	type PaymentLinkInfo,
+	type PaymentLinkPartyProfile,
+} from '@/lib/stripe/paymentLinkPageHelpers';
 
 interface Props {
 	info: PaymentLinkInfo;
@@ -47,6 +53,15 @@ function CatchUpNotice({ show }: { show: boolean }) {
 	);
 }
 
+function PartyRow({ label, profile }: { label: string; profile: PaymentLinkPartyProfile | undefined }) {
+	return (
+		<>
+			<dt className="text-muted-foreground self-center">{label}</dt>
+			<dd className="min-w-0">{profile ? <UserDisplay profile={profile} /> : <span>—</span>}</dd>
+		</>
+	);
+}
+
 export function PaymentLinkDetailsPanel({ info, loading, error, onStart }: Props) {
 	const preview = info.preview;
 	return (
@@ -56,7 +71,9 @@ export function PaymentLinkDetailsPanel({ info, loading, error, onStart }: Props
 					<CardTitle>Machtiging afgeven</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4 text-sm">
-					<dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+					<dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-3">
+						<PartyRow label="Leerling" profile={info.student} />
+						<PartyRow label="Docent" profile={info.teacher} />
 						<dt className="text-muted-foreground">Lesvorm</dt>
 						<dd>{info.lesson_form}</dd>
 						{preview ? (
