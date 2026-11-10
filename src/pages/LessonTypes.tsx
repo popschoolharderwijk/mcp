@@ -1,6 +1,7 @@
 import { LuPlus } from 'react-icons/lu';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { LessonTypesDeleteDialog } from '@/components/lesson-types/LessonTypesPageParts';
+import { StripeButton } from '@/components/stripe/StripeButton';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
@@ -23,10 +24,18 @@ export default function LessonTypes() {
 			<NavPageShell
 				item="lessonTypes"
 				actions={
-					<Button onClick={controller.handleCreate}>
-						<LuPlus className="mr-2 h-4 w-4" />
-						Lessoort toevoegen
-					</Button>
+					<div className="flex flex-wrap items-center gap-2">
+						<StripeButton
+							disabled={!controller.canSyncUnsynced || controller.syncingCatalog}
+							onClick={() => void controller.handleSyncUnsyncedCatalog()}
+						>
+							Synchroniseer met Stripe
+						</StripeButton>
+						<Button onClick={controller.handleCreate}>
+							<LuPlus className="mr-2 h-4 w-4" />
+							Lessoort toevoegen
+						</Button>
+					</div>
 				}
 			>
 				<DataTable

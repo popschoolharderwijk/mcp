@@ -5,6 +5,8 @@ export interface SyncCatalogBody {
 	lesson_type_option_id?: string;
 	/** When true (default if lesson_type_id set), rebuild affected subscription schedules. */
 	rebuild?: boolean;
+	/** When true, only sync options with stripe_catalog_status pending or error. */
+	unsynced_only?: boolean;
 }
 
 export function validateSyncCatalogBody(body: SyncCatalogBody | null): Response | null {
@@ -20,6 +22,9 @@ export function validateSyncCatalogBody(body: SyncCatalogBody | null): Response 
 		(typeof body.lesson_type_option_id !== 'string' || !UUID_RE.test(body.lesson_type_option_id))
 	) {
 		return jsonResponse(400, { error: 'Ongeldig lesoptie-id' });
+	}
+	if (body.unsynced_only !== undefined && typeof body.unsynced_only !== 'boolean') {
+		return jsonResponse(400, { error: 'Ongeldige unsynced_only-waarde' });
 	}
 	return null;
 }

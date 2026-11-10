@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	applyCatalogOptionFilters,
 	buildCatalogDesiredPrices,
 	buildCatalogLookupKey,
+	buildCatalogOptionStatusPatch,
 	buildCatalogProductName,
 	type CatalogOptionInput,
 	mapCatalogOptionRow,
@@ -9,7 +11,27 @@ import {
 	planCatalogProductUpdate,
 	resolveSyncedCatalogRow,
 	summarizeCatalogSyncResults,
+	UNSYNCED_CATALOG_STATUSES,
 } from '../../../supabase/functions/_shared/stripeCatalogHelpers';
+
+type RecordedQueryCall =
+	| { kind: 'eq'; column: string; value: string }
+	| { kind: 'in'; column: string; values: readonly string[] };
+
+function createRecordingQuery() {
+	const calls: RecordedQueryCall[] = [];
+	const query = {
+		eq(column: string, value: string) {
+			calls.push({ kind: 'eq', column, value });
+			return query;
+		},
+		in(column: string, values: readonly string[]) {
+			calls.push({ kind: 'in', column, values });
+			return query;
+		},
+	};
+	return { query, calls };
+}
 
 const baseOption: CatalogOptionInput = {
 	id: 'opt-1',
@@ -127,6 +149,44 @@ describe('stripeCatalogHelpers', () => {
 		expect(resolveSyncedCatalogRow('opt-1', 'Gitaar', 'prod_1', true, true).status).toBe('synced');
 	});
 
+	it('maps sync results onto durable option status patches', () => {
+		expect(
+			buildCatalogOptionStatusPatch(
+				{ lesson_type_option_id: 'opt-1', name: 'Gitaar', status: 'synced', changed: true },
+				'2026-11-10T12:00:00.000Z',
+			),
+		).toEqual({
+			stripe_catalog_status: 'synced',
+			stripe_catalog_synced_at: '2026-11-10T12:00:00.000Z',
+			stripe_catalog_sync_error: null,
+		});
+		expect(
+			buildCatalogOptionStatusPatch(
+				{ lesson_type_option_id: 'opt-1', name: 'Gitaar', status: 'skipped', changed: false },
+				'2026-11-10T12:00:00.000Z',
+			),
+		).toEqual({
+			stripe_catalog_status: 'synced',
+			stripe_catalog_synced_at: '2026-11-10T12:00:00.000Z',
+			stripe_catalog_sync_error: null,
+		});
+		expect(
+			buildCatalogOptionStatusPatch(
+				{
+					lesson_type_option_id: 'opt-1',
+					name: 'Gitaar',
+					status: 'error',
+					changed: false,
+					error: 'Stripe down',
+				},
+				'2026-11-10T12:00:00.000Z',
+			),
+		).toEqual({
+			stripe_catalog_status: 'error',
+			stripe_catalog_sync_error: 'Stripe down',
+		});
+	});
+
 	it('plans product updates for rename, activate, and deactivate', () => {
 		expect(planCatalogProductUpdate(true, null, null, baseOption)).toBeNull();
 		expect(
@@ -159,5 +219,25 @@ describe('stripeCatalogHelpers', () => {
 				baseOption,
 			),
 		).toBeNull();
+	});
+
+	it('applies no catalog option filters when scope is empty', () => {
+		const { query, calls } = createRecordingQuery();
+		expect(applyCatalogOptionFilters(query, {})).toBe(query);
+		expect(calls).toEqual([]);
+	});
+
+	it('applies option, lesson-type, and unsynced catalog filters', () => {
+		const { query, calls } = createRecordingQuery();
+		applyCatalogOptionFilters(query, {
+			lesson_type_option_id: 'opt-1',
+			lesson_type_id: 'lt-1',
+			unsynced_only: true,
+		});
+		expect(calls).toEqual([
+			{ kind: 'eq', column: 'id', value: 'opt-1' },
+			{ kind: 'eq', column: 'lesson_type_id', value: 'lt-1' },
+			{ kind: 'in', column: 'stripe_catalog_status', values: UNSYNCED_CATALOG_STATUSES },
+		]);
 	});
 });

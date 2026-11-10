@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import { translateLessonTypeDeleteError } from '../../../src/lib/lesson-types/lessonTypesPageHelpers';
-import { buildOptionsCountMap } from '../../../src/lib/lesson-types/lessonTypesPageMappers';
+import {
+	buildOptionsCountMap,
+	buildOptionsStripeStatusMap,
+} from '../../../src/lib/lesson-types/lessonTypesPageMappers';
 
 describe('buildOptionsCountMap', () => {
 	it('counts options per lesson type id', () => {
@@ -15,6 +18,19 @@ describe('buildOptionsCountMap', () => {
 
 	it('returns an empty map for no rows', () => {
 		expect(buildOptionsCountMap([]).size).toBe(0);
+	});
+});
+
+describe('buildOptionsStripeStatusMap', () => {
+	it('rolls option statuses up per lesson type with error winning', () => {
+		const statusMap = buildOptionsStripeStatusMap([
+			{ lesson_type_id: 'lt-1', stripe_catalog_status: 'synced' },
+			{ lesson_type_id: 'lt-1', stripe_catalog_status: 'pending' },
+			{ lesson_type_id: 'lt-2', stripe_catalog_status: 'synced' },
+			{ lesson_type_id: 'lt-2', stripe_catalog_status: 'error' },
+		]);
+		expect(statusMap.get('lt-1')).toBe('pending');
+		expect(statusMap.get('lt-2')).toBe('error');
 	});
 });
 

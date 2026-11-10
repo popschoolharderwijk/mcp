@@ -9,6 +9,14 @@ export type StripeCatalogSyncResponse = {
 	error?: string;
 };
 
+type SyncStripeCatalogOptions = {
+	lessonTypeId?: string;
+	lessonTypeOptionId?: string;
+	rebuild?: boolean;
+	unsyncedOnly?: boolean;
+	quiet?: boolean;
+};
+
 export function summarizeStripeCatalogSync(data: StripeCatalogSyncResponse): {
 	kind: 'success' | 'info' | 'error';
 	message: string;
@@ -28,36 +36,41 @@ export function summarizeStripeCatalogSync(data: StripeCatalogSyncResponse): {
 	return { kind: 'success', message: `${changed} lesoptie(s) gesynchroniseerd met Stripe` };
 }
 
-/** Calls sync-stripe-catalog. Never throws: Stripe problems must not block saving lesson types. */
-export async function syncStripeCatalog(options?: {
-	lessonTypeId?: string;
-	lessonTypeOptionId?: string;
-	rebuild?: boolean;
-	quiet?: boolean;
-}): Promise<StripeCatalogSyncResponse | null> {
-	try {
-		const body: Record<string, unknown> = {};
-		if (options?.lessonTypeId) body.lesson_type_id = options.lessonTypeId;
-		if (options?.lessonTypeOptionId) body.lesson_type_option_id = options.lessonTypeOptionId;
-		if (options?.rebuild !== undefined) body.rebuild = options.rebuild;
+function buildSyncStripeCatalogBody(options?: SyncStripeCatalogOptions): Record<string, unknown> {
+	const body: Record<string, unknown> = {};
+	if (options?.lessonTypeId) body.lesson_type_id = options.lessonTypeId;
+	if (options?.lessonTypeOptionId) body.lesson_type_option_id = options.lessonTypeOptionId;
+	if (options?.rebuild !== undefined) body.rebuild = options.rebuild;
+	if (options?.unsyncedOnly === true) body.unsynced_only = true;
+	return body;
+}
 
+function notifyStripeCatalogSync(data: StripeCatalogSyncResponse): void {
+	const summary = summarizeStripeCatalogSync(data);
+	if (summary.kind === 'error') toast.error(summary.message);
+	else if (summary.kind === 'info') toast.info(summary.message);
+	else toast.success(summary.message);
+}
+
+function toastStripeCatalogSyncFailure(quiet?: boolean): void {
+	if (!quiet) toast.error('Synchronisatie met Stripe mislukt');
+}
+
+/** Calls sync-stripe-catalog. Never throws: Stripe problems must not block saving lesson types. */
+export async function syncStripeCatalog(options?: SyncStripeCatalogOptions): Promise<StripeCatalogSyncResponse | null> {
+	try {
 		const { data, error } = await supabase.functions.invoke<StripeCatalogSyncResponse>('sync-stripe-catalog', {
-			body,
+			body: buildSyncStripeCatalogBody(options),
 		});
 		if (error || !data) {
-			if (!options?.quiet) toast.error('Synchronisatie met Stripe mislukt');
+			toastStripeCatalogSyncFailure(options?.quiet);
 			return null;
 		}
-		if (!options?.quiet) {
-			const summary = summarizeStripeCatalogSync(data);
-			if (summary.kind === 'error') toast.error(summary.message);
-			else if (summary.kind === 'info') toast.info(summary.message);
-			else toast.success(summary.message);
-		}
+		if (!options?.quiet) notifyStripeCatalogSync(data);
 		return data;
 	} catch (err) {
 		console.error('sync-stripe-catalog failed', err);
-		if (!options?.quiet) toast.error('Synchronisatie met Stripe mislukt');
+		toastStripeCatalogSyncFailure(options?.quiet);
 		return null;
 	}
 }

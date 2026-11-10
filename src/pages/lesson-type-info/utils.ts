@@ -1,3 +1,4 @@
+import { buildPendingStripeCatalogStatusPatch } from '@/lib/lesson-types/lessonTypesStripeSyncHelpers';
 import type { LessonFrequency, LessonTypeOptionFormRow } from '@/types/lesson-agreements';
 
 export const centsToInput = (cents: number | null | undefined): string =>
@@ -26,6 +27,7 @@ export function buildOptionDbPayloadFromForm(
 		price_per_lesson: priceAdult,
 		price_per_lesson_youth_cents: inputToCents(priceYouthInput),
 		price_per_lesson_adult_cents: inputToCents(priceAdultInput),
+		...buildPendingStripeCatalogStatusPatch(),
 	};
 }
 

@@ -186,3 +186,57 @@ export function summarizeCatalogSyncResults(results: CatalogSyncResultRow[]): {
 		changed: results.filter((r) => r.changed).length,
 	};
 }
+
+export type StripeCatalogDbStatus = 'pending' | 'synced' | 'error';
+
+export type CatalogOptionStatusPatch = {
+	stripe_catalog_status: StripeCatalogDbStatus;
+	stripe_catalog_sync_error: string | null;
+	stripe_catalog_synced_at?: string;
+};
+
+/** Maps a sync result onto the durable lesson_type_options status columns. */
+export function buildCatalogOptionStatusPatch(result: CatalogSyncResultRow, nowIso: string): CatalogOptionStatusPatch {
+	if (result.status === 'error') {
+		return {
+			stripe_catalog_status: 'error',
+			stripe_catalog_sync_error: result.error ?? 'Catalogussync mislukt',
+		};
+	}
+	return {
+		stripe_catalog_status: 'synced',
+		stripe_catalog_synced_at: nowIso,
+		stripe_catalog_sync_error: null,
+	};
+}
+
+export const UNSYNCED_CATALOG_STATUSES: StripeCatalogDbStatus[] = ['pending', 'error'];
+
+export type CatalogSyncFilters = {
+	lesson_type_id?: string;
+	lesson_type_option_id?: string;
+	unsynced_only?: boolean;
+};
+
+type CatalogOptionFilterableQuery = {
+	eq: (column: string, value: string) => CatalogOptionFilterableQuery;
+	in: (column: string, values: readonly string[]) => CatalogOptionFilterableQuery;
+};
+
+/** Applies catalog sync scope filters onto a lesson_type_options query builder. */
+export function applyCatalogOptionFilters<T extends CatalogOptionFilterableQuery>(
+	query: T,
+	filters: CatalogSyncFilters,
+): T {
+	let next: CatalogOptionFilterableQuery = query;
+	if (filters.lesson_type_option_id) {
+		next = next.eq('id', filters.lesson_type_option_id);
+	}
+	if (filters.lesson_type_id) {
+		next = next.eq('lesson_type_id', filters.lesson_type_id);
+	}
+	if (filters.unsynced_only) {
+		next = next.in('stripe_catalog_status', UNSYNCED_CATALOG_STATUSES);
+	}
+	return next as T;
+}

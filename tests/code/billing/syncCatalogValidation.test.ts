@@ -16,6 +16,13 @@ describe('sync-stripe-catalog validation', () => {
 		expect(response?.status).toBe(400);
 	});
 
+	it('accepts unsynced_only boolean and rejects non-booleans', () => {
+		expect(validateSyncCatalogBody({ unsynced_only: true })).toBeNull();
+		const response = validateSyncCatalogBody({ unsynced_only: 'yes' as unknown as boolean });
+		expect(response).not.toBeNull();
+		expect(response?.status).toBe(400);
+	});
+
 	it('rebuilds by default when a lesson type or option is targeted', () => {
 		expect(shouldRebuildAfterCatalogSync({ lesson_type_id: '11111111-1111-1111-1111-111111111111' })).toBe(true);
 		expect(

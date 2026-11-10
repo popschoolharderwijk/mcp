@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { buildOptionsCountMap } from '@/lib/lesson-types/lessonTypesPageMappers';
+import { buildOptionsCountMap, buildOptionsStripeStatusMap } from '@/lib/lesson-types/lessonTypesPageMappers';
+import type { LessonTypeStripeSyncStatus } from '@/lib/lesson-types/lessonTypesStripeSyncHelpers';
 
 export interface LessonTypeListItem {
 	id: string;
@@ -13,6 +14,7 @@ export interface LessonTypeListItem {
 	created_at: string;
 	updated_at: string;
 	options_count?: number;
+	stripe_sync_status: LessonTypeStripeSyncStatus;
 }
 
 export async function fetchLessonTypesWithOptionCounts(
@@ -25,20 +27,29 @@ export async function fetchLessonTypesWithOptionCounts(
 
 	const types = data ?? [];
 	if (!types.length) {
-		return { lessonTypes: types, error: null };
+		return { lessonTypes: [], error: null };
 	}
 
-	const { data: counts } = await client
+	const { data: optionRows, error: optionsError } = await client
 		.from('lesson_type_options')
-		.select('lesson_type_id')
+		.select('lesson_type_id, stripe_catalog_status')
 		.in(
 			'lesson_type_id',
 			types.map((type) => type.id),
 		);
+	if (optionsError) {
+		return { lessonTypes: [], error: optionsError.message };
+	}
 
-	const countMap = buildOptionsCountMap(counts ?? []);
+	const rows = optionRows ?? [];
+	const countMap = buildOptionsCountMap(rows);
+	const statusMap = buildOptionsStripeStatusMap(rows);
 	return {
-		lessonTypes: types.map((type) => ({ ...type, options_count: countMap.get(type.id) ?? 0 })),
+		lessonTypes: types.map((type) => ({
+			...type,
+			options_count: countMap.get(type.id) ?? 0,
+			stripe_sync_status: statusMap.get(type.id) ?? 'synced',
+		})),
 		error: null,
 	};
 }

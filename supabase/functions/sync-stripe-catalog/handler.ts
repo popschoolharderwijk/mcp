@@ -72,6 +72,7 @@ async function runCatalogSyncWithOptionalRebuild(
 	const results = await runCatalogSync(admin, stripe, {
 		lesson_type_id: body.lesson_type_id,
 		lesson_type_option_id: body.lesson_type_option_id,
+		unsynced_only: body.unsynced_only === true,
 	});
 	let rebuilds: Awaited<ReturnType<typeof rebuildAffectedSchedules>> = [];
 	if (shouldRebuildAfterCatalogSync(body)) {

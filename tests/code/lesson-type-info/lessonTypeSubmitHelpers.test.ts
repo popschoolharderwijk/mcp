@@ -53,6 +53,8 @@ describe('buildLessonTypeOptionRowPayload', () => {
 			price_per_lesson: 25,
 			price_per_lesson_youth_cents: 2000,
 			price_per_lesson_adult_cents: 2500,
+			stripe_catalog_status: 'pending',
+			stripe_catalog_sync_error: null,
 		});
 	});
 });

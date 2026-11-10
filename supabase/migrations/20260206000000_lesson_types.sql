@@ -57,13 +57,27 @@ CREATE TABLE IF NOT EXISTS public.lesson_type_options (
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id) ON DELETE CASCADE,
   duration_minutes INTEGER NOT NULL CHECK (duration_minutes > 0),
   frequency public.lesson_frequency NOT NULL,
-  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0)
+  price_per_lesson NUMERIC(10,2) NOT NULL CHECK (price_per_lesson > 0),
+  stripe_catalog_status text NOT NULL DEFAULT 'pending'
+    CHECK (stripe_catalog_status IN ('pending', 'synced', 'error')),
+  stripe_catalog_synced_at timestamptz NULL,
+  stripe_catalog_sync_error text NULL
 );
 
 -- Add audit columns to lesson_type_options
 SELECT public.apply_audit_trail('public.lesson_type_options');
 
 CREATE INDEX IF NOT EXISTS idx_lesson_type_options_lesson_type_id ON public.lesson_type_options(lesson_type_id);
+CREATE INDEX IF NOT EXISTS lesson_type_options_stripe_catalog_status_idx
+  ON public.lesson_type_options (stripe_catalog_status)
+  WHERE stripe_catalog_status IN ('pending', 'error');
+
+COMMENT ON COLUMN public.lesson_type_options.stripe_catalog_status IS
+  'Stripe Product/Price sync state for this option: pending, synced, or error.';
+COMMENT ON COLUMN public.lesson_type_options.stripe_catalog_synced_at IS
+  'When this option was last successfully synced to Stripe.';
+COMMENT ON COLUMN public.lesson_type_options.stripe_catalog_sync_error IS
+  'Last Stripe catalog sync error message when status is error.';
 
 -- One option per (lesson_type, duration, frequency, price) — same duration+frequency with different price allowed
 CREATE UNIQUE INDEX IF NOT EXISTS idx_lesson_type_options_unique_duration_frequency_price

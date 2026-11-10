@@ -27,6 +27,7 @@ const lessonTypes: LessonTypeListItem[] = [
 		created_at: '2026-01-01T00:00:00Z',
 		updated_at: '2026-01-01T00:00:00Z',
 		options_count: 2,
+		stripe_sync_status: 'synced',
 	},
 	{
 		id: 'lt-2',
@@ -40,6 +41,7 @@ const lessonTypes: LessonTypeListItem[] = [
 		created_at: '2026-01-01T00:00:00Z',
 		updated_at: '2026-01-01T00:00:00Z',
 		options_count: 1,
+		stripe_sync_status: 'pending',
 	},
 ];
 

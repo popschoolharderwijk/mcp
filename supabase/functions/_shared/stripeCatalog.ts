@@ -4,15 +4,20 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { getSafeErrorMessage } from './errors.ts';
 import {
+	applyCatalogOptionFilters,
+	buildCatalogOptionStatusPatch,
 	buildCatalogProductName,
 	type CatalogExistingPrice,
 	type CatalogExistingProduct,
 	type CatalogOptionInput,
+	type CatalogSyncFilters,
 	type CatalogSyncResultRow,
 	mapCatalogOptionRow,
 	planCatalogOptionSync,
 	resolveSyncedCatalogRow,
 } from './stripeCatalogHelpers.ts';
+
+export type { CatalogSyncFilters };
 
 type OptionDbRow = {
 	id: string;
@@ -162,40 +167,43 @@ async function syncOneOption(stripe: Stripe, option: CatalogOptionInput): Promis
 	}
 }
 
-function applyCatalogOptionFilters(
-	query: { eq: (col: string, val: string) => typeof query },
-	filters: { lesson_type_id?: string; lesson_type_option_id?: string },
-) {
-	let next = query;
-	if (filters.lesson_type_option_id) next = next.eq('id', filters.lesson_type_option_id);
-	if (filters.lesson_type_id) next = next.eq('lesson_type_id', filters.lesson_type_id);
-	return next;
+async function persistCatalogOptionStatus(admin: SupabaseClient, result: CatalogSyncResultRow): Promise<void> {
+	const patch = buildCatalogOptionStatusPatch(result, new Date().toISOString());
+	const { error } = await admin.from('lesson_type_options').update(patch).eq('id', result.lesson_type_option_id);
+	if (error) {
+		console.error('sync-stripe-catalog status persist', result.lesson_type_option_id, error);
+	}
 }
 
 async function loadCatalogOptions(
 	admin: SupabaseClient,
-	filters: { lesson_type_id?: string; lesson_type_option_id?: string } = {},
+	filters: CatalogSyncFilters = {},
 ): Promise<CatalogOptionInput[]> {
-	const base = admin
-		.from('lesson_type_options')
-		.select(
-			'id, lesson_type_id, duration_minutes, frequency, price_per_lesson_youth_cents, price_per_lesson_adult_cents, lesson_types(name, is_active)',
-		);
-	const { data, error } = await applyCatalogOptionFilters(base, filters);
+	const query = applyCatalogOptionFilters(
+		admin
+			.from('lesson_type_options')
+			.select(
+				'id, lesson_type_id, duration_minutes, frequency, price_per_lesson_youth_cents, price_per_lesson_adult_cents, lesson_types(name, is_active)',
+			),
+		filters,
+	);
+	const { data, error } = await query;
 	if (error) throw new Error(`Kon lesopties niet laden: ${error.message}`);
 	return ((data ?? []) as OptionDbRow[]).map(mapCatalogOptionRow);
 }
 
-/** Sync active lesson_type_options to Stripe Products/Prices (no DB price-id columns). */
+/** Sync lesson_type_options to Stripe Products/Prices and persist catalog status. */
 export async function runCatalogSync(
 	admin: SupabaseClient,
 	stripe: Stripe,
-	filters: { lesson_type_id?: string; lesson_type_option_id?: string } = {},
+	filters: CatalogSyncFilters = {},
 ): Promise<CatalogSyncResultRow[]> {
 	const options = await loadCatalogOptions(admin, filters);
 	const results: CatalogSyncResultRow[] = [];
 	for (const option of options) {
-		results.push(await syncOneOption(stripe, option));
+		const result = await syncOneOption(stripe, option);
+		await persistCatalogOptionStatus(admin, result);
+		results.push(result);
 	}
 	return results;
 }
