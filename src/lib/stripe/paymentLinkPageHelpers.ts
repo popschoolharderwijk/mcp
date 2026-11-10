@@ -14,7 +14,7 @@ export interface PaymentLinkPreview {
 }
 
 /** Display YYYY-MM as MM-YYYY for Dutch pay-page copy. */
-export function formatBillingMonthLabel(month: string): string {
+function formatBillingMonthLabel(month: string): string {
 	return `${month.slice(5, 7)}-${month.slice(0, 4)}`;
 }
 
@@ -65,7 +65,7 @@ export function resolvePayPageView(input: {
 }): PayPageView {
 	if (input.loadingInfo) return 'loading';
 	if (input.completed) return 'completed';
-	// Checkout complete failed: keep the form visible with the error (do not show success).
+	// Checkout complete failed: keep the form visible with the error message.
 	if (input.error) return 'details';
 	if (input.info?.arranged) return 'arranged';
 	if (!input.info?.valid) return 'invalid';

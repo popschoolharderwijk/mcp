@@ -6,12 +6,14 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpLineItems,
+	catchUpDraftNeedsLineItems,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	filterPhasesAfterCatchUpMonth,
 	listBillingMonthLabels,
 	needsCatchUpPaymentMethodUpdate,
 	pickActiveGlobalCatchUpProductId,
+	pickAdoptableLegacyCatchUpProductId,
 	pickReusableCatchUpInvoice,
 	resolveExistingCatchUpSettleKind,
 	stripeExpandableId,
@@ -207,6 +209,44 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(
 			pickActiveGlobalCatchUpProductId([{ id: 'prod_legacy', active: true, metadata: { kind: 'catch_up' } }]),
 		).toBeNull();
+	});
+
+	it('adopts active catch-up products not pinned to one agreement', () => {
+		expect(
+			pickAdoptableLegacyCatchUpProductId([
+				{
+					id: 'prod_inactive',
+					active: false,
+					metadata: { kind: 'catch_up' },
+				},
+				{
+					id: 'prod_agreement',
+					active: true,
+					metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' },
+				},
+				{
+					id: 'prod_shared',
+					active: true,
+					metadata: { kind: 'catch_up' },
+				},
+			]),
+		).toBe('prod_shared');
+		expect(
+			pickAdoptableLegacyCatchUpProductId([
+				{
+					id: 'prod_other',
+					active: true,
+					metadata: { kind: 'tuition' },
+				},
+			]),
+		).toBeNull();
+	});
+
+	it('adds catch-up lines only for empty draft invoices', () => {
+		expect(catchUpDraftNeedsLineItems({ status: 'draft', lines: { data: [] } })).toBe(true);
+		expect(catchUpDraftNeedsLineItems({ status: 'draft', lines: { data: [{ id: 'il_1' }] } })).toBe(false);
+		expect(catchUpDraftNeedsLineItems({ status: 'open', lines: { data: [] } })).toBe(false);
+		expect(catchUpDraftNeedsLineItems({ status: 'draft' })).toBe(true);
 	});
 });
 

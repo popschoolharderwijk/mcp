@@ -146,8 +146,8 @@ export function pickActiveGlobalCatchUpProductId(products: CatchUpProductCandida
 }
 
 /**
- * Shared catch-up product created before scope=global existed: active, kind=catch_up,
- * and not pinned to one lesson agreement.
+ * Active catch-up product not pinned to one lesson agreement.
+ * Used when the global-scope search finds nothing (older shared catalog rows).
  */
 export function pickAdoptableLegacyCatchUpProductId(products: CatchUpProductCandidate[]): string | null {
 	for (const product of products) {

@@ -9,10 +9,10 @@ import {
 	buildCatchUpProductIdempotencyKey,
 	buildCatchUpProductSearchQuery,
 	type CatchUpInvoicePlan,
+	catchUpDraftNeedsLineItems,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	needsCatchUpPaymentMethodUpdate,
-	catchUpDraftNeedsLineItems,
 	pickActiveGlobalCatchUpProductId,
 	pickAdoptableLegacyCatchUpProductId,
 	pickReusableCatchUpInvoice,
@@ -22,7 +22,11 @@ import {
 	stripeExpandableId,
 } from './catchUpInvoiceHelpers.ts';
 
-async function renameCatchUpProductIfNeeded(stripe: Stripe, productId: string, currentName: string | null): Promise<void> {
+async function renameCatchUpProductIfNeeded(
+	stripe: Stripe,
+	productId: string,
+	currentName: string | null,
+): Promise<void> {
 	if (currentName === STRIPE_CATCH_UP_PRODUCT_NAME) return;
 	await stripe.products.update(productId, { name: STRIPE_CATCH_UP_PRODUCT_NAME });
 }
@@ -35,7 +39,7 @@ async function adoptLegacyCatchUpProduct(stripe: Stripe, productId: string): Pro
 	return productId;
 }
 
-async function useExistingGlobalCatchUpProduct(
+async function keepExistingGlobalCatchUpProduct(
 	stripe: Stripe,
 	products: Array<{ id: string; name?: string | null }>,
 	productId: string,
@@ -51,7 +55,7 @@ async function ensureCatchUpProduct(stripe: Stripe): Promise<string> {
 		limit: 10,
 	});
 	const existingId = pickActiveGlobalCatchUpProductId(found.data);
-	if (existingId) return useExistingGlobalCatchUpProduct(stripe, found.data, existingId);
+	if (existingId) return keepExistingGlobalCatchUpProduct(stripe, found.data, existingId);
 
 	const legacy = await stripe.products.search({
 		query: `metadata['kind']:'catch_up'`,

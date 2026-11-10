@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildCatchUpNoticeText,
 	formatCentsNl,
 	formatTermText,
 	markPaymentLinkArranged,
@@ -15,6 +16,57 @@ describe('paymentLinkPageHelpers', () => {
 		expect(formatCentsNl(1250)).toBe('€ 12,50');
 		expect(formatTermText(null)).toContain('6 maanden');
 		expect(formatTermText('2027-02-28')).toContain('28-02-2027');
+	});
+
+	it('builds catch-up notice text with and without month range', () => {
+		expect(
+			buildCatchUpNoticeText({
+				monthlyCents: 7000,
+				yearlyCents: 70000,
+				finalMonthCents: null,
+				catchUp: false,
+				catchUpCents: null,
+				catchUpFromMonth: null,
+				catchUpToMonth: null,
+			}),
+		).toBeNull();
+		expect(
+			buildCatchUpNoticeText({
+				monthlyCents: 7000,
+				yearlyCents: 70000,
+				finalMonthCents: null,
+				catchUp: true,
+				catchUpCents: null,
+				catchUpFromMonth: '2026-09',
+				catchUpToMonth: '2026-11',
+			}),
+		).toBeNull();
+		expect(
+			buildCatchUpNoticeText({
+				monthlyCents: 7000,
+				yearlyCents: 70000,
+				finalMonthCents: null,
+				catchUp: true,
+				catchUpCents: 21000,
+				catchUpFromMonth: null,
+				catchUpToMonth: null,
+			}),
+		).toBe(
+			'Omdat de startdatum al voorbij is, brengen we gemiste maanden in één keer in rekening na je machtiging: € 210,00 (augustus telt niet mee).',
+		);
+		expect(
+			buildCatchUpNoticeText({
+				monthlyCents: 7000,
+				yearlyCents: 70000,
+				finalMonthCents: null,
+				catchUp: true,
+				catchUpCents: 21000,
+				catchUpFromMonth: '2026-09',
+				catchUpToMonth: '2026-11',
+			}),
+		).toBe(
+			'Omdat de startdatum al voorbij is, brengen we gemiste maanden (09-2026 t/m 11-2026) in één keer in rekening na je machtiging: € 210,00 (augustus telt niet mee).',
+		);
 	});
 
 	it('resolves pay page view branches', () => {
