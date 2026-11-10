@@ -100,18 +100,14 @@ describe('billing recipient and request guards', () => {
 		});
 	});
 
-	it('gates send when resolved recipient is missing', () => {
-		expect(resolveIssuedLinkRecipientGate(true, { ok: true, recipient: null })).toEqual({
+	it('requires a payer address before issuing a payment link mail', () => {
+		expect(resolveIssuedLinkRecipientGate({ ok: true, recipient: null })).toEqual({
 			ok: false,
 			status: 400,
 			error: 'Geen e-mailadres voor betaler',
 		});
-		expect(resolveIssuedLinkRecipientGate(false, { ok: true, recipient: null })).toEqual({
-			ok: true,
-			recipient: null,
-		});
 		expect(
-			resolveIssuedLinkRecipientGate(true, {
+			resolveIssuedLinkRecipientGate({
 				ok: false,
 				status: 403,
 				error: 'Geen rechten om de ontvanger te wijzigen',
@@ -121,7 +117,7 @@ describe('billing recipient and request guards', () => {
 			status: 403,
 			error: 'Geen rechten om de ontvanger te wijzigen',
 		});
-		expect(resolveIssuedLinkRecipientGate(true, { ok: true, recipient: 'a@b.nl' })).toEqual({
+		expect(resolveIssuedLinkRecipientGate({ ok: true, recipient: 'a@b.nl' })).toEqual({
 			ok: true,
 			recipient: 'a@b.nl',
 		});

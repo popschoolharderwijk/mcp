@@ -14,7 +14,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 ```text
 [Agreement wizard]
         │
-        │ 1. issue-payment-link (token) + agreement_created mail with {{betaalblok}} CTA
+        │ 1. issue-payment-link → agreement_created mail + stripe_checkout_invitations
         ▼
 [/pay?agreement=&t=]  (public Pay.tsx)
         │
@@ -49,7 +49,7 @@ Ops: **Machtigingen** (`/mandates`) tabs: active → canceled → pending (invit
 
 | Function                        | Auth               | Purpose                                                          |
 | ------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `issue-payment-link`            | JWT                | Rotate token; return `payment_cta`; optionally send mail         |
+| `issue-payment-link`            | JWT                | Rotate token; mail `agreement_created`; record checkout invite   |
 | `payment-link-info`             | public (token)     | Validate token; return lesson form + preview amounts             |
 | `request-payment-link`          | public             | Rate-limited new link mail to known payer address                |
 | `start-payment-checkout`        | public (token)     | Checkout / complete without login                                |
@@ -68,8 +68,9 @@ Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `
 
 - Public URL: `/pay?agreement=<uuid>&t=<token>`.
 - Betaler = `students.parent_email` when set, otherwise the student account e-mail.
+- **Single gate for payer mail:** staff/wizard paths send `agreement_created` only via `issue-payment-link` (always mails + records `stripe_checkout_invitations`). Public `request-payment-link` issues the same mail + invite row itself. Never send a betaallink `agreement_created` through `send-template-email` alone — Machtigingen **In afwachting** would miss it.
 - Template `agreement_created` includes `{{betaalblok}}` (HTML button to the fixed link).
-- “Opnieuw versturen” / public request reuse the same link + mail pattern (rate-limited on the public path).
+- Teacher confirmation (`agreement_created_teacher`) stays on `send-template-email` (no checkout invite row).
 
 ## 6. Webhook events
 

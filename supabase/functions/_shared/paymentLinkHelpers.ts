@@ -113,13 +113,12 @@ export function resolveIssuePaymentRecipient(
 	return { ok: true, recipient: override.trim() };
 }
 
-/** After recipient resolve: block send when no address is available. */
+/** After recipient resolve: require a payer address (issue-payment-link always mails). */
 export function resolveIssuedLinkRecipientGate(
-	send: boolean,
 	resolved: ReturnType<typeof resolveIssuePaymentRecipient>,
-): { ok: true; recipient: string | null } | { ok: false; status: number; error: string } {
+): { ok: true; recipient: string } | { ok: false; status: number; error: string } {
 	if (!resolved.ok) return { ok: false, status: resolved.status, error: resolved.error };
-	if (send && !resolved.recipient) {
+	if (!resolved.recipient) {
 		return { ok: false, status: 400, error: 'Geen e-mailadres voor betaler' };
 	}
 	return { ok: true, recipient: resolved.recipient };

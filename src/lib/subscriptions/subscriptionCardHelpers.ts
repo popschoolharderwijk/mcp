@@ -21,15 +21,10 @@ const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
 	sync: 'Kon niet synchroniseren met Stripe',
 };
 
-export function buildIssuePaymentLinkBody(
-	lessonAgreementId: string,
-	send: boolean,
-	recipientEmail?: string,
-): Record<string, unknown> {
+export function buildIssuePaymentLinkBody(lessonAgreementId: string, recipientEmail?: string): Record<string, unknown> {
 	const trimmed = recipientEmail?.trim();
 	return {
 		lesson_agreement_id: lessonAgreementId,
-		send,
 		...(trimmed ? { recipient_email: trimmed } : {}),
 	};
 }
@@ -41,7 +36,7 @@ export function buildSubscriptionActionBody(
 	returnUrl: string,
 ): Record<string, unknown> {
 	if (action === 'open-portal') return { user_id: studentUserId, return_url: returnUrl };
-	if (action === 'send-invite') return buildIssuePaymentLinkBody(lessonAgreementId, true);
+	if (action === 'send-invite') return buildIssuePaymentLinkBody(lessonAgreementId);
 	return { lesson_agreement_id: lessonAgreementId };
 }
 

@@ -20,14 +20,6 @@ export interface LessonTypeRow {
 	is_active: boolean;
 }
 
-export const DAY_NAMES_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
-export const FREQUENCY_LABELS: Record<string, string> = {
-	weekly: 'wekelijks',
-	biweekly: 'om de week',
-	monthly: 'maandelijks',
-};
-export const STRIPE_PAYMENT_METHOD_LABEL = 'Automatische betaling via Stripe';
-
 export const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
 export const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export const VALID_FREQUENCIES = new Set(['weekly', 'biweekly', 'monthly']);

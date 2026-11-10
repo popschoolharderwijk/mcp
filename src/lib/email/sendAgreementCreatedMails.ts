@@ -2,42 +2,41 @@
 // agreement. Called from the agreement wizard once the insert into
 // `lesson_agreements` succeeds. Errors are intentionally not rethrown: the
 // agreement is already saved; the UI may show a warning at most.
+//
+// Student payment invite mail goes only through `issue-payment-link`
+// so `stripe_checkout_invitations` always matches Machtigingen.
 
 import { supabase } from '@/integrations/supabase/client';
 import {
 	type AgreementMailSharedVars,
 	buildAgreementMailContext,
 	buildAgreementMailInvokeBody,
-	buildAgreementMailTargets,
-	resolveAgreementPayerEmail,
 } from '@/lib/email/sendAgreementCreatedMailsHelpers';
+import { buildIssuePaymentLinkBody } from '@/lib/subscriptions/subscriptionCardHelpers';
 
 export interface SendAgreementCreatedMailsResult {
 	studentSent: boolean;
 	teacherSent: boolean;
 }
 
-async function issueAgreementPaymentCta(agreementId: string): Promise<string> {
-	const { data, error } = await supabase.functions.invoke<{ payment_cta?: string }>('issue-payment-link', {
-		body: { lesson_agreement_id: agreementId, send: false },
+/** Single gate: issue token, send `agreement_created`, record `stripe_checkout_invitations`. */
+async function sendStudentPaymentInvite(agreementId: string): Promise<boolean> {
+	const { data, error } = await supabase.functions.invoke<{ sent?: boolean }>('issue-payment-link', {
+		body: buildIssuePaymentLinkBody(agreementId),
 	});
-	if (error || !data?.payment_cta) {
+	if (error) {
 		console.error('issue-payment-link for agreement mail', error);
-		return '';
+		return false;
 	}
-	return data.payment_cta;
+	return data?.sent === true;
 }
 
-async function sendAgreementMail(
-	eventKey: 'agreement_created' | 'agreement_created_teacher',
-	email: string,
-	vars: AgreementMailSharedVars,
-): Promise<boolean> {
+async function sendTeacherAgreementMail(email: string, vars: AgreementMailSharedVars): Promise<boolean> {
 	const { error: mailErr } = await supabase.functions.invoke('send-template-email', {
-		body: buildAgreementMailInvokeBody(eventKey, email, vars),
+		body: buildAgreementMailInvokeBody('agreement_created_teacher', email, vars),
 	});
 	if (mailErr) {
-		console.error(`${eventKey} mail`, mailErr);
+		console.error('agreement_created_teacher mail', mailErr);
 		return false;
 	}
 	return true;
@@ -61,7 +60,8 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		return result;
 	}
 
-	const [studentProfile, teacherProfile, studentRow, paymentCtaMarkdown] = await Promise.all([
+	const [studentSent, studentProfile, teacherProfile] = await Promise.all([
+		sendStudentPaymentInvite(agreementId),
 		supabase
 			.from('profiles')
 			.select('email, first_name, last_name')
@@ -72,25 +72,13 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 			.select('email, first_name, last_name')
 			.eq('user_id', agreement.teacher_user_id)
 			.maybeSingle(),
-		supabase.from('students').select('parent_email').eq('user_id', agreement.student_user_id).maybeSingle(),
-		issueAgreementPaymentCta(agreementId),
 	]);
+	result.studentSent = studentSent;
+
+	const teacherEmail = teacherProfile.data?.email;
+	if (!teacherEmail) return result;
 
 	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data);
-	const studentVars: AgreementMailSharedVars = { ...sharedVars, betaalblok: paymentCtaMarkdown };
-	const payerEmail = resolveAgreementPayerEmail(studentRow.data?.parent_email, studentProfile.data?.email);
-	const targets = buildAgreementMailTargets(payerEmail, teacherProfile.data?.email);
-
-	for (const target of targets) {
-		const vars = target.eventKey === 'agreement_created' ? studentVars : sharedVars;
-		const sent = await sendAgreementMail(target.eventKey, target.email, vars);
-		if (target.eventKey === 'agreement_created') {
-			result.studentSent = sent;
-		}
-		if (target.eventKey === 'agreement_created_teacher') {
-			result.teacherSent = sent;
-		}
-	}
-
+	result.teacherSent = await sendTeacherAgreementMail(teacherEmail, sharedVars);
 	return result;
 }

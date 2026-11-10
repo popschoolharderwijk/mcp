@@ -23,19 +23,16 @@ import {
 } from '../../../src/lib/subscriptions/subscriptionCardHelpers';
 
 describe('subscriptionCardHelpers', () => {
-	it('maps send-invite to issue-payment-link with send:true', () => {
+	it('maps send-invite to issue-payment-link body', () => {
 		expect(SUBSCRIPTION_ACTION_FUNCTIONS['send-invite']).toBe('issue-payment-link');
 		expect(buildSubscriptionActionBody('send-invite', 'agr-1', 'stu-1', 'https://app')).toEqual({
 			lesson_agreement_id: 'agr-1',
-			send: true,
 		});
-		expect(buildIssuePaymentLinkBody('agr-1', false)).toEqual({
+		expect(buildIssuePaymentLinkBody('agr-1')).toEqual({
 			lesson_agreement_id: 'agr-1',
-			send: false,
 		});
-		expect(buildIssuePaymentLinkBody('agr-1', true, '  test@ex.com ')).toEqual({
+		expect(buildIssuePaymentLinkBody('agr-1', '  test@ex.com ')).toEqual({
 			lesson_agreement_id: 'agr-1',
-			send: true,
 			recipient_email: 'test@ex.com',
 		});
 		expect(resolveIssuedPaymentUrl({ payment_url: 'http://127.0.0.1:8081/pay?t=abc' })).toBe(

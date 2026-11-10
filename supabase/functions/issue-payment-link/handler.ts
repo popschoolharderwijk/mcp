@@ -15,7 +15,7 @@ import {
 	resolveStripeCheckoutAgreementAccessError,
 } from '../send-stripe-checkout-invite/sendStripeCheckoutInviteHelpers.ts';
 
-type Body = { lesson_agreement_id?: string; send?: boolean; recipient_email?: string };
+type Body = { lesson_agreement_id?: string; recipient_email?: string };
 type Authorized = Extract<Awaited<ReturnType<typeof authorizeIssue>>, { ok: true }>;
 
 async function authorizeIssue(authHeader: string, agreementId: string) {
@@ -51,21 +51,7 @@ async function sendPaymentLinkMail(
 	return jsonResponse(mail.status ?? 502, { error: mail.error });
 }
 
-async function maybeMailPaymentLink(
-	req: Request,
-	admin: SupabaseClient,
-	agreementId: string,
-	send: boolean,
-	recipient: string | null,
-	paymentCtaMarkdown: string,
-): Promise<Response | null> {
-	if (!send) return null;
-	if (!recipient) return jsonResponse(400, { error: 'Geen e-mailadres voor betaler' });
-	return sendPaymentLinkMail(req, admin, agreementId, recipient, paymentCtaMarkdown);
-}
-
-async function recordIssuedInvite(authorized: Authorized, recipient: string | null, send: boolean): Promise<void> {
-	if (!send || !recipient) return;
+async function recordIssuedInvite(authorized: Authorized, recipient: string): Promise<void> {
 	await authorized.auth.admin.from('stripe_checkout_invitations').insert({
 		lesson_agreement_id: authorized.agreement.id,
 		recipient_email: recipient,
@@ -73,24 +59,18 @@ async function recordIssuedInvite(authorized: Authorized, recipient: string | nu
 	});
 }
 
-function buildIssuedPayload(paymentUrl: string, paymentCtaMarkdown: string, recipient: string | null, sent: boolean) {
+function buildIssuedPayload(paymentUrl: string, paymentCtaMarkdown: string, recipient: string) {
 	return {
 		payment_url: paymentUrl,
 		payment_cta: paymentCtaMarkdown,
 		recipient,
-		sent,
+		sent: true,
 	};
 }
 
-async function deliverIssuedLink(
-	req: Request,
-	authorized: Authorized,
-	send: boolean,
-	recipientOverride: string | undefined,
-) {
+async function deliverIssuedLink(req: Request, authorized: Authorized, recipientOverride: string | undefined) {
 	const billing = await loadBillingRecipientForStudent(authorized.auth.admin, authorized.agreement.student_user_id);
 	const gated = resolveIssuedLinkRecipientGate(
-		send,
 		resolveIssuePaymentRecipient(recipientOverride, billing.recipient, authorized.isPrivileged),
 	);
 	if (!gated.ok) {
@@ -103,20 +83,18 @@ async function deliverIssuedLink(
 		authorized.agreement.id,
 	);
 	const paymentCtaMarkdown = buildPaymentLinkEmailHtml(paymentUrl);
-	const mailErr = await maybeMailPaymentLink(
+	const mailErr = await sendPaymentLinkMail(
 		req,
 		authorized.auth.admin,
 		authorized.agreement.id,
-		send,
 		gated.recipient,
 		paymentCtaMarkdown,
 	);
 	if (mailErr) return { ok: false as const, response: mailErr };
-	const sent = Boolean(send && gated.recipient);
-	await recordIssuedInvite(authorized, gated.recipient, send);
+	await recordIssuedInvite(authorized, gated.recipient);
 	return {
 		ok: true as const,
-		payload: buildIssuedPayload(paymentUrl, paymentCtaMarkdown, gated.recipient, sent),
+		payload: buildIssuedPayload(paymentUrl, paymentCtaMarkdown, gated.recipient),
 	};
 }
 
@@ -129,7 +107,7 @@ export async function handleIssuePaymentLinkRequest(req: Request): Promise<Respo
 	if (!begun.ok) return begun.response;
 	const authorized = await authorizeIssue(begun.authHeader, begun.uuid);
 	if (!authorized.ok) return authorized.response;
-	const delivered = await deliverIssuedLink(req, authorized, begun.body.send !== false, begun.body.recipient_email);
+	const delivered = await deliverIssuedLink(req, authorized, begun.body.recipient_email);
 	if (!delivered.ok) return delivered.response;
 	return jsonResponse(200, delivered.payload);
 }

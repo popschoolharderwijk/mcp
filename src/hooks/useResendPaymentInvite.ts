@@ -24,7 +24,7 @@ export function useResendPaymentInvite(onDone?: () => void) {
 		setBusyId(agreementId);
 		setBusyKind('resend');
 		const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS['send-invite'], {
-			body: buildIssuePaymentLinkBody(agreementId, true, recipientEmail),
+			body: buildIssuePaymentLinkBody(agreementId, recipientEmail),
 		});
 		setBusyId(null);
 		setBusyKind(null);
