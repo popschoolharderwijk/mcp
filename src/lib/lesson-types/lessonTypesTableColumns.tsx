@@ -2,10 +2,6 @@ import { Badge } from '@/components/ui/badge';
 import type { DataTableColumn } from '@/components/ui/data-table';
 import { LessonTypeBadge } from '@/components/ui/lesson-type-badge';
 import type { LessonTypeListItem } from '@/lib/lesson-types/lessonTypesPageHelpers';
-import {
-	lessonTypeStripeSyncStatusLabel,
-	lessonTypeStripeSyncStatusVariant,
-} from '@/lib/lesson-types/lessonTypesStripeSyncHelpers';
 
 export function buildLessonTypesColumns(): DataTableColumn<LessonTypeListItem>[] {
 	return [
@@ -50,17 +46,6 @@ export function buildLessonTypesColumns(): DataTableColumn<LessonTypeListItem>[]
 			sortValue: (lt) => (lt.is_active ? 1 : 0),
 			render: (lt) => (
 				<Badge variant={lt.is_active ? 'default' : 'secondary'}>{lt.is_active ? 'Actief' : 'Inactief'}</Badge>
-			),
-		},
-		{
-			key: 'stripe_sync_status',
-			label: 'Stripe',
-			sortable: true,
-			sortValue: (lt) => lt.stripe_sync_status,
-			render: (lt) => (
-				<Badge variant={lessonTypeStripeSyncStatusVariant(lt.stripe_sync_status)}>
-					{lessonTypeStripeSyncStatusLabel(lt.stripe_sync_status)}
-				</Badge>
 			),
 		},
 	];

@@ -114,8 +114,28 @@ export function filterPhasesAfterCatchUpMonth(phases: BillingPhase[], catchUpThr
 	return phases.filter((phase) => phase.label > catchUpThroughMonth);
 }
 
-export function buildCatchUpInvoiceIdempotencyKey(agreementId: string, fromMonth: string, toMonth: string): string {
-	return `mcp_catchup_invoice_${agreementId}_${fromMonth}_${toMonth}`;
+/** One catch-up Product per agreement so retries share the same product id in line price_data. */
+export function buildCatchUpProductIdempotencyKey(agreementId: string): string {
+	return `mcp_catchup_product_${agreementId}`;
+}
+
+/** Includes attemptId so same-attempt retries share the key; new attempts create only when none are reusable. */
+export function buildCatchUpInvoiceIdempotencyKey(
+	agreementId: string,
+	fromMonth: string,
+	toMonth: string,
+	attemptId: string,
+): string {
+	return `mcp_catchup_invoice_${agreementId}_${fromMonth}_${toMonth}_${attemptId}`;
+}
+
+export function buildCatchUpFinalizeIdempotencyKey(
+	agreementId: string,
+	fromMonth: string,
+	toMonth: string,
+	attemptId: string,
+): string {
+	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth, attemptId)}_finalize`;
 }
 
 export function buildCatchUpLineIdempotencyKey(
@@ -123,8 +143,59 @@ export function buildCatchUpLineIdempotencyKey(
 	fromMonth: string,
 	toMonth: string,
 	month: string,
+	attemptId: string,
 ): string {
-	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth)}_item_${month}`;
+	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth, attemptId)}_item_${month}`;
+}
+
+export type CatchUpInvoiceLike = {
+	id: string;
+	status?: string | null;
+	metadata?: { kind?: string | null; lesson_agreement_id?: string | null } | null;
+};
+
+function isReusableCatchUpInvoiceStatus(status: string | null | undefined): boolean {
+	return status === 'draft' || status === 'open' || status === 'paid';
+}
+
+/** Prefer an existing draft/open/paid catch-up so rematch never charges twice. Newest-first lists. */
+export function pickReusableCatchUpInvoice<T extends CatchUpInvoiceLike>(
+	invoices: T[],
+	lessonAgreementId: string,
+): T | null {
+	for (const invoice of invoices) {
+		if (
+			invoice.metadata?.kind === 'catch_up' &&
+			invoice.metadata?.lesson_agreement_id === lessonAgreementId &&
+			isReusableCatchUpInvoiceStatus(invoice.status)
+		) {
+			return invoice;
+		}
+	}
+	return null;
+}
+
+/** Stripe expandable id field (string or object). */
+export function stripeExpandableId(value: string | { id: string } | null | undefined): string | null {
+	if (!value) return null;
+	if (typeof value === 'string') return value;
+	return value.id;
+}
+
+export function needsCatchUpPaymentMethodUpdate(
+	currentPaymentMethodId: string | null,
+	nextPaymentMethodId: string | undefined,
+): boolean {
+	return Boolean(nextPaymentMethodId) && currentPaymentMethodId !== nextPaymentMethodId;
+}
+
+export type ExistingCatchUpSettleKind = 'done' | 'pay_open' | 'finalize_draft';
+
+/** How to settle a reusable catch-up already on the customer. */
+export function resolveExistingCatchUpSettleKind(status: string | null | undefined): ExistingCatchUpSettleKind {
+	if (status === 'open') return 'pay_open';
+	if (status === 'draft') return 'finalize_draft';
+	return 'done';
 }
 
 function formatMonthDisplay(month: string): string {

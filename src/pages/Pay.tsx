@@ -18,9 +18,9 @@ import {
 	shouldSkipCompleteCheckout,
 } from '@/lib/stripe/paymentLinkPageHelpers';
 
-function requireCheckoutUrl(error: { message?: string } | null, data: { url?: string } | null | undefined): string {
+async function requireCheckoutUrl(error: unknown, data: { url?: string } | null | undefined): Promise<string> {
 	const url = data == null ? undefined : data.url;
-	const message = resolveCheckoutStartError(error, url);
+	const message = await resolveCheckoutStartError(error, url);
 	if (message) throw new Error(message);
 	return url as string;
 }
@@ -81,10 +81,10 @@ function useCompleteCheckout(
 					checkout_session_id: sessionId,
 				},
 			})
-			.then(({ error: completeError }) => {
+			.then(async ({ error: completeError }) => {
 				if (cancelled) return;
 				setStarting(false);
-				const message = resolveCompleteCheckoutErrorMessage(completeError);
+				const message = await resolveCompleteCheckoutErrorMessage(completeError);
 				if (message) {
 					setError(message);
 					return;

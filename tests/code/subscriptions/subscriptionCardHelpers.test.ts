@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildIssuePaymentLinkBody,
-	buildStaffCheckoutBody,
 	buildSubscriptionActionBody,
-	decideStaffCheckoutOpen,
+	decideIssueAndOpenPay,
 	extractPortalUrl,
 	isPortalActionDisabled,
 	isRebuildActionDisabled,
-	resolveCheckoutSessionUrl,
 	resolveIssuedPaymentUrl,
 	resolveIssuePaymentLinkSendError,
 	resolveSubscriptionActionError,
@@ -39,25 +37,26 @@ describe('subscriptionCardHelpers', () => {
 			'http://127.0.0.1:8081/pay?t=abc',
 		);
 		expect(resolveIssuedPaymentUrl({})).toBeNull();
-		expect(buildStaffCheckoutBody('agr-1')).toEqual({
-			lesson_agreement_id: 'agr-1',
-			mode: 'checkout',
-		});
-		expect(resolveCheckoutSessionUrl({ url: 'https://checkout.stripe.com/c/pay/cs_test' })).toBe(
-			'https://checkout.stripe.com/c/pay/cs_test',
-		);
-		expect(resolveCheckoutSessionUrl({ mode: 'complete' })).toBeNull();
-		expect(decideStaffCheckoutOpen({ error: 'Geen toegang' }, false)).toEqual({
-			kind: 'data_error',
+	});
+
+	it('opens pay URL only after a successful invite issue', async () => {
+		expect(await decideIssueAndOpenPay({ error: 'Geen toegang' }, null)).toEqual({
+			kind: 'error',
 			message: 'Geen toegang',
 		});
-		expect(decideStaffCheckoutOpen({ url: 'https://checkout.stripe.com/c/pay/cs_test' }, true)).toEqual({
-			kind: 'invoke_error',
+		expect(await decideIssueAndOpenPay({ recipient: 'a@b.nl', sent: true }, null)).toEqual({
+			kind: 'error',
+			message: 'Geen betaallink-URL ontvangen',
 		});
-		expect(decideStaffCheckoutOpen({}, false)).toEqual({ kind: 'missing_url' });
-		expect(decideStaffCheckoutOpen({ url: 'https://checkout.stripe.com/c/pay/cs_ok' }, false)).toEqual({
+		expect(
+			await decideIssueAndOpenPay(
+				{ recipient: 'a@b.nl', sent: true, payment_url: 'http://127.0.0.1:8081/pay?t=abc' },
+				null,
+			),
+		).toEqual({
 			kind: 'ok',
-			url: 'https://checkout.stripe.com/c/pay/cs_ok',
+			url: 'http://127.0.0.1:8081/pay?t=abc',
+			successMessage: 'Betaaluitnodiging verstuurd naar a@b.nl',
 		});
 	});
 

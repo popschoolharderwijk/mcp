@@ -394,6 +394,18 @@ export function buildStripePersonLabel(
 const STRIPE_TUITION_PRODUCT_TITLE = 'Lesgeld';
 const STRIPE_TUITION_CATCH_UP_PRODUCT_TITLE = 'Lesgeld inhaal';
 
+/** Shared Stripe metadata that pins a Subscription / Schedule to one lesson agreement. */
+export function buildAgreementStripeMetadata(
+	agreement: Pick<BillingComputationAgreement, 'id' | 'lesson_type_id' | 'frequency' | 'duration_minutes'>,
+): Record<string, string> {
+	return {
+		lesson_agreement_id: agreement.id,
+		lesson_type_id: agreement.lesson_type_id,
+		frequency: agreement.frequency,
+		duration_minutes: String(agreement.duration_minutes),
+	};
+}
+
 /** Human-readable Stripe product title. Agreement id belongs in metadata only. */
 export function buildStripeTuitionProductName(input: {
 	studentName?: string | null;

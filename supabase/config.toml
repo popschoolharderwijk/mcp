@@ -240,6 +240,3 @@ verify_jwt = false
 
 [functions.issue-payment-link]
 verify_jwt = false
-
-[functions.sync-stripe-catalog]
-verify_jwt = false

@@ -83,6 +83,7 @@ async function createScheduleOrAbsorbRace(
 			lessonAgreementId: ready.lessonAgreementId,
 			customerId: ready.customerId,
 			defaultPaymentMethod: ready.paymentMethodId,
+			attemptId: ready.attemptId,
 			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId, ready.attemptId),
 		});
 	} catch (e) {

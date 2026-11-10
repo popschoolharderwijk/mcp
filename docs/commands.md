@@ -47,7 +47,7 @@ SUPABASE_DB_PASSWORD=…          # required for bun run db:* on that target
 VITE_DEV_LOGIN_PASSWORD=…       # optional; keep out of committed mode files
 ```
 
-**`$SECRETS_PATH/.env.local`** (Bun scripts when `NODE_ENV` is unset — `create-user`, `stripe:sync:catalog`, etc.):
+**`$SECRETS_PATH/.env.local`** (Bun scripts when `NODE_ENV` is unset — `create-user`, `stripe:reset:customers`, etc.):
 
 ```env
 SUPABASE_URL=http://127.0.0.1:54421
@@ -67,7 +67,6 @@ bun run supabase:restart   # stop → start --runtime native --eager (reloads fu
 bun run db:push:secrets
 bun run db:reset
 bun run stripe:reset:customers    # wipe Stripe customers + local billing mirrors (local|dev|test; never prod)
-bun run stripe:reset:catalog      # archive catalog Prices + Products + mark options pending (local|dev|test; never prod)
 bun run stripe:setup:webhooks     # create/update Event Destination (local|dev|test|prod; local → CLI listen help)
 bun run dev:local
 # Stripe webhooks (separate terminal; keep running):

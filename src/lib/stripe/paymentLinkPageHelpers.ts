@@ -1,5 +1,6 @@
 /** Display helpers for the public /pay page. */
 
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 
 export interface PaymentLinkPreview {
@@ -57,9 +58,9 @@ export function resolvePaymentLinkInfoFromInvoke(
 	return data;
 }
 
-export function resolveCheckoutStartError(startError: { message?: string } | null, url: string | undefined): string {
-	if (startError || !url) return startError?.message || 'Kon Stripe Checkout niet starten';
-	return '';
+export async function resolveCheckoutStartError(startError: unknown, url: string | undefined): Promise<string> {
+	if (!startError && url) return '';
+	return getInvokeErrorMessage(startError, { fallback: 'Kon Stripe Checkout niet starten' });
 }
 
 export function shouldSkipCompleteCheckout(
@@ -75,7 +76,7 @@ export function markPaymentLinkArranged(prev: PaymentLinkInfo | null): PaymentLi
 	return prev ? { ...prev, arranged: true } : prev;
 }
 
-export function resolveCompleteCheckoutErrorMessage(completeError: { message?: string } | null): string | null {
+export async function resolveCompleteCheckoutErrorMessage(completeError: unknown): Promise<string | null> {
 	if (!completeError) return null;
-	return completeError.message || 'Afronden mislukt';
+	return getInvokeErrorMessage(completeError, { fallback: 'Afronden mislukt' });
 }

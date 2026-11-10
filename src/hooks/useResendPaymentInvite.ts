@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import {
 	buildIssuePaymentLinkBody,
-	buildStaffCheckoutBody,
-	decideStaffCheckoutOpen,
+	decideIssueAndOpenPay,
 	resolveIssuePaymentLinkSendError,
 	resolveSubscriptionActionSuccess,
 	SUBSCRIPTION_ACTION_FUNCTIONS,
@@ -13,9 +11,7 @@ import {
 
 export type PaymentInviteBusyKind = 'resend' | 'open';
 
-const STAFF_CHECKOUT_FUNCTION = 'create-subscription-checkout';
-
-/** Resend payment-link mail, or open Stripe Checkout for staff without rotating the mailed token. */
+/** Resend payment-link mail, or issue that mail and open the `/pay` overview link. */
 export function useResendPaymentInvite(onDone?: () => void) {
 	const [busyId, setBusyId] = useState<string | null>(null);
 	const [busyKind, setBusyKind] = useState<PaymentInviteBusyKind | null>(null);
@@ -37,22 +33,22 @@ export function useResendPaymentInvite(onDone?: () => void) {
 		onDone?.();
 	};
 
-	const openPayPage = async (agreementId: string): Promise<string | null> => {
+	const openPayPage = async (agreementId: string, recipientEmail?: string): Promise<string | null> => {
 		setBusyId(agreementId);
 		setBusyKind('open');
-		const { data, error } = await supabase.functions.invoke(STAFF_CHECKOUT_FUNCTION, {
-			body: buildStaffCheckoutBody(agreementId),
+		const { data, error } = await supabase.functions.invoke(SUBSCRIPTION_ACTION_FUNCTIONS['send-invite'], {
+			body: buildIssuePaymentLinkBody(agreementId, recipientEmail),
 		});
 		setBusyId(null);
 		setBusyKind(null);
-		const decision = decideStaffCheckoutOpen(data, Boolean(error));
-		if (decision.kind === 'ok') return decision.url;
-		if (decision.kind === 'invoke_error') {
-			toast.error(await getInvokeErrorMessage(error, { fallback: 'Kon het betaalscherm niet openen' }));
+		const decision = await decideIssueAndOpenPay(data, error);
+		if (decision.kind === 'error') {
+			toast.error(decision.message);
 			return null;
 		}
-		toast.error(decision.kind === 'data_error' ? decision.message : 'Geen betaalscherm-URL ontvangen');
-		return null;
+		toast.success(decision.successMessage);
+		onDone?.();
+		return decision.url;
 	};
 
 	return { busyId, busyKind, resend, openPayPage };

@@ -636,9 +636,6 @@ export type Database = {
 					price_per_lesson: number;
 					price_per_lesson_adult_cents: number | null;
 					price_per_lesson_youth_cents: number | null;
-					stripe_catalog_status: string;
-					stripe_catalog_sync_error: string | null;
-					stripe_catalog_synced_at: string | null;
 					updated_at: string;
 					updated_by: string | null;
 				};
@@ -653,9 +650,6 @@ export type Database = {
 					price_per_lesson: number;
 					price_per_lesson_adult_cents?: number | null;
 					price_per_lesson_youth_cents?: number | null;
-					stripe_catalog_status?: string;
-					stripe_catalog_sync_error?: string | null;
-					stripe_catalog_synced_at?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
@@ -669,9 +663,6 @@ export type Database = {
 					price_per_lesson?: number;
 					price_per_lesson_adult_cents?: number | null;
 					price_per_lesson_youth_cents?: number | null;
-					stripe_catalog_status?: string;
-					stripe_catalog_sync_error?: string | null;
-					stripe_catalog_synced_at?: string | null;
 					updated_at?: string;
 					updated_by?: string | null;
 				};

@@ -2,10 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { syncStripeCatalog } from '@/lib/billing/syncStripeCatalog';
 import { runLessonTypeDelete } from '@/lib/lesson-types/lessonTypesPageControllerHelpers';
 import { fetchLessonTypesWithOptionCounts, type LessonTypeListItem } from '@/lib/lesson-types/lessonTypesPageHelpers';
-import { lessonTypesHaveUnsyncedStripeCatalog } from '@/lib/lesson-types/lessonTypesStripeSyncHelpers';
 import { buildLessonTypesColumns } from '@/lib/lesson-types/lessonTypesTableColumns';
 
 interface UseLessonTypesPageControllerParams {
@@ -17,7 +15,6 @@ interface UseLessonTypesPageControllerParams {
 export function useLessonTypesPageController(params: UseLessonTypesPageControllerParams) {
 	const [lessonTypes, setLessonTypes] = useState<LessonTypeListItem[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [syncingCatalog, setSyncingCatalog] = useState(false);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [deleteDialog, setDeleteDialog] = useState<{
 		open: boolean;
@@ -46,7 +43,6 @@ export function useLessonTypesPageController(params: UseLessonTypesPageControlle
 	}, [params.authLoading, loadLessonTypes]);
 
 	const columns = useMemo(() => buildLessonTypesColumns(), []);
-	const canSyncUnsynced = lessonTypesHaveUnsyncedStripeCatalog(lessonTypes);
 
 	const handleEdit = useCallback(
 		(lessonType: LessonTypeListItem) => {
@@ -73,22 +69,9 @@ export function useLessonTypesPageController(params: UseLessonTypesPageControlle
 		});
 	}, [deleteDialog]);
 
-	const handleSyncUnsyncedCatalog = useCallback(async () => {
-		if (!canSyncUnsynced || syncingCatalog) return;
-		setSyncingCatalog(true);
-		try {
-			await syncStripeCatalog({ unsyncedOnly: true, rebuild: false });
-			await loadLessonTypes();
-		} finally {
-			setSyncingCatalog(false);
-		}
-	}, [canSyncUnsynced, loadLessonTypes, syncingCatalog]);
-
 	return {
 		lessonTypes,
 		loading,
-		syncingCatalog,
-		canSyncUnsynced,
 		searchQuery,
 		setSearchQuery,
 		deleteDialog,
@@ -98,6 +81,5 @@ export function useLessonTypesPageController(params: UseLessonTypesPageControlle
 		handleCreate,
 		handleDelete,
 		confirmDelete,
-		handleSyncUnsyncedCatalog,
 	};
 }

@@ -176,12 +176,12 @@ const MANDATE_DIALOG_COPY: Record<MandateInviteDialogMode, { title: string; desc
 	awaiting: {
 		title: 'Wacht op machtiging',
 		description:
-			'Stuur een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de lesovereenkomst.',
+			'Stuur een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm (stuurt eerst het verzoek en opent daarna de betaallink), of bekijk de lesovereenkomst.',
 	},
 	reoffer: {
 		title: 'Opnieuw abonnement aanbieden',
 		description:
-			'Stuur opnieuw een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm, of bekijk de lesovereenkomst.',
+			'Stuur opnieuw een betaalverzoek (desgewenst naar een ander adres), open het betaalscherm (stuurt eerst het verzoek en opent daarna de betaallink), of bekijk de lesovereenkomst.',
 	},
 	active: {
 		title: 'Actieve machtiging',
@@ -341,7 +341,7 @@ function useMandateInviteSelection<T extends { lesson_agreement_id: string }>(
 			},
 			resolvePayHref: async () => {
 				if (!selected) return null;
-				return openPayPage(selected.lesson_agreement_id);
+				return openPayPage(selected.lesson_agreement_id, recipientEmail);
 			},
 		},
 	};

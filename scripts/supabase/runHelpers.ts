@@ -56,7 +56,7 @@ export function fail(message: string): never {
 export type ResolveTargetFromArgvOptions = {
 	/** Override `[local|…]` usage fragment (default: all deploy envs). */
 	usageEnvs?: string;
-	/** Fail before confirm when the resolved env is listed (e.g. production for stripe:reset:*). */
+	/** Fail before confirm when the resolved env is listed (e.g. production for stripe:reset:customers). */
 	refuseEnvs?: readonly DeployEnv[];
 };
 

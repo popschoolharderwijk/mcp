@@ -34,15 +34,15 @@ describe('paymentLinkPageHelpers', () => {
 		expect(resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: true } })).toBe('details');
 	});
 
-	it('maps invoke and checkout errors', () => {
+	it('maps invoke and checkout errors', async () => {
 		expect(resolvePaymentLinkInfoFromInvoke(null, new Error('x'))).toEqual({ valid: false });
 		expect(resolvePaymentLinkInfoFromInvoke({ valid: true }, null)).toEqual({ valid: true });
-		expect(resolveCheckoutStartError({ message: 'boom' }, undefined)).toBe('boom');
-		expect(resolveCheckoutStartError(null, 'https://stripe.test')).toBe('');
+		expect(await resolveCheckoutStartError(new Error('boom'), undefined)).toBe('Kon Stripe Checkout niet starten');
+		expect(await resolveCheckoutStartError(null, 'https://stripe.test')).toBe('');
 		expect(shouldSkipCompleteCheckout(null, 'a', 't', false)).toBe(true);
 		expect(shouldSkipCompleteCheckout('cs_1', 'a', 't', false)).toBe(false);
-		expect(resolveCompleteCheckoutErrorMessage({ message: 'x' })).toBe('x');
-		expect(resolveCompleteCheckoutErrorMessage(null)).toBeNull();
+		expect(await resolveCompleteCheckoutErrorMessage(new Error('x'))).toBe('Afronden mislukt');
+		expect(await resolveCompleteCheckoutErrorMessage(null)).toBeNull();
 		expect(markPaymentLinkArranged({ valid: true })).toEqual({ valid: true, arranged: true });
 	});
 });

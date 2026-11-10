@@ -6,8 +6,8 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 
 - **Setup:** the payer opens a fixed payment link (no login), completes **iDEAL** Checkout, and creates a reusable payment method.
 - **After mandate:** webhook creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause).
-- **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule.
-- **Catalog:** lesson-type option prices sync to Stripe Product/Price on write, or via `bun run stripe:sync:catalog` after `db reset`. Affected schedules rebuild on demand (no cron).
+- **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule. Rematch after cancel reuses an existing draft/open/paid catch-up (updates the payment method and retries collection) so the payer is never charged twice for the same catch-up.
+- **Tariff changes:** rebuild future schedule phases on demand via `rebuild-subscription-schedule` (per agreement or per lesson type).
 
 ## 2. End-to-end flow
 
@@ -30,7 +30,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 [subscriptions / subscription_invoices] → monthly Stripe collection
 ```
 
-Ops: **Machtigingen** (`/mandates`) tabs: active → canceled → pending (invite sent) → unsent; header **Synchroniseer met Stripe** runs a thin reconcile (pull status / apply canceled schedules). Canceled rows can be re-offered with the same payment-invite dialog as unsent. **SubscriptionCard** on the agreement can resend / re-offer the link, open Customer Portal, sync one row, or rebuild.
+Ops: **Machtigingen** (`/mandates`) tabs: active → canceled → pending (invite sent) → unsent; header **Synchroniseer met Stripe** runs a thin reconcile (pull status / apply canceled schedules). Canceled rows can be re-offered with the same payment-invite dialog as unsent. **Open betaalscherm** issues the payment-link mail (same as send-invite) and then opens the returned `/pay` URL. **SubscriptionCard** on the agreement can resend / re-offer the link, open Customer Portal, sync one row, or rebuild.
 
 ## 3. Data model
 
@@ -45,24 +45,43 @@ Ops: **Machtigingen** (`/mandates`) tabs: active → canceled → pending (invit
 
 `lesson_agreements.minimum_term_end` is set when a payment link is issued (first 6-month period end for the pay page).
 
+### Stripe metadata (agreement coupling)
+
+Exact site agreement identity is always `lesson_agreement_id` (UUID PK of `lesson_agreements`). Reconstruct with that key (or the local mirrors `lesson_agreements.stripe_schedule_id` / `subscriptions.*`); never by matching type + frequency + duration.
+
+Shared agreement keys (`buildAgreementStripeMetadata`):
+
+- `lesson_agreement_id`
+- `lesson_type_id`
+- `frequency`
+- `duration_minutes` (string)
+
+Where they are written:
+
+- **Schedule** metadata: agreement keys + `school_year`; rebuild also sets `last_rebuild_at`
+- **Every phase** metadata: agreement keys + `phase_label` (Stripe copies phase metadata onto the Subscription when the phase starts)
+- **Forced subscription**: agreement keys + `forced_start` + `original_schedule_id`
+- **Product / phase Price**: `lesson_agreement_id` (prices also have `phase_label`)
+- **Checkout / SetupIntent**: `lesson_agreement_id` + `flow=schedule_setup`
+- **Catch-up invoice**: `lesson_agreement_id` + `kind=catch_up` (+ `line_month` per line)
+
 ## 4. Edge functions
 
-| Function                        | Auth               | Purpose                                                          |
-| ------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `issue-payment-link`            | JWT                | Rotate token; mail `agreement_created`; record checkout invite   |
-| `payment-link-info`             | public (token)     | Validate token; return lesson form + preview amounts             |
-| `request-payment-link`          | public             | Rate-limited new link mail to known payer address                |
-| `start-payment-checkout`        | public (token)     | Checkout / complete without login                                |
-| `create-subscription-checkout`  | JWT                | Logged-in checkout / direct / complete (staff or student)        |
-| `create-customer-portal`        | JWT                | Stripe Customer Portal                                           |
-| `sync-stripe-subscription`      | JWT                | Pull one subscription from Stripe                                |
-| `reconcile-stripe-mandates`     | JWT (privileged)   | Thin bulk reconcile of local mandate mirrors from Stripe         |
-| `rebuild-subscription-schedule` | JWT                | Recalculate future phases after rate change                      |
-| `force-start-subscription`      | JWT (admin)        | Force-start schedule (API / ops; no app UI)                      |
-| `sync-stripe-catalog`           | JWT / service role | Sync active lesson-type option prices; optional rebuild affected |
-| `stripe-webhook`                | public (signature) | Setup → schedule (+ catch-up); subscription/invoice mirrors      |
+| Function                        | Auth               | Purpose                                                        |
+| ------------------------------- | ------------------ | -------------------------------------------------------------- |
+| `issue-payment-link`            | JWT                | Rotate token; mail `agreement_created`; record checkout invite |
+| `payment-link-info`             | public (token)     | Validate token; return lesson form + preview amounts           |
+| `request-payment-link`          | public             | Rate-limited new link mail to known payer address              |
+| `start-payment-checkout`        | public (token)     | Checkout / complete without login                              |
+| `create-subscription-checkout`  | JWT                | Logged-in checkout / direct / complete (staff or student)      |
+| `create-customer-portal`        | JWT                | Stripe Customer Portal                                         |
+| `sync-stripe-subscription`      | JWT                | Pull one subscription from Stripe                              |
+| `reconcile-stripe-mandates`     | JWT (privileged)   | Thin bulk reconcile of local mandate mirrors from Stripe       |
+| `rebuild-subscription-schedule` | JWT                | Recalculate future phases after rate change                    |
+| `force-start-subscription`      | JWT (admin)        | Force-start schedule (API / ops; no app UI)                    |
+| `stripe-webhook`                | public (signature) | Setup → schedule (+ catch-up); subscription/invoice mirrors    |
 
-Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `paymentLinkHelpers.ts`, `stripeCatalog.ts`.
+Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `paymentLinkHelpers.ts`.
 
 ## 5. Payment link & mail
 
@@ -95,18 +114,7 @@ bun run stripe:setup:webhooks local --url=https://…/functions/v1/stripe-webhoo
 
 Creates/updates snapshot Event Destination `mcp-stripe-webhook` (Your account). On **create**, copy the printed `whsec_…` into `$SECRETS_PATH/supabase/.env.<env>` as `STRIPE_WEBHOOK_SECRET`, then `bun run db:push:secrets <env>`. Re-runs only refresh the event list (secret unchanged).
 
-## 7. Catalog (no cron)
-
-- On lesson-type / option save the app invokes `sync-stripe-catalog` (fire-and-forget) and may rebuild schedules for that lesson type.
-- After `supabase db reset` (+ types regen), run:
-
-```bash
-bun run stripe:sync:catalog
-```
-
-Unset `NODE_ENV` reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `$SECRETS_PATH/.env.local`. Use `NODE_ENV=development` to target mcp-dev (`.env.development.local`).
-
-## 8. Secrets
+## 7. Secrets
 
 Edge only (never `VITE_`):
 
@@ -114,24 +122,19 @@ Edge only (never `VITE_`):
 - `STRIPE_WEBHOOK_SECRET`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-## 9. Local testing
+## 8. Local testing
 
-### Wipe sandbox Stripe (`stripe:reset:customers` / `stripe:reset:catalog`)
+### Wipe sandbox Stripe (`stripe:reset:customers`)
 
-Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Both commands are destructive for **Stripe test mode** (`sk_test_…`) against the matching non-production database. **Production is never allowed.** Scopes stay separate on purpose:
+Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Destructive for **Stripe test mode** (`sk_test_…`) against the matching non-production database. **Production is never allowed.**
 
-| Command | Stripe | Local DB |
-| ------- | ------ | -------- |
-| `stripe:reset:customers` | Deletes all Customers | Clears subscriptions / customers / payment links / invites; clears `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Catalog Products stay. |
-| `stripe:reset:catalog` | Archives Prices then Products with metadata `lesson_type_option_id` (`active=false`; no Price DELETE API, and archived Prices still block Product DELETE). Agreement Products with `lesson_agreement_id` stay. | Sets every `lesson_type_options.stripe_catalog_*` back to `pending`. Customers / schedules stay. |
+Deletes all Stripe Customers and clears local subscriptions / customers / payment links / invites plus `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Agreement Products (metadata `lesson_agreement_id`) may remain archived/orphaned in the Stripe Dashboard; they are not used after customers are wiped.
 
 ```bash
 bun run stripe:reset:customers              # local Docker
 bun run stripe:reset:customers development  # mcp-dev
-bun run stripe:reset:catalog test
+bun run stripe:reset:customers test
 ```
-
-After a catalog reset, run `bun run stripe:sync:catalog` to recreate Products/Prices and mark options synced.
 
 Guards: refuses `production` / prod Supabase URL and any `sk_live_…` key. Confirmation follows `supabase.json` `targets.*.confirm` (same as `db:reset`). Loads `SUPABASE_*` from the target runtime env and `STRIPE_SECRET_KEY` from that target’s edge secrets file.
 
@@ -159,6 +162,6 @@ bun test tests/code/billing/catchUpInvoiceHelpers.test.ts
 bun test tests/code/billing/calculateYearlyAmount.test.ts
 ```
 
-## 10. Out of scope
+## 9. Out of scope
 
 Local SEPA/XML, school invoices/PDF, Exact/accounting, legacy import, “op factuur”/fonds (Stripe-only).

@@ -36,7 +36,7 @@ import {
 const STRIPE_EVENT_DESTINATIONS_API = 'https://api.stripe.com/v2/core/event_destinations';
 const VERB_LABEL = 'stripe:setup:webhooks';
 
-function stripeV2Headers(secretKey: string): HeadersInit {
+function stripeV2Headers(secretKey: string): Record<string, string> {
 	return {
 		Authorization: `Bearer ${secretKey}`,
 		'Stripe-Version': STRIPE_EVENT_DESTINATION_API_VERSION,
@@ -58,38 +58,41 @@ async function listEventDestinations(secretKey: string): Promise<StripeEventDest
 	return result.value;
 }
 
-async function createEventDestination(secretKey: string, webhookUrl: string) {
-	const response = await fetch(STRIPE_EVENT_DESTINATIONS_API, {
+type StripeEventDestinationMutationPayload = {
+	id?: string;
+	enabled_events?: string[];
+	webhook_endpoint?: { url?: string | null; signing_secret?: string | null };
+	error?: { message?: string };
+};
+
+async function mutateEventDestination(secretKey: string, url: string, body: unknown, action: 'create' | 'update') {
+	const response = await fetch(url, {
 		method: 'POST',
 		headers: stripeV2Headers(secretKey),
-		body: JSON.stringify(buildCreateStripeWebhookDestinationBody(webhookUrl)),
+		body: JSON.stringify(body),
 	});
-	const payload = (await response.json()) as {
-		id?: string;
-		enabled_events?: string[];
-		webhook_endpoint?: { url?: string | null; signing_secret?: string | null };
-		error?: { message?: string };
-	};
-	const result = stripeEventDestinationMutationResult(response.ok, payload, response.status, 'create');
+	const payload = (await response.json()) as StripeEventDestinationMutationPayload;
+	const result = stripeEventDestinationMutationResult(response.ok, payload, response.status, action);
 	if (!result.ok) fail(result.message);
 	return result.value;
 }
 
+async function createEventDestination(secretKey: string, webhookUrl: string) {
+	return mutateEventDestination(
+		secretKey,
+		STRIPE_EVENT_DESTINATIONS_API,
+		buildCreateStripeWebhookDestinationBody(webhookUrl),
+		'create',
+	);
+}
+
 async function updateEventDestination(secretKey: string, destinationId: string, webhookUrl: string) {
-	const response = await fetch(`${STRIPE_EVENT_DESTINATIONS_API}/${destinationId}`, {
-		method: 'POST',
-		headers: stripeV2Headers(secretKey),
-		body: JSON.stringify(buildUpdateStripeWebhookDestinationBody(webhookUrl)),
-	});
-	const payload = (await response.json()) as {
-		id?: string;
-		enabled_events?: string[];
-		webhook_endpoint?: { url?: string | null; signing_secret?: string | null };
-		error?: { message?: string };
-	};
-	const result = stripeEventDestinationMutationResult(response.ok, payload, response.status, 'update');
-	if (!result.ok) fail(result.message);
-	return result.value;
+	return mutateEventDestination(
+		secretKey,
+		`${STRIPE_EVENT_DESTINATIONS_API}/${destinationId}`,
+		buildUpdateStripeWebhookDestinationBody(webhookUrl),
+		'update',
+	);
 }
 
 async function setupWebhookDestination(input: {

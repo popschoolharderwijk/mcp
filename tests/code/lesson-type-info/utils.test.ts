@@ -53,8 +53,6 @@ describe('buildOptionDbPayloadFromForm', () => {
 			price_per_lesson: 2500,
 			price_per_lesson_youth_cents: 2000,
 			price_per_lesson_adult_cents: 2550,
-			stripe_catalog_status: 'pending',
-			stripe_catalog_sync_error: null,
 		});
 	});
 
@@ -65,8 +63,6 @@ describe('buildOptionDbPayloadFromForm', () => {
 			price_per_lesson: 0,
 			price_per_lesson_youth_cents: 0,
 			price_per_lesson_adult_cents: 0,
-			stripe_catalog_status: 'pending',
-			stripe_catalog_sync_error: null,
 		});
 	});
 });

@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
 	cancelScheduleIfActive,
 	createForcedSubscription,
+	type ForceStartAgreementMeta,
 	persistForcedSubscription,
 	readScheduleBillingDetails,
 } from '../_shared/force-start-subscription-core.ts';
@@ -14,7 +15,7 @@ import { getStripe } from '../_shared/stripe.ts';
 
 export async function executeForceStartSubscription(
 	admin: SupabaseClient,
-	lessonAgreementId: string,
+	agreement: ForceStartAgreementMeta,
 	scheduleId: string,
 ): Promise<
 	| { ok: true; payload: ReturnType<typeof buildForceStartSuccessPayload> }
@@ -37,14 +38,14 @@ export async function executeForceStartSubscription(
 	const subscription = await createForcedSubscription(stripe, {
 		customerId: billing.customerId as string,
 		priceId: billing.priceId as string,
-		lessonAgreementId,
+		agreement,
 		scheduleId,
 		defaultPaymentMethod: billing.defaultPaymentMethod,
 	});
 
 	await persistForcedSubscription(
 		admin,
-		lessonAgreementId,
+		agreement.id,
 		billing.customerId as string,
 		billing.priceId as string,
 		subscription,

@@ -1,14 +1,20 @@
 import { describe, expect, it } from 'bun:test';
 import { buildPhases } from '../../../supabase/functions/_shared/billingHelpers';
 import {
+	buildCatchUpFinalizeIdempotencyKey,
 	buildCatchUpInvoiceIdempotencyKey,
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpLineItems,
+	buildCatchUpProductIdempotencyKey,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	filterPhasesAfterCatchUpMonth,
 	listBillingMonthLabels,
+	needsCatchUpPaymentMethodUpdate,
+	pickReusableCatchUpInvoice,
+	resolveExistingCatchUpSettleKind,
+	stripeExpandableId,
 } from '../../../supabase/functions/_shared/catchUpInvoiceHelpers';
 
 describe('listBillingMonthLabels', () => {
@@ -166,12 +172,102 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(catchUpInvoiceDescription('2026-10', '2026-12')).toBe('Lesgeld 10-2026 t/m 12-2026 (inhaalfactuur)');
 	});
 
-	it('builds deterministic idempotency keys', () => {
-		expect(buildCatchUpInvoiceIdempotencyKey('a1', '2026-10', '2026-12')).toBe(
-			'mcp_catchup_invoice_a1_2026-10_2026-12',
+	it('builds deterministic attempt-scoped idempotency keys', () => {
+		expect(buildCatchUpProductIdempotencyKey('a1')).toBe('mcp_catchup_product_a1');
+		expect(buildCatchUpInvoiceIdempotencyKey('a1', '2026-10', '2026-12', 'seti_1')).toBe(
+			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1',
 		);
-		expect(buildCatchUpLineIdempotencyKey('a1', '2026-10', '2026-12', '2026-11')).toBe(
-			'mcp_catchup_invoice_a1_2026-10_2026-12_item_2026-11',
+		expect(buildCatchUpFinalizeIdempotencyKey('a1', '2026-10', '2026-12', 'seti_1')).toBe(
+			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1_finalize',
 		);
+		expect(buildCatchUpLineIdempotencyKey('a1', '2026-10', '2026-12', '2026-11', 'seti_1')).toBe(
+			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1_item_2026-11',
+		);
+	});
+});
+
+describe('pickReusableCatchUpInvoice', () => {
+	it('returns the newest reusable catch-up for the agreement', () => {
+		expect(
+			pickReusableCatchUpInvoice(
+				[
+					{
+						id: 'in_other',
+						status: 'paid',
+						metadata: { kind: 'catch_up', lesson_agreement_id: 'other' },
+					},
+					{
+						id: 'in_open',
+						status: 'open',
+						metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' },
+					},
+					{
+						id: 'in_paid_older',
+						status: 'paid',
+						metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' },
+					},
+				],
+				'a1',
+			)?.id,
+		).toBe('in_open');
+	});
+
+	it('ignores voided catch-ups so a fresh invoice can be created', () => {
+		expect(
+			pickReusableCatchUpInvoice(
+				[
+					{
+						id: 'in_void',
+						status: 'void',
+						metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' },
+					},
+					{
+						id: 'in_sub',
+						status: 'paid',
+						metadata: { kind: 'subscription', lesson_agreement_id: 'a1' },
+					},
+				],
+				'a1',
+			),
+		).toBeNull();
+	});
+
+	it('reuses draft and paid catch-ups for the same agreement', () => {
+		expect(
+			pickReusableCatchUpInvoice(
+				[{ id: 'in_draft', status: 'draft', metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' } }],
+				'a1',
+			)?.id,
+		).toBe('in_draft');
+		expect(
+			pickReusableCatchUpInvoice(
+				[{ id: 'in_paid', status: 'paid', metadata: { kind: 'catch_up', lesson_agreement_id: 'a1' } }],
+				'a1',
+			)?.id,
+		).toBe('in_paid');
+	});
+});
+
+describe('catch-up settle helpers', () => {
+	it('reads expandable Stripe ids', () => {
+		expect(stripeExpandableId(null)).toBeNull();
+		expect(stripeExpandableId(undefined)).toBeNull();
+		expect(stripeExpandableId('pm_1')).toBe('pm_1');
+		expect(stripeExpandableId({ id: 'pm_2' })).toBe('pm_2');
+	});
+
+	it('updates payment method only when a different id is provided', () => {
+		expect(needsCatchUpPaymentMethodUpdate(null, undefined)).toBe(false);
+		expect(needsCatchUpPaymentMethodUpdate('pm_1', undefined)).toBe(false);
+		expect(needsCatchUpPaymentMethodUpdate('pm_1', 'pm_1')).toBe(false);
+		expect(needsCatchUpPaymentMethodUpdate('pm_1', 'pm_2')).toBe(true);
+		expect(needsCatchUpPaymentMethodUpdate(null, 'pm_2')).toBe(true);
+	});
+
+	it('routes existing catch-up settle by invoice status', () => {
+		expect(resolveExistingCatchUpSettleKind('paid')).toBe('done');
+		expect(resolveExistingCatchUpSettleKind('void')).toBe('done');
+		expect(resolveExistingCatchUpSettleKind('open')).toBe('pay_open');
+		expect(resolveExistingCatchUpSettleKind('draft')).toBe('finalize_draft');
 	});
 });

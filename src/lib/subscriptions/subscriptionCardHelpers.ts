@@ -46,33 +46,6 @@ export function resolveIssuedPaymentUrl(data: unknown): string | null {
 	return url;
 }
 
-/** Stripe Checkout session URL from `create-subscription-checkout` (does not rotate pay-link tokens). */
-export function resolveCheckoutSessionUrl(data: unknown): string | null {
-	const url = (data as { url?: unknown } | null)?.url;
-	if (typeof url !== 'string' || url.length === 0) return null;
-	return url;
-}
-
-export function buildStaffCheckoutBody(lessonAgreementId: string): Record<string, unknown> {
-	return { lesson_agreement_id: lessonAgreementId, mode: 'checkout' };
-}
-
-export type StaffCheckoutOpenDecision =
-	| { kind: 'ok'; url: string }
-	| { kind: 'data_error'; message: string }
-	| { kind: 'invoke_error' }
-	| { kind: 'missing_url' };
-
-/** Classify staff checkout invoke result before toast / navigation side effects. */
-export function decideStaffCheckoutOpen(data: unknown, hasInvokeError: boolean): StaffCheckoutOpenDecision {
-	const dataError = (data as { error?: unknown } | null)?.error;
-	if (typeof dataError === 'string') return { kind: 'data_error', message: dataError };
-	if (hasInvokeError) return { kind: 'invoke_error' };
-	const url = resolveCheckoutSessionUrl(data);
-	if (!url) return { kind: 'missing_url' };
-	return { kind: 'ok', url };
-}
-
 export function shouldShowResendInvitation(
 	subscription:
 		| {
@@ -185,6 +158,26 @@ export function resolveSubscriptionActionSuccess(action: SubscriptionAction, dat
 		default:
 			return 'Klaar';
 	}
+}
+
+export type IssueAndOpenPayDecision =
+	| { kind: 'ok'; url: string; successMessage: string }
+	| { kind: 'error'; message: string };
+
+/**
+ * Staff “Open betaalscherm”: same as send-invite (mail + token), then open `/pay`.
+ * Requires a successful issue payload with `payment_url`.
+ */
+export async function decideIssueAndOpenPay(data: unknown, error: unknown): Promise<IssueAndOpenPayDecision> {
+	const sendError = await resolveIssuePaymentLinkSendError(data, error);
+	if (sendError) return { kind: 'error', message: sendError };
+	const url = resolveIssuedPaymentUrl(data);
+	if (!url) return { kind: 'error', message: 'Geen betaallink-URL ontvangen' };
+	return {
+		kind: 'ok',
+		url,
+		successMessage: resolveSubscriptionActionSuccess('send-invite', data),
+	};
 }
 
 export function extractPortalUrl(data: unknown): string | null {

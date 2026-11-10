@@ -195,7 +195,7 @@ export function parseStripeWebhookSetupCliArgs(argv: string[]): {
 	return { envArgv, urlOverride };
 }
 
-export type StripeApiResult<T> = { ok: true; value: T } | { ok: false; message: string };
+type StripeApiResult<T> = { ok: true; value: T } | { ok: false; message: string };
 
 type StripeErrorPayload = { error?: { message?: string; code?: string } };
 

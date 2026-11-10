@@ -9,6 +9,7 @@ import {
 	assertPositiveYearlyCents,
 	type BillingComputation,
 	type BillingPhase,
+	buildAgreementStripeMetadata,
 	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
 	buildLessonProductIdempotencyKey,
@@ -42,6 +43,8 @@ export interface ScheduleContext {
 	defaultPaymentMethod?: string;
 	/** When set (setup/checkout flows), concurrent creates share one Stripe schedule. */
 	idempotencyKey?: string;
+	/** Mandate attempt (SetupIntent id / direct_*); scopes catch-up invoice idempotency. */
+	attemptId: string;
 }
 
 export interface BuiltSchedule {
@@ -103,7 +106,7 @@ async function createPhasePrice(
 function buildStripePhasePayload(
 	priceId: string,
 	label: string,
-	lessonAgreementId: string,
+	agreementMetadata: Record<string, string>,
 	defaultPm?: string,
 ): StripePhasePayload {
 	return {
@@ -111,7 +114,7 @@ function buildStripePhasePayload(
 		iterations: 1,
 		proration_behavior: 'none',
 		collection_method: 'charge_automatically',
-		metadata: { phase_label: label, lesson_agreement_id: lessonAgreementId },
+		metadata: { ...agreementMetadata, phase_label: label },
 		...(defaultPm ? { default_payment_method: defaultPm } : {}),
 	};
 }
@@ -119,15 +122,17 @@ function buildStripePhasePayload(
 async function toStripePhasePayloads(
 	stripe: Stripe,
 	phases: BillingPhase[],
-	lessonAgreementId: string,
+	agreement: BillingComputation['agreement'],
 	productName: string,
 	defaultPm?: string,
 ): Promise<StripePhasePayload[]> {
+	const lessonAgreementId = agreement.id;
+	const agreementMetadata = buildAgreementStripeMetadata(agreement);
 	const productId = await ensureLessonProduct(stripe, lessonAgreementId, productName);
 	const payloads: StripePhasePayload[] = [];
 	for (const phase of phases) {
 		const priceId = await createPhasePrice(stripe, productId, phase.amountCents, phase.label, lessonAgreementId);
-		payloads.push(buildStripePhasePayload(priceId, phase.label, lessonAgreementId, defaultPm));
+		payloads.push(buildStripePhasePayload(priceId, phase.label, agreementMetadata, defaultPm));
 	}
 	return payloads;
 }
@@ -273,10 +278,11 @@ export async function createScheduleForAgreement(
 
 	const labelParts = await loadStripeTuitionLabelParts(admin, billing);
 	const productName = buildStripeTuitionProductName(labelParts);
+	const agreementMetadata = buildAgreementStripeMetadata(billing.agreement);
 	const stripePhases = await toStripePhasePayloads(
 		stripe,
 		phases,
-		ctx.lessonAgreementId,
+		billing.agreement,
 		productName,
 		ctx.defaultPaymentMethod,
 	);
@@ -287,7 +293,7 @@ export async function createScheduleForAgreement(
 			end_behavior: 'release',
 			phases: stripePhases,
 			metadata: {
-				lesson_agreement_id: ctx.lessonAgreementId,
+				...agreementMetadata,
 				school_year: labelParts.schoolYearLabel,
 			},
 		},
@@ -312,6 +318,7 @@ export async function createScheduleForAgreement(
 				defaultPaymentMethod: ctx.defaultPaymentMethod,
 				plan,
 				productName: buildStripeTuitionProductName({ ...labelParts, catchUp: true }),
+				attemptId: ctx.attemptId,
 			});
 		}
 	}
@@ -378,12 +385,14 @@ async function updateFutureSchedulePhases(input: {
 	keptPayloads: Array<Record<string, unknown>>;
 	firstFutureIndex: number;
 }): Promise<RebuildResult | null> {
-	const productName = buildStripeTuitionProductName(await loadStripeTuitionLabelParts(input.admin, input.billing));
+	const labelParts = await loadStripeTuitionLabelParts(input.admin, input.billing);
+	const productName = buildStripeTuitionProductName(labelParts);
+	const agreementMetadata = buildAgreementStripeMetadata(input.billing.agreement);
 	const futurePayloads = alignFuturePhasePayloads(
 		await toStripePhasePayloads(
 			input.stripe,
 			input.newPhases.slice(input.firstFutureIndex),
-			input.lessonAgreementId,
+			input.billing.agreement,
 			productName,
 			inheritSchedulePaymentMethod(input.keptPayloads),
 		),
@@ -396,8 +405,8 @@ async function updateFutureSchedulePhases(input: {
 		phases: [...input.keptPayloads, ...futurePayloads],
 		proration_behavior: 'none',
 		metadata: {
-			...(input.schedule.metadata ?? {}),
-			lesson_agreement_id: input.lessonAgreementId,
+			...agreementMetadata,
+			school_year: labelParts.schoolYearLabel,
 			last_rebuild_at: new Date().toISOString(),
 		},
 	});

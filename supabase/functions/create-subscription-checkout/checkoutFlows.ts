@@ -125,6 +125,7 @@ async function finalizeCompleteModeSchedule(
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: paymentMethodId,
+		attemptId: setupIntentId,
 		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, setupIntentId),
 	});
 	return buildCompleteModeSuccessResponse(built);
@@ -160,11 +161,13 @@ export async function handleDirectMode(
 		});
 	}
 
+	const attemptId = `direct_${crypto.randomUUID()}`;
 	const built = await createScheduleForAgreement(admin, stripe, {
 		lessonAgreementId: agreement.id,
 		customerId,
 		defaultPaymentMethod: defaultPmId,
-		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, `direct_${crypto.randomUUID()}`),
+		attemptId,
+		idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, attemptId),
 	});
 
 	return buildDirectModeSuccessResponse(built);
