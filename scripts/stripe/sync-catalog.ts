@@ -11,7 +11,7 @@
  *   --lesson-type-id <uuid>
  *   --no-rebuild
  *
- * Run: bun run stripe:sync-catalog
+ * Run: bun run stripe:sync:catalog
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL;

@@ -74,28 +74,27 @@ export type StripeWebhookAction =
 	| 'cancel_schedule'
 	| 'noop';
 
+/** Event types the stripe-webhook edge function handles (Dashboard / Event Destination subscribe list). */
+const STRIPE_WEBHOOK_EVENT_ACTIONS = {
+	'customer.subscription.created': 'upsert_subscription',
+	'customer.subscription.updated': 'upsert_subscription',
+	'customer.subscription.deleted': 'upsert_subscription',
+	'customer.subscription.paused': 'upsert_subscription',
+	'customer.subscription.resumed': 'upsert_subscription',
+	'checkout.session.completed': 'checkout_session_completed',
+	'setup_intent.succeeded': 'setup_intent_succeeded',
+	'invoice.paid': 'upsert_invoice',
+	'invoice.finalized': 'upsert_invoice',
+	'invoice.payment_failed': 'upsert_invoice',
+	'invoice.payment_succeeded': 'upsert_invoice',
+	'subscription_schedule.canceled': 'cancel_schedule',
+} as const satisfies Record<string, Exclude<StripeWebhookAction, 'noop'>>;
+
+export const STRIPE_WEBHOOK_ENABLED_EVENTS: readonly string[] = Object.keys(STRIPE_WEBHOOK_EVENT_ACTIONS);
+
 export function resolveStripeWebhookAction(eventType: string): StripeWebhookAction {
-	switch (eventType) {
-		case 'customer.subscription.created':
-		case 'customer.subscription.updated':
-		case 'customer.subscription.deleted':
-		case 'customer.subscription.paused':
-		case 'customer.subscription.resumed':
-			return 'upsert_subscription';
-		case 'checkout.session.completed':
-			return 'checkout_session_completed';
-		case 'setup_intent.succeeded':
-			return 'setup_intent_succeeded';
-		case 'invoice.paid':
-		case 'invoice.finalized':
-		case 'invoice.payment_failed':
-		case 'invoice.payment_succeeded':
-			return 'upsert_invoice';
-		case 'subscription_schedule.canceled':
-			return 'cancel_schedule';
-		default:
-			return 'noop';
-	}
+	const action = STRIPE_WEBHOOK_EVENT_ACTIONS[eventType as keyof typeof STRIPE_WEBHOOK_EVENT_ACTIONS];
+	return action ?? 'noop';
 }
 
 export interface SubscriptionScheduleCancelTarget {

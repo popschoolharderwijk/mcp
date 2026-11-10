@@ -5,7 +5,7 @@ import {
 	readFlagValue,
 	redactStripeCliSecrets,
 	shouldEmitFilteredLine,
-} from '../../../scripts/stripe-webhook.ts';
+} from '../../../../scripts/stripe/webhook.ts';
 
 describe('readFlagValue', () => {
 	it('reads space-separated flag values', () => {
@@ -92,9 +92,17 @@ describe('parseScriptOptions', () => {
 });
 
 describe('output filters', () => {
-	it('redacts Stripe secret prefixes', () => {
-		expect(redactStripeCliSecrets('secret is whsec_abc123 and sk_test_xyz and rk_live_zzz')).toBe(
-			'secret is whsec_** and sk_** and rk_**',
+	it('redacts Stripe secrets but keeps a short prefix hint', () => {
+		expect(
+			redactStripeCliSecrets(
+				'secret is whsec_abc123xyz and sk_test_abcdefgh and rk_live_ijklmnop',
+			),
+		).toBe('secret is whsec_abc1** and sk_test_abcd** and rk_live_ijkl**');
+	});
+
+	it('appends ** when the secret payload is shorter than the hint window', () => {
+		expect(redactStripeCliSecrets('whsec_ab sk_test_xy rk_live_z')).toBe(
+			'whsec_ab** sk_test_xy** rk_live_z**',
 		);
 	});
 

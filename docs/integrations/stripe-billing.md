@@ -7,7 +7,7 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 - **Setup:** the payer opens a fixed payment link (no login), completes **iDEAL** Checkout, and creates a reusable payment method.
 - **After mandate:** webhook creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause).
 - **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule.
-- **Catalog:** lesson-type option prices sync to Stripe Product/Price on write, or via `bun run stripe:sync-catalog` after `db reset`. Affected schedules rebuild on demand (no cron).
+- **Catalog:** lesson-type option prices sync to Stripe Product/Price on write, or via `bun run stripe:sync:catalog` after `db reset`. Affected schedules rebuild on demand (no cron).
 
 ## 2. End-to-end flow
 
@@ -82,13 +82,26 @@ Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoiceHelpers.ts`, `
 | `subscription_schedule.canceled`     | Mark local subscription `canceled` and clear `lesson_agreements.stripe_schedule_id` |
 | `invoice.*`                          | Upsert `subscription_invoices`                                                      |
 
+Canonical subscribe list: `STRIPE_WEBHOOK_ENABLED_EVENTS` in `stripeWebhookHandlersHelpers.ts`. Same env targets as `db:reset`:
+
+```bash
+bun run stripe:setup:webhooks              # local → Stripe CLI listen instructions
+bun run stripe:setup:webhooks development
+bun run stripe:setup:webhooks test
+bun run stripe:setup:webhooks production   # confirmTarget; requires sk_live_…
+# optional tunnel / explicit URL:
+bun run stripe:setup:webhooks local --url=https://…/functions/v1/stripe-webhook
+```
+
+Creates/updates snapshot Event Destination `mcp-stripe-webhook` (Your account). On **create**, copy the printed `whsec_…` into `$SECRETS_PATH/supabase/.env.<env>` as `STRIPE_WEBHOOK_SECRET`, then `bun run db:push:secrets <env>`. Re-runs only refresh the event list (secret unchanged).
+
 ## 7. Catalog (no cron)
 
 - On lesson-type / option save the app invokes `sync-stripe-catalog` (fire-and-forget) and may rebuild schedules for that lesson type.
 - After `supabase db reset` (+ types regen), run:
 
 ```bash
-bun run stripe:sync-catalog
+bun run stripe:sync:catalog
 ```
 
 Unset `NODE_ENV` reads `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` from `$SECRETS_PATH/.env.local`. Use `NODE_ENV=development` to target mcp-dev (`.env.development.local`).
@@ -103,19 +116,34 @@ Edge only (never `VITE_`):
 
 ## 9. Local testing
 
-### Wipe sandbox billing (`stripe:reset`)
+### Wipe sandbox Stripe (`stripe:reset:customers` / `stripe:reset:catalog`)
 
-Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Destructive reset for **Stripe test mode** (`sk_test_…`) plus the matching non-production database mirrors (subscriptions, customers, payment links, invites; clears `lesson_agreements.stripe_schedule_id` / `minimum_term_end`). Catalog Products/Prices stay. **Production is never allowed.**
+Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Both commands are destructive for **Stripe test mode** (`sk_test_…`) against the matching non-production database. **Production is never allowed.** Scopes stay separate on purpose:
+
+| Command | Stripe | Local DB |
+| ------- | ------ | -------- |
+| `stripe:reset:customers` | Deletes all Customers | Clears subscriptions / customers / payment links / invites; clears `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Catalog Products stay. |
+| `stripe:reset:catalog` | Archives Prices then Products with metadata `lesson_type_option_id` (`active=false`; no Price DELETE API, and archived Prices still block Product DELETE). Agreement Products with `lesson_agreement_id` stay. | Sets every `lesson_type_options.stripe_catalog_*` back to `pending`. Customers / schedules stay. |
 
 ```bash
-bun run stripe:reset              # local Docker
-bun run stripe:reset development  # mcp-dev
-bun run stripe:reset test
+bun run stripe:reset:customers              # local Docker
+bun run stripe:reset:customers development  # mcp-dev
+bun run stripe:reset:catalog test
 ```
+
+After a catalog reset, run `bun run stripe:sync:catalog` to recreate Products/Prices and mark options synced.
 
 Guards: refuses `production` / prod Supabase URL and any `sk_live_…` key. Confirmation follows `supabase.json` `targets.*.confirm` (same as `db:reset`). Loads `SUPABASE_*` from the target runtime env and `STRIPE_SECRET_KEY` from that target’s edge secrets file.
 
-Alongside `bun run dev:local`, forward Stripe events to the local edge function (keep the process running):
+Alongside `bun run dev:local`, forward Stripe events to the local edge function. One-time CLI setup (correct sandbox first):
+
+```bash
+stripe login
+stripe switch                    # pick the local sandbox (not live)
+stripe listen --print-secret     # copy whsec_…
+```
+
+Put that `whsec_…` in `$SECRETS_PATH/supabase/.env.local` as `STRIPE_WEBHOOK_SECRET`, then `bun run db:push:secrets` and `bun run supabase:restart`. After that, keep the forwarder running:
 
 ```bash
 bun run stripe:webhook
@@ -123,9 +151,7 @@ bun run stripe:webhook
 bun run stripe:webhook -- --log-level debug --log-exclude ping-pong
 ```
 
-Each start truncates `logs/stripe.log` and mirrors the Stripe CLI output there (terminal + file) through the same filters. Pass `--log-level` through to the Stripe CLI when needed (`debug` | `info` | `trace` | `warn` | `error`); default is omit (CLI `info`). `--log-exclude ping-pong` skips websocket ping/pong lines in both terminal and file. Secrets (`whsec_…` / `sk_…` / `rk_…`) are redacted to `whsec_**` (etc.) in both places — use `stripe listen --print-secret` for the raw signing secret.
-
-Put that `whsec_…` in `$SECRETS_PATH/supabase/.env.local` as `STRIPE_WEBHOOK_SECRET`, then `bun run db:push:secrets` and `bun run supabase:restart` if that secret changed.
+Each start truncates `logs/stripe.log` and mirrors the Stripe CLI output there (terminal + file) through the same filters. Pass `--log-level` through to the Stripe CLI when needed (`debug` | `info` | `trace` | `warn` | `error`); default is omit (CLI `info`). `--log-exclude ping-pong` skips websocket ping/pong lines in both terminal and file. Secrets (`whsec_…` / `sk_…` / `rk_…`) are redacted to a short hint (`whsec_abcd**`, `sk_test_abcd**`) in both places so you can tell which secret was printed without logging the full value.
 
 ```bash
 bun test tests/code/billing/paymentLinkHelpers.test.ts

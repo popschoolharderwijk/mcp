@@ -8,7 +8,8 @@
  *
  * Stripe CLI has no secret-redaction flag for `listen`. Known secret patterns
  * (`whsec_…` / `sk_…` / `rk_…`) are redacted in both terminal and log file.
- * Use `stripe listen --print-secret` when you need the raw signing secret.
+ * Prefix + first few payload chars stay visible so you can tell secrets apart;
+ * use `stripe listen --print-secret` when you need the raw signing secret.
  */
 import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
@@ -21,17 +22,28 @@ const FORWARD_TO = 'http://127.0.0.1:54421/functions/v1/stripe-webhook';
 const LOG_LEVELS = new Set(['debug', 'info', 'trace', 'warn', 'error']);
 const LOG_EXCLUDE_VALUES = new Set(['ping-pong']);
 
-/** Stripe CLI secret-like tokens; replace match with a stable placeholder. */
-const STRIPE_SECRET_PATTERNS: ReadonlyArray<{ pattern: RegExp; replacement: string }> = [
-	{ pattern: /whsec_[A-Za-z0-9]+/g, replacement: 'whsec_**' },
-	{ pattern: /sk_(?:test|live)_[A-Za-z0-9]+/g, replacement: 'sk_**' },
-	{ pattern: /rk_(?:test|live)_[A-Za-z0-9]+/g, replacement: 'rk_**' },
+/** How many secret payload chars (after the typed prefix) stay visible before `**`. */
+const SECRET_VISIBLE_PAYLOAD_CHARS = 4;
+
+/** Stripe CLI secret-like tokens; keep typed prefix + a short hint, mask the rest. */
+const STRIPE_SECRET_PATTERNS: ReadonlyArray<{ pattern: RegExp; prefixLength: number }> = [
+	{ pattern: /whsec_[A-Za-z0-9]+/g, prefixLength: 'whsec_'.length },
+	{ pattern: /sk_(?:test|live)_[A-Za-z0-9]+/g, prefixLength: 'sk_test_'.length },
+	{ pattern: /rk_(?:test|live)_[A-Za-z0-9]+/g, prefixLength: 'rk_test_'.length },
 ];
+
+export function redactStripeSecretToken(token: string, prefixLength: number): string {
+	const keep = prefixLength + SECRET_VISIBLE_PAYLOAD_CHARS;
+	if (token.length <= keep) {
+		return `${token}**`;
+	}
+	return `${token.slice(0, keep)}**`;
+}
 
 export function redactStripeCliSecrets(text: string): string {
 	let out = text;
-	for (const { pattern, replacement } of STRIPE_SECRET_PATTERNS) {
-		out = out.replace(pattern, replacement);
+	for (const { pattern, prefixLength } of STRIPE_SECRET_PATTERNS) {
+		out = out.replace(pattern, (match) => redactStripeSecretToken(match, prefixLength));
 	}
 	return out;
 }
