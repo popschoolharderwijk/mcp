@@ -753,20 +753,17 @@ export default function Mandates() {
 
 	return (
 		<div className="space-y-6">
-			<PageHeader
-				title={NAV_LABELS.mandates}
-				subtitle={NAV_DESCRIPTIONS.mandates}
-				actions={
-					<StripeButton disabled={reconciling} onClick={() => void onReconcile()}>
-						Synchroniseer met Stripe
-					</StripeButton>
-				}
-			/>
+			<PageHeader title={NAV_LABELS.mandates} subtitle={NAV_DESCRIPTIONS.mandates} />
 			<PageTabs
 				value={activeTab}
 				onValueChange={onTabChange}
 				isTabId={isMandatesTabId}
 				items={buildMandatesTabItems(tabCounts)}
+				actions={
+					<StripeButton disabled={reconciling} onClick={() => void onReconcile()}>
+						Synchroniseer met Stripe
+					</StripeButton>
+				}
 			>
 				<PageTabsContent value="active" className="space-y-4">
 					<MandatesLifecyclePanel lifecycle="active" refreshToken={refreshKey} />
