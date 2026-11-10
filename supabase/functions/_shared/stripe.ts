@@ -1,5 +1,10 @@
 import Stripe from 'npm:stripe@17.5.0';
-import { getStripeId, readGeneratedSepaDebitPaymentMethodId } from './stripeHelpers.ts';
+import {
+	getStripeId,
+	readGeneratedSepaDebitPaymentMethodId,
+	readPaymentMethodFingerprint,
+	selectDuplicateFingerprintPaymentMethodIds,
+} from './stripeHelpers.ts';
 
 export { getSafeErrorMessage } from './errors.ts';
 export { getStripeId } from './stripeHelpers.ts';
@@ -19,6 +24,26 @@ function getGeneratedSepaDebitPaymentMethodId(latestAttempt: unknown): string | 
 
 export function getReusablePaymentMethodIdFromSetupIntent(setupIntent: Stripe.SetupIntent): string | null {
 	return getGeneratedSepaDebitPaymentMethodId(setupIntent.latest_attempt) ?? getStripeId(setupIntent.payment_method);
+}
+
+async function detachDuplicateFingerprintPaymentMethods(
+	stripe: Stripe,
+	customerId: string,
+	kept: Stripe.PaymentMethod,
+): Promise<void> {
+	if (!kept.type || !readPaymentMethodFingerprint(kept)) return;
+	const listed = await stripe.paymentMethods.list({
+		customer: customerId,
+		type: kept.type,
+		limit: 100,
+	});
+	for (const duplicateId of selectDuplicateFingerprintPaymentMethodIds(kept, listed.data)) {
+		try {
+			await stripe.paymentMethods.detach(duplicateId);
+		} catch (e) {
+			console.error('detach duplicate payment method failed', duplicateId, e);
+		}
+	}
 }
 
 export async function attachDefaultPaymentMethod(
@@ -43,4 +68,5 @@ export async function attachDefaultPaymentMethod(
 	await stripe.customers.update(customerId, {
 		invoice_settings: { default_payment_method: paymentMethodId },
 	});
+	await detachDuplicateFingerprintPaymentMethods(stripe, customerId, pm);
 }
