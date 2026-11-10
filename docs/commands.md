@@ -69,6 +69,7 @@ bun run db:reset
 bun run dev:local
 # Stripe webhooks (separate terminal; keep running):
 bun run stripe:webhook
+# Mirrors to terminal + logs/stripe.log (secrets redacted; optional --log-level / --log-exclude)
 ```
 
 Types from the local stack (`supabase start` first):

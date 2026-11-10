@@ -104,9 +104,13 @@ Alongside `bun run dev:local`, forward Stripe events to the local edge function 
 
 ```bash
 bun run stripe:webhook
+# optional verbose CLI logs + drop websocket ping/pong from the log file:
+bun run stripe:webhook -- --log-level debug --log-exclude ping-pong
 ```
 
-Use the printed `whsec_…` as `STRIPE_WEBHOOK_SECRET` in `$SECRETS_PATH/supabase/.env.local`, then `bun run db:push:secrets` and `bun run supabase:restart` if that secret changed.
+Each start truncates `logs/stripe.log` and mirrors the Stripe CLI output there (terminal + file) through the same filters. Pass `--log-level` through to the Stripe CLI when needed (`debug` | `info` | `trace` | `warn` | `error`); default is omit (CLI `info`). `--log-exclude ping-pong` skips websocket ping/pong lines in both terminal and file. Secrets (`whsec_…` / `sk_…` / `rk_…`) are redacted to `whsec_**` (etc.) in both places — use `stripe listen --print-secret` for the raw signing secret.
+
+Put that `whsec_…` in `$SECRETS_PATH/supabase/.env.local` as `STRIPE_WEBHOOK_SECRET`, then `bun run db:push:secrets` and `bun run supabase:restart` if that secret changed.
 
 ```bash
 bun test tests/code/billing/paymentLinkHelpers.test.ts
