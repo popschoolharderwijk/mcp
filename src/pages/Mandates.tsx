@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { StripeButton } from '@/components/stripe/StripeButton';
 import { isValidEmail } from '@/components/students/studentFormTypes';
+import { Autocomplete } from '@/components/ui/autocomplete';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
@@ -14,7 +15,6 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
@@ -32,9 +32,11 @@ import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
 import {
 	type AwaitingMandateRow,
 	awaitingSentLabel,
+	buildMandateRecipientSuggestions,
 	filterAwaitingByInviteSent,
 	type MandateStatusRow,
 	mandateStatusRowToInviteTarget,
+	resolveMandateInviteSeedEmail,
 	sortByLongestWaiting,
 } from '@/lib/subscriptions/awaitingMandateHelpers';
 import {
@@ -259,6 +261,7 @@ function WaitingMandateDialogSendRow(props: {
 	busy: boolean;
 	busyKind: PaymentInviteBusyKind | null;
 	recipientEmail: string;
+	recipientItems: ReturnType<typeof buildMandateRecipientSuggestions>;
 	canResend: boolean;
 	onRecipientEmailChange: (value: string) => void;
 	onResend: () => void;
@@ -267,15 +270,16 @@ function WaitingMandateDialogSendRow(props: {
 		<div className="w-full space-y-2 border-t pt-3">
 			<Label htmlFor="mandate-waiting-recipient">E-mail voor betaalverzoek</Label>
 			<div className="flex gap-2">
-				<Input
+				<Autocomplete
 					id="mandate-waiting-recipient"
-					type="email"
-					autoComplete="email"
 					className="min-w-0 flex-1"
 					value={props.recipientEmail}
+					onValueChange={props.onRecipientEmailChange}
+					items={props.recipientItems}
 					disabled={props.busy}
-					onChange={(e) => props.onRecipientEmailChange(e.target.value)}
 					placeholder="naam@voorbeeld.nl"
+					emptyText=""
+					inputProps={{ type: 'email', autoComplete: 'email' }}
 				/>
 				<SubmitButton
 					className="shrink-0"
@@ -348,11 +352,21 @@ function useMandateInviteSelection<T extends { lesson_agreement_id: string }>(
 }
 
 function emailFromAwaitingRow(row: AwaitingMandateRow): string {
-	return row.recipient_email ?? row.student.email ?? '';
+	return row.recipient_email ?? '';
 }
 
 function emailFromStatusRow(row: MandateStatusRow): string {
-	return row.student.email ?? '';
+	return resolveMandateInviteSeedEmail({
+		parentEmail: row.parent_email,
+		studentEmail: row.student.email,
+	});
+}
+
+function recipientItemsFromAwaitingRow(row: AwaitingMandateRow) {
+	return buildMandateRecipientSuggestions({
+		parentEmail: row.parent_email,
+		studentEmail: row.student.email,
+	});
 }
 
 function WaitingMandateDialogBody(props: {
@@ -386,6 +400,7 @@ function WaitingMandateDialogBody(props: {
 						busy={props.handlers.busy}
 						busyKind={props.handlers.busyKind}
 						recipientEmail={props.handlers.recipientEmail}
+						recipientItems={recipientItemsFromAwaitingRow(props.row)}
 						canResend={canResend}
 						onRecipientEmailChange={props.handlers.onRecipientEmailChange}
 						onResend={props.handlers.onResend}

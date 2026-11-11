@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	awaitingSentLabel,
+	buildMandateRecipientSuggestions,
 	daysWaiting,
 	mandateStatusRowToInviteTarget,
 	mapAwaitingMandateRow,
 	mapMandateStatusRow,
 	pickPrimarySubscriptionStatus,
+	resolveMandateInviteSeedEmail,
 	resolveMandateLifecycleStatus,
 	sortByLongestWaiting,
 	sortMandateStatusRows,
@@ -166,6 +168,7 @@ describe('awaitingMandateHelpers', () => {
 			firstName: 'Ada',
 			lastName: 'Lovelace',
 			profileEmail: 'ada@ex.com',
+			parentEmail: 'ouder@ex.com',
 			avatarUrl: null,
 			inviteEmail: 'ouder@ex.com',
 			lessonType: null,
@@ -175,8 +178,73 @@ describe('awaitingMandateHelpers', () => {
 			today: '2026-10-30',
 		});
 		expect(row.recipient_email).toBe('ouder@ex.com');
+		expect(row.parent_email).toBe('ouder@ex.com');
 		expect(row.lesson_type_name).toBe('Lessoort');
 		expect(row.days_waiting).toBe(10);
+	});
+
+	it('seeds recipient from parent when no invite was sent yet', () => {
+		const row = mapAwaitingMandateRow({
+			lessonAgreementId: 'agr-2',
+			studentUserId: 'stu-2',
+			firstName: 'Ada',
+			lastName: 'Lovelace',
+			profileEmail: 'ada@ex.com',
+			parentEmail: 'ouder@ex.com',
+			avatarUrl: null,
+			inviteEmail: null,
+			lessonType: { name: 'Piano' },
+			startDate: '2026-09-01',
+			createdAt: '2026-09-01T00:00:00Z',
+			lastSentAt: null,
+			today: '2026-10-30',
+		});
+		expect(row.recipient_email).toBe('ouder@ex.com');
+	});
+
+	it('resolves invite seed email invite > parent > student', () => {
+		expect(
+			resolveMandateInviteSeedEmail({
+				inviteEmail: 'invite@ex.com',
+				parentEmail: 'ouder@ex.com',
+				studentEmail: 'kind@ex.com',
+			}),
+		).toBe('invite@ex.com');
+		expect(
+			resolveMandateInviteSeedEmail({
+				inviteEmail: null,
+				parentEmail: 'ouder@ex.com',
+				studentEmail: 'kind@ex.com',
+			}),
+		).toBe('ouder@ex.com');
+		expect(
+			resolveMandateInviteSeedEmail({
+				inviteEmail: null,
+				parentEmail: null,
+				studentEmail: 'kind@ex.com',
+			}),
+		).toBe('kind@ex.com');
+	});
+
+	it('builds ouder and leerling autocomplete suggestions without duplicates', () => {
+		expect(
+			buildMandateRecipientSuggestions({
+				parentEmail: 'ouder@ex.com',
+				studentEmail: 'kind@ex.com',
+			}),
+		).toEqual([
+			{ value: 'ouder@ex.com', label: 'Ouder', description: 'ouder@ex.com' },
+			{ value: 'kind@ex.com', label: 'Leerling', description: 'kind@ex.com' },
+		]);
+		expect(
+			buildMandateRecipientSuggestions({
+				parentEmail: 'zelfde@ex.com',
+				studentEmail: 'Zelfde@ex.com',
+			}),
+		).toEqual([{ value: 'zelfde@ex.com', label: 'Ouder', description: 'zelfde@ex.com' }]);
+		expect(buildMandateRecipientSuggestions({ parentEmail: null, studentEmail: 'kind@ex.com' })).toEqual([
+			{ value: 'kind@ex.com', label: 'Leerling', description: 'kind@ex.com' },
+		]);
 	});
 
 	it('maps a canceled status row into the payment-invite dialog target', () => {
@@ -186,6 +254,7 @@ describe('awaitingMandateHelpers', () => {
 			firstName: 'Tess',
 			lastName: 'Zee',
 			profileEmail: 'tess@ex.com',
+			parentEmail: 'ouder@ex.com',
 			avatarUrl: null,
 			lessonType: { name: 'Piano' },
 			startDate: '2026-01-01',
@@ -203,7 +272,8 @@ describe('awaitingMandateHelpers', () => {
 				email: 'tess@ex.com',
 				avatar_url: null,
 			},
-			recipient_email: 'tess@ex.com',
+			parent_email: 'ouder@ex.com',
+			recipient_email: 'ouder@ex.com',
 			lesson_type_name: 'Piano',
 			start_date: '2026-01-01',
 			created_at: '2026-01-01',

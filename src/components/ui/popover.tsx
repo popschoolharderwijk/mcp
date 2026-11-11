@@ -6,6 +6,8 @@ const Popover = PopoverPrimitive.Root;
 
 const PopoverTrigger = PopoverPrimitive.Trigger;
 
+const PopoverAnchor = PopoverPrimitive.Anchor;
+
 /** No slide/zoom on open: avoids jump when Radix flips side after measuring. */
 const popoverContentMotionClassName =
 	'data-[state=open]:animate-none data-[state=closed]:animate-none data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100 data-[side=bottom]:slide-in-from-top-0 data-[side=top]:slide-in-from-bottom-0 data-[side=left]:slide-in-from-right-0 data-[side=right]:slide-in-from-left-0';
@@ -30,4 +32,4 @@ const PopoverContent = React.forwardRef<
 ));
 PopoverContent.displayName = PopoverPrimitive.Content.displayName;
 
-export { Popover, PopoverContent, PopoverTrigger };
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };

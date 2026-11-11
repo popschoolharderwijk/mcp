@@ -44,6 +44,11 @@ type InviteRow = {
 	recipient_email: string;
 };
 
+type StudentParentRow = {
+	user_id: string;
+	parent_email: string | null;
+};
+
 function shouldReplaceInvite(existing: InviteRow | undefined, invite: InviteRow): boolean {
 	if (!existing) return true;
 	return invite.sent_at > existing.sent_at;
@@ -100,6 +105,7 @@ function inviteFields(invite: InviteRow | undefined): {
 function mapOneCandidate(
 	row: AgreementQueryRow,
 	profiles: Map<string, ProfileRow>,
+	parentEmails: Map<string, string | null>,
 	invites: Map<string, InviteRow>,
 	today: string,
 ): AwaitingMandateRow {
@@ -111,6 +117,7 @@ function mapOneCandidate(
 		firstName: fromProfile.firstName,
 		lastName: fromProfile.lastName,
 		profileEmail: fromProfile.profileEmail,
+		parentEmail: parentEmails.get(row.student_user_id) ?? null,
 		avatarUrl: fromProfile.avatarUrl,
 		inviteEmail: fromInvite.inviteEmail,
 		lessonType: row.lesson_types,
@@ -124,10 +131,11 @@ function mapOneCandidate(
 function mapCandidates(
 	candidates: AgreementQueryRow[],
 	profiles: Map<string, ProfileRow>,
+	parentEmails: Map<string, string | null>,
 	invites: Map<string, InviteRow>,
 	today: string,
 ): AwaitingMandateRow[] {
-	return candidates.map((row) => mapOneCandidate(row, profiles, invites, today));
+	return candidates.map((row) => mapOneCandidate(row, profiles, parentEmails, invites, today));
 }
 
 function throwQueryError(error: { message: string } | null): void {
@@ -139,12 +147,25 @@ function toProfileMap(data: ProfileRow[] | null): Map<string, ProfileRow> {
 	return new Map(data.map((p) => [p.user_id, p]));
 }
 
+function toParentEmailMap(data: StudentParentRow[] | null): Map<string, string | null> {
+	if (!data) return new Map();
+	return new Map(data.map((row) => [row.user_id, row.parent_email]));
+}
+
+async function loadParentEmailsByUserId(userIds: string[]): Promise<Map<string, string | null>> {
+	if (userIds.length === 0) return new Map();
+	const { data, error } = await supabase.from('students').select('user_id, parent_email').in('user_id', userIds);
+	throwQueryError(error);
+	return toParentEmailMap(data as StudentParentRow[] | null);
+}
+
 async function loadAwaitingSideData(candidates: AgreementQueryRow[]) {
-	const [profilesRes, invitesRes] = await Promise.all([
+	const studentUserIds = [...new Set(candidates.map((r) => r.student_user_id))];
+	const [profilesRes, invitesRes, parentEmails] = await Promise.all([
 		supabase
 			.from('profiles')
 			.select('user_id, first_name, last_name, email, avatar_url')
-			.in('user_id', [...new Set(candidates.map((r) => r.student_user_id))]),
+			.in('user_id', studentUserIds),
 		supabase
 			.from('stripe_checkout_invitations')
 			.select('lesson_agreement_id, sent_at, recipient_email')
@@ -152,11 +173,13 @@ async function loadAwaitingSideData(candidates: AgreementQueryRow[]) {
 				'lesson_agreement_id',
 				candidates.map((r) => r.id),
 			),
+		loadParentEmailsByUserId(studentUserIds),
 	]);
 	throwQueryError(profilesRes.error);
 	throwQueryError(invitesRes.error);
 	return {
 		profiles: toProfileMap(profilesRes.data as ProfileRow[] | null),
+		parentEmails,
 		invites: latestInviteByAgreement(invitesRes.data as InviteRow[] | null),
 	};
 }
@@ -216,7 +239,7 @@ export async function fetchAwaitingMandates(): Promise<AwaitingMandateRow[]> {
 	const candidates = filterAwaitingCandidates(await fetchActiveAgreementsWithoutSchedule(), today);
 	if (candidates.length === 0) return [];
 	const side = await loadAwaitingSideData(candidates);
-	return mapCandidates(candidates, side.profiles, side.invites, today);
+	return mapCandidates(candidates, side.profiles, side.parentEmails, side.invites, today);
 }
 
 function toMandateInput(row: AgreementQueryRow) {
@@ -239,6 +262,7 @@ function filterLifecycleCandidates(
 function mapLifecycleCandidates(
 	candidates: AgreementQueryRow[],
 	profiles: Map<string, ProfileRow>,
+	parentEmails: Map<string, string | null>,
 	lifecycle: 'active' | 'canceled',
 ): MandateStatusRow[] {
 	return candidates.map((row) => {
@@ -249,6 +273,7 @@ function mapLifecycleCandidates(
 			firstName: fromProfile.firstName,
 			lastName: fromProfile.lastName,
 			profileEmail: fromProfile.profileEmail,
+			parentEmail: parentEmails.get(row.student_user_id) ?? null,
 			avatarUrl: fromProfile.avatarUrl,
 			lessonType: row.lesson_types,
 			startDate: row.start_date,
@@ -264,13 +289,22 @@ export async function fetchMandatesByLifecycle(lifecycle: 'active' | 'canceled')
 	const today = formatDateToDb(now());
 	const candidates = filterLifecycleCandidates(await fetchAgreementsWithMandateHistory(), lifecycle, today);
 	if (candidates.length === 0) return [];
-	const profilesRes = await supabase
-		.from('profiles')
-		.select('user_id, first_name, last_name, email, avatar_url')
-		.in('user_id', [...new Set(candidates.map((r) => r.student_user_id))]);
+	const studentUserIds = [...new Set(candidates.map((r) => r.student_user_id))];
+	const [profilesRes, parentEmails] = await Promise.all([
+		supabase
+			.from('profiles')
+			.select('user_id, first_name, last_name, email, avatar_url')
+			.in('user_id', studentUserIds),
+		loadParentEmailsByUserId(studentUserIds),
+	]);
 	throwQueryError(profilesRes.error);
 	return sortMandateStatusRows(
-		mapLifecycleCandidates(candidates, toProfileMap(profilesRes.data as ProfileRow[] | null), lifecycle),
+		mapLifecycleCandidates(
+			candidates,
+			toProfileMap(profilesRes.data as ProfileRow[] | null),
+			parentEmails,
+			lifecycle,
+		),
 	);
 }
 

@@ -90,6 +90,7 @@ export interface MandateStatusRow {
 	lesson_agreement_id: string;
 	student_user_id: string;
 	student: AwaitingMandateStudent;
+	parent_email: string | null;
 	lesson_type_name: string;
 	start_date: string;
 	agreement_active: boolean;
@@ -103,6 +104,7 @@ export function mapMandateStatusRow(input: {
 	firstName: string | null | undefined;
 	lastName: string | null | undefined;
 	profileEmail: string | null | undefined;
+	parentEmail: string | null | undefined;
 	avatarUrl: string | null | undefined;
 	lessonType: { name: string } | { name: string }[] | null | undefined;
 	startDate: string;
@@ -110,6 +112,8 @@ export function mapMandateStatusRow(input: {
 	subscriptionStatus: string | null;
 	lifecycleStatus: 'active' | 'canceled';
 }): MandateStatusRow {
+	const parentEmail = input.parentEmail?.trim() || null;
+	const studentEmail = input.profileEmail?.trim() || null;
 	return {
 		lesson_agreement_id: input.lessonAgreementId,
 		student_user_id: input.studentUserId,
@@ -117,9 +121,10 @@ export function mapMandateStatusRow(input: {
 			user_id: input.studentUserId,
 			first_name: input.firstName ?? null,
 			last_name: input.lastName ?? null,
-			email: input.profileEmail ?? null,
+			email: studentEmail,
 			avatar_url: input.avatarUrl ?? null,
 		},
+		parent_email: parentEmail,
 		lesson_type_name: unwrapJoinedName(input.lessonType),
 		start_date: input.startDate,
 		agreement_active: input.agreementActive,
@@ -130,11 +135,16 @@ export function mapMandateStatusRow(input: {
 
 /** Shape a canceled mandate row for the shared payment-invite dialog. */
 export function mandateStatusRowToInviteTarget(row: MandateStatusRow): AwaitingMandateRow {
+	const recipientEmail = resolveMandateInviteSeedEmail({
+		parentEmail: row.parent_email,
+		studentEmail: row.student.email,
+	});
 	return {
 		lesson_agreement_id: row.lesson_agreement_id,
 		student_user_id: row.student_user_id,
 		student: row.student,
-		recipient_email: row.student.email ?? null,
+		parent_email: row.parent_email,
+		recipient_email: recipientEmail || null,
 		lesson_type_name: row.lesson_type_name,
 		start_date: row.start_date,
 		created_at: row.start_date,
@@ -181,12 +191,45 @@ export interface AwaitingMandateRow {
 	lesson_agreement_id: string;
 	student_user_id: string;
 	student: AwaitingMandateStudent;
+	parent_email: string | null;
 	recipient_email: string | null;
 	lesson_type_name: string;
 	start_date: string;
 	created_at: string;
 	last_sent_at: string | null;
 	days_waiting: number;
+}
+
+export type MandateRecipientSuggestion = {
+	value: string;
+	label: string;
+	description?: string;
+};
+
+/** Seed the invite field: last invite when known, else parent, else student account. */
+export function resolveMandateInviteSeedEmail(input: {
+	inviteEmail?: string | null;
+	parentEmail?: string | null;
+	studentEmail?: string | null;
+}): string {
+	return input.inviteEmail?.trim() || input.parentEmail?.trim() || input.studentEmail?.trim() || '';
+}
+
+/** Suggestion rows for the mandate invite autocomplete (ouder before leerling). */
+export function buildMandateRecipientSuggestions(input: {
+	parentEmail?: string | null;
+	studentEmail?: string | null;
+}): MandateRecipientSuggestion[] {
+	const parent = input.parentEmail?.trim() || '';
+	const student = input.studentEmail?.trim() || '';
+	const items: MandateRecipientSuggestion[] = [];
+	if (parent) {
+		items.push({ value: parent, label: 'Ouder', description: parent });
+	}
+	if (student && student.toLowerCase() !== parent.toLowerCase()) {
+		items.push({ value: student, label: 'Leerling', description: student });
+	}
+	return items;
 }
 
 function unwrapJoinedName(value: { name: string } | { name: string }[] | null | undefined): string {
@@ -201,6 +244,7 @@ export function mapAwaitingMandateRow(input: {
 	firstName: string | null | undefined;
 	lastName: string | null | undefined;
 	profileEmail: string | null | undefined;
+	parentEmail: string | null | undefined;
 	avatarUrl: string | null | undefined;
 	inviteEmail: string | null | undefined;
 	lessonType: { name: string } | { name: string }[] | null | undefined;
@@ -210,6 +254,8 @@ export function mapAwaitingMandateRow(input: {
 	today: string;
 }): AwaitingMandateRow {
 	const since = input.lastSentAt ?? input.createdAt;
+	const parentEmail = input.parentEmail?.trim() || null;
+	const studentEmail = input.profileEmail?.trim() || null;
 	return {
 		lesson_agreement_id: input.lessonAgreementId,
 		student_user_id: input.studentUserId,
@@ -217,10 +263,16 @@ export function mapAwaitingMandateRow(input: {
 			user_id: input.studentUserId,
 			first_name: input.firstName ?? null,
 			last_name: input.lastName ?? null,
-			email: input.profileEmail ?? null,
+			email: studentEmail,
 			avatar_url: input.avatarUrl ?? null,
 		},
-		recipient_email: input.inviteEmail ?? input.profileEmail ?? null,
+		parent_email: parentEmail,
+		recipient_email:
+			resolveMandateInviteSeedEmail({
+				inviteEmail: input.inviteEmail,
+				parentEmail,
+				studentEmail,
+			}) || null,
 		lesson_type_name: unwrapJoinedName(input.lessonType),
 		start_date: input.startDate,
 		created_at: input.createdAt,
