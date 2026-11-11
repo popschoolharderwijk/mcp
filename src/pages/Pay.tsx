@@ -18,9 +18,9 @@ import {
 	shouldSkipCompleteCheckout,
 } from '@/lib/stripe/paymentLinkPageHelpers';
 
-function requireCheckoutUrl(error: { message?: string } | null, data: { url?: string } | null | undefined): string {
+async function requireCheckoutUrl(error: unknown, data: { url?: string } | null | undefined): Promise<string> {
 	const url = data == null ? undefined : data.url;
-	const message = resolveCheckoutStartError(error, url);
+	const message = await resolveCheckoutStartError(error, url);
 	if (message) throw new Error(message);
 	return url as string;
 }
@@ -81,10 +81,10 @@ function useCompleteCheckout(
 					checkout_session_id: sessionId,
 				},
 			})
-			.then(({ error: completeError }) => {
+			.then(async ({ error: completeError }) => {
 				if (cancelled) return;
 				setStarting(false);
-				const message = resolveCompleteCheckoutErrorMessage(completeError);
+				const message = await resolveCompleteCheckoutErrorMessage(completeError);
 				if (message) {
 					setError(message);
 					return;
@@ -137,18 +137,22 @@ function PayView(props: {
 	error: string | null;
 	onStart: () => void;
 }) {
-	if (props.view === 'loading') return <PageSkeleton variant="header-only" />;
-	if (props.view === 'arranged') return <PaymentLinkArrangedPanel />;
-	if (props.view === 'invalid') return <PayInvalidView agreementId={props.agreementId} />;
-	return (
-		<PayDetailsView
-			agreementId={props.agreementId}
-			info={props.info}
-			starting={props.starting}
-			error={props.error}
-			onStart={props.onStart}
-		/>
-	);
+	const views = {
+		loading: () => <PageSkeleton variant="header-only" />,
+		completed: () => <PaymentLinkArrangedPanel justCompleted />,
+		arranged: () => <PaymentLinkArrangedPanel />,
+		invalid: () => <PayInvalidView agreementId={props.agreementId} />,
+		details: () => (
+			<PayDetailsView
+				agreementId={props.agreementId}
+				info={props.info}
+				starting={props.starting}
+				error={props.error}
+				onStart={props.onStart}
+			/>
+		),
+	};
+	return views[props.view]();
 }
 
 export default function Pay() {
@@ -165,7 +169,7 @@ export default function Pay() {
 
 	return (
 		<PayView
-			view={resolvePayPageView({ loadingInfo, completed, info })}
+			view={resolvePayPageView({ loadingInfo, completed, info, error })}
 			agreementId={agreementId}
 			info={info}
 			starting={starting}

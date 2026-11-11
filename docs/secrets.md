@@ -53,7 +53,7 @@ Required for CI workflows. Manage via **[GitHub Actions Secrets → popschoolhar
 | ---------------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------- |
 | `SUPABASE_ACCESS_TOKEN`            | Access token from Supabase (Account → Access Tokens)            | CI / remote CLI (`--remote=<ref>`)                              |
 | `SUPABASE_DB_PASSWORD`             | Database password of **mcp-test** (Project Settings → Database) | CI + `bun run db:* test` (same plain name as `.env.test.local`) |
-| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`jserlqacarlgtdzrblic`)            | CI `--remote=$SUPABASE_PROJECT_REF`                             |
+| `SUPABASE_PROJECT_REF`             | Project ref of **mcp-test** (`supabase.json` → `targets.test`)  | CI `--remote=$SUPABASE_PROJECT_REF`                             |
 | `SUPABASE_URL`                     | API URL of mcp-test                                             | Test runtime                                                    |
 | `SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Anon key of mcp-test                                            | Test runtime                                                    |
 | `SUPABASE_SERVICE_ROLE_KEY`        | Service role key of mcp-test                                    | Test runtime                                                    |
@@ -118,7 +118,7 @@ For fast sign-in without Magic Link in development. Add to `$SECRETS_PATH/.env.d
 Example `$SECRETS_PATH/.env.development.local`:
 
 ```env
-SUPABASE_URL=https://zdvscmogkfyddnnxzkdu.supabase.co
+SUPABASE_URL=https://<development-project-ref>.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 SUPABASE_DB_PASSWORD=...
 

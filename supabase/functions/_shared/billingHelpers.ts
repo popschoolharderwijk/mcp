@@ -357,3 +357,151 @@ export function buildBillingComputationFromLoadedData(input: {
 		schoolYear,
 	};
 }
+
+/** Map DB load results into schedule tuition context (null-safe coalescing lives here). */
+export function assembleBillingContextFromLoadedRows(input: {
+	agreement: BillingComputationAgreement & { is_active: boolean };
+	option: {
+		id: string;
+		price_per_lesson_youth_cents: number | null;
+		price_per_lesson_adult_cents: number | null;
+	};
+	student: { date_of_birth: string | null } | null | undefined;
+	noLessonPeriods: ReadonlyArray<NoLessonPeriod> | null | undefined;
+	lessonType: { name: string } | null | undefined;
+	today: string;
+}): {
+	billing: BillingComputation;
+	lessonTypeOptionId: string;
+	lessonTypeName: string | null;
+} {
+	return {
+		billing: buildBillingComputationFromLoadedData({
+			agreement: input.agreement,
+			option: {
+				price_per_lesson_youth_cents: input.option.price_per_lesson_youth_cents,
+				price_per_lesson_adult_cents: input.option.price_per_lesson_adult_cents,
+			},
+			dateOfBirth: input.student?.date_of_birth ?? null,
+			noLessonPeriods: input.noLessonPeriods ?? [],
+			today: input.today,
+		}),
+		lessonTypeOptionId: input.option.id,
+		lessonTypeName: input.lessonType?.name?.trim() || null,
+	};
+}
+
+/**
+ * Shared by checkout complete + setup webhooks so concurrent creates collapse to one schedule.
+ * `attemptId` is stable within one mandate attempt (SetupIntent id) so racing handlers share a key,
+ * and differs between attempts so Stripe's 24h idempotency window does not reuse a prior create.
+ */
+export function buildSetupScheduleIdempotencyKey(lessonAgreementId: string, attemptId: string): string {
+	return `mcp_setup_schedule_${lessonAgreementId}_${attemptId}`;
+}
+
+/** Shared tuition Product keyed by lesson_type_option. */
+export function buildLessonProductIdempotencyKey(lessonTypeOptionId: string): string {
+	return `mcp_lesson_product_${lessonTypeOptionId}`;
+}
+
+/** Shared recurring Price under that Product, keyed by unit amount (youth/adult/leftover). */
+export function buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId: string, amountCents: number): string {
+	return `mcp_lesson_price_${lessonTypeOptionId}_${amountCents}`;
+}
+
+export function formatBillingSchoolYearLabel(startYear: number): string {
+	return `${startYear}/${startYear + 1}`;
+}
+
+/** Dutch Stripe Dashboard title for shared tuition products. */
+const STRIPE_TUITION_PRODUCT_TITLE = 'Lesgeld';
+
+const FREQUENCY_LABELS: Record<LessonFrequency, string> = {
+	daily: 'dagelijks',
+	weekly: 'wekelijks',
+	biweekly: 'tweewekelijks',
+	monthly: 'maandelijks',
+};
+
+/** Shared Stripe metadata that pins a Subscription / Schedule to one lesson agreement. */
+export function buildAgreementStripeMetadata(
+	agreement: Pick<BillingComputationAgreement, 'id' | 'lesson_type_id' | 'frequency' | 'duration_minutes'>,
+): Record<string, string> {
+	return {
+		lesson_agreement_id: agreement.id,
+		lesson_type_id: agreement.lesson_type_id,
+		frequency: agreement.frequency,
+		duration_minutes: String(agreement.duration_minutes),
+	};
+}
+
+/** Shared Product title for a lesson_type_option (no student / school year). */
+export function buildStripeTuitionProductName(input: {
+	lessonTypeName?: string | null;
+	durationMinutes?: number | null;
+	frequency?: LessonFrequency | null;
+}): string {
+	const freqLabel = input.frequency ? (FREQUENCY_LABELS[input.frequency] ?? input.frequency) : null;
+	const durationLabel = input.durationMinutes != null ? `${input.durationMinutes} min` : null;
+	const rest = [input.lessonTypeName?.trim() || null, durationLabel, freqLabel].filter((part): part is string =>
+		Boolean(part),
+	);
+	return [STRIPE_TUITION_PRODUCT_TITLE, ...rest].join(' · ');
+}
+
+export type StripeTuitionPriceKind = 'monthly' | 'final';
+
+const STRIPE_TUITION_PRICE_KIND_LABELS: Record<StripeTuitionPriceKind, string> = {
+	monthly: 'Maandtermijn',
+	final: 'Slotmaand',
+};
+
+const STRIPE_TUITION_TARIFF_LABELS: Record<AgeTariff, string> = {
+	youth: 'Jeugd',
+	adult: 'Volwassen',
+};
+
+/** Slotmaand when leftover is applied; otherwise the recurring maandtermijn. */
+export function resolveStripeTuitionPriceKind(
+	amountCents: number,
+	monthlyCents: number,
+	leftoverCents: number,
+): StripeTuitionPriceKind {
+	if (leftoverCents > 0 && amountCents === monthlyCents + leftoverCents) return 'final';
+	return 'monthly';
+}
+
+/** Dashboard nickname: role + age tariff (amount already shown by Stripe). */
+export function buildStripeTuitionPriceNickname(input: { kind: StripeTuitionPriceKind; tariff: AgeTariff }): string {
+	return `${STRIPE_TUITION_PRICE_KIND_LABELS[input.kind]} ${STRIPE_TUITION_TARIFF_LABELS[input.tariff]}`;
+}
+
+export function buildLessonTypeOptionProductSearchQuery(lessonTypeOptionId: string): string {
+	return `metadata['lesson_type_option_id']:'${lessonTypeOptionId}'`;
+}
+
+export type RecurringPriceCandidate = {
+	id: string;
+	active?: boolean | null;
+	unit_amount?: number | null;
+	recurring?: { interval?: string | null; interval_count?: number | null } | null;
+};
+
+/** Prefer an active monthly recurring price with the exact unit amount. */
+export function pickSharedRecurringMonthlyPriceId(
+	prices: RecurringPriceCandidate[],
+	amountCents: number,
+): string | null {
+	for (const price of prices) {
+		if (
+			price.active !== false &&
+			price.unit_amount === amountCents &&
+			price.recurring?.interval === 'month' &&
+			(price.recurring.interval_count ?? 1) === 1
+		) {
+			return price.id;
+		}
+	}
+	return null;
+}

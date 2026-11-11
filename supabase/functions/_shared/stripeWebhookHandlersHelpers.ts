@@ -47,12 +47,23 @@ export function isScheduleSetupIntent(setupIntent: { metadata?: { flow?: string 
 	return setupIntent.metadata?.flow === 'schedule_setup';
 }
 
-export function hasScheduleSetupInput(input: {
+export type ScheduleSetupIds = {
+	lessonAgreementId: string;
+	customerId: string;
+	paymentMethodId: string;
+	attemptId: string;
+};
+
+/** Requires agreement, customer, payment method, and SetupIntent/attempt id before schedule create. */
+export function resolveScheduleSetupIds(input: {
 	lessonAgreementId: string | null;
 	customerId: string | null;
 	paymentMethodId: string | null;
-}): boolean {
-	return Boolean(input.lessonAgreementId && input.customerId && input.paymentMethodId);
+	attemptId: string | null;
+}): ScheduleSetupIds | null {
+	const { lessonAgreementId, customerId, paymentMethodId, attemptId } = input;
+	if (!lessonAgreementId || !customerId || !paymentMethodId || !attemptId) return null;
+	return { lessonAgreementId, customerId, paymentMethodId, attemptId };
 }
 
 export type StripeWebhookAction =
@@ -60,28 +71,62 @@ export type StripeWebhookAction =
 	| 'checkout_session_completed'
 	| 'setup_intent_succeeded'
 	| 'upsert_invoice'
+	| 'cancel_schedule'
 	| 'noop';
 
+/** Event types the stripe-webhook edge function handles (Dashboard / Event Destination subscribe list). */
+const STRIPE_WEBHOOK_EVENT_ACTIONS = {
+	'customer.subscription.created': 'upsert_subscription',
+	'customer.subscription.updated': 'upsert_subscription',
+	'customer.subscription.deleted': 'upsert_subscription',
+	'customer.subscription.paused': 'upsert_subscription',
+	'customer.subscription.resumed': 'upsert_subscription',
+	'checkout.session.completed': 'checkout_session_completed',
+	'setup_intent.succeeded': 'setup_intent_succeeded',
+	'invoice.paid': 'upsert_invoice',
+	'invoice.finalized': 'upsert_invoice',
+	'invoice.payment_failed': 'upsert_invoice',
+	'invoice.payment_succeeded': 'upsert_invoice',
+	'subscription_schedule.canceled': 'cancel_schedule',
+} as const satisfies Record<string, Exclude<StripeWebhookAction, 'noop'>>;
+
+export const STRIPE_WEBHOOK_ENABLED_EVENTS: readonly string[] = Object.keys(STRIPE_WEBHOOK_EVENT_ACTIONS);
+
 export function resolveStripeWebhookAction(eventType: string): StripeWebhookAction {
-	switch (eventType) {
-		case 'customer.subscription.created':
-		case 'customer.subscription.updated':
-		case 'customer.subscription.deleted':
-		case 'customer.subscription.paused':
-		case 'customer.subscription.resumed':
-			return 'upsert_subscription';
-		case 'checkout.session.completed':
-			return 'checkout_session_completed';
-		case 'setup_intent.succeeded':
-			return 'setup_intent_succeeded';
-		case 'invoice.paid':
-		case 'invoice.finalized':
-		case 'invoice.payment_failed':
-		case 'invoice.payment_succeeded':
-			return 'upsert_invoice';
-		default:
-			return 'noop';
-	}
+	const action = STRIPE_WEBHOOK_EVENT_ACTIONS[eventType as keyof typeof STRIPE_WEBHOOK_EVENT_ACTIONS];
+	return action ?? 'noop';
+}
+
+export interface SubscriptionScheduleCancelTarget {
+	scheduleId: string;
+	lessonAgreementId: string | null;
+	canceledAtIso: string | null;
+}
+
+export function resolveSubscriptionScheduleCancelTarget(schedule: {
+	id: string;
+	metadata?: { lesson_agreement_id?: string } | null;
+	canceled_at?: number | null;
+}): SubscriptionScheduleCancelTarget {
+	return {
+		scheduleId: schedule.id,
+		lessonAgreementId: schedule.metadata?.lesson_agreement_id ?? null,
+		canceledAtIso: stripeUnixTimestampToIso(schedule.canceled_at),
+	};
+}
+
+export function buildCanceledSubscriptionUpdate(canceledAtIso: string): {
+	status: 'canceled';
+	canceled_at: string;
+} {
+	return {
+		status: 'canceled',
+		canceled_at: canceledAtIso,
+	};
+}
+
+export function shouldClearAgreementScheduleForSubscriptionStatus(status: string): boolean {
+	return status === 'canceled';
 }
 
 export function extractCheckoutSubscriptionId(subscription: string | { id: string } | null | undefined): string | null {
@@ -118,4 +163,8 @@ export function isStripeWebhookCheckoutAction(
 	action: StripeWebhookAction,
 ): action is 'checkout_session_completed' | 'setup_intent_succeeded' {
 	return action === 'checkout_session_completed' || action === 'setup_intent_succeeded';
+}
+
+export function isStripeWebhookScheduleCancelAction(action: StripeWebhookAction): action is 'cancel_schedule' {
+	return action === 'cancel_schedule';
 }

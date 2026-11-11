@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	assembleBillingContextFromLoadedRows,
 	assertHasBillingPhases,
 	assertPositiveYearlyCents,
 	BILLING_MONTHS_PER_YEAR,
 	buildBillingComputationFromLoadedData,
+	buildLessonPhasePriceIdempotencyKey,
+	buildLessonProductIdempotencyKey,
+	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
+	buildSetupScheduleIdempotencyKey,
+	buildStripeTuitionProductName,
 	calculateYearly,
 	clampToSchoolYear,
 	getOccurrenceDates,
@@ -12,8 +18,10 @@ import {
 	isTerminalScheduleStatus,
 	pickAgeTariff,
 	pickPriceCentsForTariff,
+	pickSharedRecurringMonthlyPriceId,
 	resolveBillingReferenceDate,
 	resolveStripeSubscriptionId,
+	resolveStripeTuitionPriceKind,
 } from '../../../supabase/functions/_shared/billingHelpers';
 
 describe('getSchoolYearForDateString', () => {
@@ -142,6 +150,20 @@ describe('billing pure helpers', () => {
 		expect(isTerminalScheduleStatus('released')).toBe(true);
 		expect(isTerminalScheduleStatus('active')).toBe(false);
 	});
+
+	it('builds stable Stripe idempotency keys for setup schedules and shared products', () => {
+		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
+		const attemptId = 'seti_1UaCGS8GrwT7wj0BChaoxfVI';
+		const optionId = 'opt-gitaar-30-weekly';
+		expect(buildSetupScheduleIdempotencyKey(agreementId, attemptId)).toBe(
+			`mcp_setup_schedule_${agreementId}_${attemptId}`,
+		);
+		expect(buildLessonProductIdempotencyKey(optionId)).toBe(`mcp_lesson_product_${optionId}`);
+		expect(buildLessonPhasePriceIdempotencyKey(optionId, 7338)).toBe(`mcp_lesson_price_${optionId}_7338`);
+		expect(buildLessonTypeOptionProductSearchQuery(optionId)).toBe(
+			`metadata['lesson_type_option_id']:'${optionId}'`,
+		);
+	});
 });
 
 describe('buildBillingComputationFromLoadedData', () => {
@@ -204,5 +226,122 @@ describe('buildBillingComputationFromLoadedData', () => {
 				today: '2026-09-15',
 			}),
 		).toThrow('Geen lesperiode');
+	});
+});
+
+describe('assembleBillingContextFromLoadedRows', () => {
+	const baseAgreement = {
+		id: 'agr-1',
+		student_user_id: 'stu-1',
+		lesson_type_id: 'lt-1',
+		frequency: 'weekly' as const,
+		duration_minutes: 45,
+		day_of_week: 3,
+		start_date: '2026-09-01',
+		end_date: null,
+		is_active: true,
+	};
+
+	it('maps option id and trims lesson type name from loaded rows', () => {
+		const result = assembleBillingContextFromLoadedRows({
+			agreement: baseAgreement,
+			option: {
+				id: 'opt-1',
+				price_per_lesson_youth_cents: 2000,
+				price_per_lesson_adult_cents: 2500,
+			},
+			student: { date_of_birth: '2010-01-01' },
+			noLessonPeriods: null,
+			lessonType: { name: '  Piano  ' },
+			today: '2026-09-15',
+		});
+		expect(result.lessonTypeOptionId).toBe('opt-1');
+		expect(result.lessonTypeName).toBe('Piano');
+		expect(result.billing.tariff).toBe('youth');
+		expect(result.billing.pricePerLessonCents).toBe(2000);
+	});
+
+	it('treats missing student and blank lesson type as nulls', () => {
+		const result = assembleBillingContextFromLoadedRows({
+			agreement: baseAgreement,
+			option: {
+				id: 'opt-2',
+				price_per_lesson_youth_cents: 2000,
+				price_per_lesson_adult_cents: 2500,
+			},
+			student: undefined,
+			noLessonPeriods: undefined,
+			lessonType: { name: '   ' },
+			today: '2026-09-15',
+		});
+		expect(result.lessonTypeOptionId).toBe('opt-2');
+		expect(result.lessonTypeName).toBeNull();
+		expect(result.billing.tariff).toBe('adult');
+	});
+});
+
+describe('buildStripeTuitionProductName', () => {
+	it('builds a shared option product title without student names', () => {
+		expect(
+			buildStripeTuitionProductName({
+				lessonTypeName: 'Gitaarles',
+				durationMinutes: 30,
+				frequency: 'weekly',
+			}),
+		).toBe('Lesgeld · Gitaarles · 30 min · wekelijks');
+	});
+});
+
+describe('resolveStripeTuitionPriceKind', () => {
+	it('treats leftover amount as the final installment kind', () => {
+		expect(resolveStripeTuitionPriceKind(5318, 5318, 2)).toBe('monthly');
+		expect(resolveStripeTuitionPriceKind(5320, 5318, 2)).toBe('final');
+		expect(resolveStripeTuitionPriceKind(5318, 5318, 0)).toBe('monthly');
+	});
+});
+
+describe('pickSharedRecurringMonthlyPriceId', () => {
+	it('reuses an active monthly price with the same unit amount', () => {
+		expect(
+			pickSharedRecurringMonthlyPriceId(
+				[
+					{
+						id: 'price_old',
+						active: true,
+						unit_amount: 7000,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+					{
+						id: 'price_match',
+						active: true,
+						unit_amount: 7338,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+				],
+				7338,
+			),
+		).toBe('price_match');
+	});
+
+	it('ignores inactive or non-monthly prices', () => {
+		expect(
+			pickSharedRecurringMonthlyPriceId(
+				[
+					{
+						id: 'price_inactive',
+						active: false,
+						unit_amount: 7338,
+						recurring: { interval: 'month', interval_count: 1 },
+					},
+					{
+						id: 'price_yearly',
+						active: true,
+						unit_amount: 7338,
+						recurring: { interval: 'year', interval_count: 1 },
+					},
+				],
+				7338,
+			),
+		).toBeNull();
 	});
 });

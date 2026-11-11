@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'bun:test';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
 	buildLocalSupabaseDotEnv,
+	CONFIG_TOML_REMOTE_NAME,
 	configPushEnvFromSecrets,
 	confirmTargetToken,
+	DEVELOPMENT_PROJECT_REF,
 	edgeSecretsEnvFile,
 	envEntriesEqual,
+	formatLocalSupabaseStartCommand,
 	isReservedSecretName,
+	LOCAL_SUPABASE_START_ARGS,
 	matchesConfirmTargetToken,
 	mergeRuntimeEnv,
 	missingRequiredSecretNames,
+	PRODUCTION_PROJECT_REF,
 	PUSH_ALL_STEPS,
 	parseConfirmMode,
 	parseDeployEnv,
@@ -24,7 +31,20 @@ import {
 	runtimeEnvFileForNodeEnv,
 	runtimeEnvFileForViteMode,
 	staleSecretNames,
+	TEST_PROJECT_REF,
 } from '../../../../scripts/supabase/envHelpers.ts';
+
+function configTomlRemoteProjectId(toml: string, remoteName: string): string | null {
+	const match = toml.match(new RegExp(`\\[remotes\\.${remoteName}\\]\\s*\\n\\s*project_id\\s*=\\s*"([^"]+)"`));
+	return match?.[1] ?? null;
+}
+
+describe('LOCAL_SUPABASE_START_ARGS', () => {
+	it('matches the workspace container start flags', () => {
+		expect([...LOCAL_SUPABASE_START_ARGS]).toEqual(['start', '--runtime', 'native', '--eager']);
+		expect(formatLocalSupabaseStartCommand()).toBe('supabase start --runtime native --eager');
+	});
+});
 
 describe('parseDeployEnv', () => {
 	it('defaults missing or empty arg to local', () => {
@@ -116,24 +136,38 @@ describe('resolveDeployTarget', () => {
 		});
 		expect(resolveDeployTarget('development')).toMatchObject({
 			env: 'development',
-			projectRef: 'zdvscmogkfyddnnxzkdu',
+			projectRef: DEVELOPMENT_PROJECT_REF,
 			envFile: 'supabase/.env.development',
 			runtimeEnvFile: '.env.development.local',
 			confirm: 'confirmYes',
 		});
 		expect(resolveDeployTarget('test')).toMatchObject({
 			env: 'test',
-			projectRef: 'jserlqacarlgtdzrblic',
+			projectRef: TEST_PROJECT_REF,
 			envFile: 'supabase/.env.test',
 			runtimeEnvFile: '.env.test.local',
 		});
 		expect(resolveDeployTarget('production')).toMatchObject({
 			env: 'production',
-			projectRef: 'bnagepkxryauifzyoxgo',
+			projectRef: PRODUCTION_PROJECT_REF,
 			envFile: 'supabase/.env.production',
 			runtimeEnvFile: '.env.production.local',
 			confirm: 'confirmTarget',
 		});
+	});
+});
+
+describe('CONFIG_TOML_REMOTE_NAME', () => {
+	it('keeps supabase/config.toml remote project_ids aligned with supabase.json', () => {
+		const toml = readFileSync(join(import.meta.dir, '../../../../supabase/config.toml'), 'utf8');
+		expect(CONFIG_TOML_REMOTE_NAME).toEqual({
+			development: 'dev',
+			test: 'test',
+			production: 'prod',
+		});
+		expect(configTomlRemoteProjectId(toml, CONFIG_TOML_REMOTE_NAME.development)).toBe(DEVELOPMENT_PROJECT_REF);
+		expect(configTomlRemoteProjectId(toml, CONFIG_TOML_REMOTE_NAME.test)).toBe(TEST_PROJECT_REF);
+		expect(configTomlRemoteProjectId(toml, CONFIG_TOML_REMOTE_NAME.production)).toBe(PRODUCTION_PROJECT_REF);
 	});
 });
 
@@ -153,16 +187,16 @@ describe('parseConfirmMode', () => {
 describe('confirmTargetToken', () => {
 	it('uses local for Docker and the project ref for remotes', () => {
 		expect(confirmTargetToken(resolveDeployTarget('local'))).toBe('local');
-		expect(confirmTargetToken(resolveDeployTarget('production'))).toBe('bnagepkxryauifzyoxgo');
+		expect(confirmTargetToken(resolveDeployTarget('production'))).toBe(PRODUCTION_PROJECT_REF);
 	});
 });
 
 describe('matchesConfirmTargetToken', () => {
 	it('accepts an exact trimmed match and rejects other input', () => {
-		expect(matchesConfirmTargetToken(' bnagepkxryauifzyoxgo ', 'bnagepkxryauifzyoxgo')).toBe(true);
+		expect(matchesConfirmTargetToken(` ${PRODUCTION_PROJECT_REF} `, PRODUCTION_PROJECT_REF)).toBe(true);
 		expect(matchesConfirmTargetToken('local', 'local')).toBe(true);
 		expect(matchesConfirmTargetToken('LOCAL', 'local')).toBe(false);
-		expect(matchesConfirmTargetToken('bnage', 'bnagepkxryauifzyoxgo')).toBe(false);
+		expect(matchesConfirmTargetToken(PRODUCTION_PROJECT_REF.slice(0, 5), PRODUCTION_PROJECT_REF)).toBe(false);
 	});
 });
 

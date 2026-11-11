@@ -3,14 +3,15 @@
 import { jsonResponse, UUID_RE } from '../_shared/http.ts';
 import { getSiteBaseUrl } from '../_shared/http-serve.ts';
 import {
+	buildPaymentLinkEmailHtml,
 	buildPaymentLinkRequestResponse,
 	countRecentPaymentLinkRequests,
 	isPaymentLinkRequestAllowedAddress,
 	isPaymentLinkRequestRateLimited,
 	issueAgreementPaymentLink,
 	isValidEmailInput,
+	loadAgreementCreatedPaymentMailVars,
 	loadBillingRecipientForStudent,
-	paymentLinkBetaalblok,
 	paymentLinkRequestWindowStart,
 } from '../_shared/paymentLink.ts';
 import { beginPublicJsonPost } from '../_shared/paymentLinkHttpHelpers.ts';
@@ -26,23 +27,15 @@ async function sendRequestedLink(
 	recipient: string,
 ): Promise<void> {
 	const { paymentUrl } = await issueAgreementPaymentLink(admin, getSiteBaseUrl(req), agreementId);
-	await sendTemplateEmail({
+	const paymentCtaMarkdown = buildPaymentLinkEmailHtml(paymentUrl);
+	const vars = await loadAgreementCreatedPaymentMailVars(admin, agreementId, paymentCtaMarkdown);
+	const mail = await sendTemplateEmail({
 		event_key: 'agreement_created',
 		to: recipient,
-		vars: {
-			leerling_naam: '',
-			docent_naam: '',
-			les_type: '',
-			frequentie: '',
-			prijs_per_les: '',
-			dag: '',
-			tijd: '',
-			startdatum: '',
-			betaalmethode: 'Stripe',
-			betaalblok: paymentLinkBetaalblok(paymentUrl),
-		},
+		vars,
 		origin: req.headers.get('Origin'),
 	});
+	if (!mail.ok) return;
 	await admin.from('stripe_checkout_invitations').insert({
 		lesson_agreement_id: agreementId,
 		recipient_email: recipient,

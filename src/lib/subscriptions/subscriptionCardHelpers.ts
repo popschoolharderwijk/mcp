@@ -1,17 +1,17 @@
+import { getInvokeErrorMessage } from '@/lib/auth/invokeError';
 import {
 	SUBSCRIPTION_STATUS_LABELS,
 	SUBSCRIPTION_STATUS_VARIANTS,
 	type SubscriptionStatus,
 } from '@/types/subscriptions';
 
-export type SubscriptionAction = 'send-invite' | 'open-portal' | 'rebuild' | 'sync' | 'force-start';
+export type SubscriptionAction = 'send-invite' | 'open-portal' | 'rebuild' | 'sync';
 
 export const SUBSCRIPTION_ACTION_FUNCTIONS: Record<SubscriptionAction, string> = {
 	'send-invite': 'issue-payment-link',
 	'open-portal': 'create-customer-portal',
 	rebuild: 'rebuild-subscription-schedule',
 	sync: 'sync-stripe-subscription',
-	'force-start': 'force-start-subscription',
 };
 
 const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
@@ -19,8 +19,15 @@ const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
 	'open-portal': 'Kon het klantportaal niet openen',
 	rebuild: 'Kon de nieuwe tarieven niet toepassen',
 	sync: 'Kon niet synchroniseren met Stripe',
-	'force-start': 'Kon het abonnement niet direct starten',
 };
+
+export function buildIssuePaymentLinkBody(lessonAgreementId: string, recipientEmail?: string): Record<string, unknown> {
+	const trimmed = recipientEmail?.trim();
+	return {
+		lesson_agreement_id: lessonAgreementId,
+		...(trimmed ? { recipient_email: trimmed } : {}),
+	};
+}
 
 export function buildSubscriptionActionBody(
 	action: SubscriptionAction,
@@ -29,19 +36,42 @@ export function buildSubscriptionActionBody(
 	returnUrl: string,
 ): Record<string, unknown> {
 	if (action === 'open-portal') return { user_id: studentUserId, return_url: returnUrl };
-	if (action === 'send-invite') return { lesson_agreement_id: lessonAgreementId, send: true };
+	if (action === 'send-invite') return buildIssuePaymentLinkBody(lessonAgreementId);
 	return { lesson_agreement_id: lessonAgreementId };
 }
 
+export function resolveIssuedPaymentUrl(data: unknown): string | null {
+	const url = (data as { payment_url?: unknown } | null)?.payment_url;
+	if (typeof url !== 'string' || url.length === 0) return null;
+	return url;
+}
+
 export function shouldShowResendInvitation(
-	subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined,
+	subscription:
+		| {
+				status?: string | null;
+				stripe_schedule_id?: string | null;
+				stripe_subscription_id?: string | null;
+		  }
+		| null
+		| undefined,
 ): boolean {
-	return !subscription?.stripe_schedule_id && !subscription?.stripe_subscription_id;
+	if (!subscription) return true;
+	if (subscription.stripe_schedule_id) return false;
+	if (subscription.status === 'canceled') return true;
+	return !subscription.stripe_subscription_id;
 }
 
 export function shouldShowResendAction(
 	loading: boolean,
-	subscription: { stripe_schedule_id?: string | null; stripe_subscription_id?: string | null } | null | undefined,
+	subscription:
+		| {
+				status?: string | null;
+				stripe_schedule_id?: string | null;
+				stripe_subscription_id?: string | null;
+		  }
+		| null
+		| undefined,
 ): boolean {
 	if (loading) return false;
 	return shouldShowResendInvitation(subscription);
@@ -82,11 +112,24 @@ export function subscriptionInviteSentDay(
 export function resolveSubscriptionActionError(
 	action: SubscriptionAction,
 	data: unknown,
-	error: { message?: string } | null,
+	error: unknown,
 ): string | null {
 	const dataError = (data as { error?: unknown } | null)?.error;
 	if (typeof dataError === 'string') return dataError;
 	if (error) return ACTION_FALLBACK_ERRORS[action];
+	return null;
+}
+
+/** Transport/server error (incl. FunctionsHttpError body), or 200 without `sent: true`. */
+export async function resolveIssuePaymentLinkSendError(data: unknown, error: unknown): Promise<string | null> {
+	const dataError = (data as { error?: unknown } | null)?.error;
+	if (typeof dataError === 'string') return dataError;
+	if (error) {
+		return getInvokeErrorMessage(error, { fallback: ACTION_FALLBACK_ERRORS['send-invite'] });
+	}
+	if ((data as { sent?: unknown } | null)?.sent !== true) {
+		return ACTION_FALLBACK_ERRORS['send-invite'];
+	}
 	return null;
 }
 
@@ -112,11 +155,29 @@ export function resolveSubscriptionActionSuccess(action: SubscriptionAction, dat
 			return payload.synced
 				? `Gesynchroniseerd met Stripe (status: ${payload.status ?? 'onbekend'})`
 				: 'Stripe heeft nog geen actief abonnement';
-		case 'force-start':
-			return 'Abonnement direct gestart in Stripe';
 		default:
 			return 'Klaar';
 	}
+}
+
+export type IssueAndOpenPayDecision =
+	| { kind: 'ok'; url: string; successMessage: string }
+	| { kind: 'error'; message: string };
+
+/**
+ * Staff “Open betaalscherm”: same as send-invite (mail + token), then open `/pay`.
+ * Requires a successful issue payload with `payment_url`.
+ */
+export async function decideIssueAndOpenPay(data: unknown, error: unknown): Promise<IssueAndOpenPayDecision> {
+	const sendError = await resolveIssuePaymentLinkSendError(data, error);
+	if (sendError) return { kind: 'error', message: sendError };
+	const url = resolveIssuedPaymentUrl(data);
+	if (!url) return { kind: 'error', message: 'Geen betaallink-URL ontvangen' };
+	return {
+		kind: 'ok',
+		url,
+		successMessage: resolveSubscriptionActionSuccess('send-invite', data),
+	};
 }
 
 export function extractPortalUrl(data: unknown): string | null {
@@ -142,12 +203,15 @@ export type SubscriptionActionOutcome =
 	| { kind: 'portal'; url: string | null }
 	| { kind: 'success'; message: string };
 
-export function resolveSubscriptionActionOutcome(
+export async function resolveSubscriptionActionOutcome(
 	action: SubscriptionAction,
 	data: unknown,
-	error: { message?: string } | null,
-): SubscriptionActionOutcome {
-	const message = resolveSubscriptionActionError(action, data, error);
+	error: unknown,
+): Promise<SubscriptionActionOutcome> {
+	const message =
+		action === 'send-invite'
+			? await resolveIssuePaymentLinkSendError(data, error)
+			: resolveSubscriptionActionError(action, data, error);
 	if (message) return { kind: 'error', message };
 	if (action === 'open-portal') return { kind: 'portal', url: extractPortalUrl(data) };
 	return { kind: 'success', message: resolveSubscriptionActionSuccess(action, data) };

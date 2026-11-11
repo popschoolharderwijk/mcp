@@ -2,16 +2,18 @@
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
+	buildAgreementCreatedPaymentMailVars,
 	buildBillingRecipientBundle,
-	buildPaymentLinkEmailHtml,
 	buildPaymentLinkUrl,
 	computeMinimumTermEnd,
+	extractAgreementPaymentMailLessonTypeName,
 	generatePaymentLinkToken,
 	hashPaymentLinkToken,
 	paymentLinkTokenMatches,
 } from './paymentLinkHelpers.ts';
 
 export {
+	buildPaymentLinkEmailHtml,
 	buildPaymentLinkRequestResponse,
 	buildPaymentLinkUrl,
 	isPaymentLinkRequestAllowedAddress,
@@ -73,6 +75,58 @@ export async function loadBillingRecipientForStudent(
 	return buildBillingRecipientBundle(student?.parent_email, profile?.email);
 }
 
+/** Loads agreement + names for `agreement_created` payment-link mails. */
+export async function loadAgreementCreatedPaymentMailVars(
+	admin: SupabaseClient,
+	lessonAgreementId: string,
+	paymentCtaMarkdown: string,
+): Promise<Record<string, string>> {
+	const { data: agreement } = await admin
+		.from('lesson_agreements')
+		.select(
+			`day_of_week, start_time, start_date, frequency, price_per_lesson,
+			 student_user_id, teacher_user_id,
+			 lesson_types ( name )`,
+		)
+		.eq('id', lessonAgreementId)
+		.maybeSingle();
+
+	if (!agreement) {
+		return buildAgreementCreatedPaymentMailVars({
+			agreement: {
+				day_of_week: 0,
+				start_time: '',
+				start_date: '',
+				frequency: '',
+				price_per_lesson: null,
+			},
+			student: null,
+			teacher: null,
+			lessonTypeName: '',
+			paymentCtaMarkdown,
+		});
+	}
+
+	const [{ data: student }, { data: teacher }] = await Promise.all([
+		admin.from('profiles').select('first_name, last_name').eq('user_id', agreement.student_user_id).maybeSingle(),
+		admin.from('profiles').select('first_name, last_name').eq('user_id', agreement.teacher_user_id).maybeSingle(),
+	]);
+
+	return buildAgreementCreatedPaymentMailVars({
+		agreement: {
+			day_of_week: agreement.day_of_week,
+			start_time: agreement.start_time,
+			start_date: agreement.start_date,
+			frequency: agreement.frequency,
+			price_per_lesson: agreement.price_per_lesson,
+		},
+		student,
+		teacher,
+		lessonTypeName: extractAgreementPaymentMailLessonTypeName(agreement.lesson_types),
+		paymentCtaMarkdown,
+	});
+}
+
 export async function countRecentPaymentLinkRequests(
 	admin: SupabaseClient,
 	lessonAgreementId: string,
@@ -88,8 +142,4 @@ export async function countRecentPaymentLinkRequests(
 
 export function paymentLinkRequestWindowStart(now = new Date()): string {
 	return new Date(now.getTime() - 60 * 60 * 1000).toISOString();
-}
-
-export function paymentLinkBetaalblok(paymentUrl: string): string {
-	return buildPaymentLinkEmailHtml(paymentUrl);
 }

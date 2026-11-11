@@ -3,6 +3,7 @@ import {
 	buildArrangedPaymentLinkInfo,
 	buildBillingRecipientBundle,
 	buildOpenPaymentLinkInfo,
+	buildPaymentLinkParties,
 	buildPaymentLinkPreview,
 	resolveLessonFormName,
 } from '../../../supabase/functions/_shared/paymentLinkHelpers';
@@ -20,33 +21,75 @@ const agreement = {
 	day_of_week: 1,
 	minimum_term_end: '2027-02-28',
 	student_user_id: 's1',
+	teacher_user_id: 't1',
 	lesson_type_id: 'lt1',
 	is_active: true,
 	stripe_schedule_id: null as string | null,
 	lesson_types: { name: 'Piano' },
 };
 
+const parties = {
+	student: {
+		first_name: 'Roan',
+		last_name: 'van der Steen',
+		avatar_url: 'https://example.com/roan.png',
+	},
+	teacher: {
+		first_name: 'Sam',
+		last_name: 'Docent',
+		avatar_url: null,
+	},
+};
+
 describe('paymentLinkInfoHelpers', () => {
 	it('resolves lesson form and arranged payload', () => {
 		expect(resolveLessonFormName(null)).toBe('Les');
 		expect(resolveLessonFormName({ name: 'Gitaar' })).toBe('Gitaar');
-		expect(buildArrangedPaymentLinkInfo({ ...agreement, stripe_schedule_id: 'sch_1' })).toEqual({
+		expect(buildArrangedPaymentLinkInfo({ ...agreement, stripe_schedule_id: 'sch_1' }, parties)).toEqual({
 			valid: true,
 			arranged: true,
 			lesson_form: 'Piano',
+			student: parties.student,
+			teacher: parties.teacher,
 			start_date: '2026-09-01',
 			minimum_term_end: '2027-02-28',
 		});
 	});
 
-	it('builds open payload with catch-up preview', () => {
-		const preview = buildPaymentLinkPreview('2026-09-01', '2026-12-01', {
-			monthlyCents: 5000,
-			yearlyCents: 55000,
+	it('builds open payload with catch-up preview and party profiles', () => {
+		const preview = buildPaymentLinkPreview(
+			{ monthlyCents: 5000, yearlyCents: 55000, leftoverCents: 50 },
+			{ amountCents: 15000, fromMonth: '2026-09', toMonth: '2026-11' },
+		);
+		expect(preview?.finalMonthCents).toBe(5050);
+		expect(preview?.catchUp).toBe(true);
+		expect(preview?.catchUpCents).toBe(15000);
+		expect(buildOpenPaymentLinkInfo(agreement, preview, parties).preview).toEqual(preview);
+		expect(buildPaymentLinkPreview(null, null)).toBeNull();
+		expect(
+			buildPaymentLinkPreview({ monthlyCents: 5000, yearlyCents: 55000, leftoverCents: 0 }, null)
+				?.finalMonthCents,
+		).toBeNull();
+	});
+
+	it('maps party profiles and nulls missing avatar fields', () => {
+		expect(
+			buildPaymentLinkParties(
+				{ first_name: 'Roan', last_name: 'van der Steen', avatar_url: 'https://example.com/roan.png' },
+				null,
+			),
+		).toEqual({
+			student: {
+				first_name: 'Roan',
+				last_name: 'van der Steen',
+				avatar_url: 'https://example.com/roan.png',
+			},
+			teacher: {
+				first_name: null,
+				last_name: null,
+				avatar_url: null,
+			},
 		});
-		expect(preview).toEqual({ monthlyCents: 5000, yearlyCents: 55000, catchUp: true });
-		expect(buildOpenPaymentLinkInfo(agreement, preview).arranged).toBe(false);
-		expect(buildPaymentLinkPreview('2026-09-01', '2026-09-15', null)).toBeNull();
 	});
 });
 

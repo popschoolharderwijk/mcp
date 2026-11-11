@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	getStripeId,
+	paymentMethodListTypeForFingerprintDedupe,
 	readGeneratedSepaDebitFromDetails,
 	readGeneratedSepaDebitPaymentMethodId,
+	readPaymentMethodFingerprint,
+	selectDuplicateFingerprintPaymentMethodIds,
 } from '../../../supabase/functions/_shared/stripeHelpers';
 
 describe('getStripeId', () => {
@@ -48,5 +51,86 @@ describe('readGeneratedSepaDebitPaymentMethodId', () => {
 
 	it('returns null when latest attempt is missing', () => {
 		expect(readGeneratedSepaDebitPaymentMethodId(null)).toBeNull();
+	});
+});
+
+describe('payment method fingerprint duplicates', () => {
+	it('reads sepa and card fingerprints', () => {
+		expect(
+			readPaymentMethodFingerprint({
+				id: 'pm_sepa',
+				type: 'sepa_debit',
+				sepa_debit: { fingerprint: 'fp_sepa' },
+			}),
+		).toBe('fp_sepa');
+		expect(
+			readPaymentMethodFingerprint({
+				id: 'pm_card',
+				type: 'card',
+				card: { fingerprint: 'fp_card' },
+			}),
+		).toBe('fp_card');
+		expect(readPaymentMethodFingerprint({ id: 'pm_ideal', type: 'ideal' })).toBeNull();
+	});
+
+	it('selects only same-type same-fingerprint duplicates', () => {
+		expect(
+			selectDuplicateFingerprintPaymentMethodIds(
+				{
+					id: 'pm_new',
+					type: 'sepa_debit',
+					sepa_debit: { fingerprint: 'kltLlWO5ST2McK7b' },
+				},
+				[
+					{
+						id: 'pm_new',
+						type: 'sepa_debit',
+						sepa_debit: { fingerprint: 'kltLlWO5ST2McK7b' },
+					},
+					{
+						id: 'pm_old_same',
+						type: 'sepa_debit',
+						sepa_debit: { fingerprint: 'kltLlWO5ST2McK7b' },
+					},
+					{
+						id: 'pm_other_bank',
+						type: 'sepa_debit',
+						sepa_debit: { fingerprint: 'other_fp' },
+					},
+					{
+						id: 'pm_card_same_fp',
+						type: 'card',
+						card: { fingerprint: 'kltLlWO5ST2McK7b' },
+					},
+				],
+			),
+		).toEqual(['pm_old_same']);
+	});
+
+	it('selects nothing when the kept method has no fingerprint', () => {
+		expect(
+			selectDuplicateFingerprintPaymentMethodIds(
+				{ id: 'pm_new', type: 'sepa_debit', sepa_debit: { fingerprint: null } },
+				[{ id: 'pm_old', type: 'sepa_debit', sepa_debit: { fingerprint: 'fp' } }],
+			),
+		).toEqual([]);
+	});
+
+	it('lists by type only when the kept method has a fingerprint', () => {
+		expect(
+			paymentMethodListTypeForFingerprintDedupe({
+				id: 'pm_new',
+				type: 'sepa_debit',
+				sepa_debit: { fingerprint: 'fp' },
+			}),
+		).toBe('sepa_debit');
+		expect(
+			paymentMethodListTypeForFingerprintDedupe({
+				id: 'pm_new',
+				type: 'sepa_debit',
+				sepa_debit: { fingerprint: null },
+			}),
+		).toBeNull();
+		expect(paymentMethodListTypeForFingerprintDedupe({ id: 'pm_new', type: null })).toBeNull();
 	});
 });

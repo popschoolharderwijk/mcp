@@ -97,35 +97,44 @@ const ALLOWED_SITE_HOSTS = new Set([
 	'id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app',
 	'098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com',
 ]);
+const LOOPBACK_SITE_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
-function isAllowedSiteHost(hostname: string): boolean {
+function isAllowedHttpsSiteHost(hostname: string): boolean {
 	return ALLOWED_SITE_HOSTS.has(hostname);
 }
 
-function resolveAllowedHttpsUrl(candidate: string | null | undefined, format: (url: URL) => string): string | null {
+function isLoopbackSiteHost(hostname: string): boolean {
+	return LOOPBACK_SITE_HOSTS.has(hostname);
+}
+
+/** Hosted sites: https allow-list. Local Vite (`bun run dev:local`): http loopback only. */
+function isAllowedSiteUrl(url: URL): boolean {
+	if (url.protocol === 'https:' && isAllowedHttpsSiteHost(url.hostname)) return true;
+	return url.protocol === 'http:' && isLoopbackSiteHost(url.hostname);
+}
+
+function resolveAllowedUrl(candidate: string | null | undefined, format: (url: URL) => string): string | null {
 	if (!candidate) return null;
 	try {
 		const url = new URL(candidate);
-		if (url.protocol === 'https:' && isAllowedSiteHost(url.hostname)) {
-			return format(url);
-		}
+		if (isAllowedSiteUrl(url)) return format(url);
 	} catch {
 		// invalid URL
 	}
 	return null;
 }
 
-/** Return `candidate` as an origin string if it is an https URL on the allow-list, else null. */
+/** Return `candidate` as an origin when it is an allow-listed site URL, else null. */
 export function resolveAllowedSiteUrl(candidate: string | null | undefined): string | null {
-	return resolveAllowedHttpsUrl(candidate, (url) => url.origin);
+	return resolveAllowedUrl(candidate, (url) => url.origin);
 }
 
-/** Return the full redirect URL when it is https and on the allow-list, else null. */
+/** Return the full redirect URL when it is an allow-listed site URL, else null. */
 export function resolveAllowedRedirectUrl(candidate: string | null | undefined): string | null {
-	return resolveAllowedHttpsUrl(candidate, (url) => url.toString());
+	return resolveAllowedUrl(candidate, (url) => url.toString());
 }
 
-/** Resolve HTTPS site origin from request Origin header or provided env/fallback values. */
+/** Resolve site origin from request Origin header or provided env/fallback values. */
 export function resolveSiteBaseUrl(
 	req: Request,
 	envSiteUrl: string | null | undefined,

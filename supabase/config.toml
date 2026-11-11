@@ -32,6 +32,9 @@ inspector_port = 8183
 enabled = true
 sql_paths = ["./seeds/bootstrap.sql", "./seeds/lesson-types.sql", "./seeds/test.sql"]
 
+# Remote project_id values must match root supabase.json (`targets.*.projectRef`).
+# Mapping: remotes.dev → development, remotes.test → test, remotes.prod → production.
+
 [remotes.test]
 project_id = "jserlqacarlgtdzrblic"
 
@@ -236,7 +239,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.issue-payment-link]
-verify_jwt = false
-
-[functions.sync-stripe-catalog]
 verify_jwt = false

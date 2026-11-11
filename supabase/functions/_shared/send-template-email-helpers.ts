@@ -71,3 +71,16 @@ export function resolveSendTemplateEmailRecipientError(to: string | undefined): 
 export function validateSendTemplateEmailBodyInput(body: SendTemplateEmailBody): string | null {
 	return resolveSendTemplateEmailEventKeyError(body.event_key) ?? resolveSendTemplateEmailRecipientError(body.to);
 }
+
+/** Map Resend API error bodies to a stable Dutch UI message. */
+export function resolveResendApiErrorMessage(errText: string): string {
+	try {
+		const parsed = JSON.parse(errText) as { message?: unknown };
+		if (typeof parsed.message === 'string' && parsed.message.includes('domain is not verified')) {
+			return 'Afzenderdomein is niet geverifieerd in Resend (controleer RESEND_FROM_EMAIL)';
+		}
+	} catch {
+		/* not JSON */
+	}
+	return 'Mail-verzending mislukt';
+}

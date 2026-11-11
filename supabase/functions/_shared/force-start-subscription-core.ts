@@ -1,9 +1,15 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
+import { type BillingComputationAgreement, buildAgreementStripeMetadata } from './billingHelpers.ts';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
 
 export { readScheduleBillingDetails } from './force-start-subscription-helpers.ts';
+
+export type ForceStartAgreementMeta = Pick<
+	BillingComputationAgreement,
+	'id' | 'lesson_type_id' | 'frequency' | 'duration_minutes'
+>;
 
 export async function cancelScheduleIfActive(
 	stripe: Stripe,
@@ -19,7 +25,7 @@ export async function createForcedSubscription(
 	input: {
 		customerId: string;
 		priceId: string;
-		lessonAgreementId: string;
+		agreement: ForceStartAgreementMeta;
 		scheduleId: string;
 		defaultPaymentMethod?: string;
 	},
@@ -31,7 +37,7 @@ export async function createForcedSubscription(
 		proration_behavior: 'none',
 		...(input.defaultPaymentMethod ? { default_payment_method: input.defaultPaymentMethod } : {}),
 		metadata: {
-			lesson_agreement_id: input.lessonAgreementId,
+			...buildAgreementStripeMetadata(input.agreement),
 			forced_start: 'true',
 			original_schedule_id: input.scheduleId,
 		},

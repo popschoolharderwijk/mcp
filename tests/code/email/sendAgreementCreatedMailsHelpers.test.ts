@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildAgreementMailContext,
 	buildAgreementMailInvokeBody,
-	buildAgreementMailTargets,
 } from '../../../src/lib/email/sendAgreementCreatedMailsHelpers';
 
 describe('buildAgreementMailContext', () => {
@@ -99,29 +98,12 @@ describe('buildAgreementMailInvokeBody', () => {
 			{ first_name: 'Jan', last_name: 'Leerling' },
 			{ first_name: 'Piet', last_name: 'Docent' },
 		);
-		expect(buildAgreementMailInvokeBody('agreement_created', 'Jan@Example.com', context.sharedVars)).toEqual({
-			event_key: 'agreement_created',
+		expect(
+			buildAgreementMailInvokeBody('agreement_created_teacher', 'Jan@Example.com', context.sharedVars),
+		).toEqual({
+			event_key: 'agreement_created_teacher',
 			to: 'jan@example.com',
 			vars: context.sharedVars,
 		});
-	});
-});
-
-describe('buildAgreementMailTargets', () => {
-	it('returns student and teacher targets when both emails exist', () => {
-		expect(buildAgreementMailTargets('stu@example.com', 'tea@example.com')).toEqual([
-			{ eventKey: 'agreement_created', email: 'stu@example.com' },
-			{ eventKey: 'agreement_created_teacher', email: 'tea@example.com' },
-		]);
-	});
-
-	it('returns only student target when teacher email is missing', () => {
-		expect(buildAgreementMailTargets('stu@example.com', null)).toEqual([
-			{ eventKey: 'agreement_created', email: 'stu@example.com' },
-		]);
-	});
-
-	it('returns empty list when both emails are missing', () => {
-		expect(buildAgreementMailTargets(null, undefined)).toEqual([]);
 	});
 });

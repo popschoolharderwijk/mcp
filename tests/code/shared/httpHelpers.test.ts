@@ -13,9 +13,17 @@ describe('resolveAllowedSiteUrl', () => {
 		);
 	});
 
+	it('returns the origin for loopback http hosts used by local Vite', () => {
+		expect(resolveAllowedSiteUrl('http://127.0.0.1:8081/pay')).toBe('http://127.0.0.1:8081');
+		expect(resolveAllowedSiteUrl('http://localhost:8081')).toBe('http://localhost:8081');
+		expect(resolveAllowedSiteUrl('http://[::1]:8081')).toBe('http://[::1]:8081');
+	});
+
 	it('returns null for disallowed or invalid urls', () => {
 		expect(resolveAllowedSiteUrl('http://mcp.mplifi.nl')).toBeNull();
+		expect(resolveAllowedSiteUrl('https://127.0.0.1:8081')).toBeNull();
 		expect(resolveAllowedSiteUrl('https://evil.example.com')).toBeNull();
+		expect(resolveAllowedSiteUrl('http://evil.example.com')).toBeNull();
 		expect(resolveAllowedSiteUrl('not-a-url')).toBeNull();
 		expect(resolveAllowedSiteUrl(null)).toBeNull();
 	});
@@ -25,6 +33,12 @@ describe('resolveAllowedRedirectUrl', () => {
 	it('returns the full url for allowed https hosts', () => {
 		expect(resolveAllowedRedirectUrl('https://mcp.mplifi.nl/stripe/checkout/start?agreement=1')).toBe(
 			'https://mcp.mplifi.nl/stripe/checkout/start?agreement=1',
+		);
+	});
+
+	it('returns the full url for loopback http hosts', () => {
+		expect(resolveAllowedRedirectUrl('http://127.0.0.1:8081/pay?agreement=1&t=abc')).toBe(
+			'http://127.0.0.1:8081/pay?agreement=1&t=abc',
 		);
 	});
 

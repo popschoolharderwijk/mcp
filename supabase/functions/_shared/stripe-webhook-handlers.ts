@@ -1,22 +1,30 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import { createScheduleForAgreement } from './billing.ts';
+import {
+	buildSetupScheduleIdempotencyKey,
+	createScheduleForAgreement,
+	ensureCatchUpInvoiceForAgreement,
+} from './billing.ts';
 import { attachDefaultPaymentMethod, getReusablePaymentMethodIdFromSetupIntent, getStripeId } from './stripe.ts';
 import { subscriptionToState } from './stripe-subscription-mapping.ts';
 import {
 	buildSubscriptionInvoiceUpsertRow,
 	extractCheckoutSubscriptionId,
 	extractStripeSubscriptionId,
-	hasScheduleSetupInput,
 	isScheduleSetupIntent,
 	isStripeWebhookCheckoutAction,
 	isStripeWebhookDataAction,
+	isStripeWebhookScheduleCancelAction,
+	resolveScheduleSetupIds,
 	resolveSetupIntentId,
 	resolveStripeWebhookAction,
+	type ScheduleSetupIds,
+	shouldClearAgreementScheduleForSubscriptionStatus,
 	shouldHandleSubscriptionCheckout,
 	shouldProcessSetupCheckoutSession,
 } from './stripeWebhookHandlersHelpers.ts';
 import { writeSubscriptionState } from './subscription-storage.ts';
+import { applyCanceledScheduleLocally, clearAgreementScheduleId } from './subscriptionScheduleCancel.ts';
 
 async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: string): Promise<boolean> {
 	const { data } = await admin
@@ -27,6 +35,49 @@ async function hasExistingSchedule(admin: SupabaseClient, lessonAgreementId: str
 	return Boolean(data?.stripe_schedule_id);
 }
 
+async function ensureCatchUpForReadySetup(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<void> {
+	await ensureCatchUpInvoiceForAgreement(admin, stripe, {
+		lessonAgreementId: ready.lessonAgreementId,
+		customerId: ready.customerId,
+		defaultPaymentMethod: ready.paymentMethodId,
+		attemptId: ready.attemptId,
+	});
+}
+
+/** Attach + catch-up when a schedule already exists. Failures throw (webhook → 500 / Stripe retry). */
+async function settleSetupWhenScheduleExists(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<void> {
+	await attachDefaultPaymentMethod(stripe, ready.customerId, ready.paymentMethodId);
+	await ensureCatchUpForReadySetup(admin, stripe, ready);
+}
+
+async function createScheduleOrRetryCatchUp(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	ready: ScheduleSetupIds,
+): Promise<void> {
+	try {
+		await createScheduleForAgreement(admin, stripe, {
+			lessonAgreementId: ready.lessonAgreementId,
+			customerId: ready.customerId,
+			defaultPaymentMethod: ready.paymentMethodId,
+			attemptId: ready.attemptId,
+			idempotencyKey: buildSetupScheduleIdempotencyKey(ready.lessonAgreementId, ready.attemptId),
+		});
+	} catch (e) {
+		if (!(await hasExistingSchedule(admin, ready.lessonAgreementId))) throw e;
+		// Concurrent create may have persisted the schedule; catch-up must still succeed.
+		await ensureCatchUpForReadySetup(admin, stripe, ready);
+	}
+}
+
 async function createScheduleFromSetupPaymentMethod(
 	admin: SupabaseClient,
 	stripe: Stripe,
@@ -34,31 +85,29 @@ async function createScheduleFromSetupPaymentMethod(
 		lessonAgreementId: string | null;
 		customerId: string | null;
 		paymentMethodId: string | null;
+		attemptId: string | null;
 		sourceId: string;
 	},
 ): Promise<void> {
-	if (!hasScheduleSetupInput(input)) {
-		console.warn('setup event missing agreement/customer/payment_method', input.sourceId);
+	const ready = resolveScheduleSetupIds(input);
+	if (!ready) {
+		console.warn('setup event missing agreement/customer/payment_method/attempt', input.sourceId);
 		return;
 	}
 
-	if (await hasExistingSchedule(admin, input.lessonAgreementId)) {
-		console.log('schedule already exists for agreement', input.lessonAgreementId);
+	if (await hasExistingSchedule(admin, ready.lessonAgreementId)) {
+		await settleSetupWhenScheduleExists(admin, stripe, ready);
 		return;
 	}
 
-	try {
-		await attachDefaultPaymentMethod(stripe, input.customerId, input.paymentMethodId);
-	} catch (e) {
-		console.error('attach payment method failed', e);
+	await attachDefaultPaymentMethod(stripe, ready.customerId, ready.paymentMethodId);
+
+	if (await hasExistingSchedule(admin, ready.lessonAgreementId)) {
+		await ensureCatchUpForReadySetup(admin, stripe, ready);
 		return;
 	}
 
-	await createScheduleForAgreement(admin, stripe, {
-		lessonAgreementId: input.lessonAgreementId,
-		customerId: input.customerId,
-		defaultPaymentMethod: input.paymentMethodId,
-	});
+	await createScheduleOrRetryCatchUp(admin, stripe, ready);
 }
 
 async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscription): Promise<void> {
@@ -68,6 +117,19 @@ async function upsertSubscription(admin: SupabaseClient, sub: Stripe.Subscriptio
 		return;
 	}
 	await writeSubscriptionState(admin, state);
+	if (shouldClearAgreementScheduleForSubscriptionStatus(state.status)) {
+		await clearAgreementScheduleId(admin, state.lesson_agreement_id);
+	}
+}
+
+async function handleSubscriptionScheduleCanceled(
+	admin: SupabaseClient,
+	schedule: Stripe.SubscriptionSchedule,
+): Promise<void> {
+	const { lessonAgreementId } = await applyCanceledScheduleLocally(admin, schedule);
+	if (!lessonAgreementId) {
+		console.warn('schedule cancel without local subscription or agreement metadata', schedule.id);
+	}
 }
 
 async function upsertInvoice(admin: SupabaseClient, inv: Stripe.Invoice): Promise<void> {
@@ -115,6 +177,7 @@ async function handleSetupCheckoutCompleted(
 		lessonAgreementId: session.metadata?.lesson_agreement_id ?? null,
 		customerId: getStripeId(session.customer),
 		paymentMethodId,
+		attemptId: resolveSetupIntentId(session.setup_intent),
 		sourceId: session.id,
 	});
 }
@@ -155,8 +218,24 @@ async function handleSetupIntentSucceeded(
 		lessonAgreementId: expandedSetupIntent.metadata.lesson_agreement_id ?? null,
 		customerId: getStripeId(expandedSetupIntent.customer),
 		paymentMethodId: getReusablePaymentMethodIdFromSetupIntent(expandedSetupIntent),
+		attemptId: setupIntent.id,
 		sourceId: setupIntent.id,
 	});
+}
+
+async function dispatchStripeWebhookNonCancelAction(
+	admin: SupabaseClient,
+	stripe: Stripe,
+	event: Stripe.Event,
+	action: Exclude<ReturnType<typeof resolveStripeWebhookAction>, 'noop' | 'cancel_schedule'>,
+): Promise<void> {
+	if (isStripeWebhookDataAction(action)) {
+		await dispatchStripeWebhookDataAction(admin, stripe, event, action);
+		return;
+	}
+	if (isStripeWebhookCheckoutAction(action)) {
+		await dispatchStripeWebhookCheckoutAction(admin, stripe, event, action);
+	}
 }
 
 export async function handleStripeWebhookEvent(
@@ -166,13 +245,11 @@ export async function handleStripeWebhookEvent(
 ): Promise<void> {
 	const action = resolveStripeWebhookAction(event.type);
 	if (action === 'noop') return;
-	if (isStripeWebhookDataAction(action)) {
-		await dispatchStripeWebhookDataAction(admin, stripe, event, action);
+	if (isStripeWebhookScheduleCancelAction(action)) {
+		await handleSubscriptionScheduleCanceled(admin, event.data.object as Stripe.SubscriptionSchedule);
 		return;
 	}
-	if (isStripeWebhookCheckoutAction(action)) {
-		await dispatchStripeWebhookCheckoutAction(admin, stripe, event, action);
-	}
+	await dispatchStripeWebhookNonCancelAction(admin, stripe, event, action);
 }
 
 async function dispatchStripeWebhookDataAction(

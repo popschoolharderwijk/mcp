@@ -1,7 +1,15 @@
 import { StandaloneCenteredPage } from '@/components/auth/StandalonePageLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SubmitButton } from '@/components/ui/submit-button';
-import { formatCentsNl, formatTermText, type PaymentLinkInfo } from '@/lib/stripe/paymentLinkPageHelpers';
+import { UserDisplay } from '@/components/ui/user-display';
+import {
+	buildCatchUpNoticeText,
+	formatCentsNl,
+	formatTermText,
+	type PaymentLinkInfo,
+	type PaymentLinkPartyProfile,
+	type PaymentLinkPreview,
+} from '@/lib/stripe/paymentLinkPageHelpers';
 
 interface Props {
 	info: PaymentLinkInfo;
@@ -10,12 +18,16 @@ interface Props {
 	onStart: () => void;
 }
 
-export function PaymentLinkArrangedPanel() {
+export function PaymentLinkArrangedPanel({ justCompleted = false }: { justCompleted?: boolean }) {
 	return (
 		<StandaloneCenteredPage narrow>
-			<h1 className="font-bold text-2xl">Je machtiging is al geregeld</h1>
+			<h1 className="font-bold text-2xl">
+				{justCompleted ? 'Je machtiging is geregeld' : 'Je machtiging is al geregeld'}
+			</h1>
 			<p className="text-muted-foreground">
-				Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.
+				{justCompleted
+					? 'Bedankt. Het lesgeld wordt maandelijks afgeschreven.'
+					: 'Je hoeft niets meer te doen. Het lesgeld wordt maandelijks afgeschreven.'}
 			</p>
 		</StandaloneCenteredPage>
 	);
@@ -33,13 +45,41 @@ export function PaymentLinkInvalidPanel() {
 	);
 }
 
-function CatchUpNotice({ show }: { show: boolean }) {
-	if (!show) return null;
+function CatchUpNotice({ preview }: { preview: PaymentLinkPreview }) {
+	const text = buildCatchUpNoticeText(preview);
+	if (!text) return null;
+	return <p className="rounded-md border p-3 text-muted-foreground">{text}</p>;
+}
+
+function PreviewAmountRows({ preview }: { preview: PaymentLinkPreview }) {
 	return (
-		<p className="rounded-md border p-3 text-muted-foreground">
-			Omdat de startdatum al voorbij is, brengen we gemiste maanden in één keer in rekening na je machtiging
-			(augustus telt niet mee).
-		</p>
+		<>
+			<dt className="text-muted-foreground">Maandtermijn</dt>
+			<dd>{formatCentsNl(preview.monthlyCents)}</dd>
+			{preview.finalMonthCents != null ? (
+				<>
+					<dt className="text-muted-foreground">Slotmaand</dt>
+					<dd>{formatCentsNl(preview.finalMonthCents)}</dd>
+				</>
+			) : null}
+			{preview.catchUp && preview.catchUpCents != null ? (
+				<>
+					<dt className="text-muted-foreground">Inhaalfactuur</dt>
+					<dd>{formatCentsNl(preview.catchUpCents)}</dd>
+				</>
+			) : null}
+			<dt className="text-muted-foreground">Per schooljaar</dt>
+			<dd>{formatCentsNl(preview.yearlyCents)}</dd>
+		</>
+	);
+}
+
+function PartyRow({ label, profile }: { label: string; profile: PaymentLinkPartyProfile | undefined }) {
+	return (
+		<>
+			<dt className="text-muted-foreground self-center">{label}</dt>
+			<dd className="min-w-0">{profile ? <UserDisplay profile={profile} /> : <span>—</span>}</dd>
+		</>
 	);
 }
 
@@ -52,21 +92,16 @@ export function PaymentLinkDetailsPanel({ info, loading, error, onStart }: Props
 					<CardTitle>Machtiging afgeven</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-4 text-sm">
-					<dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2">
+					<dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-3">
+						<PartyRow label="Leerling" profile={info.student} />
+						<PartyRow label="Docent" profile={info.teacher} />
 						<dt className="text-muted-foreground">Lesvorm</dt>
 						<dd>{info.lesson_form}</dd>
-						{preview ? (
-							<>
-								<dt className="text-muted-foreground">Per maand</dt>
-								<dd>{formatCentsNl(preview.monthlyCents)}</dd>
-								<dt className="text-muted-foreground">Per schooljaar</dt>
-								<dd>{formatCentsNl(preview.yearlyCents)}</dd>
-							</>
-						) : null}
+						{preview ? <PreviewAmountRows preview={preview} /> : null}
 						<dt className="text-muted-foreground">Looptijd</dt>
 						<dd>{formatTermText(info.minimum_term_end)}</dd>
 					</dl>
-					<CatchUpNotice show={Boolean(preview?.catchUp)} />
+					{preview ? <CatchUpNotice preview={preview} /> : null}
 					<p className="text-muted-foreground">
 						Je geeft de machtiging met iDEAL via je eigen bank. Daarna schrijven we het lesgeld maandelijks
 						af (niet in augustus).

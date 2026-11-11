@@ -1,15 +1,39 @@
 /**
  * Pure helpers for `bun run db:*` deploy scripts.
- * Paths are inferred from the target name (not listed in config.json).
+ * Target project refs and required secret names live in root `supabase.json`.
+ * Paths are inferred from the target name (not listed in that file).
  * Secret files live under SECRETS_PATH (local `.env` pointer; see `.env.example`).
  * Edge/Auth SoT: supabase/.env.<target>
  * App/CLI runtime: .env.local | .env.<target>.local
  */
 
 import { isAbsolute, join } from 'node:path';
-import deployConfig from './config.json';
+import supabaseConfig from '../../supabase.json';
 
-export type DeployEnv = keyof typeof deployConfig.targets;
+export type DeployEnv = keyof typeof supabaseConfig.targets;
+
+function requireRemoteProjectRef(env: Exclude<DeployEnv, 'local'>): string {
+	const ref = supabaseConfig.targets[env].projectRef;
+	if (typeof ref !== 'string' || ref.length === 0) {
+		throw new Error(`supabase.json: targets.${env}.projectRef is required`);
+	}
+	return ref;
+}
+
+/** Remote project refs from root `supabase.json` (single source of truth). */
+export const DEVELOPMENT_PROJECT_REF = requireRemoteProjectRef('development');
+export const TEST_PROJECT_REF = requireRemoteProjectRef('test');
+export const PRODUCTION_PROJECT_REF = requireRemoteProjectRef('production');
+
+/**
+ * `supabase/config.toml` `[remotes.<name>]` for each remote deploy env.
+ * CLI matches overrides by `project_id`; keep those ids equal to `supabase.json`.
+ */
+export const CONFIG_TOML_REMOTE_NAME = {
+	development: 'dev',
+	test: 'test',
+	production: 'prod',
+} as const satisfies Record<Exclude<DeployEnv, 'local'>, string>;
 
 /** `confirmYes` = simple Y/n; `confirmTarget` = must type project ref (or `local`). Omit = no prompt. */
 export type ConfirmMode = 'confirmYes' | 'confirmTarget';
@@ -27,6 +51,13 @@ export type DeployTarget = {
 
 /** Pointer key in local `.env` (from `.env.example`). */
 export const ROOT_ENV_POINTER_KEY = 'SECRETS_PATH';
+
+/** Matches `.devcontainer/compose.yml` workspace start (`--eager` keeps auth/API awake). */
+export const LOCAL_SUPABASE_START_ARGS = ['start', '--runtime', 'native', '--eager'] as const;
+
+export function formatLocalSupabaseStartCommand(): string {
+	return `supabase ${LOCAL_SUPABASE_START_ARGS.join(' ')}`;
+}
 
 /** `supabase/.env.local` | `supabase/.env.development` | … under SECRETS_PATH */
 export function edgeSecretsEnvFile(env: DeployEnv): string {
@@ -84,14 +115,14 @@ export function secretsFilePath(secretsRoot: string, relativePath: string): stri
 	return join(secretsRoot, relativePath);
 }
 
-/** Required non-empty keys in each secrets env file — edit config.json `secrets`. */
-export const REQUIRED_SECRET_NAMES: readonly string[] = deployConfig.secrets;
+/** Required non-empty keys in each secrets env file — edit `supabase.json` `secrets`. */
+export const REQUIRED_SECRET_NAMES: readonly string[] = supabaseConfig.secrets;
 
 export type PushAllStep = 'migrations' | 'secrets' | 'config' | 'functions';
 
 export const PUSH_ALL_STEPS: readonly PushAllStep[] = ['migrations', 'secrets', 'config', 'functions'] as const;
 
-const DEPLOY_ENVS = Object.keys(deployConfig.targets) as DeployEnv[];
+const DEPLOY_ENVS = Object.keys(supabaseConfig.targets) as DeployEnv[];
 
 /** Short CLI aliases → canonical DeployEnv (config / file names stay full). */
 const DEPLOY_ENV_ALIASES: Readonly<Record<string, DeployEnv>> = {
@@ -131,7 +162,7 @@ export function parseConfirmMode(value: unknown): ConfirmMode | null {
 }
 
 export function resolveDeployTarget(env: DeployEnv): DeployTarget {
-	const row = deployConfig.targets[env];
+	const row = supabaseConfig.targets[env];
 	return {
 		env,
 		projectRef: row.projectRef,
@@ -141,7 +172,7 @@ export function resolveDeployTarget(env: DeployEnv): DeployTarget {
 	};
 }
 
-/** Single identity for logs/prompts: `local Docker` or `production (bnage…)`. */
+/** Single identity for logs/prompts: `local Docker` or `production (<projectRef>)`. */
 export function formatTargetLabel(target: DeployTarget): string {
 	if (target.projectRef === null) return 'local Docker';
 	return `${target.env} (${target.projectRef})`;

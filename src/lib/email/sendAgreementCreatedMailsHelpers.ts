@@ -83,17 +83,6 @@ function buildAgreementMailSharedVars(
 	};
 }
 
-/** Parent e-mail when present, otherwise the student account e-mail. */
-export function resolveAgreementPayerEmail(
-	parentEmail: string | null | undefined,
-	accountEmail: string | null | undefined,
-): string | null {
-	const parent = parentEmail?.trim();
-	if (parent) return parent;
-	const account = accountEmail?.trim();
-	return account || null;
-}
-
 export interface AgreementMailProfile {
 	email?: string | null;
 	first_name?: string | null;
@@ -101,11 +90,6 @@ export interface AgreementMailProfile {
 }
 
 export type AgreementMailEventKey = 'agreement_created' | 'agreement_created_teacher';
-
-export interface AgreementMailTarget {
-	eventKey: AgreementMailEventKey;
-	email: string;
-}
 
 export interface AgreementMailContext {
 	studentName: string;
@@ -146,18 +130,4 @@ export function buildAgreementMailContext(
 		lessonType,
 		sharedVars: buildAgreementMailSharedVars(agreement, studentName, teacherName, lessonType),
 	};
-}
-
-export function buildAgreementMailTargets(
-	studentEmail: string | null | undefined,
-	teacherEmail: string | null | undefined,
-): AgreementMailTarget[] {
-	const targets: AgreementMailTarget[] = [];
-	if (studentEmail) {
-		targets.push({ eventKey: 'agreement_created', email: studentEmail });
-	}
-	if (teacherEmail) {
-		targets.push({ eventKey: 'agreement_created_teacher', email: teacherEmail });
-	}
-	return targets;
 }

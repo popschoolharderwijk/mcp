@@ -1,8 +1,23 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
 import { jsonResponse } from '../_shared/http.ts';
+import { shouldClearAgreementScheduleForSubscriptionStatus } from '../_shared/stripeWebhookHandlersHelpers.ts';
 import { writeSubscriptionState } from '../_shared/subscription-storage.ts';
+import { clearAgreementScheduleId } from '../_shared/subscriptionScheduleCancel.ts';
 import { buildSubscriptionPayload } from './buildSubscriptionPayload.ts';
+
+async function persistSyncedSubscription(
+	admin: SupabaseClient,
+	sub: Stripe.Subscription,
+	lessonAgreementId: string,
+	scheduleIdFromDb: string | null,
+): Promise<void> {
+	const payload = buildSubscriptionPayload(sub, lessonAgreementId, scheduleIdFromDb);
+	await writeSubscriptionState(admin, payload);
+	if (shouldClearAgreementScheduleForSubscriptionStatus(payload.status)) {
+		await clearAgreementScheduleId(admin, lessonAgreementId);
+	}
+}
 
 export async function syncSubscriptionFromStripe(
 	admin: SupabaseClient,
@@ -22,8 +37,6 @@ export async function syncSubscriptionFromStripe(
 		return jsonResponse(400, { error: 'Subscription mist lesson_agreement_id metadata' });
 	}
 
-	const payload = buildSubscriptionPayload(sub, lessonAgreementId, args.scheduleIdFromDb);
-	await writeSubscriptionState(admin, payload);
-
+	await persistSyncedSubscription(admin, sub, lessonAgreementId, args.scheduleIdFromDb);
 	return jsonResponse(200, { synced: true, status: sub.status });
 }

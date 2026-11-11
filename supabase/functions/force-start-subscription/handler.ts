@@ -14,5 +14,5 @@ export async function handleForceStartSubscription({
 	const loaded = await loadForceStartAgreement(admin, lessonAgreementId);
 	if (!loaded.ok) return loaded.response;
 
-	return runForceStartSubscription(admin, lessonAgreementId, loaded.scheduleId);
+	return runForceStartSubscription(admin, loaded.agreement, loaded.scheduleId);
 }

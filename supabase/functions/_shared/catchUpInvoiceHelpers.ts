@@ -114,8 +114,76 @@ export function filterPhasesAfterCatchUpMonth(phases: BillingPhase[], catchUpThr
 	return phases.filter((phase) => phase.label > catchUpThroughMonth);
 }
 
-export function buildCatchUpInvoiceIdempotencyKey(agreementId: string, fromMonth: string, toMonth: string): string {
-	return `mcp_catchup_invoice_${agreementId}_${fromMonth}_${toMonth}`;
+/** Single global catch-up Product for all agreements. */
+export const STRIPE_CATCH_UP_PRODUCT_NAME = 'Inhalen lesgeld';
+export const STRIPE_CATCH_UP_PRODUCT_SCOPE = 'global';
+
+export function buildCatchUpProductIdempotencyKey(): string {
+	return 'mcp_catchup_product_global';
+}
+
+/** Prefer the shared catalog product; ignore legacy per-agreement catch-up products. */
+export function buildCatchUpProductSearchQuery(): string {
+	return `metadata['kind']:'catch_up' AND metadata['scope']:'${STRIPE_CATCH_UP_PRODUCT_SCOPE}'`;
+}
+
+export type CatchUpProductCandidate = {
+	id: string;
+	active?: boolean | null;
+	name?: string | null;
+	metadata?: Record<string, string> | null;
+};
+
+/** Active global catch-up product, or null when search only returned legacy/inactive rows. */
+export function pickActiveGlobalCatchUpProductId(products: CatchUpProductCandidate[]): string | null {
+	for (const product of products) {
+		if (product.active === false) continue;
+		if (product.metadata?.kind !== 'catch_up') continue;
+		if (product.metadata?.scope !== STRIPE_CATCH_UP_PRODUCT_SCOPE) continue;
+		return product.id;
+	}
+	return null;
+}
+
+/**
+ * Active catch-up product not pinned to one lesson agreement.
+ * Used when the global-scope search finds nothing (older shared catalog rows).
+ */
+export function pickAdoptableLegacyCatchUpProductId(products: CatchUpProductCandidate[]): string | null {
+	for (const product of products) {
+		if (product.active === false) continue;
+		if (product.metadata?.kind !== 'catch_up') continue;
+		if (product.metadata?.lesson_agreement_id) continue;
+		return product.id;
+	}
+	return null;
+}
+
+/** Draft catch-up invoices need line items before finalize; non-draft means another attempt finished. */
+export function catchUpDraftNeedsLineItems(invoice: {
+	status?: string | null;
+	lines?: { data?: readonly unknown[] | null } | null;
+}): boolean {
+	return invoice.status === 'draft' && (invoice.lines?.data?.length ?? 0) === 0;
+}
+
+/** Includes attemptId so same-attempt retries share the key; new attempts create only when none are reusable. */
+export function buildCatchUpInvoiceIdempotencyKey(
+	agreementId: string,
+	fromMonth: string,
+	toMonth: string,
+	attemptId: string,
+): string {
+	return `mcp_catchup_invoice_${agreementId}_${fromMonth}_${toMonth}_${attemptId}`;
+}
+
+export function buildCatchUpFinalizeIdempotencyKey(
+	agreementId: string,
+	fromMonth: string,
+	toMonth: string,
+	attemptId: string,
+): string {
+	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth, attemptId)}_finalize`;
 }
 
 export function buildCatchUpLineIdempotencyKey(
@@ -123,18 +191,73 @@ export function buildCatchUpLineIdempotencyKey(
 	fromMonth: string,
 	toMonth: string,
 	month: string,
+	attemptId: string,
 ): string {
-	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth)}_item_${month}`;
+	return `${buildCatchUpInvoiceIdempotencyKey(agreementId, fromMonth, toMonth, attemptId)}_item_${month}`;
+}
+
+export type CatchUpInvoiceLike = {
+	id: string;
+	status?: string | null;
+	metadata?: { kind?: string | null; lesson_agreement_id?: string | null } | null;
+};
+
+function isReusableCatchUpInvoiceStatus(status: string | null | undefined): boolean {
+	return status === 'draft' || status === 'open' || status === 'paid';
+}
+
+/** Prefer an existing draft/open/paid catch-up so rematch never charges twice. Newest-first lists. */
+export function pickReusableCatchUpInvoice<T extends CatchUpInvoiceLike>(
+	invoices: T[],
+	lessonAgreementId: string,
+): T | null {
+	for (const invoice of invoices) {
+		if (
+			invoice.metadata?.kind === 'catch_up' &&
+			invoice.metadata?.lesson_agreement_id === lessonAgreementId &&
+			isReusableCatchUpInvoiceStatus(invoice.status)
+		) {
+			return invoice;
+		}
+	}
+	return null;
+}
+
+/** Stripe expandable id field (string or object). */
+export function stripeExpandableId(value: string | { id: string } | null | undefined): string | null {
+	if (!value) return null;
+	if (typeof value === 'string') return value;
+	return value.id;
+}
+
+export function needsCatchUpPaymentMethodUpdate(
+	currentPaymentMethodId: string | null,
+	nextPaymentMethodId: string | undefined,
+): boolean {
+	return Boolean(nextPaymentMethodId) && currentPaymentMethodId !== nextPaymentMethodId;
+}
+
+export type ExistingCatchUpSettleKind = 'done' | 'pay_open' | 'finalize_draft';
+
+/** How to settle a reusable catch-up already on the customer. */
+export function resolveExistingCatchUpSettleKind(status: string | null | undefined): ExistingCatchUpSettleKind {
+	if (status === 'open') return 'pay_open';
+	if (status === 'draft') return 'finalize_draft';
+	return 'done';
 }
 
 function formatMonthDisplay(month: string): string {
 	return `${month.slice(5, 7)}-${month.slice(0, 4)}`;
 }
 
+/** Dutch Stripe invoice copy (identifiers stay English). */
+const STRIPE_TUITION_LINE_PREFIX = 'Lesgeld';
+const STRIPE_CATCH_UP_INVOICE_SUFFIX = '(inhaalfactuur)';
+
 export function catchUpLineDescription(month: string): string {
-	return `Lesgeld ${formatMonthDisplay(month)}`;
+	return `${STRIPE_TUITION_LINE_PREFIX} ${formatMonthDisplay(month)}`;
 }
 
 export function catchUpInvoiceDescription(fromMonth: string, toMonth: string): string {
-	return `Lesgeld ${formatMonthDisplay(fromMonth)} t/m ${formatMonthDisplay(toMonth)} (inhaalfactuur)`;
+	return `${STRIPE_TUITION_LINE_PREFIX} ${formatMonthDisplay(fromMonth)} t/m ${formatMonthDisplay(toMonth)} ${STRIPE_CATCH_UP_INVOICE_SUFFIX}`;
 }

@@ -91,10 +91,10 @@ const NAV_ITEMS = {
 		icon: LuClipboardList,
 		description: 'Beheer lesovereenkomsten tussen leerlingen en docenten',
 	},
-	awaitingMandate: {
-		label: 'Wacht op machtiging',
+	mandates: {
+		label: 'Machtigingen',
 		icon: LuWallet,
-		description: 'Actieve overeenkomsten waarvoor nog geen Stripe-machtiging is afgegeven.',
+		description: 'Overzicht van Stripe-machtigingen voor lesovereenkomsten.',
 	},
 	lessonGroups: {
 		label: 'Groepslessen',

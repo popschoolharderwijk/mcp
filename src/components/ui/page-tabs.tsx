@@ -15,6 +15,8 @@ interface PageTabsProps<T extends string> {
 	items: readonly PageTabItem<T>[];
 	children: ReactNode;
 	className?: string;
+	/** Optional controls on the same row as the tab list (right-aligned). */
+	actions?: ReactNode;
 	/**
 	 * Tailwind fraction of the container on large screens. Default `full`.
 	 */
@@ -29,6 +31,7 @@ export function PageTabs<T extends string>({
 	items,
 	children,
 	className = 'space-y-2',
+	actions,
 	width = 'full',
 }: PageTabsProps<T>) {
 	const tabs = (
@@ -39,13 +42,16 @@ export function PageTabs<T extends string>({
 			}}
 			className={className}
 		>
-			<TabsList>
-				{items.map((item) => (
-					<TabsTrigger key={item.value} value={item.value}>
-						{item.label}
-					</TabsTrigger>
-				))}
-			</TabsList>
+			<div className="flex flex-wrap items-center justify-between gap-2">
+				<TabsList>
+					{items.map((item) => (
+						<TabsTrigger key={item.value} value={item.value}>
+							{item.label}
+						</TabsTrigger>
+					))}
+				</TabsList>
+				{actions != null ? <div className="flex items-center gap-2">{actions}</div> : null}
+			</div>
 			{children}
 		</Tabs>
 	);

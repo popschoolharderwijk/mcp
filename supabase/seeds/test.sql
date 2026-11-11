@@ -593,7 +593,7 @@ FROM (VALUES
   -- Monday morning 09:00-12:00 (Gitaarles): 6 slots
   ('student-009@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '09:00',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE - INTERVAL '7 days', true),
   ('student-010@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '09:30',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE - INTERVAL '7 days', true),
-  ('student-011@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '10:00',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '3 days', true),
+  ('student-011@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '10:00',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
   ('student-012@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '10:30',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
   ('student-013@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '11:00',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
   ('student-014@test.nl', 'teacher-alice@test.nl', 'Gitaarles', 1, '11:30',   CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),

@@ -25,20 +25,26 @@ export async function fetchLessonTypesWithOptionCounts(
 
 	const types = data ?? [];
 	if (!types.length) {
-		return { lessonTypes: types, error: null };
+		return { lessonTypes: [], error: null };
 	}
 
-	const { data: counts } = await client
+	const { data: optionRows, error: optionsError } = await client
 		.from('lesson_type_options')
 		.select('lesson_type_id')
 		.in(
 			'lesson_type_id',
 			types.map((type) => type.id),
 		);
+	if (optionsError) {
+		return { lessonTypes: [], error: optionsError.message };
+	}
 
-	const countMap = buildOptionsCountMap(counts ?? []);
+	const countMap = buildOptionsCountMap(optionRows ?? []);
 	return {
-		lessonTypes: types.map((type) => ({ ...type, options_count: countMap.get(type.id) ?? 0 })),
+		lessonTypes: types.map((type) => ({
+			...type,
+			options_count: countMap.get(type.id) ?? 0,
+		})),
 		error: null,
 	};
 }
