@@ -98,6 +98,38 @@ export interface MandateStatusRow {
 	lifecycle_status: 'active' | 'canceled';
 }
 
+type MandateStudentIdentityInput = {
+	lessonAgreementId: string;
+	studentUserId: string;
+	firstName: string | null | undefined;
+	lastName: string | null | undefined;
+	profileEmail: string | null | undefined;
+	parentEmail: string | null | undefined;
+	avatarUrl: string | null | undefined;
+};
+
+function mapMandateStudentIdentity(input: MandateStudentIdentityInput): {
+	lesson_agreement_id: string;
+	student_user_id: string;
+	student: AwaitingMandateStudent;
+	parent_email: string | null;
+} {
+	const parentEmail = input.parentEmail?.trim() || null;
+	const studentEmail = input.profileEmail?.trim() || null;
+	return {
+		lesson_agreement_id: input.lessonAgreementId,
+		student_user_id: input.studentUserId,
+		student: {
+			user_id: input.studentUserId,
+			first_name: input.firstName ?? null,
+			last_name: input.lastName ?? null,
+			email: studentEmail,
+			avatar_url: input.avatarUrl ?? null,
+		},
+		parent_email: parentEmail,
+	};
+}
+
 export function mapMandateStatusRow(input: {
 	lessonAgreementId: string;
 	studentUserId: string;
@@ -112,19 +144,8 @@ export function mapMandateStatusRow(input: {
 	subscriptionStatus: string | null;
 	lifecycleStatus: 'active' | 'canceled';
 }): MandateStatusRow {
-	const parentEmail = input.parentEmail?.trim() || null;
-	const studentEmail = input.profileEmail?.trim() || null;
 	return {
-		lesson_agreement_id: input.lessonAgreementId,
-		student_user_id: input.studentUserId,
-		student: {
-			user_id: input.studentUserId,
-			first_name: input.firstName ?? null,
-			last_name: input.lastName ?? null,
-			email: studentEmail,
-			avatar_url: input.avatarUrl ?? null,
-		},
-		parent_email: parentEmail,
+		...mapMandateStudentIdentity(input),
 		lesson_type_name: unwrapJoinedName(input.lessonType),
 		start_date: input.startDate,
 		agreement_active: input.agreementActive,
@@ -254,24 +275,14 @@ export function mapAwaitingMandateRow(input: {
 	today: string;
 }): AwaitingMandateRow {
 	const since = input.lastSentAt ?? input.createdAt;
-	const parentEmail = input.parentEmail?.trim() || null;
-	const studentEmail = input.profileEmail?.trim() || null;
+	const identity = mapMandateStudentIdentity(input);
 	return {
-		lesson_agreement_id: input.lessonAgreementId,
-		student_user_id: input.studentUserId,
-		student: {
-			user_id: input.studentUserId,
-			first_name: input.firstName ?? null,
-			last_name: input.lastName ?? null,
-			email: studentEmail,
-			avatar_url: input.avatarUrl ?? null,
-		},
-		parent_email: parentEmail,
+		...identity,
 		recipient_email:
 			resolveMandateInviteSeedEmail({
 				inviteEmail: input.inviteEmail,
-				parentEmail,
-				studentEmail,
+				parentEmail: identity.parent_email,
+				studentEmail: identity.student.email,
 			}) || null,
 		lesson_type_name: unwrapJoinedName(input.lessonType),
 		start_date: input.startDate,
