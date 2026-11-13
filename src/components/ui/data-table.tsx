@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAutofocus } from '@/hooks/useAutofocus';
+import { usePasswordManagerSafeInputProps } from '@/hooks/usePasswordManagerSafeInputProps';
 import { cn } from '@/lib/utils';
 
 const DATA_TABLE_SKELETON_KEYS = Array.from({ length: 100 }, (_, index) => `data-table-skeleton-${index}`);
@@ -169,6 +170,7 @@ export function DataTable<T>({
 	const [rowsPerPage, setRowsPerPage] = useState(initialRowsPerPage);
 	const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery ?? '');
 	const searchInputRef = useAutofocus<HTMLInputElement>(!!onSearchChange);
+	const passwordManagerSafeInputProps = usePasswordManagerSafeInputProps();
 	const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 	// Determine if we're in server-side pagination mode
@@ -386,7 +388,8 @@ export function DataTable<T>({
 								<LuSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 								<input
 									ref={searchInputRef}
-									type="text"
+									type="search"
+									name="data-table-search"
 									placeholder={searchPlaceholder}
 									value={localSearchQuery}
 									onChange={(e) => handleSearchChange(e.target.value)}
@@ -395,7 +398,8 @@ export function DataTable<T>({
 										e.preventDefault();
 										clearSearch();
 									}}
-									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+									className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-9 text-sm read-only:cursor-text focus:outline-none focus:ring-2 focus:ring-ring [&::-webkit-search-cancel-button]:hidden"
+									{...passwordManagerSafeInputProps}
 								/>
 								{localSearchQuery.length > 0 && (
 									<button

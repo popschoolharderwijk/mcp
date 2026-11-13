@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0 — 2026-11-13
+
+- Stripe integratie
+- Nieuw menu **Lokalen**: lokalen beheren met zichtbaarheid en detailpagina
+- **Beschikbaarheid**: lokaal kiezen per tijdblok (naam en kleur in het rooster)
+- Zoekbalken triggeren geen wachtwoordmanager meer
+
 ## 1.3.0 — 2026-11-09
 
 - Inloggen met **passkey**; beheer onder Account → **Beveiliging**
