@@ -5,7 +5,7 @@ import {
 	createScheduleForAgreement,
 	ensureCatchUpInvoiceForAgreement,
 } from '../_shared/billing.ts';
-import { jsonResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
+import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
 	attachDefaultPaymentMethod,
 	getReusablePaymentMethodIdFromSetupIntent,
@@ -253,7 +253,8 @@ export async function handleCheckoutMode(
 	customerId: string,
 	body: { success_url?: string; cancel_url?: string },
 ): Promise<Response> {
-	const origin = resolveSiteBaseUrl(req, Deno.env.get('SITE_URL'));
+	const origin = resolveSiteBaseUrl(req);
+	if (!origin) return missingSiteBaseUrlResponse();
 	const urls = buildCheckoutSessionUrls(origin, agreement.id, body);
 	if (!urls.ok) return jsonResponse(400, { error: urls.error });
 	const { successUrl, cancelUrl } = urls;

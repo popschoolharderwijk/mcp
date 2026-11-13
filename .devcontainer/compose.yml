@@ -8,8 +8,8 @@ name: mcp_devcontainer
 # - The only host path bind-mounted is this repository (`..:/workspace`).
 #   Secrets dirs, home, and other worktrees stay off this service.
 # - Host publishes bind 127.0.0.1 only (not the LAN). Local demo keys stay on
-#   the machine that runs Docker. The app uses the Vite :8081 proxy to the
-#   loopback API; Studio/Mailpit/tools can use the published localhost ports.
+#   the machine that runs Docker. Vite :8080 (mcp-dev) and :8081 (localdev
+#   proxy to the loopback API) are published; Studio/Mailpit use the other ports.
 services:
     workspace:
         build:
@@ -30,6 +30,7 @@ services:
             - "127.0.0.1:54427:64427"
             - "127.0.0.1:54428:64428"
             - "127.0.0.1:54429:64429"
+            - "127.0.0.1:8080:8080"
             - "127.0.0.1:8081:8081"
             - "127.0.0.1:8183:18183"
         volumes:

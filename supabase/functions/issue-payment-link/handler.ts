@@ -1,6 +1,10 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { beginAuthenticatedPostWithUuidField, jsonResponse } from '../_shared/http.ts';
-import { getSiteBaseUrl } from '../_shared/http-serve.ts';
+import {
+	beginAuthenticatedPostWithUuidField,
+	jsonResponse,
+	missingSiteBaseUrlResponse,
+	resolveSiteBaseUrl,
+} from '../_shared/http.ts';
 import {
 	buildPaymentLinkEmailHtml,
 	issueAgreementPaymentLink,
@@ -77,11 +81,9 @@ async function deliverIssuedLink(req: Request, authorized: Authorized, recipient
 		return { ok: false as const, response: jsonResponse(gated.status, { error: gated.error }) };
 	}
 
-	const { paymentUrl } = await issueAgreementPaymentLink(
-		authorized.auth.admin,
-		getSiteBaseUrl(req),
-		authorized.agreement.id,
-	);
+	const siteUrl = resolveSiteBaseUrl(req);
+	if (!siteUrl) return { ok: false as const, response: missingSiteBaseUrlResponse() };
+	const { paymentUrl } = await issueAgreementPaymentLink(authorized.auth.admin, siteUrl, authorized.agreement.id);
 	const paymentCtaMarkdown = buildPaymentLinkEmailHtml(paymentUrl);
 	const mailErr = await sendPaymentLinkMail(
 		req,

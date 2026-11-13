@@ -1,7 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getEmailEvent } from './email-events.ts';
-import { jsonResponse, resolveAllowedSiteUrl } from './http.ts';
-import { getSiteBaseUrl } from './http-serve.ts';
+import { jsonResponse, missingSiteBaseUrlResponse, resolveAllowedSiteUrl, resolveSiteBaseUrl } from './http.ts';
 import {
 	appendFooter,
 	buildPendingFooter,
@@ -77,11 +76,12 @@ export async function buildRenderedEmailHtml(
 	req: Request,
 	body: SendTemplateEmailBody,
 	templateHtml: string,
-): Promise<string> {
+): Promise<string | Response> {
 	const { data: profile } = await admin.from('profiles').select('user_id').eq('email', body.to).maybeSingle();
-	const baseUrl = resolveAllowedSiteUrl(body.site_url) ?? getSiteBaseUrl(req);
-	const footer = profile ? buildPortalFooter(baseUrl, body.to) : buildPendingFooter();
-	return appendFooter(templateHtml, footer);
+	if (!profile) return appendFooter(templateHtml, buildPendingFooter());
+	const baseUrl = resolveAllowedSiteUrl(body.site_url) ?? resolveSiteBaseUrl(req);
+	if (!baseUrl) return missingSiteBaseUrlResponse();
+	return appendFooter(templateHtml, buildPortalFooter(baseUrl, body.to));
 }
 
 export async function sendEmailViaResend(input: {

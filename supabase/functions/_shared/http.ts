@@ -90,7 +90,6 @@ export async function beginAuthenticatedPostWithUuidField<T>(
 	return { ok: true, authHeader: begun.authHeader, body: begun.body, uuid: uuid as string };
 }
 
-const FALLBACK_SITE_URL = 'https://mcp.mplifi.nl';
 const ALLOWED_SITE_HOSTS = new Set([
 	'mcp.mplifi.nl',
 	'instant-setup-kit.lovable.app',
@@ -98,6 +97,7 @@ const ALLOWED_SITE_HOSTS = new Set([
 	'098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com',
 ]);
 const LOOPBACK_SITE_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+const MISSING_SITE_BASE_URL_ERROR = 'Geen geldige site-URL (Origin)';
 
 function isAllowedHttpsSiteHost(hostname: string): boolean {
 	return ALLOWED_SITE_HOSTS.has(hostname);
@@ -134,18 +134,12 @@ export function resolveAllowedRedirectUrl(candidate: string | null | undefined):
 	return resolveAllowedUrl(candidate, (url) => url.toString());
 }
 
-/** Resolve site origin from request Origin header or provided env/fallback values. */
-export function resolveSiteBaseUrl(
-	req: Request,
-	envSiteUrl: string | null | undefined,
-	fallback = FALLBACK_SITE_URL,
-): string {
-	const candidates = [req.headers.get('Origin'), envSiteUrl, fallback];
+/** Resolve site origin from request Origin; null when missing or not allow-listed. */
+export function resolveSiteBaseUrl(req: Request): string | null {
+	return resolveAllowedSiteUrl(req.headers.get('Origin'));
+}
 
-	for (const candidate of candidates) {
-		const resolved = resolveAllowedSiteUrl(candidate);
-		if (resolved) return resolved;
-	}
-
-	return fallback;
+/** 400 when Origin cannot resolve to an allow-listed site. */
+export function missingSiteBaseUrlResponse(): Response {
+	return jsonResponse(400, { error: MISSING_SITE_BASE_URL_ERROR });
 }

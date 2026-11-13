@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { jsonResponse } from '../_shared/http.ts';
-import { getSiteBaseUrl, type LessonAgreementPostContext } from '../_shared/http-serve.ts';
+import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
+import type { LessonAgreementPostContext } from '../_shared/http-serve.ts';
 import { getSafeErrorMessage } from '../_shared/stripe.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
 import {
@@ -49,13 +49,16 @@ async function prepareStripeCheckoutInvite(ctx: LessonAgreementPostContext): Pro
 	);
 	if (!recipientResult.ok) return recipientResult;
 
+	const siteUrl = resolveSiteBaseUrl(ctx.req);
+	if (!siteUrl) return { ok: false, response: missingSiteBaseUrlResponse() };
+
 	return {
 		ok: true,
 		admin: auth.admin,
 		userId: auth.user.id,
 		agreement: access.agreement,
 		recipient: recipientResult.recipient,
-		redirectTo: buildStripeCheckoutInviteRedirectUrl(getSiteBaseUrl(ctx.req), access.agreement.id),
+		redirectTo: buildStripeCheckoutInviteRedirectUrl(siteUrl, access.agreement.id),
 	};
 }
 

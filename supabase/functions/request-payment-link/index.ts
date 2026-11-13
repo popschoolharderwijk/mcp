@@ -1,7 +1,6 @@
 // Public: request a new payment-link mail (rate-limited). Always returns the same message.
 
-import { jsonResponse, UUID_RE } from '../_shared/http.ts';
-import { getSiteBaseUrl } from '../_shared/http-serve.ts';
+import { jsonResponse, resolveSiteBaseUrl, UUID_RE } from '../_shared/http.ts';
 import {
 	buildPaymentLinkEmailHtml,
 	buildPaymentLinkRequestResponse,
@@ -26,7 +25,9 @@ async function sendRequestedLink(
 	agreementId: string,
 	recipient: string,
 ): Promise<void> {
-	const { paymentUrl } = await issueAgreementPaymentLink(admin, getSiteBaseUrl(req), agreementId);
+	const siteUrl = resolveSiteBaseUrl(req);
+	if (!siteUrl) return;
+	const { paymentUrl } = await issueAgreementPaymentLink(admin, siteUrl, agreementId);
 	const paymentCtaMarkdown = buildPaymentLinkEmailHtml(paymentUrl);
 	const vars = await loadAgreementCreatedPaymentMailVars(admin, agreementId, paymentCtaMarkdown);
 	const mail = await sendTemplateEmail({

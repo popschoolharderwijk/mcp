@@ -52,6 +52,7 @@ async function deliverPreparedTemplateEmail(
 	const subject = renderTemplate(prepared.template.subject, vars);
 	const bodyHtml = markdownToHtml(renderTemplate(prepared.template.body_markdown, vars));
 	const html = await buildRenderedEmailHtml(prepared.admin, prepared.req, prepared.body, bodyHtml);
+	if (html instanceof Response) return html;
 
 	const sendResult = await sendEmailViaResend({
 		resendKey: prepared.resendKey,

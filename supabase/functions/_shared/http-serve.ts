@@ -1,10 +1,4 @@
-import {
-	beginAuthenticatedPostWithUuidField,
-	handleCorsPreflight,
-	jsonResponse,
-	requireAuthHeader,
-	resolveSiteBaseUrl,
-} from './http.ts';
+import { beginAuthenticatedPostWithUuidField, handleCorsPreflight, jsonResponse, requireAuthHeader } from './http.ts';
 
 export type LessonAgreementPostContext = {
 	req: Request;
@@ -40,9 +34,4 @@ export function serveAuthenticatedJsonRequest(handler: (req: Request, authHeader
 			return jsonResponse(500, { error: 'Internal server error' });
 		}
 	});
-}
-
-/** Resolve HTTPS site origin from request Origin header or SITE_URL env. */
-export function getSiteBaseUrl(req: Request, fallback = 'https://mcp.mplifi.nl'): string {
-	return resolveSiteBaseUrl(req, Deno.env.get('SITE_URL'), fallback);
 }

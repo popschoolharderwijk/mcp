@@ -1,6 +1,5 @@
 // Public (token): start or complete Stripe Checkout setup for a payment link.
-import { jsonResponse } from '../_shared/http.ts';
-import { getSiteBaseUrl } from '../_shared/http-serve.ts';
+import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import { buildPaymentLinkUrl, verifyAgreementPaymentLink } from '../_shared/paymentLink.ts';
 import { beginPublicPaymentLinkTokenRequest } from '../_shared/paymentLinkHttpHelpers.ts';
 import { createPaymentLinkAdminClient } from '../_shared/paymentLinkServiceClient.ts';
@@ -92,7 +91,9 @@ async function startCheckoutSession(
 		loaded.agreement.student_user_id,
 		loaded.profile,
 	);
-	const payUrl = buildPaymentLinkUrl(getSiteBaseUrl(req), agreementId, token);
+	const siteUrl = resolveSiteBaseUrl(req);
+	if (!siteUrl) return missingSiteBaseUrlResponse();
+	const payUrl = buildPaymentLinkUrl(siteUrl, agreementId, token);
 	return handleCheckoutMode(stripe, req, loaded.agreement, customerId, {
 		success_url: `${payUrl}&session_id={CHECKOUT_SESSION_ID}`,
 		cancel_url: payUrl,
