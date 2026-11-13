@@ -57,7 +57,6 @@ function previewFromLoadedParts(
 		startDate: agreement.start_date,
 		today,
 		monthlyCents: billing.yearly.monthlyCents,
-		leftoverCents: billing.yearly.leftoverCents,
 		periodStart: billing.periodStart,
 		periodEnd: billing.periodEnd,
 	});

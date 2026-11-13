@@ -6,7 +6,6 @@ import { formatDbDateToUi } from '@/lib/date/date-format';
 export interface PaymentLinkPreview {
 	monthlyCents: number;
 	yearlyCents: number;
-	finalMonthCents: number | null;
 	catchUp: boolean;
 	catchUpCents: number | null;
 	catchUpFromMonth: string | null;

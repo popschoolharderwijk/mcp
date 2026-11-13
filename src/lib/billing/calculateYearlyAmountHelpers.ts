@@ -36,12 +36,3 @@ export function shiftDatePastNoLessonPeriods(
 	if (isNonBillingMonthString(actual, schoolYearBounds)) return { lessonDate: null, shiftDays };
 	return { lessonDate: actual, shiftDays };
 }
-
-export function splitYearlyAmountAcrossBillingMonths(
-	yearlyCents: number,
-	billingMonths: number,
-): { monthlyCents: number; leftoverCents: number } {
-	const monthlyCents = billingMonths > 0 ? Math.floor(yearlyCents / billingMonths) : 0;
-	const leftoverCents = yearlyCents - monthlyCents * billingMonths;
-	return { monthlyCents, leftoverCents };
-}

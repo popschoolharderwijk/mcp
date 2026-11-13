@@ -23,7 +23,6 @@ import {
 	type LessonFrequency,
 	pickSharedRecurringMonthlyPriceId,
 	resolveStripeSubscriptionId,
-	resolveStripeTuitionPriceKind,
 	type YearlyResult,
 } from './billingHelpers.ts';
 import { issueCatchUpInvoice, planCatchUpInvoice } from './catchUpInvoice.ts';
@@ -146,19 +145,14 @@ async function toStripePhasePayloads(
 		lessonTypeOptionId: string;
 		productName: string;
 		tariff: AgeTariff;
-		monthlyCents: number;
-		leftoverCents: number;
 	},
 	defaultPm?: string,
 ): Promise<StripePhasePayload[]> {
 	const agreementMetadata = buildAgreementStripeMetadata(agreement);
 	const productId = await ensureLessonProduct(stripe, tuition.lessonTypeOptionId, tuition.productName);
 	const payloads: StripePhasePayload[] = [];
+	const nickname = buildStripeTuitionPriceNickname(tuition.tariff);
 	for (const phase of phases) {
-		const nickname = buildStripeTuitionPriceNickname({
-			kind: resolveStripeTuitionPriceKind(phase.amountCents, tuition.monthlyCents, tuition.leftoverCents),
-			tariff: tuition.tariff,
-		});
 		const priceId = await ensureRecurringMonthlyPrice(
 			stripe,
 			productId,
@@ -238,8 +232,6 @@ function buildTuitionProductContext(
 	lessonTypeOptionId: string;
 	productName: string;
 	tariff: AgeTariff;
-	monthlyCents: number;
-	leftoverCents: number;
 } {
 	return {
 		lessonTypeOptionId,
@@ -249,8 +241,6 @@ function buildTuitionProductContext(
 			frequency: billing.agreement.frequency,
 		}),
 		tariff: billing.tariff,
-		monthlyCents: billing.yearly.monthlyCents,
-		leftoverCents: billing.yearly.leftoverCents,
 	};
 }
 
@@ -285,12 +275,7 @@ function resolveSchedulePhases(
 	billing: BillingComputation,
 	today: string,
 ): { phases: BillingPhase[]; catchUpThroughMonth: string | null } {
-	const allPhases = buildPhases(
-		billing.periodStart,
-		billing.periodEnd,
-		billing.yearly.monthlyCents,
-		billing.yearly.leftoverCents,
-	);
+	const allPhases = buildPhases(billing.periodStart, billing.periodEnd, billing.yearly.monthlyCents);
 	if (!needsCatchUpInvoice(billing.agreement.start_date, today)) {
 		return { phases: allPhases, catchUpThroughMonth: null };
 	}
@@ -372,7 +357,6 @@ export async function ensureCatchUpInvoiceForAgreement(
 		startDate: billing.agreement.start_date,
 		today,
 		monthlyCents: billing.yearly.monthlyCents,
-		leftoverCents: billing.yearly.leftoverCents,
 		periodStart: billing.periodStart,
 		periodEnd: billing.periodEnd,
 	});
@@ -392,7 +376,6 @@ export interface RebuildResult {
 	keptPhases: number;
 	updatedPhases: number;
 	newMonthlyCents: number;
-	newLeftoverCents: number;
 	skipped?: 'no_future_phases';
 }
 
@@ -402,7 +385,6 @@ function skippedRebuildResult(scheduleId: string, keptPhases: number, billing: B
 		keptPhases,
 		updatedPhases: 0,
 		newMonthlyCents: billing.yearly.monthlyCents,
-		newLeftoverCents: billing.yearly.leftoverCents,
 		skipped: 'no_future_phases',
 	};
 }
@@ -435,8 +417,6 @@ async function updateFutureSchedulePhases(input: {
 		lessonTypeOptionId: string;
 		productName: string;
 		tariff: AgeTariff;
-		monthlyCents: number;
-		leftoverCents: number;
 	};
 	newPhases: BillingPhase[];
 	keptPayloads: Array<Record<string, unknown>>;
@@ -471,7 +451,6 @@ async function updateFutureSchedulePhases(input: {
 		keptPhases: input.keptPayloads.length,
 		updatedPhases: futurePayloads.length,
 		newMonthlyCents: input.billing.yearly.monthlyCents,
-		newLeftoverCents: input.billing.yearly.leftoverCents,
 	};
 }
 
@@ -487,12 +466,7 @@ export async function rebuildScheduleForAgreement(
 ): Promise<RebuildResult> {
 	const { scheduleId, schedule } = await loadScheduleForRebuild(admin, stripe, lessonAgreementId);
 	const { billing, lessonTypeOptionId, lessonTypeName } = await loadBillingContext(admin, lessonAgreementId);
-	const newPhases = buildPhases(
-		billing.periodStart,
-		billing.periodEnd,
-		billing.yearly.monthlyCents,
-		billing.yearly.leftoverCents,
-	);
+	const newPhases = buildPhases(billing.periodStart, billing.periodEnd, billing.yearly.monthlyCents);
 	const { keptPayloads, firstFutureIndex } = collectKeptSchedulePhases(
 		schedule.phases ?? [],
 		Math.floor(Date.now() / 1000),

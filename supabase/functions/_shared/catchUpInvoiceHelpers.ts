@@ -51,25 +51,14 @@ export function listBillingMonthLabels(periodStart: string, periodEnd: string, b
 	return labels;
 }
 
-function amountForBillingMonth(
-	month: string,
-	monthlyCents: number,
-	leftoverCents: number,
-	leftoverMonth: string | undefined,
-): number {
-	return monthlyCents + (month === leftoverMonth ? leftoverCents : 0);
-}
-
 /**
  * Line items for one catch-up invoice: billing months from the agreement start month
  * through the current calendar month. Empty when catch-up is not needed or no billable months.
- * Leftover cents follow buildPhases: added only on the last billing month of [periodStart, periodEnd].
  */
 export function buildCatchUpLineItems(input: {
 	startDate: string;
 	today: string;
 	monthlyCents: number;
-	leftoverCents: number;
 	periodStart: string;
 	periodEnd: string;
 	schoolYearBounds?: SchoolYearBounds;
@@ -77,7 +66,6 @@ export function buildCatchUpLineItems(input: {
 	if (!needsCatchUpInvoice(input.startDate, input.today)) return [];
 
 	const allMonths = listBillingMonthLabels(input.periodStart, input.periodEnd, input.schoolYearBounds);
-	const leftoverMonth = allMonths[allMonths.length - 1];
 	const from = input.startDate.slice(0, 7);
 	const to = input.today.slice(0, 7);
 
@@ -85,7 +73,7 @@ export function buildCatchUpLineItems(input: {
 		.filter((month) => month >= from && month <= to)
 		.map((month) => ({
 			month,
-			amountCents: amountForBillingMonth(month, input.monthlyCents, input.leftoverCents, leftoverMonth),
+			amountCents: input.monthlyCents,
 		}));
 }
 
@@ -93,7 +81,6 @@ export function buildCatchUpInvoicePlan(input: {
 	startDate: string;
 	today: string;
 	monthlyCents: number;
-	leftoverCents: number;
 	periodStart: string;
 	periodEnd: string;
 	schoolYearBounds?: SchoolYearBounds;

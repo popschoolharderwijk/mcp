@@ -302,8 +302,6 @@ export function buildPaymentLinkParties(
 export interface PaymentLinkPreviewAmounts {
 	monthlyCents: number;
 	yearlyCents: number;
-	/** monthly + leftover when leftover > 0; otherwise null (same as maandtermijn). */
-	finalMonthCents: number | null;
 	catchUp: boolean;
 	catchUpCents: number | null;
 	catchUpFromMonth: string | null;
@@ -330,7 +328,6 @@ export function buildPaymentLinkPreview(
 	yearly: {
 		monthlyCents: number;
 		yearlyCents: number;
-		leftoverCents: number;
 	} | null,
 	catchUpPlan: {
 		amountCents: number;
@@ -339,11 +336,9 @@ export function buildPaymentLinkPreview(
 	} | null,
 ): PaymentLinkPreviewAmounts | null {
 	if (!yearly) return null;
-	const leftoverCents = yearly.leftoverCents;
 	return {
 		monthlyCents: yearly.monthlyCents,
 		yearlyCents: yearly.yearlyCents,
-		finalMonthCents: leftoverCents > 0 ? yearly.monthlyCents + leftoverCents : null,
 		catchUp: catchUpPlan != null,
 		catchUpCents: catchUpPlan?.amountCents ?? null,
 		catchUpFromMonth: catchUpPlan?.fromMonth ?? null,

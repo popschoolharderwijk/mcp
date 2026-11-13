@@ -315,7 +315,6 @@ export function planCatchUpInvoice(input: {
 	startDate: string;
 	today: string;
 	monthlyCents: number;
-	leftoverCents: number;
 	periodStart: string;
 	periodEnd: string;
 }): CatchUpInvoicePlan | null {

@@ -3,7 +3,6 @@ import {
 	assembleBillingContextFromLoadedRows,
 	assertHasBillingPhases,
 	assertPositiveYearlyCents,
-	BILLING_MONTHS_PER_YEAR,
 	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
 	buildLessonProductIdempotencyKey,
@@ -21,7 +20,6 @@ import {
 	pickSharedRecurringMonthlyPriceId,
 	resolveBillingReferenceDate,
 	resolveStripeSubscriptionId,
-	resolveStripeTuitionPriceKind,
 } from '../../../supabase/functions/_shared/billingHelpers';
 
 describe('getSchoolYearForDateString', () => {
@@ -92,7 +90,6 @@ describe('calculateYearly', () => {
 			expect(date >= '2026-12-21' && date <= '2027-01-04').toBe(false);
 		}
 		expect(result.yearlyCents).toBe(result.lessonsCount * 2000);
-		expect(result.monthlyCents * BILLING_MONTHS_PER_YEAR + result.leftoverCents).toBe(result.yearlyCents);
 	});
 });
 
@@ -107,12 +104,25 @@ describe('pickAgeTariff', () => {
 });
 
 describe('buildPhases', () => {
-	it('builds eleven billing months with leftover on the last phase', () => {
-		const phases = buildPhases('2026-09-01', '2027-07-31', 1000, 50);
+	it('builds eleven billing months with a flat monthly amount', () => {
+		const phases = buildPhases('2026-09-01', '2027-07-31', 1000);
 		expect(phases).toHaveLength(11);
-		expect(phases[0]?.amountCents).toBe(1000);
-		expect(phases[10]?.amountCents).toBe(1050);
-		expect(phases.every((phase) => !phase.label.endsWith('-08'))).toBe(true);
+		expect(phases.map((phase) => phase.amountCents)).toEqual([
+			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+		]);
+		expect(phases.map((phase) => phase.label)).toEqual([
+			'2026-09',
+			'2026-10',
+			'2026-11',
+			'2026-12',
+			'2027-01',
+			'2027-02',
+			'2027-03',
+			'2027-04',
+			'2027-05',
+			'2027-06',
+			'2027-07',
+		]);
 	});
 });
 
@@ -289,14 +299,6 @@ describe('buildStripeTuitionProductName', () => {
 				frequency: 'weekly',
 			}),
 		).toBe('Lesgeld · Gitaarles · 30 min · wekelijks');
-	});
-});
-
-describe('resolveStripeTuitionPriceKind', () => {
-	it('treats leftover amount as the final installment kind', () => {
-		expect(resolveStripeTuitionPriceKind(5318, 5318, 2)).toBe('monthly');
-		expect(resolveStripeTuitionPriceKind(5320, 5318, 2)).toBe('final');
-		expect(resolveStripeTuitionPriceKind(5318, 5318, 0)).toBe('monthly');
 	});
 });
 

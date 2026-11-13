@@ -68,9 +68,6 @@ function billingMonthsPerSchoolYear(bounds: SchoolYearBounds = DEFAULT_SCHOOL_YE
 	return (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + (end.getUTCMonth() - start.getUTCMonth()) + 1;
 }
 
-/** Bootstrap billing month count for existing tests and callers with default school year. */
-export const BILLING_MONTHS_PER_YEAR = billingMonthsPerSchoolYear(DEFAULT_SCHOOL_YEAR_BOUNDS);
-
 function isNonBillingDateString(dateStr: string, bounds: SchoolYearBounds = DEFAULT_SCHOOL_YEAR_BOUNDS): boolean {
 	const window = getSchoolYearForDateString(dateStr, bounds);
 	return dateStr < window.start || dateStr > window.end;
@@ -145,7 +142,6 @@ export interface YearlyResult {
 	lessonsCount: number;
 	yearlyCents: number;
 	monthlyCents: number;
-	leftoverCents: number;
 	lessonDates: string[];
 }
 
@@ -166,9 +162,8 @@ export function calculateYearly(input: {
 	);
 	const lessonsCount = lessonDates.length;
 	const yearlyCents = lessonsCount * input.pricePerLessonCents;
-	const monthlyCents = Math.floor(yearlyCents / billingMonths);
-	const leftoverCents = yearlyCents - monthlyCents * billingMonths;
-	return { lessonsCount, yearlyCents, monthlyCents, leftoverCents, lessonDates };
+	const monthlyCents = billingMonths > 0 ? Math.floor(yearlyCents / billingMonths) : 0;
+	return { lessonsCount, yearlyCents, monthlyCents, lessonDates };
 }
 
 export type AgeTariff = 'youth' | 'adult';
@@ -228,23 +223,17 @@ function phaseWindowForMonth(
 	};
 }
 
-/** Build the 11 monthly phases for a school year, with leftover on the last (July) phase. */
-export function buildPhases(
-	periodStart: string,
-	periodEnd: string,
-	monthlyCents: number,
-	leftoverCents: number,
-): BillingPhase[] {
+/** Build one phase per billing month with a flat monthly amount. */
+export function buildPhases(periodStart: string, periodEnd: string, monthlyCents: number): BillingPhase[] {
 	const start = new Date(`${periodStart}T00:00:00Z`);
 	const end = new Date(`${periodEnd}T00:00:00Z`);
 	const months = collectBillingMonths(periodStart, periodEnd);
 	return months.map((month, index) => {
 		const { startUnix, endUnix } = phaseWindowForMonth(months, index, start, end);
-		const isLast = index === months.length - 1;
 		return {
 			startUnix,
 			endUnix,
-			amountCents: monthlyCents + (isLast ? leftoverCents : 0),
+			amountCents: monthlyCents,
 			label: `${month.getUTCFullYear()}-${pad(month.getUTCMonth() + 1)}`,
 		};
 	});
@@ -405,7 +394,7 @@ export function buildLessonProductIdempotencyKey(lessonTypeOptionId: string): st
 	return `mcp_lesson_product_${lessonTypeOptionId}`;
 }
 
-/** Shared recurring Price under that Product, keyed by unit amount (youth/adult/leftover). */
+/** Shared recurring Price under that Product, keyed by unit amount (youth/adult). */
 export function buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId: string, amountCents: number): string {
 	return `mcp_lesson_price_${lessonTypeOptionId}_${amountCents}`;
 }
@@ -450,31 +439,14 @@ export function buildStripeTuitionProductName(input: {
 	return [STRIPE_TUITION_PRODUCT_TITLE, ...rest].join(' · ');
 }
 
-export type StripeTuitionPriceKind = 'monthly' | 'final';
-
-const STRIPE_TUITION_PRICE_KIND_LABELS: Record<StripeTuitionPriceKind, string> = {
-	monthly: 'Maandtermijn',
-	final: 'Slotmaand',
-};
-
 const STRIPE_TUITION_TARIFF_LABELS: Record<AgeTariff, string> = {
 	youth: 'Jeugd',
 	adult: 'Volwassen',
 };
 
-/** Slotmaand when leftover is applied; otherwise the recurring maandtermijn. */
-export function resolveStripeTuitionPriceKind(
-	amountCents: number,
-	monthlyCents: number,
-	leftoverCents: number,
-): StripeTuitionPriceKind {
-	if (leftoverCents > 0 && amountCents === monthlyCents + leftoverCents) return 'final';
-	return 'monthly';
-}
-
-/** Dashboard nickname: role + age tariff (amount already shown by Stripe). */
-export function buildStripeTuitionPriceNickname(input: { kind: StripeTuitionPriceKind; tariff: AgeTariff }): string {
-	return `${STRIPE_TUITION_PRICE_KIND_LABELS[input.kind]} ${STRIPE_TUITION_TARIFF_LABELS[input.tariff]}`;
+/** Dashboard nickname: maandtermijn + age tariff (amount already shown by Stripe). */
+export function buildStripeTuitionPriceNickname(tariff: AgeTariff): string {
+	return `Maandtermijn ${STRIPE_TUITION_TARIFF_LABELS[tariff]}`;
 }
 
 export function buildLessonTypeOptionProductSearchQuery(lessonTypeOptionId: string): string {

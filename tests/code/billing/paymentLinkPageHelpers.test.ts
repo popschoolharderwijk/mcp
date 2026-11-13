@@ -23,7 +23,6 @@ describe('paymentLinkPageHelpers', () => {
 			buildCatchUpNoticeText({
 				monthlyCents: 7000,
 				yearlyCents: 70000,
-				finalMonthCents: null,
 				catchUp: false,
 				catchUpCents: null,
 				catchUpFromMonth: null,
@@ -34,7 +33,6 @@ describe('paymentLinkPageHelpers', () => {
 			buildCatchUpNoticeText({
 				monthlyCents: 7000,
 				yearlyCents: 70000,
-				finalMonthCents: null,
 				catchUp: true,
 				catchUpCents: null,
 				catchUpFromMonth: '2026-09',
@@ -45,7 +43,6 @@ describe('paymentLinkPageHelpers', () => {
 			buildCatchUpNoticeText({
 				monthlyCents: 7000,
 				yearlyCents: 70000,
-				finalMonthCents: null,
 				catchUp: true,
 				catchUpCents: 21000,
 				catchUpFromMonth: null,
@@ -58,7 +55,6 @@ describe('paymentLinkPageHelpers', () => {
 			buildCatchUpNoticeText({
 				monthlyCents: 7000,
 				yearlyCents: 70000,
-				finalMonthCents: null,
 				catchUp: true,
 				catchUpCents: 21000,
 				catchUpFromMonth: '2026-09',
