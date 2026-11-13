@@ -89,29 +89,25 @@ bun run db:push:functions production
 | `approve-signup-request`        | Admin approves signup → user + welcome email.                                            | Standard, `RESEND_API_KEY`                             |
 | `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                     | Standard, `RESEND_API_KEY`                             |
 | `send-template-email`           | Sends email from `email_templates` + variables.                                          | Standard, `RESEND_API_KEY`                             |
-| `send-stripe-checkout-invite`   | Generates a magic link for Stripe Checkout onboarding and emails it.                     | Standard, `RESEND_API_KEY`                             |
-| `create-subscription-checkout`  | Creates Stripe Checkout (iDEAL setup) or activates immediately on an existing mandate.   | Standard, `STRIPE_SECRET_KEY`                          |
-| `create-customer-portal`        | Opens Stripe Customer Portal for the customer or (privileged) on their behalf.           | Standard, `STRIPE_SECRET_KEY`                          |
-| `sync-stripe-subscription`      | Re-sync one subscription from Stripe into the DB.                                        | Standard, `STRIPE_SECRET_KEY`                          |
-| `reconcile-stripe-mandates`     | Privileged bulk reconcile of mandate mirrors from Stripe (Machtigingen button).          | Standard, `STRIPE_SECRET_KEY`                          |
-| `rebuild-subscription-schedule` | Recalculates future schedule phases after a price change.                                | Standard, `STRIPE_SECRET_KEY`                          |
-| `force-start-subscription`      | Ops/test: cancel current schedule and start immediately (no app UI).                     | Standard, `STRIPE_SECRET_KEY`                          |
-| `stripe-webhook`                | Handles Stripe events (setup, subscription, invoice). **`verify_jwt = false`** required. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| `issue-payment-link`            | Rotate `/pay` token; mail `agreement_created`; invite audit row.                         | Standard, `RESEND_API_KEY`                             |
+| `payment-link-info`             | Public token: pay-page payload + arranged poll. **`verify_jwt = false`**.                | Standard                                               |
+| `request-payment-link`          | Public rate-limited re-mail of payment link. **`verify_jwt = false`**.                   | Standard, `RESEND_API_KEY`                             |
+| `start-payment-checkout`        | Public token: Stripe Checkout setup only. **`verify_jwt = false`**.                      | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-subscription-checkout`  | JWT: checkout / direct / complete (complete = poll; webhook fulfills).                   | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-customer-portal`        | Stripe Customer Portal.                                                                  | Standard, `STRIPE_SECRET_KEY`                          |
+| `sync-stripe-subscription`      | Pull one subscription from Stripe.                                                       | Standard, `STRIPE_SECRET_KEY`                          |
+| `reconcile-stripe-mandates`     | Privileged bulk mandate reconcile (Machtigingen).                                        | Standard, `STRIPE_SECRET_KEY`                          |
+| `rebuild-subscription-schedule` | Recalculate future phases after a price change.                                          | Standard, `STRIPE_SECRET_KEY`                          |
+| `force-start-subscription`      | Ops: force-start schedule (no app UI).                                                   | Standard, `STRIPE_SECRET_KEY`                          |
+| `stripe-webhook`                | Fulfill schedule + catch-up; subscription/invoice mirrors. **`verify_jwt = false`**.     | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
-> 💡 "Standard" = the auto-injected Supabase env vars (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md).
+> 💡 "Standard" = auto-injected Supabase env (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md). Stripe invariants: [integrations/stripe-billing.md](./integrations/stripe-billing.md).
 
 ---
 
 ## Edge Functions structure
 
-Shared helpers live in `supabase/functions/_shared/`:
-
-- `cors.ts` — shared CORS headers (browser invocations).
-- `errors.ts` — `getSafeErrorMessage` prevents leaking internal stack traces.
-- `billing.ts` — school year, occurrences, `calculateYearly`, `pickAgeTariff`, schedule-phase builders.
-- `stripe.ts` — Stripe client constructor.
-- `subscription-storage.ts` — DB upserts for `subscriptions`.
-- `email-events.ts` — register of app mail events (event keys + variables).
+Shared under `supabase/functions/_shared/` (billing: `billing.ts` / `billingHelpers.ts`, `catchUpInvoice.ts` / `catchUpInvoiceHelpers.ts`, `paymentLink.ts` / `paymentLinkHelpers.ts`; also `cors.ts`, `stripe.ts`, `subscription-storage.ts`, `email-events.ts`).
 
 ### Creating a new Edge Function
 

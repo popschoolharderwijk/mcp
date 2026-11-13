@@ -57,8 +57,6 @@ bun test --bail
 | Email templates & SMTP          | [docs/email-templates.md](docs/email-templates.md)                         |
 | Stripe billing                  | [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md) |
 
-> [`stripe-tuition-direct-debit-plan.md`](stripe-tuition-direct-debit-plan.md) is a **historical planning document** (May 2026) and is no longer authoritative. The current Stripe flow is described in [docs/integrations/stripe-billing.md](docs/integrations/stripe-billing.md).
-
 ## License
 
 See [LICENSE](LICENSE)

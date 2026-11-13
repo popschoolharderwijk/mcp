@@ -71,9 +71,9 @@ bun run db:reset
 bun run stripe:reset:customers    # wipe Stripe customers + local billing mirrors (local|dev|test; never prod)
 bun run stripe:setup:webhooks     # create/update Event Destination (local|dev|test|prod; local → CLI listen help)
 bun run dev:local
-# Stripe webhooks (separate terminal; keep running):
+# Stripe webhooks (separate terminal):
 bun run stripe:webhook
-# Mirrors to terminal + logs/stripe.log ([HH:mm:ss] via console clock, log level once at top, secrets hint-redacted; optional --log-level / --log-exclude / --log-terminal off)
+# details: docs/integrations/stripe-billing.md
 ```
 
 Types from the local stack (`supabase start` first):
