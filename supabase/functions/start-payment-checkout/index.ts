@@ -1,17 +1,12 @@
-// Public (token): start or complete Stripe Checkout setup for a payment link.
+// Public (token): start Stripe Checkout setup for a payment link.
+// Fulfillment (schedule + catch-up) is webhook-only; /pay polls payment-link-info after return.
 import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import { buildPaymentLinkUrl, verifyAgreementPaymentLink } from '../_shared/paymentLink.ts';
 import { beginPublicPaymentLinkTokenRequest } from '../_shared/paymentLinkHttpHelpers.ts';
 import { createPaymentLinkAdminClient } from '../_shared/paymentLinkServiceClient.ts';
 import { getSafeErrorMessage, getStripe } from '../_shared/stripe.ts';
-import {
-	ensureStripeCustomer,
-	handleCheckoutMode,
-	handleCompleteMode,
-} from '../create-subscription-checkout/checkoutFlows.ts';
+import { ensureStripeCustomer, handleCheckoutMode } from '../create-subscription-checkout/checkoutFlows.ts';
 import type { AgreementRow, ProfileRow } from '../create-subscription-checkout/types.ts';
-
-type Body = { mode?: 'checkout' | 'complete'; checkout_session_id?: string };
 
 type LoadedCheckout =
 	| { ok: false; response: Response }
@@ -100,20 +95,13 @@ async function startCheckoutSession(
 	});
 }
 
-async function runTokenCheckout(req: Request, agreementId: string, token: string, body: Body): Promise<Response> {
-	const loaded = await loadAgreementForCheckout(agreementId, token);
-	if (!loaded.ok) return loaded.response;
-	if (body.mode === 'complete') {
-		return handleCompleteMode(loaded.admin, getStripe(), loaded.agreement, body.checkout_session_id);
-	}
-	return startCheckoutSession(req, loaded, agreementId, token);
-}
-
 Deno.serve(async (req) => {
 	const begun = await beginPublicPaymentLinkTokenRequest(req);
 	if (!begun.ok) return begun.response;
 	try {
-		return await runTokenCheckout(req, begun.agreementId, begun.token, begun.body);
+		const loaded = await loadAgreementForCheckout(begun.agreementId, begun.token);
+		if (!loaded.ok) return loaded.response;
+		return await startCheckoutSession(req, loaded, begun.agreementId, begun.token);
 	} catch (err) {
 		console.error('start-payment-checkout', err);
 		return jsonResponse(500, { error: getSafeErrorMessage(err, 'Kon betaalflow niet starten') });

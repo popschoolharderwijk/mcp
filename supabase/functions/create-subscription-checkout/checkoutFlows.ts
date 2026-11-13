@@ -1,27 +1,16 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type Stripe from 'npm:stripe@17.5.0';
-import {
-	buildSetupScheduleIdempotencyKey,
-	createScheduleForAgreement,
-	ensureCatchUpInvoiceForAgreement,
-} from '../_shared/billing.ts';
+import { buildSetupScheduleIdempotencyKey, createScheduleForAgreement } from '../_shared/billing.ts';
 import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '../_shared/http.ts';
 import {
-	attachDefaultPaymentMethod,
-	getReusablePaymentMethodIdFromSetupIntent,
-	getSafeErrorMessage,
-	getStripeId,
-} from '../_shared/stripe.ts';
-import {
 	buildCheckoutSessionUrls,
-	buildCompleteModeSuccessResponse,
+	buildCompleteModeArrangementResponse,
 	buildDirectModeSuccessResponse,
 	buildStripeCustomerDisplayName,
+	resolveCompleteModeArrangement,
 	resolveDirectModePaymentMethodId,
-	resolveSetupIntentPaymentMethodId,
 	validateCompleteCheckoutSessionId,
 	validateCompleteCheckoutSessionMatch,
-	validateCompleteModePaymentReady,
 } from './checkoutFlowsHelpers.ts';
 import type { AgreementRow, ProfileRow } from './types.ts';
 
@@ -59,153 +48,10 @@ async function loadExistingScheduleId(admin: SupabaseClient, agreementId: string
 	return existingAgreement?.stripe_schedule_id ?? null;
 }
 
-type CompleteModeReadyIds = {
-	customerId: string;
-	paymentMethodId: string;
-	setupIntentId: string;
-};
-
-function resolveCompleteModeReadyIds(
-	session: {
-		mode: string;
-		metadata?: { lesson_agreement_id?: string } | null;
-		customer: unknown;
-		setup_intent: Parameters<typeof getReusablePaymentMethodIdFromSetupIntent>[0] | string | null | undefined;
-	},
-	agreementId: string,
-): { ready: CompleteModeReadyIds } | { error: Response } {
-	const sessionMatchError = validateCompleteCheckoutSessionMatch(session, agreementId);
-	if (sessionMatchError) return { error: sessionMatchError };
-
-	const customerId = getStripeId(session.customer);
-	const paymentMethodId = resolveSetupIntentPaymentMethodId(
-		session.setup_intent,
-		getReusablePaymentMethodIdFromSetupIntent,
-	);
-	const paymentReadyError = validateCompleteModePaymentReady(customerId, paymentMethodId);
-	if (paymentReadyError) return { error: paymentReadyError };
-
-	const setupIntentId = getStripeId(session.setup_intent);
-	if (!setupIntentId) {
-		return { error: jsonResponse(409, { error: 'SetupIntent ontbreekt op checkout sessie' }) };
-	}
-
-	return {
-		ready: {
-			customerId: customerId as string,
-			paymentMethodId: paymentMethodId as string,
-			setupIntentId,
-		},
-	};
-}
-
-async function attachCompleteModePaymentMethod(
-	stripe: Stripe,
-	customerId: string,
-	paymentMethodId: string,
-): Promise<Response | null> {
-	try {
-		await attachDefaultPaymentMethod(stripe, customerId, paymentMethodId);
-		return null;
-	} catch (e) {
-		console.error('attach payment method failed', e);
-		return jsonResponse(409, {
-			error: getSafeErrorMessage(e, 'Kon betaalmethode niet koppelen aan klant'),
-		});
-	}
-}
-
-async function settleCatchUpForCompleteMode(
-	admin: SupabaseClient,
-	stripe: Stripe,
-	agreementId: string,
-	ready: CompleteModeReadyIds,
-): Promise<Response | null> {
-	try {
-		await ensureCatchUpInvoiceForAgreement(admin, stripe, {
-			lessonAgreementId: agreementId,
-			customerId: ready.customerId,
-			defaultPaymentMethod: ready.paymentMethodId,
-			attemptId: ready.setupIntentId,
-		});
-		return null;
-	} catch (e) {
-		console.error('catch-up invoice failed during checkout complete', agreementId, e);
-		return jsonResponse(500, {
-			error: getSafeErrorMessage(
-				e,
-				'Machtiging staat, maar de inhaalfactuur mislukte. Neem contact op met de school.',
-			),
-		});
-	}
-}
-
-async function respondCompleteModeWithCatchUp(
-	admin: SupabaseClient,
-	stripe: Stripe,
-	agreementId: string,
-	ready: CompleteModeReadyIds,
-	scheduleId: string,
-): Promise<Response> {
-	const catchUpError = await settleCatchUpForCompleteMode(admin, stripe, agreementId, ready);
-	if (catchUpError) return catchUpError;
-	return buildCompleteModeSuccessResponse({ scheduleId });
-}
-
-async function createCompleteModeScheduleOrRecover(
-	admin: SupabaseClient,
-	stripe: Stripe,
-	agreement: AgreementRow,
-	ready: CompleteModeReadyIds,
-): Promise<Response> {
-	try {
-		const built = await createScheduleForAgreement(admin, stripe, {
-			lessonAgreementId: agreement.id,
-			customerId: ready.customerId,
-			defaultPaymentMethod: ready.paymentMethodId,
-			attemptId: ready.setupIntentId,
-			idempotencyKey: buildSetupScheduleIdempotencyKey(agreement.id, ready.setupIntentId),
-		});
-		return buildCompleteModeSuccessResponse(built);
-	} catch (e) {
-		const scheduleId = await loadExistingScheduleId(admin, agreement.id);
-		if (scheduleId) {
-			return respondCompleteModeWithCatchUp(admin, stripe, agreement.id, ready, scheduleId);
-		}
-		console.error('create schedule during checkout complete failed', agreement.id, e);
-		return jsonResponse(500, {
-			error: getSafeErrorMessage(e, 'Kon machtiging niet afronden. Probeer het opnieuw of neem contact op.'),
-		});
-	}
-}
-
-async function finalizeCompleteModeSchedule(
-	admin: SupabaseClient,
-	stripe: Stripe,
-	agreement: AgreementRow,
-	checkoutSessionId: string,
-	existingScheduleId: string | null,
-): Promise<Response> {
-	const session = await stripe.checkout.sessions.retrieve(checkoutSessionId, {
-		expand: ['setup_intent.latest_attempt'],
-	});
-	const resolved = resolveCompleteModeReadyIds(session, agreement.id);
-	if ('error' in resolved) return resolved.error;
-
-	const attachError = await attachCompleteModePaymentMethod(
-		stripe,
-		resolved.ready.customerId,
-		resolved.ready.paymentMethodId,
-	);
-	if (attachError) return attachError;
-
-	if (existingScheduleId) {
-		return respondCompleteModeWithCatchUp(admin, stripe, agreement.id, resolved.ready, existingScheduleId);
-	}
-
-	return createCompleteModeScheduleOrRecover(admin, stripe, agreement, resolved.ready);
-}
-
+/**
+ * Status-only after Checkout return. Schedule + catch-up are created by the Stripe webhook
+ * (source of truth). Clients poll until `schedule_id` is present.
+ */
 export async function handleCompleteMode(
 	admin: SupabaseClient,
 	stripe: Stripe,
@@ -215,8 +61,12 @@ export async function handleCompleteMode(
 	const sessionIdError = validateCompleteCheckoutSessionId(checkoutSessionId);
 	if (sessionIdError) return sessionIdError;
 
-	const existingScheduleId = await loadExistingScheduleId(admin, agreement.id);
-	return finalizeCompleteModeSchedule(admin, stripe, agreement, checkoutSessionId as string, existingScheduleId);
+	const session = await stripe.checkout.sessions.retrieve(checkoutSessionId as string);
+	const sessionMatchError = validateCompleteCheckoutSessionMatch(session, agreement.id);
+	if (sessionMatchError) return sessionMatchError;
+
+	const scheduleId = await loadExistingScheduleId(admin, agreement.id);
+	return buildCompleteModeArrangementResponse(resolveCompleteModeArrangement(session.status, scheduleId), scheduleId);
 }
 
 export async function handleDirectMode(

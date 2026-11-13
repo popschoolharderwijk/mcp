@@ -9,9 +9,7 @@ import { runStripeCheckoutStartFlow } from '@/lib/stripe/stripeCheckoutStartHelp
 /**
  * Landing page for the magic link from the Stripe checkout invitation email.
  * 1. Consumes the magic link (PKCE or token_hash) when present in the URL.
- * 2. Calls create-subscription-checkout for the given agreement.
- * 3. Redirects the user to Stripe Checkout (mode `checkout`)
- *    or confirms completion (mode `complete`).
+ * 2. Starts Checkout (`checkout`) or polls until the webhook wrote the schedule (`complete`).
  */
 export default function StripeCheckoutStart() {
 	const [params] = useSearchParams();

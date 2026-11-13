@@ -6,15 +6,22 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpLineItems,
+	buildCatchUpProductIdempotencyKey,
+	buildCatchUpProductRecoveryIdempotencyKey,
 	catchUpDraftNeedsLineItems,
+	catchUpIdempotencyRetryDelayMs,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	filterPhasesAfterCatchUpMonth,
+	isStripeIdempotencyKeyInUseError,
+	isStripeResourceMissingError,
+	isUsableStripeProduct,
 	listBillingMonthLabels,
 	needsCatchUpPaymentMethodUpdate,
 	pickActiveGlobalCatchUpProductId,
 	pickAdoptableLegacyCatchUpProductId,
 	pickReusableCatchUpInvoice,
+	readStripeErrorCode,
 	resolveExistingCatchUpSettleKind,
 	stripeExpandableId,
 } from '../../../supabase/functions/_shared/catchUpInvoiceHelpers';
@@ -173,6 +180,28 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(buildCatchUpLineIdempotencyKey('a1', '2026-10', '2026-12', '2026-11', 'seti_1')).toBe(
 			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1_item_2026-11',
 		);
+		expect(buildCatchUpProductIdempotencyKey()).toBe('mcp_catchup_product_global');
+		expect(buildCatchUpProductRecoveryIdempotencyKey('nonce-1')).toBe(
+			'mcp_catchup_product_global_recreate_nonce-1',
+		);
+	});
+
+	it('classifies Stripe error codes and usable catalog products', () => {
+		expect(readStripeErrorCode({ code: 'resource_missing' })).toBe('resource_missing');
+		expect(readStripeErrorCode({ raw: { code: 'idempotency_key_in_use' } })).toBe('idempotency_key_in_use');
+		expect(readStripeErrorCode(null)).toBeNull();
+		expect(isStripeResourceMissingError({ code: 'resource_missing' })).toBe(true);
+		expect(isStripeIdempotencyKeyInUseError({ code: 'idempotency_key_in_use' })).toBe(true);
+		expect(isUsableStripeProduct({ id: 'prod_1', active: true })).toBe(true);
+		expect(isUsableStripeProduct({ id: 'prod_1', deleted: true })).toBe(false);
+		expect(isUsableStripeProduct({ id: 'prod_1', active: false })).toBe(false);
+		expect(isUsableStripeProduct({ id: '' })).toBe(false);
+	});
+
+	it('computes catch-up idempotency retry delay only while the key is still in use', () => {
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'resource_missing' }, 1, 4, 250)).toBeNull();
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'idempotency_key_in_use' }, 4, 4, 250)).toBeNull();
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'idempotency_key_in_use' }, 2, 4, 250)).toBe(500);
 	});
 
 	it('picks only an active global catch-up product', () => {

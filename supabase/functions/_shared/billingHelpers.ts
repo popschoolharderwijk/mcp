@@ -389,14 +389,28 @@ export function buildSetupScheduleIdempotencyKey(lessonAgreementId: string, atte
 	return `mcp_setup_schedule_${lessonAgreementId}_${attemptId}`;
 }
 
-/** Shared tuition Product keyed by lesson_type_option. */
+/** Shared tuition Product keyed by lesson_type_option (concurrent webhooks share one create). */
 export function buildLessonProductIdempotencyKey(lessonTypeOptionId: string): string {
 	return `mcp_lesson_product_${lessonTypeOptionId}`;
+}
+
+/** Fresh key when the stable product key replayed a deleted Product after a catalog wipe. */
+export function buildLessonProductRecoveryIdempotencyKey(lessonTypeOptionId: string, nonce: string): string {
+	return `mcp_lesson_product_${lessonTypeOptionId}_recreate_${nonce}`;
 }
 
 /** Shared recurring Price under that Product, keyed by unit amount (youth/adult). */
 export function buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId: string, amountCents: number): string {
 	return `mcp_lesson_price_${lessonTypeOptionId}_${amountCents}`;
+}
+
+/** Fresh key when the stable price key replayed a deleted Price after a catalog wipe. */
+export function buildLessonPhasePriceRecoveryIdempotencyKey(
+	lessonTypeOptionId: string,
+	amountCents: number,
+	nonce: string,
+): string {
+	return `mcp_lesson_price_${lessonTypeOptionId}_${amountCents}_recreate_${nonce}`;
 }
 
 export function formatBillingSchoolYearLabel(startYear: number): string {

@@ -3,12 +3,11 @@ import {
 	buildCatchUpNoticeText,
 	formatCentsNl,
 	formatTermText,
-	markPaymentLinkArranged,
 	resolveCheckoutStartError,
-	resolveCompleteCheckoutErrorMessage,
+	resolveMandateAwaitPollResult,
 	resolvePaymentLinkInfoFromInvoke,
 	resolvePayPageView,
-	shouldSkipCompleteCheckout,
+	runMandateAwaitPoll,
 } from '../../../src/lib/stripe/paymentLinkPageHelpers';
 
 describe('paymentLinkPageHelpers', () => {
@@ -83,22 +82,49 @@ describe('paymentLinkPageHelpers', () => {
 				loadingInfo: false,
 				completed: false,
 				info: { valid: true, arranged: true },
-				error: 'Inhaalfactuur mislukte',
+				hasCheckoutSession: true,
+			}),
+		).toBe('loading');
+		expect(
+			resolvePayPageView({
+				loadingInfo: false,
+				completed: false,
+				info: { valid: true, arranged: true },
+				error: 'Timeout',
 			}),
 		).toBe('details');
 		expect(resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: false } })).toBe('invalid');
 		expect(resolvePayPageView({ loadingInfo: false, completed: false, info: { valid: true } })).toBe('details');
 	});
 
-	it('maps invoke and checkout errors', async () => {
+	it('maps invoke and checkout start errors', async () => {
 		expect(resolvePaymentLinkInfoFromInvoke(null, new Error('x'))).toEqual({ valid: false });
-		expect(resolvePaymentLinkInfoFromInvoke({ valid: true }, null)).toEqual({ valid: true });
 		expect(await resolveCheckoutStartError(new Error('boom'), undefined)).toBe('Kon Stripe Checkout niet starten');
 		expect(await resolveCheckoutStartError(null, 'https://stripe.test')).toBe('');
-		expect(shouldSkipCompleteCheckout(null, 'a', 't', false)).toBe(true);
-		expect(shouldSkipCompleteCheckout('cs_1', 'a', 't', false)).toBe(false);
-		expect(await resolveCompleteCheckoutErrorMessage(new Error('x'))).toBe('Afronden mislukt');
-		expect(await resolveCompleteCheckoutErrorMessage(null)).toBeNull();
-		expect(markPaymentLinkArranged({ valid: true })).toEqual({ valid: true, arranged: true });
+		expect(resolveMandateAwaitPollResult({ arranged: false, attemptIndex: 2, maxAttempts: 3 })).toBe('timeout');
+	});
+
+	it('polls payment-link info until arranged or timeout', async () => {
+		let calls = 0;
+		const completed = await runMandateAwaitPoll({
+			fetchInfo: async () => {
+				calls += 1;
+				return { valid: true, arranged: calls >= 2 };
+			},
+			maxAttempts: 3,
+			intervalMs: 0,
+			sleep: async () => undefined,
+		});
+		expect(completed).toEqual({ status: 'completed', info: { valid: true, arranged: true } });
+		expect(calls).toBe(2);
+
+		const timedOut = await runMandateAwaitPoll({
+			fetchInfo: async () => ({ valid: true, arranged: false }),
+			maxAttempts: 2,
+			intervalMs: 0,
+			sleep: async () => undefined,
+		});
+		expect(timedOut.status).toBe('timeout');
+		expect(timedOut.info).toEqual({ valid: true, arranged: false });
 	});
 });

@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildCheckoutSessionUrls,
+	buildCompleteModeArrangementResponse,
 	buildCompleteModeSuccessResponse,
 	buildDirectModeSuccessResponse,
 	buildStripeCustomerDisplayName,
+	resolveCompleteModeArrangement,
 	resolveDirectModePaymentMethodId,
-	resolveExistingScheduleResponse,
-	resolveSetupIntentPaymentMethodId,
 	validateCompleteCheckoutSessionId,
 	validateCompleteCheckoutSessionMatch,
-	validateCompleteModePaymentReady,
 } from '../../../supabase/functions/create-subscription-checkout/checkoutFlowsHelpers';
 
 const AGREEMENT_ID = '11111111-1111-1111-1111-111111111111';
@@ -112,30 +111,6 @@ describe('buildCheckoutSessionUrls', () => {
 	});
 });
 
-describe('resolveExistingScheduleResponse', () => {
-	it('returns null when no schedule id exists', () => {
-		expect(resolveExistingScheduleResponse(null)).toBeNull();
-	});
-
-	it('returns a complete-mode response when a schedule id exists', async () => {
-		const response = resolveExistingScheduleResponse('sub_sched_1');
-		expect(response?.status).toBe(200);
-		expect(await response?.json()).toEqual({ mode: 'complete', schedule_id: 'sub_sched_1' });
-	});
-});
-
-describe('validateCompleteModePaymentReady', () => {
-	it('returns null when customer and payment method are present', () => {
-		expect(validateCompleteModePaymentReady('cus_1', 'pm_1')).toBeNull();
-	});
-
-	it('returns a 409 response when payment details are missing', async () => {
-		const response = validateCompleteModePaymentReady(null, 'pm_1');
-		expect(response?.status).toBe(409);
-		expect(await readError(response as Response)).toBe('Betaalmethode is nog niet beschikbaar in Stripe');
-	});
-});
-
 describe('buildStripeCustomerDisplayName', () => {
 	it('joins first and last name when both are present', () => {
 		expect(buildStripeCustomerDisplayName('Anna', 'Bakker')).toBe('Anna Bakker');
@@ -152,8 +127,37 @@ describe('buildCompleteModeSuccessResponse', () => {
 		expect(response.status).toBe(200);
 		expect(await response.json()).toEqual({
 			mode: 'complete',
+			pending: false,
 			schedule_id: 'sched_1',
 			subscription_id: 'sub_1',
+		});
+	});
+});
+
+describe('resolveCompleteModeArrangement', () => {
+	it('maps session status and schedule id to poll outcomes', () => {
+		expect(resolveCompleteModeArrangement('open', null)).toBe('not_complete');
+		expect(resolveCompleteModeArrangement('complete', null)).toBe('pending');
+		expect(resolveCompleteModeArrangement('complete', 'sched_1')).toBe('ready');
+	});
+});
+
+describe('buildCompleteModeArrangementResponse', () => {
+	it('maps arrangement to complete-mode HTTP payloads', async () => {
+		const notComplete = buildCompleteModeArrangementResponse('not_complete', null);
+		expect(notComplete.status).toBe(409);
+		expect(await readError(notComplete)).toBe('Checkout is nog niet afgerond');
+
+		const pending = buildCompleteModeArrangementResponse('pending', null);
+		expect(pending.status).toBe(200);
+		expect(await pending.json()).toEqual({ mode: 'complete', pending: true });
+
+		const ready = buildCompleteModeArrangementResponse('ready', 'sched_1');
+		expect(ready.status).toBe(200);
+		expect(await ready.json()).toEqual({
+			mode: 'complete',
+			pending: false,
+			schedule_id: 'sched_1',
 		});
 	});
 });
@@ -179,20 +183,5 @@ describe('buildDirectModeSuccessResponse', () => {
 			period: { start: '2026-09-01', end: '2027-08-31' },
 			tariff: 'standard',
 		});
-	});
-});
-
-describe('resolveSetupIntentPaymentMethodId', () => {
-	it('extracts payment method ids from expanded setup intents', () => {
-		expect(
-			resolveSetupIntentPaymentMethodId(
-				{ id: 'seti_1', latest_attempt: { payment_method: 'pm_1' } },
-				() => 'pm_1',
-			),
-		).toBe('pm_1');
-	});
-
-	it('returns null for string setup intent references', () => {
-		expect(resolveSetupIntentPaymentMethodId('seti_1', () => 'pm_1')).toBeNull();
 	});
 });

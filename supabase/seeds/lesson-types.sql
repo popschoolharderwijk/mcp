@@ -40,8 +40,8 @@ WHERE NOT EXISTS (SELECT 1 FROM public.lesson_types WHERE lesson_types.name = v.
 -- LESSON TYPE OPTIONS
 -- Not all lesson types have all 15 options (30/45/60/90/120 x weekly/biweekly/monthly).
 -- - Gitaarles, Drumles, Zangles, Basles, Keyboardles, Bandcoaching: all 15 options (price = duration).
--- - Saxofoonles: 6 options (30 and 45 min only) — agreements use 30 min weekly.
--- - DJ / Beats: 3 options (45 min only, all frequencies) — agreements use 45 min monthly.
+-- - Saxofoonles: 6 options (30 and 45 min only) — test seed mixes both durations × all frequencies.
+-- - DJ / Beats: 3 options (45 min only, all frequencies) — test seed mixes weekly/biweekly/monthly.
 -- -----------------------------------------------------------------------------
 
 -- Full 15 options for: Gitaarles, Drumles, Zangles, Basles, Keyboardles, Bandcoaching
@@ -116,15 +116,25 @@ WHERE lt.name = 'DJ / Beats'
       AND lto.price_per_lesson = opt.price_per_lesson
   );
 
--- Default rates for weekly/biweekly lesson_type_options (from stripe_billing migration).
+-- Default youth/adult rates scale with duration (30 min base from stripe_billing).
+-- Weekly 30: €19.50 / €23.60; biweekly 30: €20.55 / €24.98; monthly 30: €21.50 / €26.00.
 UPDATE public.lesson_type_options
-SET price_per_lesson_youth_cents = 1950,
-    price_per_lesson_adult_cents = 2360
+SET
+  price_per_lesson_youth_cents = ROUND(1950::numeric * duration_minutes / 30)::integer,
+  price_per_lesson_adult_cents = ROUND(2360::numeric * duration_minutes / 30)::integer
 WHERE frequency = 'weekly'
   AND price_per_lesson_youth_cents IS NULL;
 
 UPDATE public.lesson_type_options
-SET price_per_lesson_youth_cents = 2055,
-    price_per_lesson_adult_cents = 2498
+SET
+  price_per_lesson_youth_cents = ROUND(2055::numeric * duration_minutes / 30)::integer,
+  price_per_lesson_adult_cents = ROUND(2498::numeric * duration_minutes / 30)::integer
 WHERE frequency = 'biweekly'
+  AND price_per_lesson_youth_cents IS NULL;
+
+UPDATE public.lesson_type_options
+SET
+  price_per_lesson_youth_cents = ROUND(2150::numeric * duration_minutes / 30)::integer,
+  price_per_lesson_adult_cents = ROUND(2600::numeric * duration_minutes / 30)::integer
+WHERE frequency = 'monthly'
   AND price_per_lesson_youth_cents IS NULL;

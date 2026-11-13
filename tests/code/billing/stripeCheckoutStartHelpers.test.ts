@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'bun:test';
-import { runStripeCheckoutStartFlow } from '../../../src/lib/stripe/stripeCheckoutStartHelpers';
+import {
+	resolveCheckoutCompletePollStatus,
+	runStripeCheckoutStartFlow,
+} from '../../../src/lib/stripe/stripeCheckoutStartHelpers';
+
+describe('resolveCheckoutCompletePollStatus', () => {
+	it('classifies complete poll payloads', () => {
+		expect(resolveCheckoutCompletePollStatus({ schedule_id: 'sched_1', pending: false })).toBe('success');
+		expect(resolveCheckoutCompletePollStatus({ pending: true })).toBe('pending');
+		expect(resolveCheckoutCompletePollStatus({})).toBe('invalid');
+		expect(resolveCheckoutCompletePollStatus(null)).toBe('invalid');
+	});
+});
 
 describe('runStripeCheckoutStartFlow', () => {
 	const baseDeps = {
@@ -11,6 +23,7 @@ describe('runStripeCheckoutStartFlow', () => {
 			error: null,
 		}),
 		getFunctionErrorMessage: async (_data: unknown, _error: unknown, fallback: string) => fallback,
+		sleep: async () => undefined,
 	};
 
 	it('returns error when agreement id is missing', async () => {
@@ -53,12 +66,34 @@ describe('runStripeCheckoutStartFlow', () => {
 		expect(result).toEqual({ status: 'redirect', url: 'https://checkout.stripe.com/pay/cs_test' });
 	});
 
-	it('returns success for complete mode', async () => {
-		const result = await runStripeCheckoutStartFlow(new URLSearchParams('agreement=agr-1&session_id=sess-1'), {
+	it('polls complete mode until the webhook schedule id appears', async () => {
+		let calls = 0;
+		const result = await runStripeCheckoutStartFlow(new URLSearchParams('agreement=agr-1&session_id=cs_1'), {
 			...baseDeps,
-			invokeCreateSubscriptionCheckout: async () => ({ data: { ok: true }, error: null }),
+			maxPollAttempts: 3,
+			invokeCreateSubscriptionCheckout: async () => {
+				calls += 1;
+				if (calls < 2) return { data: { mode: 'complete', pending: true }, error: null };
+				return { data: { mode: 'complete', pending: false, schedule_id: 'sched_1' }, error: null };
+			},
 		});
 		expect(result).toEqual({ status: 'success' });
+		expect(calls).toBe(2);
+	});
+
+	it('returns timeout when complete mode stays pending', async () => {
+		const result = await runStripeCheckoutStartFlow(new URLSearchParams('agreement=agr-1&session_id=cs_1'), {
+			...baseDeps,
+			maxPollAttempts: 2,
+			invokeCreateSubscriptionCheckout: async () => ({
+				data: { mode: 'complete', pending: true },
+				error: null,
+			}),
+		});
+		expect(result.status).toBe('error');
+		if (result.status === 'error') {
+			expect(result.message).toContain('nog niet zichtbaar');
+		}
 	});
 
 	it('returns invoke error message for checkout failures', async () => {
@@ -71,8 +106,9 @@ describe('runStripeCheckoutStartFlow', () => {
 	});
 
 	it('returns complete fallback error for complete mode failures', async () => {
-		const result = await runStripeCheckoutStartFlow(new URLSearchParams('agreement=agr-1&session_id=sess-1'), {
+		const result = await runStripeCheckoutStartFlow(new URLSearchParams('agreement=agr-1&session_id=cs_1'), {
 			...baseDeps,
+			maxPollAttempts: 1,
 			invokeCreateSubscriptionCheckout: async () => ({ data: null, error: new Error('failed') }),
 			getFunctionErrorMessage: async (_data, _error, fallback) => fallback,
 		});

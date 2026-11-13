@@ -5,7 +5,9 @@ import {
 	assertPositiveYearlyCents,
 	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
+	buildLessonPhasePriceRecoveryIdempotencyKey,
 	buildLessonProductIdempotencyKey,
+	buildLessonProductRecoveryIdempotencyKey,
 	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
@@ -161,7 +163,7 @@ describe('billing pure helpers', () => {
 		expect(isTerminalScheduleStatus('active')).toBe(false);
 	});
 
-	it('builds stable Stripe idempotency keys for setup schedules and shared products', () => {
+	it('builds setup schedule and shared catalog idempotency keys', () => {
 		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
 		const attemptId = 'seti_1UaCGS8GrwT7wj0BChaoxfVI';
 		const optionId = 'opt-gitaar-30-weekly';
@@ -169,7 +171,13 @@ describe('billing pure helpers', () => {
 			`mcp_setup_schedule_${agreementId}_${attemptId}`,
 		);
 		expect(buildLessonProductIdempotencyKey(optionId)).toBe(`mcp_lesson_product_${optionId}`);
+		expect(buildLessonProductRecoveryIdempotencyKey(optionId, 'nonce-1')).toBe(
+			`mcp_lesson_product_${optionId}_recreate_nonce-1`,
+		);
 		expect(buildLessonPhasePriceIdempotencyKey(optionId, 7338)).toBe(`mcp_lesson_price_${optionId}_7338`);
+		expect(buildLessonPhasePriceRecoveryIdempotencyKey(optionId, 7338, 'nonce-2')).toBe(
+			`mcp_lesson_price_${optionId}_7338_recreate_nonce-2`,
+		);
 		expect(buildLessonTypeOptionProductSearchQuery(optionId)).toBe(
 			`metadata['lesson_type_option_id']:'${optionId}'`,
 		);

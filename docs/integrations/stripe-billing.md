@@ -5,10 +5,10 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
 ## 1. What we do
 
 - **Setup:** the payer opens a fixed payment link (no login), completes **iDEAL** Checkout, and creates a reusable payment method.
-- **After mandate:** webhook creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause).
+- **After mandate:** the **Stripe webhook** is the sole fulfillment writer — it creates a `SubscriptionSchedule` with monthly phases (school year, age tariff, August pause) and any catch-up invoice. The `/pay` (and logged-in checkout) return URL only **polls** until `stripe_schedule_id` is present; it does not create schedules.
 - **Late mandate:** if the agreement start month is already past, one **catch-up invoice** covers missed billing months; remaining months stay on the schedule. Rematch after cancel reuses an existing draft/open/paid catch-up (updates the payment method and retries collection) so the payer is never charged twice for the same catch-up.
 - **Tariff changes:** rebuild future schedule phases on demand via `rebuild-subscription-schedule` (per agreement or per lesson type). New amounts create a new Price under the same shared Product; youth/adult are Prices, not separate Products.
-- **Catalog:** Products are created lazily and shared. Tuition is one Product per `lesson_type_option` (metadata `lesson_type_option_id`); catch-up is one global Product named **Inhalen lesgeld** (metadata `kind=catch_up`). There is no catalog sync job.
+- **Catalog:** Products are created lazily on first use (empty sandbox / new production is fine). Tuition is one Product per `lesson_type_option` (metadata `lesson_type_option_id`); catch-up is one global Product named **Inhalen lesgeld** (metadata `kind=catch_up`, `scope=global`). Creates use stable idempotency keys so concurrent webhooks (`checkout.session.completed` + `setup_intent.succeeded`) share one Product/Price; after create the id is verified, and a one-off recovery key is used if a sandbox wipe left a stale idempotency replay. There is no catalog sync job.
 
 ## 2. End-to-end flow
 
@@ -23,10 +23,11 @@ Stripe is the sole payment source of truth. Each active `lesson_agreements` row 
         ▼
 [Stripe Checkout — iDEAL setup]
         │
-        │ 3. setup_intent.succeeded / checkout.session.completed (webhook)
+        │ 3. setup_intent.succeeded / checkout.session.completed (webhook = fulfill)
         ▼
 [createScheduleForAgreement] (+ optional catch-up invoice)
         │
+        │ 4. /pay?session_id=… polls payment-link-info until arranged
         ▼
 [subscriptions / subscription_invoices] → monthly Stripe collection
 ```
@@ -130,7 +131,7 @@ Edge only (never `VITE_`):
 
 Same CLI shape as `db:reset`: target via `[local|development|dev|test]`. Destructive for **Stripe test mode** (`sk_test_…`) against the matching non-production database. **Production is never allowed.**
 
-Deletes all Stripe Customers and clears local subscriptions / customers / payment links / invites plus `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Shared Products (`lesson_type_option_id` / catch-up) stay in the Stripe Dashboard and are reused on the next mandate.
+Deletes all Stripe Customers and clears local subscriptions / customers / payment links / invites plus `lesson_agreements.stripe_schedule_id` / `minimum_term_end`. Shared Products (`lesson_type_option_id` / catch-up) stay in the Stripe Dashboard when you use this script and are reused on the next mandate. A full Dashboard “Delete test data” wipe removes Products too — the next mandate recreates them via search-or-create (no stale forever idempotency keys).
 
 ```bash
 bun run stripe:reset:customers              # local Docker

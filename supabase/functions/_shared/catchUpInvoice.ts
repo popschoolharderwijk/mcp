@@ -7,11 +7,15 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpProductIdempotencyKey,
+	buildCatchUpProductRecoveryIdempotencyKey,
 	buildCatchUpProductSearchQuery,
 	type CatchUpInvoicePlan,
 	catchUpDraftNeedsLineItems,
+	catchUpIdempotencyRetryDelayMs,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
+	isStripeResourceMissingError,
+	isUsableStripeProduct,
 	needsCatchUpPaymentMethodUpdate,
 	pickActiveGlobalCatchUpProductId,
 	pickAdoptableLegacyCatchUpProductId,
@@ -22,6 +26,16 @@ import {
 	stripeExpandableId,
 } from './catchUpInvoiceHelpers.ts';
 
+const CATCH_UP_IDEMPOTENCY_RETRY_ATTEMPTS = 4;
+const CATCH_UP_IDEMPOTENCY_RETRY_DELAY_MS = 250;
+
+function catchUpProductCreateParams(): Stripe.ProductCreateParams {
+	return {
+		name: STRIPE_CATCH_UP_PRODUCT_NAME,
+		metadata: { kind: 'catch_up', scope: STRIPE_CATCH_UP_PRODUCT_SCOPE },
+	};
+}
+
 async function renameCatchUpProductIfNeeded(
 	stripe: Stripe,
 	productId: string,
@@ -31,47 +45,102 @@ async function renameCatchUpProductIfNeeded(
 	await stripe.products.update(productId, { name: STRIPE_CATCH_UP_PRODUCT_NAME });
 }
 
-async function adoptLegacyCatchUpProduct(stripe: Stripe, productId: string): Promise<string> {
-	await stripe.products.update(productId, {
+/** Confirm a Product id from search still exists (search can lag after catalog wipes). */
+export async function retrieveUsableStripeProductId(stripe: Stripe, productId: string): Promise<string | null> {
+	try {
+		const product = await stripe.products.retrieve(productId);
+		return isUsableStripeProduct(product) ? product.id : null;
+	} catch (e) {
+		if (isStripeResourceMissingError(e)) return null;
+		throw e;
+	}
+}
+
+async function adoptLegacyCatchUpProduct(stripe: Stripe, productId: string): Promise<string | null> {
+	const usableId = await retrieveUsableStripeProductId(stripe, productId);
+	if (!usableId) return null;
+	await stripe.products.update(usableId, {
 		name: STRIPE_CATCH_UP_PRODUCT_NAME,
 		metadata: { kind: 'catch_up', scope: STRIPE_CATCH_UP_PRODUCT_SCOPE },
 	});
-	return productId;
+	return usableId;
 }
 
 async function keepExistingGlobalCatchUpProduct(
 	stripe: Stripe,
 	products: Array<{ id: string; name?: string | null }>,
 	productId: string,
-): Promise<string> {
-	const existing = products.find((product) => product.id === productId);
-	await renameCatchUpProductIfNeeded(stripe, productId, existing?.name ?? null);
-	return productId;
+): Promise<string | null> {
+	const usableId = await retrieveUsableStripeProductId(stripe, productId);
+	if (!usableId) return null;
+	const existing = products.find((product) => product.id === usableId);
+	await renameCatchUpProductIfNeeded(stripe, usableId, existing?.name ?? null);
+	return usableId;
 }
 
-async function ensureCatchUpProduct(stripe: Stripe): Promise<string> {
+async function tryGlobalCatchUpProduct(stripe: Stripe): Promise<string | null> {
 	const found = await stripe.products.search({
 		query: buildCatchUpProductSearchQuery(),
 		limit: 10,
 	});
 	const existingId = pickActiveGlobalCatchUpProductId(found.data);
-	if (existingId) return keepExistingGlobalCatchUpProduct(stripe, found.data, existingId);
+	if (!existingId) return null;
+	return keepExistingGlobalCatchUpProduct(stripe, found.data, existingId);
+}
 
+async function tryLegacyCatchUpProduct(stripe: Stripe): Promise<string | null> {
 	const legacy = await stripe.products.search({
 		query: `metadata['kind']:'catch_up'`,
 		limit: 20,
 	});
 	const adoptableId = pickAdoptableLegacyCatchUpProductId(legacy.data);
-	if (adoptableId) return adoptLegacyCatchUpProduct(stripe, adoptableId);
+	if (!adoptableId) return null;
+	return adoptLegacyCatchUpProduct(stripe, adoptableId);
+}
 
-	const created = await stripe.products.create(
-		{
-			name: STRIPE_CATCH_UP_PRODUCT_NAME,
-			metadata: { kind: 'catch_up', scope: STRIPE_CATCH_UP_PRODUCT_SCOPE },
-		},
-		{ idempotencyKey: buildCatchUpProductIdempotencyKey() },
-	);
-	return created.id;
+async function createCatchUpProduct(stripe: Stripe): Promise<string> {
+	const params = catchUpProductCreateParams();
+	const created = await stripe.products.create(params, {
+		idempotencyKey: buildCatchUpProductIdempotencyKey(),
+	});
+	const usableId = await retrieveUsableStripeProductId(stripe, created.id);
+	if (usableId) return usableId;
+
+	const recovered = await stripe.products.create(params, {
+		idempotencyKey: buildCatchUpProductRecoveryIdempotencyKey(crypto.randomUUID()),
+	});
+	return recovered.id;
+}
+
+/** Shared catch-up Product; creates one when the catalog has none (empty env / wipe). */
+async function ensureCatchUpProduct(stripe: Stripe): Promise<string> {
+	const fromGlobal = await tryGlobalCatchUpProduct(stripe);
+	if (fromGlobal) return fromGlobal;
+	const fromLegacy = await tryLegacyCatchUpProduct(stripe);
+	if (fromLegacy) return fromLegacy;
+	return createCatchUpProduct(stripe);
+}
+
+async function sleepCatchUpRetry(ms: number): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Retry when checkout.session.completed and setup_intent.succeeded race the same key. */
+async function withCatchUpIdempotencyRetry<T>(operation: () => Promise<T>): Promise<T> {
+	for (let attempt = 1; ; attempt += 1) {
+		try {
+			return await operation();
+		} catch (e) {
+			const delayMs = catchUpIdempotencyRetryDelayMs(
+				e,
+				attempt,
+				CATCH_UP_IDEMPOTENCY_RETRY_ATTEMPTS,
+				CATCH_UP_IDEMPOTENCY_RETRY_DELAY_MS,
+			);
+			if (delayMs == null) throw e;
+			await sleepCatchUpRetry(delayMs);
+		}
+	}
 }
 
 async function listCustomerInvoices(stripe: Stripe, customerId: string): Promise<Stripe.Invoice[]> {
@@ -104,27 +173,29 @@ async function addCatchUpLineItems(
 ): Promise<void> {
 	const { plan, lessonAgreementId, attemptId } = input;
 	for (const line of plan.lines) {
-		await stripe.invoiceItems.create(
-			{
-				customer: input.customerId,
-				invoice: input.invoiceId,
-				description: catchUpLineDescription(line.month),
-				price_data: {
-					currency: 'eur',
-					product: input.productId,
-					unit_amount: line.amountCents,
+		await withCatchUpIdempotencyRetry(() =>
+			stripe.invoiceItems.create(
+				{
+					customer: input.customerId,
+					invoice: input.invoiceId,
+					description: catchUpLineDescription(line.month),
+					price_data: {
+						currency: 'eur',
+						product: input.productId,
+						unit_amount: line.amountCents,
+					},
+					metadata: { ...input.metadata, line_month: line.month },
 				},
-				metadata: { ...input.metadata, line_month: line.month },
-			},
-			{
-				idempotencyKey: buildCatchUpLineIdempotencyKey(
-					lessonAgreementId,
-					plan.fromMonth,
-					plan.toMonth,
-					line.month,
-					attemptId,
-				),
-			},
+				{
+					idempotencyKey: buildCatchUpLineIdempotencyKey(
+						lessonAgreementId,
+						plan.fromMonth,
+						plan.toMonth,
+						line.month,
+						attemptId,
+					),
+				},
+			),
 		);
 	}
 }
@@ -136,17 +207,19 @@ async function finalizeCatchUpDraft(
 	plan: CatchUpInvoicePlan,
 	attemptId: string,
 ): Promise<string> {
-	const finalized = await stripe.invoices.finalizeInvoice(
-		invoiceId,
-		{ auto_advance: true },
-		{
-			idempotencyKey: buildCatchUpFinalizeIdempotencyKey(
-				lessonAgreementId,
-				plan.fromMonth,
-				plan.toMonth,
-				attemptId,
-			),
-		},
+	const finalized = await withCatchUpIdempotencyRetry(() =>
+		stripe.invoices.finalizeInvoice(
+			invoiceId,
+			{ auto_advance: true },
+			{
+				idempotencyKey: buildCatchUpFinalizeIdempotencyKey(
+					lessonAgreementId,
+					plan.fromMonth,
+					plan.toMonth,
+					attemptId,
+				),
+			},
+		),
 	);
 	return finalized.id;
 }
@@ -238,24 +311,26 @@ async function createAndFinalizeCatchUpInvoice(
 		to_month: plan.toMonth,
 	};
 
-	const created = await stripe.invoices.create(
-		{
-			customer: customerId,
-			collection_method: 'charge_automatically',
-			auto_advance: false,
-			pending_invoice_items_behavior: 'exclude',
-			description: catchUpInvoiceDescription(plan.fromMonth, plan.toMonth),
-			metadata,
-			...(input.defaultPaymentMethod ? { default_payment_method: input.defaultPaymentMethod } : {}),
-		},
-		{
-			idempotencyKey: buildCatchUpInvoiceIdempotencyKey(
-				lessonAgreementId,
-				plan.fromMonth,
-				plan.toMonth,
-				attemptId,
-			),
-		},
+	const created = await withCatchUpIdempotencyRetry(() =>
+		stripe.invoices.create(
+			{
+				customer: customerId,
+				collection_method: 'charge_automatically',
+				auto_advance: false,
+				pending_invoice_items_behavior: 'exclude',
+				description: catchUpInvoiceDescription(plan.fromMonth, plan.toMonth),
+				metadata,
+				...(input.defaultPaymentMethod ? { default_payment_method: input.defaultPaymentMethod } : {}),
+			},
+			{
+				idempotencyKey: buildCatchUpInvoiceIdempotencyKey(
+					lessonAgreementId,
+					plan.fromMonth,
+					plan.toMonth,
+					attemptId,
+				),
+			},
+		),
 	);
 
 	// Create idempotency returns the cached draft body; retrieve for live status/lines on retries/races.
