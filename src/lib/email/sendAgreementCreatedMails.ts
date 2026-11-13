@@ -8,9 +8,12 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import {
+	AGREEMENT_MAIL_UNKNOWN_ROOM,
 	type AgreementMailSharedVars,
+	agreementRoomNameFromJoin,
 	buildAgreementMailContext,
 	buildAgreementMailInvokeBody,
+	resolveAgreementRoomLabel,
 } from '@/lib/email/sendAgreementCreatedMailsHelpers';
 import { buildIssuePaymentLinkBody } from '@/lib/subscriptions/subscriptionCardHelpers';
 
@@ -29,6 +32,28 @@ async function sendStudentPaymentInvite(agreementId: string): Promise<boolean> {
 		return false;
 	}
 	return data?.sent === true;
+}
+
+async function loadAgreementRoomLabel(teacherUserId: string, dayOfWeek: number, lessonStart: string): Promise<string> {
+	const { data, error } = await supabase
+		.from('teacher_availability')
+		.select('start_time, end_time, rooms(name)')
+		.eq('teacher_user_id', teacherUserId)
+		.eq('day_of_week', dayOfWeek);
+
+	if (error || !data) {
+		if (error) console.error('sendAgreementCreatedMails: lokaal niet geladen', error);
+		return AGREEMENT_MAIL_UNKNOWN_ROOM;
+	}
+
+	return resolveAgreementRoomLabel(
+		data.map((row) => ({
+			start_time: row.start_time,
+			end_time: row.end_time,
+			room_name: agreementRoomNameFromJoin(row.rooms),
+		})),
+		lessonStart,
+	);
 }
 
 async function sendTeacherAgreementMail(email: string, vars: AgreementMailSharedVars): Promise<boolean> {
@@ -60,7 +85,7 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 		return result;
 	}
 
-	const [studentSent, studentProfile, teacherProfile] = await Promise.all([
+	const [studentSent, studentProfile, teacherProfile, roomLabel] = await Promise.all([
 		sendStudentPaymentInvite(agreementId),
 		supabase
 			.from('profiles')
@@ -72,13 +97,14 @@ export async function sendAgreementCreatedMails(agreementId: string): Promise<Se
 			.select('email, first_name, last_name')
 			.eq('user_id', agreement.teacher_user_id)
 			.maybeSingle(),
+		loadAgreementRoomLabel(agreement.teacher_user_id, agreement.day_of_week, agreement.start_time),
 	]);
 	result.studentSent = studentSent;
 
 	const teacherEmail = teacherProfile.data?.email;
 	if (!teacherEmail) return result;
 
-	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data);
+	const { sharedVars } = buildAgreementMailContext(agreement, studentProfile.data, teacherProfile.data, roomLabel);
 	result.teacherSent = await sendTeacherAgreementMail(teacherEmail, sharedVars);
 	return result;
 }

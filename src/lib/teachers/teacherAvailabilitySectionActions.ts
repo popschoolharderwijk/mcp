@@ -27,7 +27,7 @@ async function deleteAvailabilityIds(ids: string[]): Promise<boolean> {
 async function updateAvailabilityTimes(blockId: string, form: AvailabilityTimeForm): Promise<boolean> {
 	const { error } = await supabase
 		.from('teacher_availability')
-		.update({ start_time: form.start_time, end_time: form.end_time })
+		.update({ start_time: form.start_time, end_time: form.end_time, room_id: form.room_id })
 		.eq('id', blockId);
 
 	if (error) {
@@ -87,6 +87,7 @@ async function executeAvailabilityWritePlan(
 			day_of_week: displayDayToDbDay(context.displayDay),
 			start_time: plan.form.start_time,
 			end_time: plan.form.end_time,
+			room_id: plan.form.room_id,
 		});
 		return !error;
 	}

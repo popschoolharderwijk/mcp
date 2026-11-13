@@ -6,6 +6,10 @@ const ROOM_VISIBILITY_LABELS: Record<RoomVisibility, string> = {
 	hidden: 'Verborgen',
 };
 
+export function canManageRooms(isAdmin: boolean, isSiteAdmin: boolean): boolean {
+	return isAdmin || isSiteAdmin;
+}
+
 export function roomVisibilityLabel(visibility: RoomVisibility): string {
 	return ROOM_VISIBILITY_LABELS[visibility];
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { LuPlus, LuX } from 'react-icons/lu';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { roomVisibilityLabel } from '@/lib/rooms/roomVisibilityHelpers';
+import { canManageRooms, roomVisibilityLabel } from '@/lib/rooms/roomVisibilityHelpers';
 import type { RoomInsert, RoomRow, RoomVisibility } from '@/types/rooms';
 
 const VISIBILITIES: RoomVisibility[] = ['public', 'internal', 'hidden'];
@@ -56,12 +56,20 @@ function formFromRoom(room: RoomRow): RoomFormState {
 	};
 }
 
+function roomCapacityError(maxCapacity: string): string | null {
+	const capacity = Number.parseInt(maxCapacity, 10);
+	if (!Number.isInteger(capacity) || capacity < 1) return 'Capaciteit moet minstens 1 zijn.';
+	return null;
+}
+
+function roomColorError(color: string): string | null {
+	if (!/^#[0-9A-Fa-f]{6}$/.test(color)) return 'Kies een geldige kleur.';
+	return null;
+}
+
 function roomFormError(form: RoomFormState): string | null {
 	if (form.name.trim() === '') return 'Vul een naam in.';
-	const capacity = Number.parseInt(form.maxCapacity, 10);
-	if (!Number.isInteger(capacity) || capacity < 1) return 'Capaciteit moet minstens 1 zijn.';
-	if (!/^#[0-9A-Fa-f]{6}$/.test(form.color)) return 'Kies een geldige kleur.';
-	return null;
+	return roomCapacityError(form.maxCapacity) ?? roomColorError(form.color);
 }
 
 function roomWritePayload(form: RoomFormState): RoomInsert {
@@ -76,120 +84,274 @@ function roomWritePayload(form: RoomFormState): RoomInsert {
 	};
 }
 
+function roomLoadAllowed(isEditMode: boolean, authLoading: boolean, hasAccess: boolean): boolean {
+	if (!isEditMode || authLoading) return false;
+	return hasAccess;
+}
+
+function roomLoadId(
+	isEditMode: boolean,
+	id: string | undefined,
+	authLoading: boolean,
+	hasAccess: boolean,
+): string | null {
+	if (!roomLoadAllowed(isEditMode, authLoading, hasAccess) || !id) return null;
+	return id;
+}
+
+function applyRoomLoad(
+	result: { data: RoomRow | null; error: { message: string } | null },
+	cancelled: boolean,
+	setRoom: (room: RoomRow | null) => void,
+	setForm: (form: RoomFormState) => void,
+	setLoading: (loading: boolean) => void,
+): void {
+	if (cancelled) return;
+	setLoading(false);
+	if (result.error) {
+		toast.error('Fout bij laden lokaal');
+		setRoom(null);
+		return;
+	}
+	setRoom(result.data);
+	if (!result.data) return;
+	setForm(formFromRoom(result.data));
+}
+
+function saveErrorDescription(error: unknown): string {
+	if (error instanceof Error) return error.message;
+	return 'Er is een onbekende fout opgetreden.';
+}
+
+async function updateRoom(id: string, payload: RoomInsert): Promise<RoomRow> {
+	const { data, error } = await supabase.from('rooms').update(payload).eq('id', id).select('*').single();
+	if (error) throw error;
+	return data;
+}
+
+async function createRoom(payload: RoomInsert): Promise<string> {
+	const { data, error } = await supabase.from('rooms').insert(payload).select('id').single();
+	if (error) throw error;
+	return data.id;
+}
+
+async function saveRoomForm(params: {
+	isEditMode: boolean;
+	id: string | undefined;
+	form: RoomFormState;
+	setRoom: (room: RoomRow) => void;
+	setForm: (form: RoomFormState) => void;
+	navigate: (path: string) => void;
+}): Promise<void> {
+	const payload = roomWritePayload(params.form);
+	if (params.isEditMode && params.id) {
+		const data = await updateRoom(params.id, payload);
+		params.setRoom(data);
+		params.setForm(formFromRoom(data));
+		toast.success('Lokaal opgeslagen');
+		return;
+	}
+	const createdId = await createRoom(payload);
+	toast.success('Lokaal opgeslagen');
+	params.navigate(`/rooms/${createdId}`);
+}
+
+function roomPageTitle(isEditMode: boolean, formName: string, roomName: string | undefined): string {
+	if (!isEditMode) return 'Nieuw lokaal';
+	if (formName) return formName;
+	if (roomName) return roomName;
+	return 'Lokaal';
+}
+
+function bindRoomLoad(
+	isEditMode: boolean,
+	id: string | undefined,
+	authLoading: boolean,
+	hasAccess: boolean,
+	setRoom: (room: RoomRow | null) => void,
+	setForm: (form: RoomFormState) => void,
+	setLoading: (loading: boolean) => void,
+): () => void {
+	const roomId = roomLoadId(isEditMode, id, authLoading, hasAccess);
+	if (!roomId) return () => undefined;
+	let cancelled = false;
+	setLoading(true);
+	void supabase
+		.from('rooms')
+		.select('*')
+		.eq('id', roomId)
+		.maybeSingle()
+		.then((result) => {
+			applyRoomLoad(result, cancelled, setRoom, setForm, setLoading);
+		});
+	return () => {
+		cancelled = true;
+	};
+}
+
+function bindRoomBreadcrumb(
+	room: RoomRow | null,
+	setBreadcrumbSuffix: (suffix: { label: string }[]) => void,
+): () => void {
+	if (!room) {
+		setBreadcrumbSuffix([]);
+		return () => undefined;
+	}
+	setBreadcrumbSuffix([{ label: room.name }]);
+	return () => setBreadcrumbSuffix([]);
+}
+
+function commitFacilityDraft(
+	form: RoomFormState,
+	draft: string,
+	setForm: (form: RoomFormState) => void,
+	setDraft: (draft: string) => void,
+): void {
+	const facilities = nextFacilities(form.facilities, draft);
+	if (!facilities) return;
+	setForm({ ...form, facilities });
+	setDraft('');
+}
+
+function addFacilityOnEnter(event: { key: string; preventDefault: () => void }, addFacility: () => void): void {
+	if (event.key !== 'Enter') return;
+	event.preventDefault();
+	addFacility();
+}
+
+async function submitRoomForm(params: {
+	isEditMode: boolean;
+	id: string | undefined;
+	form: RoomFormState;
+	setRoom: (room: RoomRow) => void;
+	setForm: (form: RoomFormState) => void;
+	setSaving: (saving: boolean) => void;
+	navigate: (path: string) => void;
+}): Promise<void> {
+	const validationError = roomFormError(params.form);
+	if (validationError) {
+		toast.error(validationError);
+		return;
+	}
+	params.setSaving(true);
+	try {
+		await saveRoomForm(params);
+	} catch (error) {
+		toast.error('Opslaan mislukt', { description: saveErrorDescription(error) });
+	} finally {
+		params.setSaving(false);
+	}
+}
+
+function roomPageIsLoading(authLoading: boolean, isEditMode: boolean, loading: boolean): boolean {
+	if (authLoading) return true;
+	return isEditMode && loading;
+}
+
+function nextFacilities(facilities: string[], draft: string): string[] | null {
+	const next = draft.trim();
+	if (!next || facilities.includes(next)) return null;
+	return [...facilities, next];
+}
+
+function RoomSettingsGate(props: { isEditMode: boolean; room: RoomRow | null; children: ReactNode }) {
+	if (props.isEditMode && !props.room) return <p className="text-sm text-muted-foreground">Lokaal niet gevonden.</p>;
+	return props.children;
+}
+
+function RoomPageHeading(props: { room: RoomRow | null; title: string }) {
+	if (!props.room) return <PageHeader title={props.title} />;
+	const roomInitial = props.title.trim().charAt(0).toUpperCase() || 'L';
+	return (
+		<div className="flex min-w-0 items-center gap-4">
+			<Avatar className="h-20 w-20 flex-shrink-0">
+				<AvatarImage src={props.room.image_url ?? undefined} alt={props.title} className="object-cover" />
+				<AvatarFallback
+					className="text-2xl font-medium text-white"
+					style={{ backgroundColor: props.room.color }}
+				>
+					{roomInitial}
+				</AvatarFallback>
+			</Avatar>
+			<h1 className="text-2xl font-semibold leading-none tracking-tight truncate">{props.title}</h1>
+		</div>
+	);
+}
+
 export default function RoomInfo() {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const { setBreadcrumbSuffix } = useBreadcrumb();
 	const isEditMode = Boolean(id);
-	const hasAccess = isAdmin || isSiteAdmin;
+	const hasAccess = canManageRooms(isAdmin, isSiteAdmin);
 	const [room, setRoom] = useState<RoomRow | null>(null);
 	const [form, setForm] = useState<RoomFormState>(emptyForm);
 	const [loading, setLoading] = useState(isEditMode);
 	const [saving, setSaving] = useState(false);
 	const [facilityDraft, setFacilityDraft] = useState('');
 
-	useEffect(() => {
-		if (!isEditMode || !id || authLoading || !hasAccess) return;
-		let cancelled = false;
-		setLoading(true);
-		void supabase
-			.from('rooms')
-			.select('*')
-			.eq('id', id)
-			.maybeSingle()
-			.then(({ data, error }) => {
-				if (cancelled) return;
-				if (error) {
-					toast.error('Fout bij laden lokaal');
-					setRoom(null);
-				} else {
-					setRoom(data);
-					if (data) setForm(formFromRoom(data));
-				}
-				setLoading(false);
-			});
-		return () => {
-			cancelled = true;
-		};
-	}, [authLoading, hasAccess, id, isEditMode]);
+	useEffect(
+		() => bindRoomLoad(isEditMode, id, authLoading, hasAccess, setRoom, setForm, setLoading),
+		[authLoading, hasAccess, id, isEditMode],
+	);
 
-	useEffect(() => {
-		if (!room) {
-			setBreadcrumbSuffix([]);
-			return;
-		}
-		setBreadcrumbSuffix([{ label: room.name }]);
-		return () => setBreadcrumbSuffix([]);
-	}, [room, setBreadcrumbSuffix]);
+	useEffect(() => bindRoomBreadcrumb(room, setBreadcrumbSuffix), [room, setBreadcrumbSuffix]);
 
-	const addFacility = () => {
-		const next = facilityDraft.trim();
-		if (!next || form.facilities.includes(next)) return;
-		setForm({ ...form, facilities: [...form.facilities, next] });
-		setFacilityDraft('');
-	};
-
-	const save = async () => {
-		const validationError = roomFormError(form);
-		if (validationError) {
-			toast.error(validationError);
-			return;
-		}
-		setSaving(true);
-		const payload = roomWritePayload(form);
-		try {
-			if (isEditMode && id) {
-				const { data, error } = await supabase.from('rooms').update(payload).eq('id', id).select('*').single();
-				if (error) throw error;
-				setRoom(data);
-				setForm(formFromRoom(data));
-				toast.success('Lokaal opgeslagen');
-				return;
-			}
-			const { data, error } = await supabase.from('rooms').insert(payload).select('id').single();
-			if (error) throw error;
-			toast.success('Lokaal opgeslagen');
-			navigate(`/rooms/${data.id}`);
-		} catch (error) {
-			const description = error instanceof Error ? error.message : 'Er is een onbekende fout opgetreden.';
-			toast.error('Opslaan mislukt', { description });
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	if (authLoading || (isEditMode && loading)) return <PageSkeleton variant="header-and-cards" />;
+	if (roomPageIsLoading(authLoading, isEditMode, loading)) return <PageSkeleton variant="header-and-cards" />;
 	if (!hasAccess) return <Navigate to="/" replace />;
 
-	const title = isEditMode ? form.name || room?.name || 'Lokaal' : 'Nieuw lokaal';
-	const roomInitial = title.trim().charAt(0).toUpperCase() || 'L';
+	return (
+		<RoomEditor
+			isEditMode={isEditMode}
+			id={id}
+			room={room}
+			form={form}
+			setForm={setForm}
+			setRoom={setRoom}
+			saving={saving}
+			setSaving={setSaving}
+			facilityDraft={facilityDraft}
+			setFacilityDraft={setFacilityDraft}
+			navigate={navigate}
+		/>
+	);
+}
+
+function RoomEditor(props: {
+	isEditMode: boolean;
+	id: string | undefined;
+	room: RoomRow | null;
+	form: RoomFormState;
+	setForm: (form: RoomFormState) => void;
+	setRoom: (room: RoomRow) => void;
+	saving: boolean;
+	setSaving: (saving: boolean) => void;
+	facilityDraft: string;
+	setFacilityDraft: (draft: string) => void;
+	navigate: (path: string) => void;
+}) {
+	const {
+		isEditMode,
+		id,
+		room,
+		form,
+		setForm,
+		setRoom,
+		saving,
+		setSaving,
+		facilityDraft,
+		setFacilityDraft,
+		navigate,
+	} = props;
+	const addFacility = () => commitFacilityDraft(form, facilityDraft, setForm, setFacilityDraft);
+	const save = () => submitRoomForm({ isEditMode, id, form, setRoom, setForm, setSaving, navigate });
+	const title = roomPageTitle(isEditMode, form.name, room?.name);
 
 	return (
 		<div className="space-y-6">
-			{room ? (
-				<div className="flex min-w-0 items-center gap-4">
-					<Avatar className="h-20 w-20 flex-shrink-0">
-						<AvatarImage
-							src={room.image_url ?? undefined}
-							alt={title}
-							className="object-cover"
-						/>
-						<AvatarFallback
-							className="text-2xl font-medium text-white"
-							style={{ backgroundColor: room.color }}
-						>
-							{roomInitial}
-						</AvatarFallback>
-					</Avatar>
-					<h1 className="text-2xl font-semibold leading-none tracking-tight truncate">{title}</h1>
-				</div>
-			) : (
-				<PageHeader title={title} />
-			)}
-			{isEditMode && !room ? (
-				<p className="text-sm text-muted-foreground">Lokaal niet gevonden.</p>
-			) : (
+			<RoomPageHeading room={room} title={title} />
+			<RoomSettingsGate isEditMode={isEditMode} room={room}>
 				<Card>
 					<CardHeader>
 						<CardTitle>Instellingen</CardTitle>
@@ -210,9 +372,7 @@ export default function RoomInfo() {
 								<Label htmlFor="room-visibility">Zichtbaarheid</Label>
 								<Select
 									value={form.visibility}
-									onValueChange={(value: RoomVisibility) =>
-										setForm({ ...form, visibility: value })
-									}
+									onValueChange={(value: RoomVisibility) => setForm({ ...form, visibility: value })}
 								>
 									<SelectTrigger id="room-visibility">
 										<SelectValue />
@@ -230,11 +390,7 @@ export default function RoomInfo() {
 
 						<div className="flex items-center gap-3">
 							<Label>Kleur</Label>
-							<ColorPicker
-								value={form.color}
-								onChange={(color) => setForm({ ...form, color })}
-								compact
-							/>
+							<ColorPicker value={form.color} onChange={(color) => setForm({ ...form, color })} compact />
 						</div>
 
 						<div className="space-y-2">
@@ -275,12 +431,7 @@ export default function RoomInfo() {
 								<Input
 									value={facilityDraft}
 									onChange={(event) => setFacilityDraft(event.target.value)}
-									onKeyDown={(event) => {
-										if (event.key === 'Enter') {
-											event.preventDefault();
-											addFacility();
-										}
-									}}
+									onKeyDown={(event) => addFacilityOnEnter(event, addFacility)}
 									placeholder="Nieuwe faciliteit..."
 									className="flex-1"
 								/>
@@ -320,7 +471,7 @@ export default function RoomInfo() {
 						</SubmitButton>
 					</CardContent>
 				</Card>
-			)}
+			</RoomSettingsGate>
 		</div>
 	);
 }

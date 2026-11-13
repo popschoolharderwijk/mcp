@@ -5,7 +5,10 @@ import { DAY_NAMES_DISPLAY } from '@/lib/date/day-index';
 import {
 	type AvailabilityBlock,
 	type AvailabilityTimeForm,
+	availabilityIncludesUnassignedRoom,
+	availabilityUnassignedRoomLegendSwatchClass,
 	getAvailabilityHourTopPercent,
+	roomsUsedInAvailability,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 
 const dayNames = DAY_NAMES_DISPLAY;
@@ -25,7 +28,9 @@ export function TeacherAvailabilityGrid({
 	onBlockClick,
 	onBlockTimesCommit,
 }: TeacherAvailabilityGridProps) {
-	const { agenda, timeSlots, hourLabels, availabilityBlocks, canEdit } = vm;
+	const { agenda, rooms, timeSlots, hourLabels, availabilityBlocks, canEdit } = vm;
+	const legendRooms = roomsUsedInAvailability(rooms, availabilityBlocks);
+	const showUnassignedRoom = availabilityIncludesUnassignedRoom(availabilityBlocks);
 
 	return (
 		<>
@@ -86,11 +91,22 @@ export function TeacherAvailabilityGrid({
 						))}
 					</div>
 
-					<div className="mt-3 pt-3 border-t border-border flex items-center gap-3 text-xs text-muted-foreground">
-						<div className="flex items-center gap-1.5">
-							<div className="h-3 w-5 bg-emerald-500/80 rounded-sm" />
-							<span>Beschikbaar</span>
-						</div>
+					<div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+						{legendRooms.map((room) => (
+							<div key={room.id} className="flex items-center gap-1.5">
+								<div
+									className="h-3 w-5 rounded-sm border border-black/10"
+									style={{ backgroundColor: room.color }}
+								/>
+								<span>{room.name}</span>
+							</div>
+						))}
+						{showUnassignedRoom && (
+							<div className="flex items-center gap-1.5">
+								<div className={availabilityUnassignedRoomLegendSwatchClass()} />
+								<span>Geen lokaal</span>
+							</div>
+						)}
 					</div>
 				</CardContent>
 			</Card>

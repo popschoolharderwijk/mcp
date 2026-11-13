@@ -54,6 +54,7 @@ Fijn dat je bij ons komt lessen! Je lesovereenkomst is aangemaakt met de volgend
 - **Lessoort:** {{les_type}}
 - **Frequentie:** {{frequentie}}
 - **Dag & tijd:** {{dag}} om {{tijd}}
+- **Lokaal:** {{lokaal}}
 - **Startdatum:** {{startdatum}}
 - **Prijs per les:** {{prijs_per_les}}
 - **Betaalmethode:** {{betaalmethode}}
@@ -73,6 +74,7 @@ Er is een nieuwe lesovereenkomst aan je gekoppeld:
 - **Lessoort:** {{les_type}}
 - **Frequentie:** {{frequentie}}
 - **Dag & tijd:** {{dag}} om {{tijd}}
+- **Lokaal:** {{lokaal}}
 - **Startdatum:** {{startdatum}}
 - **Prijs per les:** {{prijs_per_les}}
 - **Betaalmethode:** {{betaalmethode}}

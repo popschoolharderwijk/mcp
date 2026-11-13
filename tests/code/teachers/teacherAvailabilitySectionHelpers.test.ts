@@ -5,6 +5,7 @@ import {
 	applyAvailabilityBlockResize,
 	availabilityBlockDisplayTimes,
 	availabilityBlockTimesChanged,
+	availabilityIncludesUnassignedRoom,
 	availabilityPercentDeltaToMinutes,
 	availabilityPointerYToMinutes,
 	availabilityRangesTouchOrOverlap,
@@ -27,6 +28,7 @@ import {
 	resolveAvailabilityBlockPointerTimes,
 	resolveAvailabilityCreatePointerEndAction,
 	resolveAvailabilityPointerEndAction,
+	roomsUsedInAvailability,
 	shouldShowAvailabilityBlockTimes,
 } from '../../../src/lib/teachers/teacherAvailabilitySectionHelpers';
 
@@ -52,6 +54,7 @@ describe('buildAvailabilityBlocks', () => {
 				day_of_week: 1,
 				start_time: '09:00:00',
 				end_time: '10:00:00',
+				room_id: null,
 				created_at: '2026-01-01T00:00:00Z',
 				updated_at: '2026-01-01T00:00:00Z',
 				created_by: null,
@@ -73,6 +76,7 @@ describe('getAvailabilityBlocksForDay', () => {
 				day_of_week: 1,
 				start_time: '09:00:00',
 				end_time: '10:00:00',
+				room_id: null,
 				created_at: '2026-01-01T00:00:00Z',
 				updated_at: '2026-01-01T00:00:00Z',
 				created_by: null,
@@ -84,6 +88,7 @@ describe('getAvailabilityBlocksForDay', () => {
 				day_of_week: 2,
 				start_time: '09:00:00',
 				end_time: '10:00:00',
+				room_id: null,
 				created_at: '2026-01-01T00:00:00Z',
 				updated_at: '2026-01-01T00:00:00Z',
 				created_by: null,
@@ -101,6 +106,7 @@ describe('buildAvailabilitySlotFormFromClick', () => {
 		expect(buildAvailabilitySlotFormFromClick('09:00', slots)).toEqual({
 			start_time: '09:00',
 			end_time: '10:00',
+			room_id: null,
 		});
 	});
 });
@@ -126,7 +132,7 @@ describe('availabilityBlockDisplayTimes', () => {
 	it('uses preview times when present', () => {
 		expect(
 			availabilityBlockDisplayTimes(
-				{ start_time: '09:30', end_time: '10:30' },
+				{ start_time: '09:30', end_time: '10:30', room_id: null },
 				{ startTime: '09:00:00', endTime: '10:00:00' },
 			),
 		).toEqual({ start: '09:30', end: '10:30' });
@@ -152,6 +158,7 @@ describe('findAvailabilityBlockCoveringTime', () => {
 				day_of_week: 1,
 				start_time: '09:00:00',
 				end_time: '10:00:00',
+				room_id: null,
 				created_at: '2026-01-01T00:00:00Z',
 				updated_at: '2026-01-01T00:00:00Z',
 				created_by: null,
@@ -191,7 +198,7 @@ describe('buildAvailabilityCreateRangeFromMinutes', () => {
 				currentMinutes: 9 * 60 + 20,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:00', end_time: '09:30' });
+		).toEqual({ start_time: '09:00', end_time: '09:30', room_id: null });
 	});
 
 	it('creates a range spanning dragged slots in either direction', () => {
@@ -201,14 +208,14 @@ describe('buildAvailabilityCreateRangeFromMinutes', () => {
 				currentMinutes: 10 * 60 + 10,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:00', end_time: '10:30' });
+		).toEqual({ start_time: '09:00', end_time: '10:30', room_id: null });
 		expect(
 			buildAvailabilityCreateRangeFromMinutes({
 				originMinutes: 10 * 60 + 10,
 				currentMinutes: 9 * 60,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:00', end_time: '10:30' });
+		).toEqual({ start_time: '09:00', end_time: '10:30', room_id: null });
 	});
 });
 
@@ -228,7 +235,7 @@ describe('applyAvailabilityBlockMove', () => {
 				deltaMinutes: 30,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:30', end_time: '10:30' });
+		).toEqual({ start_time: '09:30', end_time: '10:30', room_id: null });
 	});
 
 	it('clamps a moved block to the agenda window', () => {
@@ -239,7 +246,7 @@ describe('applyAvailabilityBlockMove', () => {
 				deltaMinutes: 600,
 				agenda,
 			}),
-		).toEqual({ start_time: '17:00', end_time: '18:00' });
+		).toEqual({ start_time: '17:00', end_time: '18:00', room_id: null });
 	});
 });
 
@@ -253,7 +260,7 @@ describe('applyAvailabilityBlockResize', () => {
 				deltaMinutes: 60,
 				agenda,
 			}),
-		).toEqual({ start_time: '10:00', end_time: '11:00' });
+		).toEqual({ start_time: '10:00', end_time: '11:00', room_id: null });
 	});
 
 	it('resizes the end edge within the agenda window', () => {
@@ -265,7 +272,7 @@ describe('applyAvailabilityBlockResize', () => {
 				deltaMinutes: 30,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:00', end_time: '10:30' });
+		).toEqual({ start_time: '09:00', end_time: '10:30', room_id: null });
 	});
 });
 
@@ -279,7 +286,7 @@ describe('resolveAvailabilityBlockPointerTimes', () => {
 				deltaMinutes: 30,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:30', end_time: '10:30' });
+		).toEqual({ start_time: '09:30', end_time: '10:30', room_id: null });
 		expect(
 			resolveAvailabilityBlockPointerTimes({
 				mode: 'resize-end',
@@ -288,7 +295,7 @@ describe('resolveAvailabilityBlockPointerTimes', () => {
 				deltaMinutes: 30,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:00', end_time: '10:30' });
+		).toEqual({ start_time: '09:00', end_time: '10:30', room_id: null });
 	});
 });
 
@@ -304,7 +311,7 @@ describe('resolveAvailabilityPointerEndAction', () => {
 		expect(
 			resolveAvailabilityPointerEndAction({
 				deltaYPx: 2,
-				preview: { start_time: '09:30', end_time: '10:30' },
+				preview: { start_time: '09:30', end_time: '10:30', room_id: null },
 				original: { startTime: '09:00', endTime: '10:00' },
 			}),
 		).toEqual({ kind: 'click' });
@@ -314,17 +321,17 @@ describe('resolveAvailabilityPointerEndAction', () => {
 		expect(
 			resolveAvailabilityPointerEndAction({
 				deltaYPx: 20,
-				preview: { start_time: '09:30', end_time: '10:30' },
+				preview: { start_time: '09:30', end_time: '10:30', room_id: null },
 				original: { startTime: '09:00', endTime: '10:00' },
 			}),
-		).toEqual({ kind: 'commit', form: { start_time: '09:30', end_time: '10:30' } });
+		).toEqual({ kind: 'commit', form: { start_time: '09:30', end_time: '10:30', room_id: null } });
 	});
 
 	it('returns noop when drag leaves times unchanged', () => {
 		expect(
 			resolveAvailabilityPointerEndAction({
 				deltaYPx: 20,
-				preview: { start_time: '09:00', end_time: '10:00' },
+				preview: { start_time: '09:00', end_time: '10:00', room_id: null },
 				original: { startTime: '09:00:00', endTime: '10:00:00' },
 			}),
 		).toEqual({ kind: 'noop' });
@@ -336,15 +343,15 @@ describe('resolveAvailabilityCreatePointerEndAction', () => {
 		expect(
 			resolveAvailabilityCreatePointerEndAction({
 				deltaYPx: 1,
-				preview: { start_time: '09:00', end_time: '10:00' },
+				preview: { start_time: '09:00', end_time: '10:00', room_id: null },
 			}),
 		).toEqual({ kind: 'click' });
 		expect(
 			resolveAvailabilityCreatePointerEndAction({
 				deltaYPx: 20,
-				preview: { start_time: '09:00', end_time: '10:00' },
+				preview: { start_time: '09:00', end_time: '10:00', room_id: null },
 			}),
-		).toEqual({ kind: 'commit', form: { start_time: '09:00', end_time: '10:00' } });
+		).toEqual({ kind: 'commit', form: { start_time: '09:00', end_time: '10:00', room_id: null } });
 		expect(resolveAvailabilityCreatePointerEndAction({ deltaYPx: 20, preview: null })).toEqual({
 			kind: 'noop',
 		});
@@ -377,7 +384,7 @@ describe('computeAvailabilityBlockPointerPreview', () => {
 				columnHeight: 600,
 				agenda,
 			}),
-		).toEqual({ start_time: '09:30', end_time: '10:30' });
+		).toEqual({ start_time: '09:30', end_time: '10:30', room_id: null });
 	});
 });
 
@@ -394,13 +401,13 @@ describe('availabilityBlockTimesChanged', () => {
 		expect(
 			availabilityBlockTimesChanged(
 				{ startTime: '09:00:00', endTime: '10:00:00' },
-				{ start_time: '09:00', end_time: '10:00' },
+				{ start_time: '09:00', end_time: '10:00', room_id: null },
 			),
 		).toBe(false);
 		expect(
 			availabilityBlockTimesChanged(
 				{ startTime: '09:00:00', endTime: '10:00:00' },
-				{ start_time: '09:30', end_time: '10:00' },
+				{ start_time: '09:30', end_time: '10:00', room_id: null },
 			),
 		).toBe(true);
 	});
@@ -418,28 +425,28 @@ describe('mergeAvailabilityTimeForms', () => {
 	it('returns the union of start and end times', () => {
 		expect(
 			mergeAvailabilityTimeForms([
-				{ start_time: '09:00', end_time: '10:00' },
-				{ start_time: '09:30', end_time: '11:00' },
+				{ start_time: '09:00', end_time: '10:00', room_id: null },
+				{ start_time: '09:30', end_time: '11:00', room_id: null },
 			]),
-		).toEqual({ start_time: '09:00', end_time: '11:00' });
+		).toEqual({ start_time: '09:00', end_time: '11:00', room_id: null });
 	});
 });
 
 describe('planAvailabilitySlotWrite', () => {
 	const dayBlocks = [
-		{ id: 'a', startTime: '09:00', endTime: '09:30' },
-		{ id: 'b', startTime: '11:00', endTime: '12:00' },
+		{ id: 'a', startTime: '09:00', endTime: '09:30', roomId: null },
+		{ id: 'b', startTime: '11:00', endTime: '12:00', roomId: null },
 	];
 
 	it('inserts when the new range does not touch existing blocks', () => {
 		expect(
 			planAvailabilitySlotWrite({
 				dayBlocks,
-				form: { start_time: '10:00', end_time: '10:30' },
+				form: { start_time: '10:00', end_time: '10:30', room_id: null },
 			}),
 		).toEqual({
 			kind: 'insert',
-			form: { start_time: '10:00', end_time: '10:30' },
+			form: { start_time: '10:00', end_time: '10:30', room_id: null },
 		});
 	});
 
@@ -447,12 +454,12 @@ describe('planAvailabilitySlotWrite', () => {
 		expect(
 			planAvailabilitySlotWrite({
 				dayBlocks,
-				form: { start_time: '09:15', end_time: '11:30' },
+				form: { start_time: '09:15', end_time: '11:30', room_id: null },
 			}),
 		).toEqual({
 			kind: 'update',
 			keepId: 'a',
-			form: { start_time: '09:00', end_time: '12:00' },
+			form: { start_time: '09:00', end_time: '12:00', room_id: null },
 			deleteIds: ['b'],
 		});
 	});
@@ -461,13 +468,47 @@ describe('planAvailabilitySlotWrite', () => {
 		expect(
 			planAvailabilitySlotWrite({
 				dayBlocks,
-				form: { start_time: '09:15', end_time: '11:30' },
+				form: { start_time: '09:15', end_time: '11:30', room_id: null },
 				movingBlockId: 'a',
 			}),
 		).toEqual({
 			kind: 'update',
 			keepId: 'a',
-			form: { start_time: '09:15', end_time: '12:00' },
+			form: { start_time: '09:15', end_time: '12:00', room_id: null },
+			deleteIds: ['b'],
+		});
+	});
+
+	it('does not merge overlapping blocks that use different rooms', () => {
+		expect(
+			planAvailabilitySlotWrite({
+				dayBlocks: [
+					{ id: 'a', startTime: '09:00', endTime: '10:00', roomId: 'room-blue' },
+					{ id: 'b', startTime: '10:00', endTime: '11:00', roomId: 'room-pink' },
+				],
+				form: { start_time: '09:30', end_time: '10:30', room_id: 'room-blue' },
+			}),
+		).toEqual({
+			kind: 'update',
+			keepId: 'a',
+			form: { start_time: '09:00', end_time: '10:30', room_id: 'room-blue' },
+			deleteIds: [],
+		});
+	});
+
+	it('merges overlapping blocks that share the same room', () => {
+		expect(
+			planAvailabilitySlotWrite({
+				dayBlocks: [
+					{ id: 'a', startTime: '09:00', endTime: '10:00', roomId: 'room-blue' },
+					{ id: 'b', startTime: '10:00', endTime: '11:00', roomId: 'room-blue' },
+				],
+				form: { start_time: '09:30', end_time: '10:30', room_id: 'room-blue' },
+			}),
+		).toEqual({
+			kind: 'update',
+			keepId: 'a',
+			form: { start_time: '09:00', end_time: '11:00', room_id: 'room-blue' },
 			deleteIds: ['b'],
 		});
 	});
@@ -483,6 +524,9 @@ describe('getAvailabilityDialogTitle', () => {
 				endTime: '10:00',
 				topPercent: 0,
 				heightPercent: 10,
+				roomId: null,
+				roomName: null,
+				roomColor: null,
 			}),
 		).toBe('Tijdslot wijzigen');
 	});
@@ -537,5 +581,37 @@ describe('getAvailabilityDialogDescriptionText', () => {
 			dayName: 'Dinsdag',
 			startTime: '09:00',
 		});
+	});
+});
+
+const legendRooms = [
+	{ id: 'studio', name: 'Studio', color: '#ff9500' },
+	{ id: 'drum', name: 'Drumlokaal', color: '#ffdd00' },
+	{ id: 'oefen', name: 'Oefenruimte', color: '#f5ffc2' },
+];
+
+describe('roomsUsedInAvailability', () => {
+	it('keeps only rooms that a block uses, in the room list order', () => {
+		expect(
+			roomsUsedInAvailability(legendRooms, [{ roomId: 'oefen' }, { roomId: 'studio' }, { roomId: 'oefen' }]),
+		).toEqual([legendRooms[0], legendRooms[2]]);
+	});
+
+	it('returns no rooms when every block has no room', () => {
+		expect(roomsUsedInAvailability(legendRooms, [{ roomId: null }])).toEqual([]);
+	});
+});
+
+describe('availabilityIncludesUnassignedRoom', () => {
+	it('is true when a block has no room', () => {
+		expect(availabilityIncludesUnassignedRoom([{ roomId: 'studio' }, { roomId: null }])).toBe(true);
+	});
+
+	it('is false when every block has a room', () => {
+		expect(availabilityIncludesUnassignedRoom([{ roomId: 'studio' }])).toBe(false);
+	});
+
+	it('is false when there are no blocks', () => {
+		expect(availabilityIncludesUnassignedRoom([])).toBe(false);
 	});
 });

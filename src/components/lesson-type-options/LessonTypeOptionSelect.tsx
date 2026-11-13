@@ -1,4 +1,4 @@
-import { frequencyLabels } from '@/lib/frequencies';
+import { formatLessonOptionSummary } from '@/lib/frequencies';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
 export interface OptionSnapshot {
@@ -54,7 +54,7 @@ export function LessonTypeOptionSelect({ options, value, onChange, placeholder =
 			<option value="">{placeholder}</option>
 			{options.map((opt) => (
 				<option key={opt.id} value={opt.id}>
-					{opt.duration_minutes} min · {frequencyLabels[opt.frequency]} · €{opt.price_per_lesson}
+					{formatLessonOptionSummary(opt)}
 				</option>
 			))}
 		</select>

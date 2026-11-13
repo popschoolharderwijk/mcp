@@ -152,6 +152,7 @@ describe('agreement_created payment mail vars', () => {
 				teacher: { first_name: 'Tess', last_name: 'Teacher' },
 				lessonTypeName: 'Piano',
 				paymentCtaMarkdown: '[Betaal](https://x)',
+				roomLabel: 'Studio',
 			}),
 		).toEqual({
 			leerling_naam: 'Sam Student',
@@ -161,6 +162,7 @@ describe('agreement_created payment mail vars', () => {
 			prijs_per_les: '€ 27,50',
 			dag: 'maandag',
 			tijd: '16:30',
+			lokaal: 'Studio',
 			startdatum: '10-11-2026',
 			betaalmethode: 'Stripe',
 			betaalblok: '[Betaal](https://x)',

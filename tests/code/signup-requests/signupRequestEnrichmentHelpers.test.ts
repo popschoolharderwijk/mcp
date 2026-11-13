@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	buildOptionLabelMap,
+	buildSignupApplicantEmailOrFilter,
+	buildSignupApplicantMap,
 	buildTeacherNameMap,
 	buildTrialMap,
 	collectTeacherUserIds,
 	collectUniqueOptionIds,
 	enrichSignupRequestRow,
+	signupApplicantDisplayProfile,
+	signupApplicantForEmail,
 } from '../../../src/lib/signup-requests/signupRequestEnrichmentHelpers';
 import type { SignupRequestRowBase } from '../../../src/lib/signup-requests/signupRequestsPageHelpers';
 
@@ -52,7 +56,7 @@ describe('buildOptionLabelMap', () => {
 		const optionMap = buildOptionLabelMap([
 			{ id: 'opt-1', duration_minutes: 45, frequency: 'weekly', price_per_lesson: 25 },
 		]);
-		expect(optionMap.get('opt-1')).toBe('45 min · weekly · €25');
+		expect(optionMap.get('opt-1')).toBe('45 min · Wekelijks · €25');
 	});
 });
 
@@ -113,15 +117,62 @@ describe('collectTeacherUserIds', () => {
 	});
 });
 
+describe('signup applicants', () => {
+	const profile = {
+		user_id: 'user-1',
+		first_name: 'Anna',
+		last_name: 'Jansen',
+		email: 'Anna@Example.com',
+		avatar_url: 'https://example.com/anna.png',
+	};
+
+	it('matches an existing profile by email ignoring case', () => {
+		const applicants = buildSignupApplicantMap([profile, { ...profile, user_id: 'user-2', first_name: 'Other' }]);
+		expect(signupApplicantForEmail('anna@example.com', applicants)).toEqual(profile);
+		expect(signupApplicantForEmail('missing@example.com', applicants)).toBeNull();
+	});
+
+	it('builds a case-insensitive email filter and skips blank emails', () => {
+		expect(buildSignupApplicantEmailOrFilter([' Anna@Example.com ', '', 'piet@example.com'])).toBe(
+			'email.ilike."anna@example.com",email.ilike."piet@example.com"',
+		);
+		expect(buildSignupApplicantEmailOrFilter([' ', ''])).toBeNull();
+	});
+
+	it('uses the existing profile for display and falls back to the signup name', () => {
+		expect(
+			signupApplicantDisplayProfile({
+				first_name: 'Form',
+				last_name: 'Name',
+				email: 'anna@example.com',
+				applicant: profile,
+			}),
+		).toEqual(profile);
+		expect(
+			signupApplicantDisplayProfile({
+				first_name: 'Form',
+				last_name: 'Name',
+				email: 'anna@example.com',
+				applicant: null,
+			}),
+		).toEqual({
+			first_name: 'Form',
+			last_name: 'Name',
+			email: 'anna@example.com',
+			avatar_url: null,
+		});
+	});
+});
+
 describe('enrichSignupRequestRow', () => {
 	it('adds option label and trial teacher details', () => {
-		const optionMap = new Map([['opt-1', '45 min · weekly · €25']]);
+		const optionMap = new Map([['opt-1', '45 min · Wekelijks · €25']]);
 		const trialMap = new Map([['req-1', { date: '2026-09-15', time: '14:00', teacher_user_id: 'tea-1' }]]);
 		const teacherNames = new Map([['tea-1', 'Piet Docent']]);
 
 		expect(enrichSignupRequestRow(baseRow, optionMap, trialMap, teacherNames)).toEqual({
 			...baseRow,
-			option_label: '45 min · weekly · €25',
+			option_label: '45 min · Wekelijks · €25',
 			trial_scheduled_date: '2026-09-15',
 			trial_scheduled_time: '14:00',
 			trial_teacher_name: 'Piet Docent',

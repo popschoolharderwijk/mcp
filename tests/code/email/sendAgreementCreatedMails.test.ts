@@ -7,6 +7,7 @@ const recordedInvokes: { fn: string; body: unknown }[] = [];
 let agreementResult: TableResult = { data: null, error: null };
 let studentProfileResult: TableResult = { data: null, error: null };
 let teacherProfileResult: TableResult = { data: null, error: null };
+let availabilityResult: TableResult = { data: [], error: null };
 let invokeResults: Record<string, InvokeResult> = {};
 
 const supabaseMock = {
@@ -16,6 +17,15 @@ const supabaseMock = {
 				select: () => ({
 					eq: () => ({
 						maybeSingle: () => Promise.resolve(agreementResult),
+					}),
+				}),
+			};
+		}
+		if (table === 'teacher_availability') {
+			return {
+				select: () => ({
+					eq: () => ({
+						eq: () => Promise.resolve(availabilityResult),
 					}),
 				}),
 			};
@@ -68,6 +78,7 @@ describe('sendAgreementCreatedMails', () => {
 	beforeEach(() => {
 		recordedInvokes.length = 0;
 		invokeResults = {};
+		availabilityResult = { data: [], error: null };
 		agreementResult = {
 			data: {
 				id: 'agr-1',
@@ -116,7 +127,39 @@ describe('sendAgreementCreatedMails', () => {
 					leerling_naam: 'Jan Leerling',
 					docent_naam: 'Piet Docent',
 					les_type: 'Piano',
+					lokaal: 'onbekend',
 				}),
+			},
+		});
+	});
+
+	it('puts the availability room name on the teacher mail', async () => {
+		availabilityResult = {
+			data: [{ start_time: '14:00:00', end_time: '16:00:00', rooms: { name: 'Studio' } }],
+			error: null,
+		};
+		const result = await sendAgreementCreatedMails('agr-1');
+		expect(result.teacherSent).toBe(true);
+		expect(recordedInvokes[1]).toEqual({
+			fn: 'send-template-email',
+			body: {
+				event_key: 'agreement_created_teacher',
+				to: 'piet@example.com',
+				vars: expect.objectContaining({ lokaal: 'Studio' }),
+			},
+		});
+	});
+
+	it('sends the teacher mail with onbekend when the room lookup fails', async () => {
+		availabilityResult = { data: null, error: { message: 'rls' } };
+		const result = await sendAgreementCreatedMails('agr-1');
+		expect(result.teacherSent).toBe(true);
+		expect(recordedInvokes[1]).toEqual({
+			fn: 'send-template-email',
+			body: {
+				event_key: 'agreement_created_teacher',
+				to: 'piet@example.com',
+				vars: expect.objectContaining({ lokaal: 'onbekend' }),
 			},
 		});
 	});

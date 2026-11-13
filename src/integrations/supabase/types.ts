@@ -1266,6 +1266,7 @@ export type Database = {
 					day_of_week: number;
 					end_time: string;
 					id: string;
+					room_id: string | null;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at: string;
@@ -1278,6 +1279,7 @@ export type Database = {
 					day_of_week: number;
 					end_time: string;
 					id?: string;
+					room_id?: string | null;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at?: string;
@@ -1289,12 +1291,20 @@ export type Database = {
 					day_of_week?: number;
 					end_time?: string;
 					id?: string;
+					room_id?: string | null;
 					start_time?: string;
 					teacher_user_id?: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'teacher_availability_room_id_fkey';
+						columns: ['room_id'];
+						isOneToOne: false;
+						referencedRelation: 'rooms';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'teacher_availability_teacher_user_id_fkey';
 						columns: ['teacher_user_id'];

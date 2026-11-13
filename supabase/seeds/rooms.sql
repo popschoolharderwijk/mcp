@@ -115,5 +115,55 @@ VALUES
 			'Nord Stage Revision B Digitale piano'
 		],
 		'https://ubsajgkldbjvdczrdjsh.supabase.co/storage/v1/object/public/room-images/7fb2f1c0-3588-4722-bc4b-b0ccd259bd01/1764067114632.png'
+	),
+	(
+		'a11b22c3-d44e-4f55-9667-788899001111',
+		'Blauwe kamer',
+		'#3b82f6',
+		'internal',
+		true,
+		3,
+		ARRAY[]::text[],
+		NULL
+	),
+	(
+		'a11b22c3-d44e-4f55-9667-788899001112',
+		'Roze kamer',
+		'#ec4899',
+		'internal',
+		true,
+		3,
+		ARRAY[]::text[],
+		NULL
+	),
+	(
+		'a11b22c3-d44e-4f55-9667-788899001113',
+		'Groene kamer',
+		'#22c55e',
+		'internal',
+		true,
+		3,
+		ARRAY[]::text[],
+		NULL
+	),
+	(
+		'a11b22c3-d44e-4f55-9667-788899001114',
+		'Zwarte zaal',
+		'#1f2937',
+		'internal',
+		true,
+		10,
+		ARRAY[]::text[],
+		NULL
+	),
+	(
+		'a11b22c3-d44e-4f55-9667-788899001115',
+		'Studio ''Tussenruimte''',
+		'#a855f7',
+		'internal',
+		true,
+		10,
+		ARRAY[]::text[],
+		NULL
 	)
 ON CONFLICT (id) DO NOTHING;

@@ -19,10 +19,17 @@ export function useTeacherAvailability(teacherUserId: string | null | undefined,
 	}, [enabled, teacherUserId]);
 
 	const applyLocalAvailabilityTimes = useCallback(
-		(blockId: string, times: Pick<TeacherAvailability, 'start_time' | 'end_time'>) => {
+		(blockId: string, times: Pick<TeacherAvailability, 'start_time' | 'end_time' | 'room_id'>) => {
 			setAvailability((rows) =>
 				rows.map((row) =>
-					row.id === blockId ? { ...row, start_time: times.start_time, end_time: times.end_time } : row,
+					row.id === blockId
+						? {
+								...row,
+								start_time: times.start_time,
+								end_time: times.end_time,
+								room_id: times.room_id,
+							}
+						: row,
 				),
 			);
 		},

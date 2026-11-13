@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAppSettingsContext } from '@/components/AppSettingsProvider';
 import { useTeacherAvailability } from '@/hooks/useTeacherAvailability';
+import { fetchAvailabilityRooms } from '@/lib/teachers/teacherAvailabilityApi';
 import {
 	addTeacherAvailabilitySlot,
 	removeTeacherAvailabilitySlot,
@@ -9,6 +10,7 @@ import {
 } from '@/lib/teachers/teacherAvailabilitySectionActions';
 import {
 	type AvailabilityBlock,
+	type AvailabilityRoomRef,
 	type AvailabilityTimeForm,
 	buildAvailabilityBlocks,
 	buildAvailabilityHourLabels,
@@ -24,14 +26,34 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 	const agenda = settings.agenda;
 	const { availability, loading, loadAvailability, applyLocalAvailabilityTimes } =
 		useTeacherAvailability(teacherUserId);
+	const [rooms, setRooms] = useState<AvailabilityRoomRef[]>([]);
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [selectedSlot, setSelectedSlot] = useState<{ day: number; time: string } | null>(null);
 	const [editingBlock, setEditingBlock] = useState<AvailabilityBlock | null>(null);
 	const [form, setForm] = useState<AvailabilityTimeForm>(() => resetAvailabilityDialogForm(agenda));
 
+	useEffect(() => {
+		let cancelled = false;
+		void fetchAvailabilityRooms().then((result) => {
+			if (cancelled || result.error) return;
+			setRooms(result.data);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
 	const timeSlots = useMemo(() => generateAvailabilityTimeSlots(agenda), [agenda]);
 	const hourLabels = useMemo(() => buildAvailabilityHourLabels(agenda), [agenda]);
-	const availabilityBlocks = useMemo(() => buildAvailabilityBlocks(availability, agenda), [availability, agenda]);
+	const roomsById = useMemo(() => {
+		const map = new Map<string, AvailabilityRoomRef>();
+		for (const room of rooms) map.set(room.id, room);
+		return map;
+	}, [rooms]);
+	const availabilityBlocks = useMemo(
+		() => buildAvailabilityBlocks(availability, roomsById, agenda),
+		[availability, roomsById, agenda],
+	);
 
 	const closeDialog = () => {
 		setAddDialogOpen(false);
@@ -86,21 +108,23 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 
 	const handleCreateRangeCommit = (dayIndex: number, nextForm: AvailabilityTimeForm) => {
 		if (!canEdit || !teacherUserId) return;
-		void addTeacherAvailabilitySlot({
-			teacherUserId,
-			displayDay: dayIndex,
-			form: nextForm,
-			dayBlocks: toAvailabilityDayBlockRefs(availabilityBlocks, dayIndex),
-		}).then((saved) => {
-			if (saved) loadAvailability();
+		setEditingBlock(null);
+		setSelectedSlot({ day: dayIndex, time: formatTime(nextForm.start_time) });
+		setForm({
+			start_time: formatTime(nextForm.start_time),
+			end_time: formatTime(nextForm.end_time),
+			room_id: null,
 		});
+		setAddDialogOpen(true);
 	};
 
 	const handleBlockClick = (block: AvailabilityBlock) => {
 		if (!canEdit) return;
 		setEditingBlock(block);
 		setSelectedSlot({ day: block.displayDay, time: block.startTime });
-		setForm(buildAvailabilitySlotFormFromBlock(formatTime(block.startTime), formatTime(block.endTime)));
+		setForm(
+			buildAvailabilitySlotFormFromBlock(formatTime(block.startTime), formatTime(block.endTime), block.roomId),
+		);
 		setAddDialogOpen(true);
 	};
 
@@ -131,6 +155,7 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 		loading,
 		canEdit,
 		agenda,
+		rooms,
 		timeSlots,
 		hourLabels,
 		availabilityBlocks,

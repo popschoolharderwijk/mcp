@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	AGREEMENT_MAIL_UNKNOWN_ROOM,
 	buildAgreementMailContext,
 	buildAgreementMailInvokeBody,
+	resolveAgreementRoomLabel,
 } from '../../../src/lib/email/sendAgreementCreatedMailsHelpers';
 
 describe('buildAgreementMailContext', () => {
@@ -17,6 +19,7 @@ describe('buildAgreementMailContext', () => {
 			},
 			{ first_name: 'Jan', last_name: 'Docent' },
 			null,
+			AGREEMENT_MAIL_UNKNOWN_ROOM,
 		);
 		expect(context.studentName).toBe('Jan Docent');
 		expect(context.teacherName).toBe('docent');
@@ -35,6 +38,7 @@ describe('buildAgreementMailContext', () => {
 			},
 			null,
 			null,
+			AGREEMENT_MAIL_UNKNOWN_ROOM,
 		);
 		expect(context.lessonType).toBe('Gitaar');
 	});
@@ -51,6 +55,7 @@ describe('buildAgreementMailContext', () => {
 			},
 			{ first_name: 'Jan', last_name: 'Leerling' },
 			{ first_name: 'Piet', last_name: 'Docent' },
+			'Studio',
 		);
 		expect(context.sharedVars.leerling_naam).toBe('Jan Leerling');
 		expect(context.sharedVars.docent_naam).toBe('Piet Docent');
@@ -59,6 +64,7 @@ describe('buildAgreementMailContext', () => {
 		expect(context.sharedVars.prijs_per_les).toContain('45');
 		expect(context.sharedVars.dag).toBe('maandag');
 		expect(context.sharedVars.tijd).toBe('14:30');
+		expect(context.sharedVars.lokaal).toBe('Studio');
 		expect(context.sharedVars.startdatum).toBe('07-09-2026');
 		expect(context.sharedVars.betaalmethode).toBe('Stripe');
 	});
@@ -75,6 +81,7 @@ describe('buildAgreementMailContext', () => {
 			},
 			{ first_name: 'S', last_name: '' },
 			{ first_name: 'T', last_name: '' },
+			AGREEMENT_MAIL_UNKNOWN_ROOM,
 		);
 		expect(context.sharedVars.prijs_per_les).toBe('');
 		expect(context.sharedVars.tijd).toBe('');
@@ -97,6 +104,7 @@ describe('buildAgreementMailInvokeBody', () => {
 			},
 			{ first_name: 'Jan', last_name: 'Leerling' },
 			{ first_name: 'Piet', last_name: 'Docent' },
+			'Studio',
 		);
 		expect(
 			buildAgreementMailInvokeBody('agreement_created_teacher', 'Jan@Example.com', context.sharedVars),
@@ -105,5 +113,39 @@ describe('buildAgreementMailInvokeBody', () => {
 			to: 'jan@example.com',
 			vars: context.sharedVars,
 		});
+	});
+});
+
+describe('resolveAgreementRoomLabel', () => {
+	const slots = [
+		{ start_time: '09:00:00', end_time: '12:00:00', room_name: 'Studio' },
+		{ start_time: '11:00:00', end_time: '13:00:00', room_name: 'Drumlokaal' },
+		{ start_time: '15:00:00', end_time: '17:00:00', room_name: null },
+		{ start_time: '17:00:00', end_time: '18:00:00', room_name: '   ' },
+	];
+
+	it('uses the room of the slot that contains the lesson start', () => {
+		expect(resolveAgreementRoomLabel(slots, '10:15:00')).toBe('Studio');
+	});
+
+	it('prefers the containing slot with the latest start', () => {
+		expect(resolveAgreementRoomLabel(slots, '11:30')).toBe('Drumlokaal');
+	});
+
+	it('returns onbekend when the matching slot has no room', () => {
+		expect(resolveAgreementRoomLabel(slots, '15:00:00')).toBe(AGREEMENT_MAIL_UNKNOWN_ROOM);
+	});
+
+	it('returns onbekend when the matching room name is blank', () => {
+		expect(resolveAgreementRoomLabel(slots, '17:00:00')).toBe(AGREEMENT_MAIL_UNKNOWN_ROOM);
+	});
+
+	it('returns onbekend when no slot contains the lesson start', () => {
+		expect(resolveAgreementRoomLabel(slots, '13:00:00')).toBe(AGREEMENT_MAIL_UNKNOWN_ROOM);
+		expect(resolveAgreementRoomLabel(slots, '08:00:00')).toBe(AGREEMENT_MAIL_UNKNOWN_ROOM);
+	});
+
+	it('returns onbekend when the lesson start is not a time', () => {
+		expect(resolveAgreementRoomLabel(slots, '')).toBe(AGREEMENT_MAIL_UNKNOWN_ROOM);
 	});
 });

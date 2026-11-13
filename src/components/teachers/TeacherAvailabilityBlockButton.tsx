@@ -1,11 +1,13 @@
 import { type PointerEvent as ReactPointerEvent, useRef } from 'react';
 import { useTeacherAvailabilityBlockPointer } from '@/components/teachers/useTeacherAvailabilityBlockPointer';
+import { darkenColor, getContrastTextColor } from '@/lib/color/color-utils';
 import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import {
 	type AvailabilityBlock,
 	type AvailabilityBlockPointerMode,
 	type AvailabilityTimeForm,
 	availabilityBlockCursorClass,
+	availabilityUnassignedRoomSurfaceClass,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 import { cn } from '@/lib/utils';
 
@@ -18,28 +20,66 @@ interface TeacherAvailabilityBlockButtonProps {
 	onTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
 }
 
-function AvailabilityBlockTimeLabels(props: { show: boolean; startLabel: string; endLabel: string }) {
+function availabilityBlockLabelTitle(startLabel: string, endLabel: string, roomName: string | null): string {
+	const times = `${startLabel} – ${endLabel}`;
+	if (!roomName) return times;
+	return `${times} · ${roomName}`;
+}
+
+function AvailabilityBlockRoomName(props: { roomName: string | null; textClassName: string; sizeClass: string }) {
+	if (!props.roomName) return null;
+	return (
+		<span
+			className={cn(
+				'w-full min-w-0 shrink-0 text-center leading-tight line-clamp-2 break-words',
+				props.sizeClass,
+				props.textClassName,
+			)}
+		>
+			{props.roomName}
+		</span>
+	);
+}
+
+function AvailabilityBlockTimeLabels(props: {
+	show: boolean;
+	startLabel: string;
+	endLabel: string;
+	roomName: string | null;
+	textClassName: string;
+}) {
 	if (!props.show) return null;
-	const { startLabel, endLabel } = props;
+	const { startLabel, endLabel, roomName, textClassName } = props;
+	const title = availabilityBlockLabelTitle(startLabel, endLabel, roomName);
 	return (
 		<>
 			<div
-				className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0 pointer-events-none"
-				title={`${startLabel} – ${endLabel}`}
+				className="block-content-single absolute inset-0 flex flex-col px-2 py-0.5 overflow-hidden min-w-0 pointer-events-none"
+				title={title}
 			>
-				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-					{startLabel}
-				</span>
-				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center">
+					<span className={cn('text-[10px] font-medium leading-tight truncate max-w-full', textClassName)}>
+						{startLabel}
+					</span>
+					<span className={cn('text-[10px] font-medium leading-tight truncate max-w-full', textClassName)}>
+						{endLabel}
+					</span>
+				</div>
+				<AvailabilityBlockRoomName roomName={roomName} textClassName={textClassName} sizeClass="text-[8px]" />
 			</div>
 			<div
-				className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0 pointer-events-none"
-				title={`${startLabel} – ${endLabel}`}
+				className="block-content-double absolute inset-0 flex flex-col px-2 py-0.5 overflow-hidden min-w-0 pointer-events-none"
+				title={title}
 			>
-				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-					{startLabel}
-				</span>
-				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
+				<div className="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center text-center">
+					<span className={cn('text-[12px] font-medium leading-tight truncate max-w-full', textClassName)}>
+						{startLabel}
+					</span>
+					<span className={cn('text-[12px] font-medium leading-tight truncate max-w-full', textClassName)}>
+						{endLabel}
+					</span>
+				</div>
+				<AvailabilityBlockRoomName roomName={roomName} textClassName={textClassName} sizeClass="text-[10px]" />
 			</div>
 		</>
 	);
@@ -78,14 +118,59 @@ function AvailabilityBlockResizeHandles(props: {
 	);
 }
 
-function availabilityBlockSurfaceClass(canEdit: boolean, isDragging: boolean, isPendingSave: boolean): string {
+function availabilityBlockTextClass(roomColor: string | null): string {
+	if (!roomColor) return 'text-muted-foreground';
+	if (getContrastTextColor(roomColor) === '#000') return 'text-gray-900';
+	return 'text-white';
+}
+
+function pendingAssignedRoomClass(roomColor: string | null, isPendingSave: boolean): string | false {
+	if (!roomColor || !isPendingSave) return false;
+	return 'border-dashed opacity-60';
+}
+
+function availabilityBlockSurfaceClass(params: {
+	roomColor: string | null;
+	isPendingSave: boolean;
+	canEdit: boolean;
+	isDragging: boolean;
+}): string {
+	const { roomColor, isPendingSave, canEdit, isDragging } = params;
 	return cn(
-		'availability-block absolute left-0.5 right-0.5 rounded-md shadow-sm transition-[opacity,colors] border focus:outline-none focus:ring-2 focus:ring-white/50 z-10 touch-none',
-		isPendingSave
-			? 'bg-emerald-500/35 border-emerald-600/20 border-dashed'
-			: 'bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600/30',
+		'availability-block absolute left-0.5 right-0.5 rounded-md shadow-sm transition-[opacity,colors] border focus:outline-none focus:ring-2 focus:ring-ring/50 z-10 touch-none',
+		!roomColor && availabilityUnassignedRoomSurfaceClass(isPendingSave),
+		pendingAssignedRoomClass(roomColor, isPendingSave),
 		availabilityBlockCursorClass(canEdit, isDragging, isPendingSave),
 	);
+}
+
+function availabilityBlockSurfaceStyle(
+	topPercent: number,
+	heightPercent: number,
+	roomColor: string | null,
+): { top: string; height: string; minHeight: string; backgroundColor?: string; borderColor?: string } {
+	const style = {
+		top: `${topPercent}%`,
+		height: `${heightPercent}%`,
+		minHeight: '10px',
+	};
+	if (!roomColor) return style;
+	return {
+		...style,
+		backgroundColor: roomColor,
+		borderColor: darkenColor(roomColor, 0.25),
+	};
+}
+
+function availabilityBlockTitle(
+	dayName: string,
+	startLabel: string,
+	endLabel: string,
+	roomName: string | null,
+): string {
+	const times = `${dayName} ${startLabel} - ${endLabel}`;
+	if (!roomName) return times;
+	return `${times} · ${roomName}`;
 }
 
 function beginMoveOnPrimaryButton(
@@ -114,17 +199,27 @@ export function TeacherAvailabilityBlockButton({
 		onTimesCommit,
 	});
 
+	const roomColor = block.roomColor;
+	const textClassName = availabilityBlockTextClass(roomColor);
+	const surfaceClass = availabilityBlockSurfaceClass({
+		roomColor,
+		isPendingSave: pointer.isPendingSave,
+		canEdit,
+		isDragging: pointer.isDragging,
+	});
+	const surfaceStyle = availabilityBlockSurfaceStyle(
+		pointer.geometry.topPercent,
+		pointer.geometry.heightPercent,
+		roomColor,
+	);
+
 	return (
 		<button
 			ref={buttonRef}
 			type="button"
 			disabled={pointer.isPendingSave}
-			className={availabilityBlockSurfaceClass(canEdit, pointer.isDragging, pointer.isPendingSave)}
-			style={{
-				top: `${pointer.geometry.topPercent}%`,
-				height: `${pointer.geometry.heightPercent}%`,
-				minHeight: '10px',
-			}}
+			className={surfaceClass}
+			style={surfaceStyle}
 			onPointerDown={(event) => beginMoveOnPrimaryButton(event, pointer.beginPointerSession)}
 			onPointerMove={pointer.updatePointerSession}
 			onPointerUp={pointer.endPointerSession}
@@ -133,12 +228,14 @@ export function TeacherAvailabilityBlockButton({
 				event.preventDefault();
 				event.stopPropagation();
 			}}
-			title={`${dayName} ${pointer.startLabel} - ${pointer.endLabel}`}
+			title={availabilityBlockTitle(dayName, pointer.startLabel, pointer.endLabel, block.roomName)}
 		>
 			<AvailabilityBlockTimeLabels
 				show={pointer.showTimes}
 				startLabel={pointer.startLabel}
 				endLabel={pointer.endLabel}
+				roomName={block.roomName}
+				textClassName={textClassName}
 			/>
 			<AvailabilityBlockResizeHandles
 				show={pointer.showResizeHandles}

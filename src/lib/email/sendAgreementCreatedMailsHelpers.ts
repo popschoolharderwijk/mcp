@@ -58,9 +58,60 @@ export interface AgreementMailSharedVars {
 	prijs_per_les: string;
 	dag: string;
 	tijd: string;
+	lokaal: string;
 	startdatum: string;
 	betaalmethode: string;
 	betaalblok: string;
+}
+
+export const AGREEMENT_MAIL_UNKNOWN_ROOM = 'onbekend';
+
+export function agreementRoomDisplayLabel(roomName: string | null | undefined): string {
+	const name = roomName?.trim() ?? '';
+	if (!name) return AGREEMENT_MAIL_UNKNOWN_ROOM;
+	return name;
+}
+
+export function agreementRoomNameFromJoin(rooms: { name: string } | { name: string }[] | null): string | null {
+	if (Array.isArray(rooms)) return rooms[0]?.name ?? null;
+	return rooms?.name ?? null;
+}
+
+export interface AgreementMailAvailabilitySlot {
+	start_time: string;
+	end_time: string;
+	room_name: string | null;
+}
+
+function clockToMinutes(time: string): number | null {
+	const match = /^(\d{1,2}):(\d{2})/.exec(time);
+	if (!match) return null;
+	const hours = Number(match[1]);
+	const minutes = Number(match[2]);
+	if (hours > 23 || minutes > 59) return null;
+	return hours * 60 + minutes;
+}
+
+export function resolveAgreementRoomLabel(
+	slots: readonly AgreementMailAvailabilitySlot[],
+	lessonStart: string,
+): string {
+	const start = clockToMinutes(lessonStart);
+	if (start === null) return AGREEMENT_MAIL_UNKNOWN_ROOM;
+
+	let chosenName: string | null = null;
+	let chosenStart = -1;
+	for (const slot of slots) {
+		const slotStart = clockToMinutes(slot.start_time);
+		const slotEnd = clockToMinutes(slot.end_time);
+		if (slotStart === null || slotEnd === null) continue;
+		if (start < slotStart || start >= slotEnd) continue;
+		if (slotStart < chosenStart) continue;
+		chosenName = slot.room_name;
+		chosenStart = slotStart;
+	}
+
+	return agreementRoomDisplayLabel(chosenName);
 }
 
 function buildAgreementMailSharedVars(
@@ -68,6 +119,7 @@ function buildAgreementMailSharedVars(
 	studentName: string,
 	teacherName: string,
 	lessonTypeName: string,
+	roomLabel: string,
 ): AgreementMailSharedVars {
 	return {
 		leerling_naam: studentName,
@@ -77,6 +129,7 @@ function buildAgreementMailSharedVars(
 		prijs_per_les: formatAgreementMailPrice(agreement.price_per_lesson),
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementMailTime(agreement.start_time),
+		lokaal: roomLabel,
 		startdatum: formatAgreementMailDate(agreement.start_date),
 		betaalmethode: STRIPE_PAYMENT_METHOD_LABEL,
 		betaalblok: '',
@@ -120,6 +173,7 @@ export function buildAgreementMailContext(
 	},
 	studentProfile: AgreementMailProfile | null | undefined,
 	teacherProfile: AgreementMailProfile | null | undefined,
+	roomLabel: string,
 ): AgreementMailContext {
 	const studentName = buildProfileDisplayName(studentProfile?.first_name, studentProfile?.last_name, 'leerling');
 	const teacherName = buildProfileDisplayName(teacherProfile?.first_name, teacherProfile?.last_name, 'docent');
@@ -128,6 +182,6 @@ export function buildAgreementMailContext(
 		studentName,
 		teacherName,
 		lessonType,
-		sharedVars: buildAgreementMailSharedVars(agreement, studentName, teacherName, lessonType),
+		sharedVars: buildAgreementMailSharedVars(agreement, studentName, teacherName, lessonType, roomLabel),
 	};
 }

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	formatSignupRequestFullName,
 	hasSignupRequestParentInfo,
 	resolveSignupRequestStatusVariant,
 } from '../../../src/lib/students/signupRequestDialogHelpers';
@@ -44,11 +43,5 @@ describe('hasSignupRequestParentInfo', () => {
 
 	it('returns true when parent email exists', () => {
 		expect(hasSignupRequestParentInfo({ ...baseRequest, parent_email: 'ouder@example.com' })).toBe(true);
-	});
-});
-
-describe('formatSignupRequestFullName', () => {
-	it('joins first and last name', () => {
-		expect(formatSignupRequestFullName(baseRequest)).toBe('Jan Jansen');
 	});
 });

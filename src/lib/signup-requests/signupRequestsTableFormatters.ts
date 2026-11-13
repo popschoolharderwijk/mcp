@@ -35,13 +35,6 @@ export function getSignupLessonTypeCellContent(row: SignupRequestRowBase): Signu
 	};
 }
 
-export function getSignupStatusDisplayLabel(status: SignupRequestRowBase['status']): string {
-	if (status === 'trial_scheduled') {
-		return 'proefles ingepland';
-	}
-	return status;
-}
-
 function formatSignupTrialTimePart(time: string | null): string | null {
 	if (!time) {
 		return null;

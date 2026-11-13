@@ -476,73 +476,75 @@ WHERE NOT EXISTS (
 -- This represents realistic availability where teachers have free time for new students.
 -- Overlapping/adjacent blocks are merged into single blocks.
 --
--- Extended schedule (covers lessons + extra availability):
---   Teacher 1 (Alice): Mon 08:00-18:00, Wed 10:00-20:00, Fri 09:00-13:00 (extra)
---   Teacher 2 (Bob): Tue 09:00-18:00, Thu 08:00-18:00, Sat 10:00-14:00 (extra)
---   Teacher 3 (Charlie): Mon 12:00-19:00, Wed 14:00-18:00 (extra), Fri 08:00-14:00
---   Teacher 4 (Diana): Tue 10:00-20:00, Thu 09:00-14:00, Sat 09:00-12:00 (extra)
---   Teacher 5 (Eve): Mon 09:00-17:00, Thu 14:00-18:00 (extra)
---   Teacher 6 (Frank): Mon 14:00-17:00 (extra), Wed 09:00-14:00, Fri 12:00-19:00
---   Teacher 7 (Grace): Mon 09:00-15:00, Thu 09:00-15:00, Fri 10:00-14:00 (extra)
---   Teacher 8 (Henry): Tue 09:00-14:00, Wed 15:00-19:00 (extra), Fri 09:00-15:00
---   Teacher 9 (Iris): Tue 14:00-17:00 (extra), Wed 09:00-15:00, Thu 12:00-19:00
---   Teacher 10 (Jack): Tue 10:00-14:00, Thu 10:00-14:00 (availability, no students)
+-- Extended schedule (covers lessons + extra availability).
+-- Lesson-day blocks have a room from seeds/rooms.sql. Extra blocks have none.
+--   Teacher 1 (Alice): Mon 08:00-18:00 Drumlokaal, Wed 10:00-20:00 Studio, Fri 09:00-13:00 (extra)
+--   Teacher 2 (Bob): Tue 09:00-18:00 Oefenruimte, Thu 08:00-18:00 Studio, Sat 10:00-14:00 (extra)
+--   Teacher 3 (Charlie): Mon 12:00-19:00 Opnameruimte, Wed 14:00-18:00 (extra), Fri 08:00-14:00 Oefenruimte
+--   Teacher 4 (Diana): Tue 10:00-20:00 Productieruimte, Thu 09:00-14:00 Productieruimte, Sat 09:00-12:00 (extra)
+--   Teacher 5 (Eve): Mon 09:00-17:00 Studio, Thu 14:00-18:00 (extra)
+--   Teacher 6 (Frank): Mon 14:00-17:00 (extra), Wed 09:00-14:00 Oefenruimte, Fri 12:00-19:00 Drumlokaal
+--   Teacher 7 (Grace): Mon 09:00-15:00 Drumlokaal, Thu 09:00-15:00 Drumlokaal, Fri 10:00-14:00 (extra)
+--   Teacher 8 (Henry): Tue 09:00-14:00 Opnameruimte, Wed 15:00-19:00 (extra), Fri 09:00-15:00 Studio
+--   Teacher 9 (Iris): Tue 14:00-17:00 (extra), Wed 09:00-15:00 Oefenruimte, Thu 12:00-19:00 Productieruimte
+--   Teacher 10 (Jack): Tue 10:00-14:00, Thu 10:00-14:00 (availability, no students, no room)
 -- -----------------------------------------------------------------------------
-INSERT INTO public.teacher_availability (teacher_user_id, day_of_week, start_time, end_time)
+INSERT INTO public.teacher_availability (teacher_user_id, day_of_week, start_time, end_time, room_id)
 SELECT
   t.user_id AS teacher_user_id,
   availability_data.day_of_week,
   availability_data.start_time::TIME,
-  availability_data.end_time::TIME
+  availability_data.end_time::TIME,
+  availability_data.room_id::uuid
 FROM (VALUES
   -- Teacher 1 (Alice) - Extended availability with extra slots
-  ('teacher-alice@test.nl', 1, '08:00', '18:00'),  -- Monday (mixed-duration Gitaar/Drum blocks)
-  ('teacher-alice@test.nl', 3, '10:00', '20:00'),  -- Wednesday extended
-  ('teacher-alice@test.nl', 5, '09:00', '13:00'),  -- Friday morning (extra, no lessons)
+  ('teacher-alice@test.nl', 1, '08:00', '18:00', '707ee156-f622-450f-8c57-413177cc9cb4'),  -- Monday Drumlokaal
+  ('teacher-alice@test.nl', 3, '10:00', '20:00', '7fb2f1c0-3588-4722-bc4b-b0ccd259bd01'),  -- Wednesday Studio
+  ('teacher-alice@test.nl', 5, '09:00', '13:00', NULL),  -- Friday morning (extra, no lessons)
 
   -- Teacher 2 (Bob) - Extended availability
-  ('teacher-bob@test.nl', 2, '09:00', '18:00'),    -- Tuesday (mixed Bas/Keyboard)
-  ('teacher-bob@test.nl', 4, '08:00', '18:00'),    -- Thursday full day
-  ('teacher-bob@test.nl', 6, '10:00', '14:00'),    -- Saturday morning (extra)
+  ('teacher-bob@test.nl', 2, '09:00', '18:00', '483682b6-ce71-4114-86b9-6fc00d168863'),    -- Tuesday Oefenruimte
+  ('teacher-bob@test.nl', 4, '08:00', '18:00', '7fb2f1c0-3588-4722-bc4b-b0ccd259bd01'),    -- Thursday Studio
+  ('teacher-bob@test.nl', 6, '10:00', '14:00', NULL),    -- Saturday morning (extra)
 
   -- Teacher 3 (Charlie) - Extended availability
-  ('teacher-charlie@test.nl', 1, '12:00', '19:00'), -- Monday (Saxofoon mix)
-  ('teacher-charlie@test.nl', 3, '14:00', '18:00'), -- Wednesday afternoon (extra)
-  ('teacher-charlie@test.nl', 5, '08:00', '14:00'), -- Friday (Saxofoon mix)
+  ('teacher-charlie@test.nl', 1, '12:00', '19:00', 'e2dabeaf-addc-46b4-8fc9-c8303a69ee02'), -- Monday Opnameruimte
+  ('teacher-charlie@test.nl', 3, '14:00', '18:00', NULL), -- Wednesday afternoon (extra)
+  ('teacher-charlie@test.nl', 5, '08:00', '14:00', '483682b6-ce71-4114-86b9-6fc00d168863'), -- Friday Oefenruimte
 
   -- Teacher 4 (Diana) - Extended availability
-  ('teacher-diana@test.nl', 2, '10:00', '20:00'),  -- Tuesday (DJ / Beats frequencies)
-  ('teacher-diana@test.nl', 4, '09:00', '14:00'),  -- Thursday (DJ / Beats frequencies)
-  ('teacher-diana@test.nl', 6, '09:00', '12:00'),  -- Saturday morning (extra)
+  ('teacher-diana@test.nl', 2, '10:00', '20:00', 'c51a6a77-d513-44ca-8404-074b365ea50a'),  -- Tuesday Productieruimte
+  ('teacher-diana@test.nl', 4, '09:00', '14:00', 'c51a6a77-d513-44ca-8404-074b365ea50a'),  -- Thursday Productieruimte
+  ('teacher-diana@test.nl', 6, '09:00', '12:00', NULL),  -- Saturday morning (extra)
 
   -- Teacher 5 (Eve) - Extended beyond just Bandcoaching
-  ('teacher-eve@test.nl', 1, '09:00', '17:00'),    -- Monday (Bandcoaching 14:00–15:00)
-  ('teacher-eve@test.nl', 4, '14:00', '18:00'),    -- Thursday afternoon (extra)
+  ('teacher-eve@test.nl', 1, '09:00', '17:00', '7fb2f1c0-3588-4722-bc4b-b0ccd259bd01'),    -- Monday Studio
+  ('teacher-eve@test.nl', 4, '14:00', '18:00', NULL),    -- Thursday afternoon (extra)
 
   -- Teacher 6 (Frank) - Extended availability
-  ('teacher-frank@test.nl', 1, '14:00', '17:00'),  -- Monday afternoon (extra)
-  ('teacher-frank@test.nl', 3, '09:00', '14:00'),  -- Wednesday (Gitaar mix)
-  ('teacher-frank@test.nl', 5, '12:00', '19:00'),  -- Friday (Gitaar mix incl. 120 min)
+  ('teacher-frank@test.nl', 1, '14:00', '17:00', NULL),  -- Monday afternoon (extra)
+  ('teacher-frank@test.nl', 3, '09:00', '14:00', '483682b6-ce71-4114-86b9-6fc00d168863'),  -- Wednesday Oefenruimte
+  ('teacher-frank@test.nl', 5, '12:00', '19:00', '707ee156-f622-450f-8c57-413177cc9cb4'),  -- Friday Drumlokaal
 
   -- Teacher 7 (Grace) - Extended availability
-  ('teacher-grace@test.nl', 1, '09:00', '15:00'),  -- Monday (Drum mix)
-  ('teacher-grace@test.nl', 4, '09:00', '15:00'),  -- Thursday (Drum mix)
-  ('teacher-grace@test.nl', 5, '10:00', '14:00'),  -- Friday late morning (extra)
+  ('teacher-grace@test.nl', 1, '09:00', '15:00', '707ee156-f622-450f-8c57-413177cc9cb4'),  -- Monday Drumlokaal
+  ('teacher-grace@test.nl', 4, '09:00', '15:00', '707ee156-f622-450f-8c57-413177cc9cb4'),  -- Thursday Drumlokaal
+  ('teacher-grace@test.nl', 5, '10:00', '14:00', NULL),  -- Friday late morning (extra)
 
   -- Teacher 8 (Henry) - Extended availability
-  ('teacher-henry@test.nl', 2, '09:00', '14:00'),  -- Tuesday (Zang mix)
-  ('teacher-henry@test.nl', 3, '15:00', '19:00'),  -- Wednesday afternoon (extra)
-  ('teacher-henry@test.nl', 5, '09:00', '15:00'),  -- Friday (Zang mix)
+  ('teacher-henry@test.nl', 2, '09:00', '14:00', 'e2dabeaf-addc-46b4-8fc9-c8303a69ee02'),  -- Tuesday Opnameruimte
+  ('teacher-henry@test.nl', 3, '15:00', '19:00', NULL),  -- Wednesday afternoon (extra)
+  ('teacher-henry@test.nl', 5, '09:00', '15:00', '7fb2f1c0-3588-4722-bc4b-b0ccd259bd01'),  -- Friday Studio
 
   -- Teacher 9 (Iris) - Extended availability
-  ('teacher-iris@test.nl', 2, '14:00', '17:00'),   -- Tuesday afternoon (extra)
-  ('teacher-iris@test.nl', 3, '09:00', '15:00'),   -- Wednesday (Bas mix)
-  ('teacher-iris@test.nl', 4, '12:00', '19:00'),   -- Thursday (Bas mix)
+  ('teacher-iris@test.nl', 2, '14:00', '17:00', NULL),   -- Tuesday afternoon (extra)
+  ('teacher-iris@test.nl', 3, '09:00', '15:00', '483682b6-ce71-4114-86b9-6fc00d168863'),   -- Wednesday Oefenruimte
+  ('teacher-iris@test.nl', 4, '12:00', '19:00', 'c51a6a77-d513-44ca-8404-074b365ea50a'),   -- Thursday Productieruimte
 
-  -- Teacher 10 (Jack) - Has availability but no students
-  ('teacher-jack@test.nl', 2, '10:00', '14:00'),   -- Tuesday late morning
-  ('teacher-jack@test.nl', 4, '10:00', '14:00')    -- Thursday late morning
-) AS availability_data(teacher_email, day_of_week, start_time, end_time)
+  -- Teacher 10 (Jack) - Has availability but no students and no room
+  ('teacher-jack@test.nl', 2, '10:00', '14:00', NULL),   -- Tuesday late morning
+  ('teacher-jack@test.nl', 4, '10:00', '14:00', NULL)    -- Thursday late morning
+) AS availability_data(teacher_email, day_of_week, start_time, end_time, room_id)
 INNER JOIN public.profiles p ON p.email = availability_data.teacher_email
 INNER JOIN public.teachers t ON t.user_id = p.user_id
 WHERE NOT EXISTS (

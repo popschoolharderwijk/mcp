@@ -5,6 +5,7 @@ import type { SlotWithStatus } from '@/lib/agreementSlots';
 import { mapConfirmSelectedLessonTypeValues } from '@/lib/agreements/confirmStepSummaryRowsHelpers';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 import { DAY_NAMES } from '@/lib/date/day-index';
+import { agreementRoomDisplayLabel } from '@/lib/email/sendAgreementCreatedMailsHelpers';
 import { frequencyLabels } from '@/lib/frequencies';
 import { formatTime } from '@/lib/time/time-format';
 import type {
@@ -66,6 +67,14 @@ export function ConfirmTeacherDisplayRow({
 	return (
 		<ConfirmStepRow label="Docent">
 			{profile ? <UserDisplay profile={profile} showEmail /> : <p className="font-medium">-</p>}
+		</ConfirmStepRow>
+	);
+}
+
+export function ConfirmRoomDisplayRow({ slot }: { slot: SlotWithStatus | null }) {
+	return (
+		<ConfirmStepRow label="Lokaal">
+			<p className="font-medium">{slot ? agreementRoomDisplayLabel(slot.roomName) : '-'}</p>
 		</ConfirmStepRow>
 	);
 }

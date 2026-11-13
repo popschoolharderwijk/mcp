@@ -1,3 +1,9 @@
+import type { QuickFilterGroup } from '@/components/ui/data-table';
+import {
+	SIGNUP_REQUEST_STATUS_FILTER_OPEN,
+	SIGNUP_REQUEST_STATUS_LABELS,
+	type SignupRequestStatus,
+} from '@/lib/signup-requests/signupRequestStatuses';
 import type { SignupRequestRowBase } from '@/lib/signup-requests/signupRequestsPageHelpers';
 
 export type SignupRequestsPageGate = 'loading' | 'denied' | 'ready';
@@ -8,11 +14,26 @@ export function resolveSignupRequestsPageGate(isLoading: boolean, isPrivileged: 
 	return 'ready';
 }
 
-export function resolveSignupStatusFilterVariant(
-	currentFilter: 'pending' | 'all',
-	option: 'pending' | 'all',
-): 'default' | 'outline' {
-	return currentFilter === option ? 'default' : 'outline';
+const SIGNUP_STATUS_FILTER_ORDER: SignupRequestStatus[] = ['pending', 'trial_scheduled', 'approved', 'rejected'];
+
+export function buildSignupRequestStatusQuickFilter(
+	value: string | null,
+	onChange: (value: string | null) => void,
+): QuickFilterGroup {
+	return {
+		label: 'Status',
+		value,
+		showAllOption: true,
+		allOptionLabel: 'Alle',
+		options: [
+			{ id: SIGNUP_REQUEST_STATUS_FILTER_OPEN, label: 'Open' },
+			...SIGNUP_STATUS_FILTER_ORDER.map((status) => ({
+				id: status,
+				label: SIGNUP_REQUEST_STATUS_LABELS[status],
+			})),
+		],
+		onChange,
+	};
 }
 
 export interface ScheduleTrialSignupRequestPayload {

@@ -64,15 +64,11 @@ export async function processSignupRequest(params: ProcessSignupRequestParams): 
 	);
 }
 
-export async function rejectSignupRequest(row: SignupRequestRowBase, reload: () => void): Promise<void> {
-	const { error } = await supabase
-		.from('lesson_signup_requests')
-		.update({ status: 'rejected', processed_at: new Date().toISOString() })
-		.eq('id', row.id);
+export async function deleteSignupRequest(row: SignupRequestRowBase): Promise<void> {
+	const { error } = await supabase.from('lesson_signup_requests').delete().eq('id', row.id);
 	if (error) {
-		toast.error('Kon niet afwijzen');
-		return;
+		toast.error('Kon aanmelding niet verwijderen');
+		throw error;
 	}
-	toast.success('Aanmelding afgewezen');
-	reload();
+	toast.success('Aanmelding verwijderd');
 }

@@ -11,13 +11,18 @@ import { NavPageShell } from '@/components/ui/nav-page-shell';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { roomVisibilityBadgeVariant, roomVisibilityLabel } from '@/lib/rooms/roomVisibilityHelpers';
+import { canManageRooms, roomVisibilityBadgeVariant, roomVisibilityLabel } from '@/lib/rooms/roomVisibilityHelpers';
 import type { RoomRow } from '@/types/rooms';
+
+function roomDeleteDescription(room: RoomRow | null): string {
+	if (!room) return '';
+	return `Weet je zeker dat je ${room.name} wilt verwijderen?`;
+}
 
 export default function Rooms() {
 	const navigate = useNavigate();
 	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
-	const hasAccess = isAdmin || isSiteAdmin;
+	const hasAccess = canManageRooms(isAdmin, isSiteAdmin);
 	const [rooms, setRooms] = useState<RoomRow[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchQuery, setSearchQuery] = useState('');
@@ -50,11 +55,7 @@ export default function Rooms() {
 				render: (room) => (
 					<span className="flex items-center gap-2 font-medium">
 						<Avatar className="h-8 w-8 flex-shrink-0">
-							<AvatarImage
-								src={room.image_url ?? undefined}
-								alt={room.name}
-								className="object-cover"
-							/>
+							<AvatarImage src={room.image_url ?? undefined} alt={room.name} className="object-cover" />
 							<AvatarFallback
 								className="text-xs font-medium text-white"
 								style={{ backgroundColor: room.color }}
@@ -138,11 +139,7 @@ export default function Rooms() {
 					if (!open) setRoomToDelete(null);
 				}}
 				title="Lokaal verwijderen"
-				description={
-					roomToDelete
-						? `Weet je zeker dat je ${roomToDelete.name} wilt verwijderen?`
-						: ''
-				}
+				description={roomDeleteDescription(roomToDelete)}
 				onConfirm={confirmDelete}
 			/>
 		</div>

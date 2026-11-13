@@ -48,7 +48,7 @@ function applyPointerEndAction(
 	}
 	if (action.kind === 'commit') {
 		controls.setIsPendingSave(true);
-		void Promise.resolve(controls.onTimesCommit(block, action.form)).finally(() => {
+		void Promise.resolve(controls.onTimesCommit(block, { ...action.form, room_id: block.roomId })).finally(() => {
 			controls.setPreviewTimes(null);
 			controls.setIsPendingSave(false);
 		});
@@ -90,6 +90,7 @@ function beginPointerSession(params: {
 	setPreviewTimes({
 		start_time: formatTime(block.startTime),
 		end_time: formatTime(block.endTime),
+		room_id: block.roomId,
 	});
 }
 
@@ -97,9 +98,10 @@ function updatePointerSession(params: {
 	event: ReactPointerEvent<HTMLElement>;
 	sessionRef: React.MutableRefObject<PointerSession | null>;
 	agenda: AgendaSetting;
+	blockRoomId: string | null;
 	setPreviewTimes: (next: AvailabilityTimeForm | null) => void;
 }): void {
-	const { event, sessionRef, agenda, setPreviewTimes } = params;
+	const { event, sessionRef, agenda, blockRoomId, setPreviewTimes } = params;
 	const session = sessionRef.current;
 	if (!session || event.pointerId !== session.pointerId) return;
 
@@ -112,7 +114,7 @@ function updatePointerSession(params: {
 		columnHeight: session.columnHeight,
 		agenda,
 	});
-	if (next) setPreviewTimes(next);
+	if (next) setPreviewTimes({ ...next, room_id: blockRoomId });
 }
 
 function endPointerSession(params: {
@@ -188,7 +190,7 @@ export function useTeacherAvailabilityBlockPointer(params: {
 			});
 		},
 		updatePointerSession: (event: ReactPointerEvent<HTMLElement>) => {
-			updatePointerSession({ event, sessionRef, agenda, setPreviewTimes });
+			updatePointerSession({ event, sessionRef, agenda, blockRoomId: block.roomId, setPreviewTimes });
 		},
 		endPointerSession: (event: ReactPointerEvent<HTMLElement>) => {
 			endPointerSession({

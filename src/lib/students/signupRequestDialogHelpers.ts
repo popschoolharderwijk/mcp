@@ -11,7 +11,3 @@ export function resolveSignupRequestStatusVariant(status: SignupRequestDetail['s
 export function hasSignupRequestParentInfo(request: SignupRequestDetail): boolean {
 	return Boolean(request.parent_name || request.parent_email || request.parent_phone_number);
 }
-
-export function formatSignupRequestFullName(request: SignupRequestDetail): string {
-	return `${request.first_name} ${request.last_name}`;
-}

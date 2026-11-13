@@ -9,6 +9,12 @@ import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import { formatTime, hasTimeChange } from '@/lib/time/time-format';
 import { timeToMinutes } from '@/lib/time/time-range';
 
+export interface AvailabilityRoomRef {
+	id: string;
+	name: string;
+	color: string;
+}
+
 export interface AvailabilityBlock {
 	id: string;
 	displayDay: number;
@@ -16,11 +22,15 @@ export interface AvailabilityBlock {
 	endTime: string;
 	topPercent: number;
 	heightPercent: number;
+	roomId: string | null;
+	roomName: string | null;
+	roomColor: string | null;
 }
 
 export interface AvailabilityTimeForm {
 	start_time: string;
 	end_time: string;
+	room_id: string | null;
 }
 
 export type AvailabilityBlockPointerMode = 'move' | 'resize-start' | 'resize-end';
@@ -33,6 +43,7 @@ export function defaultAvailabilityTimeForm(
 	return {
 		start_time: availabilityDefaultStartTime(agenda),
 		end_time: availabilityDefaultEndTime(agenda),
+		room_id: null,
 	};
 }
 
@@ -90,12 +101,15 @@ export function availabilityGeometryFromTimes(
 }
 
 export function buildAvailabilityBlocks(
-	availability: Tables<'teacher_availability'>[],
+	availability: Array<Tables<'teacher_availability'>>,
+	roomsById: ReadonlyMap<string, AvailabilityRoomRef> = new Map(),
 	agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda,
 ): AvailabilityBlock[] {
 	return availability.map((entry) => {
 		const displayDay = entry.day_of_week === 0 ? 6 : entry.day_of_week - 1;
 		const geometry = availabilityGeometryFromTimes(entry.start_time, entry.end_time, agenda);
+		const roomId = entry.room_id ?? null;
+		const room = roomId ? (roomsById.get(roomId) ?? null) : null;
 
 		return {
 			id: entry.id,
@@ -104,6 +118,9 @@ export function buildAvailabilityBlocks(
 			endTime: entry.end_time,
 			topPercent: geometry.topPercent,
 			heightPercent: geometry.heightPercent,
+			roomId,
+			roomName: room?.name ?? null,
+			roomColor: room?.color ?? null,
 		};
 	});
 }
@@ -154,12 +171,14 @@ export function applyAvailabilityBlockMove(params: {
 		return {
 			start_time: minutesToHHmm(bounds.start),
 			end_time: minutesToHHmm(bounds.end),
+			room_id: null,
 		};
 	}
 
 	return {
 		start_time: minutesToHHmm(nextStart),
 		end_time: minutesToHHmm(nextEnd),
+		room_id: null,
 	};
 }
 
@@ -186,6 +205,7 @@ export function applyAvailabilityBlockResize(params: {
 		return {
 			start_time: minutesToHHmm(nextStart),
 			end_time: minutesToHHmm(bounds.end),
+			room_id: null,
 		};
 	}
 
@@ -196,6 +216,7 @@ export function applyAvailabilityBlockResize(params: {
 	return {
 		start_time: minutesToHHmm(bounds.start),
 		end_time: minutesToHHmm(nextEnd),
+		room_id: null,
 	};
 }
 
@@ -291,6 +312,7 @@ export interface AvailabilityDayBlockRef {
 	id: string;
 	startTime: string;
 	endTime: string;
+	roomId: string | null;
 }
 
 export type AvailabilitySlotWritePlan =
@@ -312,6 +334,7 @@ export function mergeAvailabilityTimeForms(forms: AvailabilityTimeForm[]): Avail
 
 	let start = formatTime(forms[0].start_time);
 	let end = formatTime(forms[0].end_time);
+	const roomId = forms[0].room_id;
 	for (const form of forms.slice(1)) {
 		const formStart = formatTime(form.start_time);
 		const formEnd = formatTime(form.end_time);
@@ -319,7 +342,7 @@ export function mergeAvailabilityTimeForms(forms: AvailabilityTimeForm[]): Avail
 		if (formEnd > end) end = formEnd;
 	}
 
-	return { start_time: start, end_time: end };
+	return { start_time: start, end_time: end, room_id: roomId };
 }
 
 export function planAvailabilitySlotWrite(params: {
@@ -328,18 +351,27 @@ export function planAvailabilitySlotWrite(params: {
 	movingBlockId?: string;
 }): AvailabilitySlotWritePlan {
 	const others = params.dayBlocks.filter((block) => block.id !== params.movingBlockId);
-	const overlapping = others.filter((block) =>
-		availabilityRangesTouchOrOverlap(params.form.start_time, params.form.end_time, block.startTime, block.endTime),
+	const overlapping = others.filter(
+		(block) =>
+			params.form.room_id === block.roomId &&
+			availabilityRangesTouchOrOverlap(
+				params.form.start_time,
+				params.form.end_time,
+				block.startTime,
+				block.endTime,
+			),
 	);
 
 	const merged = mergeAvailabilityTimeForms([
 		{
 			start_time: formatTime(params.form.start_time),
 			end_time: formatTime(params.form.end_time),
+			room_id: params.form.room_id,
 		},
 		...overlapping.map((block) => ({
 			start_time: formatTime(block.startTime),
 			end_time: formatTime(block.endTime),
+			room_id: block.roomId,
 		})),
 	]);
 
@@ -379,6 +411,7 @@ export function toAvailabilityDayBlockRefs(blocks: AvailabilityBlock[], displayD
 		id: block.id,
 		startTime: block.startTime,
 		endTime: block.endTime,
+		roomId: block.roomId,
 	}));
 }
 
@@ -419,6 +452,7 @@ export function buildAvailabilityCreateRangeFromMinutes(params: {
 	return {
 		start_time: minutesToHHmm(start),
 		end_time: minutesToHHmm(end),
+		room_id: null,
 	};
 }
 
@@ -469,14 +503,48 @@ export function buildAvailabilitySlotFormFromClick(time: string, timeSlots: stri
 	return {
 		start_time: time,
 		end_time: getNextAvailabilityTimeSlot(time, 2, timeSlots),
+		room_id: null,
 	};
 }
 
-export function buildAvailabilitySlotFormFromBlock(startTime: string, endTime: string): AvailabilityTimeForm {
+export function buildAvailabilitySlotFormFromBlock(
+	startTime: string,
+	endTime: string,
+	roomId: string | null = null,
+): AvailabilityTimeForm {
 	return {
 		start_time: startTime,
 		end_time: endTime,
+		room_id: roomId,
 	};
+}
+
+/** CSS classes for a slot without a room (grey + light diagonal hatch). */
+export function availabilityUnassignedRoomSurfaceClass(isPendingSave: boolean): string {
+	if (isPendingSave) {
+		return 'bg-muted/50 border-muted-foreground/30 border-dashed bg-[repeating-linear-gradient(-45deg,transparent,transparent_3px,rgba(0,0,0,0.05)_3px,rgba(0,0,0,0.05)_6px)]';
+	}
+	return 'bg-muted border-muted-foreground/40 bg-[repeating-linear-gradient(-45deg,transparent,transparent_3px,rgba(0,0,0,0.06)_3px,rgba(0,0,0,0.06)_6px)]';
+}
+
+export function availabilityUnassignedRoomLegendSwatchClass(): string {
+	return 'h-3 w-5 rounded-sm border border-muted-foreground/40 bg-muted bg-[repeating-linear-gradient(-45deg,transparent,transparent_2px,rgba(0,0,0,0.07)_2px,rgba(0,0,0,0.07)_4px)]';
+}
+
+/** Rooms that appear on at least one availability block, in the given room order. */
+export function roomsUsedInAvailability(
+	rooms: readonly AvailabilityRoomRef[],
+	blocks: readonly Pick<AvailabilityBlock, 'roomId'>[],
+): AvailabilityRoomRef[] {
+	const usedIds = new Set<string>();
+	for (const block of blocks) {
+		if (block.roomId) usedIds.add(block.roomId);
+	}
+	return rooms.filter((room) => usedIds.has(room.id));
+}
+
+export function availabilityIncludesUnassignedRoom(blocks: readonly Pick<AvailabilityBlock, 'roomId'>[]): boolean {
+	return blocks.some((block) => block.roomId === null);
 }
 
 export function getAvailabilityHourTopPercent(

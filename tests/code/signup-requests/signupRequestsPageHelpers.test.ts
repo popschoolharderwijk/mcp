@@ -50,6 +50,7 @@ describe('signupRequestsPageHelpers', () => {
 		expect(mapped.is_group_lesson).toBe(true);
 		expect(mapped.option_label).toBeNull();
 		expect(mapped.trial_scheduled_date).toBeNull();
+		expect(mapped.applicant).toBeNull();
 	});
 
 	it('unwraps array relations when mapping base row', () => {

@@ -92,7 +92,7 @@ export function TeacherAvailabilityDayColumn({
 
 			{createPointer.previewGeometry && (
 				<div
-					className="absolute left-0.5 right-0.5 bg-emerald-500/50 rounded-md border border-emerald-600/40 pointer-events-none z-20"
+					className="absolute left-0.5 right-0.5 rounded-md border border-muted-foreground/40 pointer-events-none z-20 bg-muted/70 bg-[repeating-linear-gradient(-45deg,transparent,transparent_3px,rgba(0,0,0,0.06)_3px,rgba(0,0,0,0.06)_6px)]"
 					style={{
 						top: `${createPointer.previewGeometry.topPercent}%`,
 						height: `${createPointer.previewGeometry.heightPercent}%`,
