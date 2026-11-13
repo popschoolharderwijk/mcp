@@ -23,10 +23,12 @@ type StripeCheckoutInviteContext =
 			redirectTo: string;
 	  };
 
-async function prepareStripeCheckoutInvite(ctx: LessonAgreementPostContext): Promise<StripeCheckoutInviteContext> {
-	const auth = await requireAuthenticatedClients(ctx.authHeader);
-	if (!auth.ok) return { ok: false, response: auth.response };
+type AuthenticatedClients = Extract<Awaited<ReturnType<typeof requireAuthenticatedClients>>, { ok: true }>;
 
+async function loadStripeCheckoutInviteAfterAuth(
+	auth: AuthenticatedClients,
+	ctx: LessonAgreementPostContext,
+): Promise<StripeCheckoutInviteContext> {
 	const role = await fetchUserRole(auth.userClient, auth.user.id);
 	const { data: agreement, error: agErr } = await auth.admin
 		.from('lesson_agreements')
@@ -60,6 +62,12 @@ async function prepareStripeCheckoutInvite(ctx: LessonAgreementPostContext): Pro
 		recipient: recipientResult.recipient,
 		redirectTo: buildStripeCheckoutInviteRedirectUrl(siteUrl, access.agreement.id),
 	};
+}
+
+async function prepareStripeCheckoutInvite(ctx: LessonAgreementPostContext): Promise<StripeCheckoutInviteContext> {
+	const auth = await requireAuthenticatedClients(ctx.authHeader);
+	if (!auth.ok) return { ok: false, response: auth.response };
+	return loadStripeCheckoutInviteAfterAuth(auth, ctx);
 }
 
 async function resolveStripeCheckoutInviteRecipientEmail(

@@ -2,14 +2,14 @@
 
 ## Development Environments
 
-| Command                  | Environment        | Env file           | Use                                                                               |
-| ------------------------ | ------------------ | ------------------ | --------------------------------------------------------------------------------- |
-| `bun dev`                | Remote development | `.env.development` | Shared mcp-dev / Lovable (default `dev` script)                                   |
-| `bun run docker:dev`     | Remote development | `.env.development` | Same as `bun dev`, inside the workspace container (Ctrl-C stops Vite)             |
-| `bun run docker:dev:local` | Local            | `.env.localdev`    | Container: Vite localdev + `stripe:webhook` (Ctrl-C stops both)                   |
-| `bun run dev:local`      | Local              | `.env.localdev`    | Native Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
-| `bun run dev:test`       | Test database      | `.env.test`        | Remote mcp-test                                                                   |
-| `bun prod`               | Production         | `.env.production`  | Production server                                                                 |
+| Command                    | Environment        | Env file           | Use                                                                               |
+| -------------------------- | ------------------ | ------------------ | --------------------------------------------------------------------------------- |
+| `bun dev`                  | Remote development | `.env.development` | Shared mcp-dev / Lovable (default `dev` script)                                   |
+| `bun run docker:dev`       | Remote development | `.env.development` | Same as `bun dev`, inside the workspace container (Ctrl-C stops Vite)             |
+| `bun run docker:dev:local` | Local              | `.env.localdev`    | Container: Vite localdev + `stripe:webhook` (Ctrl-C stops both)                   |
+| `bun run dev:local`        | Local              | `.env.localdev`    | Native Supabase (`supabase start`); Vite port **8081** (beside `bun dev` on 8080) |
+| `bun run dev:test`         | Test database      | `.env.test`        | Remote mcp-test                                                                   |
+| `bun prod`                 | Production         | `.env.production`  | Production server                                                                 |
 
 Vite forbids **mode name** `local` (it would clash with the `.env.local` postfix). The script therefore uses mode **`localdev`**. Committed `.env.localdev` holds the local public keys — no `SECRETS_PATH` needed for `bun run dev:local`. Remote modes can overlay from `$SECRETS_PATH/.env.<mode>.local` (see [secrets.md](./secrets.md)).
 
