@@ -3,6 +3,20 @@ import { cn } from '@/lib/utils';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
 
+/**
+ * Vendor opt-outs for password managers. Prefer usePasswordManagerSafeInputProps on real inputs
+ * (adds read-only-until-focus for Chrome / Keychain).
+ */
+export const passwordManagerIgnoreInputProps = {
+	autoComplete: 'off',
+	'data-1p-ignore': true,
+	'data-op-ignore': true,
+	'data-lpignore': 'true',
+	'data-bwignore': 'true',
+	'data-protonpass-ignore': true,
+	'data-form-type': 'other',
+} as const;
+
 const Input = React.forwardRef<HTMLInputElement, InputProps>(({ className, type, ...props }, ref) => {
 	return (
 		<input
