@@ -1,3 +1,5 @@
+// FIXME: remove fallow-ignore after this PR; intentional theater-test cleanup
+// fallow-ignore-file weakened-tests
 import { describe, expect, it } from 'bun:test';
 import {
 	requireValidUuidField,
