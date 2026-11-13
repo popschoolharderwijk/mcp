@@ -5,8 +5,7 @@ import { authorizeCustomerPortalAccess, beginCustomerPortalPost } from './beginC
 import {
 	buildCustomerPortalSuccessPayload,
 	type CustomerPortalBody,
-	resolveMissingStripeCustomerResponse,
-	resolvePortalReturnUrl,
+	resolveCustomerPortalSessionSetup,
 } from './validationHelpers.ts';
 
 async function createCustomerPortalSession(
@@ -20,18 +19,14 @@ async function createCustomerPortalSession(
 		.select('stripe_customer_id')
 		.eq('user_id', targetUserId)
 		.maybeSingle();
-	if (!customerRow?.stripe_customer_id) {
-		return resolveMissingStripeCustomerResponse();
-	}
-
-	const returnUrlResult = resolvePortalReturnUrl(origin, body.return_url);
-	if (!returnUrlResult.ok) return jsonResponse(400, { error: returnUrlResult.error });
+	const setup = resolveCustomerPortalSessionSetup(customerRow?.stripe_customer_id, origin, body.return_url);
+	if (!setup.ok) return setup.response;
 
 	try {
 		const stripe = getStripe();
 		const session = await stripe.billingPortal.sessions.create({
-			customer: customerRow.stripe_customer_id,
-			return_url: returnUrlResult.returnUrl,
+			customer: setup.stripeCustomerId,
+			return_url: setup.returnUrl,
 		});
 		return jsonResponse(200, buildCustomerPortalSuccessPayload(session.url));
 	} catch (err) {

@@ -40,6 +40,26 @@ export function resolvePortalReturnUrl(origin: string, returnUrl: string | undef
 	return { ok: true, returnUrl: allowed };
 }
 
+export type CustomerPortalSessionSetup =
+	| { ok: false; response: Response }
+	| { ok: true; stripeCustomerId: string; returnUrl: string };
+
+/** Missing Stripe customer or invalid return_url before creating a portal session. */
+export function resolveCustomerPortalSessionSetup(
+	stripeCustomerId: string | null | undefined,
+	origin: string,
+	returnUrl: string | undefined,
+): CustomerPortalSessionSetup {
+	if (!stripeCustomerId) {
+		return { ok: false, response: resolveMissingStripeCustomerResponse() };
+	}
+	const returnUrlResult = resolvePortalReturnUrl(origin, returnUrl);
+	if (!returnUrlResult.ok) {
+		return { ok: false, response: jsonResponse(400, { error: returnUrlResult.error }) };
+	}
+	return { ok: true, stripeCustomerId, returnUrl: returnUrlResult.returnUrl };
+}
+
 export function buildCustomerPortalSuccessPayload(url: string | null): { url: string | null } {
 	return { url };
 }
