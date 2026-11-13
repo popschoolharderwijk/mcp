@@ -1,4 +1,4 @@
-/** User JWT callers of send-template-email: admin/site_admin only (not staff). */
+/** User JWT callers of send-template-email must be admin or site_admin. */
 export function isSendTemplateEmailUserRoleAllowed(role: string | null | undefined): boolean {
 	return role === 'admin' || role === 'site_admin';
 }

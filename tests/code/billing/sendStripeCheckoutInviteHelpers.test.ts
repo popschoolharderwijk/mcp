@@ -6,7 +6,6 @@ import {
 	canOverrideStripeCheckoutInviteRecipient,
 	hasStripeCheckoutAgreementRecord,
 	isStripeCheckoutInviteAdminRole,
-	isStripeCheckoutInvitePrivilegedRole,
 	resolveStripeCheckoutAgreementAccessError,
 	resolveStripeCheckoutAgreementInactiveResponse,
 	resolveStripeCheckoutAgreementNotFoundResponse,
@@ -27,19 +26,6 @@ describe('isStripeCheckoutInviteAdminRole', () => {
 		expect(isStripeCheckoutInviteAdminRole('teacher')).toBe(false);
 		expect(isStripeCheckoutInviteAdminRole('student')).toBe(false);
 		expect(isStripeCheckoutInviteAdminRole(null)).toBe(false);
-	});
-});
-
-describe('isStripeCheckoutInvitePrivilegedRole', () => {
-	it('returns true for admin and site_admin only', () => {
-		expect(isStripeCheckoutInvitePrivilegedRole('admin')).toBe(true);
-		expect(isStripeCheckoutInvitePrivilegedRole('site_admin')).toBe(true);
-	});
-
-	it('returns false for teacher, student and missing roles', () => {
-		expect(isStripeCheckoutInvitePrivilegedRole('teacher')).toBe(false);
-		expect(isStripeCheckoutInvitePrivilegedRole('student')).toBe(false);
-		expect(isStripeCheckoutInvitePrivilegedRole(null)).toBe(false);
 	});
 });
 

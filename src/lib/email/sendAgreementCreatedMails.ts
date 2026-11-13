@@ -1,11 +1,5 @@
-// Sends confirmation emails to student/parent and teacher after creating a lesson
-// agreement. Called from the agreement wizard once the insert into
-// `lesson_agreements` succeeds. Errors are intentionally not rethrown: the
-// agreement is already saved; the UI may show a warning at most.
-//
-// Both mails go through `issue-payment-link` (service-role send-template-email):
-// student payment invite + optional teacher notify. Staff must not call
-// send-template-email with an arbitrary `to` address.
+// Wizard post-save mails: student payment invite and teacher notify both go through
+// `issue-payment-link` (service-role delivery). Errors stay soft — agreement already saved.
 
 import { supabase } from '@/integrations/supabase/client';
 import { buildIssuePaymentLinkBody } from '@/lib/subscriptions/subscriptionCardHelpers';

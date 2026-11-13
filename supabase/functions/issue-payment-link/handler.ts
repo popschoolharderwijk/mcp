@@ -11,11 +11,7 @@ import {
 	loadAgreementCreatedPaymentMailVars,
 	loadBillingRecipientForStudent,
 } from '../_shared/paymentLink.ts';
-import {
-	resolveIssuedLinkRecipientGate,
-	resolveIssuePaymentRecipient,
-	wantsTeacherNotifyOnIssuePaymentLink,
-} from '../_shared/paymentLinkHelpers.ts';
+import { resolveIssuedLinkRecipientGate, resolveIssuePaymentRecipient } from '../_shared/paymentLinkHelpers.ts';
 import { sendTemplateEmail } from '../_shared/sendTemplateEmail.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
 import {
@@ -72,7 +68,7 @@ async function maybeNotifyAgreementTeacher(
 	notifyTeacher: boolean | undefined,
 	paymentCtaMarkdown: string,
 ): Promise<boolean> {
-	if (!wantsTeacherNotifyOnIssuePaymentLink(notifyTeacher)) return false;
+	if (notifyTeacher !== true) return false;
 
 	const { data: teacherProfile } = await admin
 		.from('profiles')

@@ -25,8 +25,8 @@ afterAll(async () => {
  * Seed: one Bandcoaching group taught by Eve with students 001-008.
  *
  * Security contracts:
- * - get_lesson_group_teacher must not be callable by authenticated (teacher UUID leak).
- * - Members with left_date in the past must not keep SELECT on the group.
+ * - authenticated has no EXECUTE on get_lesson_group_teacher (no teacher UUID RPC).
+ * - membership with left_date set loses lesson_groups SELECT.
  */
 
 const dbNoRLS = createClientBypassRLS();

@@ -72,7 +72,7 @@ ALTER TABLE public.lesson_group_members FORCE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 3. Helpers
 -- ============================================================================
--- Boolean ownership check for RLS (avoids exposing teacher_user_id via a callable RPC).
+-- Boolean teacher ownership for RLS policies (no teacher UUID returned to callers).
 CREATE OR REPLACE FUNCTION public.is_lesson_group_teacher(_group_id uuid, _user_id uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER

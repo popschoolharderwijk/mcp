@@ -2,11 +2,6 @@ export function isStripeCheckoutInviteAdminRole(role: string | null | undefined)
 	return role === 'admin' || role === 'site_admin';
 }
 
-/** Admin/site_admin only — teachers must match agreement.teacher_user_id. */
-export function isStripeCheckoutInvitePrivilegedRole(role: string | null | undefined): boolean {
-	return isStripeCheckoutInviteAdminRole(role);
-}
-
 export function canAccessStripeCheckoutInviteAgreement(input: {
 	isAdmin: boolean;
 	agreementStudentUserId: string;

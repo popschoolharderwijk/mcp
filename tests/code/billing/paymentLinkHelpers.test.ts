@@ -19,7 +19,6 @@ import {
 	resolveBillingRecipient,
 	resolveIssuedLinkRecipientGate,
 	resolveIssuePaymentRecipient,
-	wantsTeacherNotifyOnIssuePaymentLink,
 } from '../../../supabase/functions/_shared/paymentLinkHelpers';
 
 describe('payment link tokens', () => {
@@ -122,12 +121,6 @@ describe('billing recipient and request guards', () => {
 			ok: true,
 			recipient: 'a@b.nl',
 		});
-	});
-
-	it('notifies the teacher only when notify_teacher is explicitly true', () => {
-		expect(wantsTeacherNotifyOnIssuePaymentLink(true)).toBe(true);
-		expect(wantsTeacherNotifyOnIssuePaymentLink(false)).toBe(false);
-		expect(wantsTeacherNotifyOnIssuePaymentLink(undefined)).toBe(false);
 	});
 });
 

@@ -113,11 +113,6 @@ export function resolveIssuePaymentRecipient(
 	return { ok: true, recipient: override.trim() };
 }
 
-/** When true, issue-payment-link also sends agreement_created_teacher (server-side recipient). */
-export function wantsTeacherNotifyOnIssuePaymentLink(notifyTeacher: boolean | undefined): boolean {
-	return notifyTeacher === true;
-}
-
 /** After recipient resolve: require a payer address (issue-payment-link always mails). */
 export function resolveIssuedLinkRecipientGate(
 	resolved: ReturnType<typeof resolveIssuePaymentRecipient>,
