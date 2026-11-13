@@ -1,7 +1,17 @@
 import { type FocusEvent, type FocusEventHandler, useState } from 'react';
-import { passwordManagerIgnoreInputProps } from '@/components/ui/input';
 
 type SafeInputFocusHandler = FocusEventHandler<HTMLInputElement>;
+
+/** Vendor password-manager opt-outs; browsers ignore autocomplete="off" alone. */
+const passwordManagerIgnoreInputProps = {
+	autoComplete: 'off',
+	'data-1p-ignore': true,
+	'data-op-ignore': true,
+	'data-lpignore': 'true',
+	'data-bwignore': 'true',
+	'data-protonpass-ignore': true,
+	'data-form-type': 'other',
+} as const;
 
 /**
  * Props for non-credential inputs (search, filters): vendor ignore attrs + read-only until focus.
