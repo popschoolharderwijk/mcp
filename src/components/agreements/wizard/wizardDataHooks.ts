@@ -12,7 +12,50 @@ import type {
 	WizardTeacherInfo,
 } from '@/types/lesson-agreements';
 
-export type ReloadTeacherSlotsOptions = { feedback?: boolean };
+type ReloadTeacherSlotsOptions = { feedback?: boolean };
+
+type TeacherSlotsLoadResult = {
+	loadFailed: boolean;
+	statuses: SlotWithStatus[] | null;
+};
+
+function slotsOrEmpty(statuses: SlotWithStatus[] | null): SlotWithStatus[] {
+	if (!statuses) return [];
+	return statuses;
+}
+
+function wantsTeacherSlotsReloadFeedback(options: ReloadTeacherSlotsOptions | undefined): boolean {
+	if (!options) return false;
+	return options.feedback === true;
+}
+
+function notifyTeacherSlotsReloadResult(
+	options: ReloadTeacherSlotsOptions | undefined,
+	result: TeacherSlotsLoadResult,
+): void {
+	if (!wantsTeacherSlotsReloadFeedback(options)) return;
+	if (result.loadFailed) {
+		toast.error('Fout bij laden tijdslotten');
+		return;
+	}
+	if (result.statuses === null) return;
+	toast.success('Tijdslotten vernieuwd');
+}
+
+async function loadTeacherSlotsStatuses(params: {
+	teacherUserId: string;
+	startDate: string;
+	endDate: string;
+	initialAgreement: AgreementTableRow | null;
+	selectedLessonType: { duration_minutes: number; frequency: LessonFrequency };
+}): Promise<TeacherSlotsLoadResult> {
+	try {
+		const statuses = await runWizardLoad('teacherSlots', params);
+		return { loadFailed: false, statuses };
+	} catch {
+		return { loadFailed: true, statuses: null };
+	}
+}
 
 export function useWizardAgreement(id: string | undefined, isEditMode: boolean) {
 	const [agreement, setAgreement] = useState<AgreementTableRow | null>(null);
@@ -96,29 +139,18 @@ export function useWizardTeacherSlots(
 
 			const requestId = ++requestIdRef.current;
 			setLoading(true);
-			let loadFailed = false;
-			const statuses = await runWizardLoad('teacherSlots', {
+			const result = await loadTeacherSlotsStatuses({
 				teacherUserId,
 				startDate,
 				endDate,
 				initialAgreement,
 				selectedLessonType,
-			}).catch(() => {
-				loadFailed = true;
-				return null;
 			});
 
 			if (requestId !== requestIdRef.current) return;
-			setSlots(statuses ?? []);
+			setSlots(slotsOrEmpty(result.statuses));
 			setLoading(false);
-
-			if (!options?.feedback) return;
-			if (loadFailed) {
-				toast.error('Fout bij laden tijdslotten');
-				return;
-			}
-			if (statuses === null) return;
-			toast.success('Tijdslotten vernieuwd');
+			notifyTeacherSlotsReloadResult(options, result);
 		},
 		[step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType],
 	);
