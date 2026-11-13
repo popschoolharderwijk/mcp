@@ -38,7 +38,7 @@
 		"docker:exec": "bun run docker:start && docker compose -f .devcontainer/compose.yml exec -it -u agent workspace",
 		"docker:shell": "bun run docker:exec bash",
 		"docker:agent": "bun run docker:exec agent",
-		"docker:dev": "bun run docker:exec bash -lc 'trap \"kill $w $d 2>/dev/null\" INT TERM EXIT; bun run stripe:webhook -- --log-stderr off & w=$!; bun run dev:local & d=$!; wait'"
+		"docker:dev": "bun run docker:exec bash -lc 'trap \"kill $w $d 2>/dev/null\" INT TERM EXIT; bun run stripe:webhook -- --log-terminal off & w=$!; bun run dev:local & d=$!; wait'"
 	},
 	"dependencies": {
 		"@radix-ui/react-alert-dialog": "^1.1.15",

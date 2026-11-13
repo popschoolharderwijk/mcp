@@ -154,11 +154,11 @@ Put that `whsec_…` in `$SECRETS_PATH/supabase/.env.local` as `STRIPE_WEBHOOK_S
 bun run stripe:webhook
 # optional verbose CLI logs + drop websocket ping/pong from the log file:
 bun run stripe:webhook -- --log-level debug --log-exclude ping-pong
-# file-only CLI stderr (no terminal mirror; useful when sharing a shell with Vite):
-bun run stripe:webhook -- --log-stderr off
+# file-only CLI output (no terminal mirror; useful when sharing a shell with Vite):
+bun run stripe:webhook -- --log-terminal off
 ```
 
-Each start truncates `logs/stripe.log` and mirrors the Stripe CLI output there (terminal + file) through the same filters. Pass `--log-level` through to the Stripe CLI when needed (`debug` | `info` | `trace` | `warn` | `error`); default is omit (CLI `info`). `--log-exclude ping-pong` skips websocket ping/pong lines in both terminal and file. `--log-stderr off` keeps writing CLI stderr to the log file but stops mirroring it to the terminal (default `on`). Secrets (`whsec_…` / `sk_…` / `rk_…`) are redacted to a short hint (`whsec_abcd**`, `sk_test_abcd**`) in both places so you can tell which secret was printed without logging the full value.
+Each start truncates `logs/stripe.log` and mirrors the Stripe CLI output there (terminal + file) through the same filters. Pass `--log-level` through to the Stripe CLI when needed (`debug` | `info` | `trace` | `warn` | `error`); default is omit (CLI `info`). The chosen level is written once as `log level: …` at the top; Stripe `time=` / event timestamps are stripped and logfmt `msg="…"` is unwrapped; every line then gets `[HH:mm:ss]` via the shared console clock helper. `--log-exclude ping-pong` skips websocket ping/pong lines in both terminal and file. `--log-terminal off` keeps writing CLI stdout+stderr to the log file but stops mirroring either stream to the terminal (default `on`). Secrets (`whsec_…` / `sk_…` / `rk_…`) are redacted to a short hint (`whsec_abcd**`, `sk_test_abcd**`) in both places so you can tell which secret was printed without logging the full value.
 
 ```bash
 bun test tests/code/billing/paymentLinkHelpers.test.ts
