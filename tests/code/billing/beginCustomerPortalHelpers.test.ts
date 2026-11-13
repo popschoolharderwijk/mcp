@@ -30,14 +30,18 @@ describe('resolveCustomerPortalPostGate', () => {
 });
 
 describe('buildCustomerPortalPostSuccess', () => {
-	it('builds the success payload with origin fallback', () => {
+	it('builds the success payload with the allow-listed origin', () => {
 		expect(
-			buildCustomerPortalPostSuccess('Bearer token', { user_id: '11111111-1111-1111-1111-111111111111' }, null),
+			buildCustomerPortalPostSuccess(
+				'Bearer token',
+				{ user_id: '11111111-1111-1111-1111-111111111111' },
+				'https://mcp.mplifi.nl',
+			),
 		).toEqual({
 			ok: true,
 			authHeader: 'Bearer token',
 			body: { user_id: '11111111-1111-1111-1111-111111111111' },
-			origin: '',
+			origin: 'https://mcp.mplifi.nl',
 		});
 	});
 });

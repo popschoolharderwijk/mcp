@@ -1,65 +1,15 @@
 import { beforeAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 
-type TableResult = { data?: unknown; error?: { message: string } | null };
 type InvokeResult = { data?: unknown; error?: { message: string } | null };
 
 const recordedInvokes: { fn: string; body: unknown }[] = [];
-let agreementResult: TableResult = { data: null, error: null };
-let studentProfileResult: TableResult = { data: null, error: null };
-let teacherProfileResult: TableResult = { data: null, error: null };
-let availabilityResult: TableResult = { data: [], error: null };
 let invokeResults: Record<string, InvokeResult> = {};
 
 const supabaseMock = {
-	from: (table: string) => {
-		if (table === 'lesson_agreements') {
-			return {
-				select: () => ({
-					eq: () => ({
-						maybeSingle: () => Promise.resolve(agreementResult),
-					}),
-				}),
-			};
-		}
-		if (table === 'teacher_availability') {
-			return {
-				select: () => ({
-					eq: () => ({
-						eq: () => Promise.resolve(availabilityResult),
-					}),
-				}),
-			};
-		}
-		if (table === 'profiles') {
-			return {
-				select: () => ({
-					eq: (_col: string, userId: string) => ({
-						maybeSingle: () =>
-							Promise.resolve(userId === 'tea-1' ? teacherProfileResult : studentProfileResult),
-					}),
-				}),
-			};
-		}
-		return {
-			select: () => ({
-				eq: () => ({
-					maybeSingle: () => Promise.resolve({ data: null, error: null }),
-				}),
-			}),
-		};
-	},
 	functions: {
 		invoke: (fn: string, opts: { body: unknown }) => {
 			recordedInvokes.push({ fn, body: opts.body });
-			if (fn === 'issue-payment-link') {
-				return Promise.resolve(
-					invokeResults[fn] ?? {
-						data: { sent: true, payment_cta: '[Betaalmethode koppelen](https://x/pay)' },
-						error: null,
-					},
-				);
-			}
-			return Promise.resolve(invokeResults[fn] ?? { data: null, error: null });
+			return Promise.resolve(invokeResults[fn] ?? { data: { sent: true }, error: null });
 		},
 	},
 };
@@ -78,109 +28,32 @@ describe('sendAgreementCreatedMails', () => {
 	beforeEach(() => {
 		recordedInvokes.length = 0;
 		invokeResults = {};
-		availabilityResult = { data: [], error: null };
-		agreementResult = {
-			data: {
-				id: 'agr-1',
-				day_of_week: 1,
-				start_time: '14:30:00',
-				start_date: '2026-09-07',
-				frequency: 'weekly',
-				price_per_lesson: 45,
-				student_user_id: 'stu-1',
-				teacher_user_id: 'tea-1',
-				lesson_types: { name: 'Piano' },
-			},
-			error: null,
-		};
-		studentProfileResult = {
-			data: { email: 'Student@Example.com', first_name: 'Jan', last_name: 'Leerling' },
-			error: null,
-		};
-		teacherProfileResult = {
-			data: { email: 'piet@example.com', first_name: 'Piet', last_name: 'Docent' },
-			error: null,
-		};
 	});
 
-	it('returns false results when the agreement is missing', async () => {
-		agreementResult = { data: null, error: { message: 'not found' } };
-		const result = await sendAgreementCreatedMails('missing');
-		expect(result).toEqual({ studentSent: false, teacherSent: false });
-		expect(recordedInvokes).toHaveLength(0);
-	});
-
-	it('sends student invite via issue-payment-link and teacher mail separately', async () => {
+	it('issues payment link with teacher notify via issue-payment-link only', async () => {
+		invokeResults['issue-payment-link'] = {
+			data: { sent: true, teacher_notified: true },
+			error: null,
+		};
 		const result = await sendAgreementCreatedMails('agr-1');
 		expect(result).toEqual({ studentSent: true, teacherSent: true });
-		expect(recordedInvokes).toHaveLength(2);
-		expect(recordedInvokes[0]).toEqual({
-			fn: 'issue-payment-link',
-			body: { lesson_agreement_id: 'agr-1' },
-		});
-		expect(recordedInvokes[1]).toEqual({
-			fn: 'send-template-email',
-			body: {
-				event_key: 'agreement_created_teacher',
-				to: 'piet@example.com',
-				vars: expect.objectContaining({
-					leerling_naam: 'Jan Leerling',
-					docent_naam: 'Piet Docent',
-					les_type: 'Piano',
-					lokaal: 'onbekend',
-				}),
+		expect(recordedInvokes).toEqual([
+			{
+				fn: 'issue-payment-link',
+				body: { lesson_agreement_id: 'agr-1', notify_teacher: true },
 			},
-		});
+		]);
 	});
 
-	it('puts the availability room name on the teacher mail', async () => {
-		availabilityResult = {
-			data: [{ start_time: '14:00:00', end_time: '16:00:00', rooms: { name: 'Studio' } }],
-			error: null,
-		};
-		const result = await sendAgreementCreatedMails('agr-1');
-		expect(result.teacherSent).toBe(true);
-		expect(recordedInvokes[1]).toEqual({
-			fn: 'send-template-email',
-			body: {
-				event_key: 'agreement_created_teacher',
-				to: 'piet@example.com',
-				vars: expect.objectContaining({ lokaal: 'Studio' }),
-			},
-		});
-	});
-
-	it('sends the teacher mail with onbekend when the room lookup fails', async () => {
-		availabilityResult = { data: null, error: { message: 'rls' } };
-		const result = await sendAgreementCreatedMails('agr-1');
-		expect(result.teacherSent).toBe(true);
-		expect(recordedInvokes[1]).toEqual({
-			fn: 'send-template-email',
-			body: {
-				event_key: 'agreement_created_teacher',
-				to: 'piet@example.com',
-				vars: expect.objectContaining({ lokaal: 'onbekend' }),
-			},
-		});
-	});
-
-	it('marks student mail as failed when issue-payment-link errors', async () => {
+	it('marks both mails failed when issue-payment-link errors', async () => {
 		invokeResults['issue-payment-link'] = { data: null, error: { message: 'invite failed' } };
 		const result = await sendAgreementCreatedMails('agr-1');
-		expect(result).toEqual({ studentSent: false, teacherSent: true });
+		expect(result).toEqual({ studentSent: false, teacherSent: false });
 	});
 
-	it('marks student mail as failed when issue-payment-link returns sent:false', async () => {
-		invokeResults['issue-payment-link'] = { data: { sent: false }, error: null };
-		const result = await sendAgreementCreatedMails('agr-1');
-		expect(result).toEqual({ studentSent: false, teacherSent: true });
-	});
-
-	it('skips teacher mail when teacher email is missing', async () => {
-		teacherProfileResult = { data: { email: null, first_name: 'Piet', last_name: 'Docent' }, error: null };
+	it('marks teacher failed when issue-payment-link omits teacher_notified', async () => {
+		invokeResults['issue-payment-link'] = { data: { sent: true }, error: null };
 		const result = await sendAgreementCreatedMails('agr-1');
 		expect(result).toEqual({ studentSent: true, teacherSent: false });
-		expect(recordedInvokes).toHaveLength(1);
-		expect(recordedInvokes[0]?.fn).toBe('issue-payment-link');
 	});
 });

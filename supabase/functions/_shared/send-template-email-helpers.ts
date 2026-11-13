@@ -1,3 +1,8 @@
+/** User JWT callers of send-template-email: admin/site_admin only (not staff). */
+export function isSendTemplateEmailUserRoleAllowed(role: string | null | undefined): boolean {
+	return role === 'admin' || role === 'site_admin';
+}
+
 export function buildPortalFooter(baseUrl: string, recipient: string): string {
 	const loginUrl = `${baseUrl}/login?email=${encodeURIComponent(recipient)}`;
 	return `

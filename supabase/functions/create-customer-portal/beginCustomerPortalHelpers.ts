@@ -14,7 +14,7 @@ export function resolveCustomerPortalPostGate(
 export function buildCustomerPortalPostSuccess(
 	authHeader: string,
 	body: CustomerPortalBody,
-	origin: string | null,
+	origin: string,
 ): { ok: true; authHeader: string; body: CustomerPortalBody; origin: string } {
-	return { ok: true, authHeader, body, origin: origin ?? '' };
+	return { ok: true, authHeader, body, origin };
 }

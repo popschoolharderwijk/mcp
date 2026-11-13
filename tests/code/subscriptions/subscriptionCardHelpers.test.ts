@@ -33,6 +33,10 @@ describe('subscriptionCardHelpers', () => {
 			lesson_agreement_id: 'agr-1',
 			recipient_email: 'test@ex.com',
 		});
+		expect(buildIssuePaymentLinkBody('agr-1', undefined, { notifyTeacher: true })).toEqual({
+			lesson_agreement_id: 'agr-1',
+			notify_teacher: true,
+		});
 		expect(resolveIssuedPaymentUrl({ payment_url: 'http://127.0.0.1:8081/pay?t=abc' })).toBe(
 			'http://127.0.0.1:8081/pay?t=abc',
 		);

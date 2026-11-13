@@ -1,9 +1,11 @@
-import { jsonResponse, UUID_RE } from '../_shared/http.ts';
+import { jsonResponse, resolveAllowedRedirectUrl, UUID_RE } from '../_shared/http.ts';
 
 export interface CustomerPortalBody {
 	user_id?: string;
 	return_url?: string;
 }
+
+export type PortalReturnUrlResult = { ok: true; returnUrl: string } | { ok: false; error: string };
 
 export function parseCustomerPortalBody(raw: unknown): CustomerPortalBody {
 	if (!raw || typeof raw !== 'object') return {};
@@ -29,8 +31,13 @@ export function resolveMissingStripeCustomerResponse(): Response {
 	return jsonResponse(404, { error: 'Geen Stripe klant gekoppeld' });
 }
 
-export function resolvePortalReturnUrl(origin: string, returnUrl: string | undefined): string {
-	return returnUrl ?? `${origin}/account/profile`;
+/** Allow-listed return_url, or profile path on the allow-listed origin when omitted. */
+export function resolvePortalReturnUrl(origin: string, returnUrl: string | undefined): PortalReturnUrlResult {
+	const defaultReturnUrl = `${origin}/account/profile`;
+	if (!returnUrl) return { ok: true, returnUrl: defaultReturnUrl };
+	const allowed = resolveAllowedRedirectUrl(returnUrl);
+	if (!allowed) return { ok: false, error: 'Ongeldige return_url' };
+	return { ok: true, returnUrl: allowed };
 }
 
 export function buildCustomerPortalSuccessPayload(url: string | null): { url: string | null } {

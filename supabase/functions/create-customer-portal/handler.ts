@@ -24,11 +24,14 @@ async function createCustomerPortalSession(
 		return resolveMissingStripeCustomerResponse();
 	}
 
+	const returnUrlResult = resolvePortalReturnUrl(origin, body.return_url);
+	if (!returnUrlResult.ok) return jsonResponse(400, { error: returnUrlResult.error });
+
 	try {
 		const stripe = getStripe();
 		const session = await stripe.billingPortal.sessions.create({
 			customer: customerRow.stripe_customer_id,
-			return_url: resolvePortalReturnUrl(origin, body.return_url),
+			return_url: returnUrlResult.returnUrl,
 		});
 		return jsonResponse(200, buildCustomerPortalSuccessPayload(session.url));
 	} catch (err) {

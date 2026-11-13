@@ -6,7 +6,7 @@ import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.
 import {
 	buildStripeCheckoutInviteRedirectUrl,
 	buildStripeCheckoutInviteSuccessPayload,
-	isStripeCheckoutInvitePrivilegedRole,
+	isStripeCheckoutInviteAdminRole,
 	resolveStripeCheckoutAgreementAccessError,
 	resolveStripeCheckoutInviteMissingEmailResponse,
 	resolveStripeCheckoutInviteRecipient,
@@ -18,7 +18,7 @@ type StripeCheckoutInviteContext =
 			ok: true;
 			admin: SupabaseClient;
 			userId: string;
-			agreement: { id: string; student_user_id: string };
+			agreement: { id: string; student_user_id: string; teacher_user_id: string };
 			recipient: string;
 			redirectTo: string;
 	  };
@@ -32,13 +32,13 @@ async function loadStripeCheckoutInviteAfterAuth(
 	const role = await fetchUserRole(auth.userClient, auth.user.id);
 	const { data: agreement, error: agErr } = await auth.admin
 		.from('lesson_agreements')
-		.select('id, student_user_id, is_active')
+		.select('id, student_user_id, teacher_user_id, is_active')
 		.eq('id', ctx.lessonAgreementId)
 		.maybeSingle();
 	const access = resolveStripeCheckoutAgreementAccessError(
 		agreement,
 		agErr,
-		isStripeCheckoutInvitePrivilegedRole(role),
+		isStripeCheckoutInviteAdminRole(role),
 		auth.user.id,
 	);
 	if (!access.ok) {

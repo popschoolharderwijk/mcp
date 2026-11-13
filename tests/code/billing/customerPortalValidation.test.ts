@@ -136,16 +136,25 @@ describe('resolveMissingStripeCustomerResponse', () => {
 });
 
 describe('resolvePortalReturnUrl', () => {
-	it('uses the provided return url when present', () => {
-		expect(resolvePortalReturnUrl('https://app.example.com', 'https://example.com/back')).toBe(
-			'https://example.com/back',
-		);
+	it('uses an allow-listed return url when present', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://mcp.mplifi.nl/account/profile')).toEqual({
+			ok: true,
+			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+		});
+	});
+
+	it('rejects an untrusted return url', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://evil.example.com/back')).toEqual({
+			ok: false,
+			error: 'Ongeldige return_url',
+		});
 	});
 
 	it('falls back to the profile route on the origin', () => {
-		expect(resolvePortalReturnUrl('https://app.example.com', undefined)).toBe(
-			'https://app.example.com/account/profile',
-		);
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', undefined)).toEqual({
+			ok: true,
+			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+		});
 	});
 });
 
