@@ -5,6 +5,7 @@ interface SidebarMainNavProps {
 	collapsed: boolean;
 	isStudent: boolean;
 	isTeacher: boolean;
+	teacherUserId: string | null;
 	showTeachersNav: boolean;
 	showStudentsNav: boolean;
 	showReportsNav: boolean;
@@ -16,6 +17,7 @@ export function SidebarMainNav({
 	collapsed,
 	isStudent,
 	isTeacher,
+	teacherUserId,
 	showTeachersNav,
 	showStudentsNav,
 	showReportsNav,
@@ -26,6 +28,7 @@ export function SidebarMainNav({
 		collapsed,
 		isStudent,
 		isTeacher,
+		teacherUserId,
 		showTeachersNav,
 		showStudentsNav,
 		showReportsNav,
