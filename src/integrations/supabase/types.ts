@@ -968,6 +968,61 @@ export type Database = {
 					},
 				];
 			};
+			rooms: {
+				Row: {
+					categories: string[];
+					color: string;
+					created_at: string;
+					created_by: string | null;
+					description: string | null;
+					facilities: string[];
+					id: string;
+					image_url: string | null;
+					is_active: boolean;
+					max_capacity: number;
+					name: string;
+					notes: string | null;
+					updated_at: string;
+					updated_by: string | null;
+					visibility: Database['public']['Enums']['room_visibility'];
+				};
+				ComputedFields: never;
+				Insert: {
+					categories?: string[];
+					color?: string;
+					created_at?: string;
+					created_by?: string | null;
+					description?: string | null;
+					facilities?: string[];
+					id?: string;
+					image_url?: string | null;
+					is_active?: boolean;
+					max_capacity?: number;
+					name: string;
+					notes?: string | null;
+					updated_at?: string;
+					updated_by?: string | null;
+					visibility?: Database['public']['Enums']['room_visibility'];
+				};
+				Update: {
+					categories?: string[];
+					color?: string;
+					created_at?: string;
+					created_by?: string | null;
+					description?: string | null;
+					facilities?: string[];
+					id?: string;
+					image_url?: string | null;
+					is_active?: boolean;
+					max_capacity?: number;
+					name?: string;
+					notes?: string | null;
+					updated_at?: string;
+					updated_by?: string | null;
+					visibility?: Database['public']['Enums']['room_visibility'];
+				};
+				Relationships: [];
+			};
 			stripe_checkout_invitations: {
 				Row: {
 					created_at: string;
@@ -1211,6 +1266,7 @@ export type Database = {
 					day_of_week: number;
 					end_time: string;
 					id: string;
+					room_id: string | null;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at: string;
@@ -1223,6 +1279,7 @@ export type Database = {
 					day_of_week: number;
 					end_time: string;
 					id?: string;
+					room_id?: string | null;
 					start_time: string;
 					teacher_user_id: string;
 					updated_at?: string;
@@ -1234,12 +1291,20 @@ export type Database = {
 					day_of_week?: number;
 					end_time?: string;
 					id?: string;
+					room_id?: string | null;
 					start_time?: string;
 					teacher_user_id?: string;
 					updated_at?: string;
 					updated_by?: string | null;
 				};
 				Relationships: [
+					{
+						foreignKeyName: 'teacher_availability_room_id_fkey';
+						columns: ['room_id'];
+						isOneToOne: false;
+						referencedRelation: 'rooms';
+						referencedColumns: ['id'];
+					},
 					{
 						foreignKeyName: 'teacher_availability_teacher_user_id_fkey';
 						columns: ['teacher_user_id'];
@@ -1637,6 +1702,7 @@ export type Database = {
 			normalize_trim_text: { Args: { p_value: string }; Returns: string };
 			policy_exists: { Args: { p_policy_name: string; p_table_name: string }; Returns: boolean };
 			shift_recurring_deviation_to_next_week: { Args: { p_deviation_id: string }; Returns: string };
+			slugify: { Args: { p_value: string }; Returns: string };
 			submit_trial_decision: {
 				Args: { p_decision: string; p_trial_id: string };
 				Returns: {
@@ -1675,6 +1741,7 @@ export type Database = {
 			app_role: 'site_admin' | 'admin' | 'staff';
 			cancellation_type: 'student' | 'teacher';
 			lesson_frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
+			room_visibility: 'public' | 'internal' | 'hidden';
 			signup_request_status: 'pending' | 'approved' | 'rejected' | 'trial_scheduled';
 			trial_lesson_status:
 				| 'scheduled'
@@ -1796,6 +1863,7 @@ export const Constants = {
 			app_role: ['site_admin', 'admin', 'staff'],
 			cancellation_type: ['student', 'teacher'],
 			lesson_frequency: ['daily', 'weekly', 'biweekly', 'monthly'],
+			room_visibility: ['public', 'internal', 'hidden'],
 			signup_request_status: ['pending', 'approved', 'rejected', 'trial_scheduled'],
 			trial_lesson_status: [
 				'scheduled',

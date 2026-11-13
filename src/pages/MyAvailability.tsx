@@ -84,6 +84,7 @@ export default function MyAvailability() {
 		}
 
 		const { error } = await insertTeacherAvailability({
+			room_id: null,
 			teacher_user_id: teacherUserId,
 			day_of_week: form.day_of_week,
 			start_time: form.start_time,

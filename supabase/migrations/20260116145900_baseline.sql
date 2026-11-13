@@ -209,6 +209,29 @@ REVOKE ALL ON FUNCTION public.normalize_trim_text(text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.normalize_trim_text(text) TO authenticated;
 ALTER FUNCTION public.normalize_trim_text(text) OWNER TO postgres;
 
+-- Lowercase, strip accents, collapse other runs to hyphens, trim hyphens.
+-- NULL or blank becomes NULL. Callers pick a fallback when needed.
+-- Matches src/lib/text/slugify.ts.
+CREATE OR REPLACE FUNCTION public.slugify(p_value text)
+RETURNS text
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+SET search_path = public
+AS $$
+  SELECT CASE
+    WHEN p_value IS NULL THEN NULL
+    ELSE nullif(trim(both '-' FROM regexp_replace(
+      translate(lower(p_value), 'áàäâãåéèëêíìïîóòöôõúùüûýÿçñ', 'aaaaaaeeeeiiiiooooouuuuyycn'),
+      '[^a-z0-9]+', '-', 'g')), '')
+  END;
+$$;
+
+REVOKE ALL ON FUNCTION public.slugify(text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.slugify(text) FROM anon;
+GRANT EXECUTE ON FUNCTION public.slugify(text) TO authenticated;
+ALTER FUNCTION public.slugify(text) OWNER TO postgres;
+
 -- =============================================================================
 -- SECTION 2: TABLES
 -- =============================================================================

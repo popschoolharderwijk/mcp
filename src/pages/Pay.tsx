@@ -6,7 +6,7 @@ import {
 	PaymentLinkInvalidPanel,
 } from '@/components/stripe/PaymentLinkDetailsPanel';
 import { PaymentLinkRequestForm } from '@/components/stripe/PaymentLinkRequestForm';
-import { PageSkeleton } from '@/components/ui/page-skeleton';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { supabase } from '@/integrations/supabase/client';
 import {
 	MANDATE_AWAIT_MAX_ATTEMPTS,
@@ -137,7 +137,11 @@ function PayView(props: {
 	onStart: () => void;
 }) {
 	const views = {
-		loading: () => <PageSkeleton variant="header-only" />,
+		loading: () => (
+			<div className="flex min-h-screen items-center justify-center">
+				<LoadingSpinner size="lg" className="text-muted-foreground" />
+			</div>
+		),
 		completed: () => <PaymentLinkArrangedPanel justCompleted />,
 		arranged: () => <PaymentLinkArrangedPanel />,
 		invalid: () => <PayInvalidView agreementId={props.agreementId} />,

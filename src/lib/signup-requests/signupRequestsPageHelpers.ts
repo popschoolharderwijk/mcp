@@ -1,11 +1,15 @@
 import type { Tables } from '@/integrations/supabase/types';
 import {
 	buildOptionLabelMap,
+	buildSignupApplicantEmailOrFilter,
+	buildSignupApplicantMap,
 	buildTeacherNameMap,
 	buildTrialMap,
 	collectTeacherUserIds,
 	collectUniqueOptionIds,
 	enrichSignupRequestRow,
+	type SignupApplicantProfile,
+	signupApplicantForEmail,
 } from '@/lib/signup-requests/signupRequestEnrichmentHelpers';
 
 function unwrapRelation<T>(value: T | T[] | null | undefined): T | null {
@@ -43,6 +47,7 @@ export type SignupRequestRowBase = Tables<'lesson_signup_requests'> & {
 	trial_scheduled_date: string | null;
 	trial_scheduled_time: string | null;
 	trial_teacher_name: string | null;
+	applicant: SignupApplicantProfile | null;
 };
 
 export function mapSignupRequestBaseRow(
@@ -65,6 +70,7 @@ export function mapSignupRequestBaseRow(
 		trial_scheduled_date: null,
 		trial_scheduled_time: null,
 		trial_teacher_name: null,
+		applicant: null,
 	};
 }
 
@@ -100,5 +106,18 @@ export async function enrichSignupRequestRows(baseRows: SignupRequestRowBase[]):
 		}
 	}
 
-	return baseRows.map((row) => enrichSignupRequestRow(row, optionMap, trialMap, teacherNames));
+	const applicantFilter = buildSignupApplicantEmailOrFilter(baseRows.map((row) => row.email));
+	let applicantMap = new Map<string, SignupApplicantProfile>();
+	if (applicantFilter) {
+		const { data: profiles } = await supabase
+			.from('profiles')
+			.select('user_id, first_name, last_name, email, avatar_url')
+			.or(applicantFilter);
+		applicantMap = buildSignupApplicantMap(profiles);
+	}
+
+	return baseRows.map((row) => ({
+		...enrichSignupRequestRow(row, optionMap, trialMap, teacherNames),
+		applicant: signupApplicantForEmail(row.email, applicantMap),
+	}));
 }

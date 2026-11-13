@@ -10,6 +10,7 @@ import {
 	mapLoadedAgreementRow,
 } from '@/lib/agreements/wizardLoadHelpers';
 import { saveWizardAgreement, type WizardSaveForm } from '@/lib/agreements/wizardSaveHelpers';
+import { agreementRoomNameFromJoin } from '@/lib/email/sendAgreementCreatedMailsHelpers';
 import type { AgreementTableRow, LessonFrequency, WizardTeacherInfo } from '@/types/lesson-agreements';
 
 type AgreementLoadParams = {
@@ -76,7 +77,7 @@ async function loadTeacherSlots(params: TeacherSlotsLoadParams): Promise<SlotWit
 	const [avail, agreements] = await Promise.all([
 		supabase
 			.from('teacher_availability')
-			.select('day_of_week, start_time, end_time')
+			.select('day_of_week, start_time, end_time, rooms(name)')
 			.eq('teacher_user_id', params.teacherUserId),
 		supabase
 			.from('lesson_agreements')
@@ -102,10 +103,17 @@ async function loadTeacherSlots(params: TeacherSlotsLoadParams): Promise<SlotWit
 			duration_minutes: a.duration_minutes,
 		}));
 
+	const availabilitySlots = (avail.data ?? []).map((row) => ({
+		day_of_week: row.day_of_week,
+		start_time: row.start_time,
+		end_time: row.end_time,
+		room_name: agreementRoomNameFromJoin(row.rooms),
+	}));
+
 	return getSlotStatuses(
 		new Date(params.startDate),
 		new Date(params.endDate),
-		avail.data ?? [],
+		availabilitySlots,
 		filteredAgreements,
 		params.selectedLessonType.duration_minutes,
 		params.selectedLessonType.frequency,

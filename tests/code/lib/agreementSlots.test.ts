@@ -10,6 +10,27 @@ import {
 const mondayAvail: AvailabilitySlot[] = [{ day_of_week: 1, start_time: '09:00', end_time: '11:00' }];
 
 describe('getSlotStatuses', () => {
+	it('copies the availability room name onto each lesson slot', () => {
+		const periodStart = new Date('2026-09-07T12:00:00');
+		const periodEnd = new Date('2026-09-28T12:00:00');
+		const availability: AvailabilitySlot[] = [
+			{ day_of_week: 1, start_time: '09:00', end_time: '11:00', room_name: 'Studio' },
+		];
+		const result = getSlotStatuses(periodStart, periodEnd, availability, [], 60, 'weekly');
+		const nine = result.find((slot) => slot.start_time === '09:00');
+		const ten = result.find((slot) => slot.start_time === '10:00');
+		expect(nine?.roomName).toBe('Studio');
+		expect(ten?.roomName).toBe('Studio');
+	});
+
+	it('leaves the lesson slot room empty when the availability window has none', () => {
+		const periodStart = new Date('2026-09-07T12:00:00');
+		const periodEnd = new Date('2026-09-28T12:00:00');
+		const result = getSlotStatuses(periodStart, periodEnd, mondayAvail, [], 60, 'weekly');
+		const nine = result.find((slot) => slot.start_time === '09:00');
+		expect(nine?.roomName).toBeNull();
+	});
+
 	it('marks slots free when there are no agreements', () => {
 		const periodStart = new Date('2026-09-07T12:00:00');
 		const periodEnd = new Date('2026-09-28T12:00:00');

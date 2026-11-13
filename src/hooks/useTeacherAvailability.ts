@@ -8,8 +8,6 @@ export function useTeacherAvailability(teacherUserId: string | null | undefined,
 	const loadAvailability = useCallback(async () => {
 		if (!enabled || !teacherUserId) return;
 
-		setLoading(true);
-
 		const result = await fetchTeacherAvailability(teacherUserId);
 		if (result.error) {
 			setLoading(false);
@@ -20,11 +18,29 @@ export function useTeacherAvailability(teacherUserId: string | null | undefined,
 		setLoading(false);
 	}, [enabled, teacherUserId]);
 
+	const applyLocalAvailabilityTimes = useCallback(
+		(blockId: string, times: Pick<TeacherAvailability, 'start_time' | 'end_time' | 'room_id'>) => {
+			setAvailability((rows) =>
+				rows.map((row) =>
+					row.id === blockId
+						? {
+								...row,
+								start_time: times.start_time,
+								end_time: times.end_time,
+								room_id: times.room_id,
+							}
+						: row,
+				),
+			);
+		},
+		[],
+	);
+
 	useEffect(() => {
 		if (enabled) {
 			void loadAvailability();
 		}
 	}, [enabled, loadAvailability]);
 
-	return { availability, loading, loadAvailability };
+	return { availability, loading, loadAvailability, applyLocalAvailabilityTimes };
 }

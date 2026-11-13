@@ -149,6 +149,14 @@ export const TEACHER_AVAILABILITY = {
 	TEACHER_HENRY: 3, // Tue 09:00-14:00, Wed 15:00-19:00, Fri 09:00-15:00
 	TEACHER_IRIS: 3, // Tue 14:00-17:00, Wed 09:00-15:00, Thu 12:00-19:00
 	TEACHER_JACK: 2, // Tue 10:00-14:00, Thu 10:00-14:00 (no students but has availability)
+
+	/** Lesson-day slots in seeds/test.sql that reference a room. Extra slots stay unassigned. */
+	WITH_ROOM: 17,
+} as const;
+
+/** Room ids from supabase/seeds/rooms.sql used by teacher availability. */
+export const ROOMS = {
+	DRUMLOKAAL: '707ee156-f622-450f-8c57-413177cc9cb4',
 } as const;
 
 /**

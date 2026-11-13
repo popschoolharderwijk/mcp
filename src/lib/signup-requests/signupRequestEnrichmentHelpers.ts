@@ -1,12 +1,9 @@
+import { formatLessonOptionSummary } from '@/lib/frequencies';
 import type { SignupRequestRowBase } from '@/lib/signup-requests/signupRequestsPageHelpers';
+import type { LessonFrequency } from '@/types/lesson-agreements';
+import type { User } from '@/types/users';
 
-function formatLessonTypeOptionLabel(option: {
-	duration_minutes: number;
-	frequency: string;
-	price_per_lesson: number;
-}): string {
-	return `${option.duration_minutes} min · ${option.frequency} · €${option.price_per_lesson}`;
-}
+export type SignupApplicantProfile = Pick<User, 'user_id' | 'first_name' | 'last_name' | 'email' | 'avatar_url'>;
 
 function formatTeacherDisplayName(firstName: string | null, lastName: string | null): string {
 	return `${firstName ?? ''} ${lastName ?? ''}`.trim() || 'Docent';
@@ -38,13 +35,13 @@ export function buildOptionLabelMap(
 	options: Array<{
 		id: string;
 		duration_minutes: number;
-		frequency: string;
+		frequency: LessonFrequency;
 		price_per_lesson: number;
 	}> | null,
 ): Map<string, string> {
 	const optionMap = new Map<string, string>();
 	for (const option of options ?? []) {
-		optionMap.set(option.id, formatLessonTypeOptionLabel(option));
+		optionMap.set(option.id, formatLessonOptionSummary(option));
 	}
 	return optionMap;
 }
@@ -77,6 +74,46 @@ export function buildTeacherNameMap(
 		teacherNames.set(profile.user_id, formatTeacherDisplayName(profile.first_name, profile.last_name));
 	}
 	return teacherNames;
+}
+
+export function buildSignupApplicantEmailOrFilter(emails: string[]): string | null {
+	const unique = [...new Set(emails.map((email) => email.trim().toLowerCase()).filter((email) => email.length > 0))];
+	if (unique.length === 0) return null;
+	return unique.map((email) => `email.ilike."${email.replace(/"/g, '')}"`).join(',');
+}
+
+export function buildSignupApplicantMap(
+	profiles: SignupApplicantProfile[] | null,
+): Map<string, SignupApplicantProfile> {
+	const applicants = new Map<string, SignupApplicantProfile>();
+	for (const profile of profiles ?? []) {
+		const email = profile.email.trim().toLowerCase();
+		if (!email || applicants.has(email)) continue;
+		applicants.set(email, profile);
+	}
+	return applicants;
+}
+
+export function signupApplicantForEmail(
+	email: string,
+	applicants: Map<string, SignupApplicantProfile>,
+): SignupApplicantProfile | null {
+	return applicants.get(email.trim().toLowerCase()) ?? null;
+}
+
+export function signupApplicantDisplayProfile(row: {
+	first_name: string;
+	last_name: string;
+	email: string;
+	applicant?: SignupApplicantProfile | null;
+}): Pick<User, 'first_name' | 'last_name' | 'email' | 'avatar_url'> & { user_id?: string } {
+	if (row.applicant) return row.applicant;
+	return {
+		first_name: row.first_name,
+		last_name: row.last_name,
+		email: row.email,
+		avatar_url: null,
+	};
 }
 
 export function collectTeacherUserIds(

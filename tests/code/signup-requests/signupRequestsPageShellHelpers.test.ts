@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'bun:test';
+import { signupRequestMatchesStatusFilter } from '../../../src/lib/signup-requests/signupRequestStatuses';
 import {
 	buildScheduleTrialSignupRequestPayload,
+	buildSignupRequestStatusQuickFilter,
 	resolveSignupRequestsPageGate,
-	resolveSignupStatusFilterVariant,
 } from '../../../src/lib/signup-requests/signupRequestsPageShellHelpers';
 
 const signupRow = {
@@ -47,13 +48,39 @@ describe('resolveSignupRequestsPageGate', () => {
 	});
 });
 
-describe('resolveSignupStatusFilterVariant', () => {
-	it('returns default for active filter', () => {
-		expect(resolveSignupStatusFilterVariant('pending', 'pending')).toBe('default');
+describe('buildSignupRequestStatusQuickFilter', () => {
+	it('lists open plus every signup status with the shared Dutch labels', () => {
+		const group = buildSignupRequestStatusQuickFilter('open', () => undefined);
+		expect(group.label).toBe('Status');
+		expect(group.value).toBe('open');
+		expect(group.showAllOption).toBe(true);
+		expect(group.allOptionLabel).toBe('Alle');
+		expect(group.options.map((option) => option.label)).toEqual([
+			'Open',
+			'In afwachting',
+			'Proefles ingepland',
+			'Goedgekeurd',
+			'Afgewezen',
+		]);
+	});
+});
+
+describe('signupRequestMatchesStatusFilter', () => {
+	it('keeps every status when no filter is selected', () => {
+		expect(signupRequestMatchesStatusFilter('approved', null)).toBe(true);
+		expect(signupRequestMatchesStatusFilter('rejected', null)).toBe(true);
 	});
 
-	it('returns outline for inactive filter', () => {
-		expect(resolveSignupStatusFilterVariant('pending', 'all')).toBe('outline');
+	it('treats open as pending and trial scheduled', () => {
+		expect(signupRequestMatchesStatusFilter('pending', 'open')).toBe(true);
+		expect(signupRequestMatchesStatusFilter('trial_scheduled', 'open')).toBe(true);
+		expect(signupRequestMatchesStatusFilter('approved', 'open')).toBe(false);
+		expect(signupRequestMatchesStatusFilter('rejected', 'open')).toBe(false);
+	});
+
+	it('matches one status exactly', () => {
+		expect(signupRequestMatchesStatusFilter('rejected', 'rejected')).toBe(true);
+		expect(signupRequestMatchesStatusFilter('pending', 'rejected')).toBe(false);
 	});
 });
 

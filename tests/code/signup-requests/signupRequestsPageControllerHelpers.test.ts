@@ -59,6 +59,7 @@ function mockSignupRequestRow(overrides: Partial<SignupRequestRowBase> = {}): Si
 		trial_scheduled_time: null,
 		trial_teacher_name: null,
 		...overrides,
+		applicant: overrides.applicant ?? null,
 	};
 }
 

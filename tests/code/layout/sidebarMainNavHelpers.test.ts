@@ -7,12 +7,15 @@ describe('buildSidebarMainNavItems', () => {
 		collapsed: false,
 		isStudent: false,
 		isTeacher: false,
+		teacherUserId: null as string | null,
 		showTeachersNav: false,
 		showStudentsNav: false,
 		showReportsNav: false,
 		showProjectsNav: false,
 		showAdminNav: false,
 	};
+
+	const teacherUserId = '40000000-0001-0000-0000-000000000000';
 
 	it('returns student nav items for students', () => {
 		const items = buildSidebarMainNavItems({ ...baseVisibility, isStudent: true });
@@ -24,7 +27,18 @@ describe('buildSidebarMainNavItems', () => {
 		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda']);
 	});
 
-	it('includes teacher my-students link for teachers without admin teacher nav', () => {
+	it('includes teacher my-profile and my-students for teachers without admin teacher nav', () => {
+		const items = buildSidebarMainNavItems({
+			...baseVisibility,
+			isTeacher: true,
+			teacherUserId,
+			showReportsNav: true,
+		});
+		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'my-profile', 'my-students', 'reports']);
+		expect(items.find((item) => item.key === 'my-profile')?.href).toBe(`/teachers/${teacherUserId}/profile`);
+	});
+
+	it('omits teacher my-profile when teacherUserId is missing', () => {
 		const items = buildSidebarMainNavItems({ ...baseVisibility, isTeacher: true, showReportsNav: true });
 		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'my-students', 'reports']);
 	});

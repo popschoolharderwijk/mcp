@@ -2,6 +2,11 @@
 
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
+	AGREEMENT_MAIL_UNKNOWN_ROOM,
+	agreementRoomNameFromJoin,
+	resolveAgreementRoomLabel,
+} from '../../../src/lib/email/sendAgreementCreatedMailsHelpers.ts';
+import {
 	buildAgreementCreatedPaymentMailVars,
 	buildBillingRecipientBundle,
 	buildPaymentLinkUrl,
@@ -104,12 +109,14 @@ export async function loadAgreementCreatedPaymentMailVars(
 			teacher: null,
 			lessonTypeName: '',
 			paymentCtaMarkdown,
+			roomLabel: AGREEMENT_MAIL_UNKNOWN_ROOM,
 		});
 	}
 
-	const [{ data: student }, { data: teacher }] = await Promise.all([
+	const [{ data: student }, { data: teacher }, roomLabel] = await Promise.all([
 		admin.from('profiles').select('first_name, last_name').eq('user_id', agreement.student_user_id).maybeSingle(),
 		admin.from('profiles').select('first_name, last_name').eq('user_id', agreement.teacher_user_id).maybeSingle(),
+		loadPaymentMailRoomLabel(admin, agreement.teacher_user_id, agreement.day_of_week, agreement.start_time),
 	]);
 
 	return buildAgreementCreatedPaymentMailVars({
@@ -124,7 +131,35 @@ export async function loadAgreementCreatedPaymentMailVars(
 		teacher,
 		lessonTypeName: extractAgreementPaymentMailLessonTypeName(agreement.lesson_types),
 		paymentCtaMarkdown,
+		roomLabel,
 	});
+}
+
+async function loadPaymentMailRoomLabel(
+	admin: SupabaseClient,
+	teacherUserId: string,
+	dayOfWeek: number,
+	lessonStart: string,
+): Promise<string> {
+	const { data, error } = await admin
+		.from('teacher_availability')
+		.select('start_time, end_time, rooms(name)')
+		.eq('teacher_user_id', teacherUserId)
+		.eq('day_of_week', dayOfWeek);
+
+	if (error || !data) {
+		if (error) console.error('agreement_created: lokaal niet geladen', error);
+		return AGREEMENT_MAIL_UNKNOWN_ROOM;
+	}
+
+	return resolveAgreementRoomLabel(
+		data.map((row) => ({
+			start_time: row.start_time,
+			end_time: row.end_time,
+			room_name: agreementRoomNameFromJoin(row.rooms),
+		})),
+		lessonStart,
+	);
 }
 
 export async function countRecentPaymentLinkRequests(

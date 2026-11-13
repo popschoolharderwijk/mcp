@@ -3,6 +3,7 @@ export interface SidebarNavVisibilityInput {
 	isSiteAdmin: boolean;
 	isPrivileged: boolean;
 	isTeacher: boolean;
+	teacherUserId: string | null;
 	hasOwnedProjects: boolean;
 	ownedProjectsLoading: boolean;
 }
@@ -10,6 +11,7 @@ export interface SidebarNavVisibilityInput {
 export interface SidebarNavVisibilityState {
 	isStudent: boolean;
 	isTeacher: boolean;
+	teacherUserId: string | null;
 	showAdminNav: boolean;
 	showTeachersNav: boolean;
 	showStudentsNav: boolean;
@@ -18,7 +20,8 @@ export interface SidebarNavVisibilityState {
 }
 
 export function computeSidebarNavVisibility(input: SidebarNavVisibilityInput): SidebarNavVisibilityState {
-	const { isAdmin, isSiteAdmin, isPrivileged, isTeacher, hasOwnedProjects, ownedProjectsLoading } = input;
+	const { isAdmin, isSiteAdmin, isPrivileged, isTeacher, teacherUserId, hasOwnedProjects, ownedProjectsLoading } =
+		input;
 	const isStudent = !isPrivileged && !isTeacher;
 	const showAdminNav = isAdmin || isSiteAdmin;
 	const showTeachersNav = isAdmin || isSiteAdmin;
@@ -30,6 +33,7 @@ export function computeSidebarNavVisibility(input: SidebarNavVisibilityInput): S
 	return {
 		isStudent,
 		isTeacher,
+		teacherUserId,
 		showAdminNav,
 		showTeachersNav,
 		showStudentsNav,

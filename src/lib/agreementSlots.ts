@@ -8,6 +8,7 @@ export interface AvailabilitySlot {
 	day_of_week: number;
 	start_time: string;
 	end_time: string;
+	room_name?: string | null;
 }
 
 /** Minimal agreement shape used to compute slot occupancy in a period */
@@ -29,6 +30,7 @@ export interface SlotWithStatus {
 	status: SlotStatus;
 	totalOccurrences: number;
 	occupiedOccurrences: number;
+	roomName?: string | null;
 }
 
 /** Whether an agreement has an occurrence on this date (given its frequency and day) */
@@ -124,6 +126,7 @@ function buildSlotWithStatus(
 		status: slotStatusFromOccupancy(occupiedCount, totalOccurrences),
 		totalOccurrences,
 		occupiedOccurrences: occupiedCount,
+		roomName: avail.room_name ?? null,
 	};
 }
 

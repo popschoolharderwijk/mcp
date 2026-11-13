@@ -14,6 +14,7 @@ import {
 } from './confirmStepShared';
 import {
 	ConfirmInitialAgreementRows,
+	ConfirmRoomDisplayRow,
 	ConfirmSelectedLessonTypeRows,
 	ConfirmSlotDiffValue,
 	ConfirmStepDiffRow,
@@ -127,6 +128,7 @@ function ConfirmStepNewAgreementCard({
 					changed={slotChanged}
 					newValue={<ConfirmSlotDiffValue slot={effectiveSlot} />}
 				/>
+				<ConfirmRoomDisplayRow slot={effectiveSlot} />
 			</CardContent>
 		</Card>
 	);

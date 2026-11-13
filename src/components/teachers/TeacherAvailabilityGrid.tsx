@@ -1,11 +1,14 @@
 import { TeacherAvailabilityDayColumn } from '@/components/teachers/TeacherAvailabilityDayColumn';
 import type { TeacherAvailabilitySectionViewModel } from '@/components/teachers/useTeacherAvailabilitySection';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DAY_NAMES_DISPLAY } from '@/lib/date/day-index';
 import {
 	type AvailabilityBlock,
+	type AvailabilityTimeForm,
+	availabilityIncludesUnassignedRoom,
+	availabilityUnassignedRoomLegendSwatchClass,
 	getAvailabilityHourTopPercent,
-	getTeacherAvailabilityCardDescription,
+	roomsUsedInAvailability,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 
 const dayNames = DAY_NAMES_DISPLAY;
@@ -13,11 +16,21 @@ const dayNames = DAY_NAMES_DISPLAY;
 interface TeacherAvailabilityGridProps {
 	vm: TeacherAvailabilitySectionViewModel;
 	onEmptySlotClick: (dayIndex: number, time: string) => void;
+	onCreateRangeCommit: (dayIndex: number, form: AvailabilityTimeForm) => void;
 	onBlockClick: (block: AvailabilityBlock) => void;
+	onBlockTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
 }
 
-export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: TeacherAvailabilityGridProps) {
-	const { canEdit, agenda, timeSlots, hourLabels, availabilityBlocks } = vm;
+export function TeacherAvailabilityGrid({
+	vm,
+	onEmptySlotClick,
+	onCreateRangeCommit,
+	onBlockClick,
+	onBlockTimesCommit,
+}: TeacherAvailabilityGridProps) {
+	const { agenda, rooms, timeSlots, hourLabels, availabilityBlocks, canEdit } = vm;
+	const legendRooms = roomsUsedInAvailability(rooms, availabilityBlocks);
+	const showUnassignedRoom = availabilityIncludesUnassignedRoom(availabilityBlocks);
 
 	return (
 		<>
@@ -25,21 +38,14 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 				.availability-block { container-type: size; container-name: ab; }
 				.availability-block .block-content-single { display: flex; }
 				.availability-block .block-content-double { display: none; }
-				.availability-block .block-edit-icon { display: none; }
-				.availability-block .block-edit-icon-small { display: block; }
 				@container ab (min-height: 2.5rem) {
 					.availability-block .block-content-single { display: none; }
 					.availability-block .block-content-double { display: flex; }
-				}
-				@container ab (min-height: 1.5rem) {
-					.availability-block .block-edit-icon { display: block; }
-					.availability-block .block-edit-icon-small { display: none; }
 				}
 			`}</style>
 			<Card>
 				<CardHeader className="pb-3">
 					<CardTitle>Beschikbaarheid</CardTitle>
-					<CardDescription>{getTeacherAvailabilityCardDescription(canEdit)}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex border-b border-border pb-2 mb-1">
@@ -78,16 +84,29 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 								agenda={agenda}
 								canEdit={canEdit}
 								onEmptySlotClick={onEmptySlotClick}
+								onCreateRangeCommit={onCreateRangeCommit}
 								onBlockClick={onBlockClick}
+								onBlockTimesCommit={onBlockTimesCommit}
 							/>
 						))}
 					</div>
 
-					<div className="mt-3 pt-3 border-t border-border flex items-center gap-3 text-xs text-muted-foreground">
-						<div className="flex items-center gap-1.5">
-							<div className="h-3 w-5 bg-emerald-500/80 rounded-sm" />
-							<span>Beschikbaar</span>
-						</div>
+					<div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground">
+						{legendRooms.map((room) => (
+							<div key={room.id} className="flex items-center gap-1.5">
+								<div
+									className="h-3 w-5 rounded-sm border border-black/10"
+									style={{ backgroundColor: room.color }}
+								/>
+								<span>{room.name}</span>
+							</div>
+						))}
+						{showUnassignedRoom && (
+							<div className="flex items-center gap-1.5">
+								<div className={availabilityUnassignedRoomLegendSwatchClass()} />
+								<span>Geen lokaal</span>
+							</div>
+						)}
 					</div>
 				</CardContent>
 			</Card>

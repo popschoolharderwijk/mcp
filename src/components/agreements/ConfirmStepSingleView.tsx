@@ -5,6 +5,7 @@ import type { UserOptional } from '@/types/users';
 import { ConfirmStepRow } from './ConfirmStepRow';
 import {
 	ConfirmPeriodDisplayRow,
+	ConfirmRoomDisplayRow,
 	ConfirmSelectedLessonTypeRows,
 	ConfirmSlotDisplayRow,
 	ConfirmTeacherDisplayRow,
@@ -52,6 +53,7 @@ export function ConfirmStepSingleView({
 			<ConfirmPeriodDisplayRow startDate={startDate} endDate={endDate} />
 			<ConfirmTeacherDisplayRow teacher={selectedTeacher} />
 			<ConfirmSlotDisplayRow slot={effectiveSlot} />
+			<ConfirmRoomDisplayRow slot={effectiveSlot} />
 		</div>
 	);
 }

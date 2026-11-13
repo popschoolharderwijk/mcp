@@ -3,7 +3,7 @@ import { createClientAs } from '../../db';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { TEACHER_AVAILABILITY } from '../seed-data-constants';
+import { ROOMS, TEACHER_AVAILABILITY } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 const aliceTeacherUserId = fixtures.requireTeacherId(TestUsers.TEACHER_ALICE);
@@ -39,6 +39,7 @@ describe('RLS: teacher_availability SELECT', () => {
 		const data = unwrap(await db.from('teacher_availability').select('*'));
 
 		expect(data).toHaveLength(TEACHER_AVAILABILITY.TOTAL);
+		expect(data.filter((row) => row.room_id !== null)).toHaveLength(TEACHER_AVAILABILITY.WITH_ROOM);
 	});
 
 	it('admin sees all availability', async () => {
@@ -64,6 +65,13 @@ describe('RLS: teacher_availability SELECT', () => {
 
 		expect(data).toHaveLength(TEACHER_AVAILABILITY.TEACHER_ALICE);
 		expect(data.every((a) => a.teacher_user_id === aliceTeacherUserId)).toBe(true);
+		expect(data).toContainEqual(
+			expect.objectContaining({
+				teacher_user_id: aliceTeacherUserId,
+				day_of_week: 1,
+				room_id: ROOMS.DRUMLOKAAL,
+			}),
+		);
 	});
 
 	it('teacher cannot see other teachers availability', async () => {

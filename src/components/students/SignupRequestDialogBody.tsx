@@ -1,18 +1,16 @@
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { Badge } from '@/components/ui/badge';
+import { UserDisplay } from '@/components/ui/user-display';
 import { formatDbDateLong } from '@/lib/date/date-format';
 import {
-	formatSignupRequestFullName,
+	type SignupApplicantProfile,
+	signupApplicantDisplayProfile,
+} from '@/lib/signup-requests/signupRequestEnrichmentHelpers';
+import { SIGNUP_REQUEST_STATUS_LABELS } from '@/lib/signup-requests/signupRequestStatuses';
+import {
 	hasSignupRequestParentInfo,
 	resolveSignupRequestStatusVariant,
 } from '@/lib/students/signupRequestDialogHelpers';
-
-const STATUS_LABEL: Record<SignupRequestDetail['status'], string> = {
-	pending: 'In behandeling',
-	approved: 'Goedgekeurd',
-	rejected: 'Afgewezen',
-	trial_scheduled: 'Proefles ingepland',
-};
 
 function SignupRequestField({ label, value }: { label: string; value: React.ReactNode }) {
 	return (
@@ -27,7 +25,7 @@ function SignupRequestStatusHeader({ request }: { request: SignupRequestDetail }
 	const statusVariant = resolveSignupRequestStatusVariant(request.status);
 	return (
 		<div className="flex items-center gap-2">
-			<Badge variant={statusVariant}>{STATUS_LABEL[request.status]}</Badge>
+			<Badge variant={statusVariant}>{SIGNUP_REQUEST_STATUS_LABELS[request.status]}</Badge>
 			{request.processed_at && (
 				<span className="text-xs text-muted-foreground">
 					Verwerkt op {formatDbDateLong(request.processed_at)}
@@ -37,13 +35,18 @@ function SignupRequestStatusHeader({ request }: { request: SignupRequestDetail }
 	);
 }
 
-function SignupRequestMainFields({ request }: { request: SignupRequestDetail }) {
+type SignupRequestDialogRequest = SignupRequestDetail & {
+	applicant?: SignupApplicantProfile | null;
+};
+
+function SignupRequestMainFields({ request }: { request: SignupRequestDialogRequest }) {
 	return (
 		<div className="grid grid-cols-2 gap-3">
+			<div className="col-span-2">
+				<UserDisplay profile={signupApplicantDisplayProfile(request)} showEmail />
+			</div>
 			<SignupRequestField label="Lessoort" value={request.lesson_type_name} />
 			<SignupRequestField label="Groep" value={request.lesson_group_name} />
-			<SignupRequestField label="Naam" value={formatSignupRequestFullName(request)} />
-			<SignupRequestField label="Email" value={request.email} />
 			<SignupRequestField label="Telefoon" value={request.phone_number} />
 			<SignupRequestField
 				label="Geboortedatum"
@@ -77,7 +80,7 @@ function SignupRequestNotesSection({ request }: { request: SignupRequestDetail }
 	);
 }
 
-export function SignupRequestDialogBody({ request }: { request: SignupRequestDetail }) {
+export function SignupRequestDialogBody({ request }: { request: SignupRequestDialogRequest }) {
 	return (
 		<div className="space-y-4 py-2">
 			<SignupRequestStatusHeader request={request} />

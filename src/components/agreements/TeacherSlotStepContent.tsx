@@ -40,6 +40,7 @@ interface TeacherSlotStepContentProps {
 	isTeacherOwnStudent: boolean;
 	onTeacherChange: (userId: string | null) => void;
 	onSlotClick: (slot: SlotWithStatus) => void;
+	onReloadSlots?: () => void;
 }
 
 export function TeacherSlotStepContent({
@@ -54,6 +55,7 @@ export function TeacherSlotStepContent({
 	isTeacherOwnStudent,
 	onTeacherChange,
 	onSlotClick,
+	onReloadSlots,
 }: TeacherSlotStepContentProps) {
 	const slotsByDay = useMemo(() => groupTeacherSlotsByDay(slotsWithStatus), [slotsWithStatus]);
 
@@ -69,11 +71,11 @@ export function TeacherSlotStepContent({
 			/>
 			<div className="space-y-2">
 				<Label>Tijdslot</Label>
-				{loadingStep3 ? (
-					<SectionSkeleton className="py-6" />
-				) : (
-					<div className="space-y-2">
-						<TeacherSlotLegend />
+				<div className="space-y-2">
+					<TeacherSlotLegend onReload={onReloadSlots} reloading={loadingStep3} />
+					{loadingStep3 && slotsWithStatus.length === 0 ? (
+						<SectionSkeleton className="py-6" />
+					) : (
 						<ScrollArea className="h-72 rounded-md border">
 							<div className="p-2 space-y-3">
 								{slotsWithStatus.length === 0 ? (
@@ -98,8 +100,8 @@ export function TeacherSlotStepContent({
 								)}
 							</div>
 						</ScrollArea>
-					</div>
-				)}
+					)}
+				</div>
 			</div>
 		</div>
 	);

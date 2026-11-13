@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { LuClipboardList } from 'react-icons/lu';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { SIGNUP_REQUEST_STATUS_LABELS } from '@/lib/signup-requests/signupRequestStatuses';
 import { cn } from '@/lib/utils';
 import { type SignupRequestDetail, SignupRequestDialog } from './SignupRequestDialog';
 
@@ -9,13 +10,6 @@ interface SignupRequestItemProps {
 	request: SignupRequestDetail;
 	className?: string;
 }
-
-const STATUS_LABEL: Record<SignupRequestDetail['status'], string> = {
-	pending: 'In behandeling',
-	approved: 'Goedgekeurd',
-	rejected: 'Afgewezen',
-	trial_scheduled: 'Proefles ingepland',
-};
 
 const STATUS_BADGE_VARIANT: Record<SignupRequestDetail['status'], 'default' | 'secondary' | 'outline'> = {
 	pending: 'default',
@@ -53,7 +47,7 @@ export function SignupRequestItem({ request, className }: SignupRequestItemProps
 									variant={STATUS_BADGE_VARIANT[request.status]}
 									className="w-fit text-[10px] px-1 py-0"
 								>
-									{STATUS_LABEL[request.status]}
+									{SIGNUP_REQUEST_STATUS_LABELS[request.status]}
 								</Badge>
 							</div>
 						</button>

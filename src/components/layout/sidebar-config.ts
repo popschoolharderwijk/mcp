@@ -14,6 +14,7 @@ export const administrationNavItems = [{ href: '/mandates', label: NAV_LABELS.ma
 export const adminNavItems = [
 	{ href: '/users', label: NAV_LABELS.users, icon: NAV_ICONS.users },
 	{ href: '/lesson-types', label: NAV_LABELS.lessonTypes, icon: NAV_ICONS.lessonTypes },
+	{ href: '/rooms', label: NAV_LABELS.rooms, icon: NAV_ICONS.rooms },
 	{ href: '/announcements', label: NAV_LABELS.announcements, icon: NAV_ICONS.announcements },
 	{ href: '/manual', label: NAV_LABELS.manual, icon: NAV_ICONS.manual },
 	{ href: '/settings', label: NAV_LABELS.settings, icon: NAV_ICONS.settings },

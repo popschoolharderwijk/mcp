@@ -224,6 +224,7 @@ export function buildAgreementCreatedPaymentMailVars(input: {
 	teacher: AgreementPaymentMailProfile | null | undefined;
 	lessonTypeName: string;
 	paymentCtaMarkdown: string;
+	roomLabel: string;
 }): Record<string, string> {
 	const { agreement } = input;
 	return {
@@ -242,6 +243,7 @@ export function buildAgreementCreatedPaymentMailVars(input: {
 		prijs_per_les: formatAgreementPaymentMailPrice(agreement.price_per_lesson),
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementPaymentMailTime(agreement.start_time),
+		lokaal: input.roomLabel,
 		startdatum: formatAgreementPaymentMailDate(agreement.start_date),
 		betaalmethode: STRIPE_PAYMENT_METHOD_LABEL,
 		betaalblok: input.paymentCtaMarkdown,

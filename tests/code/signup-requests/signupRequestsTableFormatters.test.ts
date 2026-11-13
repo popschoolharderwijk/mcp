@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'bun:test';
+import { SIGNUP_REQUEST_STATUS_LABELS } from '../../../src/lib/signup-requests/signupRequestStatuses';
 import {
 	canScheduleTrialForSignupRequest,
 	formatSignupTrialScheduledLine,
 	getSignupLessonTypeCellContent,
-	getSignupStatusDisplayLabel,
 	isSignupRequestActionable,
 } from '../../../src/lib/signup-requests/signupRequestsTableFormatters';
 
@@ -57,13 +57,12 @@ describe('getSignupLessonTypeCellContent', () => {
 	});
 });
 
-describe('getSignupStatusDisplayLabel', () => {
-	it('maps trial scheduled status to Dutch label', () => {
-		expect(getSignupStatusDisplayLabel('trial_scheduled')).toBe('proefles ingepland');
-	});
-
-	it('returns other statuses unchanged', () => {
-		expect(getSignupStatusDisplayLabel('pending')).toBe('pending');
+describe('SIGNUP_REQUEST_STATUS_LABELS', () => {
+	it('uses Dutch labels for every signup status', () => {
+		expect(SIGNUP_REQUEST_STATUS_LABELS.pending).toBe('In afwachting');
+		expect(SIGNUP_REQUEST_STATUS_LABELS.approved).toBe('Goedgekeurd');
+		expect(SIGNUP_REQUEST_STATUS_LABELS.rejected).toBe('Afgewezen');
+		expect(SIGNUP_REQUEST_STATUS_LABELS.trial_scheduled).toBe('Proefles ingepland');
 	});
 });
 

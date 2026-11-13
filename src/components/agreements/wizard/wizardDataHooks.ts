@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { WizardStep } from '@/components/agreements/WizardStepIndicator';
 import { supabase } from '@/integrations/supabase/client';
 import type { SlotWithStatus } from '@/lib/agreementSlots';
@@ -10,6 +11,51 @@ import type {
 	LessonTypeOptionSnapshot,
 	WizardTeacherInfo,
 } from '@/types/lesson-agreements';
+
+type ReloadTeacherSlotsOptions = { feedback?: boolean };
+
+type TeacherSlotsLoadResult = {
+	loadFailed: boolean;
+	statuses: SlotWithStatus[] | null;
+};
+
+function slotsOrEmpty(statuses: SlotWithStatus[] | null): SlotWithStatus[] {
+	if (!statuses) return [];
+	return statuses;
+}
+
+function wantsTeacherSlotsReloadFeedback(options: ReloadTeacherSlotsOptions | undefined): boolean {
+	if (!options) return false;
+	return options.feedback === true;
+}
+
+function notifyTeacherSlotsReloadResult(
+	options: ReloadTeacherSlotsOptions | undefined,
+	result: TeacherSlotsLoadResult,
+): void {
+	if (!wantsTeacherSlotsReloadFeedback(options)) return;
+	if (result.loadFailed) {
+		toast.error('Fout bij laden tijdslotten');
+		return;
+	}
+	if (result.statuses === null) return;
+	toast.success('Tijdslotten vernieuwd');
+}
+
+async function loadTeacherSlotsStatuses(params: {
+	teacherUserId: string;
+	startDate: string;
+	endDate: string;
+	initialAgreement: AgreementTableRow | null;
+	selectedLessonType: { duration_minutes: number; frequency: LessonFrequency };
+}): Promise<TeacherSlotsLoadResult> {
+	try {
+		const statuses = await runWizardLoad('teacherSlots', params);
+		return { loadFailed: false, statuses };
+	} catch {
+		return { loadFailed: true, statuses: null };
+	}
+}
 
 export function useWizardAgreement(id: string | undefined, isEditMode: boolean) {
 	const [agreement, setAgreement] = useState<AgreementTableRow | null>(null);
@@ -81,40 +127,41 @@ export function useWizardTeacherSlots(
 ) {
 	const [slots, setSlots] = useState<SlotWithStatus[]>([]);
 	const [loading, setLoading] = useState(false);
+	const requestIdRef = useRef(0);
+
+	const reloadSlots = useCallback(
+		async (options?: ReloadTeacherSlotsOptions) => {
+			if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
+				// Drop any in-flight load so it cannot write slots after this clear.
+				requestIdRef.current += 1;
+				setSlots([]);
+				setLoading(false);
+				return;
+			}
+
+			const requestId = ++requestIdRef.current;
+			setLoading(true);
+			const result = await loadTeacherSlotsStatuses({
+				teacherUserId,
+				startDate,
+				endDate,
+				initialAgreement,
+				selectedLessonType,
+			});
+
+			if (requestId !== requestIdRef.current) return;
+			setSlots(slotsOrEmpty(result.statuses));
+			setLoading(false);
+			notifyTeacherSlotsReloadResult(options, result);
+		},
+		[step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType],
+	);
 
 	useEffect(() => {
-		if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
-			setSlots([]);
-			setLoading(false);
-			return;
-		}
-		let active = true;
-		setLoading(true);
-		void runWizardLoad('teacherSlots', {
-			teacherUserId,
-			startDate,
-			endDate,
-			initialAgreement,
-			selectedLessonType,
-		})
-			.then((statuses) => {
-				if (!active) return;
-				setSlots(statuses ?? []);
-			})
-			.catch(() => {
-				if (!active) return;
-				setSlots([]);
-			})
-			.finally(() => {
-				if (!active) return;
-				setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
-	}, [step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType]);
+		void reloadSlots();
+	}, [reloadSlots]);
 
-	return { slots, loading };
+	return { slots, loading, reloadSlots };
 }
 
 export function useWizardTeachers(step: WizardStep, lessonTypeId: string | null) {

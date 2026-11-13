@@ -1,5 +1,6 @@
 import { adminOperationalNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
+import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 
 export const ADMIN_SECTION_KEY = 'admin-section';
 export const ADMINISTRATION_SECTION_KEY = 'administration-section';
@@ -23,6 +24,7 @@ export interface SidebarMainNavVisibility {
 	collapsed: boolean;
 	isStudent: boolean;
 	isTeacher: boolean;
+	teacherUserId: string | null;
 	showTeachersNav: boolean;
 	showStudentsNav: boolean;
 	showReportsNav: boolean;
@@ -54,6 +56,15 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 	}
 
 	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
+
+	if (visibility.isTeacher && visibility.teacherUserId) {
+		items.push({
+			key: 'my-profile',
+			href: buildTeacherInfoPath(visibility.teacherUserId),
+			label: NAV_LABELS.myProfile,
+			icon: NAV_ICONS.myProfile,
+		});
+	}
 
 	if (visibility.showTeachersNav) {
 		items.push({
