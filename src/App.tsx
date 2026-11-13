@@ -29,6 +29,8 @@ import Pay from './pages/Pay';
 import Projects from './pages/Projects';
 import PublicSignup from './pages/PublicSignup';
 import Reports from './pages/Reports';
+import RoomInfo from './pages/RoomInfo';
+import Rooms from './pages/Rooms';
 import SignupRequests from './pages/SignupRequests';
 import StripeCheckoutStart from './pages/StripeCheckoutStart';
 import StudentDetail from './pages/StudentDetail';
@@ -75,6 +77,9 @@ const App = () => (
 						<Route path="/lesson-types" element={<LessonTypes />} />
 						<Route path="/lesson-types/new" element={<LessonTypeInfo />} />
 						<Route path="/lesson-types/:id" element={<LessonTypeInfo />} />
+						<Route path="/rooms" element={<Rooms />} />
+						<Route path="/rooms/new" element={<RoomInfo />} />
+						<Route path="/rooms/:id" element={<RoomInfo />} />
 						<Route path="/agreements" element={<Agreements />} />
 						<Route path="/mandates" element={<Mandates />} />
 						<Route path="/mandates/:tab" element={<Mandates />} />

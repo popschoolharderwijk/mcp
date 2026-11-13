@@ -216,6 +216,7 @@ const EXPECTED_FUNCTIONS = [
 	'normalize_trim_text',
 	'policy_exists',
 	'shift_recurring_deviation_to_next_week',
+	'slugify',
 	'submit_trial_decision',
 	'sync_lesson_group_event_participants',
 ];

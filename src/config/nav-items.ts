@@ -5,6 +5,7 @@ import {
 	LuCalendarOff,
 	LuChartBar,
 	LuClipboardList,
+	LuDoorOpen,
 	LuFingerprint,
 	LuFolderOpen,
 	LuGraduationCap,
@@ -41,6 +42,11 @@ const NAV_ITEMS = {
 		label: 'Lessoorten',
 		icon: LuMusic2,
 		description: 'Beheer alle lessoorten en hun configuratie',
+	},
+	rooms: {
+		label: 'Lokalen',
+		icon: LuDoorOpen,
+		description: 'Beheer de lokalen en hun instellingen',
 	},
 	projects: { label: 'Projecten', icon: LuFolderOpen, description: 'Beheer alle projecten' },
 	settings: {

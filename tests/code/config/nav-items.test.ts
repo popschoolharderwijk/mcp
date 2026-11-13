@@ -44,6 +44,7 @@ describe('NAV_DESCRIPTIONS', () => {
 			'myTrial',
 			'projects',
 			'reports',
+			'rooms',
 			'settings',
 			'signupRequests',
 			'students',
