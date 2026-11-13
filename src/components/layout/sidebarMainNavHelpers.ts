@@ -55,6 +55,8 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 		);
 	}
 
+	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
+
 	if (visibility.isTeacher && visibility.teacherUserId) {
 		items.push({
 			key: 'my-profile',
@@ -63,8 +65,6 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 			icon: NAV_ICONS.myProfile,
 		});
 	}
-
-	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
 
 	if (visibility.showTeachersNav) {
 		items.push({

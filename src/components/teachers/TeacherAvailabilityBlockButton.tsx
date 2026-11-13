@@ -1,77 +1,134 @@
-import { LuPencil } from 'react-icons/lu';
-import type { AvailabilityBlock } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
-import { shouldShowAvailabilityBlockTimes } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
-import { formatTime } from '@/lib/time/time-format';
+import { type PointerEvent as ReactPointerEvent, useRef } from 'react';
+import { useTeacherAvailabilityBlockPointer } from '@/components/teachers/useTeacherAvailabilityBlockPointer';
+import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
+import {
+	type AvailabilityBlock,
+	type AvailabilityBlockPointerMode,
+	type AvailabilityTimeForm,
+	availabilityBlockCursorClass,
+} from '@/lib/teachers/teacherAvailabilitySectionHelpers';
+import { cn } from '@/lib/utils';
 
 interface TeacherAvailabilityBlockButtonProps {
 	block: AvailabilityBlock;
 	dayName: string;
+	agenda: AgendaSetting;
 	canEdit: boolean;
 	onClick: (block: AvailabilityBlock) => void;
+	onTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
+}
+
+function AvailabilityBlockTimeLabels(props: { startLabel: string; endLabel: string }) {
+	const { startLabel, endLabel } = props;
+	return (
+		<>
+			<div
+				className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0 pointer-events-none"
+				title={`${startLabel} – ${endLabel}`}
+			>
+				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">{startLabel}</span>
+				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
+			</div>
+			<div
+				className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0 pointer-events-none"
+				title={`${startLabel} – ${endLabel}`}
+			>
+				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">{startLabel}</span>
+				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
+			</div>
+		</>
+	);
+}
+
+function AvailabilityBlockResizeHandles(props: {
+	onBegin: (event: ReactPointerEvent<HTMLElement>, mode: AvailabilityBlockPointerMode) => void;
+	onMove: (event: ReactPointerEvent<HTMLElement>) => void;
+	onEnd: (event: ReactPointerEvent<HTMLElement>) => void;
+}) {
+	return (
+		<>
+			<span
+				className="absolute inset-x-0 top-0 h-2 cursor-ns-resize z-20"
+				onPointerDown={(event) => {
+					if (event.button !== 0) return;
+					props.onBegin(event, 'resize-start');
+				}}
+				onPointerMove={props.onMove}
+				onPointerUp={props.onEnd}
+				onPointerCancel={props.onEnd}
+			/>
+			<span
+				className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize z-20"
+				onPointerDown={(event) => {
+					if (event.button !== 0) return;
+					props.onBegin(event, 'resize-end');
+				}}
+				onPointerMove={props.onMove}
+				onPointerUp={props.onEnd}
+				onPointerCancel={props.onEnd}
+			/>
+		</>
+	);
 }
 
 export function TeacherAvailabilityBlockButton({
 	block,
 	dayName,
+	agenda,
 	canEdit,
 	onClick,
+	onTimesCommit,
 }: TeacherAvailabilityBlockButtonProps) {
-	const startLabel = formatTime(block.startTime);
-	const endLabel = formatTime(block.endTime);
-	const showTimes = shouldShowAvailabilityBlockTimes(block.startTime, block.endTime);
+	const buttonRef = useRef<HTMLButtonElement>(null);
+	const pointer = useTeacherAvailabilityBlockPointer({
+		block,
+		agenda,
+		canEdit,
+		buttonRef,
+		onClick,
+		onTimesCommit,
+	});
 
 	return (
 		<button
+			ref={buttonRef}
 			type="button"
-			className="availability-block absolute left-0.5 right-0.5 bg-emerald-500/80 hover:bg-emerald-500 rounded-md shadow-sm transition-all cursor-pointer group border border-emerald-600/30 focus:outline-none focus:ring-2 focus:ring-white/50 z-10"
+			disabled={pointer.isPendingSave}
+			className={cn(
+				'availability-block absolute left-0.5 right-0.5 rounded-md shadow-sm transition-[opacity,colors] border focus:outline-none focus:ring-2 focus:ring-white/50 z-10 touch-none',
+				pointer.isPendingSave
+					? 'bg-emerald-500/35 border-emerald-600/20 border-dashed'
+					: 'bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600/30',
+				availabilityBlockCursorClass(canEdit, pointer.isDragging, pointer.isPendingSave),
+			)}
 			style={{
-				top: `${block.topPercent}%`,
-				height: `${block.heightPercent}%`,
+				top: `${pointer.geometry.topPercent}%`,
+				height: `${pointer.geometry.heightPercent}%`,
 				minHeight: '10px',
 			}}
-			onClick={(event) => {
-				event.stopPropagation();
-				onClick(block);
+			onPointerDown={(event) => {
+				if (event.button !== 0) return;
+				pointer.beginPointerSession(event, 'move');
 			}}
-			title={`${dayName} ${startLabel} - ${endLabel}`}
+			onPointerMove={pointer.updatePointerSession}
+			onPointerUp={pointer.endPointerSession}
+			onPointerCancel={pointer.endPointerSession}
+			onClick={(event) => {
+				event.preventDefault();
+				event.stopPropagation();
+			}}
+			title={`${dayName} ${pointer.startLabel} - ${pointer.endLabel}`}
 		>
-			{showTimes && (
-				<>
-					<div
-						className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0"
-						title={`${startLabel} – ${endLabel}`}
-					>
-						<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-							{startLabel}
-						</span>
-						<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
-							{endLabel}
-						</span>
-					</div>
-					<div
-						className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0"
-						title={`${startLabel} – ${endLabel}`}
-					>
-						<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-							{startLabel}
-						</span>
-						<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
-							{endLabel}
-						</span>
-					</div>
-				</>
-			)}
-
-			{canEdit && (
-				<div className="absolute inset-0 flex items-center justify-center bg-primary/90 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-					<span className="block-edit-icon-small">
-						<LuPencil className="h-2.5 w-2.5 text-white" />
-					</span>
-					<span className="block-edit-icon">
-						<LuPencil className="h-4 w-4 text-white" />
-					</span>
-				</div>
-			)}
+			{pointer.showTimes ? (
+				<AvailabilityBlockTimeLabels startLabel={pointer.startLabel} endLabel={pointer.endLabel} />
+			) : null}
+			{canEdit && !pointer.isPendingSave ? (
+				<AvailabilityBlockResizeHandles
+					onBegin={pointer.beginPointerSession}
+					onMove={pointer.updatePointerSession}
+					onEnd={pointer.endPointerSession}
+				/>
+			) : null}
 		</button>
 	);
 }

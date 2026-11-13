@@ -70,6 +70,7 @@ function WizardTeacherSlotStepPanel({ wizard, updaters, currentAgreementSlot }: 
 			isTeacherOwnStudent={wizard.isTeacherOwnStudent}
 			onTeacherChange={updaters.onTeacherChange}
 			onSlotClick={wizard.handleSlotClick}
+			onReloadSlots={wizard.reloadSlots}
 		/>
 	);
 }

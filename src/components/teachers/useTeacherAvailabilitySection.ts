@@ -15,13 +15,15 @@ import {
 	buildAvailabilitySlotFormFromBlock,
 	buildAvailabilitySlotFormFromClick,
 	generateAvailabilityTimeSlots,
+	toAvailabilityDayBlockRefs,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 import { formatTime } from '@/lib/time/time-format';
 
 export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: boolean) {
 	const { settings } = useAppSettingsContext();
 	const agenda = settings.agenda;
-	const { availability, loading, loadAvailability } = useTeacherAvailability(teacherUserId);
+	const { availability, loading, loadAvailability, applyLocalAvailabilityTimes } =
+		useTeacherAvailability(teacherUserId);
 	const [addDialogOpen, setAddDialogOpen] = useState(false);
 	const [selectedSlot, setSelectedSlot] = useState<{ day: number; time: string } | null>(null);
 	const [editingBlock, setEditingBlock] = useState<AvailabilityBlock | null>(null);
@@ -44,6 +46,7 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 			teacherUserId,
 			displayDay: selectedSlot.day,
 			form,
+			dayBlocks: toAvailabilityDayBlockRefs(availabilityBlocks, selectedSlot.day),
 		});
 		if (!saved) return;
 
@@ -55,7 +58,11 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 	const handleUpdate = async () => {
 		if (!editingBlock) return;
 
-		const saved = await updateTeacherAvailabilitySlot({ blockId: editingBlock.id, form });
+		const saved = await updateTeacherAvailabilitySlot({
+			blockId: editingBlock.id,
+			form,
+			dayBlocks: toAvailabilityDayBlockRefs(availabilityBlocks, editingBlock.displayDay),
+		});
 		if (!saved) return;
 
 		closeDialog();
@@ -77,12 +84,39 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 		setAddDialogOpen(true);
 	};
 
+	const handleCreateRangeCommit = (dayIndex: number, nextForm: AvailabilityTimeForm) => {
+		if (!canEdit || !teacherUserId) return;
+		void addTeacherAvailabilitySlot({
+			teacherUserId,
+			displayDay: dayIndex,
+			form: nextForm,
+			dayBlocks: toAvailabilityDayBlockRefs(availabilityBlocks, dayIndex),
+		}).then((saved) => {
+			if (saved) loadAvailability();
+		});
+	};
+
 	const handleBlockClick = (block: AvailabilityBlock) => {
 		if (!canEdit) return;
 		setEditingBlock(block);
 		setSelectedSlot({ day: block.displayDay, time: block.startTime });
 		setForm(buildAvailabilitySlotFormFromBlock(formatTime(block.startTime), formatTime(block.endTime)));
 		setAddDialogOpen(true);
+	};
+
+	const handleBlockTimesCommit = async (
+		block: AvailabilityBlock,
+		nextForm: AvailabilityTimeForm,
+	): Promise<boolean> => {
+		if (!canEdit) return false;
+		applyLocalAvailabilityTimes(block.id, nextForm);
+		const saved = await updateTeacherAvailabilitySlot({
+			blockId: block.id,
+			form: nextForm,
+			dayBlocks: toAvailabilityDayBlockRefs(availabilityBlocks, block.displayDay),
+		});
+		await loadAvailability();
+		return saved;
 	};
 
 	const handleDialogOpenChange = (open: boolean) => {
@@ -110,7 +144,9 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 		handleUpdate,
 		handleDelete,
 		handleEmptySlotClick,
+		handleCreateRangeCommit,
 		handleBlockClick,
+		handleBlockTimesCommit,
 		handleDialogOpenChange,
 	};
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { WizardStep } from '@/components/agreements/WizardStepIndicator';
 import { supabase } from '@/integrations/supabase/client';
@@ -81,40 +81,35 @@ export function useWizardTeacherSlots(
 ) {
 	const [slots, setSlots] = useState<SlotWithStatus[]>([]);
 	const [loading, setLoading] = useState(false);
+	const requestIdRef = useRef(0);
 
-	useEffect(() => {
+	const reloadSlots = useCallback(async () => {
 		if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
 			setSlots([]);
 			setLoading(false);
 			return;
 		}
-		let active = true;
+
+		const requestId = ++requestIdRef.current;
 		setLoading(true);
-		void runWizardLoad('teacherSlots', {
+		const statuses = await runWizardLoad('teacherSlots', {
 			teacherUserId,
 			startDate,
 			endDate,
 			initialAgreement,
 			selectedLessonType,
-		})
-			.then((statuses) => {
-				if (!active) return;
-				setSlots(statuses ?? []);
-			})
-			.catch(() => {
-				if (!active) return;
-				setSlots([]);
-			})
-			.finally(() => {
-				if (!active) return;
-				setLoading(false);
-			});
-		return () => {
-			active = false;
-		};
+		}).catch(() => [] as SlotWithStatus[]);
+
+		if (requestId !== requestIdRef.current) return;
+		setSlots(statuses ?? []);
+		setLoading(false);
 	}, [step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType]);
 
-	return { slots, loading };
+	useEffect(() => {
+		void reloadSlots();
+	}, [reloadSlots]);
+
+	return { slots, loading, reloadSlots };
 }
 
 export function useWizardTeachers(step: WizardStep, lessonTypeId: string | null) {

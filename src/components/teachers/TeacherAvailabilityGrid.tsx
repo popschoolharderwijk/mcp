@@ -1,11 +1,11 @@
 import { TeacherAvailabilityDayColumn } from '@/components/teachers/TeacherAvailabilityDayColumn';
 import type { TeacherAvailabilitySectionViewModel } from '@/components/teachers/useTeacherAvailabilitySection';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DAY_NAMES_DISPLAY } from '@/lib/date/day-index';
 import {
 	type AvailabilityBlock,
+	type AvailabilityTimeForm,
 	getAvailabilityHourTopPercent,
-	getTeacherAvailabilityCardDescription,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 
 const dayNames = DAY_NAMES_DISPLAY;
@@ -13,11 +13,19 @@ const dayNames = DAY_NAMES_DISPLAY;
 interface TeacherAvailabilityGridProps {
 	vm: TeacherAvailabilitySectionViewModel;
 	onEmptySlotClick: (dayIndex: number, time: string) => void;
+	onCreateRangeCommit: (dayIndex: number, form: AvailabilityTimeForm) => void;
 	onBlockClick: (block: AvailabilityBlock) => void;
+	onBlockTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
 }
 
-export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: TeacherAvailabilityGridProps) {
-	const { canEdit, agenda, timeSlots, hourLabels, availabilityBlocks } = vm;
+export function TeacherAvailabilityGrid({
+	vm,
+	onEmptySlotClick,
+	onCreateRangeCommit,
+	onBlockClick,
+	onBlockTimesCommit,
+}: TeacherAvailabilityGridProps) {
+	const { agenda, timeSlots, hourLabels, availabilityBlocks, canEdit } = vm;
 
 	return (
 		<>
@@ -25,21 +33,14 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 				.availability-block { container-type: size; container-name: ab; }
 				.availability-block .block-content-single { display: flex; }
 				.availability-block .block-content-double { display: none; }
-				.availability-block .block-edit-icon { display: none; }
-				.availability-block .block-edit-icon-small { display: block; }
 				@container ab (min-height: 2.5rem) {
 					.availability-block .block-content-single { display: none; }
 					.availability-block .block-content-double { display: flex; }
-				}
-				@container ab (min-height: 1.5rem) {
-					.availability-block .block-edit-icon { display: block; }
-					.availability-block .block-edit-icon-small { display: none; }
 				}
 			`}</style>
 			<Card>
 				<CardHeader className="pb-3">
 					<CardTitle>Beschikbaarheid</CardTitle>
-					<CardDescription>{getTeacherAvailabilityCardDescription(canEdit)}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<div className="flex border-b border-border pb-2 mb-1">
@@ -78,7 +79,9 @@ export function TeacherAvailabilityGrid({ vm, onEmptySlotClick, onBlockClick }: 
 								agenda={agenda}
 								canEdit={canEdit}
 								onEmptySlotClick={onEmptySlotClick}
+								onCreateRangeCommit={onCreateRangeCommit}
 								onBlockClick={onBlockClick}
+								onBlockTimesCommit={onBlockTimesCommit}
 							/>
 						))}
 					</div>

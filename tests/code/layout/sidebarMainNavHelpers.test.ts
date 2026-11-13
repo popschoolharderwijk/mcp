@@ -34,7 +34,7 @@ describe('buildSidebarMainNavItems', () => {
 			teacherUserId,
 			showReportsNav: true,
 		});
-		expect(items.map((item) => item.key)).toEqual(['dashboard', 'my-profile', 'agenda', 'my-students', 'reports']);
+		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'my-profile', 'my-students', 'reports']);
 		expect(items.find((item) => item.key === 'my-profile')?.href).toBe(`/teachers/${teacherUserId}/profile`);
 	});
 

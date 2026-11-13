@@ -46,6 +46,7 @@ export function useAgreementWizard() {
 		selectedTeacher: setup.derived.selectedTeacher,
 		slotsWithStatus: setup.derived.slotsWithStatus,
 		loadingSlots: setup.derived.loadingSlots,
+		reloadSlots: setup.derived.reloadSlots,
 		effectiveSlot: setup.derived.effectiveSlot,
 		hasChanges: setup.derived.hasChanges,
 		isDuoLesson: setup.derived.isDuoLesson,

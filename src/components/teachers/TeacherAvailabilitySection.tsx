@@ -20,7 +20,9 @@ export function TeacherAvailabilitySection({ teacherUserId, canEdit }: TeacherAv
 			<TeacherAvailabilityGrid
 				vm={vm}
 				onEmptySlotClick={vm.handleEmptySlotClick}
+				onCreateRangeCommit={vm.handleCreateRangeCommit}
 				onBlockClick={vm.handleBlockClick}
+				onBlockTimesCommit={vm.handleBlockTimesCommit}
 			/>
 			<TeacherAvailabilitySlotDialog vm={vm} />
 		</>

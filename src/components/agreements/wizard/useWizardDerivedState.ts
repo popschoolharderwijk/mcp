@@ -37,7 +37,11 @@ export function useWizardDerivedState({
 		[agreement, matchedLessonType, form.selectedOptionSnapshot],
 	);
 
-	const { slots: slotsWithStatus, loading: loadingSlots } = useWizardTeacherSlots(
+	const {
+		slots: slotsWithStatus,
+		loading: loadingSlots,
+		reloadSlots,
+	} = useWizardTeacherSlots(
 		step,
 		form.teacherUserId,
 		form.lessonTypeId,
@@ -64,6 +68,7 @@ export function useWizardDerivedState({
 		selectedLessonType,
 		slotsWithStatus,
 		loadingSlots,
+		reloadSlots,
 		selectedTeacher,
 		effectiveSlot,
 		hasChanges,

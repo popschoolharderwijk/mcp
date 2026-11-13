@@ -1,7 +1,10 @@
+import { useRef } from 'react';
 import { TeacherAvailabilityBlockButton } from '@/components/teachers/TeacherAvailabilityBlockButton';
+import { useTeacherAvailabilityCreatePointer } from '@/components/teachers/useTeacherAvailabilityCreatePointer';
 import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import {
 	type AvailabilityBlock,
+	type AvailabilityTimeForm,
 	findAvailabilityBlockCoveringTime,
 	getAvailabilityBlocksForDay,
 	getAvailabilityHourTopPercent,
@@ -17,7 +20,9 @@ interface TeacherAvailabilityDayColumnProps {
 	agenda: AgendaSetting;
 	canEdit: boolean;
 	onEmptySlotClick: (dayIndex: number, time: string) => void;
+	onCreateRangeCommit: (dayIndex: number, form: AvailabilityTimeForm) => void;
 	onBlockClick: (block: AvailabilityBlock) => void;
+	onBlockTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
 }
 
 export function TeacherAvailabilityDayColumn({
@@ -29,12 +34,29 @@ export function TeacherAvailabilityDayColumn({
 	agenda,
 	canEdit,
 	onEmptySlotClick,
+	onCreateRangeCommit,
 	onBlockClick,
+	onBlockTimesCommit,
 }: TeacherAvailabilityDayColumnProps) {
+	const columnRef = useRef<HTMLDivElement>(null);
+	const createPointer = useTeacherAvailabilityCreatePointer({
+		agenda,
+		canEdit,
+		dayIndex,
+		columnRef,
+		onEmptySlotClick,
+		onCreateRangeCommit,
+	});
 	const dayBlocks = getAvailabilityBlocksForDay(blocks, dayIndex);
 
 	return (
-		<div className="flex-1 relative border-l border-border/50">
+		<div
+			ref={columnRef}
+			className="flex-1 relative border-l border-border/50 touch-none"
+			onPointerMove={createPointer.updateCreateSession}
+			onPointerUp={createPointer.endCreateSession}
+			onPointerCancel={createPointer.endCreateSession}
+		>
 			{hours.map((hour) => (
 				<div
 					key={hour}
@@ -55,19 +77,39 @@ export function TeacherAvailabilityDayColumn({
 							key={`${dayName}-${time}`}
 							className="absolute left-0 right-0 hover:bg-accent transition-colors border border-transparent hover:border-accent"
 							style={{ top: `${topPercent}%`, height: `${heightPercent}%` }}
-							onClick={() => onEmptySlotClick(dayIndex, time)}
-							title={`${dayName} ${time} - Klik om beschikbaarheid toe te voegen`}
+							onPointerDown={(event) => {
+								if (event.button !== 0) return;
+								createPointer.beginCreateSession(event, time);
+							}}
+							onClick={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+							}}
+							title={`${dayName} ${time} - Sleep om beschikbaarheid toe te voegen`}
 						/>
 					);
 				})}
+
+			{createPointer.previewGeometry && (
+				<div
+					className="absolute left-0.5 right-0.5 bg-emerald-500/50 rounded-md border border-emerald-600/40 pointer-events-none z-20"
+					style={{
+						top: `${createPointer.previewGeometry.topPercent}%`,
+						height: `${createPointer.previewGeometry.heightPercent}%`,
+						minHeight: '10px',
+					}}
+				/>
+			)}
 
 			{dayBlocks.map((block) => (
 				<TeacherAvailabilityBlockButton
 					key={block.id}
 					block={block}
 					dayName={dayName}
+					agenda={agenda}
 					canEdit={canEdit}
 					onClick={onBlockClick}
+					onTimesCommit={onBlockTimesCommit}
 				/>
 			))}
 		</div>
