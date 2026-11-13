@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { WizardStep } from '@/components/agreements/WizardStepIndicator';
 import { supabase } from '@/integrations/supabase/client';
 import type { SlotWithStatus } from '@/lib/agreementSlots';
@@ -10,6 +11,8 @@ import type {
 	LessonTypeOptionSnapshot,
 	WizardTeacherInfo,
 } from '@/types/lesson-agreements';
+
+export type ReloadTeacherSlotsOptions = { feedback?: boolean };
 
 export function useWizardAgreement(id: string | undefined, isEditMode: boolean) {
 	const [agreement, setAgreement] = useState<AgreementTableRow | null>(null);
@@ -83,27 +86,42 @@ export function useWizardTeacherSlots(
 	const [loading, setLoading] = useState(false);
 	const requestIdRef = useRef(0);
 
-	const reloadSlots = useCallback(async () => {
-		if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
-			setSlots([]);
+	const reloadSlots = useCallback(
+		async (options?: ReloadTeacherSlotsOptions) => {
+			if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
+				setSlots([]);
+				setLoading(false);
+				return;
+			}
+
+			const requestId = ++requestIdRef.current;
+			setLoading(true);
+			let loadFailed = false;
+			const statuses = await runWizardLoad('teacherSlots', {
+				teacherUserId,
+				startDate,
+				endDate,
+				initialAgreement,
+				selectedLessonType,
+			}).catch(() => {
+				loadFailed = true;
+				return null;
+			});
+
+			if (requestId !== requestIdRef.current) return;
+			setSlots(statuses ?? []);
 			setLoading(false);
-			return;
-		}
 
-		const requestId = ++requestIdRef.current;
-		setLoading(true);
-		const statuses = await runWizardLoad('teacherSlots', {
-			teacherUserId,
-			startDate,
-			endDate,
-			initialAgreement,
-			selectedLessonType,
-		}).catch(() => [] as SlotWithStatus[]);
-
-		if (requestId !== requestIdRef.current) return;
-		setSlots(statuses ?? []);
-		setLoading(false);
-	}, [step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType]);
+			if (!options?.feedback) return;
+			if (loadFailed) {
+				toast.error('Fout bij laden tijdslotten');
+				return;
+			}
+			if (statuses === null) return;
+			toast.success('Tijdslotten vernieuwd');
+		},
+		[step, teacherUserId, lessonTypeId, startDate, endDate, initialAgreement, selectedLessonType],
+	);
 
 	useEffect(() => {
 		void reloadSlots();
