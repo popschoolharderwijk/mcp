@@ -20,11 +20,57 @@ import {
 	buildSignupRequestStatusQuickFilter,
 	resolveSignupRequestsPageGate,
 } from '@/lib/signup-requests/signupRequestsPageShellHelpers';
-import { getSignupRequestRowActionState } from '@/lib/signup-requests/signupRequestsTableActionHelpers';
+import {
+	listSignupRequestDialogActions,
+	type SignupRequestDialogActionId,
+	type SignupRequestDialogActionItem,
+} from '@/lib/signup-requests/signupRequestsTableActionHelpers';
 
 function signupDeleteDescription(row: SignupRequestRowBase | null): string {
 	if (!row) return '';
 	return `Weet je zeker dat je de aanmelding van ${row.first_name} ${row.last_name} wilt verwijderen?`;
+}
+
+const SIGNUP_DIALOG_ACTION_COPY = {
+	delete: { label: 'Verwijderen', variant: 'outline' as const, Icon: LuTrash2 },
+	trial: { label: 'Proefles inplannen', variant: 'outline' as const, Icon: LuCalendarPlus },
+	process: { label: 'Verwerken', variant: 'default' as const, Icon: LuCalendar },
+};
+
+function clickSignupRequestDialogAction(
+	id: SignupRequestDialogActionId,
+	row: SignupRequestRowBase | null,
+	handlers: {
+		onDelete: () => void;
+		onScheduleTrial: (row: SignupRequestRowBase) => void;
+		onProcess: () => void;
+	},
+) {
+	const run = {
+		delete: () => handlers.onDelete(),
+		trial: () => {
+			if (!row) return;
+			handlers.onScheduleTrial(row);
+		},
+		process: () => handlers.onProcess(),
+	};
+	run[id]();
+}
+
+function SignupRequestDialogActionButton({
+	action,
+	onClick,
+}: {
+	action: SignupRequestDialogActionItem;
+	onClick: () => void;
+}) {
+	const copy = SIGNUP_DIALOG_ACTION_COPY[action.id];
+	const Icon = copy.Icon;
+	return (
+		<Button variant={copy.variant} onClick={onClick} disabled={action.disabled}>
+			<Icon className="h-4 w-4" /> {copy.label}
+		</Button>
+	);
 }
 
 function SignupRequestActionsDialog({
@@ -42,29 +88,24 @@ function SignupRequestActionsDialog({
 	onScheduleTrial: (row: SignupRequestRowBase) => void;
 	onProcess: () => void;
 }) {
-	const actionState = row ? getSignupRequestRowActionState(row.status, row.id, busyId) : null;
-
+	const actions = listSignupRequestDialogActions(row, busyId);
 	return (
 		<Dialog open={row !== null} onOpenChange={onOpenChange}>
 			<DialogContent className="max-w-xl">
 				<DialogHeader>
 					<DialogTitle>Aanmelding</DialogTitle>
 				</DialogHeader>
-				{row && <SignupRequestDialogBody request={row} />}
+				{row ? <SignupRequestDialogBody request={row} /> : null}
 				<DialogFooter className="flex-wrap gap-2 sm:space-x-0">
-					<Button variant="outline" onClick={onDelete} disabled={actionState?.isBusy}>
-						<LuTrash2 className="h-4 w-4" /> Verwijderen
-					</Button>
-					{actionState?.showTrialButton && row && (
-						<Button variant="outline" onClick={() => onScheduleTrial(row)} disabled={actionState.isBusy}>
-							<LuCalendarPlus className="h-4 w-4" /> Proefles inplannen
-						</Button>
-					)}
-					{actionState?.showActions && (
-						<Button onClick={onProcess} disabled={actionState.isBusy}>
-							<LuCalendar className="h-4 w-4" /> Verwerken
-						</Button>
-					)}
+					{actions.map((action) => (
+						<SignupRequestDialogActionButton
+							key={action.id}
+							action={action}
+							onClick={() =>
+								clickSignupRequestDialogAction(action.id, row, { onDelete, onScheduleTrial, onProcess })
+							}
+						/>
+					))}
 				</DialogFooter>
 			</DialogContent>
 		</Dialog>
