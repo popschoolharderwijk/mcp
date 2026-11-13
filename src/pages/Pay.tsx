@@ -9,13 +9,15 @@ import { PaymentLinkRequestForm } from '@/components/stripe/PaymentLinkRequestFo
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import {
-	markPaymentLinkArranged,
+	MANDATE_AWAIT_MAX_ATTEMPTS,
+	MANDATE_AWAIT_POLL_INTERVAL_MS,
 	type PaymentLinkInfo,
 	resolveCheckoutStartError,
-	resolveCompleteCheckoutErrorMessage,
+	resolveMandateAwaitTimeoutMessage,
 	resolvePaymentLinkInfoFromInvoke,
 	resolvePayPageView,
-	shouldSkipCompleteCheckout,
+	runMandateAwaitPoll,
+	shouldSkipMandateAwait,
 } from '@/lib/stripe/paymentLinkPageHelpers';
 
 async function requireCheckoutUrl(error: unknown, data: { url?: string } | null | undefined): Promise<string> {
@@ -32,6 +34,13 @@ async function startPaymentCheckout(agreementId: string, token: string): Promise
 	return requireCheckoutUrl(error, data);
 }
 
+async function fetchPaymentLinkInfo(agreementId: string, token: string): Promise<PaymentLinkInfo> {
+	const { data, error } = await supabase.functions.invoke<PaymentLinkInfo>('payment-link-info', {
+		body: { lesson_agreement_id: agreementId, token },
+	});
+	return resolvePaymentLinkInfoFromInvoke(data, error);
+}
+
 function usePaymentLinkInfo(agreementId: string, token: string) {
 	const [info, setInfo] = useState<PaymentLinkInfo | null>(null);
 	const [loadingInfo, setLoadingInfo] = useState(true);
@@ -42,15 +51,11 @@ function usePaymentLinkInfo(agreementId: string, token: string) {
 			return;
 		}
 		let cancelled = false;
-		void supabase.functions
-			.invoke<PaymentLinkInfo>('payment-link-info', {
-				body: { lesson_agreement_id: agreementId, token },
-			})
-			.then(({ data, error: invokeError }) => {
-				if (cancelled) return;
-				setInfo(resolvePaymentLinkInfoFromInvoke(data, invokeError));
-				setLoadingInfo(false);
-			});
+		void fetchPaymentLinkInfo(agreementId, token).then((next) => {
+			if (cancelled) return;
+			setInfo(next);
+			setLoadingInfo(false);
+		});
 		return () => {
 			cancelled = true;
 		};
@@ -58,44 +63,38 @@ function usePaymentLinkInfo(agreementId: string, token: string) {
 	return { info, setInfo, loadingInfo };
 }
 
-function useCompleteCheckout(
+/** After Stripe redirect: poll until the webhook wrote stripe_schedule_id. */
+function useAwaitMandateAfterCheckout(
 	sessionId: string | null,
 	agreementId: string,
 	token: string,
 	completed: boolean,
 	setCompleted: (v: boolean) => void,
-	setInfo: (updater: (prev: PaymentLinkInfo | null) => PaymentLinkInfo | null) => void,
+	setInfo: (info: PaymentLinkInfo) => void,
 	setError: (v: string | null) => void,
-	setStarting: (v: boolean) => void,
 ) {
 	useEffect(() => {
-		if (shouldSkipCompleteCheckout(sessionId, agreementId, token, completed)) return;
+		if (shouldSkipMandateAwait(sessionId, agreementId, token, completed)) return;
 		let cancelled = false;
-		setStarting(true);
-		void supabase.functions
-			.invoke('start-payment-checkout', {
-				body: {
-					lesson_agreement_id: agreementId,
-					token,
-					mode: 'complete',
-					checkout_session_id: sessionId,
-				},
-			})
-			.then(async ({ error: completeError }) => {
-				if (cancelled) return;
-				setStarting(false);
-				const message = await resolveCompleteCheckoutErrorMessage(completeError);
-				if (message) {
-					setError(message);
-					return;
-				}
+		void runMandateAwaitPoll({
+			fetchInfo: () => fetchPaymentLinkInfo(agreementId, token),
+			maxAttempts: MANDATE_AWAIT_MAX_ATTEMPTS,
+			intervalMs: MANDATE_AWAIT_POLL_INTERVAL_MS,
+			sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+			isCancelled: () => cancelled,
+		}).then((outcome) => {
+			if (cancelled) return;
+			setInfo(outcome.info);
+			if (outcome.status === 'completed') {
 				setCompleted(true);
-				setInfo(markPaymentLinkArranged);
-			});
+				return;
+			}
+			setError(resolveMandateAwaitTimeoutMessage());
+		});
 		return () => {
 			cancelled = true;
 		};
-	}, [sessionId, agreementId, token, completed, setCompleted, setInfo, setError, setStarting]);
+	}, [sessionId, agreementId, token, completed, setCompleted, setInfo, setError]);
 }
 
 function PayInvalidView({ agreementId }: { agreementId: string }) {
@@ -165,11 +164,17 @@ export default function Pay() {
 	const [error, setError] = useState<string | null>(null);
 	const [completed, setCompleted] = useState(false);
 
-	useCompleteCheckout(sessionId, agreementId, token, completed, setCompleted, setInfo, setError, setStarting);
+	useAwaitMandateAfterCheckout(sessionId, agreementId, token, completed, setCompleted, setInfo, setError);
 
 	return (
 		<PayView
-			view={resolvePayPageView({ loadingInfo, completed, info, error })}
+			view={resolvePayPageView({
+				loadingInfo,
+				completed,
+				info,
+				error,
+				hasCheckoutSession: Boolean(sessionId),
+			})}
 			agreementId={agreementId}
 			info={info}
 			starting={starting}

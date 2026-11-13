@@ -56,12 +56,6 @@ function PreviewAmountRows({ preview }: { preview: PaymentLinkPreview }) {
 		<>
 			<dt className="text-muted-foreground">Maandtermijn</dt>
 			<dd>{formatCentsNl(preview.monthlyCents)}</dd>
-			{preview.finalMonthCents != null ? (
-				<>
-					<dt className="text-muted-foreground">Slotmaand</dt>
-					<dd>{formatCentsNl(preview.finalMonthCents)}</dd>
-				</>
-			) : null}
 			{preview.catchUp && preview.catchUpCents != null ? (
 				<>
 					<dt className="text-muted-foreground">Inhaalfactuur</dt>

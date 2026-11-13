@@ -6,7 +6,6 @@ import { formatDbDateToUi } from '@/lib/date/date-format';
 export interface PaymentLinkPreview {
 	monthlyCents: number;
 	yearlyCents: number;
-	finalMonthCents: number | null;
 	catchUp: boolean;
 	catchUpCents: number | null;
 	catchUpFromMonth: string | null;
@@ -62,11 +61,13 @@ export function resolvePayPageView(input: {
 	completed: boolean;
 	info: PaymentLinkInfo | null;
 	error?: string | null;
+	/** Present after Stripe redirect (`session_id`); webhook may still be writing the schedule. */
+	hasCheckoutSession?: boolean;
 }): PayPageView {
 	if (input.loadingInfo) return 'loading';
 	if (input.completed) return 'completed';
-	// Checkout complete failed: keep the form visible with the error message.
 	if (input.error) return 'details';
+	if (input.hasCheckoutSession) return 'loading';
 	if (input.info?.arranged) return 'arranged';
 	if (!input.info?.valid) return 'invalid';
 	return 'details';
@@ -85,7 +86,11 @@ export async function resolveCheckoutStartError(startError: unknown, url: string
 	return getInvokeErrorMessage(startError, { fallback: 'Kon Stripe Checkout niet starten' });
 }
 
-export function shouldSkipCompleteCheckout(
+/** Poll payment-link-info until the webhook has set the schedule. */
+export const MANDATE_AWAIT_POLL_INTERVAL_MS = 1000;
+export const MANDATE_AWAIT_MAX_ATTEMPTS = 45;
+
+export function shouldSkipMandateAwait(
 	sessionId: string | null,
 	agreementId: string,
 	token: string,
@@ -94,11 +99,49 @@ export function shouldSkipCompleteCheckout(
 	return !sessionId || !agreementId || !token || completed;
 }
 
-export function markPaymentLinkArranged(prev: PaymentLinkInfo | null): PaymentLinkInfo | null {
-	return prev ? { ...prev, arranged: true } : prev;
+export type MandateAwaitPollResult = 'completed' | 'continue' | 'timeout';
+
+/** `attemptIndex` is 0-based after each poll response. */
+export function resolveMandateAwaitPollResult(input: {
+	arranged: boolean;
+	attemptIndex: number;
+	maxAttempts: number;
+}): MandateAwaitPollResult {
+	if (input.arranged) return 'completed';
+	if (input.attemptIndex + 1 >= input.maxAttempts) return 'timeout';
+	return 'continue';
 }
 
-export async function resolveCompleteCheckoutErrorMessage(completeError: unknown): Promise<string | null> {
-	if (!completeError) return null;
-	return getInvokeErrorMessage(completeError, { fallback: 'Afronden mislukt' });
+export function resolveMandateAwaitTimeoutMessage(): string {
+	return 'Je betaling is ontvangen, maar de machtiging is nog niet zichtbaar. Vernieuw de pagina over een moment, of neem contact op met de school.';
+}
+
+export type MandateAwaitPollOutcome =
+	| { status: 'completed'; info: PaymentLinkInfo }
+	| { status: 'timeout'; info: PaymentLinkInfo };
+
+/** Poll until payment-link-info reports arranged, or attempts are exhausted. */
+export async function runMandateAwaitPoll(input: {
+	fetchInfo: () => Promise<PaymentLinkInfo>;
+	maxAttempts: number;
+	intervalMs: number;
+	sleep: (ms: number) => Promise<void>;
+	isCancelled?: () => boolean;
+}): Promise<MandateAwaitPollOutcome> {
+	let attemptIndex = 0;
+	let info: PaymentLinkInfo = { valid: false };
+	while (!input.isCancelled?.()) {
+		info = await input.fetchInfo();
+		if (input.isCancelled?.()) break;
+		const result = resolveMandateAwaitPollResult({
+			arranged: Boolean(info.arranged),
+			attemptIndex,
+			maxAttempts: input.maxAttempts,
+		});
+		if (result === 'completed') return { status: 'completed', info };
+		if (result === 'timeout') return { status: 'timeout', info };
+		attemptIndex += 1;
+		await input.sleep(input.intervalMs);
+	}
+	return { status: 'timeout', info };
 }

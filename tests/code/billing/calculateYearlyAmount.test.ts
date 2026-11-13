@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { pickAgeTariff, pickPriceCents } from '../../../src/lib/billing/ageTariff';
 import { calculateYearlyAmount } from '../../../src/lib/billing/calculateYearlyAmount';
-import {
-	shiftDatePastNoLessonPeriods,
-	splitYearlyAmountAcrossBillingMonths,
-} from '../../../src/lib/billing/calculateYearlyAmountHelpers';
+import { shiftDatePastNoLessonPeriods } from '../../../src/lib/billing/calculateYearlyAmountHelpers';
 import {
 	clampToSchoolYear,
 	getSchoolYearForDateString,
@@ -99,13 +96,6 @@ describe('calculateYearlyAmountHelpers', () => {
 		const result = shiftDatePastNoLessonPeriods('2026-08-03', '2026-08-31', [], 0);
 		expect(result.lessonDate).toBeNull();
 	});
-
-	it('splits yearly cents across billing months with remainder', () => {
-		expect(splitYearlyAmountAcrossBillingMonths(91650, 11)).toEqual({
-			monthlyCents: 8331,
-			leftoverCents: 9,
-		});
-	});
 });
 
 describe('calculateYearlyAmount', () => {
@@ -120,7 +110,6 @@ describe('calculateYearlyAmount', () => {
 		expect(result.lessonsCount).toBe(47);
 		expect(result.yearlyCents).toBe(91650);
 		expect(result.monthlyCents).toBe(8331);
-		expect(result.leftoverCents).toBe(9);
 	});
 
 	it('subtracts no-lesson periods (holidays)', () => {
@@ -168,7 +157,6 @@ describe('calculateYearlyAmount', () => {
 			lessonsCount: 0,
 			yearlyCents: 0,
 			monthlyCents: 0,
-			leftoverCents: 0,
 			lessonDates: [],
 		});
 		expect(
@@ -183,7 +171,6 @@ describe('calculateYearlyAmount', () => {
 			lessonsCount: 0,
 			yearlyCents: 0,
 			monthlyCents: 0,
-			leftoverCents: 0,
 			lessonDates: [],
 		});
 	});

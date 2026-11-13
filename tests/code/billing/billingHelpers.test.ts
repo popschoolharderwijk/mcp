@@ -3,10 +3,11 @@ import {
 	assembleBillingContextFromLoadedRows,
 	assertHasBillingPhases,
 	assertPositiveYearlyCents,
-	BILLING_MONTHS_PER_YEAR,
 	buildBillingComputationFromLoadedData,
 	buildLessonPhasePriceIdempotencyKey,
+	buildLessonPhasePriceRecoveryIdempotencyKey,
 	buildLessonProductIdempotencyKey,
+	buildLessonProductRecoveryIdempotencyKey,
 	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
@@ -21,7 +22,6 @@ import {
 	pickSharedRecurringMonthlyPriceId,
 	resolveBillingReferenceDate,
 	resolveStripeSubscriptionId,
-	resolveStripeTuitionPriceKind,
 } from '../../../supabase/functions/_shared/billingHelpers';
 
 describe('getSchoolYearForDateString', () => {
@@ -92,7 +92,6 @@ describe('calculateYearly', () => {
 			expect(date >= '2026-12-21' && date <= '2027-01-04').toBe(false);
 		}
 		expect(result.yearlyCents).toBe(result.lessonsCount * 2000);
-		expect(result.monthlyCents * BILLING_MONTHS_PER_YEAR + result.leftoverCents).toBe(result.yearlyCents);
 	});
 });
 
@@ -107,12 +106,25 @@ describe('pickAgeTariff', () => {
 });
 
 describe('buildPhases', () => {
-	it('builds eleven billing months with leftover on the last phase', () => {
-		const phases = buildPhases('2026-09-01', '2027-07-31', 1000, 50);
+	it('builds eleven billing months with a flat monthly amount', () => {
+		const phases = buildPhases('2026-09-01', '2027-07-31', 1000);
 		expect(phases).toHaveLength(11);
-		expect(phases[0]?.amountCents).toBe(1000);
-		expect(phases[10]?.amountCents).toBe(1050);
-		expect(phases.every((phase) => !phase.label.endsWith('-08'))).toBe(true);
+		expect(phases.map((phase) => phase.amountCents)).toEqual([
+			1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000,
+		]);
+		expect(phases.map((phase) => phase.label)).toEqual([
+			'2026-09',
+			'2026-10',
+			'2026-11',
+			'2026-12',
+			'2027-01',
+			'2027-02',
+			'2027-03',
+			'2027-04',
+			'2027-05',
+			'2027-06',
+			'2027-07',
+		]);
 	});
 });
 
@@ -151,7 +163,7 @@ describe('billing pure helpers', () => {
 		expect(isTerminalScheduleStatus('active')).toBe(false);
 	});
 
-	it('builds stable Stripe idempotency keys for setup schedules and shared products', () => {
+	it('builds setup schedule and shared catalog idempotency keys', () => {
 		const agreementId = 'b71a9af2-a151-4d42-adf2-3dae0db53ff0';
 		const attemptId = 'seti_1UaCGS8GrwT7wj0BChaoxfVI';
 		const optionId = 'opt-gitaar-30-weekly';
@@ -159,7 +171,13 @@ describe('billing pure helpers', () => {
 			`mcp_setup_schedule_${agreementId}_${attemptId}`,
 		);
 		expect(buildLessonProductIdempotencyKey(optionId)).toBe(`mcp_lesson_product_${optionId}`);
+		expect(buildLessonProductRecoveryIdempotencyKey(optionId, 'nonce-1')).toBe(
+			`mcp_lesson_product_${optionId}_recreate_nonce-1`,
+		);
 		expect(buildLessonPhasePriceIdempotencyKey(optionId, 7338)).toBe(`mcp_lesson_price_${optionId}_7338`);
+		expect(buildLessonPhasePriceRecoveryIdempotencyKey(optionId, 7338, 'nonce-2')).toBe(
+			`mcp_lesson_price_${optionId}_7338_recreate_nonce-2`,
+		);
 		expect(buildLessonTypeOptionProductSearchQuery(optionId)).toBe(
 			`metadata['lesson_type_option_id']:'${optionId}'`,
 		);
@@ -289,14 +307,6 @@ describe('buildStripeTuitionProductName', () => {
 				frequency: 'weekly',
 			}),
 		).toBe('Lesgeld · Gitaarles · 30 min · wekelijks');
-	});
-});
-
-describe('resolveStripeTuitionPriceKind', () => {
-	it('treats leftover amount as the final installment kind', () => {
-		expect(resolveStripeTuitionPriceKind(5318, 5318, 2)).toBe('monthly');
-		expect(resolveStripeTuitionPriceKind(5320, 5318, 2)).toBe('final');
-		expect(resolveStripeTuitionPriceKind(5318, 5318, 0)).toBe('monthly');
 	});
 });
 

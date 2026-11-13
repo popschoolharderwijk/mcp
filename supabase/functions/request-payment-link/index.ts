@@ -1,7 +1,6 @@
 // Public: request a new payment-link mail (rate-limited). Always returns the same message.
 
-import { jsonResponse, UUID_RE } from '../_shared/http.ts';
-import { getSiteBaseUrl } from '../_shared/http-serve.ts';
+import { jsonResponse, resolveSiteBaseUrl, UUID_RE } from '../_shared/http.ts';
 import {
 	buildPaymentLinkEmailHtml,
 	buildPaymentLinkRequestResponse,
@@ -25,8 +24,9 @@ async function sendRequestedLink(
 	req: Request,
 	agreementId: string,
 	recipient: string,
+	siteUrl: string,
 ): Promise<void> {
-	const { paymentUrl } = await issueAgreementPaymentLink(admin, getSiteBaseUrl(req), agreementId);
+	const { paymentUrl } = await issueAgreementPaymentLink(admin, siteUrl, agreementId);
 	const paymentCtaMarkdown = buildPaymentLinkEmailHtml(paymentUrl);
 	const vars = await loadAgreementCreatedPaymentMailVars(admin, agreementId, paymentCtaMarkdown);
 	const mail = await sendTemplateEmail({
@@ -76,10 +76,11 @@ async function sendIfBillingRecipient(
 	req: Request,
 	agreementId: string,
 	studentUserId: string,
+	siteUrl: string,
 ): Promise<void> {
 	const billing = await loadBillingRecipientForStudent(admin, studentUserId);
 	if (!billing.recipient) return;
-	await sendRequestedLink(admin, req, agreementId, billing.recipient);
+	await sendRequestedLink(admin, req, agreementId, billing.recipient, siteUrl);
 }
 
 async function maybeSendRequestedPaymentLink(req: Request, agreementId: string, email: string): Promise<void> {
@@ -91,8 +92,11 @@ async function maybeSendRequestedPaymentLink(req: Request, agreementId: string, 
 		.maybeSingle();
 	if (!isAgreementOpenForPaymentLink(agreement)) return;
 	if (!(await canSendRequestedLink(admin, agreementId, email, agreement.student_user_id))) return;
+	// Rate-limit rows are only written when a payment URL can be built.
+	const siteUrl = resolveSiteBaseUrl(req);
+	if (!siteUrl) return;
 	await admin.from('payment_link_requests').insert({ lesson_agreement_id: agreementId });
-	await sendIfBillingRecipient(admin, req, agreementId, agreement.student_user_id);
+	await sendIfBillingRecipient(admin, req, agreementId, agreement.student_user_id, siteUrl);
 }
 
 function hasValidRequestBody(body: Body): body is { lesson_agreement_id: string; email: string } {

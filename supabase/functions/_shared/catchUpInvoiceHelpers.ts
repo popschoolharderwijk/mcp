@@ -51,25 +51,14 @@ export function listBillingMonthLabels(periodStart: string, periodEnd: string, b
 	return labels;
 }
 
-function amountForBillingMonth(
-	month: string,
-	monthlyCents: number,
-	leftoverCents: number,
-	leftoverMonth: string | undefined,
-): number {
-	return monthlyCents + (month === leftoverMonth ? leftoverCents : 0);
-}
-
 /**
  * Line items for one catch-up invoice: billing months from the agreement start month
  * through the current calendar month. Empty when catch-up is not needed or no billable months.
- * Leftover cents follow buildPhases: added only on the last billing month of [periodStart, periodEnd].
  */
 export function buildCatchUpLineItems(input: {
 	startDate: string;
 	today: string;
 	monthlyCents: number;
-	leftoverCents: number;
 	periodStart: string;
 	periodEnd: string;
 	schoolYearBounds?: SchoolYearBounds;
@@ -77,7 +66,6 @@ export function buildCatchUpLineItems(input: {
 	if (!needsCatchUpInvoice(input.startDate, input.today)) return [];
 
 	const allMonths = listBillingMonthLabels(input.periodStart, input.periodEnd, input.schoolYearBounds);
-	const leftoverMonth = allMonths[allMonths.length - 1];
 	const from = input.startDate.slice(0, 7);
 	const to = input.today.slice(0, 7);
 
@@ -85,7 +73,7 @@ export function buildCatchUpLineItems(input: {
 		.filter((month) => month >= from && month <= to)
 		.map((month) => ({
 			month,
-			amountCents: amountForBillingMonth(month, input.monthlyCents, input.leftoverCents, leftoverMonth),
+			amountCents: input.monthlyCents,
 		}));
 }
 
@@ -93,7 +81,6 @@ export function buildCatchUpInvoicePlan(input: {
 	startDate: string;
 	today: string;
 	monthlyCents: number;
-	leftoverCents: number;
 	periodStart: string;
 	periodEnd: string;
 	schoolYearBounds?: SchoolYearBounds;
@@ -118,8 +105,14 @@ export function filterPhasesAfterCatchUpMonth(phases: BillingPhase[], catchUpThr
 export const STRIPE_CATCH_UP_PRODUCT_NAME = 'Inhalen lesgeld';
 export const STRIPE_CATCH_UP_PRODUCT_SCOPE = 'global';
 
+/** Concurrent webhooks share one catch-up Product create. */
 export function buildCatchUpProductIdempotencyKey(): string {
 	return 'mcp_catchup_product_global';
+}
+
+/** Fresh key when the stable create key replayed a deleted Product after a catalog wipe. */
+export function buildCatchUpProductRecoveryIdempotencyKey(nonce: string): string {
+	return `mcp_catchup_product_global_recreate_${nonce}`;
 }
 
 /** Prefer the shared catalog product; ignore legacy per-agreement catch-up products. */
@@ -130,9 +123,59 @@ export function buildCatchUpProductSearchQuery(): string {
 export type CatchUpProductCandidate = {
 	id: string;
 	active?: boolean | null;
+	deleted?: boolean | null;
 	name?: string | null;
 	metadata?: Record<string, string> | null;
 };
+
+/** Live Product usable for Prices / invoice `price_data.product` (not deleted / inactive). */
+export function isUsableStripeProduct(product: {
+	id?: string | null;
+	active?: boolean | null;
+	deleted?: boolean | null;
+}): boolean {
+	if (!product.id) return false;
+	if (product.deleted) return false;
+	if (product.active === false) return false;
+	return true;
+}
+
+function asErrorRecord(err: unknown): Record<string, unknown> | null {
+	return typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : null;
+}
+
+/** Stripe error `code` from Error-like or raw API objects. */
+export function readStripeErrorCode(err: unknown): string | null {
+	const record = asErrorRecord(err);
+	if (!record) return null;
+	if (typeof record.code === 'string') return record.code;
+	const raw = asErrorRecord(record.raw);
+	if (raw && typeof raw.code === 'string') return raw.code;
+	return null;
+}
+
+export function isStripeResourceMissingError(err: unknown): boolean {
+	return readStripeErrorCode(err) === 'resource_missing';
+}
+
+export function isStripeIdempotencyKeyInUseError(err: unknown): boolean {
+	return readStripeErrorCode(err) === 'idempotency_key_in_use';
+}
+
+/**
+ * Delay before retrying a catch-up Stripe write, or null when the error is final.
+ * Shared by checkout.session.completed / setup_intent.succeeded races on one idempotency key.
+ */
+export function catchUpIdempotencyRetryDelayMs(
+	err: unknown,
+	attempt: number,
+	maxAttempts: number,
+	baseDelayMs: number,
+): number | null {
+	if (!isStripeIdempotencyKeyInUseError(err)) return null;
+	if (attempt >= maxAttempts) return null;
+	return baseDelayMs * attempt;
+}
 
 /** Active global catch-up product, or null when search only returned legacy/inactive rows. */
 export function pickActiveGlobalCatchUpProductId(products: CatchUpProductCandidate[]): string | null {

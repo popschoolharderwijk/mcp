@@ -30,7 +30,7 @@ Both use the same SMTP provider (Resend).
 | `{{ .SiteURL }}`         | Configured Site URL          |
 | `{{ .Email }}`           | User email address           |
 
-The Stripe checkout invite flow uses its own variant with `token_hash` format — see [stripe-billing.md §5](integrations/stripe-billing.md).
+Stripe payer mail is app-template `agreement_created` (not Auth magic link) — see [stripe-billing.md](integrations/stripe-billing.md).
 
 ---
 
@@ -70,7 +70,7 @@ Edge function `send-template-email` (`supabase/functions/send-template-email/ind
 3. Fills variables (`{{name}}` → value).
 4. Converts markdown to HTML, then sends via Resend with `RESEND_API_KEY`.
 
-Other edge functions (`send-stripe-checkout-invite`, `approve-signup-request`, `schedule-trial-lesson`, …) use the same helper internally.
+Other edge functions (`issue-payment-link`, `approve-signup-request`, `schedule-trial-lesson`, …) call the same `sendTemplateEmail` helper.
 
 ### Testing from the UI
 

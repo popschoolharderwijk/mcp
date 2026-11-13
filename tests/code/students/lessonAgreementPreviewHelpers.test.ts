@@ -13,7 +13,6 @@ const preview: AgreementBillingPreview = {
 	lessonsCount: 36,
 	yearlyCents: 72000,
 	monthlyCents: 6545,
-	leftoverCents: 0,
 	lessonDates: [],
 	periodStart: '2026-09-01',
 	periodEnd: '2027-07-01',

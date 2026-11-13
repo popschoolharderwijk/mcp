@@ -5,6 +5,11 @@
  * Optional flags (after `--`):
  *   --log-level debug|info|trace|warn|error   → forwarded to Stripe CLI (default: omit)
  *   --log-exclude ping-pong                   → drop websocket ping/pong lines (terminal + file)
+ *   --log-terminal on|off                     → mirror CLI stdout+stderr to the terminal (default: on; file always)
+ *
+ * Log lines are normalized: Stripe `time=` / event timestamps stripped, logfmt
+ * `msg="…"` unwrapped, then every line (including a one-time `log level: …`
+ * header) gets `[HH:mm:ss]` via `prefixConsoleLines`.
  *
  * Stripe CLI has no secret-redaction flag for `listen`. Known secret patterns
  * (`whsec_…` / `sk_…` / `rk_…`) are redacted in both terminal and log file.
@@ -14,6 +19,7 @@
 import { spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { prefixConsoleLines } from '../../src/lib/time/consoleClockHelpers';
 
 const LOG_DIR = 'logs';
 const LOG_FILE = path.join(LOG_DIR, 'stripe.log');
@@ -21,6 +27,13 @@ const FORWARD_TO = 'http://127.0.0.1:54421/functions/v1/stripe-webhook';
 
 const LOG_LEVELS = new Set(['debug', 'info', 'trace', 'warn', 'error']);
 const LOG_EXCLUDE_VALUES = new Set(['ping-pong']);
+const LOG_TERMINAL_VALUES = new Set(['on', 'off']);
+
+const LOGFMT_TIME_PREFIX = /^time="([^"]*)"\s*/;
+const LOGFMT_LEVEL_PREFIX = /^level=(\S+)\s*/;
+const LOGFMT_MSG_QUOTED = /^msg="((?:\\.|[^"\\])*)"\s*/;
+const LOGFMT_MSG_BARE = /^msg=(\S+)\s*/;
+const EVENT_TIMESTAMP_PREFIX = /^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})\s+/;
 
 /** How many secret payload chars (after the typed prefix) stay visible before `**`. */
 const SECRET_VISIBLE_PAYLOAD_CHARS = 4;
@@ -52,10 +65,58 @@ export function isWebsocketPingPongLine(line: string): boolean {
 	return line.includes('Sending ping message') || line.includes('Received pong message');
 }
 
+export function extractStripeLogLevel(line: string): string | null {
+	const withoutTime = line.replace(LOGFMT_TIME_PREFIX, '');
+	const match = withoutTime.match(LOGFMT_LEVEL_PREFIX);
+	return match?.[1] ?? null;
+}
+
+function unwrapLogfmtMsg(rest: string): string {
+	const quoted = rest.match(LOGFMT_MSG_QUOTED);
+	if (quoted) {
+		const message = quoted[1].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+		const remainder = rest.slice(quoted[0].length);
+		return remainder.length > 0 ? `${message} ${remainder}` : message;
+	}
+	const bare = rest.match(LOGFMT_MSG_BARE);
+	if (bare) {
+		const remainder = rest.slice(bare[0].length);
+		return remainder.length > 0 ? `${bare[1]} ${remainder}` : bare[1];
+	}
+	return rest;
+}
+
+/** Strip Stripe timestamps/level and unwrap logfmt `msg=`; clock prefix is applied later. */
+export function formatStripeCliLogLine(line: string): string {
+	if (line.length === 0) return '';
+
+	const timeMatch = line.match(LOGFMT_TIME_PREFIX);
+	if (timeMatch) {
+		let rest = line.slice(timeMatch[0].length);
+		rest = rest.replace(LOGFMT_LEVEL_PREFIX, '');
+		return unwrapLogfmtMsg(rest);
+	}
+
+	const eventMatch = line.match(EVENT_TIMESTAMP_PREFIX);
+	if (eventMatch) {
+		return line.slice(eventMatch[0].length);
+	}
+
+	return line;
+}
+
 export type ScriptOptions = {
 	stripeLogLevelArgs: string[];
 	excludePingPong: boolean;
+	/** When false, CLI stdout+stderr still go to the log file but not to the terminal. */
+	logTerminal: boolean;
 };
+
+function configuredStripeLogLevel(options: ScriptOptions): string | null {
+	const levelIndex = options.stripeLogLevelArgs.indexOf('--log-level');
+	if (levelIndex < 0) return null;
+	return options.stripeLogLevelArgs[levelIndex + 1] ?? null;
+}
 
 type FlagValueResult = { ok: true; value: string; nextIndex: number } | { ok: false; error: string };
 
@@ -121,12 +182,31 @@ function consumeLogExcludeFlag(argv: readonly string[], i: number): FlagConsumeR
 	};
 }
 
+function consumeLogTerminalFlag(argv: readonly string[], i: number): FlagConsumeResult {
+	const arg = argv[i] ?? '';
+	if (!matchesFlag(arg, '--log-terminal')) return null;
+	const parsed = readFlagValue(argv, i, '--log-terminal');
+	if (!parsed.ok) return parsed;
+	if (!LOG_TERMINAL_VALUES.has(parsed.value)) {
+		return { ok: false, error: `Invalid --log-terminal "${parsed.value}" (on | off)` };
+	}
+	const logTerminal = parsed.value === 'on';
+	return {
+		ok: true,
+		nextIndex: parsed.nextIndex,
+		apply: (options) => {
+			options.logTerminal = logTerminal;
+		},
+	};
+}
+
 export function parseScriptOptions(argv: readonly string[]): ParseOptionsResult {
-	const options: ScriptOptions = { stripeLogLevelArgs: [], excludePingPong: false };
+	const options: ScriptOptions = { stripeLogLevelArgs: [], excludePingPong: false, logTerminal: true };
 
 	let i = 0;
 	while (i < argv.length) {
-		const consumed = consumeLogLevelFlag(argv, i) ?? consumeLogExcludeFlag(argv, i);
+		const consumed =
+			consumeLogLevelFlag(argv, i) ?? consumeLogExcludeFlag(argv, i) ?? consumeLogTerminalFlag(argv, i);
 		if (!consumed) return { ok: false, error: `Unknown argument: ${argv[i]}` };
 		if (!consumed.ok) return consumed;
 		consumed.apply(options);
@@ -153,18 +233,40 @@ function runCli(): void {
 	writeFileSync(LOG_FILE, '');
 
 	const logStream = createWriteStream(LOG_FILE, { flags: 'a' });
+	const terminalOut = options.logTerminal ? process.stdout : null;
+	const terminalErr = options.logTerminal ? process.stderr : null;
 
 	type StreamMirror = {
-		terminal: NodeJS.WriteStream;
+		terminal: NodeJS.WriteStream | null;
 		buf: string;
 	};
 
-	function emitLine(line: string, terminal: NodeJS.WriteStream, trailingNewline: boolean): void {
-		if (!shouldEmitFilteredLine(line, options.excludePingPong)) return;
-		const redacted = redactStripeCliSecrets(line);
-		const text = trailingNewline ? `${redacted}\n` : redacted;
-		terminal.write(text);
+	let levelHeaderEmitted = false;
+
+	function writeText(text: string, terminal: NodeJS.WriteStream | null): void {
+		terminal?.write(text);
 		logStream.write(text);
+	}
+
+	function emitStamped(message: string, terminal: NodeJS.WriteStream | null, trailingNewline: boolean): void {
+		const stamped = prefixConsoleLines(message);
+		writeText(trailingNewline ? `${stamped}\n` : stamped, terminal);
+	}
+
+	function emitLevelHeaderOnce(level: string | null, terminal: NodeJS.WriteStream | null): void {
+		if (levelHeaderEmitted || !level) return;
+		levelHeaderEmitted = true;
+		emitStamped(`log level: ${level}`, terminal, true);
+	}
+
+	emitLevelHeaderOnce(configuredStripeLogLevel(options), terminalOut);
+
+	function emitLine(line: string, terminal: NodeJS.WriteStream | null, trailingNewline: boolean): void {
+		if (!shouldEmitFilteredLine(line, options.excludePingPong)) return;
+		emitLevelHeaderOnce(extractStripeLogLevel(line), terminal);
+		const formatted = formatStripeCliLogLine(line);
+		const redacted = redactStripeCliSecrets(formatted);
+		emitStamped(redacted, terminal, trailingNewline);
 	}
 
 	function onChunk(mirror: StreamMirror, chunk: Buffer): void {
@@ -182,8 +284,10 @@ function runCli(): void {
 		mirror.buf = '';
 	}
 
-	const stdoutMirror: StreamMirror = { terminal: process.stdout, buf: '' };
-	const stderrMirror: StreamMirror = { terminal: process.stderr, buf: '' };
+	// Stripe CLI splits output across streams (e.g. `-->` / `<--` events often on
+	// stdout, debug/`Ready!` on stderr); --log-terminal off mutes both.
+	const stdoutMirror: StreamMirror = { terminal: terminalOut, buf: '' };
+	const stderrMirror: StreamMirror = { terminal: terminalErr, buf: '' };
 
 	const stripeArgs = ['listen', '--all-snapshot', '--forward-to', FORWARD_TO, ...options.stripeLogLevelArgs];
 	const stripeCli = Bun.which('stripe');

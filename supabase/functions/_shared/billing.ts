@@ -12,7 +12,9 @@ import {
 	type BillingPhase,
 	buildAgreementStripeMetadata,
 	buildLessonPhasePriceIdempotencyKey,
+	buildLessonPhasePriceRecoveryIdempotencyKey,
 	buildLessonProductIdempotencyKey,
+	buildLessonProductRecoveryIdempotencyKey,
 	buildLessonTypeOptionProductSearchQuery,
 	buildPhases,
 	buildSetupScheduleIdempotencyKey,
@@ -23,11 +25,14 @@ import {
 	type LessonFrequency,
 	pickSharedRecurringMonthlyPriceId,
 	resolveStripeSubscriptionId,
-	resolveStripeTuitionPriceKind,
 	type YearlyResult,
 } from './billingHelpers.ts';
-import { issueCatchUpInvoice, planCatchUpInvoice } from './catchUpInvoice.ts';
-import { filterPhasesAfterCatchUpMonth } from './catchUpInvoiceHelpers.ts';
+import { issueCatchUpInvoice, planCatchUpInvoice, retrieveUsableStripeProductId } from './catchUpInvoice.ts';
+import {
+	filterPhasesAfterCatchUpMonth,
+	isStripeResourceMissingError,
+	isUsableStripeProduct,
+} from './catchUpInvoiceHelpers.ts';
 import { needsCatchUpInvoice } from './paymentLinkHelpers.ts';
 
 import {
@@ -71,6 +76,38 @@ interface StripePhasePayload {
 	default_payment_method?: string;
 }
 
+async function retrieveUsableStripePriceId(stripe: Stripe, priceId: string): Promise<string | null> {
+	try {
+		const price = await stripe.prices.retrieve(priceId);
+		return isUsableStripeProduct(price) ? price.id : null;
+	} catch (e) {
+		if (isStripeResourceMissingError(e)) return null;
+		throw e;
+	}
+}
+
+function lessonProductCreateParams(lessonTypeOptionId: string, productName: string): Stripe.ProductCreateParams {
+	return {
+		name: productName,
+		metadata: { lesson_type_option_id: lessonTypeOptionId },
+	};
+}
+
+async function createLessonProduct(stripe: Stripe, lessonTypeOptionId: string, productName: string): Promise<string> {
+	const params = lessonProductCreateParams(lessonTypeOptionId, productName);
+	const created = await stripe.products.create(params, {
+		idempotencyKey: buildLessonProductIdempotencyKey(lessonTypeOptionId),
+	});
+	const usableId = await retrieveUsableStripeProductId(stripe, created.id);
+	if (usableId) return usableId;
+
+	const recovered = await stripe.products.create(params, {
+		idempotencyKey: buildLessonProductRecoveryIdempotencyKey(lessonTypeOptionId, crypto.randomUUID()),
+	});
+	return recovered.id;
+}
+
+/** Shared tuition Product per lesson_type_option (search → verify → idempotent create). */
 async function ensureLessonProduct(stripe: Stripe, lessonTypeOptionId: string, productName: string): Promise<string> {
 	const found = await stripe.products.search({
 		query: buildLessonTypeOptionProductSearchQuery(lessonTypeOptionId),
@@ -78,20 +115,59 @@ async function ensureLessonProduct(stripe: Stripe, lessonTypeOptionId: string, p
 	});
 	const existing = found.data[0];
 	if (existing) {
-		if (existing.name !== productName) {
-			await stripe.products.update(existing.id, { name: productName });
+		const usableId = await retrieveUsableStripeProductId(stripe, existing.id);
+		if (usableId) {
+			if (existing.name !== productName) {
+				await stripe.products.update(usableId, { name: productName });
+			}
+			return usableId;
 		}
-		return existing.id;
 	}
 
-	const created = await stripe.products.create(
-		{
-			name: productName,
-			metadata: { lesson_type_option_id: lessonTypeOptionId },
+	return createLessonProduct(stripe, lessonTypeOptionId, productName);
+}
+
+function lessonPriceCreateParams(
+	productId: string,
+	lessonTypeOptionId: string,
+	amountCents: number,
+	nickname: string,
+): Stripe.PriceCreateParams {
+	return {
+		currency: 'eur',
+		product: productId,
+		unit_amount: amountCents,
+		recurring: { interval: 'month', interval_count: 1 },
+		nickname,
+		metadata: {
+			lesson_type_option_id: lessonTypeOptionId,
+			amount_cents: String(amountCents),
 		},
-		{ idempotencyKey: buildLessonProductIdempotencyKey(lessonTypeOptionId) },
-	);
-	return created.id;
+	};
+}
+
+async function createLessonRecurringMonthlyPrice(
+	stripe: Stripe,
+	productId: string,
+	lessonTypeOptionId: string,
+	amountCents: number,
+	nickname: string,
+): Promise<string> {
+	const params = lessonPriceCreateParams(productId, lessonTypeOptionId, amountCents, nickname);
+	const created = await stripe.prices.create(params, {
+		idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId, amountCents),
+	});
+	const usableId = await retrieveUsableStripePriceId(stripe, created.id);
+	if (usableId) return usableId;
+
+	const recovered = await stripe.prices.create(params, {
+		idempotencyKey: buildLessonPhasePriceRecoveryIdempotencyKey(
+			lessonTypeOptionId,
+			amountCents,
+			crypto.randomUUID(),
+		),
+	});
+	return recovered.id;
 }
 
 async function ensureRecurringMonthlyPrice(
@@ -105,21 +181,7 @@ async function ensureRecurringMonthlyPrice(
 	const existingId = pickSharedRecurringMonthlyPriceId(listed.data, amountCents);
 	if (existingId) return existingId;
 
-	const price = await stripe.prices.create(
-		{
-			currency: 'eur',
-			product: productId,
-			unit_amount: amountCents,
-			recurring: { interval: 'month', interval_count: 1 },
-			nickname,
-			metadata: {
-				lesson_type_option_id: lessonTypeOptionId,
-				amount_cents: String(amountCents),
-			},
-		},
-		{ idempotencyKey: buildLessonPhasePriceIdempotencyKey(lessonTypeOptionId, amountCents) },
-	);
-	return price.id;
+	return createLessonRecurringMonthlyPrice(stripe, productId, lessonTypeOptionId, amountCents, nickname);
 }
 
 function buildStripePhasePayload(
@@ -146,19 +208,14 @@ async function toStripePhasePayloads(
 		lessonTypeOptionId: string;
 		productName: string;
 		tariff: AgeTariff;
-		monthlyCents: number;
-		leftoverCents: number;
 	},
 	defaultPm?: string,
 ): Promise<StripePhasePayload[]> {
 	const agreementMetadata = buildAgreementStripeMetadata(agreement);
 	const productId = await ensureLessonProduct(stripe, tuition.lessonTypeOptionId, tuition.productName);
 	const payloads: StripePhasePayload[] = [];
+	const nickname = buildStripeTuitionPriceNickname(tuition.tariff);
 	for (const phase of phases) {
-		const nickname = buildStripeTuitionPriceNickname({
-			kind: resolveStripeTuitionPriceKind(phase.amountCents, tuition.monthlyCents, tuition.leftoverCents),
-			tariff: tuition.tariff,
-		});
 		const priceId = await ensureRecurringMonthlyPrice(
 			stripe,
 			productId,
@@ -238,8 +295,6 @@ function buildTuitionProductContext(
 	lessonTypeOptionId: string;
 	productName: string;
 	tariff: AgeTariff;
-	monthlyCents: number;
-	leftoverCents: number;
 } {
 	return {
 		lessonTypeOptionId,
@@ -249,8 +304,6 @@ function buildTuitionProductContext(
 			frequency: billing.agreement.frequency,
 		}),
 		tariff: billing.tariff,
-		monthlyCents: billing.yearly.monthlyCents,
-		leftoverCents: billing.yearly.leftoverCents,
 	};
 }
 
@@ -285,12 +338,7 @@ function resolveSchedulePhases(
 	billing: BillingComputation,
 	today: string,
 ): { phases: BillingPhase[]; catchUpThroughMonth: string | null } {
-	const allPhases = buildPhases(
-		billing.periodStart,
-		billing.periodEnd,
-		billing.yearly.monthlyCents,
-		billing.yearly.leftoverCents,
-	);
+	const allPhases = buildPhases(billing.periodStart, billing.periodEnd, billing.yearly.monthlyCents);
 	if (!needsCatchUpInvoice(billing.agreement.start_date, today)) {
 		return { phases: allPhases, catchUpThroughMonth: null };
 	}
@@ -372,7 +420,6 @@ export async function ensureCatchUpInvoiceForAgreement(
 		startDate: billing.agreement.start_date,
 		today,
 		monthlyCents: billing.yearly.monthlyCents,
-		leftoverCents: billing.yearly.leftoverCents,
 		periodStart: billing.periodStart,
 		periodEnd: billing.periodEnd,
 	});
@@ -392,7 +439,6 @@ export interface RebuildResult {
 	keptPhases: number;
 	updatedPhases: number;
 	newMonthlyCents: number;
-	newLeftoverCents: number;
 	skipped?: 'no_future_phases';
 }
 
@@ -402,7 +448,6 @@ function skippedRebuildResult(scheduleId: string, keptPhases: number, billing: B
 		keptPhases,
 		updatedPhases: 0,
 		newMonthlyCents: billing.yearly.monthlyCents,
-		newLeftoverCents: billing.yearly.leftoverCents,
 		skipped: 'no_future_phases',
 	};
 }
@@ -435,8 +480,6 @@ async function updateFutureSchedulePhases(input: {
 		lessonTypeOptionId: string;
 		productName: string;
 		tariff: AgeTariff;
-		monthlyCents: number;
-		leftoverCents: number;
 	};
 	newPhases: BillingPhase[];
 	keptPayloads: Array<Record<string, unknown>>;
@@ -471,7 +514,6 @@ async function updateFutureSchedulePhases(input: {
 		keptPhases: input.keptPayloads.length,
 		updatedPhases: futurePayloads.length,
 		newMonthlyCents: input.billing.yearly.monthlyCents,
-		newLeftoverCents: input.billing.yearly.leftoverCents,
 	};
 }
 
@@ -487,12 +529,7 @@ export async function rebuildScheduleForAgreement(
 ): Promise<RebuildResult> {
 	const { scheduleId, schedule } = await loadScheduleForRebuild(admin, stripe, lessonAgreementId);
 	const { billing, lessonTypeOptionId, lessonTypeName } = await loadBillingContext(admin, lessonAgreementId);
-	const newPhases = buildPhases(
-		billing.periodStart,
-		billing.periodEnd,
-		billing.yearly.monthlyCents,
-		billing.yearly.leftoverCents,
-	);
+	const newPhases = buildPhases(billing.periodStart, billing.periodEnd, billing.yearly.monthlyCents);
 	const { keptPayloads, firstFutureIndex } = collectKeptSchedulePhases(
 		schedule.phases ?? [],
 		Math.floor(Date.now() / 1000),

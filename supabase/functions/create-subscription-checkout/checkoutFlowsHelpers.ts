@@ -52,24 +52,39 @@ export function buildCheckoutSessionUrls(
 	};
 }
 
-export function resolveExistingScheduleResponse(scheduleId: string | null | undefined): Response | null {
-	if (!scheduleId) return null;
-	return jsonResponse(200, { mode: 'complete', schedule_id: scheduleId });
-}
-
-export function validateCompleteModePaymentReady(
-	customerId: string | null,
-	paymentMethodId: string | null,
-): Response | null {
-	if (!customerId || !paymentMethodId) {
-		return jsonResponse(409, { error: 'Betaalmethode is nog niet beschikbaar in Stripe' });
-	}
-	return null;
-}
-
 export function buildStripeCustomerDisplayName(firstName: string | null, lastName: string | null): string | undefined {
 	const name = [firstName, lastName].filter(Boolean).join(' ');
 	return name || undefined;
+}
+
+/** Webhook has not written `stripe_schedule_id` yet — client should poll. */
+function buildCompleteModePendingResponse(): Response {
+	return jsonResponse(200, { mode: 'complete', pending: true });
+}
+
+export type CompleteModeArrangement = 'not_complete' | 'pending' | 'ready';
+
+/** Map Checkout session + local schedule id to complete-mode poll outcome. */
+export function resolveCompleteModeArrangement(
+	sessionStatus: string | null | undefined,
+	scheduleId: string | null,
+): CompleteModeArrangement {
+	if (sessionStatus !== 'complete') return 'not_complete';
+	if (scheduleId) return 'ready';
+	return 'pending';
+}
+
+export function buildCompleteModeArrangementResponse(
+	arrangement: CompleteModeArrangement,
+	scheduleId: string | null,
+): Response {
+	if (arrangement === 'not_complete') {
+		return jsonResponse(409, { error: 'Checkout is nog niet afgerond' });
+	}
+	if (arrangement === 'ready') {
+		return buildCompleteModeSuccessResponse({ scheduleId: scheduleId as string });
+	}
+	return buildCompleteModePendingResponse();
 }
 
 export function buildCompleteModeSuccessResponse(built: {
@@ -78,6 +93,7 @@ export function buildCompleteModeSuccessResponse(built: {
 }): Response {
 	return jsonResponse(200, {
 		mode: 'complete',
+		pending: false,
 		schedule_id: built.scheduleId,
 		subscription_id: built.subscriptionId,
 	});
@@ -101,12 +117,4 @@ export function buildDirectModeSuccessResponse(built: {
 		period: { start: built.periodStart, end: built.periodEnd },
 		tariff: built.tariff,
 	});
-}
-
-export function resolveSetupIntentPaymentMethodId<T extends { id?: string }>(
-	setupIntent: string | T | null | undefined,
-	extractPaymentMethodId: (intent: T) => string | null,
-): string | null {
-	if (typeof setupIntent !== 'object' || !setupIntent) return null;
-	return extractPaymentMethodId(setupIntent);
 }

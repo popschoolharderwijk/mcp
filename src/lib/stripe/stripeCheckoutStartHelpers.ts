@@ -16,7 +16,13 @@ export type StripeCheckoutStartFlowDeps = {
 	getSession: () => Promise<{ session: unknown | null }>;
 	invokeCreateSubscriptionCheckout: (body: Record<string, string>) => Promise<{ data: unknown; error: unknown }>;
 	getFunctionErrorMessage: (data: unknown, error: unknown, fallback: string) => Promise<string>;
+	sleep?: (ms: number) => Promise<void>;
+	pollIntervalMs?: number;
+	maxPollAttempts?: number;
 };
+
+const CHECKOUT_COMPLETE_POLL_INTERVAL_MS = 1000;
+const CHECKOUT_COMPLETE_MAX_ATTEMPTS = 45;
 
 function parseStripeCheckoutStartParams(params: URLSearchParams): StripeCheckoutStartParams {
 	return {
@@ -74,6 +80,60 @@ function resolveStripeCheckoutFallbackError(): string {
 	return 'Kon betaling niet starten.';
 }
 
+/** JSON body from create-subscription-checkout `mode: complete` (not a Stripe object). */
+type CheckoutCompletePollPayload = {
+	mode?: string;
+	pending?: boolean;
+	schedule_id?: string;
+	subscription_id?: string | null;
+};
+
+function isCheckoutCompletePollPayload(data: unknown): data is CheckoutCompletePollPayload {
+	return typeof data === 'object' && data !== null;
+}
+
+export function resolveCheckoutCompletePollStatus(data: unknown): 'success' | 'pending' | 'invalid' {
+	if (!isCheckoutCompletePollPayload(data)) return 'invalid';
+	if (typeof data.schedule_id === 'string' && data.schedule_id.length > 0) return 'success';
+	if (data.pending === true) return 'pending';
+	return 'invalid';
+}
+
+function resolveCheckoutCompleteTimeoutMessage(): string {
+	return 'Je betaling is ontvangen, maar de machtiging is nog niet zichtbaar. Vernieuw de pagina over een moment, of neem contact op met de school.';
+}
+
+async function defaultSleep(ms: number): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function pollCheckoutCompleteUntilArranged(
+	agreementId: string,
+	checkoutSessionId: string,
+	deps: StripeCheckoutStartFlowDeps,
+): Promise<StripeCheckoutStartFlowResult> {
+	const sleep = deps.sleep ?? defaultSleep;
+	const intervalMs = deps.pollIntervalMs ?? CHECKOUT_COMPLETE_POLL_INTERVAL_MS;
+	const maxAttempts = deps.maxPollAttempts ?? CHECKOUT_COMPLETE_MAX_ATTEMPTS;
+	const body = buildStripeCheckoutInvokeBody(agreementId, 'complete', checkoutSessionId);
+
+	for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+		const { data, error: invokeErr } = await deps.invokeCreateSubscriptionCheckout(body);
+		if (hasInvokeResponseError(data, invokeErr)) {
+			const message = await deps.getFunctionErrorMessage(data, invokeErr, resolveStripeCompleteFallbackError());
+			return { status: 'error', message };
+		}
+		const status = resolveCheckoutCompletePollStatus(data);
+		if (status === 'success') return { status: 'success' };
+		if (status === 'invalid') {
+			return { status: 'error', message: resolveStripeCompleteFallbackError() };
+		}
+		if (attempt + 1 < maxAttempts) await sleep(intervalMs);
+	}
+
+	return { status: 'error', message: resolveCheckoutCompleteTimeoutMessage() };
+}
+
 export async function runStripeCheckoutStartFlow(
 	params: URLSearchParams,
 	deps: StripeCheckoutStartFlowDeps,
@@ -99,18 +159,16 @@ export async function runStripeCheckoutStartFlow(
 	}
 
 	const mode = resolveStripeCheckoutMode(checkoutSessionId);
+	if (mode === 'complete') {
+		return pollCheckoutCompleteUntilArranged(agreementId, checkoutSessionId as string, deps);
+	}
+
 	const { data, error: invokeErr } = await deps.invokeCreateSubscriptionCheckout(
 		buildStripeCheckoutInvokeBody(agreementId, mode, checkoutSessionId),
 	);
 	if (hasInvokeResponseError(data, invokeErr)) {
-		const fallback =
-			mode === 'complete' ? resolveStripeCompleteFallbackError() : resolveStripeCheckoutFallbackError();
-		const message = await deps.getFunctionErrorMessage(data, invokeErr, fallback);
+		const message = await deps.getFunctionErrorMessage(data, invokeErr, resolveStripeCheckoutFallbackError());
 		return { status: 'error', message };
-	}
-
-	if (mode === 'complete') {
-		return { status: 'success' };
 	}
 
 	const url = extractCheckoutRedirectUrl(data);

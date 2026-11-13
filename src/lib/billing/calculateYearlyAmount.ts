@@ -9,7 +9,7 @@
 import { getOccurrenceDatesInRange } from '@/lib/lessonHelpers';
 import { APP_SETTINGS_BOOTSTRAP } from '@/lib/settings/appSettingsDefaults';
 import type { LessonFrequency } from '@/types/lesson-agreements';
-import { shiftDatePastNoLessonPeriods, splitYearlyAmountAcrossBillingMonths } from './calculateYearlyAmountHelpers';
+import { shiftDatePastNoLessonPeriods } from './calculateYearlyAmountHelpers';
 import { billingMonthsPerSchoolYear, type SchoolYearBounds } from './schoolYear';
 
 export interface NoLessonPeriod {
@@ -42,10 +42,8 @@ export interface CalculateYearlyAmountResult {
 	lessonsCount: number;
 	/** Yearly amount in cents (= lessonsCount × pricePerLessonCents). */
 	yearlyCents: number;
-	/** Standard monthly amount in cents (= floor(yearlyCents / billingMonths)). */
+	/** Monthly amount in cents (= floor(yearlyCents / billingMonths)). */
 	monthlyCents: number;
-	/** Remainder in cents (applied to the last billing month). */
-	leftoverCents: number;
 	/** Actual lesson dates (YYYY-MM-DD), after filtering. */
 	lessonDates: string[];
 }
@@ -57,7 +55,7 @@ export function calculateYearlyAmount(input: CalculateYearlyAmountInput): Calcul
 	const noLessonPeriods = input.noLessonPeriods ?? [];
 
 	if (periodStart > periodEnd || pricePerLessonCents <= 0) {
-		return { lessonsCount: 0, yearlyCents: 0, monthlyCents: 0, leftoverCents: 0, lessonDates: [] };
+		return { lessonsCount: 0, yearlyCents: 0, monthlyCents: 0, lessonDates: [] };
 	}
 
 	const start = new Date(`${periodStart}T12:00:00`);
@@ -80,7 +78,7 @@ export function calculateYearlyAmount(input: CalculateYearlyAmountInput): Calcul
 
 	const lessonsCount = lessonDates.length;
 	const yearlyCents = lessonsCount * pricePerLessonCents;
-	const { monthlyCents, leftoverCents } = splitYearlyAmountAcrossBillingMonths(yearlyCents, billingMonths);
+	const monthlyCents = billingMonths > 0 ? Math.floor(yearlyCents / billingMonths) : 0;
 
-	return { lessonsCount, yearlyCents, monthlyCents, leftoverCents, lessonDates };
+	return { lessonsCount, yearlyCents, monthlyCents, lessonDates };
 }

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	extractStripeLogLevel,
+	formatStripeCliLogLine,
 	isWebsocketPingPongLine,
 	parseScriptOptions,
 	readFlagValue,
@@ -41,31 +43,35 @@ describe('readFlagValue', () => {
 });
 
 describe('parseScriptOptions', () => {
-	it('defaults to no Stripe log-level and no excludes', () => {
+	it('defaults to no Stripe log-level, no excludes, and terminal on', () => {
 		expect(parseScriptOptions([])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: [], excludePingPong: false },
+			options: { stripeLogLevelArgs: [], excludePingPong: false, logTerminal: true },
 		});
 	});
 
 	it('forwards a valid log-level to Stripe CLI args', () => {
 		expect(parseScriptOptions(['--log-level', 'debug'])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: ['--log-level', 'debug'], excludePingPong: false },
+			options: { stripeLogLevelArgs: ['--log-level', 'debug'], excludePingPong: false, logTerminal: true },
 		});
 	});
 
 	it('enables ping-pong exclusion', () => {
 		expect(parseScriptOptions(['--log-exclude=ping-pong'])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: [], excludePingPong: true },
+			options: { stripeLogLevelArgs: [], excludePingPong: true, logTerminal: true },
 		});
 	});
 
-	it('accepts log-level and log-exclude together', () => {
-		expect(parseScriptOptions(['--log-level=trace', '--log-exclude', 'ping-pong'])).toEqual({
+	it('accepts log-level, log-exclude, and log-terminal together', () => {
+		expect(parseScriptOptions(['--log-level=trace', '--log-exclude', 'ping-pong', '--log-terminal=off'])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: ['--log-level', 'trace'], excludePingPong: true },
+			options: {
+				stripeLogLevelArgs: ['--log-level', 'trace'],
+				excludePingPong: true,
+				logTerminal: false,
+			},
 		});
 	});
 
@@ -80,6 +86,13 @@ describe('parseScriptOptions', () => {
 		expect(parseScriptOptions(['--log-exclude', 'deadlines'])).toEqual({
 			ok: false,
 			error: 'Unknown --log-exclude value "deadlines" (supported: ping-pong)',
+		});
+	});
+
+	it('rejects invalid log-terminal values', () => {
+		expect(parseScriptOptions(['--log-terminal', 'quiet'])).toEqual({
+			ok: false,
+			error: 'Invalid --log-terminal "quiet" (on | off)',
 		});
 	});
 
@@ -113,5 +126,31 @@ describe('output filters', () => {
 		expect(shouldEmitFilteredLine(ping, false)).toBe(true);
 		expect(shouldEmitFilteredLine(ping, true)).toBe(false);
 		expect(shouldEmitFilteredLine('Ready! whsec_abc', true)).toBe(true);
+	});
+});
+
+describe('Stripe CLI log line formatting', () => {
+	it('extracts level from logfmt lines', () => {
+		expect(
+			extractStripeLogLevel('time="Fri, 13 Nov 2026 10:07:47 UTC" level=debug msg="Connected!" prefix=websocket'),
+		).toBe('debug');
+		expect(extractStripeLogLevel('2026-11-13 10:07:47   --> customer.created')).toBe(null);
+	});
+
+	it('strips logfmt time/level and unwraps msg', () => {
+		expect(
+			formatStripeCliLogLine(
+				'time="Fri, 13 Nov 2026 10:07:47 UTC" level=debug msg="Using profiles file" path="/tmp/config.toml" prefix=config',
+			),
+		).toBe('Using profiles file path="/tmp/config.toml" prefix=config');
+	});
+
+	it('strips event-forward timestamps', () => {
+		expect(formatStripeCliLogLine('2026-11-13 10:07:47   --> customer.created [evt_1]')).toBe(
+			'--> customer.created [evt_1]',
+		);
+		expect(formatStripeCliLogLine('2026-11-13 10:07:47  <--  [400] POST http://127.0.0.1/hook [evt_1]')).toBe(
+			'<--  [400] POST http://127.0.0.1/hook [evt_1]',
+		);
 	});
 });

@@ -6,15 +6,22 @@ import {
 	buildCatchUpInvoicePlan,
 	buildCatchUpLineIdempotencyKey,
 	buildCatchUpLineItems,
+	buildCatchUpProductIdempotencyKey,
+	buildCatchUpProductRecoveryIdempotencyKey,
 	catchUpDraftNeedsLineItems,
+	catchUpIdempotencyRetryDelayMs,
 	catchUpInvoiceDescription,
 	catchUpLineDescription,
 	filterPhasesAfterCatchUpMonth,
+	isStripeIdempotencyKeyInUseError,
+	isStripeResourceMissingError,
+	isUsableStripeProduct,
 	listBillingMonthLabels,
 	needsCatchUpPaymentMethodUpdate,
 	pickActiveGlobalCatchUpProductId,
 	pickAdoptableLegacyCatchUpProductId,
 	pickReusableCatchUpInvoice,
+	readStripeErrorCode,
 	resolveExistingCatchUpSettleKind,
 	stripeExpandableId,
 } from '../../../supabase/functions/_shared/catchUpInvoiceHelpers';
@@ -44,7 +51,6 @@ describe('buildCatchUpLineItems', () => {
 				startDate: '2026-10-01',
 				today: '2026-10-20',
 				monthlyCents: 7000,
-				leftoverCents: 50,
 				periodStart: '2026-10-01',
 				periodEnd: '2027-07-31',
 			}),
@@ -57,7 +63,6 @@ describe('buildCatchUpLineItems', () => {
 				startDate: '2026-11-15',
 				today: '2026-10-21',
 				monthlyCents: 7000,
-				leftoverCents: 0,
 				periodStart: '2026-11-15',
 				periodEnd: '2027-07-31',
 			}),
@@ -70,7 +75,6 @@ describe('buildCatchUpLineItems', () => {
 				startDate: '2026-10-15',
 				today: '2026-12-03',
 				monthlyCents: 7338,
-				leftoverCents: 40,
 				periodStart: '2026-10-15',
 				periodEnd: '2027-07-31',
 			}),
@@ -81,35 +85,30 @@ describe('buildCatchUpLineItems', () => {
 		]);
 	});
 
-	it('skips August and does not emit a zero line', () => {
+	it('skips August and charges July at the same monthly amount', () => {
 		expect(
 			buildCatchUpLineItems({
 				startDate: '2026-07-01',
 				today: '2026-09-10',
 				monthlyCents: 5000,
-				leftoverCents: 100,
 				periodStart: '2026-07-01',
 				periodEnd: '2026-09-30',
 			}),
 		).toEqual([
 			{ month: '2026-07', amountCents: 5000 },
-			{ month: '2026-09', amountCents: 5100 },
+			{ month: '2026-09', amountCents: 5000 },
 		]);
-	});
-
-	it('adds leftover cents only on the last billing month of the period', () => {
 		expect(
 			buildCatchUpLineItems({
 				startDate: '2027-06-01',
 				today: '2027-07-20',
 				monthlyCents: 1000,
-				leftoverCents: 50,
 				periodStart: '2026-09-01',
 				periodEnd: '2027-07-31',
 			}),
 		).toEqual([
 			{ month: '2027-06', amountCents: 1000 },
-			{ month: '2027-07', amountCents: 1050 },
+			{ month: '2027-07', amountCents: 1000 },
 		]);
 	});
 });
@@ -121,7 +120,6 @@ describe('buildCatchUpInvoicePlan', () => {
 				startDate: '2026-10-01',
 				today: '2026-10-20',
 				monthlyCents: 7000,
-				leftoverCents: 0,
 				periodStart: '2026-10-01',
 				periodEnd: '2027-07-31',
 			}),
@@ -134,7 +132,6 @@ describe('buildCatchUpInvoicePlan', () => {
 				startDate: '2026-10-15',
 				today: '2026-12-03',
 				monthlyCents: 7338,
-				leftoverCents: 0,
 				periodStart: '2026-10-15',
 				periodEnd: '2027-07-31',
 			}),
@@ -153,7 +150,7 @@ describe('buildCatchUpInvoicePlan', () => {
 
 describe('filterPhasesAfterCatchUpMonth', () => {
 	it('drops phases covered by the catch-up invoice', () => {
-		const phases = buildPhases('2026-09-01', '2027-07-31', 1000, 50);
+		const phases = buildPhases('2026-09-01', '2027-07-31', 1000);
 		const remaining = filterPhasesAfterCatchUpMonth(phases, '2026-12');
 		expect(remaining.map((phase) => phase.label)).toEqual([
 			'2027-01',
@@ -164,7 +161,6 @@ describe('filterPhasesAfterCatchUpMonth', () => {
 			'2027-06',
 			'2027-07',
 		]);
-		expect(remaining[remaining.length - 1]?.amountCents).toBe(1050);
 	});
 });
 
@@ -184,6 +180,28 @@ describe('catch-up descriptions and idempotency keys', () => {
 		expect(buildCatchUpLineIdempotencyKey('a1', '2026-10', '2026-12', '2026-11', 'seti_1')).toBe(
 			'mcp_catchup_invoice_a1_2026-10_2026-12_seti_1_item_2026-11',
 		);
+		expect(buildCatchUpProductIdempotencyKey()).toBe('mcp_catchup_product_global');
+		expect(buildCatchUpProductRecoveryIdempotencyKey('nonce-1')).toBe(
+			'mcp_catchup_product_global_recreate_nonce-1',
+		);
+	});
+
+	it('classifies Stripe error codes and usable catalog products', () => {
+		expect(readStripeErrorCode({ code: 'resource_missing' })).toBe('resource_missing');
+		expect(readStripeErrorCode({ raw: { code: 'idempotency_key_in_use' } })).toBe('idempotency_key_in_use');
+		expect(readStripeErrorCode(null)).toBeNull();
+		expect(isStripeResourceMissingError({ code: 'resource_missing' })).toBe(true);
+		expect(isStripeIdempotencyKeyInUseError({ code: 'idempotency_key_in_use' })).toBe(true);
+		expect(isUsableStripeProduct({ id: 'prod_1', active: true })).toBe(true);
+		expect(isUsableStripeProduct({ id: 'prod_1', deleted: true })).toBe(false);
+		expect(isUsableStripeProduct({ id: 'prod_1', active: false })).toBe(false);
+		expect(isUsableStripeProduct({ id: '' })).toBe(false);
+	});
+
+	it('computes catch-up idempotency retry delay only while the key is still in use', () => {
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'resource_missing' }, 1, 4, 250)).toBeNull();
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'idempotency_key_in_use' }, 4, 4, 250)).toBeNull();
+		expect(catchUpIdempotencyRetryDelayMs({ code: 'idempotency_key_in_use' }, 2, 4, 250)).toBe(500);
 	});
 
 	it('picks only an active global catch-up product', () => {
