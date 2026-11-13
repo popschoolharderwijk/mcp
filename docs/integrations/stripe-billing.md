@@ -25,13 +25,13 @@ Ops UI: **Machtigingen** (`/mandates`); **Open betaalscherm** = issue link + ope
 
 ## Tables
 
-| Table | Role |
-| --- | --- |
-| `stripe_customers` | user ↔ Stripe customer |
-| `subscriptions` / `subscription_invoices` | Stripe mirrors |
-| `stripe_checkout_invitations` | audit of payment-link mails |
-| `agreement_payment_links` | SHA-256 of current token |
-| `payment_link_requests` | rate limit for public “nieuwe link” (3/h) |
+| Table                                     | Role                                      |
+| ----------------------------------------- | ----------------------------------------- |
+| `stripe_customers`                        | user ↔ Stripe customer                    |
+| `subscriptions` / `subscription_invoices` | Stripe mirrors                            |
+| `stripe_checkout_invitations`             | audit of payment-link mails               |
+| `agreement_payment_links`                 | SHA-256 of current token                  |
+| `payment_link_requests`                   | rate limit for public “nieuwe link” (3/h) |
 
 `lesson_agreements.minimum_term_end` set when a payment link is issued.
 
@@ -43,19 +43,19 @@ Also: schedule `school_year` (+ `last_rebuild_at` on rebuild); phase `phase_labe
 
 ## Edge functions
 
-| Function | Auth | Role |
-| --- | --- | --- |
-| `issue-payment-link` | JWT (own check) | rotate token; mail; invite row |
-| `payment-link-info` | token | pay page + poll “arranged” |
-| `request-payment-link` | public | rate-limited re-mail |
-| `start-payment-checkout` | token | Checkout setup only |
-| `create-subscription-checkout` | JWT | checkout / direct / complete (complete = poll status) |
-| `create-customer-portal` | JWT | portal |
-| `sync-stripe-subscription` | JWT | pull one row |
-| `reconcile-stripe-mandates` | privileged | Machtigingen sync |
-| `rebuild-subscription-schedule` | JWT | future phases after rate change |
-| `force-start-subscription` | admin | ops only, no UI |
-| `stripe-webhook` | signature | fulfill + mirrors |
+| Function                        | Auth            | Role                                                  |
+| ------------------------------- | --------------- | ----------------------------------------------------- |
+| `issue-payment-link`            | JWT (own check) | rotate token; mail; invite row                        |
+| `payment-link-info`             | token           | pay page + poll “arranged”                            |
+| `request-payment-link`          | public          | rate-limited re-mail                                  |
+| `start-payment-checkout`        | token           | Checkout setup only                                   |
+| `create-subscription-checkout`  | JWT             | checkout / direct / complete (complete = poll status) |
+| `create-customer-portal`        | JWT             | portal                                                |
+| `sync-stripe-subscription`      | JWT             | pull one row                                          |
+| `reconcile-stripe-mandates`     | privileged      | Machtigingen sync                                     |
+| `rebuild-subscription-schedule` | JWT             | future phases after rate change                       |
+| `force-start-subscription`      | admin           | ops only, no UI                                       |
+| `stripe-webhook`                | signature       | fulfill + mirrors                                     |
 
 Shared: `_shared/billing.ts`, `billingHelpers.ts`, `catchUpInvoice.ts`, `catchUpInvoiceHelpers.ts`, `paymentLink.ts`, `paymentLinkHelpers.ts`. Event list: `STRIPE_WEBHOOK_ENABLED_EVENTS`.
 

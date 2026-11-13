@@ -81,25 +81,25 @@ bun run db:push:functions production
 
 ## Available Edge Functions
 
-| Function                        | Purpose                                                                                  | Required secrets                                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `delete-user`                   | GDPR: delete account (self or admin).                                                    | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
-| `create-user`                   | Admin-script only: create a user with optional password.                                 | Standard                                               |
-| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                           | Standard, `RESEND_API_KEY`                             |
-| `approve-signup-request`        | Admin approves signup → user + welcome email.                                            | Standard, `RESEND_API_KEY`                             |
-| `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                     | Standard, `RESEND_API_KEY`                             |
-| `send-template-email`           | Sends email from `email_templates` + variables.                                          | Standard, `RESEND_API_KEY`                             |
-| `issue-payment-link`            | Rotate `/pay` token; mail `agreement_created`; invite audit row.                         | Standard, `RESEND_API_KEY`                             |
-| `payment-link-info`             | Public token: pay-page payload + arranged poll. **`verify_jwt = false`**.                | Standard                                               |
-| `request-payment-link`          | Public rate-limited re-mail of payment link. **`verify_jwt = false`**.                   | Standard, `RESEND_API_KEY`                             |
-| `start-payment-checkout`        | Public token: Stripe Checkout setup only. **`verify_jwt = false`**.                      | Standard, `STRIPE_SECRET_KEY`                          |
-| `create-subscription-checkout`  | JWT: checkout / direct / complete (complete = poll; webhook fulfills).                   | Standard, `STRIPE_SECRET_KEY`                          |
-| `create-customer-portal`        | Stripe Customer Portal.                                                                  | Standard, `STRIPE_SECRET_KEY`                          |
-| `sync-stripe-subscription`      | Pull one subscription from Stripe.                                                       | Standard, `STRIPE_SECRET_KEY`                          |
-| `reconcile-stripe-mandates`     | Privileged bulk mandate reconcile (Machtigingen).                                        | Standard, `STRIPE_SECRET_KEY`                          |
-| `rebuild-subscription-schedule` | Recalculate future phases after a price change.                                          | Standard, `STRIPE_SECRET_KEY`                          |
-| `force-start-subscription`      | Ops: force-start schedule (no app UI).                                                   | Standard, `STRIPE_SECRET_KEY`                          |
-| `stripe-webhook`                | Fulfill schedule + catch-up; subscription/invoice mirrors. **`verify_jwt = false`**.     | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| Function                        | Purpose                                                                              | Required secrets                                       |
+| ------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
+| `delete-user`                   | GDPR: delete account (self or admin).                                                | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
+| `create-user`                   | Admin-script only: create a user with optional password.                             | Standard                                               |
+| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                       | Standard, `RESEND_API_KEY`                             |
+| `approve-signup-request`        | Admin approves signup → user + welcome email.                                        | Standard, `RESEND_API_KEY`                             |
+| `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                 | Standard, `RESEND_API_KEY`                             |
+| `send-template-email`           | Sends email from `email_templates` + variables.                                      | Standard, `RESEND_API_KEY`                             |
+| `issue-payment-link`            | Rotate `/pay` token; mail `agreement_created`; invite audit row.                     | Standard, `RESEND_API_KEY`                             |
+| `payment-link-info`             | Public token: pay-page payload + arranged poll. **`verify_jwt = false`**.            | Standard                                               |
+| `request-payment-link`          | Public rate-limited re-mail of payment link. **`verify_jwt = false`**.               | Standard, `RESEND_API_KEY`                             |
+| `start-payment-checkout`        | Public token: Stripe Checkout setup only. **`verify_jwt = false`**.                  | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-subscription-checkout`  | JWT: checkout / direct / complete (complete = poll; webhook fulfills).               | Standard, `STRIPE_SECRET_KEY`                          |
+| `create-customer-portal`        | Stripe Customer Portal.                                                              | Standard, `STRIPE_SECRET_KEY`                          |
+| `sync-stripe-subscription`      | Pull one subscription from Stripe.                                                   | Standard, `STRIPE_SECRET_KEY`                          |
+| `reconcile-stripe-mandates`     | Privileged bulk mandate reconcile (Machtigingen).                                    | Standard, `STRIPE_SECRET_KEY`                          |
+| `rebuild-subscription-schedule` | Recalculate future phases after a price change.                                      | Standard, `STRIPE_SECRET_KEY`                          |
+| `force-start-subscription`      | Ops: force-start schedule (no app UI).                                               | Standard, `STRIPE_SECRET_KEY`                          |
+| `stripe-webhook`                | Fulfill schedule + catch-up; subscription/invoice mirrors. **`verify_jwt = false`**. | Standard, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
 
 > 💡 "Standard" = auto-injected Supabase env (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`). See [secrets.md](./secrets.md). Stripe invariants: [integrations/stripe-billing.md](./integrations/stripe-billing.md).
 
