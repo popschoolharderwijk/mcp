@@ -93,6 +93,7 @@ export async function beginAuthenticatedPostWithUuidField<T>(
 const ALLOWED_SITE_HOSTS = new Set([
 	'mcp.mplifi.nl',
 	'instant-setup-kit.lovable.app',
+	'preview--instant-setup-kit.lovable.app',
 	'id-preview--098d4be4-b790-4fca-9806-d5dd653b8946.lovable.app',
 	'098d4be4-b790-4fca-9806-d5dd653b8946.lovableproject.com',
 ]);
