@@ -603,7 +603,8 @@ FROM (VALUES
   ('student-017@test.nl', 'teacher-alice@test.nl', 'Drumles', 60, 'weekly'::public.lesson_frequency, 60.00, 1, '15:15', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
   ('student-018@test.nl', 'teacher-alice@test.nl', 'Drumles', 30, 'monthly'::public.lesson_frequency, 30.00, 1, '16:15', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
   ('student-019@test.nl', 'teacher-alice@test.nl', 'Drumles', 45, 'monthly'::public.lesson_frequency, 45.00, 1, '16:45', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
-  ('student-020@test.nl', 'teacher-alice@test.nl', 'Drumles', 30, 'biweekly'::public.lesson_frequency, 30.00, 1, '17:30', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
+  -- student-020: weekly Drumles with Alice (get_hours_report RLS fixtures)
+  ('student-020@test.nl', 'teacher-alice@test.nl', 'Drumles', 30, 'weekly'::public.lesson_frequency, 30.00, 1, '17:30', CURRENT_DATE - INTERVAL '45 days', CURRENT_DATE + INTERVAL '6 months', true),
 
   -- ========================================================================
   -- TEACHER 2 (Bob) - Basles, Keyboardles
