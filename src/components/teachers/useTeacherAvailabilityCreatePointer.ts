@@ -1,11 +1,11 @@
 import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
 import type { AgendaSetting } from '@/lib/settings/appSettingsTypes';
 import {
+	type AvailabilityCreatePointerEndAction,
 	type AvailabilityTimeForm,
 	availabilityGeometryFromTimes,
 	availabilityPointerYToMinutes,
 	buildAvailabilityCreateRangeFromMinutes,
-	type AvailabilityCreatePointerEndAction,
 	resolveAvailabilityCreatePointerEndAction,
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 

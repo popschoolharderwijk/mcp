@@ -444,6 +444,16 @@ export function shouldShowAvailabilityBlockTimes(startTime: string, endTime: str
 	return availabilityBlockDurationMinutes(startTime, endTime) > 30;
 }
 
+export function availabilityBlockDisplayTimes(
+	preview: AvailabilityTimeForm | null,
+	block: Pick<AvailabilityBlock, 'startTime' | 'endTime'>,
+): { start: string; end: string } {
+	if (!preview) {
+		return { start: block.startTime, end: block.endTime };
+	}
+	return { start: preview.start_time, end: preview.end_time };
+}
+
 export function isAvailabilityTimeRangeValid(startTime: string, endTime: string): boolean {
 	return startTime < endTime;
 }

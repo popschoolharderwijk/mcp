@@ -5,6 +5,7 @@ import {
 	type AvailabilityBlockPointerMode,
 	type AvailabilityPointerEndAction,
 	type AvailabilityTimeForm,
+	availabilityBlockDisplayTimes,
 	availabilityGeometryFromTimes,
 	canStartAvailabilityBlockPointer,
 	computeAvailabilityBlockPointerPreview,
@@ -22,10 +23,119 @@ interface PointerSession {
 	originEndTime: string;
 }
 
+type PointerPreviewControls = {
+	setPreviewTimes: (next: AvailabilityTimeForm | null) => void;
+	setIsPendingSave: (next: boolean) => void;
+	onClick: (block: AvailabilityBlock) => void;
+	onTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
+};
+
 function releasePointerCapture(event: ReactPointerEvent<HTMLElement>): void {
 	if (event.currentTarget.hasPointerCapture(event.pointerId)) {
 		event.currentTarget.releasePointerCapture(event.pointerId);
 	}
+}
+
+function applyPointerEndAction(
+	action: AvailabilityPointerEndAction,
+	block: AvailabilityBlock,
+	controls: PointerPreviewControls,
+): void {
+	if (action.kind === 'click') {
+		controls.setPreviewTimes(null);
+		controls.onClick(block);
+		return;
+	}
+	if (action.kind === 'commit') {
+		controls.setIsPendingSave(true);
+		void Promise.resolve(controls.onTimesCommit(block, action.form)).finally(() => {
+			controls.setPreviewTimes(null);
+			controls.setIsPendingSave(false);
+		});
+		return;
+	}
+	controls.setPreviewTimes(null);
+}
+
+function beginPointerSession(params: {
+	event: ReactPointerEvent<HTMLElement>;
+	mode: AvailabilityBlockPointerMode;
+	canEdit: boolean;
+	isPendingSave: boolean;
+	buttonRef: React.RefObject<HTMLButtonElement | null>;
+	block: AvailabilityBlock;
+	sessionRef: React.MutableRefObject<PointerSession | null>;
+	setIsDragging: (next: boolean) => void;
+	setPreviewTimes: (next: AvailabilityTimeForm | null) => void;
+}): void {
+	const { event, mode, canEdit, isPendingSave, buttonRef, block, sessionRef, setIsDragging, setPreviewTimes } =
+		params;
+	if (!canStartAvailabilityBlockPointer(canEdit, isPendingSave)) return;
+	const columnEl = buttonRef.current?.offsetParent;
+	if (!(columnEl instanceof HTMLElement)) return;
+
+	event.preventDefault();
+	event.stopPropagation();
+	event.currentTarget.setPointerCapture(event.pointerId);
+
+	sessionRef.current = {
+		mode,
+		pointerId: event.pointerId,
+		startClientY: event.clientY,
+		columnHeight: columnEl.getBoundingClientRect().height,
+		originStartTime: block.startTime,
+		originEndTime: block.endTime,
+	};
+	setIsDragging(true);
+	setPreviewTimes({
+		start_time: formatTime(block.startTime),
+		end_time: formatTime(block.endTime),
+	});
+}
+
+function updatePointerSession(params: {
+	event: ReactPointerEvent<HTMLElement>;
+	sessionRef: React.MutableRefObject<PointerSession | null>;
+	agenda: AgendaSetting;
+	setPreviewTimes: (next: AvailabilityTimeForm | null) => void;
+}): void {
+	const { event, sessionRef, agenda, setPreviewTimes } = params;
+	const session = sessionRef.current;
+	if (!session || event.pointerId !== session.pointerId) return;
+
+	const next = computeAvailabilityBlockPointerPreview({
+		mode: session.mode,
+		originStartTime: session.originStartTime,
+		originEndTime: session.originEndTime,
+		startClientY: session.startClientY,
+		currentClientY: event.clientY,
+		columnHeight: session.columnHeight,
+		agenda,
+	});
+	if (next) setPreviewTimes(next);
+}
+
+function endPointerSession(params: {
+	event: ReactPointerEvent<HTMLElement>;
+	sessionRef: React.MutableRefObject<PointerSession | null>;
+	previewRef: React.MutableRefObject<AvailabilityTimeForm | null>;
+	block: AvailabilityBlock;
+	setIsDragging: (next: boolean) => void;
+	controls: PointerPreviewControls;
+}): void {
+	const { event, sessionRef, previewRef, block, setIsDragging, controls } = params;
+	const session = sessionRef.current;
+	if (!session || event.pointerId !== session.pointerId) return;
+
+	releasePointerCapture(event);
+	const action = resolveAvailabilityPointerEndAction({
+		deltaYPx: event.clientY - session.startClientY,
+		preview: previewRef.current,
+		original: block,
+	});
+	sessionRef.current = null;
+	setIsDragging(false);
+	applyPointerEndAction(action, block, controls);
 }
 
 export function useTeacherAvailabilityBlockPointer(params: {
@@ -48,91 +158,47 @@ export function useTeacherAvailabilityBlockPointer(params: {
 		setPreview(next);
 	};
 
-	const displayStart = preview?.start_time ?? block.startTime;
-	const displayEnd = preview?.end_time ?? block.endTime;
-	const geometry = availabilityGeometryFromTimes(displayStart, displayEnd, agenda);
-
-	const applyPointerEndAction = (action: AvailabilityPointerEndAction) => {
-		if (action.kind === 'click') {
-			setPreviewTimes(null);
-			onClick(block);
-			return;
-		}
-		if (action.kind === 'commit') {
-			setIsPendingSave(true);
-			void Promise.resolve(onTimesCommit(block, action.form)).finally(() => {
-				setPreviewTimes(null);
-				setIsPendingSave(false);
-			});
-			return;
-		}
-		setPreviewTimes(null);
-	};
-
-	const beginPointerSession = (event: ReactPointerEvent<HTMLElement>, mode: AvailabilityBlockPointerMode) => {
-		if (!canStartAvailabilityBlockPointer(canEdit, isPendingSave)) return;
-		const columnEl = buttonRef.current?.offsetParent;
-		if (!(columnEl instanceof HTMLElement)) return;
-
-		event.preventDefault();
-		event.stopPropagation();
-		event.currentTarget.setPointerCapture(event.pointerId);
-
-		sessionRef.current = {
-			mode,
-			pointerId: event.pointerId,
-			startClientY: event.clientY,
-			columnHeight: columnEl.getBoundingClientRect().height,
-			originStartTime: block.startTime,
-			originEndTime: block.endTime,
-		};
-		setIsDragging(true);
-		setPreviewTimes({
-			start_time: formatTime(block.startTime),
-			end_time: formatTime(block.endTime),
-		});
-	};
-
-	const updatePointerSession = (event: ReactPointerEvent<HTMLElement>) => {
-		const session = sessionRef.current;
-		if (!session || event.pointerId !== session.pointerId) return;
-
-		const next = computeAvailabilityBlockPointerPreview({
-			mode: session.mode,
-			originStartTime: session.originStartTime,
-			originEndTime: session.originEndTime,
-			startClientY: session.startClientY,
-			currentClientY: event.clientY,
-			columnHeight: session.columnHeight,
-			agenda,
-		});
-		if (next) setPreviewTimes(next);
-	};
-
-	const endPointerSession = (event: ReactPointerEvent<HTMLElement>) => {
-		const session = sessionRef.current;
-		if (!session || event.pointerId !== session.pointerId) return;
-
-		releasePointerCapture(event);
-		const action = resolveAvailabilityPointerEndAction({
-			deltaYPx: event.clientY - session.startClientY,
-			preview: previewRef.current,
-			original: block,
-		});
-		sessionRef.current = null;
-		setIsDragging(false);
-		applyPointerEndAction(action);
+	const display = availabilityBlockDisplayTimes(preview, block);
+	const controls: PointerPreviewControls = {
+		setPreviewTimes,
+		setIsPendingSave,
+		onClick,
+		onTimesCommit,
 	};
 
 	return {
 		isDragging,
 		isPendingSave,
-		geometry,
-		startLabel: formatTime(displayStart),
-		endLabel: formatTime(displayEnd),
-		showTimes: shouldShowAvailabilityBlockTimes(displayStart, displayEnd),
-		beginPointerSession,
-		updatePointerSession,
-		endPointerSession,
+		geometry: availabilityGeometryFromTimes(display.start, display.end, agenda),
+		startLabel: formatTime(display.start),
+		endLabel: formatTime(display.end),
+		showTimes: shouldShowAvailabilityBlockTimes(display.start, display.end),
+		showResizeHandles: canStartAvailabilityBlockPointer(canEdit, isPendingSave),
+		beginPointerSession: (event: ReactPointerEvent<HTMLElement>, mode: AvailabilityBlockPointerMode) => {
+			beginPointerSession({
+				event,
+				mode,
+				canEdit,
+				isPendingSave,
+				buttonRef,
+				block,
+				sessionRef,
+				setIsDragging,
+				setPreviewTimes,
+			});
+		},
+		updatePointerSession: (event: ReactPointerEvent<HTMLElement>) => {
+			updatePointerSession({ event, sessionRef, agenda, setPreviewTimes });
+		},
+		endPointerSession: (event: ReactPointerEvent<HTMLElement>) => {
+			endPointerSession({
+				event,
+				sessionRef,
+				previewRef,
+				block,
+				setIsDragging,
+				controls,
+			});
+		},
 	};
 }

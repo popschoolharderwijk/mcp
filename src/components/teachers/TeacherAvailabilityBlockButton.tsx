@@ -18,7 +18,8 @@ interface TeacherAvailabilityBlockButtonProps {
 	onTimesCommit: (block: AvailabilityBlock, form: AvailabilityTimeForm) => boolean | Promise<boolean>;
 }
 
-function AvailabilityBlockTimeLabels(props: { startLabel: string; endLabel: string }) {
+function AvailabilityBlockTimeLabels(props: { show: boolean; startLabel: string; endLabel: string }) {
+	if (!props.show) return null;
 	const { startLabel, endLabel } = props;
 	return (
 		<>
@@ -26,14 +27,18 @@ function AvailabilityBlockTimeLabels(props: { startLabel: string; endLabel: stri
 				className="block-content-single absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden min-w-0 pointer-events-none"
 				title={`${startLabel} – ${endLabel}`}
 			>
-				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">{startLabel}</span>
+				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">
+					{startLabel}
+				</span>
 				<span className="text-[10px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
 			</div>
 			<div
 				className="block-content-double absolute inset-0 flex flex-col items-center justify-center gap-0 p-0.5 overflow-hidden text-center min-w-0 pointer-events-none"
 				title={`${startLabel} – ${endLabel}`}
 			>
-				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">{startLabel}</span>
+				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">
+					{startLabel}
+				</span>
 				<span className="text-[12px] font-medium leading-tight text-white truncate max-w-full">{endLabel}</span>
 			</div>
 		</>
@@ -41,10 +46,12 @@ function AvailabilityBlockTimeLabels(props: { startLabel: string; endLabel: stri
 }
 
 function AvailabilityBlockResizeHandles(props: {
+	show: boolean;
 	onBegin: (event: ReactPointerEvent<HTMLElement>, mode: AvailabilityBlockPointerMode) => void;
 	onMove: (event: ReactPointerEvent<HTMLElement>) => void;
 	onEnd: (event: ReactPointerEvent<HTMLElement>) => void;
 }) {
+	if (!props.show) return null;
 	return (
 		<>
 			<span
@@ -71,6 +78,24 @@ function AvailabilityBlockResizeHandles(props: {
 	);
 }
 
+function availabilityBlockSurfaceClass(canEdit: boolean, isDragging: boolean, isPendingSave: boolean): string {
+	return cn(
+		'availability-block absolute left-0.5 right-0.5 rounded-md shadow-sm transition-[opacity,colors] border focus:outline-none focus:ring-2 focus:ring-white/50 z-10 touch-none',
+		isPendingSave
+			? 'bg-emerald-500/35 border-emerald-600/20 border-dashed'
+			: 'bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600/30',
+		availabilityBlockCursorClass(canEdit, isDragging, isPendingSave),
+	);
+}
+
+function beginMoveOnPrimaryButton(
+	event: ReactPointerEvent<HTMLElement>,
+	begin: (event: ReactPointerEvent<HTMLElement>, mode: AvailabilityBlockPointerMode) => void,
+): void {
+	if (event.button !== 0) return;
+	begin(event, 'move');
+}
+
 export function TeacherAvailabilityBlockButton({
 	block,
 	dayName,
@@ -94,22 +119,13 @@ export function TeacherAvailabilityBlockButton({
 			ref={buttonRef}
 			type="button"
 			disabled={pointer.isPendingSave}
-			className={cn(
-				'availability-block absolute left-0.5 right-0.5 rounded-md shadow-sm transition-[opacity,colors] border focus:outline-none focus:ring-2 focus:ring-white/50 z-10 touch-none',
-				pointer.isPendingSave
-					? 'bg-emerald-500/35 border-emerald-600/20 border-dashed'
-					: 'bg-emerald-500/80 hover:bg-emerald-500 border-emerald-600/30',
-				availabilityBlockCursorClass(canEdit, pointer.isDragging, pointer.isPendingSave),
-			)}
+			className={availabilityBlockSurfaceClass(canEdit, pointer.isDragging, pointer.isPendingSave)}
 			style={{
 				top: `${pointer.geometry.topPercent}%`,
 				height: `${pointer.geometry.heightPercent}%`,
 				minHeight: '10px',
 			}}
-			onPointerDown={(event) => {
-				if (event.button !== 0) return;
-				pointer.beginPointerSession(event, 'move');
-			}}
+			onPointerDown={(event) => beginMoveOnPrimaryButton(event, pointer.beginPointerSession)}
 			onPointerMove={pointer.updatePointerSession}
 			onPointerUp={pointer.endPointerSession}
 			onPointerCancel={pointer.endPointerSession}
@@ -119,16 +135,17 @@ export function TeacherAvailabilityBlockButton({
 			}}
 			title={`${dayName} ${pointer.startLabel} - ${pointer.endLabel}`}
 		>
-			{pointer.showTimes ? (
-				<AvailabilityBlockTimeLabels startLabel={pointer.startLabel} endLabel={pointer.endLabel} />
-			) : null}
-			{canEdit && !pointer.isPendingSave ? (
-				<AvailabilityBlockResizeHandles
-					onBegin={pointer.beginPointerSession}
-					onMove={pointer.updatePointerSession}
-					onEnd={pointer.endPointerSession}
-				/>
-			) : null}
+			<AvailabilityBlockTimeLabels
+				show={pointer.showTimes}
+				startLabel={pointer.startLabel}
+				endLabel={pointer.endLabel}
+			/>
+			<AvailabilityBlockResizeHandles
+				show={pointer.showResizeHandles}
+				onBegin={pointer.beginPointerSession}
+				onMove={pointer.updatePointerSession}
+				onEnd={pointer.endPointerSession}
+			/>
 		</button>
 	);
 }

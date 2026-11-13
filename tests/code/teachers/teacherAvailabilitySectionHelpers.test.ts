@@ -3,6 +3,7 @@ import { DEFAULT_START_TIME } from '../../../src/lib/availability';
 import {
 	applyAvailabilityBlockMove,
 	applyAvailabilityBlockResize,
+	availabilityBlockDisplayTimes,
 	availabilityBlockTimesChanged,
 	availabilityPercentDeltaToMinutes,
 	availabilityPointerYToMinutes,
@@ -111,6 +112,24 @@ describe('shouldShowAvailabilityBlockTimes', () => {
 
 	it('returns true for longer blocks', () => {
 		expect(shouldShowAvailabilityBlockTimes('09:00', '10:00')).toBe(true);
+	});
+});
+
+describe('availabilityBlockDisplayTimes', () => {
+	it('uses block times when preview is null', () => {
+		expect(availabilityBlockDisplayTimes(null, { startTime: '09:00:00', endTime: '10:00:00' })).toEqual({
+			start: '09:00:00',
+			end: '10:00:00',
+		});
+	});
+
+	it('uses preview times when present', () => {
+		expect(
+			availabilityBlockDisplayTimes(
+				{ start_time: '09:30', end_time: '10:30' },
+				{ startTime: '09:00:00', endTime: '10:00:00' },
+			),
+		).toEqual({ start: '09:30', end: '10:30' });
 	});
 });
 
