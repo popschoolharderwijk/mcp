@@ -1,5 +1,11 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { handleCorsPreflight, requireAuthHeader, requirePost } from '../_shared/http.ts';
+import {
+	handleCorsPreflight,
+	missingSiteBaseUrlResponse,
+	requireAuthHeader,
+	requirePost,
+	resolveSiteBaseUrl,
+} from '../_shared/http.ts';
 import { createSupabaseClients, requireAuthenticatedUser } from '../_shared/supabase.ts';
 import { buildCustomerPortalPostSuccess, resolveCustomerPortalPostGate } from './beginCustomerPortalHelpers.ts';
 import { resolveCustomerPortalTargetUserId } from './validation.ts';
@@ -21,7 +27,10 @@ export async function beginCustomerPortalPost(
 	const userIdError = validateCustomerPortalUserId(body.user_id);
 	if (userIdError) return { ok: false, response: userIdError };
 
-	return buildCustomerPortalPostSuccess(gate.authHeader, body, req.headers.get('origin'));
+	const origin = resolveSiteBaseUrl(req);
+	if (!origin) return { ok: false, response: missingSiteBaseUrlResponse() };
+
+	return buildCustomerPortalPostSuccess(gate.authHeader, body, origin);
 }
 
 export async function authorizeCustomerPortalAccess(

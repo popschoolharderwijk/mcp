@@ -72,17 +72,22 @@ ALTER TABLE public.lesson_group_members FORCE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 3. Helpers
 -- ============================================================================
-CREATE OR REPLACE FUNCTION public.get_lesson_group_teacher(_group_id uuid)
-RETURNS uuid
+-- Boolean teacher ownership for RLS policies (no teacher UUID returned to callers).
+CREATE OR REPLACE FUNCTION public.is_lesson_group_teacher(_group_id uuid, _user_id uuid)
+RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public SET row_security = off
 AS $$
-  SELECT teacher_user_id FROM public.lesson_groups WHERE id = _group_id;
+  SELECT EXISTS (
+    SELECT 1 FROM public.lesson_groups
+    WHERE id = _group_id AND teacher_user_id = _user_id
+  );
 $$;
-REVOKE ALL ON FUNCTION public.get_lesson_group_teacher(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_lesson_group_teacher(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.get_lesson_group_teacher(uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.is_lesson_group_teacher(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.is_lesson_group_teacher(uuid, uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION public.is_lesson_group_teacher(uuid, uuid) TO authenticated;
 
+-- Current membership only: left_date set means the student has left the group.
 CREATE OR REPLACE FUNCTION public.is_lesson_group_member(_group_id uuid, _user_id uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
@@ -90,7 +95,9 @@ SET search_path = public SET row_security = off
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.lesson_group_members
-    WHERE lesson_group_id = _group_id AND student_user_id = _user_id
+    WHERE lesson_group_id = _group_id
+      AND student_user_id = _user_id
+      AND left_date IS NULL
   );
 $$;
 REVOKE ALL ON FUNCTION public.is_lesson_group_member(uuid, uuid) FROM PUBLIC;
@@ -128,7 +135,7 @@ CREATE POLICY lesson_group_members_select ON public.lesson_group_members
 FOR SELECT TO authenticated
 USING (
   student_user_id = public.current_user_id()
-  OR public.get_lesson_group_teacher(lesson_group_id) = public.get_teacher_user_id(public.current_user_id())
+  OR public.is_lesson_group_teacher(lesson_group_id, public.get_teacher_user_id(public.current_user_id()))
   OR public.is_privileged()
 );
 

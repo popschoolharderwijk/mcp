@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { createClientAs } from '../../db';
+import { addDaysFromNow, formatDateToDb } from '../../../src/lib/date/date-format';
+import { createClientAs, createClientBypassRLS } from '../../db';
+import type { LessonGroupInsert, LessonGroupMemberInsert } from '../../types';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
@@ -18,10 +20,33 @@ afterAll(async () => {
 });
 
 /**
- * lesson_groups SELECT: privileged, the group's teacher, or a group member.
+ * lesson_groups SELECT: privileged, the group's teacher, or a current group member.
  * lesson_group_members SELECT: privileged, the group's teacher, or the member's own row.
  * Seed: one Bandcoaching group taught by Eve with students 001-008.
+ *
+ * Security contracts:
+ * - authenticated has no EXECUTE on get_lesson_group_teacher (no teacher UUID RPC).
+ * - membership with left_date set loses lesson_groups SELECT.
  */
+
+const dbNoRLS = createClientBypassRLS();
+const OUTSIDER_STUDENT_ID = fixtures.requireUserId(TestUsers.STUDENT_009);
+const TEACHER_EVE_ID = fixtures.requireTeacherId(TestUsers.TEACHER_EVE);
+
+/** Thursday 14:00 within Eve's availability; dates far in the future so no seed overlap. */
+const TEMP_GROUP: LessonGroupInsert = {
+	name: 'RLS former-member group',
+	lesson_type_id: fixtures.requireLessonTypeId('Bandcoaching'),
+	teacher_user_id: TEACHER_EVE_ID,
+	duration_minutes: 60,
+	frequency: 'weekly',
+	day_of_week: 4,
+	start_time: '14:00',
+	start_date: formatDateToDb(new Date(2030, 0, 10)),
+};
+
+const MEMBER_JOINED_DATE = formatDateToDb(addDaysFromNow(-14));
+const MEMBER_LEFT_DATE = formatDateToDb(addDaysFromNow(-1));
 
 async function selectGroupIds(user: TestUser) {
 	const db = await createClientAs(user);
@@ -33,6 +58,11 @@ async function selectMemberStudentIds(user: TestUser) {
 	return unwrap(await db.from('lesson_group_members').select('student_user_id').order('student_user_id')).map(
 		(row) => row.student_user_id,
 	);
+}
+
+async function removeTempGroup(groupId: string) {
+	unwrap(await dbNoRLS.from('lesson_agreements').delete().eq('lesson_group_id', groupId).select('id'));
+	unwrap(await dbNoRLS.from('lesson_groups').delete().eq('id', groupId).select('id'));
 }
 
 const BANDCOACHING_MEMBER_IDS = [
@@ -96,5 +126,55 @@ describe('RLS: lesson_groups + members SELECT - student', () => {
 
 	it('user without role sees no groups or members', async () => {
 		await expectSeesNothing(TestUsers.USER_001);
+	});
+
+	it('former group member cannot see the group after left_date', async () => {
+		const [group] = unwrap(await dbNoRLS.from('lesson_groups').insert(TEMP_GROUP).select('id'));
+		try {
+			const member: LessonGroupMemberInsert = {
+				lesson_group_id: group.id,
+				student_user_id: OUTSIDER_STUDENT_ID,
+				joined_date: MEMBER_JOINED_DATE,
+			};
+			unwrap(await dbNoRLS.from('lesson_group_members').insert(member).select('id'));
+			unwrap(
+				await dbNoRLS
+					.from('lesson_group_members')
+					.update({ left_date: MEMBER_LEFT_DATE })
+					.eq('lesson_group_id', group.id)
+					.eq('student_user_id', OUTSIDER_STUDENT_ID)
+					.select('id'),
+			);
+
+			const formerMemberDb = await createClientAs(TestUsers.STUDENT_009);
+			const visibleGroups = unwrap(await formerMemberDb.from('lesson_groups').select('id').eq('id', group.id));
+			expect(visibleGroups).toHaveLength(0);
+		} finally {
+			await removeTempGroup(group.id);
+		}
+	});
+});
+
+describe('RLS: get_lesson_group_teacher must not leak teacher ownership', () => {
+	it('authenticated has no EXECUTE on get_lesson_group_teacher', async () => {
+		expect(
+			unwrap(
+				await dbNoRLS.rpc('authenticated_has_execute_on', {
+					p_regprocedure: 'public.get_lesson_group_teacher(uuid)',
+				}),
+			),
+		).toBe(false);
+	});
+
+	it('signed-in outsider cannot resolve a group teacher via RPC', async () => {
+		const db = await createClientAs(TestUsers.USER_001);
+		const result = await db.rpc(
+			'get_lesson_group_teacher' as 'is_lesson_group_member',
+			{
+				_group_id: LESSON_GROUPS.BANDCOACHING_ID,
+			} as never,
+		);
+		expect(result.data).toBeNull();
+		expect(result.error).not.toBeNull();
 	});
 });

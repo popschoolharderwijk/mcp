@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	isDefinedTemplateVar,
+	isSendTemplateEmailUserRoleAllowed,
 	isValidTemplateRecipient,
 	normalizeTemplateVars,
 	renderTemplate,
@@ -9,6 +10,17 @@ import {
 	resolveSendTemplateEmailRecipientError,
 	validateSendTemplateEmailBodyInput,
 } from '../../../supabase/functions/_shared/send-template-email-helpers';
+
+describe('isSendTemplateEmailUserRoleAllowed', () => {
+	it('allows admin and site_admin only', () => {
+		expect(isSendTemplateEmailUserRoleAllowed('admin')).toBe(true);
+		expect(isSendTemplateEmailUserRoleAllowed('site_admin')).toBe(true);
+		expect(isSendTemplateEmailUserRoleAllowed('staff')).toBe(false);
+		expect(isSendTemplateEmailUserRoleAllowed('teacher')).toBe(false);
+		expect(isSendTemplateEmailUserRoleAllowed('student')).toBe(false);
+		expect(isSendTemplateEmailUserRoleAllowed(null)).toBe(false);
+	});
+});
 
 describe('resolveResendApiErrorMessage', () => {
 	it('maps an unverified domain to a Dutch config hint', () => {

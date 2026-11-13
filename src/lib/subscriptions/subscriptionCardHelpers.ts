@@ -21,11 +21,16 @@ const ACTION_FALLBACK_ERRORS: Record<SubscriptionAction, string> = {
 	sync: 'Kon niet synchroniseren met Stripe',
 };
 
-export function buildIssuePaymentLinkBody(lessonAgreementId: string, recipientEmail?: string): Record<string, unknown> {
+export function buildIssuePaymentLinkBody(
+	lessonAgreementId: string,
+	recipientEmail?: string,
+	options?: { notifyTeacher?: boolean },
+): Record<string, unknown> {
 	const trimmed = recipientEmail?.trim();
 	return {
 		lesson_agreement_id: lessonAgreementId,
 		...(trimmed ? { recipient_email: trimmed } : {}),
+		...(options?.notifyTeacher ? { notify_teacher: true } : {}),
 	};
 }
 

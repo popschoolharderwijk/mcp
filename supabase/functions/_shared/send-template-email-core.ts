@@ -5,11 +5,12 @@ import {
 	appendFooter,
 	buildPendingFooter,
 	buildPortalFooter,
+	isSendTemplateEmailUserRoleAllowed,
 	resolveResendApiErrorMessage,
 	type SendTemplateEmailBody,
 	validateSendTemplateEmailBodyInput,
 } from './send-template-email-helpers.ts';
-import { requirePrivilegedUser } from './supabase.ts';
+import { fetchUserRole, requireAuthenticatedUser } from './supabase.ts';
 
 export type { SendTemplateEmailBody } from './send-template-email-helpers.ts';
 
@@ -40,8 +41,12 @@ export async function authenticateSendTemplateEmailRequest(
 		global: { headers: { Authorization: authHeader } },
 		auth: { autoRefreshToken: false, persistSession: false },
 	});
-	const authn = await requirePrivilegedUser(userClient);
+	const authn = await requireAuthenticatedUser(userClient);
 	if (!authn.ok) return authn.response;
+	const role = await fetchUserRole(userClient, authn.user.id);
+	if (!isSendTemplateEmailUserRoleAllowed(role)) {
+		return jsonResponse(403, { error: 'Geen rechten' });
+	}
 	return null;
 }
 

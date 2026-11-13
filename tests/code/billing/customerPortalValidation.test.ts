@@ -5,6 +5,7 @@ import {
 	canOpenPortalForOtherUser,
 	parseCustomerPortalBody,
 	parseCustomerPortalRequestBody,
+	resolveCustomerPortalSessionSetup,
 	resolveMissingStripeCustomerResponse,
 	resolvePortalForOtherUserForbiddenResponse,
 	resolvePortalReturnUrl,
@@ -12,6 +13,7 @@ import {
 } from '../../../supabase/functions/create-customer-portal/validationHelpers';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
+const ORIGIN = 'https://mcp.mplifi.nl';
 
 async function readError(response: Response): Promise<string> {
 	const body = (await response.json()) as { error: string };
@@ -135,17 +137,64 @@ describe('resolveMissingStripeCustomerResponse', () => {
 	});
 });
 
+describe('resolveCustomerPortalSessionSetup', () => {
+	it('returns 404 when the Stripe customer id is missing', async () => {
+		const result = resolveCustomerPortalSessionSetup(null, ORIGIN, undefined) as {
+			ok: false;
+			response: Response;
+		};
+		expect(result.ok).toBe(false);
+		expect(result.response.status).toBe(404);
+		expect(await readError(result.response)).toBe('Geen Stripe klant gekoppeld');
+	});
+
+	it('returns 400 for an untrusted return_url', async () => {
+		const result = resolveCustomerPortalSessionSetup('cus_123', ORIGIN, 'https://evil.example.com/back') as {
+			ok: false;
+			response: Response;
+		};
+		expect(result.ok).toBe(false);
+		expect(result.response.status).toBe(400);
+		expect(await readError(result.response)).toBe('Ongeldige return_url');
+	});
+
+	it('returns the customer id and allow-listed return url', () => {
+		expect(resolveCustomerPortalSessionSetup('cus_123', ORIGIN, `${ORIGIN}/account/profile`)).toEqual({
+			ok: true,
+			stripeCustomerId: 'cus_123',
+			returnUrl: `${ORIGIN}/account/profile`,
+		});
+	});
+
+	it('falls back to the profile route when return_url is omitted', () => {
+		expect(resolveCustomerPortalSessionSetup('cus_123', ORIGIN, undefined)).toEqual({
+			ok: true,
+			stripeCustomerId: 'cus_123',
+			returnUrl: `${ORIGIN}/account/profile`,
+		});
+	});
+});
+
 describe('resolvePortalReturnUrl', () => {
-	it('uses the provided return url when present', () => {
-		expect(resolvePortalReturnUrl('https://app.example.com', 'https://example.com/back')).toBe(
-			'https://example.com/back',
-		);
+	it('uses an allow-listed return url when present', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://mcp.mplifi.nl/account/profile')).toEqual({
+			ok: true,
+			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+		});
+	});
+
+	it('rejects an untrusted return url', () => {
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://evil.example.com/back')).toEqual({
+			ok: false,
+			error: 'Ongeldige return_url',
+		});
 	});
 
 	it('falls back to the profile route on the origin', () => {
-		expect(resolvePortalReturnUrl('https://app.example.com', undefined)).toBe(
-			'https://app.example.com/account/profile',
-		);
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', undefined)).toEqual({
+			ok: true,
+			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+		});
 	});
 });
 

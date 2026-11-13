@@ -46,3 +46,6 @@ import/out/*
 import/source/*
 import_sources/
 .agent-home
+
+# Local working plans
+plans/

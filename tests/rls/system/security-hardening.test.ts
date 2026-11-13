@@ -76,6 +76,7 @@ const AUTHENTICATED_MUST_NOT_EXECUTE: string[] = [
 	'public.enforce_agenda_deviation_immutable_fields()',
 	'public.enforce_agenda_deviation_validity()',
 	'public.ensure_student_exists(uuid)',
+	'public.get_lesson_group_teacher(uuid)',
 	'public.handle_auth_user_email_update()',
 	'public.handle_new_user()',
 	'public.prevent_last_site_admin_removal()',

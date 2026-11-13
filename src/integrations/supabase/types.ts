@@ -1632,7 +1632,6 @@ export type Database = {
 				};
 				Returns: Json;
 			};
-			get_lesson_group_teacher: { Args: { _group_id: string }; Returns: string };
 			get_public_function_pronames: { Args: Record<PropertyKey, never>; Returns: string[] };
 			get_public_table_names: {
 				Args: Record<PropertyKey, never>;
@@ -1690,6 +1689,7 @@ export type Database = {
 			is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_agenda_participant: { Args: { ev_id: string; uid: string }; Returns: boolean };
 			is_lesson_group_member: { Args: { _group_id: string; _user_id: string }; Returns: boolean };
+			is_lesson_group_teacher: { Args: { _group_id: string; _user_id: string }; Returns: boolean };
 			is_privileged: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_site_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };

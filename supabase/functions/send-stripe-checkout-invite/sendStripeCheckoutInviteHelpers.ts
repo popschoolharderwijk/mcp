@@ -1,13 +1,18 @@
-export function isStripeCheckoutInvitePrivilegedRole(role: string | null | undefined): boolean {
-	return role === 'admin' || role === 'site_admin' || role === 'teacher';
+export function isStripeCheckoutInviteAdminRole(role: string | null | undefined): boolean {
+	return role === 'admin' || role === 'site_admin';
 }
 
-export function canAccessStripeCheckoutInviteAgreement(
-	isPrivileged: boolean,
-	agreementStudentUserId: string,
-	requestingUserId: string,
-): boolean {
-	return isPrivileged || agreementStudentUserId === requestingUserId;
+export function canAccessStripeCheckoutInviteAgreement(input: {
+	isAdmin: boolean;
+	agreementStudentUserId: string;
+	agreementTeacherUserId: string;
+	requestingUserId: string;
+}): boolean {
+	return (
+		input.isAdmin ||
+		input.agreementStudentUserId === input.requestingUserId ||
+		input.agreementTeacherUserId === input.requestingUserId
+	);
 }
 
 export function buildStripeCheckoutInviteRedirectUrl(siteUrl: string, agreementId: string): string {
@@ -38,21 +43,26 @@ export function buildStripeCheckoutInviteSuccessPayload(recipient: string): { ok
 	return { ok: true, recipient };
 }
 
+export type StripeCheckoutInviteAgreement = {
+	id: string;
+	student_user_id: string;
+	teacher_user_id: string;
+	is_active: boolean;
+};
+
 export function hasStripeCheckoutAgreementRecord(
-	agreement: { id: string; student_user_id: string; is_active: boolean } | null,
+	agreement: StripeCheckoutInviteAgreement | null,
 	error: unknown,
-): agreement is { id: string; student_user_id: string; is_active: boolean } {
+): agreement is StripeCheckoutInviteAgreement {
 	return Boolean(agreement) && !error;
 }
 
 export function resolveStripeCheckoutAgreementAccessError(
-	agreement: { id: string; is_active: boolean; student_user_id: string } | null,
+	agreement: StripeCheckoutInviteAgreement | null,
 	error: unknown,
-	isPrivileged: boolean,
+	isAdmin: boolean,
 	userId: string,
-):
-	| { ok: false; status: number; error: string }
-	| { ok: true; agreement: { id: string; is_active: boolean; student_user_id: string } } {
+): { ok: false; status: number; error: string } | { ok: true; agreement: StripeCheckoutInviteAgreement } {
 	if (!hasStripeCheckoutAgreementRecord(agreement, error)) {
 		const notFound = resolveStripeCheckoutAgreementNotFoundResponse();
 		return { ok: false, status: notFound.status, error: notFound.error };
@@ -61,9 +71,25 @@ export function resolveStripeCheckoutAgreementAccessError(
 		const inactive = resolveStripeCheckoutAgreementInactiveResponse();
 		return { ok: false, status: inactive.status, error: inactive.error };
 	}
-	if (!canAccessStripeCheckoutInviteAgreement(isPrivileged, agreement.student_user_id, userId)) {
+	if (
+		!canAccessStripeCheckoutInviteAgreement({
+			isAdmin,
+			agreementStudentUserId: agreement.student_user_id,
+			agreementTeacherUserId: agreement.teacher_user_id,
+			requestingUserId: userId,
+		})
+	) {
 		const forbidden = resolveStripeCheckoutInviteForbiddenResponse();
 		return { ok: false, status: forbidden.status, error: forbidden.error };
 	}
 	return { ok: true, agreement };
+}
+
+/** Recipient override: admin, or the teacher on this agreement. */
+export function canOverrideStripeCheckoutInviteRecipient(
+	isAdmin: boolean,
+	agreementTeacherUserId: string,
+	requestingUserId: string,
+): boolean {
+	return isAdmin || agreementTeacherUserId === requestingUserId;
 }
