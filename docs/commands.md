@@ -71,7 +71,7 @@ bun run stripe:setup:webhooks     # create/update Event Destination (local|dev|t
 bun run dev:local
 # Stripe webhooks (separate terminal; keep running):
 bun run stripe:webhook
-# Mirrors to terminal + logs/stripe.log (secrets hint-redacted; optional --log-level / --log-exclude)
+# Mirrors to terminal + logs/stripe.log (secrets hint-redacted; optional --log-level / --log-exclude / --log-stderr off)
 ```
 
 Types from the local stack (`supabase start` first):

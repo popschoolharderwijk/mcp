@@ -41,31 +41,37 @@ describe('readFlagValue', () => {
 });
 
 describe('parseScriptOptions', () => {
-	it('defaults to no Stripe log-level and no excludes', () => {
+	it('defaults to no Stripe log-level, no excludes, and stderr on', () => {
 		expect(parseScriptOptions([])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: [], excludePingPong: false },
+			options: { stripeLogLevelArgs: [], excludePingPong: false, logStderr: true },
 		});
 	});
 
 	it('forwards a valid log-level to Stripe CLI args', () => {
 		expect(parseScriptOptions(['--log-level', 'debug'])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: ['--log-level', 'debug'], excludePingPong: false },
+			options: { stripeLogLevelArgs: ['--log-level', 'debug'], excludePingPong: false, logStderr: true },
 		});
 	});
 
 	it('enables ping-pong exclusion', () => {
 		expect(parseScriptOptions(['--log-exclude=ping-pong'])).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: [], excludePingPong: true },
+			options: { stripeLogLevelArgs: [], excludePingPong: true, logStderr: true },
 		});
 	});
 
-	it('accepts log-level and log-exclude together', () => {
-		expect(parseScriptOptions(['--log-level=trace', '--log-exclude', 'ping-pong'])).toEqual({
+	it('accepts log-level, log-exclude, and log-stderr together', () => {
+		expect(
+			parseScriptOptions(['--log-level=trace', '--log-exclude', 'ping-pong', '--log-stderr=off']),
+		).toEqual({
 			ok: true,
-			options: { stripeLogLevelArgs: ['--log-level', 'trace'], excludePingPong: true },
+			options: {
+				stripeLogLevelArgs: ['--log-level', 'trace'],
+				excludePingPong: true,
+				logStderr: false,
+			},
 		});
 	});
 
@@ -80,6 +86,13 @@ describe('parseScriptOptions', () => {
 		expect(parseScriptOptions(['--log-exclude', 'deadlines'])).toEqual({
 			ok: false,
 			error: 'Unknown --log-exclude value "deadlines" (supported: ping-pong)',
+		});
+	});
+
+	it('rejects invalid log-stderr values', () => {
+		expect(parseScriptOptions(['--log-stderr', 'quiet'])).toEqual({
+			ok: false,
+			error: 'Invalid --log-stderr "quiet" (on | off)',
 		});
 	});
 

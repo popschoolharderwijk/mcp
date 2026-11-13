@@ -5,6 +5,7 @@
  * Optional flags (after `--`):
  *   --log-level debug|info|trace|warn|error   → forwarded to Stripe CLI (default: omit)
  *   --log-exclude ping-pong                   → drop websocket ping/pong lines (terminal + file)
+ *   --log-stderr on|off                       → mirror CLI stderr to the terminal (default: on; file always)
  *
  * Stripe CLI has no secret-redaction flag for `listen`. Known secret patterns
  * (`whsec_…` / `sk_…` / `rk_…`) are redacted in both terminal and log file.
@@ -21,6 +22,7 @@ const FORWARD_TO = 'http://127.0.0.1:54421/functions/v1/stripe-webhook';
 
 const LOG_LEVELS = new Set(['debug', 'info', 'trace', 'warn', 'error']);
 const LOG_EXCLUDE_VALUES = new Set(['ping-pong']);
+const LOG_STDERR_VALUES = new Set(['on', 'off']);
 
 /** How many secret payload chars (after the typed prefix) stay visible before `**`. */
 const SECRET_VISIBLE_PAYLOAD_CHARS = 4;
@@ -55,6 +57,8 @@ export function isWebsocketPingPongLine(line: string): boolean {
 export type ScriptOptions = {
 	stripeLogLevelArgs: string[];
 	excludePingPong: boolean;
+	/** When false, CLI stderr still goes to the log file but not to the terminal. */
+	logStderr: boolean;
 };
 
 type FlagValueResult = { ok: true; value: string; nextIndex: number } | { ok: false; error: string };
@@ -121,12 +125,31 @@ function consumeLogExcludeFlag(argv: readonly string[], i: number): FlagConsumeR
 	};
 }
 
+function consumeLogStderrFlag(argv: readonly string[], i: number): FlagConsumeResult {
+	const arg = argv[i] ?? '';
+	if (!matchesFlag(arg, '--log-stderr')) return null;
+	const parsed = readFlagValue(argv, i, '--log-stderr');
+	if (!parsed.ok) return parsed;
+	if (!LOG_STDERR_VALUES.has(parsed.value)) {
+		return { ok: false, error: `Invalid --log-stderr "${parsed.value}" (on | off)` };
+	}
+	const logStderr = parsed.value === 'on';
+	return {
+		ok: true,
+		nextIndex: parsed.nextIndex,
+		apply: (options) => {
+			options.logStderr = logStderr;
+		},
+	};
+}
+
 export function parseScriptOptions(argv: readonly string[]): ParseOptionsResult {
-	const options: ScriptOptions = { stripeLogLevelArgs: [], excludePingPong: false };
+	const options: ScriptOptions = { stripeLogLevelArgs: [], excludePingPong: false, logStderr: true };
 
 	let i = 0;
 	while (i < argv.length) {
-		const consumed = consumeLogLevelFlag(argv, i) ?? consumeLogExcludeFlag(argv, i);
+		const consumed =
+			consumeLogLevelFlag(argv, i) ?? consumeLogExcludeFlag(argv, i) ?? consumeLogStderrFlag(argv, i);
 		if (!consumed) return { ok: false, error: `Unknown argument: ${argv[i]}` };
 		if (!consumed.ok) return consumed;
 		consumed.apply(options);
@@ -155,15 +178,15 @@ function runCli(): void {
 	const logStream = createWriteStream(LOG_FILE, { flags: 'a' });
 
 	type StreamMirror = {
-		terminal: NodeJS.WriteStream;
+		terminal: NodeJS.WriteStream | null;
 		buf: string;
 	};
 
-	function emitLine(line: string, terminal: NodeJS.WriteStream, trailingNewline: boolean): void {
+	function emitLine(line: string, terminal: NodeJS.WriteStream | null, trailingNewline: boolean): void {
 		if (!shouldEmitFilteredLine(line, options.excludePingPong)) return;
 		const redacted = redactStripeCliSecrets(line);
 		const text = trailingNewline ? `${redacted}\n` : redacted;
-		terminal.write(text);
+		terminal?.write(text);
 		logStream.write(text);
 	}
 
@@ -183,7 +206,10 @@ function runCli(): void {
 	}
 
 	const stdoutMirror: StreamMirror = { terminal: process.stdout, buf: '' };
-	const stderrMirror: StreamMirror = { terminal: process.stderr, buf: '' };
+	const stderrMirror: StreamMirror = {
+		terminal: options.logStderr ? process.stderr : null,
+		buf: '',
+	};
 
 	const stripeArgs = ['listen', '--all-snapshot', '--forward-to', FORWARD_TO, ...options.stripeLogLevelArgs];
 	const stripeCli = Bun.which('stripe');
