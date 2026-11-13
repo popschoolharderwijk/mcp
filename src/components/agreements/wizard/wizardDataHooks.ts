@@ -132,6 +132,8 @@ export function useWizardTeacherSlots(
 	const reloadSlots = useCallback(
 		async (options?: ReloadTeacherSlotsOptions) => {
 			if (!shouldLoadTeacherSlots(step, teacherUserId, lessonTypeId, startDate, endDate, selectedLessonType)) {
+				// Drop any in-flight load so it cannot write slots after this clear.
+				requestIdRef.current += 1;
 				setSlots([]);
 				setLoading(false);
 				return;
