@@ -11,8 +11,6 @@
 -- SECTION 1: TYPES
 -- =============================================================================
 
-DROP TYPE IF EXISTS public.app_role CASCADE;
-
 CREATE TYPE public.app_role AS ENUM (
   'site_admin',
   'admin',

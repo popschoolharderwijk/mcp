@@ -45,12 +45,7 @@ import UserManual from './pages/UserManual';
 import Users from './pages/Users';
 
 const App = () => (
-	<BrowserRouter
-		future={{
-			v7_startTransition: true,
-			v7_relativeSplatPath: true,
-		}}
-	>
+	<BrowserRouter>
 		<ThemeProvider defaultTheme="system">
 			<AuthProvider>
 				<Routes>

@@ -15,8 +15,6 @@
 -- SECTION 1: TYPES
 -- =============================================================================
 
-DROP TYPE IF EXISTS public.lesson_frequency CASCADE;
-
 CREATE TYPE public.lesson_frequency AS ENUM ('daily', 'weekly', 'biweekly', 'monthly');
 
 -- =============================================================================
