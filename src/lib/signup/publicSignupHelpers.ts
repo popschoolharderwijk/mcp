@@ -1,8 +1,7 @@
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
 import { isValidPhone } from '@/components/students/studentFormTypes';
 import { formatDbDateToUi } from '@/lib/date/date-format';
-import { frequencyLabels } from '@/lib/frequencies';
-import type { LessonFrequency } from '@/types/lesson-agreements';
+import { getFrequencyLabel } from '@/lib/frequencies';
 
 /** Individual lessons with no catalog options need an explicit Next on the choice step. */
 export function needsManualSignupChoiceNext(isGroupLesson: boolean, optionCount: number): boolean {
@@ -186,7 +185,7 @@ function pushIfPresent(rows: SignupOverviewRow[], label: string, value: string |
 }
 
 function formatSignupOptionLine(option: OptionSnapshot): string {
-	const freq = frequencyLabels[option.frequency as LessonFrequency] ?? option.frequency;
+	const freq = getFrequencyLabel(option.frequency);
 	return `${option.duration_minutes} min · ${freq} · €${Number(option.price_per_lesson).toFixed(2)} per les`;
 }
 
@@ -200,7 +199,7 @@ function formatSignupGroupLine(group: {
 	teacher_name: string | null;
 }): string {
 	const day = DAY_LABELS[group.day_of_week] ?? '';
-	const freq = frequencyLabels[group.frequency as LessonFrequency] ?? group.frequency;
+	const freq = getFrequencyLabel(group.frequency);
 	const teacher = group.teacher_name ? ` · Docent: ${group.teacher_name}` : '';
 	return `${group.name} — ${day} ${group.start_time.slice(0, 5)} · ${group.duration_minutes} min · ${freq} · €${Number(group.price_per_lesson).toFixed(2)}${teacher}`;
 }

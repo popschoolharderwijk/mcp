@@ -1,3 +1,4 @@
+import { getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
 import type { SignupRequest } from './types.ts';
 
 export interface SignupConfirmationOptionDetails {
@@ -30,7 +31,7 @@ export function buildSignupConfirmationOptionDetails(
 		return { frequentie: '', prijs: '' };
 	}
 	return {
-		frequentie: String(option.frequency ?? ''),
+		frequentie: getFrequencyLabel(option.frequency),
 		prijs: formatSignupOptionPrice(option.price_per_lesson),
 	};
 }

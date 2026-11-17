@@ -158,7 +158,7 @@ describe('agreement_created payment mail vars', () => {
 			leerling_naam: 'Sam Student',
 			docent_naam: 'Tess Teacher',
 			les_type: 'Piano',
-			frequentie: 'wekelijks',
+			frequentie: 'Wekelijks',
 			prijs_per_les: '€ 27,50',
 			dag: 'maandag',
 			tijd: '16:30',
