@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { readFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
 	buildLocalSupabaseDotEnv,
@@ -118,6 +119,24 @@ describe('resolveSecretsRoot', () => {
 
 	it('resolves a relative SECRETS_PATH from the root .env against projectRoot', () => {
 		expect(resolveSecretsRoot('/repo', {}, 'SECRETS_PATH=../mcp-secrets')).toBe('/mcp-secrets');
+	});
+
+	it('keeps an absolute SECRETS_PATH from the root .env', () => {
+		expect(resolveSecretsRoot('/repo', {}, 'SECRETS_PATH=/home/user/git/mcp-secrets')).toBe(
+			'/home/user/git/mcp-secrets',
+		);
+	});
+
+	it('expands a home-relative SECRETS_PATH from the root .env', () => {
+		expect(resolveSecretsRoot('/repo', {}, 'SECRETS_PATH=~/git/mcp-secrets')).toBe(
+			join(homedir(), 'git/mcp-secrets'),
+		);
+	});
+
+	it('expands a home-relative SECRETS_PATH from process env', () => {
+		expect(resolveSecretsRoot('/repo', { SECRETS_PATH: '~/git/mcp-secrets' }, null)).toBe(
+			join(homedir(), 'git/mcp-secrets'),
+		);
 	});
 
 	it('returns null when SECRETS_PATH is missing', () => {

@@ -7,9 +7,23 @@
  * App/CLI runtime: .env.local | .env.<target>.local
  */
 
+import { homedir } from 'node:os';
 import { isAbsolute, join } from 'node:path';
 import { isRemoteMode } from '../../src/lib/modeHelpers';
 import supabaseConfig from '../../supabase.json';
+
+/** Expand leading `~` / `~/` to the current user's home directory. */
+function expandHomePrefix(configuredPath: string): string {
+	if (configuredPath === '~') return homedir();
+	if (configuredPath.startsWith('~/')) return join(homedir(), configuredPath.slice(2));
+	return configuredPath;
+}
+
+/** Absolute secrets path: expand `~`, keep absolute paths, else join with projectRoot. */
+function resolveConfiguredSecretsPath(projectRoot: string, configuredPath: string): string {
+	const expanded = expandHomePrefix(configuredPath);
+	return isAbsolute(expanded) ? expanded : join(projectRoot, expanded);
+}
 
 export type DeployEnv = keyof typeof supabaseConfig.targets;
 
@@ -94,7 +108,8 @@ export function runtimeEnvFileForNodeEnv(nodeEnv: string | undefined): string {
 
 /**
  * Resolve absolute secrets root: process.env.SECRETS_PATH wins, else local `.env` contents.
- * Relative paths are resolved against projectRoot. Missing pointer → null (CI uses process env only).
+ * Relative paths resolve against projectRoot; `~/…` expands to the user home directory.
+ * Missing pointer → null (CI uses process env only).
  */
 export function resolveSecretsRoot(
 	projectRoot: string,
@@ -103,12 +118,12 @@ export function resolveSecretsRoot(
 ): string | null {
 	const fromProcess = processEnv[ROOT_ENV_POINTER_KEY]?.trim();
 	if (fromProcess) {
-		return isAbsolute(fromProcess) ? fromProcess : join(projectRoot, fromProcess);
+		return resolveConfiguredSecretsPath(projectRoot, fromProcess);
 	}
 	if (rootEnvFileContents === null) return null;
 	const fromFile = parseEnvFileEntries(rootEnvFileContents)[ROOT_ENV_POINTER_KEY]?.trim();
 	if (!fromFile) return null;
-	return isAbsolute(fromFile) ? fromFile : join(projectRoot, fromFile);
+	return resolveConfiguredSecretsPath(projectRoot, fromFile);
 }
 
 /** Absolute path to a secrets-relative file. */
