@@ -63,13 +63,6 @@ export function agendaLessonTypeFilterSelectionToValue(selection: AgendaLessonTy
 	return selection.lessonTypeId;
 }
 
-/** Parse a filter value string into a selection. */
-export function agendaLessonTypeFilterValueToSelection(value: string): AgendaLessonTypeFilterSelection {
-	if (value === AGENDA_LESSON_TYPE_FILTER_VALUE_ALL) return AGENDA_LESSON_TYPE_FILTER_ALL;
-	if (value === AGENDA_LESSON_TYPE_FILTER_VALUE_NON_LESSONS) return { kind: 'non-lessons' };
-	return { kind: 'lesson-type', lessonTypeId: value };
-}
-
 /** Effective selection for UI and filtering; missing lesson-type ids fall back to all. */
 export function resolveAgendaLessonTypeFilterSelection(
 	selection: AgendaLessonTypeFilterSelection,
