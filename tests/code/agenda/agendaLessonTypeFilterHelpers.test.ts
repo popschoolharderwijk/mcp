@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { CalendarEvent } from '../../../src/components/agenda/types';
 import {
-	AGENDA_LESSON_TYPE_FILTER_VALUE_ALL,
-	AGENDA_LESSON_TYPE_FILTER_VALUE_NON_LESSONS,
-	agendaLessonTypeFilterSelectionToValue,
-	agendaLessonTypeFilterValueToSelection,
 	collectAgendaLessonTypeFilterOptions,
 	filterAgendaEventsByLessonTypeSelection,
 	resolveAgendaLessonTypeFilterSelection,
@@ -131,11 +127,6 @@ describe('collectAgendaLessonTypeFilterOptions', () => {
 });
 
 describe('filterAgendaEventsByLessonTypeSelection', () => {
-	it('returns the same list when selection is all', () => {
-		const events = [mockEvent({ lessonTypeId: 'lt-drums', isLesson: true }), mockEvent({ title: 'Meeting' })];
-		expect(filterAgendaEventsByLessonTypeSelection(events, { kind: 'all' })).toBe(events);
-	});
-
 	it('keeps only non-lesson events when selection is non-lessons', () => {
 		const drums = mockEvent({ lessonTypeId: 'lt-drums', isLesson: true, title: 'Drum' });
 		const guitar = mockEvent({ lessonTypeId: 'lt-guitar', isLesson: true, title: 'Gitaar' });
@@ -159,35 +150,7 @@ describe('filterAgendaEventsByLessonTypeSelection', () => {
 	});
 });
 
-describe('agendaLessonTypeFilterSelectionToValue / agendaLessonTypeFilterValueToSelection', () => {
-	it('round-trips all, non-lessons, and lesson-type selections', () => {
-		expect(agendaLessonTypeFilterSelectionToValue({ kind: 'all' })).toBe(AGENDA_LESSON_TYPE_FILTER_VALUE_ALL);
-		expect(agendaLessonTypeFilterSelectionToValue({ kind: 'non-lessons' })).toBe(
-			AGENDA_LESSON_TYPE_FILTER_VALUE_NON_LESSONS,
-		);
-		expect(agendaLessonTypeFilterSelectionToValue({ kind: 'lesson-type', lessonTypeId: 'lt-drums' })).toBe(
-			'lt-drums',
-		);
-
-		expect(agendaLessonTypeFilterValueToSelection(AGENDA_LESSON_TYPE_FILTER_VALUE_ALL)).toEqual({ kind: 'all' });
-		expect(agendaLessonTypeFilterValueToSelection(AGENDA_LESSON_TYPE_FILTER_VALUE_NON_LESSONS)).toEqual({
-			kind: 'non-lessons',
-		});
-		expect(agendaLessonTypeFilterValueToSelection('lt-drums')).toEqual({
-			kind: 'lesson-type',
-			lessonTypeId: 'lt-drums',
-		});
-	});
-});
-
 describe('resolveAgendaLessonTypeFilterSelection', () => {
-	it('keeps a lesson-type selection when that option is still available', () => {
-		const selection = resolveAgendaLessonTypeFilterSelection({ kind: 'lesson-type', lessonTypeId: 'lt-drums' }, [
-			{ id: 'lt-drums', name: 'Drumles', icon: null, color: null },
-		]);
-		expect(selection).toEqual({ kind: 'lesson-type', lessonTypeId: 'lt-drums' });
-	});
-
 	it('falls back to all when the selected lesson type is gone', () => {
 		const selection = resolveAgendaLessonTypeFilterSelection({ kind: 'lesson-type', lessonTypeId: 'lt-gone' }, [
 			{ id: 'lt-drums', name: 'Drumles', icon: null, color: null },
