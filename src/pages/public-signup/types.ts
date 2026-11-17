@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
 import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
-import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
+import type { LessonFrequency, LessonTypeOptionRow } from '@/types/lesson-agreements';
 
 export interface LessonType {
 	id: string;
@@ -17,7 +17,7 @@ export interface GroupOption {
 	day_of_week: number;
 	start_time: string;
 	duration_minutes: number;
-	frequency: string;
+	frequency: LessonFrequency;
 	price_per_lesson: number;
 	teacher_name: string | null;
 	members_count: number;

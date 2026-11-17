@@ -1,7 +1,6 @@
 import { FREQUENCY_LABELS, getFrequencyLabel } from '@/lib/frequenciesHelpers';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
-export type { FrequencyLabelKey } from '@/lib/frequenciesHelpers';
 export { getFrequencyLabel };
 
 export const frequencyLabels: Record<LessonFrequency, string> = { ...FREQUENCY_LABELS };

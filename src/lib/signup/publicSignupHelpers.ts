@@ -2,6 +2,7 @@ import type { OptionSnapshot } from '@/components/lesson-type-options/LessonType
 import { isValidPhone } from '@/components/students/studentFormTypes';
 import { formatDbDateToUi } from '@/lib/date/date-format';
 import { getFrequencyLabel } from '@/lib/frequencies';
+import type { LessonFrequency } from '@/types/lesson-agreements';
 
 /** Individual lessons with no catalog options need an explicit Next on the choice step. */
 export function needsManualSignupChoiceNext(isGroupLesson: boolean, optionCount: number): boolean {
@@ -194,7 +195,7 @@ function formatSignupGroupLine(group: {
 	day_of_week: number;
 	start_time: string;
 	duration_minutes: number;
-	frequency: string;
+	frequency: LessonFrequency;
 	price_per_lesson: number;
 	teacher_name: string | null;
 }): string {
@@ -214,7 +215,7 @@ export function buildSignupOverviewRows(input: {
 		day_of_week: number;
 		start_time: string;
 		duration_minutes: number;
-		frequency: string;
+		frequency: LessonFrequency;
 		price_per_lesson: number;
 		teacher_name: string | null;
 	} | null;

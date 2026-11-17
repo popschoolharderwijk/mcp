@@ -7,9 +7,8 @@ export const FREQUENCY_LABELS = {
 	monthly: 'Maandelijks',
 } as const;
 
-export type FrequencyLabelKey = keyof typeof FREQUENCY_LABELS;
+export type FrequencyKey = keyof typeof FREQUENCY_LABELS;
 
-export function getFrequencyLabel(frequency: string | null | undefined): string {
-	if (frequency == null || frequency === '') return '';
-	return FREQUENCY_LABELS[frequency as FrequencyLabelKey] ?? frequency;
+export function getFrequencyLabel(frequency: FrequencyKey): string {
+	return FREQUENCY_LABELS[frequency];
 }

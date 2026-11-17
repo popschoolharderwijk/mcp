@@ -102,7 +102,7 @@ export async function loadAgreementCreatedPaymentMailVars(
 				day_of_week: 0,
 				start_time: '',
 				start_date: '',
-				frequency: '',
+				frequency: null,
 				price_per_lesson: null,
 			},
 			student: null,

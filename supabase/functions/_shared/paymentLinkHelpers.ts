@@ -3,7 +3,7 @@
  * Only the SHA-256 hash of the token is stored. No Deno/DB IO (Bun-testable).
  */
 
-import { getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
+import { type FrequencyKey, getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
 
 const PAYMENT_LINK_TOKEN_BYTES = 32;
 const PAYMENT_LINK_REQUESTS_PER_HOUR = 3;
@@ -168,7 +168,7 @@ export type AgreementPaymentMailAgreement = {
 	day_of_week: number;
 	start_time: string;
 	start_date: string;
-	frequency: string;
+	frequency: FrequencyKey | null;
 	price_per_lesson: number | null;
 };
 
@@ -235,7 +235,7 @@ export function buildAgreementCreatedPaymentMailVars(input: {
 			'docent',
 		),
 		les_type: input.lessonTypeName,
-		frequentie: getFrequencyLabel(agreement.frequency),
+		frequentie: agreement.frequency ? getFrequencyLabel(agreement.frequency) : '',
 		prijs_per_les: formatAgreementPaymentMailPrice(agreement.price_per_lesson),
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementPaymentMailTime(agreement.start_time),
