@@ -20,13 +20,16 @@ A reader must learn something the type signature does not already say: inputs �
 * ❌ Tests of single-property getters / constant returners (`return row.published_at`, `return 'avatar-upload'`)
 * ❌ Tests of boolean renames like `shouldShowX(flag)` that only check `true→true` / `false→false`
 * ❌ Tests whose only assertion is a Tailwind/CSS class string (`toContain('orange')`, `toContain('border-green-500')`, `toBe('flex …')` when that is pure presentation)
+* ❌ **Dictionary / table / enum→string catalog tests** — asserting that `code X` maps to copy string `Y`, mode `M` maps to path `P`, key `K` maps to label `L`, when the implementation is a `Record`, `switch` of return literals, or similar lookup with **no rule beyond the table itself**. That only restates the source; a typo in the test updates with the table and catches nothing real.
 * ❌ One shallow happy-path test on a complex helper just to paint coverage while real branches stay unasserted
 * ❌ Extracting a tiny helper plus a trivial test instead of splitting a complex function when **complexity** (not coverage) is the problem
 
+**Smell (string catalogs):** If every expect is `f(knownKey) === 'some literal from the same PR'`, and deleting the test would not hide a broken branch/invariant, delete the test. Prefer one test of an unknown/default path, a compose/forward rule (e.g. detail level on/off), or caller behavior — not the whole copy table.
+
 ### ALWAYS
 
-* ✅ Test logic that already has branches, mapping, validation, or domain rules — or test at the caller if the helper is trivial
-* ✅ If Fallow/CRAP needs coverage, assert outcomes of existing (or meaningfully extracted) logic — not `f(x) === x`
+* ✅ Test logic that already has branches, **decision rules**, validation, or domain invariants — or test at the caller if the helper is trivial. “Mapping” here means rules (when silent vs error, when to append details), **not** re-listing every `Record` entry’s UI string.
+* ✅ If Fallow/CRAP needs coverage, assert outcomes of existing (or meaningfully extracted) logic — not `f(x) === x` and not a full string-catalog dump of a lookup table
 * ✅ Smell check: if you inlined the helper back into the caller, would the test still be worth keeping? If no → do not extract; refactor or test at the right layer
 * ✅ Prefer deleting a trivial helper over adding a theater test to keep Fallow green
 

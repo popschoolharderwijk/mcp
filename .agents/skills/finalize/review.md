@@ -33,7 +33,10 @@ Reject and fix tests that:
 * Exist only to raise coverage / lower CRAP without locking real behavior
 * Assert only CSS/Tailwind class strings
 * Assert identity, passthrough, constant return, or `true→true` / `false→false` renames
+* **Dictionary / catalog string tests** — `expect(f('code')).toBe('Dutch copy…')` (or mode→path, key→label) for every entry of a `Record` / literal `switch`, with no rule beyond the lookup table. That restates source strings; it is not behavior.
 * Wrap a one-liner in a helper just so a tiny test can exist
+
+**Smell:** every assertion is `knownKey → hardcoded string from the same change` and an unknown/default or compose rule is untested → theater. Keep tests of silent vs error, detail on/off, validation edges — not the full copy table.
 
 Fix by: delete the theater test; inline or remove the trivial helper; or replace with a behavior test that would still matter if the helper were inlined.
 

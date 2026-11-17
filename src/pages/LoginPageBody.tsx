@@ -15,7 +15,11 @@ export function LoginPageBody({ login }: { login: LoginPageState }) {
 					<p className="text-muted-foreground mt-2">Log in met je passkey, of ontvang een link per e-mail.</p>
 				</div>
 
-				{login.error && <Alert variant="error">{login.error}</Alert>}
+				{login.error && (
+					<Alert variant="error">
+						<span className="whitespace-pre-wrap">{login.error}</span>
+					</Alert>
+				)}
 
 				{isLoginSendingState(login.state) ? (
 					<LoginMagicLinkForm

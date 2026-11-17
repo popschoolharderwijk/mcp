@@ -25,19 +25,25 @@ describe('resolvePasskeySignInOutcome', () => {
 
 	it('explains missing or cancelled passkeys on intentional sign-in', () => {
 		expect(
-			resolvePasskeySignInOutcome({
-				code: 'ERROR_AUTHENTICATOR_GENERAL_ERROR',
-				message: 'cancelled',
-			}),
+			resolvePasskeySignInOutcome(
+				{
+					code: 'ERROR_AUTHENTICATOR_GENERAL_ERROR',
+					message: 'cancelled',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: NO_PASSKEY_SIGN_IN_MESSAGE,
 		});
 		expect(
-			resolvePasskeySignInOutcome({
-				name: 'NotAllowedError',
-				message: 'denied',
-			}),
+			resolvePasskeySignInOutcome(
+				{
+					name: 'NotAllowedError',
+					message: 'denied',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: NO_PASSKEY_SIGN_IN_MESSAGE,
@@ -46,10 +52,13 @@ describe('resolvePasskeySignInOutcome', () => {
 
 	it('explains unsupported browsers on intentional sign-in', () => {
 		expect(
-			resolvePasskeySignInOutcome({
-				name: 'NotSupportedError',
-				message: 'unsupported',
-			}),
+			resolvePasskeySignInOutcome(
+				{
+					name: 'NotSupportedError',
+					message: 'unsupported',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: PASSKEY_UNSUPPORTED_MESSAGE,
@@ -58,10 +67,13 @@ describe('resolvePasskeySignInOutcome', () => {
 
 	it('returns a Dutch error message for verification failures', () => {
 		expect(
-			resolvePasskeySignInOutcome({
-				code: 'webauthn_verification_failed',
-				message: 'failed',
-			}),
+			resolvePasskeySignInOutcome(
+				{
+					code: 'webauthn_verification_failed',
+					message: 'failed',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: 'Passkey-verificatie mislukt. Probeer het opnieuw.',
@@ -94,10 +106,13 @@ describe('resolveConditionalPasskeySignInOutcome', () => {
 describe('resolvePasskeyManageOutcome', () => {
 	it('maps too_many_passkeys to a Dutch manage error', () => {
 		expect(
-			resolvePasskeyManageOutcome({
-				code: 'too_many_passkeys',
-				message: 'limit',
-			}),
+			resolvePasskeyManageOutcome(
+				{
+					code: 'too_many_passkeys',
+					message: 'limit',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: 'Je hebt het maximum aantal passkeys bereikt.',
@@ -115,29 +130,50 @@ describe('resolvePasskeyManageOutcome', () => {
 
 	it('explains missing session and insecure local origins', () => {
 		expect(
-			resolvePasskeyManageOutcome({
-				code: 'session_not_found',
-				message: 'Session not found',
-			}),
+			resolvePasskeyManageOutcome(
+				{
+					code: 'session_not_found',
+					message: 'Session not found',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: PASSKEY_SESSION_REQUIRED_MESSAGE,
 		});
 		expect(
-			resolvePasskeyManageOutcome({
-				message: 'Registration failure: Invalid request: insecure protocol',
-			}),
+			resolvePasskeyManageOutcome(
+				{
+					message: 'Registration failure: Invalid request: insecure protocol',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: PASSKEY_INSECURE_ORIGIN_MESSAGE,
 		});
 		expect(
-			resolvePasskeyManageOutcome({
-				message: 'Auth session missing!',
-			}),
+			resolvePasskeyManageOutcome(
+				{
+					message: 'Auth session missing!',
+				},
+				'production',
+			),
 		).toEqual({
 			kind: 'error',
 			message: PASSKEY_SESSION_REQUIRED_MESSAGE,
+		});
+	});
+
+	it('forwards app mode into manage error detail level', () => {
+		const error = { message: 'boom', name: 'Error' };
+		expect(resolvePasskeyManageOutcome(error, 'production')).toEqual({
+			kind: 'error',
+			message: 'Er ging iets mis bij het beheren van je passkey.',
+		});
+		expect(resolvePasskeyManageOutcome(error, 'test')).toEqual({
+			kind: 'error',
+			message: 'Er ging iets mis bij het beheren van je passkey.\n\n[dev] name=Error message=boom',
 		});
 	});
 });
@@ -174,12 +210,18 @@ describe('passkey helper predicates and display', () => {
 		expect(resolveLoginStateAfterPasskeySignIn({ kind: 'error', message: 'x' })).toBe('idle');
 	});
 
-	it('uses context-specific default error copy', () => {
-		expect(resolvePasskeyErrorMessage({ message: 'boom' }, 'sign-in')).toBe(
+	it('keeps unknown manage errors user-facing only on production', () => {
+		const error = { code: 'unexpected_webauthn', message: 'boom', name: 'Error' };
+		const withDetails =
+			'Er ging iets mis bij het beheren van je passkey.\n\n[dev] name=Error code=unexpected_webauthn message=boom';
+		expect(resolvePasskeyErrorMessage(error, 'sign-in', 'production')).toBe(
 			'Er ging iets mis bij het inloggen met je passkey.',
 		);
-		expect(resolvePasskeyErrorMessage({ message: 'boom' }, 'manage')).toBe(
+		expect(resolvePasskeyErrorMessage(error, 'manage', 'production')).toBe(
 			'Er ging iets mis bij het beheren van je passkey.',
 		);
+		expect(resolvePasskeyErrorMessage(error, 'manage', 'development')).toBe(withDetails);
+		expect(resolvePasskeyErrorMessage(error, 'manage', 'localdev')).toBe(withDetails);
+		expect(resolvePasskeyErrorMessage(error, 'manage', 'test')).toBe(withDetails);
 	});
 });

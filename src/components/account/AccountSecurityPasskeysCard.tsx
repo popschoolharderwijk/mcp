@@ -216,7 +216,13 @@ function PasskeyDeleteDialog({
 					verwijderen? Je kunt daarna niet meer met deze passkey inloggen.
 				</p>
 			}
-			extraContent={error ? <Alert variant="error">{error}</Alert> : null}
+			extraContent={
+				error ? (
+					<Alert variant="error">
+						<span className="whitespace-pre-wrap">{error}</span>
+					</Alert>
+				) : null
+			}
 			onConfirm={onConfirmDelete}
 		/>
 	);
@@ -258,7 +264,11 @@ export function AccountSecurityPasskeysCard({
 					<PasskeyRegisterButton registering={registering} loading={loading} onRegister={onRegister} />
 				</CardHeader>
 				<CardContent className="space-y-4">
-					{error && !deleteTarget ? <Alert variant="error">{error}</Alert> : null}
+					{error && !deleteTarget ? (
+						<Alert variant="error">
+							<span className="whitespace-pre-wrap">{error}</span>
+						</Alert>
+					) : null}
 					<PasskeysCardBody
 						loading={loading}
 						passkeys={passkeys}

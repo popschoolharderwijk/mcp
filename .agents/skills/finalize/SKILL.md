@@ -111,7 +111,7 @@ Prefer the **smallest change that genuinely resolves the finding**. A real refac
 1. Progress UI: **invoke** `TodoWrite` via `CallDynamicTool` (not schema discovery); do not run gates until the first successful write.
 2. Follow the state machine; do not skip check → ci → fallow → fallow-audit in an outer pass.
 3. Fix priority inside a failing step: Biome → TypeScript → tests → Fallow (details in [`quality-loop.md`](quality-loop.md)). Never edit tests while `tsc` still fails.
-4. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — [`fallow.md`](fallow.md), [`review.md`](review.md).
+4. No Fallow suppressions / threshold hacks; no CRAP / coverage theater — including **no `Record`/lookup string-catalog tests** (`code→copy`, `mode→path`) — [`fallow.md`](fallow.md), [`review.md`](review.md), `.cursor/rules/tests.mdc`.
 5. No diff-narration comments — [`review.md`](review.md) / `.cursor/rules/comments.mdc`.
 6. No unsolicited legacy / dual-API shims — [`review.md`](review.md) / `.cursor/rules/no-legacy.mdc`.
 7. No single-caller helper modules — [`review.md`](review.md) §4 / `.cursor/rules/no-single-caller-modules.mdc`.

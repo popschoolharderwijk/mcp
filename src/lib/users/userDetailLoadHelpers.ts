@@ -8,11 +8,15 @@ const USER_DETAIL_PROFILE_COLUMNS =
 export type { UserDetailLoadOutcome };
 
 export async function loadUserDetail(userId: string): Promise<UserDetailLoadOutcome> {
-	const [profileResult, roleResult] = await Promise.all([
+	const [profileResult, roleRowsResult] = await Promise.all([
 		supabase.from('profiles').select(USER_DETAIL_PROFILE_COLUMNS).eq('user_id', userId).maybeSingle(),
-		supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle(),
+		supabase.from('user_roles').select('role').eq('user_id', userId).limit(1),
 	]);
 
+	const roleResult = {
+		data: roleRowsResult.data?.[0] ?? null,
+		error: roleRowsResult.error,
+	};
 	const { outcome, toastDescription } = mapUserDetailQueriesToOutcome(profileResult, roleResult);
 	if (toastDescription !== null) {
 		toast.error('Fout bij laden gebruiker', { description: toastDescription });
