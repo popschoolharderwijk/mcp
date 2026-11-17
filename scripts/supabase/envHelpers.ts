@@ -8,6 +8,7 @@
  */
 
 import { isAbsolute, join } from 'node:path';
+import { isRemoteMode } from '../../src/lib/modeHelpers';
 import supabaseConfig from '../../supabase.json';
 
 export type DeployEnv = keyof typeof supabaseConfig.targets;
@@ -76,7 +77,7 @@ export function runtimeEnvFile(env: DeployEnv): string {
  * Unknown modes get no overlay.
  */
 export function runtimeEnvFileForViteMode(mode: string): string | null {
-	if (mode === 'development' || mode === 'test' || mode === 'production') return runtimeEnvFile(mode);
+	if (isRemoteMode(mode)) return runtimeEnvFile(mode);
 	return null;
 }
 

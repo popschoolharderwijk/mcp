@@ -38,26 +38,27 @@ export function useAuthProviderState() {
 	}, [clearBootstrapTimeout]);
 
 	const fetchRole = useCallback(async (userId: string): Promise<AuthBackendProbeError> => {
-		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).maybeSingle();
+		// Zero rows is normal for teachers/students. Array `.limit(1)` avoids PostgREST singular HTTP 406.
+		const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', userId).limit(1);
 
 		if (error) {
 			console.error('Error fetching user role:', error);
 			setRole(null);
 			return error;
 		}
-		setRole(data?.role ?? null);
+		setRole(data?.[0]?.role ?? null);
 		return null;
 	}, []);
 
 	const fetchTeacher = useCallback(async (userId: string): Promise<AuthBackendProbeError> => {
-		const { data, error } = await supabase.from('teachers').select('user_id').eq('user_id', userId).maybeSingle();
+		const { data, error } = await supabase.from('teachers').select('user_id').eq('user_id', userId).limit(1);
 
 		if (error) {
 			console.error('Error fetching teacher:', error);
 			setTeacherUserId(null);
 			return error;
 		}
-		setTeacherUserId(data?.user_id ?? null);
+		setTeacherUserId(data?.[0]?.user_id ?? null);
 		return null;
 	}, []);
 

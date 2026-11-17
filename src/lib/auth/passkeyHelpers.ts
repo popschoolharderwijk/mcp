@@ -1,3 +1,5 @@
+import { resolveErrorDetailLevel } from '@/lib/modeHelpers';
+
 const PASSKEY_FRIENDLY_NAME_MAX_LENGTH = 120;
 
 export type PasskeyErrorLike = {
@@ -88,7 +90,41 @@ function messageLooksMissingSession(message: string): boolean {
 	return /auth session missing/i.test(message);
 }
 
-export function resolvePasskeyErrorMessage(error: PasskeyErrorLike, context: 'sign-in' | 'manage'): string {
+function formatPasskeyErrorDetails(error: PasskeyErrorLike): string {
+	const parts: string[] = [];
+	if (error.name) parts.push(`name=${error.name}`);
+	if (error.code) parts.push(`code=${error.code}`);
+	if (error.message) parts.push(`message=${error.message}`);
+	return parts.join(' ');
+}
+
+function withOptionalPasskeyErrorDetails(userMessage: string, error: PasskeyErrorLike, mode: string): string {
+	if (resolveErrorDetailLevel(mode) !== 'technical') return userMessage;
+	const details = formatPasskeyErrorDetails(error);
+	if (!details) return userMessage;
+	return `${userMessage}\n\n[dev] ${details}`;
+}
+
+const PASSKEY_ERROR_MESSAGE_BY_CODE: Record<string, string> = {
+	passkey_disabled: 'Passkeys zijn niet beschikbaar.',
+	too_many_passkeys: 'Je hebt het maximum aantal passkeys bereikt.',
+	webauthn_credential_exists: 'Deze passkey is al geregistreerd op dit account.',
+	webauthn_credential_not_found: 'Deze passkey is niet gekoppeld aan een account.',
+	webauthn_challenge_not_found: 'De passkey-aanvraag is verlopen. Probeer het opnieuw.',
+	webauthn_challenge_expired: 'De passkey-aanvraag is verlopen. Probeer het opnieuw.',
+	webauthn_verification_failed: 'Passkey-verificatie mislukt. Probeer het opnieuw.',
+	email_not_confirmed: 'Je e-mailadres is nog niet bevestigd.',
+	phone_not_confirmed: 'Je telefoonnummer is nog niet bevestigd.',
+	user_banned: 'Dit account is geblokkeerd.',
+	session_not_found: PASSKEY_SESSION_REQUIRED_MESSAGE,
+};
+
+function defaultPasskeyErrorMessage(context: 'sign-in' | 'manage'): string {
+	if (context === 'sign-in') return 'Er ging iets mis bij het inloggen met je passkey.';
+	return 'Er ging iets mis bij het beheren van je passkey.';
+}
+
+function resolvePasskeyUserFacingErrorMessage(error: PasskeyErrorLike, context: 'sign-in' | 'manage'): string {
 	if (messageLooksInsecureOrigin(error.message)) {
 		return PASSKEY_INSECURE_ORIGIN_MESSAGE;
 	}
@@ -103,42 +139,33 @@ export function resolvePasskeyErrorMessage(error: PasskeyErrorLike, context: 'si
 	}
 
 	const code = resolvePasskeyErrorCode(error);
-	switch (code) {
-		case 'passkey_disabled':
-			return 'Passkeys zijn niet beschikbaar.';
-		case 'too_many_passkeys':
-			return 'Je hebt het maximum aantal passkeys bereikt.';
-		case 'webauthn_credential_exists':
-			return 'Deze passkey is al geregistreerd op dit account.';
-		case 'webauthn_credential_not_found':
-			return 'Deze passkey is niet gekoppeld aan een account.';
-		case 'webauthn_challenge_not_found':
-		case 'webauthn_challenge_expired':
-			return 'De passkey-aanvraag is verlopen. Probeer het opnieuw.';
-		case 'webauthn_verification_failed':
-			return 'Passkey-verificatie mislukt. Probeer het opnieuw.';
-		case 'email_not_confirmed':
-			return 'Je e-mailadres is nog niet bevestigd.';
-		case 'phone_not_confirmed':
-			return 'Je telefoonnummer is nog niet bevestigd.';
-		case 'user_banned':
-			return 'Dit account is geblokkeerd.';
-		case 'session_not_found':
-			return PASSKEY_SESSION_REQUIRED_MESSAGE;
-		default:
-			return context === 'sign-in'
-				? 'Er ging iets mis bij het inloggen met je passkey.'
-				: 'Er ging iets mis bij het beheren van je passkey.';
+	if (code && PASSKEY_ERROR_MESSAGE_BY_CODE[code]) {
+		return PASSKEY_ERROR_MESSAGE_BY_CODE[code];
 	}
+	return defaultPasskeyErrorMessage(context);
+}
+
+export function resolvePasskeyErrorMessage(
+	error: PasskeyErrorLike,
+	context: 'sign-in' | 'manage',
+	mode: string = import.meta.env.MODE ?? '',
+): string {
+	return withOptionalPasskeyErrorDetails(resolvePasskeyUserFacingErrorMessage(error, context), error, mode);
 }
 
 /** Intentional modal passkey button: always show feedback on failure. */
-export function resolvePasskeySignInOutcome(error: PasskeyErrorLike | null): PasskeySignInOutcome {
+export function resolvePasskeySignInOutcome(
+	error: PasskeyErrorLike | null,
+	mode: string = import.meta.env.MODE ?? '',
+): PasskeySignInOutcome {
 	if (!error) return { kind: 'success' };
-	return { kind: 'error', message: resolvePasskeyErrorMessage(error, 'sign-in') };
+	return { kind: 'error', message: resolvePasskeyErrorMessage(error, 'sign-in', mode) };
 }
 
-export function resolvePasskeyManageOutcome(error: PasskeyErrorLike | null): PasskeyActionOutcome {
+export function resolvePasskeyManageOutcome(
+	error: PasskeyErrorLike | null,
+	mode: string = import.meta.env.MODE ?? '',
+): PasskeyActionOutcome {
 	if (!error) return { kind: 'success' };
 	const code = resolvePasskeyErrorCode(error);
 	if (code === 'ERROR_CEREMONY_ABORTED' || error.name === 'AbortError' || error.name === 'NotAllowedError') {
@@ -147,7 +174,7 @@ export function resolvePasskeyManageOutcome(error: PasskeyErrorLike | null): Pas
 	if (code === 'ERROR_AUTHENTICATOR_GENERAL_ERROR') {
 		return { kind: 'silent' };
 	}
-	return { kind: 'error', message: resolvePasskeyErrorMessage(error, 'manage') };
+	return { kind: 'error', message: resolvePasskeyErrorMessage(error, 'manage', mode) };
 }
 
 export function resolvePasskeyDisplayName(friendlyName: string | undefined): string {

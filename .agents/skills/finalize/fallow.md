@@ -49,10 +49,11 @@ When cyclomatic/cognitive complexity is high: split real responsibilities; extra
 
 ## Test theater (extra scrutiny)
 
-Do **not** silence Fallow with weak tests. Forbidden examples (also in [`review.md`](review.md)):
+Do **not** silence Fallow with weak tests. Forbidden examples (also in [`review.md`](review.md) / `.cursor/rules/tests.mdc`):
 
 * Asserting only Tailwind/CSS class strings
 * Identity / passthrough / constant-return / boolean-rename tests
+* **Lookup-table / string-catalog dumps** (`code→copy`, `mode→path`, `key→label` for every `Record` entry) with no rule beyond the table
 * New tiny helper + trivial test instead of a real split
 
-Prefer: delete theater, inline trivial helpers, or assert real domain branches. If the only way to green Fallow is theater → escalate.
+Prefer: delete theater, inline trivial helpers, or assert real domain branches (default/unknown path, compose rules, silent vs error). If the only way to green Fallow is theater → escalate.

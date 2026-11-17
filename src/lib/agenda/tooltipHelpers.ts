@@ -1,5 +1,6 @@
 import type { CalendarEventResource } from '@/components/agenda/types';
 import { formatDbDateLong } from '@/lib/date/date-format';
+import { resolveErrorDetailLevel } from '@/lib/modeHelpers';
 import { formatTime } from '@/lib/time/time-format';
 
 export function buildTooltipFirstLine(eventTitle: string, resource: CalendarEventResource): string {
@@ -86,17 +87,12 @@ export function buildTooltipStatusLines(resource: CalendarEventResource): string
 	return lines;
 }
 
-/** Import/debug notes stay off production and test builds; only localdev + mcp-dev. */
-function shouldShowAgendaTooltipNotes(mode: string): boolean {
-	return mode === 'development' || mode === 'localdev';
-}
-
-/** Agreement notes line(s); empty when notes are null/blank or the build is not a dev site. */
+/** Agreement notes line(s); empty when notes are null/blank or technical UI detail is off. */
 export function buildTooltipNotesLines(
 	resource: CalendarEventResource,
 	mode: string = import.meta.env.MODE ?? '',
 ): string[] {
-	if (!shouldShowAgendaTooltipNotes(mode)) return [];
+	if (resolveErrorDetailLevel(mode) !== 'technical') return [];
 	const notes = resource.notes?.trim();
 	if (!notes) return [];
 	return [`Notities: ${notes}`];
