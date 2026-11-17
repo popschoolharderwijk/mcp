@@ -53,7 +53,7 @@ describe('buildSignupConfirmationOptionDetails', () => {
 				price_per_lesson: 20,
 			}),
 		).toEqual({
-			frequentie: 'weekly',
+			frequentie: 'Wekelijks',
 			prijs: '€ 20,00',
 		});
 	});
@@ -65,12 +65,12 @@ describe('buildSignupConfirmationEmailVars', () => {
 			buildSignupConfirmationEmailVars({
 				body,
 				lessonTypeName: 'Piano',
-				optionDetails: { frequentie: 'weekly', prijs: '€ 20,00' },
+				optionDetails: { frequentie: 'Wekelijks', prijs: '€ 20,00' },
 			}),
 		).toEqual({
 			leerling_naam: 'Anna Jansen',
 			les_type: 'Piano',
-			frequentie: 'weekly',
+			frequentie: 'Wekelijks',
 			prijs_per_les: '€ 20,00',
 		});
 	});

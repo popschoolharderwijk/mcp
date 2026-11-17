@@ -1,6 +1,7 @@
 /** Pure billing helpers shared by Deno edge functions (no Deno/Stripe/Supabase imports). */
 /** School-year bounds mirror src/lib/billing/schoolYear.ts + app_settings.school_year bootstrap. */
 
+import { getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
 import { resolveSchoolYearStartAndEndYear } from './schoolYearStartYearHelpers.ts';
 
 export type LessonFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
@@ -420,13 +421,6 @@ export function formatBillingSchoolYearLabel(startYear: number): string {
 /** Dutch Stripe Dashboard title for shared tuition products. */
 const STRIPE_TUITION_PRODUCT_TITLE = 'Lesgeld';
 
-const FREQUENCY_LABELS: Record<LessonFrequency, string> = {
-	daily: 'dagelijks',
-	weekly: 'wekelijks',
-	biweekly: 'tweewekelijks',
-	monthly: 'maandelijks',
-};
-
 /** Shared Stripe metadata that pins a Subscription / Schedule to one lesson agreement. */
 export function buildAgreementStripeMetadata(
 	agreement: Pick<BillingComputationAgreement, 'id' | 'lesson_type_id' | 'frequency' | 'duration_minutes'>,
@@ -445,7 +439,7 @@ export function buildStripeTuitionProductName(input: {
 	durationMinutes?: number | null;
 	frequency?: LessonFrequency | null;
 }): string {
-	const freqLabel = input.frequency ? (FREQUENCY_LABELS[input.frequency] ?? input.frequency) : null;
+	const freqLabel = input.frequency ? getFrequencyLabel(input.frequency) : null;
 	const durationLabel = input.durationMinutes != null ? `${input.durationMinutes} min` : null;
 	const rest = [input.lessonTypeName?.trim() || null, durationLabel, freqLabel].filter((part): part is string =>
 		Boolean(part),

@@ -1,11 +1,16 @@
 # Changelog
 
+## 1.5.0 — 2026-11-17
+
+- Agenda: filter afspraken op lessoort (@Cas)
+- Fix: Geen Engelse tekst in mails meer.
+
 ## 1.4.0 — 2026-11-13
 
 - Stripe integratie
 - Nieuw menu **Lokalen**: lokalen beheren met zichtbaarheid en detailpagina
 - **Beschikbaarheid**: lokaal kiezen per tijdblok (naam en kleur in het rooster)
-- Zoekbalken triggeren geen wachtwoordmanager meer
+- Fix: Zoekbalken triggeren geen wachtwoordmanager meer
 
 ## 1.3.0 — 2026-11-09
 

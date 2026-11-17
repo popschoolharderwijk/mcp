@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
-import { frequencyLabels } from '@/lib/frequencies';
+import { getFrequencyLabel } from '@/lib/frequencies';
 import {
 	buildSignupOverviewRows,
 	needsManualSignupChoiceNext,
 	resolveSelectedSignupGroup,
 	type SignupFormFields,
 } from '@/lib/signup/publicSignupHelpers';
-import type { LessonFrequency, LessonTypeOptionRow } from '@/types/lesson-agreements';
+import type { LessonTypeOptionRow } from '@/types/lesson-agreements';
 import { resolvePublicSignupRenderStep } from './publicSignupStepSwitchHelpers';
 import { SignupFormField } from './SignupFormField';
 import { DAY_LABELS, type GroupOption, type LessonType, type PublicSignupFlowProps } from './types';
@@ -95,7 +95,7 @@ function GroupLessonSelection(props: {
 					<div className="font-medium">{group.name}</div>
 					<div className="mt-1 text-sm text-muted-foreground">
 						{DAY_LABELS[group.day_of_week]} {group.start_time.slice(0, 5)} · {group.duration_minutes} min ·{' '}
-						{frequencyLabels[group.frequency as LessonFrequency] ?? group.frequency}
+						{getFrequencyLabel(group.frequency)}
 					</div>
 					<div className="text-sm text-muted-foreground">
 						{group.teacher_name ? `Docent: ${group.teacher_name}` : ''} · {group.members_count} deelnemers ·

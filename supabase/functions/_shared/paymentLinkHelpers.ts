@@ -3,6 +3,8 @@
  * Only the SHA-256 hash of the token is stored. No Deno/DB IO (Bun-testable).
  */
 
+import { type FrequencyKey, getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
+
 const PAYMENT_LINK_TOKEN_BYTES = 32;
 const PAYMENT_LINK_REQUESTS_PER_HOUR = 3;
 
@@ -160,19 +162,13 @@ Of open deze link: [${paymentUrl}](${paymentUrl})`;
 
 const DAY_NAMES_NL = ['zondag', 'maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag'];
 
-const FREQUENCY_LABELS: Record<string, string> = {
-	weekly: 'wekelijks',
-	biweekly: 'om de week',
-	monthly: 'maandelijks',
-};
-
 const STRIPE_PAYMENT_METHOD_LABEL = 'Stripe';
 
 export type AgreementPaymentMailAgreement = {
 	day_of_week: number;
 	start_time: string;
 	start_date: string;
-	frequency: string;
+	frequency: FrequencyKey | null;
 	price_per_lesson: number | null;
 };
 
@@ -239,7 +235,7 @@ export function buildAgreementCreatedPaymentMailVars(input: {
 			'docent',
 		),
 		les_type: input.lessonTypeName,
-		frequentie: FREQUENCY_LABELS[agreement.frequency] ?? agreement.frequency,
+		frequentie: agreement.frequency ? getFrequencyLabel(agreement.frequency) : '',
 		prijs_per_les: formatAgreementPaymentMailPrice(agreement.price_per_lesson),
 		dag: DAY_NAMES_NL[agreement.day_of_week] ?? '',
 		tijd: formatAgreementPaymentMailTime(agreement.start_time),

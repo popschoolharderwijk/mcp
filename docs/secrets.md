@@ -13,7 +13,7 @@ cp .env.example .env
 SECRETS_PATH=../mcp-secrets
 ```
 
-Resolve relative paths against the project root. Absolute paths are allowed. Override with a real `SECRETS_PATH` environment variable when needed.
+Resolve relative paths against the project root. Absolute paths and `~/…` (home) are allowed. Override with a real `SECRETS_PATH` environment variable when needed.
 
 **CI** does not use `SECRETS_PATH` or `mcp-secrets`. Workflows inject `SUPABASE_*` / `RESEND_*` via GitHub Actions secrets into the job environment. Bun preload skips file loading when no local `.env` pointer is present.
 

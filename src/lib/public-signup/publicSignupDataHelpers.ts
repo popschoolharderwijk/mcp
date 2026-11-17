@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GroupOption } from '@/pages/public-signup/types';
+import type { LessonFrequency } from '@/types/lesson-agreements';
 
 interface LessonGroupRow {
 	id: string;
@@ -7,7 +8,7 @@ interface LessonGroupRow {
 	day_of_week: number;
 	start_time: string;
 	duration_minutes: number;
-	frequency: string;
+	frequency: LessonFrequency;
 	price_per_lesson: number;
 	teacher_user_id: string;
 }

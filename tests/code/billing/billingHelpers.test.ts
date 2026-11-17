@@ -306,7 +306,7 @@ describe('buildStripeTuitionProductName', () => {
 				durationMinutes: 30,
 				frequency: 'weekly',
 			}),
-		).toBe('Lesgeld · Gitaarles · 30 min · wekelijks');
+		).toBe('Lesgeld · Gitaarles · 30 min · Wekelijks');
 	});
 });
 

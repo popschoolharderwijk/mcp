@@ -1,11 +1,9 @@
+import { FREQUENCY_LABELS, getFrequencyLabel } from '@/lib/frequenciesHelpers';
 import type { LessonFrequency } from '@/types/lesson-agreements';
 
-export const frequencyLabels: Record<LessonFrequency, string> = {
-	daily: 'Dagelijks',
-	weekly: 'Wekelijks',
-	biweekly: 'Tweewekelijks',
-	monthly: 'Maandelijks',
-};
+export { getFrequencyLabel };
+
+export const frequencyLabels: Record<LessonFrequency, string> = { ...FREQUENCY_LABELS };
 
 export const frequencyOptions = Object.entries(frequencyLabels).map(([value, label]) => ({
 	value: value as LessonFrequency,
@@ -17,5 +15,5 @@ export function formatLessonOptionSummary(option: {
 	frequency: LessonFrequency;
 	price_per_lesson: number;
 }): string {
-	return `${option.duration_minutes} min · ${frequencyLabels[option.frequency]} · €${option.price_per_lesson}`;
+	return `${option.duration_minutes} min · ${getFrequencyLabel(option.frequency)} · €${option.price_per_lesson}`;
 }
