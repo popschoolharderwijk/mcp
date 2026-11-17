@@ -27,8 +27,18 @@
 		@apply hover:bg-accent hover:text-accent-foreground;
 	}
 
-	& .rbc-btn-group button.rbc-toolbar-fullscreen {
+	& .rbc-btn-group button.rbc-toolbar-icon {
 		@apply inline-flex h-8 w-8 items-center justify-center p-0;
+	}
+
+	/* react-big-calendar sets .rbc-toolbar button to inline-block; keep label + chevron on one row. */
+	& .rbc-btn-group button.rbc-toolbar-filter-select {
+		@apply inline-flex h-8 max-w-[16rem] items-center justify-between gap-2 px-2.5;
+	}
+
+	& .rbc-btn-group select.rbc-toolbar-select {
+		@apply h-8 min-w-[5rem] cursor-pointer rounded-md border border-border bg-card pl-2.5 pr-8 text-sm font-medium text-foreground;
+		@apply focus:outline-none focus:ring-2 focus:ring-ring;
 	}
 
 	/* Nav group: chevrons flank label (Google Calendar style) */

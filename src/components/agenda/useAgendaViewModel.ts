@@ -5,6 +5,11 @@ import { buildAgendaViewDerivedState } from '@/components/agenda/agendaViewDeriv
 import { useAgendaViewHandlers } from '@/components/agenda/useAgendaViewHandlers';
 import { useAgendaData } from '@/hooks/useAgendaData';
 import { useAgendaUI } from '@/hooks/useAgendaUI';
+import {
+	collectAgendaLessonTypeFilterOptions,
+	filterAgendaEventsByLessonTypeSelection,
+	resolveAgendaLessonTypeFilterSelection,
+} from '@/lib/agenda/agendaLessonTypeFilterHelpers';
 import { buildCalendarEvents } from '@/lib/agenda/buildCalendarEvents';
 import { getCalendarProps } from '@/lib/agenda/calendarProps';
 import { resolveAgendaTimeGrid } from '@/lib/agenda/resolveAgendaScrollToTime';
@@ -27,9 +32,29 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		if (!ui.formDialogOpen) ui.openingForEditRef.current = false;
 	}, [ui.formDialogOpen, ui.openingForEditRef]);
 
+	const lessonTypeFilterOptions = useMemo(
+		() =>
+			collectAgendaLessonTypeFilterOptions(
+				agendaData.agreementsMap.values(),
+				agendaData.lessonGroupsMap.values(),
+			),
+		[agendaData.agreementsMap, agendaData.lessonGroupsMap],
+	);
+
 	const events = useMemo(
-		() => buildCalendarEvents(agendaData.getEnrichedEvents(ui.currentDate, effectiveUserId), ui.optimisticMove),
-		[agendaData.getEnrichedEvents, ui.currentDate, effectiveUserId, ui.optimisticMove],
+		() =>
+			filterAgendaEventsByLessonTypeSelection(
+				buildCalendarEvents(agendaData.getEnrichedEvents(ui.currentDate, effectiveUserId), ui.optimisticMove),
+				resolveAgendaLessonTypeFilterSelection(ui.lessonTypeFilterSelection, lessonTypeFilterOptions),
+			),
+		[
+			agendaData.getEnrichedEvents,
+			ui.currentDate,
+			effectiveUserId,
+			ui.optimisticMove,
+			ui.lessonTypeFilterSelection,
+			lessonTypeFilterOptions,
+		],
 	);
 
 	const timeGrid = useMemo(
@@ -77,5 +102,16 @@ export function useAgendaViewModel(params: UseAgendaViewModelParams) {
 		noLessonPeriods: agendaData.noLessonPeriods,
 	});
 
-	return { ui, derived, handlers, calendarProps, loading: agendaData.loading };
+	return {
+		ui,
+		derived,
+		handlers,
+		calendarProps,
+		loading: agendaData.loading,
+		lessonTypeFilter: {
+			options: lessonTypeFilterOptions,
+			selection: ui.lessonTypeFilterSelection,
+			onSelect: ui.setLessonTypeFilterSelection,
+		},
+	};
 }

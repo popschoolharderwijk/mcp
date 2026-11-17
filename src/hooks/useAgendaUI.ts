@@ -3,6 +3,10 @@ import type { View } from 'react-big-calendar';
 import { useSearchParams } from 'react-router-dom';
 import type { RecurrenceScope } from '@/components/agenda/RecurrenceChoiceDialog';
 import type { CalendarEvent } from '@/components/agenda/types';
+import {
+	AGENDA_LESSON_TYPE_FILTER_ALL,
+	type AgendaLessonTypeFilterSelection,
+} from '@/lib/agenda/agendaLessonTypeFilterHelpers';
 import { buildAgendaUrlSearchParams, parseAgendaUrlState } from '@/lib/agenda/agendaUrlState';
 import type { OptimisticMove } from '@/lib/agenda/buildCalendarEvents';
 import { formatDateToDb, now } from '@/lib/date/date-format';
@@ -107,11 +111,22 @@ function useAgendaMoveModalUiState() {
 	};
 }
 
+function useAgendaLessonTypeFilterUiState() {
+	const [lessonTypeFilterSelection, setLessonTypeFilterSelection] =
+		useState<AgendaLessonTypeFilterSelection>(AGENDA_LESSON_TYPE_FILTER_ALL);
+
+	return {
+		lessonTypeFilterSelection,
+		setLessonTypeFilterSelection,
+	};
+}
+
 export function useAgendaUI() {
 	return {
 		...useAgendaUrlSyncedState(),
 		...useAgendaFormDialogUiState(),
 		...useAgendaCancelRecurrenceUiState(),
 		...useAgendaMoveModalUiState(),
+		...useAgendaLessonTypeFilterUiState(),
 	};
 }

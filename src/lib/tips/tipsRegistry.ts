@@ -65,4 +65,12 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		target: 'agenda-date-picker',
 		completeOn: ['target-click'],
 	},
+	{
+		id: 'agenda-lesson-type-filter',
+		title: 'Afspraken filteren',
+		body: 'Kies in het filterveld wat je wilt zien: alle afspraken, alles behalve lessen, of één lessoort.',
+		routes: ['/agenda'],
+		target: 'agenda-lesson-type-filter',
+		completeOn: ['target-click'],
+	},
 ] as const;

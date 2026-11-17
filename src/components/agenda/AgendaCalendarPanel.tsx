@@ -3,6 +3,10 @@ import type { View } from 'react-big-calendar';
 import { Calendar } from 'react-big-calendar';
 import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
 import { AgendaFullscreenProvider } from '@/components/agenda/AgendaFullscreenContext';
+import {
+	type AgendaLessonTypeFilterContextValue,
+	AgendaLessonTypeFilterProvider,
+} from '@/components/agenda/AgendaLessonTypeFilterContext';
 import { CalendarViewProvider } from '@/components/agenda/CalendarViewContext';
 import { Legend } from '@/components/agenda/Legend';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
@@ -53,6 +57,7 @@ interface AgendaCalendarPanelProps {
 	currentDate: Date;
 	isFullscreen: boolean;
 	onFullscreenChange: (fullscreen: boolean) => void;
+	lessonTypeFilter: AgendaLessonTypeFilterContextValue;
 }
 
 export function AgendaCalendarPanel({
@@ -61,6 +66,7 @@ export function AgendaCalendarPanel({
 	currentDate,
 	isFullscreen,
 	onFullscreenChange,
+	lessonTypeFilter,
 }: AgendaCalendarPanelProps) {
 	const dndProps = calendarProps as unknown as ComponentProps<typeof DragAndDropCalendar>;
 
@@ -114,19 +120,21 @@ export function AgendaCalendarPanel({
 				toggleFullscreen: () => onFullscreenChange(!isFullscreen),
 			}}
 		>
-			<div className="flex flex-col gap-4 flex-1 min-h-0">
-				<style>{AGENDA_EVENT_LAYOUT_STYLE}</style>
-				{!isFullscreen && panelBody}
-				<Dialog open={isFullscreen} onOpenChange={onFullscreenChange}>
-					<DialogContent
-						hideCloseButton
-						className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-4 rounded-none border-0 p-4 sm:rounded-none"
-					>
-						<DialogTitle className="sr-only">Agenda volledig scherm</DialogTitle>
-						{isFullscreen && panelBody}
-					</DialogContent>
-				</Dialog>
-			</div>
+			<AgendaLessonTypeFilterProvider value={lessonTypeFilter}>
+				<div className="flex flex-col gap-4 flex-1 min-h-0">
+					<style>{AGENDA_EVENT_LAYOUT_STYLE}</style>
+					{!isFullscreen && panelBody}
+					<Dialog open={isFullscreen} onOpenChange={onFullscreenChange}>
+						<DialogContent
+							hideCloseButton
+							className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-4 rounded-none border-0 p-4 sm:rounded-none"
+						>
+							<DialogTitle className="sr-only">Agenda volledig scherm</DialogTitle>
+							{isFullscreen && panelBody}
+						</DialogContent>
+					</Dialog>
+				</div>
+			</AgendaLessonTypeFilterProvider>
 		</AgendaFullscreenProvider>
 	);
 }

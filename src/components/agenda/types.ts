@@ -14,6 +14,8 @@ export interface CalendarEventResource {
 	lessonTypeName: string;
 	lessonTypeColor: string | null;
 	lessonTypeIcon: string | null;
+	/** Lesson type id when the event is linked to a lesson_agreement or lesson_group */
+	lessonTypeId?: string | null;
 	isDeviation: boolean;
 	/** True when deviation changed date/time (not only title/description/color/participants). Used for "Gewijzigde afspraak" icon and banner. */
 	hasTimeOrDateChange?: boolean;

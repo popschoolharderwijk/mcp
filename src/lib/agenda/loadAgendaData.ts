@@ -220,6 +220,26 @@ function lessonTypeFromGroupRow(group: LessonGroupQueryRow) {
 	return Array.isArray(group.lesson_types) ? group.lesson_types[0] : group.lesson_types;
 }
 
+function resolveLessonGroupLessonTypeFields(
+	group: LessonGroupQueryRow,
+): Pick<LessonGroupInfo, 'lessonTypeId' | 'lessonTypeName' | 'lessonTypeIcon' | 'lessonTypeColor'> {
+	const lessonType = lessonTypeFromGroupRow(group);
+	if (!lessonType) {
+		return {
+			lessonTypeId: null,
+			lessonTypeName: null,
+			lessonTypeIcon: null,
+			lessonTypeColor: null,
+		};
+	}
+	return {
+		lessonTypeId: lessonType.id,
+		lessonTypeName: lessonType.name,
+		lessonTypeIcon: lessonType.icon,
+		lessonTypeColor: lessonType.color,
+	};
+}
+
 function activeLessonGroupMemberUserIds(group: LessonGroupQueryRow): string[] {
 	return (group.lesson_group_members ?? [])
 		.filter((member) => member.left_date === null)
@@ -233,13 +253,10 @@ function buildLessonGroupsMap(
 	const lessonGroupsMap = new Map<string, LessonGroupInfo>();
 
 	for (const group of rows) {
-		const lessonType = lessonTypeFromGroupRow(group);
 		lessonGroupsMap.set(group.id, {
 			id: group.id,
 			name: group.name,
-			lessonTypeName: lessonType?.name ?? null,
-			lessonTypeIcon: lessonType?.icon ?? null,
-			lessonTypeColor: lessonType?.color ?? null,
+			...resolveLessonGroupLessonTypeFields(group),
 			memberUserIds: activeLessonGroupMemberUserIds(group),
 			notes: notesByGroupId.get(group.id) ?? null,
 		});

@@ -6,6 +6,7 @@ import type { User } from '@/types/users';
 export interface LessonGroupInfo {
 	id: string;
 	name: string;
+	lessonTypeId: string | null;
 	lessonTypeName: string | null;
 	lessonTypeIcon: string | null;
 	lessonTypeColor: string | null;

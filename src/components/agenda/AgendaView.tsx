@@ -11,7 +11,7 @@ export interface AgendaViewProps {
 }
 
 export function AgendaView(props: AgendaViewProps = {}) {
-	const { ui, derived, handlers, calendarProps, loading, canEdit, canManageAgenda, user } =
+	const { ui, derived, handlers, calendarProps, loading, canEdit, canManageAgenda, user, lessonTypeFilter } =
 		useAgendaViewController(props);
 
 	if (loading) return <PageSkeleton variant="agenda" />;
@@ -24,6 +24,7 @@ export function AgendaView(props: AgendaViewProps = {}) {
 				currentDate={ui.currentDate}
 				isFullscreen={ui.isFullscreen}
 				onFullscreenChange={ui.setIsFullscreen}
+				lessonTypeFilter={lessonTypeFilter}
 			/>
 			<AgendaViewDialogs
 				ui={ui}
