@@ -1,6 +1,7 @@
 import type { ToolbarProps, View } from 'react-big-calendar';
 import { LuChevronLeft, LuChevronRight, LuMaximize2, LuMinimize2 } from 'react-icons/lu';
 import { useAgendaFullscreen } from '@/components/agenda/AgendaFullscreenContext';
+import { AgendaLessonTypeFilter } from '@/components/agenda/AgendaLessonTypeFilter';
 import { DatePicker } from '@/components/ui/date-picker';
 import { resolveCalendarViewLabel } from '@/lib/agenda/calendarToolbarHelpers';
 import {
@@ -91,17 +92,16 @@ interface CalendarToolbarViewSelectProps {
 export function CalendarToolbarViewSelect({ view, viewOptions, messages, onView }: CalendarToolbarViewSelectProps) {
 	const fullscreen = useAgendaFullscreen();
 	const showViewSelect = viewOptions.length > 1;
-	if (!showViewSelect && !fullscreen) return null;
-
 	const fullscreenLabel = fullscreen?.isFullscreen ? 'Agenda verkleinen (F)' : 'Agenda vergroten (F)';
 
 	return (
 		<span className="rbc-btn-group flex items-center gap-1">
+			<AgendaLessonTypeFilter />
 			{showViewSelect && (
 				<select
 					value={view}
 					onChange={(event) => onView(event.target.value as View)}
-					className="h-8 min-w-[5rem] cursor-pointer rounded border border-input bg-background pl-2 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+					className="rbc-toolbar-select"
 					aria-label="Weergave"
 				>
 					{viewOptions.map((viewOption) => (
@@ -117,7 +117,7 @@ export function CalendarToolbarViewSelect({ view, viewOptions, messages, onView 
 					onClick={fullscreen.toggleFullscreen}
 					aria-label={fullscreenLabel}
 					title={fullscreenLabel}
-					className="rbc-toolbar-fullscreen"
+					className="rbc-toolbar-icon"
 					data-tip-target="agenda-fullscreen"
 				>
 					{fullscreen.isFullscreen ? (

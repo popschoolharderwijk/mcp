@@ -180,6 +180,7 @@ describe('loadAgendaData pure helpers', () => {
 				{
 					id: 'grp-1',
 					name: 'Groep A',
+					lessonTypeId: 'lt-piano',
 					lessonTypeName: 'Piano',
 					lessonTypeIcon: null,
 					lessonTypeColor: null,
@@ -411,6 +412,7 @@ describe('loadAgendaData fetch helpers', () => {
 		expect(result.lessonGroupsMap.get('grp-1')).toEqual({
 			id: 'grp-1',
 			name: 'Groep A',
+			lessonTypeId: 'lt-1',
 			lessonTypeName: 'Piano',
 			lessonTypeIcon: 'piano',
 			lessonTypeColor: '#000000',
@@ -463,11 +465,50 @@ describe('loadAgendaData fetch helpers', () => {
 		expect(result.lessonGroupsMap.get('grp-2')).toEqual({
 			id: 'grp-2',
 			name: 'Groep B',
+			lessonTypeId: 'lt-2',
 			lessonTypeName: 'Gitaar',
 			lessonTypeIcon: 'guitar',
 			lessonTypeColor: '#ff0000',
 			memberUserIds: ['stu-3'],
 			notes: null,
+		});
+	});
+
+	it('maps missing lesson type and members, and joins active agreement notes', async () => {
+		tableResults.lesson_groups = {
+			data: [
+				{
+					id: 'grp-3',
+					name: 'Groep C',
+					lesson_types: null,
+					lesson_group_members: null,
+				},
+			],
+			error: null,
+		};
+		tableResults.lesson_agreements = {
+			data: [
+				{ lesson_group_id: 'grp-3', notes: '  Speel zachter  ' },
+				{ lesson_group_id: 'grp-3', notes: 'Tweede notitie' },
+				{ lesson_group_id: 'grp-3', notes: '   ' },
+				{ lesson_group_id: null, notes: 'orphan' },
+			],
+			error: null,
+		};
+		const result = await loadAgendaData.fetchAgendaRelatedData({
+			lessonAgreementIds: [],
+			projectIds: [],
+			lessonGroupIds: ['grp-3'],
+		});
+		expect(result.lessonGroupsMap.get('grp-3')).toEqual({
+			id: 'grp-3',
+			name: 'Groep C',
+			lessonTypeId: null,
+			lessonTypeName: null,
+			lessonTypeIcon: null,
+			lessonTypeColor: null,
+			memberUserIds: [],
+			notes: 'Speel zachter\n\nTweede notitie',
 		});
 	});
 });

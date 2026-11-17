@@ -132,6 +132,7 @@ describe('enrichAgendaEvent', () => {
 					{
 						id: 'group-1',
 						name: 'Groep A',
+						lessonTypeId: 'lt-zang',
 						lessonTypeName: 'Zang',
 						lessonTypeIcon: 'mic',
 						lessonTypeColor: '#123456',
@@ -206,6 +207,7 @@ describe('enrichAgendaEvent', () => {
 					{
 						id: 'group-1',
 						name: 'Groep A',
+						lessonTypeId: 'lt-zang',
 						lessonTypeName: 'Zang',
 						lessonTypeIcon: 'mic',
 						lessonTypeColor: '#123456',
