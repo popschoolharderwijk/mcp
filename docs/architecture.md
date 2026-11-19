@@ -147,22 +147,22 @@ The application uses role-based access control (RBAC) with these roles:
 
 ## Helper Functions
 
-| Function                                                    | Description                                                                                         | Security           |
-| ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
-| `is_site_admin()`                                           | Whether the **signed-in** user is site_admin                                                        | `SECURITY INVOKER` |
-| `is_admin()`                                                | Whether the signed-in user is admin                                                                 | `SECURITY INVOKER` |
-| `is_staff()`                                                | Whether the signed-in user is staff                                                                 | `SECURITY INVOKER` |
-| `is_privileged()`                                           | Staff, admin, or site_admin for the signed-in user (single query)                                   | `SECURITY INVOKER` |
-| `_has_role(uuid, app_role)`                                 | Internal; only from other `SECURITY DEFINER` functions; **no** `GRANT` to `authenticated`           | `SECURITY DEFINER` |
-| `is_student(uuid)` / `is_teacher(uuid)`                     | Check for a student/teacher record                                                                  | `SECURITY DEFINER` |
-| `get_teacher_user_id(uuid)`                                 | Resolve teacher user_id from user_id                                                                | `SECURITY DEFINER` |
-| `can_delete_user(uuid)`                                     | May the current session delete the given `user_id`?                                                 | `SECURITY DEFINER` |
-| `can_manage_agenda_event(ev_id)`                            | May the current session manage a specific agenda event?                                             | `SECURITY DEFINER` |
-| `is_project_teacher(uuid)` / `is_project_participant(uuid)` | RLS helpers for projects                                                                            | `SECURITY DEFINER` |
-| `get_hours_report(start_date, end_date, user_id)`           | Hours report plus financial breakdown per teacher/student, including VAT by age on the lesson date. | `SECURITY INVOKER` |
-| `is_valid_phone_number(text)`                               | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`               | —                  |
+| Function                                                      | Schema / exposure                                              | Description                                                                                         | Security           |
+| ------------------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------ |
+| `is_site_admin()`                                             | `public` (PostgREST)                                           | Whether the **signed-in** user is site_admin                                                        | `SECURITY INVOKER` |
+| `is_admin()`                                                  | `public`                                                       | Whether the signed-in user is admin                                                                 | `SECURITY INVOKER` |
+| `is_staff()`                                                  | `public`                                                       | Whether the signed-in user is staff                                                                 | `SECURITY INVOKER` |
+| `is_privileged()`                                             | `public`                                                       | Staff, admin, or site_admin for the signed-in user (single query)                                   | `SECURITY INVOKER` |
+| `_has_role(uuid, app_role)`                                   | `private` (not API-exposed); **no** `GRANT` to `authenticated` | Internal; only from other `SECURITY DEFINER` functions                                              | `SECURITY DEFINER` |
+| `is_student(uuid)` / `is_teacher(uuid)`                       | `private` (RLS helpers; not PostgREST-exposed)                 | Check for a student/teacher record                                                                  | `SECURITY DEFINER` |
+| `get_teacher_user_id(uuid)`                                   | `private`                                                      | Resolve teacher user_id from user_id                                                                | `SECURITY DEFINER` |
+| `can_manage_agenda_event(ev_id)` / agenda participant helpers | `private`                                                      | May the current session manage a specific agenda event? / participant/owner lookups for RLS         | `SECURITY DEFINER` |
+| `is_lesson_group_member` / `is_lesson_group_teacher`          | `private`                                                      | Lesson-group RLS helpers                                                                            | `SECURITY DEFINER` |
+| `can_delete_user(uuid)`                                       | `public`                                                       | May the current session delete the given `user_id`?                                                 | `SECURITY INVOKER` |
+| `get_hours_report(start_date, end_date, user_id)`             | `public`                                                       | Hours report plus financial breakdown per teacher/student, including VAT by age on the lesson date. | `SECURITY INVOKER` |
+| `is_valid_phone_number(text)`                                 | `public`                                                       | `IMMUTABLE`: NL mobile `06` + 8 digits; used by CHECK on e.g. `profiles.phone_number`               | —                  |
 
-> Public role checks (`is_admin()`, `is_privileged()`, …) are **`SECURITY INVOKER`** with a single `EXISTS` on `user_roles`. `can_manage_agenda_event` is **`SECURITY DEFINER`** and uses **`current_user_id()`** + **`is_privileged()`**. `_has_role` is not for clients. `profiles.email` is `UNIQUE` and follows `auth.users.email`. Phone rules are centralised in **`is_valid_phone_number`**.
+> Public role checks (`is_admin()`, `is_privileged()`, …) are **`SECURITY INVOKER`** with a single `EXISTS` on `user_roles`. RLS helpers live in schema **`private`** (not in PostgREST exposed schemas) so they are not callable via `/rest/v1/rpc`, while policies still `GRANT EXECUTE` to `authenticated`. Intentional client `SECURITY DEFINER` RPCs (pagination, trial, deviations, duo partner) stay in `public` with authz in the function body. `profiles.email` is `UNIQUE` and follows `auth.users.email`. Phone rules are centralised in **`is_valid_phone_number`**.
 
 ---
 
@@ -212,11 +212,9 @@ None. All views use `security_invoker = on` or have been removed; students see t
 
 ### Linter Warnings
 
-The Supabase linter reports warnings for SECURITY DEFINER views. For views on the whitelist these are **false positives** because:
+Lint **0029** (`authenticated_security_definer_function_executable`) flags `SECURITY DEFINER` functions in **exposed** schemas that `authenticated` can `EXECUTE`. RLS helpers in **`private`** are outside PostgREST `db_schemas`, so they do not trigger that lint. Intentional `public` DEFINER RPCs (pagination, trial, agenda deviations, duo partner) still warn; that is accepted when authz lives in the function body and RLS tests cover allow/deny.
 
-- Security is implemented explicitly via `auth.uid()` checks
-- Tests in `tests/rls/` verify that unauthorized access is blocked
-- A whitelist entry requires explicit approval
+For SECURITY DEFINER **views** on a whitelist: security is implemented via explicit `auth.uid()` checks, `tests/rls/` block unauthorized access, and a whitelist entry requires explicit approval.
 
 ---
 

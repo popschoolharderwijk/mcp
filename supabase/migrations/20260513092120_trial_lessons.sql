@@ -54,7 +54,7 @@ CREATE POLICY trial_lessons_select ON public.trial_lessons
   FOR SELECT TO authenticated
   USING (
     student_user_id = public.current_user_id()
-    OR teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+    OR teacher_user_id = private.get_teacher_user_id(public.current_user_id())
     OR public.is_privileged()
   );
 

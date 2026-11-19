@@ -7,6 +7,8 @@ stack = true
 # (defaults 54320–54329). Offset +100 → 5442x.
 [api]
 port = 54421
+# Exclude graphql_public — app uses PostgREST only (no GraphQL client).
+schemas = ["public", "storage"]
 
 [db]
 port = 54422

@@ -80,7 +80,7 @@ fixtures.allProjectDomains / allProjectLabels / allProjects; // project referenc
 - ✅ RLS is enabled on all expected tables
 - ✅ All expected policies exist
 - ✅ No unexpected policies
-- ✅ Security helper functions exist (`is_admin`, `is_teacher`, `is_student`, etc.)
+- ✅ Security helper functions exist (`is_admin`, `is_privileged`, etc.; RLS helpers such as `is_teacher` / `is_student` live in schema `private`)
 - ✅ Seed data ground truth (correct user counts per type)
 - ✅ Triggers work correctly (immutability, updated_at, site_admin protection)
 - ✅ Anonymous users have no access to data

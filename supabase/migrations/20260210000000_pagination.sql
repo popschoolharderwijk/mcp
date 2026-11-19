@@ -30,7 +30,7 @@ COMMENT ON VIEW view_profiles_with_display_name IS 'Profile data with calculated
 -- get_students_paginated
 -- =============================================================================
 -- SECURITY DEFINER: list scans must not pay per-row RLS (FORCE RLS + is_privileged /
--- get_teacher_user_id). Access is gated in the query body to match students_select:
+-- private.get_teacher_user_id). Access is gated in the query body to match students_select:
 -- privileged → all; own row; teacher → students with a lesson_agreement for that teacher.
 -- current_user_id() is unaffected by the role switch. Tests:
 -- tests/rls/pagination/get_students_paginated.test.ts
@@ -83,7 +83,7 @@ BEGIN
 
   v_is_privileged := public.is_privileged();
   v_caller_id := public.current_user_id();
-  v_teacher_id := public.get_teacher_user_id(v_caller_id);
+  v_teacher_id := private.get_teacher_user_id(v_caller_id);
 
   v_needs_pre_counts :=
     COALESCE(p_status, 'all') IN ('active', 'inactive')
@@ -395,7 +395,7 @@ REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, tex
 REVOKE ALL ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text, boolean) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_students_paginated(integer, integer, text, text, uuid, text, text, boolean) TO authenticated;
 
-COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with profile and optional agreements. SECURITY DEFINER so list scans skip FORCE RLS; access matches students_select via is_privileged()/current_user_id()/get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_students_paginated.test.ts.';
+COMMENT ON FUNCTION get_students_paginated IS 'Get paginated students with profile and optional agreements. SECURITY DEFINER so list scans skip FORCE RLS; access matches students_select via is_privileged()/current_user_id()/private.get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_students_paginated.test.ts.';
 
 -- =============================================================================
 -- get_teachers_paginated
@@ -635,7 +635,7 @@ BEGIN
 
   v_is_privileged := public.is_privileged();
   v_caller_id := public.current_user_id();
-  v_teacher_id := public.get_teacher_user_id(v_caller_id);
+  v_teacher_id := private.get_teacher_user_id(v_caller_id);
 
   v_query := format($q$
     WITH agreement_base AS (
@@ -787,7 +787,7 @@ REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, 
 REVOKE ALL ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) FROM anon;
 GRANT EXECUTE ON FUNCTION public.get_lesson_agreements_paginated(integer, integer, text, uuid, uuid, uuid, boolean, text, text) TO authenticated;
 
-COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type. SECURITY DEFINER so list scans skip FORCE RLS; access matches lesson_agreements_select via is_privileged()/current_user_id()/get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_lesson_agreements_paginated.test.ts.';
+COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type. SECURITY DEFINER so list scans skip FORCE RLS; access matches lesson_agreements_select via is_privileged()/current_user_id()/private.get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_lesson_agreements_paginated.test.ts.';
 
 -- =============================================================================
 -- get_users_paginated

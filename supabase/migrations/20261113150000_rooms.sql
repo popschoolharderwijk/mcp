@@ -49,3 +49,4 @@ USING (public.is_admin() OR public.is_site_admin());
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.rooms TO authenticated;
 GRANT ALL ON public.rooms TO service_role;
+REVOKE ALL ON TABLE public.rooms FROM anon;

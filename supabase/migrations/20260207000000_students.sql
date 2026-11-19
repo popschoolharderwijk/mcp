@@ -53,14 +53,13 @@ ALTER TABLE public.students FORCE ROW LEVEL SECURITY;
 -- SECTION 4: HELPER FUNCTIONS
 -- =============================================================================
 
--- Helper function to check if a user is a student
--- Uses SECURITY DEFINER to bypass RLS on students table
-CREATE OR REPLACE FUNCTION public.is_student(_user_id UUID)
+-- RLS helper: whether a user_id has a students row. Not PostgREST-exposed (private schema).
+CREATE OR REPLACE FUNCTION private.is_student(_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 AS $$
   SELECT EXISTS (
@@ -70,11 +69,10 @@ AS $$
   );
 $$;
 
--- Revoke public access, grant only to authenticated users
-REVOKE ALL ON FUNCTION public.is_student(UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.is_student(UUID) FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_student(UUID) TO authenticated;
-ALTER FUNCTION public.is_student(UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_student(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_student(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_student(UUID) TO authenticated;
+ALTER FUNCTION private.is_student(UUID) OWNER TO postgres;
 
 CREATE OR REPLACE FUNCTION public.normalize_students_text_fields()
 RETURNS TRIGGER

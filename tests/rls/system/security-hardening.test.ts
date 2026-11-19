@@ -55,6 +55,7 @@ const TABLES_ANON_MUST_NOT_SELECT = [
 	'lesson_groups',
 	'lesson_signup_requests',
 	'no_lesson_periods',
+	'rooms',
 	'stripe_customers',
 	'subscription_invoices',
 	'subscriptions',
@@ -96,6 +97,34 @@ const AUTHENTICATED_MUST_NOT_EXECUTE: string[] = [
 	'public.validate_agenda_event_source()',
 	'public.validate_duo_agreement()',
 	'public.validate_lesson_group_type()',
+	'private._has_role(uuid, app_role)',
+];
+
+/**
+ * RLS helpers live in schema `private` (not PostgREST-exposed). Authenticated may
+ * EXECUTE them for policy evaluation, but `/rest/v1/rpc/<name>` must not resolve them.
+ */
+const PRIVATE_HELPERS_NOT_POSTGREST_RPC: {
+	name: string;
+	args: Record<string, unknown>;
+}[] = [
+	{ name: 'is_student', args: { _user_id: '00000000-0000-0000-0000-000000000001' } },
+	{ name: 'is_teacher', args: { _user_id: '00000000-0000-0000-0000-000000000001' } },
+	{ name: 'get_teacher_user_id', args: { _user_id: '00000000-0000-0000-0000-000000000001' } },
+	{
+		name: 'is_agenda_participant',
+		args: { ev_id: '00000000-0000-0000-0000-000000000001', uid: '00000000-0000-0000-0000-000000000001' },
+	},
+	{ name: 'can_manage_agenda_event', args: { ev_id: '00000000-0000-0000-0000-000000000001' } },
+	{ name: 'get_agenda_event_owner', args: { ev_id: '00000000-0000-0000-0000-000000000001' } },
+	{
+		name: 'is_lesson_group_member',
+		args: { _group_id: '00000000-0000-0000-0000-000000000001', _user_id: '00000000-0000-0000-0000-000000000001' },
+	},
+	{
+		name: 'is_lesson_group_teacher',
+		args: { _group_id: '00000000-0000-0000-0000-000000000001', _user_id: '00000000-0000-0000-0000-000000000001' },
+	},
 ];
 
 /**
@@ -289,6 +318,17 @@ describe('Security hardening: authenticated must not EXECUTE internal SECURITY D
 				}),
 			);
 			expect(data).toBe(false);
+		});
+	}
+});
+
+describe('Security hardening: private RLS helpers are not PostgREST RPCs', () => {
+	for (const rpc of PRIVATE_HELPERS_NOT_POSTGREST_RPC) {
+		it(`authenticated cannot call ${rpc.name} via Data API`, async () => {
+			const db = await createClientAs(TestUsers.STUDENT_001);
+			const result = await db.rpc(rpc.name as 'can_delete_user', rpc.args as never);
+			expect(result.data).toBeNull();
+			expect(result.error).not.toBeNull();
 		});
 	}
 });
