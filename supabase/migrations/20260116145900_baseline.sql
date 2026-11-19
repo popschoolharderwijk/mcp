@@ -297,23 +297,32 @@ REVOKE ALL ON FUNCTION public.current_user_id() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.current_user_id() TO authenticated;
 
 -- =============================================================================
+-- SECTION 3c: PRIVATE SCHEMA (RLS / internal helpers — not PostgREST-exposed)
+-- =============================================================================
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+GRANT USAGE ON SCHEMA private TO authenticated;
+COMMENT ON SCHEMA private IS
+  'Non-exposed helpers for RLS and internal DEFINER use; not in PostgREST db_schemas.';
+
+-- =============================================================================
 -- SECTION 4: ROLE HELPER FUNCTIONS (HARDENED)
 -- =============================================================================
--- _has_role: SECURITY DEFINER + row_security off — only for DEFINER helpers (e.g. can_*), never granted to authenticated.
+-- private._has_role: SECURITY DEFINER + row_security off — only for DEFINER helpers; never granted to authenticated.
 -- is_*(): SECURITY INVOKER — EXISTS on user_roles under RLS. Use a single SELECT policy with
 -- (own row OR is_privileged()); splitting into a second policy USING (is_privileged()) alone causes
 -- stack depth errors (re-entrant RLS while evaluating is_privileged()).
 
 -- Internal helper — do not call from clients; use is_site_admin(), is_admin(), etc. instead
-CREATE OR REPLACE FUNCTION public._has_role(
+CREATE OR REPLACE FUNCTION private._has_role(
   _user_id UUID,
-  _role app_role
+  _role public.app_role
 )
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 AS $$
   SELECT EXISTS (
@@ -386,7 +395,7 @@ $$;
 
 -- Revoke public access
 REVOKE ALL ON FUNCTION
-  public._has_role(UUID, app_role),
+  private._has_role(UUID, public.app_role),
   public.is_site_admin(),
   public.is_admin(),
   public.is_staff(),
@@ -395,7 +404,7 @@ FROM PUBLIC;
 
 -- Explicitly revoke from anon (Supabase's anon role doesn't inherit from PUBLIC revokes)
 REVOKE ALL ON FUNCTION
-  public._has_role(UUID, app_role),
+  private._has_role(UUID, public.app_role),
   public.is_site_admin(),
   public.is_admin(),
   public.is_staff(),
@@ -403,14 +412,14 @@ REVOKE ALL ON FUNCTION
 FROM anon;
 
 -- _has_role: internal only — never grant to authenticated (would leak role info for arbitrary user ids)
-REVOKE ALL ON FUNCTION public._has_role(UUID, app_role) FROM authenticated;
+REVOKE ALL ON FUNCTION private._has_role(UUID, public.app_role) FROM authenticated;
 
 GRANT EXECUTE ON FUNCTION public.is_site_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_staff() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_privileged() TO authenticated;
 
-ALTER FUNCTION public._has_role(UUID, app_role) OWNER TO postgres;
+ALTER FUNCTION private._has_role(UUID, public.app_role) OWNER TO postgres;
 ALTER FUNCTION public.is_site_admin() OWNER TO postgres;
 ALTER FUNCTION public.is_admin() OWNER TO postgres;
 ALTER FUNCTION public.is_staff() OWNER TO postgres;
@@ -426,18 +435,18 @@ ALTER FUNCTION public.is_privileged() OWNER TO postgres;
 -- Rules:
 -- - Self-deletion always allowed
 -- - Admin and site_admin may delete any account
+-- SECURITY INVOKER: uses public is_admin()/is_site_admin() under caller RLS (no DEFINER bypass).
 CREATE OR REPLACE FUNCTION public.can_delete_user(_target_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
-SECURITY DEFINER
+SECURITY INVOKER
 SET search_path = public
-SET row_security = off
 AS $$
   SELECT
     public.current_user_id() = _target_id
-    OR public._has_role(public.current_user_id(), 'admin')
-    OR public._has_role(public.current_user_id(), 'site_admin');
+    OR public.is_admin()
+    OR public.is_site_admin();
 $$;
 
 -- Security: only authenticated users can call this
@@ -852,6 +861,15 @@ CREATE TRIGGER protect_last_site_admin
 BEFORE UPDATE OR DELETE ON public.user_roles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_last_site_admin_removal();
+
+-- =============================================================================
+-- SECTION: API SURFACE
+-- =============================================================================
+-- Data API is PostgREST only; pg_graphql and pg_net are not used.
+-- squawk-ignore ban-drop-extension
+DROP EXTENSION IF EXISTS pg_graphql CASCADE;
+-- squawk-ignore ban-drop-extension
+DROP EXTENSION IF EXISTS pg_net CASCADE;
 
 -- =============================================================================
 -- END OF DATABASE SETUP

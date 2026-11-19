@@ -1586,11 +1586,9 @@ export type Database = {
 			};
 		};
 		Functions: {
-			_has_role: { Args: { _role: Database['public']['Enums']['app_role']; _user_id: string }; Returns: boolean };
 			apply_audit_trail: { Args: { p_table: unknown }; Returns: undefined };
 			authenticated_has_execute_on: { Args: { p_regprocedure: string }; Returns: boolean };
 			can_delete_user: { Args: { _target_id: string }; Returns: boolean };
-			can_manage_agenda_event: { Args: { ev_id: string }; Returns: boolean };
 			check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean };
 			check_rls_forced: { Args: { p_table_name: string }; Returns: boolean };
 			cleanup_student_if_no_agreements: { Args: { _user_id: string }; Returns: undefined };
@@ -1606,7 +1604,6 @@ export type Database = {
 				Returns: string;
 			};
 			function_exists: { Args: { p_regprocedure: string }; Returns: boolean };
-			get_agenda_event_owner: { Args: { ev_id: string }; Returns: string };
 			get_duo_partner_display_name: {
 				Args: { _agreement_id: string };
 				Returns: {
@@ -1662,7 +1659,6 @@ export type Database = {
 				Returns: Json;
 			};
 			get_table_policies: { Args: { p_table_name: string }; Returns: string[] };
-			get_teacher_user_id: { Args: { _user_id: string }; Returns: string };
 			get_teachers_paginated: {
 				Args: {
 					p_lesson_type_id?: string;
@@ -1687,14 +1683,9 @@ export type Database = {
 				Returns: Json;
 			};
 			is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
-			is_agenda_participant: { Args: { ev_id: string; uid: string }; Returns: boolean };
-			is_lesson_group_member: { Args: { _group_id: string; _user_id: string }; Returns: boolean };
-			is_lesson_group_teacher: { Args: { _group_id: string; _user_id: string }; Returns: boolean };
 			is_privileged: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_site_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
 			is_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
-			is_student: { Args: { _user_id: string }; Returns: boolean };
-			is_teacher: { Args: { _user_id: string }; Returns: boolean };
 			is_valid_country_code: { Args: { p_code: string }; Returns: boolean };
 			is_valid_phone_number: { Args: { p_phone: string }; Returns: boolean };
 			mark_trial_lesson_completed: { Args: { _trial_id: string }; Returns: undefined };

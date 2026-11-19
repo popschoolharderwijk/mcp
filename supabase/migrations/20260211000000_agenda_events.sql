@@ -320,28 +320,28 @@ ALTER TABLE public.agenda_event_deviations FORCE ROW LEVEL SECURITY;
 -- SECTION 5b: HELPERS FOR RLS (avoid recursion: agenda_events <-> agenda_participants)
 -- =============================================================================
 
--- Helper to get event owner (bypasses RLS)
-CREATE OR REPLACE FUNCTION public.get_agenda_event_owner(ev_id uuid)
+-- Helpers for RLS (avoid recursion). Not PostgREST-exposed (private schema).
+CREATE OR REPLACE FUNCTION private.get_agenda_event_owner(ev_id uuid)
 RETURNS uuid
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 STABLE
 AS $$
   SELECT owner_user_id FROM public.agenda_events WHERE id = ev_id LIMIT 1;
 $$;
-ALTER FUNCTION public.get_agenda_event_owner(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.get_agenda_event_owner(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_agenda_event_owner(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.get_agenda_event_owner(uuid) TO authenticated;
+ALTER FUNCTION private.get_agenda_event_owner(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.get_agenda_event_owner(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.get_agenda_event_owner(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.get_agenda_event_owner(uuid) TO authenticated;
 
--- Helper: current session user may manage event (owner or privileged). No uid argument — not spoofable.
-CREATE OR REPLACE FUNCTION public.can_manage_agenda_event(ev_id uuid)
+-- Current session user may manage event (owner or privileged). No uid argument — not spoofable.
+CREATE OR REPLACE FUNCTION private.can_manage_agenda_event(ev_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 STABLE
 AS $$
@@ -355,17 +355,16 @@ AS $$
       )
   );
 $$;
-ALTER FUNCTION public.can_manage_agenda_event(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.can_manage_agenda_event(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.can_manage_agenda_event(uuid) TO authenticated;
+ALTER FUNCTION private.can_manage_agenda_event(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.can_manage_agenda_event(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.can_manage_agenda_event(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.can_manage_agenda_event(uuid) TO authenticated;
 
--- Helper to check if user is participant of event - bypasses RLS
-CREATE OR REPLACE FUNCTION public.is_agenda_participant(ev_id uuid, uid uuid)
+CREATE OR REPLACE FUNCTION private.is_agenda_participant(ev_id uuid, uid uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 STABLE
 AS $$
@@ -374,10 +373,10 @@ AS $$
     WHERE event_id = ev_id AND user_id = uid
   );
 $$;
-ALTER FUNCTION public.is_agenda_participant(uuid, uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION public.is_agenda_participant(uuid, uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.is_agenda_participant(uuid, uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_agenda_participant(uuid, uuid) TO authenticated;
+ALTER FUNCTION private.is_agenda_participant(uuid, uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_agenda_participant(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_agenda_participant(uuid, uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_agenda_participant(uuid, uuid) TO authenticated;
 
 -- =============================================================================
 -- SECTION 6: RLS POLICIES
@@ -389,7 +388,7 @@ CREATE POLICY agenda_events_select
 ON public.agenda_events FOR SELECT TO authenticated
 USING (
   owner_user_id = public.current_user_id()
-  OR public.is_agenda_participant(agenda_events.id, public.current_user_id())
+  OR private.is_agenda_participant(agenda_events.id, public.current_user_id())
   OR public.is_privileged()
 );
 
@@ -415,7 +414,7 @@ ON public.agenda_participants FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
   OR public.is_privileged()
-  OR public.get_agenda_event_owner(event_id) = public.current_user_id()
+  OR private.get_agenda_event_owner(event_id) = public.current_user_id()
 );
 
 -- agenda_participants: INSERT only event owner or privileged
@@ -428,31 +427,31 @@ WITH CHECK (
   public.is_privileged()
   OR (
     -- Event owner can add participants...
-    public.get_agenda_event_owner(event_id) = public.current_user_id()
+    private.get_agenda_event_owner(event_id) = public.current_user_id()
     AND (
       -- ...owner can always add themselves
       user_id = public.current_user_id()
       -- ...or add non-teachers
-      OR NOT public.is_teacher(user_id)
+      OR NOT private.is_teacher(user_id)
     )
   )
 );
 
 CREATE POLICY agenda_participants_update
 ON public.agenda_participants FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id))
-WITH CHECK (public.can_manage_agenda_event(event_id));
+USING (private.can_manage_agenda_event(event_id))
+WITH CHECK (private.can_manage_agenda_event(event_id));
 
 CREATE POLICY agenda_participants_delete
 ON public.agenda_participants FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id));
+USING (private.can_manage_agenda_event(event_id));
 
 -- agenda_event_deviations: SELECT if participant of event or privileged
 -- Uses helper function to avoid recursion
 CREATE POLICY agenda_event_deviations_select
 ON public.agenda_event_deviations FOR SELECT TO authenticated
 USING (
-  public.is_agenda_participant(agenda_event_deviations.event_id, public.current_user_id())
+  private.is_agenda_participant(agenda_event_deviations.event_id, public.current_user_id())
   OR public.is_privileged()
 );
 
@@ -461,17 +460,17 @@ USING (
 CREATE POLICY agenda_event_deviations_insert
 ON public.agenda_event_deviations FOR INSERT TO authenticated
 WITH CHECK (
-  public.can_manage_agenda_event(event_id)
+  private.can_manage_agenda_event(event_id)
 );
 
 CREATE POLICY agenda_event_deviations_update
 ON public.agenda_event_deviations FOR UPDATE TO authenticated
-USING (public.can_manage_agenda_event(event_id))
-WITH CHECK (public.can_manage_agenda_event(event_id));
+USING (private.can_manage_agenda_event(event_id))
+WITH CHECK (private.can_manage_agenda_event(event_id));
 
 CREATE POLICY agenda_event_deviations_delete
 ON public.agenda_event_deviations FOR DELETE TO authenticated
-USING (public.can_manage_agenda_event(event_id));
+USING (private.can_manage_agenda_event(event_id));
 
 -- =============================================================================
 -- SECTION 7: DEVIATION TRIGGERS (immutable fields, no-op delete, validity)

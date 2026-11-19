@@ -133,14 +133,13 @@ ALTER TABLE public.teacher_lesson_types FORCE ROW LEVEL SECURITY;
 -- SECTION 4: HELPER FUNCTIONS
 -- =============================================================================
 
--- Helper function to check if a user is a teacher
--- Uses SECURITY DEFINER to bypass RLS on teachers table
-CREATE OR REPLACE FUNCTION public.is_teacher(_user_id UUID)
+-- RLS helpers: not PostgREST-exposed (private schema).
+CREATE OR REPLACE FUNCTION private.is_teacher(_user_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 AS $$
   SELECT EXISTS (
@@ -150,20 +149,17 @@ AS $$
   );
 $$;
 
--- Revoke public access, grant only to authenticated users
-REVOKE ALL ON FUNCTION public.is_teacher(UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.is_teacher(UUID) FROM anon;
-GRANT EXECUTE ON FUNCTION public.is_teacher(UUID) TO authenticated;
-ALTER FUNCTION public.is_teacher(UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_teacher(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_teacher(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_teacher(UUID) TO authenticated;
+ALTER FUNCTION private.is_teacher(UUID) OWNER TO postgres;
 
--- Helper function to get teacher ID for a user
--- Uses SECURITY DEFINER to bypass RLS on teachers table
-CREATE OR REPLACE FUNCTION public.get_teacher_user_id(_user_id UUID)
+CREATE OR REPLACE FUNCTION private.get_teacher_user_id(_user_id UUID)
 RETURNS UUID
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 SET row_security = off
 AS $$
   SELECT user_id
@@ -172,11 +168,10 @@ AS $$
   LIMIT 1;
 $$;
 
--- Revoke public access, grant only to authenticated users
-REVOKE ALL ON FUNCTION public.get_teacher_user_id(UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.get_teacher_user_id(UUID) FROM anon;
-GRANT EXECUTE ON FUNCTION public.get_teacher_user_id(UUID) TO authenticated;
-ALTER FUNCTION public.get_teacher_user_id(UUID) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.get_teacher_user_id(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.get_teacher_user_id(UUID) FROM anon;
+GRANT EXECUTE ON FUNCTION private.get_teacher_user_id(UUID) TO authenticated;
+ALTER FUNCTION private.get_teacher_user_id(UUID) OWNER TO postgres;
 
 -- =============================================================================
 -- SECTION 5: RLS POLICIES
@@ -220,7 +215,7 @@ USING (public.is_admin() OR public.is_site_admin());
 CREATE POLICY teacher_availability_select
 ON public.teacher_availability FOR SELECT TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_privileged()
 );
 
@@ -228,7 +223,7 @@ USING (
 CREATE POLICY teacher_availability_insert
 ON public.teacher_availability FOR INSERT TO authenticated
 WITH CHECK (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -236,11 +231,11 @@ WITH CHECK (
 CREATE POLICY teacher_availability_update
 ON public.teacher_availability FOR UPDATE TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -248,7 +243,7 @@ WITH CHECK (
 CREATE POLICY teacher_availability_delete
 ON public.teacher_availability FOR DELETE TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -260,7 +255,7 @@ USING (
 CREATE POLICY teacher_lesson_types_select
 ON public.teacher_lesson_types FOR SELECT TO authenticated
 USING (
-  teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_privileged()
 );
 

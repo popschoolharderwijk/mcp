@@ -184,7 +184,7 @@ CREATE POLICY lesson_agreements_select
 ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
   student_user_id = public.current_user_id()
-  OR teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+  OR teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   OR public.is_privileged()
 );
 
@@ -273,7 +273,7 @@ USING (
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = students.user_id
-      AND la.teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+      AND la.teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   )
 );
 
@@ -323,7 +323,7 @@ USING (
   OR EXISTS (
     SELECT 1 FROM public.lesson_agreements la
     WHERE la.student_user_id = profiles.user_id
-      AND la.teacher_user_id = public.get_teacher_user_id(public.current_user_id())
+      AND la.teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   )
 );
 
