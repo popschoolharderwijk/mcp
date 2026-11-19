@@ -866,7 +866,9 @@ EXECUTE FUNCTION public.prevent_last_site_admin_removal();
 -- SECTION: API SURFACE
 -- =============================================================================
 -- Data API is PostgREST only; pg_graphql and pg_net are not used.
+-- squawk-ignore ban-drop-extension
 DROP EXTENSION IF EXISTS pg_graphql CASCADE;
+-- squawk-ignore ban-drop-extension
 DROP EXTENSION IF EXISTS pg_net CASCADE;
 
 -- =============================================================================
