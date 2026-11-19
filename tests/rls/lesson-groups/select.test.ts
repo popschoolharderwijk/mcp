@@ -169,7 +169,7 @@ describe('RLS: get_lesson_group_teacher must not leak teacher ownership', () => 
 	it('signed-in outsider cannot resolve a group teacher via RPC', async () => {
 		const db = await createClientAs(TestUsers.USER_001);
 		const result = await db.rpc(
-			'get_lesson_group_teacher' as 'is_lesson_group_member',
+			'get_lesson_group_teacher' as 'can_delete_user',
 			{
 				_group_id: LESSON_GROUPS.BANDCOACHING_ID,
 			} as never,
