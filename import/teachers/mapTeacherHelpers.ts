@@ -59,7 +59,7 @@ export function teacherRowWarningReasons(row: MappedTeacherRow): string[] {
 }
 
 export type MapTeacherDocOptions = {
-	/** Keep source email (no duplicate_N_); same name+email as an existing profile. */
+	/** Keep source email (no shared_member); same name+email as an existing profile. */
 	keepExistingEmail?: boolean;
 };
 
@@ -94,6 +94,7 @@ export function mapTeacherDoc(
 	const row: MappedTeacherRow = {
 		mongoOid,
 		email: allocated.email,
+		emailKind: allocated.kind,
 		emailWarning: allocated.warning,
 		firstName: normalizeCompactTextOrNull(asOptionalString(teacher.name)),
 		lastName: normalizeCompactTextOrNull(asOptionalString(teacher.surname)),

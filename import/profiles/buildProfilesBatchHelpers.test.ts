@@ -42,10 +42,12 @@ describe('buildProfilesBatch', () => {
 		expect(batch.idMap.student?.['student-kid']).toBe('uuid-2');
 		expect(batch.sqlRows).toHaveLength(2);
 
-		const shared = batch.sqlRows.find((row) => row.email.toLowerCase() === 'shared@example.com');
+		const shared = batch.sqlRows.find((row) => row.email?.toLowerCase() === 'shared@example.com');
 		expect(shared).toEqual({
 			userId: 'uuid-1',
 			email: 'Shared@example.com',
+			loginUserId: 'uuid-1',
+			membershipRole: 'owner',
 			firstName: 'Alex',
 			lastName: 'BOTH',
 			phoneNumber: '0612345678',
@@ -60,10 +62,10 @@ describe('buildProfilesBatch', () => {
 			dateOfBirth: '1990-05-05',
 		});
 
-		expect(batch.sqlRows.map((row) => row.email).sort()).toEqual([
-			'Shared@example.com',
-			'duplicate_1_shared@example.com',
-		]);
+		const member = batch.sqlRows.find((row) => row.userId === 'uuid-2');
+		expect(member?.email).toBeNull();
+		expect(member?.membershipRole).toBe('member');
+		expect(member?.loginUserId).toBe('uuid-1');
 		expect(batch.report.warnings).toEqual([
 			{
 				oid: 'student-same',
@@ -71,7 +73,7 @@ describe('buildProfilesBatch', () => {
 			},
 			{
 				oid: 'student-kid',
-				reason: 'Duplicate email "shared@example.com"; using "duplicate_1_shared@example.com"',
+				reason: 'Shared login email "shared@example.com"; attaching as member under existing login',
 			},
 		]);
 	});
@@ -111,7 +113,7 @@ describe('buildProfilesBatch', () => {
 		expect(batch.sqlRows[0]?.dateOfBirth).toBe('1990-01-01');
 	});
 
-	it('rewrites parent-shared emails across students with different names', () => {
+	it('attaches siblings with the same parent email as shared-login members', () => {
 		const batch = buildProfilesBatch(
 			[],
 			[
@@ -128,10 +130,16 @@ describe('buildProfilesBatch', () => {
 		expect(batch.sqlRows).toHaveLength(2);
 		expect(batch.idMap.student?.s1).toBe('uuid-1');
 		expect(batch.idMap.student?.s2).toBe('uuid-2');
-		expect(batch.sqlRows.map((row) => row.email).sort()).toEqual([
-			'duplicate_1_parent@example.com',
-			'parent@example.com',
-		]);
+		expect(batch.sqlRows.find((row) => row.userId === 'uuid-1')).toMatchObject({
+			email: 'parent@example.com',
+			membershipRole: 'owner',
+			loginUserId: 'uuid-1',
+		});
+		expect(batch.sqlRows.find((row) => row.userId === 'uuid-2')).toMatchObject({
+			email: null,
+			membershipRole: 'member',
+			loginUserId: 'uuid-1',
+		});
 	});
 
 	it('merges two teachers with the same name and email', () => {
@@ -161,7 +169,7 @@ describe('buildProfilesBatch', () => {
 		expect(batch.sqlRows[0]?.cocIssuedOn).toBe('2024-01-01');
 	});
 
-	it('rewrites duplicate emails within teachers when names differ', () => {
+	it('attaches teachers with the same email and different names as shared-login members', () => {
 		const batch = buildProfilesBatch(
 			[
 				{ _id: { $oid: 't1' }, name: 'A', surname: 'One', email: 'a@example.com' },
@@ -175,6 +183,14 @@ describe('buildProfilesBatch', () => {
 			})(),
 		);
 
-		expect(batch.sqlRows.map((row) => row.email).sort()).toEqual(['a@example.com', 'duplicate_1_a@example.com']);
+		expect(batch.sqlRows.find((row) => row.userId === 'uuid-1')).toMatchObject({
+			email: 'a@example.com',
+			membershipRole: 'owner',
+		});
+		expect(batch.sqlRows.find((row) => row.userId === 'uuid-2')).toMatchObject({
+			email: null,
+			membershipRole: 'member',
+			loginUserId: 'uuid-1',
+		});
 	});
 });

@@ -46,7 +46,7 @@ export function matchesProfileSearch(user: User, rawQuery: string): boolean {
 	if (!trimmed) return true;
 
 	const name = profileDisplayName(user);
-	const email = user.email.toLowerCase();
+	const email = (user.email ?? '').toLowerCase();
 	if (name.includes(trimmed) || email.includes(trimmed)) return true;
 
 	return trimmed.split(/\s+/).every((token) => name.includes(token) || email.includes(token));
@@ -61,7 +61,7 @@ export function profileSearchMatchScore(user: User, rawQuery: string): number {
 	if (name === query) return 0;
 	if (name.startsWith(query)) return 1;
 	if (name.includes(query)) return 2;
-	if (user.email.toLowerCase().includes(query)) return 3;
+	if ((user.email ?? '').toLowerCase().includes(query)) return 3;
 	if (matchesProfileSearch(user, query)) return 4;
 	return 5;
 }

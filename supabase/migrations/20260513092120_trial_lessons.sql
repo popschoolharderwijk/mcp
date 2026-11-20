@@ -13,7 +13,7 @@ CREATE TYPE public.trial_lesson_status AS ENUM (
 CREATE TABLE public.trial_lessons (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   signup_request_id uuid REFERENCES public.lesson_signup_requests(id) ON DELETE SET NULL,
-  student_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  student_user_id uuid NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
   teacher_user_id uuid NOT NULL REFERENCES public.teachers(user_id) ON DELETE RESTRICT,
   lesson_type_id uuid NOT NULL REFERENCES public.lesson_types(id) ON DELETE RESTRICT,
   lesson_type_option_id uuid REFERENCES public.lesson_type_options(id) ON DELETE SET NULL,
@@ -53,8 +53,8 @@ ALTER TABLE public.trial_lessons FORCE ROW LEVEL SECURITY;
 CREATE POLICY trial_lessons_select ON public.trial_lessons
   FOR SELECT TO authenticated
   USING (
-    student_user_id = public.current_user_id()
-    OR teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+    student_user_id = public.current_profile_id()
+    OR teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
     OR public.is_privileged()
   );
 

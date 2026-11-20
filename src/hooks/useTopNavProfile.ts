@@ -3,14 +3,14 @@ import { keyboardTargetFromEventTarget, shouldOpenCommandPaletteOnHotkey } from 
 import type { TopNavProfile } from '@/lib/layout/topNavHelpers';
 import { fetchUserRoleAndProfile } from '@/lib/layout/topNavProfile';
 
-export function useTopNavProfileData(userId: string | undefined) {
+export function useTopNavProfileData(loginUserId: string | undefined, activeProfileId: string | undefined) {
 	const [role, setRole] = useState<string | null>(null);
 	const [profile, setProfile] = useState<TopNavProfile | null>(null);
 
 	useEffect(() => {
 		async function loadRoleAndProfile() {
-			if (!userId) return;
-			const result = await fetchUserRoleAndProfile(userId);
+			if (!loginUserId || !activeProfileId) return;
+			const result = await fetchUserRoleAndProfile(loginUserId, activeProfileId);
 			setRole(result.role);
 			setProfile(result.profile);
 		}
@@ -23,7 +23,7 @@ export function useTopNavProfileData(userId: string | undefined) {
 
 		window.addEventListener('profile-updated', handleProfileUpdate);
 		return () => window.removeEventListener('profile-updated', handleProfileUpdate);
-	}, [userId]);
+	}, [loginUserId, activeProfileId]);
 
 	return { role, profile };
 }

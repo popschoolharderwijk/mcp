@@ -3,7 +3,8 @@ import type { AgreementTableRow } from '@/types/lesson-agreements';
 export function buildAgreementWizardStudentDisplay(agreement: AgreementTableRow): { studentName: string } {
 	const studentName =
 		[agreement.student.first_name, agreement.student.last_name].filter(Boolean).join(' ') ||
-		agreement.student.email;
+		agreement.student.email ||
+		'';
 
 	return { studentName };
 }

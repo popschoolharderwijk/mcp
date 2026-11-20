@@ -10,6 +10,10 @@ describe('resolveStoredDevLoginValue', () => {
 		expect(resolveStoredDevLoginValue('teacher-alice@test.nl')).toBe('teacher-alice@test.nl');
 	});
 
+	it('returns stored shared-login parent email', () => {
+		expect(resolveStoredDevLoginValue('parent-shared@test.nl')).toBe('parent-shared@test.nl');
+	});
+
 	it('returns default site admin when stored value is missing', () => {
 		expect(resolveStoredDevLoginValue(null)).toBe('site-admin@test.nl');
 	});
@@ -22,6 +26,14 @@ describe('resolveStoredDevLoginValue', () => {
 describe('resolveDevLoginEmail', () => {
 	it('returns direct dev user email', () => {
 		expect(resolveDevLoginEmail('teacher-alice@test.nl')).toBe('teacher-alice@test.nl');
+	});
+
+	it('returns shared-login parent email', () => {
+		expect(resolveDevLoginEmail('parent-shared@test.nl')).toBe('parent-shared@test.nl');
+	});
+
+	it('returns student email', () => {
+		expect(resolveDevLoginEmail('student-001@test.nl')).toBe('student-001@test.nl');
 	});
 
 	it('returns null for unknown value', () => {

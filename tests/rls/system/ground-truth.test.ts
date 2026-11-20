@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { STUDENTS, TEACHERS, USER_ROLES, USERS } from '../seed-data-constants';
+import { SHARED_LOGIN_FAMILY, STUDENTS, TEACHERS, USER_ROLES, USERS } from '../seed-data-constants';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
@@ -17,7 +17,7 @@ afterAll(async () => {
 const { allProfiles, allUserRoles } = fixtures;
 
 describe('RLS: verify ground truth', () => {
-	it('should have exactly 88 profiles', () => {
+	it('should have the seeded profile count', () => {
 		expect(allProfiles).toHaveLength(USERS.TOTAL);
 	});
 
@@ -49,28 +49,41 @@ describe('RLS: verify ground truth', () => {
 		}
 	});
 
-	it('should have 80 users without explicit roles', () => {
+	it('should have profiles without explicit roles matching seed mix', () => {
 		const userIdsWithRoles = new Set(allUserRoles.map((ur) => ur.user_id));
 		const profilesWithoutRoles = allProfiles.filter((p) => !userIdsWithRoles.has(p.user_id));
 		expect(profilesWithoutRoles).toHaveLength(USERS.WITHOUT_ROLE);
 
 		const teacherEmails = profilesWithoutRoles
-			.filter((p) => p.email.startsWith('teacher-'))
+			.filter((p) => p.email?.startsWith('teacher-'))
 			.map((p) => p.email)
 			.sort();
 		expect(teacherEmails).toHaveLength(TEACHERS.TOTAL);
 
 		const studentEmails = profilesWithoutRoles
-			.filter((p) => p.email.startsWith('student-'))
+			.filter((p) => p.email?.startsWith('student-'))
 			.map((p) => p.email)
 			.sort();
-		expect(studentEmails).toHaveLength(STUDENTS.TOTAL);
+		expect(studentEmails).toHaveLength(STUDENTS.WITH_OWN_LOGIN);
 
 		const userEmails = profilesWithoutRoles
-			.filter((p) => p.email.startsWith('user-'))
+			.filter((p) => p.email?.startsWith('user-'))
 			.map((p) => p.email)
 			.sort();
 		expect(userEmails).toHaveLength(USERS.PLAIN_USERS);
+
+		const sharedParent = profilesWithoutRoles.find((p) => p.email === SHARED_LOGIN_FAMILY.PARENT_EMAIL);
+		expect(sharedParent?.user_id).toBe(SHARED_LOGIN_FAMILY.PARENT_USER_ID);
+
+		const sharedMembers = profilesWithoutRoles.filter((p) => p.email == null);
+		expect(sharedMembers).toHaveLength(SHARED_LOGIN_FAMILY.MEMBER_COUNT);
+	});
+
+	it('should have shared-login children in students', () => {
+		const { allStudents } = fixtures;
+		expect(allStudents).toHaveLength(STUDENTS.TOTAL);
+		expect(allStudents.some((s) => s.user_id === SHARED_LOGIN_FAMILY.CHILD_EMMA_USER_ID)).toBe(true);
+		expect(allStudents.some((s) => s.user_id === SHARED_LOGIN_FAMILY.CHILD_LARS_USER_ID)).toBe(true);
 	});
 
 	it('should have correct email for site_admin', () => {

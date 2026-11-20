@@ -3,7 +3,7 @@ import { createClientAs } from '../../db';
 import { unwrap } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
-import { LESSON_AGREEMENTS } from '../seed-data-constants';
+import { LESSON_AGREEMENTS, SHARED_LOGIN_FAMILY } from '../seed-data-constants';
 import { TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
@@ -49,21 +49,17 @@ describe('RLS: profiles SELECT', () => {
 
 		const data = unwrap(await db.from('profiles').select('*'));
 
-		// Teacher sees own profile + profiles of students they have a lesson_agreement with (seed: Alice has students 009–020)
-		const teacherAliceStudentEmails = Array.from(
-			{ length: LESSON_AGREEMENTS.TEACHER_ALICE },
-			(_, i) => `student-${String(i + 9).padStart(3, '0')}@test.nl`,
+		// Alice: own profile + classic students 009–020 + shared-login family (Karin, Emma, Lars)
+		expect(data).toHaveLength(
+			1 + LESSON_AGREEMENTS.TEACHER_ALICE_CLASSIC_STUDENTS + SHARED_LOGIN_FAMILY.MEMBERSHIP_COUNT,
 		);
-		const allowedEmails = new Set([TestUsers.TEACHER_ALICE, ...teacherAliceStudentEmails]);
 
-		expect(data).toHaveLength(allowedEmails.size);
-
-		for (const profile of data) {
-			expect(allowedEmails.has(profile.email)).toBe(true);
-		}
-		// No duplicates
-		const emails = data.map((p) => p.email);
-		expect(emails).toHaveLength(new Set(emails).size);
+		const ids = new Set(data.map((profile) => profile.user_id));
+		expect(ids.has(fixtures.requireTeacherId(TestUsers.TEACHER_ALICE))).toBe(true);
+		expect(ids.has(SHARED_LOGIN_FAMILY.PARENT_USER_ID)).toBe(true);
+		expect(ids.has(SHARED_LOGIN_FAMILY.CHILD_EMMA_USER_ID)).toBe(true);
+		expect(ids.has(SHARED_LOGIN_FAMILY.CHILD_LARS_USER_ID)).toBe(true);
+		expect(ids.size).toBe(data.length);
 	});
 
 	it('user without role sees only own profile', async () => {

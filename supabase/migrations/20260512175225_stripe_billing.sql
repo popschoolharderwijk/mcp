@@ -15,7 +15,7 @@ ALTER TABLE public.lesson_type_options
 -- stripe_customers: 1 customer per user
 -- ============================================================
 CREATE TABLE public.stripe_customers (
-  user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id uuid PRIMARY KEY REFERENCES public.profiles(user_id) ON DELETE CASCADE,
   stripe_customer_id text NOT NULL UNIQUE
 );
 
@@ -25,7 +25,7 @@ ALTER TABLE public.stripe_customers FORCE ROW LEVEL SECURITY;
 CREATE POLICY "stripe_customers_select"
   ON public.stripe_customers FOR SELECT
   TO authenticated
-  USING (user_id = public.current_user_id() OR public.is_privileged());
+  USING (user_id = public.current_profile_id() OR public.is_privileged());
 
 SELECT public.apply_audit_trail('public.stripe_customers'::regclass);
 
@@ -80,7 +80,7 @@ USING (
   is_privileged() OR EXISTS (
     SELECT 1 FROM lesson_agreements la
     WHERE la.id = subscriptions.lesson_agreement_id
-      AND la.student_user_id = current_user_id()
+      AND la.student_user_id = public.current_profile_id()
   )
 );
 
@@ -121,7 +121,7 @@ USING (
     SELECT 1 FROM subscriptions s
     JOIN lesson_agreements la ON la.id = s.lesson_agreement_id
     WHERE s.id = subscription_invoices.subscription_id
-      AND la.student_user_id = current_user_id()
+      AND la.student_user_id = public.current_profile_id()
   )
 );
 

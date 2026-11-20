@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS public.lesson_agreements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
   -- References
-  student_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  student_user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
   teacher_user_id UUID NOT NULL REFERENCES public.teachers(user_id) ON DELETE CASCADE,
   lesson_type_id UUID NOT NULL REFERENCES public.lesson_types(id),
 
@@ -183,8 +183,8 @@ ALTER TABLE public.lesson_agreements FORCE ROW LEVEL SECURITY;
 CREATE POLICY lesson_agreements_select
 ON public.lesson_agreements FOR SELECT TO authenticated
 USING (
-  student_user_id = public.current_user_id()
-  OR teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  student_user_id = public.current_profile_id()
+  OR teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_privileged()
 );
 
@@ -257,74 +257,79 @@ FOR EACH ROW
 EXECUTE FUNCTION public.check_teacher_lesson_type_has_no_agreements();
 
 -- =============================================================================
--- SECTION 4.5: EXTEND STUDENTS SELECT POLICY
+-- SECTION 4.5: AGREEMENT CROSS-ACCESS HELPERS + FINAL SELECT POLICIES
 -- =============================================================================
--- Drop and recreate students_select to include teacher access to their students.
--- Teachers can view student records for students they have a lesson_agreement with.
+
+CREATE OR REPLACE FUNCTION private.is_teacher_of_student(_student_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+SET row_security = off
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.lesson_agreements la
+    WHERE la.student_user_id = _student_user_id
+      AND la.teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
+  );
+$$;
+
+ALTER FUNCTION private.is_teacher_of_student(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_teacher_of_student(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_teacher_of_student(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_teacher_of_student(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION private.is_student_of_teacher(_teacher_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+SET row_security = off
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.lesson_agreements la
+    WHERE la.teacher_user_id = _teacher_user_id
+      AND la.student_user_id = public.current_profile_id()
+  );
+$$;
+
+ALTER FUNCTION private.is_student_of_teacher(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_student_of_teacher(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_student_of_teacher(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_student_of_teacher(uuid) TO authenticated;
 
 DROP POLICY IF EXISTS students_select ON public.students;
-
 CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_privileged()
-  -- Teachers can view their own students
-  OR EXISTS (
-    SELECT 1 FROM public.lesson_agreements la
-    WHERE la.student_user_id = students.user_id
-      AND la.teacher_user_id = private.get_teacher_user_id(public.current_user_id())
-  )
+  OR private.is_teacher_of_student(user_id)
+  OR private.has_profile_membership(user_id)
 );
 
--- =============================================================================
--- SECTION 4.6: EXTEND TEACHERS SELECT POLICY
--- =============================================================================
--- Drop and recreate teachers_select to include student access to their teachers.
--- Students can view teacher records for teachers they have a lesson_agreement with.
-
 DROP POLICY IF EXISTS teachers_select ON public.teachers;
-
 CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_privileged()
-  -- Students can view their own teachers
-  OR EXISTS (
-    SELECT 1 FROM public.lesson_agreements la
-    WHERE la.teacher_user_id = teachers.user_id
-      AND la.student_user_id = public.current_user_id()
-  )
+  OR private.is_student_of_teacher(user_id)
 );
 
--- =============================================================================
--- SECTION 4.7: EXTEND PROFILES SELECT POLICY
--- =============================================================================
--- Drop and recreate profiles_select to include cross-viewing for lesson agreements.
--- Students: can view profiles of teachers they have a lesson_agreement with.
--- Teachers: can view profiles of students they have a lesson_agreement with.
-
 DROP POLICY IF EXISTS profiles_select ON public.profiles;
-
 CREATE POLICY profiles_select
 ON public.profiles FOR SELECT TO authenticated
 USING (
-  public.current_user_id() = user_id
+  user_id = public.current_profile_id()
   OR public.is_privileged()
-  -- Students can view their teachers' profiles
-  OR EXISTS (
-    SELECT 1 FROM public.teachers t
-    INNER JOIN public.lesson_agreements la ON la.teacher_user_id = t.user_id
-    WHERE t.user_id = profiles.user_id
-      AND la.student_user_id = public.current_user_id()
-  )
-  -- Teachers can view their students' profiles
-  OR EXISTS (
-    SELECT 1 FROM public.lesson_agreements la
-    WHERE la.student_user_id = profiles.user_id
-      AND la.teacher_user_id = private.get_teacher_user_id(public.current_user_id())
-  )
+  OR private.has_profile_membership(user_id)
+  OR private.is_student_of_teacher(user_id)
+  OR private.is_teacher_of_student(user_id)
 );
 
 -- =============================================================================

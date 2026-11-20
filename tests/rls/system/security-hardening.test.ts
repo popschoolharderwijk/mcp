@@ -189,7 +189,8 @@ async function createDuoFixture(): Promise<DuoFixture> {
 	const studentAUserId = fixtures.requireUserId(TestUsers.STUDENT_001);
 	const studentBUserId = fixtures.requireUserId(TestUsers.STUDENT_002);
 	const profileB = fixtures.requireProfile(TestUsers.STUDENT_002);
-	const partnerBDisplayName = `${profileB.first_name ?? ''} ${profileB.last_name ?? ''}`.trim() || profileB.email;
+	const partnerBDisplayName =
+		`${profileB.first_name ?? ''} ${profileB.last_name ?? ''}`.trim() || profileB.email || '';
 	const duoPairId = crypto.randomUUID();
 
 	const lessonType = requireRow(

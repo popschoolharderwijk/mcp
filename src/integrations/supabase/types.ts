@@ -3,6 +3,55 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type Database = {
 	public: {
 		Tables: {
+			account_memberships: {
+				Row: {
+					created_at: string;
+					created_by: string | null;
+					id: string;
+					login_user_id: string;
+					profile_id: string;
+					role: string;
+					updated_at: string;
+					updated_by: string | null;
+				};
+				ComputedFields: never;
+				Insert: {
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					login_user_id: string;
+					profile_id: string;
+					role: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Update: {
+					created_at?: string;
+					created_by?: string | null;
+					id?: string;
+					login_user_id?: string;
+					profile_id?: string;
+					role?: string;
+					updated_at?: string;
+					updated_by?: string | null;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'account_memberships_profile_id_fkey';
+						columns: ['profile_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'account_memberships_profile_id_fkey';
+						columns: ['profile_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+				];
+			};
 			agenda_event_deviations: {
 				Row: {
 					actual_date: string;
@@ -149,7 +198,22 @@ export type Database = {
 					updated_at?: string;
 					updated_by?: string | null;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'agenda_events_owner_user_id_fkey';
+						columns: ['owner_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'agenda_events_owner_user_id_fkey';
+						columns: ['owner_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+				];
 			};
 			agenda_participants: {
 				Row: {
@@ -178,6 +242,20 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'agenda_events';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'agenda_participants_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'agenda_participants_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
 					},
 				];
 			};
@@ -397,6 +475,20 @@ export type Database = {
 						referencedColumns: ['id'];
 					},
 					{
+						foreignKeyName: 'lesson_agreements_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'lesson_agreements_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+					{
 						foreignKeyName: 'lesson_agreements_teacher_user_id_fkey';
 						columns: ['teacher_user_id'];
 						isOneToOne: false;
@@ -447,6 +539,20 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'lesson_groups';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'lesson_group_members_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'lesson_group_members_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
 					},
 				];
 			};
@@ -796,7 +902,7 @@ export type Database = {
 					country_code: string;
 					created_at: string;
 					created_by: string | null;
-					email: string;
+					email: string | null;
 					first_name: string | null;
 					house_number: string | null;
 					last_name: string | null;
@@ -814,7 +920,7 @@ export type Database = {
 					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
-					email: string;
+					email?: string | null;
 					first_name?: string | null;
 					house_number?: string | null;
 					last_name?: string | null;
@@ -831,7 +937,7 @@ export type Database = {
 					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
-					email?: string;
+					email?: string | null;
 					first_name?: string | null;
 					house_number?: string | null;
 					last_name?: string | null;
@@ -1085,7 +1191,22 @@ export type Database = {
 					updated_by?: string | null;
 					user_id?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'stripe_customers_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'stripe_customers_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+				];
 			};
 			students: {
 				Row: {
@@ -1122,7 +1243,22 @@ export type Database = {
 					updated_by?: string | null;
 					user_id?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'students_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'students_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+				];
 			};
 			subscription_invoices: {
 				Row: {
@@ -1380,7 +1516,22 @@ export type Database = {
 					updated_by?: string | null;
 					user_id?: string;
 				};
-				Relationships: [];
+				Relationships: [
+					{
+						foreignKeyName: 'teachers_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'teachers_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: true;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+				];
 			};
 			trial_lessons: {
 				Row: {
@@ -1487,6 +1638,20 @@ export type Database = {
 						referencedColumns: ['id'];
 					},
 					{
+						foreignKeyName: 'trial_lessons_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['user_id'];
+					},
+					{
+						foreignKeyName: 'trial_lessons_student_user_id_fkey';
+						columns: ['student_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'view_profiles_with_display_name';
+						referencedColumns: ['user_id'];
+					},
+					{
 						foreignKeyName: 'trial_lessons_teacher_user_id_fkey';
 						columns: ['teacher_user_id'];
 						isOneToOne: false;
@@ -1555,7 +1720,7 @@ export type Database = {
 					avatar_url: string | null;
 					created_at: string;
 					display_name: string | null;
-					email: string;
+					email: string | null;
 					first_name: string | null;
 					last_name: string | null;
 					phone_number: string | null;
@@ -1593,6 +1758,7 @@ export type Database = {
 			check_rls_forced: { Args: { p_table_name: string }; Returns: boolean };
 			cleanup_student_if_no_agreements: { Args: { _user_id: string }; Returns: undefined };
 			compute_minimum_term_end: { Args: { p_start_date: string }; Returns: string };
+			current_profile_id: { Args: Record<PropertyKey, never>; Returns: string };
 			current_user_id: { Args: Record<PropertyKey, never>; Returns: string };
 			end_recurring_deviation_from_week: {
 				Args: { p_deviation_id: string; p_week_date: string };

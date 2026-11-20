@@ -5,7 +5,7 @@ import { fetchStudentAgreementsForProfile } from '@/lib/students/fetchStudentAgr
 
 export interface MyStudentProfileData {
 	profile: {
-		email: string;
+		email: string | null;
 		first_name: string | null;
 		last_name: string | null;
 		phone_number: string | null;
@@ -26,6 +26,7 @@ export type MyStudentProfileLoadOutcome =
 			agreements: Awaited<ReturnType<typeof fetchStudentAgreementsForProfile>>;
 			signupRequests: Awaited<ReturnType<typeof fetchSignupRequestsByEmail>>;
 	  }
+	| { kind: 'not-found' }
 	| { kind: 'error' };
 
 const STUDENT_SELECT = 'user_id, parent_name, parent_email, parent_phone_number';
@@ -38,11 +39,14 @@ function reportMyStudentProfileLoadError(error: unknown): MyStudentProfileLoadOu
 }
 
 async function fetchMyStudentRecord(userId: string) {
-	return supabase.from('students').select(STUDENT_SELECT).eq('user_id', userId).single();
+	// Zero rows is normal for a shared-login owner (parent). Array `.limit(1)` avoids PostgREST singular HTTP 406.
+	const { data, error } = await supabase.from('students').select(STUDENT_SELECT).eq('user_id', userId).limit(1);
+	return { data: data?.[0] ?? null, error };
 }
 
 async function fetchMyStudentProfileRecord(userId: string) {
-	return supabase.from('profiles').select(PROFILE_SELECT).eq('user_id', userId).single();
+	const { data, error } = await supabase.from('profiles').select(PROFILE_SELECT).eq('user_id', userId).limit(1);
+	return { data: data?.[0] ?? null, error };
 }
 
 async function loadMyStudentProfileRelatedData(userId: string, email: string | null) {
@@ -59,10 +63,16 @@ export async function loadMyStudentProfileData(userId: string): Promise<MyStuden
 		if (studentError) {
 			return reportMyStudentProfileLoadError(studentError);
 		}
+		if (!studentData) {
+			return { kind: 'not-found' };
+		}
 
 		const { data: profileData, error: profileError } = await fetchMyStudentProfileRecord(userId);
 		if (profileError) {
 			return reportMyStudentProfileLoadError(profileError);
+		}
+		if (!profileData) {
+			return { kind: 'not-found' };
 		}
 
 		const profile: MyStudentProfileData = {

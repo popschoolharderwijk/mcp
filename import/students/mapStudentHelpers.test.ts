@@ -29,6 +29,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: '65deed9e3f515bbe5a0eca83',
 				email: 'Eva.Koning14_anon@gmail.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Nick',
 				lastName: 'van de Brink',
@@ -58,6 +59,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: 'oid-no-email',
 				email: 'missing_oid-no-email@example.com',
+				emailKind: 'missing',
 				emailWarning: 'Missing email; using "missing_oid-no-email@example.com"',
 				firstName: 'Britt',
 				lastName: 'de Groot',
@@ -74,7 +76,7 @@ describe('mapStudentDoc', () => {
 		});
 	});
 
-	it('rewrites later rows with the same email using duplicate_N_ prefix', () => {
+	it('marks later rows with the same email as shared_member', () => {
 		expect(
 			mapStudentDoc({
 				_id: { $oid: 'oid-first' },
@@ -95,8 +97,9 @@ describe('mapStudentDoc', () => {
 			ok: true,
 			row: {
 				mongoOid: 'oid-second',
-				email: 'duplicate_1_Shared@example.com',
-				emailWarning: 'Duplicate email "Shared@example.com"; using "duplicate_1_Shared@example.com"',
+				email: null,
+				emailKind: 'shared_member',
+				emailWarning: 'Shared login email "Shared@example.com"; attaching as member under existing login',
 				firstName: 'Second',
 				lastName: 'Student',
 				phoneNumber: null,
@@ -126,6 +129,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-dob',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -160,6 +164,7 @@ describe('mapStudentDoc', () => {
 			row: {
 				mongoOid: 'oid-house',
 				email: 'noa-house@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',

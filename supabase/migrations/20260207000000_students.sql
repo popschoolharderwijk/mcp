@@ -6,7 +6,7 @@
 -- 2. RLS policies for the table
 -- 3. Triggers for data integrity
 --
--- Students are linked to auth.users via user_id.
+-- Students are linked to profiles (person) via user_id.
 -- =============================================================================
 
 -- =============================================================================
@@ -18,9 +18,9 @@
 -- SECTION 2: TABLES
 -- =============================================================================
 
--- Students table - links users to student records (user_id is PK)
+-- Students table - links person profiles to student records (user_id is PK)
 CREATE TABLE IF NOT EXISTS public.students (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES public.profiles(user_id) ON DELETE CASCADE,
 
   -- Parent/guardian information (for minors)
   parent_name TEXT
@@ -102,12 +102,13 @@ EXECUTE FUNCTION public.normalize_students_text_fields();
 -- SECTION 5: RLS POLICIES
 -- =============================================================================
 
--- Combined SELECT policy: students can view own record, privileged users can view all
+-- Combined SELECT policy (extended later in lesson_agreements with teacher/membership helpers)
 CREATE POLICY students_select
 ON public.students FOR SELECT TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_privileged()
+  OR private.has_profile_membership(user_id)
 );
 
 -- Note: INSERT policy is intentionally omitted.
@@ -118,11 +119,21 @@ USING (
 -- Students are automatically deleted via triggers on lesson_agreements.
 -- No one can manually delete students.
 
--- Admins and site_admins can update students (for future fields)
-CREATE POLICY students_update_admin
+-- Own active profile, login membership (shared-login parent), or admins
+CREATE POLICY students_update
 ON public.students FOR UPDATE TO authenticated
-USING (public.is_admin() OR public.is_site_admin())
-WITH CHECK (public.is_admin() OR public.is_site_admin());
+USING (
+  user_id = public.current_profile_id()
+  OR private.has_profile_membership(user_id)
+  OR public.is_admin()
+  OR public.is_site_admin()
+)
+WITH CHECK (
+  user_id = public.current_profile_id()
+  OR private.has_profile_membership(user_id)
+  OR public.is_admin()
+  OR public.is_site_admin()
+);
 
 -- Note: Teachers cannot view students directly. They can view lesson_agreements
 -- which contain the student information they need.

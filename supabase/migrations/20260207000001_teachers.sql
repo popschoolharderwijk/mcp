@@ -8,7 +8,7 @@
 -- 4. RLS policies for all tables
 -- 5. Triggers for data integrity
 --
--- Teachers are linked to auth.users via user_id.
+-- Teachers are linked to profiles (person) via user_id.
 -- =============================================================================
 
 -- =============================================================================
@@ -20,9 +20,9 @@
 -- SECTION 2: TABLES
 -- =============================================================================
 
--- Teachers table - links users to teacher records (user_id is PK)
+-- Teachers table - links person profiles to teacher records (user_id is PK)
 CREATE TABLE IF NOT EXISTS public.teachers (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID PRIMARY KEY REFERENCES public.profiles(user_id) ON DELETE CASCADE,
 
   -- Teacher profile information
   bio TEXT
@@ -177,11 +177,11 @@ ALTER FUNCTION private.get_teacher_user_id(UUID) OWNER TO postgres;
 -- SECTION 5: RLS POLICIES
 -- =============================================================================
 
--- Combined SELECT policy: teachers can view own record, privileged users can view all
+-- Combined SELECT policy (extended later in lesson_agreements with student helper)
 CREATE POLICY teachers_select
 ON public.teachers FOR SELECT TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_privileged()
 );
 
@@ -194,11 +194,11 @@ WITH CHECK (public.is_admin() OR public.is_site_admin());
 CREATE POLICY teachers_update
 ON public.teachers FOR UPDATE TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -215,7 +215,7 @@ USING (public.is_admin() OR public.is_site_admin());
 CREATE POLICY teacher_availability_select
 ON public.teacher_availability FOR SELECT TO authenticated
 USING (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_privileged()
 );
 
@@ -223,7 +223,7 @@ USING (
 CREATE POLICY teacher_availability_insert
 ON public.teacher_availability FOR INSERT TO authenticated
 WITH CHECK (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -231,11 +231,11 @@ WITH CHECK (
 CREATE POLICY teacher_availability_update
 ON public.teacher_availability FOR UPDATE TO authenticated
 USING (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_admin() OR public.is_site_admin()
 )
 WITH CHECK (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -243,7 +243,7 @@ WITH CHECK (
 CREATE POLICY teacher_availability_delete
 ON public.teacher_availability FOR DELETE TO authenticated
 USING (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_admin() OR public.is_site_admin()
 );
 
@@ -255,7 +255,7 @@ USING (
 CREATE POLICY teacher_lesson_types_select
 ON public.teacher_lesson_types FOR SELECT TO authenticated
 USING (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
   OR public.is_privileged()
 );
 

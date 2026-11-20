@@ -30,6 +30,7 @@
 --   75000000 = trial_lesson
 --   76000000 = no_lesson_period
 --   77000000 = announcement
+--   78000000 = shared-login family (parent login + member children)
 --
 -- Examples:
 --   10000000-0001-0000-0000-000000000000 = site_admin, 1st
@@ -69,11 +70,16 @@
 --   40000000-0009-0000-0000-000000000000 (Teacher Iris - has students, no VOG)
 --   40000000-0010-0000-0000-000000000000 (Teacher Jack - NO students, no VOG)
 --
--- students (60)
+-- students (60 with own login)
 --   50000000-0001 t/m 50000000-0060
 --
 -- users without any role (10)
 --   60000000-0001 t/m 60000000-0010
+--
+-- shared-login family (dev example; password "password")
+--   78000000-0001 parent login/owner — parent-shared@test.nl (Karin de Vries)
+--   78000000-0002 child member — Emma de Vries (no auth email)
+--   78000000-0003 child member — Lars de Vries (no auth email)
 -- -----------------------------------------------------------------------------
 
 DO $$
@@ -93,8 +99,9 @@ BEGIN
   -- INSERT USERS INTO TEMP TABLE
   -- -------------------------------------------------------------------------
   -- Logic: Insert all users with new UUID structure
-  -- - 1 site_admin, 2 admins, 5 staff, 10 teachers, 60 students, 10 users (no role)
-  -- - Total: 88 users
+  -- - 1 site_admin, 2 admins, 5 staff, 10 teachers, 60 students, 10 users (no role),
+  --   1 shared-login parent
+  -- - Total: 89 auth logins (member children are profiles without auth.users)
   -- -------------------------------------------------------------------------
   INSERT INTO new_users (id, email, first_name, last_name, phone_number)
   VALUES
@@ -196,7 +203,10 @@ BEGIN
     (UUID '60000000-0007-0000-0000-000000000000', 'user-007@test.nl', 'Nick', 'de Boer', '0667890127'),
     (UUID '60000000-0008-0000-0000-000000000000', 'user-008@test.nl', 'Basles', 'Mulder', NULL),
     (UUID '60000000-0009-0000-0000-000000000000', 'user-009@test.nl', 'Stijn', 'de Vries', '0667890128'),
-    (UUID '60000000-0010-0000-0000-000000000000', 'user-010@test.nl', 'Willem-Jan', 'van der Berg', '0667890129');
+    (UUID '60000000-0010-0000-0000-000000000000', 'user-010@test.nl', 'Willem-Jan', 'van der Berg', '0667890129'),
+
+    -- Shared-login parent (owner person; children are member profiles without auth.users)
+    (UUID '78000000-0001-0000-0000-000000000000', 'parent-shared@test.nl', 'Karin', 'de Vries', '0611111001');
 
   -- -------------------------------------------------------------------------
   -- INSERT INTO AUTH.USERS
@@ -1664,6 +1674,164 @@ UPDATE public.students SET
   parent_email = 'tom.janssen@example.nl',
   parent_phone_number = '0612340015'
 WHERE user_id = '50000000-0015-0000-0000-000000000000';
+
+-- -----------------------------------------------------------------------------
+-- SHARED LOGIN DEV EXAMPLE (parent + two children)
+-- -----------------------------------------------------------------------------
+-- Login: parent-shared@test.nl / password
+-- Owner profile 78000000-0001 (Karin) is created with auth.users above.
+-- Children are member profiles (email NULL) under that login — no auth.users rows.
+-- -----------------------------------------------------------------------------
+INSERT INTO public.profiles (user_id, email, first_name, last_name, phone_number, country_code)
+VALUES
+  (
+    '78000000-0002-0000-0000-000000000000',
+    NULL,
+    'Emma',
+    'de Vries',
+    NULL,
+    'NL'
+  ),
+  (
+    '78000000-0003-0000-0000-000000000000',
+    NULL,
+    'Lars',
+    'de Vries',
+    NULL,
+    'NL'
+  )
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO public.account_memberships (login_user_id, profile_id, role)
+VALUES
+  (
+    '78000000-0001-0000-0000-000000000000',
+    '78000000-0002-0000-0000-000000000000',
+    'member'
+  ),
+  (
+    '78000000-0001-0000-0000-000000000000',
+    '78000000-0003-0000-0000-000000000000',
+    'member'
+  )
+ON CONFLICT (login_user_id, profile_id) DO NOTHING;
+
+INSERT INTO public.students (
+  user_id,
+  date_of_birth,
+  parent_name,
+  parent_email,
+  parent_phone_number
+)
+VALUES
+  (
+    '78000000-0001-0000-0000-000000000000',
+    DATE '1985-03-20',
+    NULL,
+    NULL,
+    NULL
+  ),
+  (
+    '78000000-0002-0000-0000-000000000000',
+    DATE '2014-05-12',
+    'Karin de Vries',
+    'parent-shared@test.nl',
+    '0611111001'
+  ),
+  (
+    '78000000-0003-0000-0000-000000000000',
+    DATE '2016-09-03',
+    'Karin de Vries',
+    'parent-shared@test.nl',
+    '0611111001'
+  )
+ON CONFLICT (user_id) DO NOTHING;
+
+-- Family agreements (by profile UUID — member children have NULL email).
+-- Karin: 1 Gitaarles; Emma: 1 Gitaarles; Lars: 1 Gitaarles + 1 Drumles (Alice).
+INSERT INTO public.lesson_agreements (
+  student_user_id,
+  teacher_user_id,
+  lesson_type_id,
+  duration_minutes,
+  frequency,
+  price_per_lesson,
+  day_of_week,
+  start_time,
+  start_date,
+  end_date,
+  is_active
+)
+SELECT
+  a.student_user_id,
+  t.user_id,
+  lt.id,
+  a.duration_minutes,
+  a.frequency,
+  a.price_per_lesson,
+  a.day_of_week,
+  a.start_time,
+  a.start_date,
+  a.end_date,
+  true
+FROM (VALUES
+  (
+    '78000000-0001-0000-0000-000000000000'::uuid,
+    'Gitaarles',
+    45,
+    'weekly'::public.lesson_frequency,
+    45.00,
+    3,
+    '10:00'::time,
+    CURRENT_DATE - INTERVAL '30 days',
+    CURRENT_DATE + INTERVAL '6 months'
+  ),
+  (
+    '78000000-0002-0000-0000-000000000000'::uuid,
+    'Gitaarles',
+    30,
+    'weekly'::public.lesson_frequency,
+    30.00,
+    2,
+    '16:00'::time,
+    CURRENT_DATE - INTERVAL '30 days',
+    CURRENT_DATE + INTERVAL '6 months'
+  ),
+  (
+    '78000000-0003-0000-0000-000000000000'::uuid,
+    'Gitaarles',
+    30,
+    'weekly'::public.lesson_frequency,
+    30.00,
+    4,
+    '15:00'::time,
+    CURRENT_DATE - INTERVAL '30 days',
+    CURRENT_DATE + INTERVAL '6 months'
+  ),
+  (
+    '78000000-0003-0000-0000-000000000000'::uuid,
+    'Drumles',
+    45,
+    'biweekly'::public.lesson_frequency,
+    45.00,
+    5,
+    '17:00'::time,
+    CURRENT_DATE - INTERVAL '30 days',
+    CURRENT_DATE + INTERVAL '6 months'
+  )
+) AS a(student_user_id, lesson_type_name, duration_minutes, frequency, price_per_lesson, day_of_week, start_time, start_date, end_date)
+INNER JOIN public.profiles tp ON tp.email = 'teacher-alice@test.nl'
+INNER JOIN public.teachers t ON t.user_id = tp.user_id
+INNER JOIN public.lesson_types lt ON lt.name = a.lesson_type_name
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM public.lesson_agreements la
+  WHERE la.student_user_id = a.student_user_id
+    AND la.teacher_user_id = t.user_id
+    AND la.lesson_type_id = lt.id
+    AND la.day_of_week = a.day_of_week
+    AND la.start_time = a.start_time
+);
 
 -- =============================================================================
 -- END SEED

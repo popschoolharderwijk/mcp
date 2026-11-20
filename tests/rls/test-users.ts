@@ -55,6 +55,9 @@ export const TestUsers = {
 	USER_008: 'user-008@test.nl',
 	USER_009: 'user-009@test.nl',
 	USER_010: 'user-010@test.nl',
+
+	/** Shared-login parent (owner); children are member profiles without login email */
+	PARENT_SHARED: 'parent-shared@test.nl',
 } as const;
 
 export type TestUser = (typeof TestUsers)[keyof typeof TestUsers];

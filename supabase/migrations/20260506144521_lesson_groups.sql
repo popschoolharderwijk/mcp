@@ -55,7 +55,7 @@ ALTER TABLE public.lesson_groups FORCE ROW LEVEL SECURITY;
 CREATE TABLE public.lesson_group_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   lesson_group_id UUID NOT NULL REFERENCES public.lesson_groups(id) ON DELETE CASCADE,
-  student_user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  student_user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
   joined_date DATE NOT NULL DEFAULT CURRENT_DATE,
   left_date DATE,
   CONSTRAINT lesson_group_members_unique UNIQUE (lesson_group_id, student_user_id),
@@ -110,8 +110,8 @@ GRANT EXECUTE ON FUNCTION private.is_lesson_group_member(uuid, uuid) TO authenti
 CREATE POLICY lesson_groups_select ON public.lesson_groups
 FOR SELECT TO authenticated
 USING (
-  teacher_user_id = private.get_teacher_user_id(public.current_user_id())
-  OR private.is_lesson_group_member(id, public.current_user_id())
+  teacher_user_id = private.get_teacher_user_id(public.current_profile_id())
+  OR private.is_lesson_group_member(id, public.current_profile_id())
   OR public.is_privileged()
 );
 
@@ -134,8 +134,8 @@ USING (public.is_privileged());
 CREATE POLICY lesson_group_members_select ON public.lesson_group_members
 FOR SELECT TO authenticated
 USING (
-  student_user_id = public.current_user_id()
-  OR private.is_lesson_group_teacher(lesson_group_id, private.get_teacher_user_id(public.current_user_id()))
+  student_user_id = public.current_profile_id()
+  OR private.is_lesson_group_teacher(lesson_group_id, private.get_teacher_user_id(public.current_profile_id()))
   OR public.is_privileged()
 );
 

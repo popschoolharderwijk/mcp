@@ -11,9 +11,14 @@ export const DEV_TEACHERS: DevUser[] = [
 ];
 
 export const DEV_STUDENTS: DevUser[] = [
-	{ email: 'student-001@test.nl', firstName: 'Lucas', description: 'Met Bandcoaching' },
-	{ email: 'student-009@test.nl', firstName: 'Luuk', description: 'Zonder Bandcoaching' },
-	{ email: 'student-010@test.nl', firstName: 'Bram', description: 'Zonder Bandcoaching' },
+	{ email: 'student-001@test.nl', firstName: 'Lucas', description: 'Bandcoaching' },
+	{ email: 'student-009@test.nl', firstName: 'Luuk', description: 'Gitaar (Alice + Frank)' },
+	{ email: 'student-010@test.nl', firstName: 'Bram', description: 'Gitaar (Alice + Frank)' },
+];
+
+/** Shared-login parent (seed: Emma + Lars as members). */
+export const DEV_SHARED_LOGINS: DevUser[] = [
+	{ email: 'parent-shared@test.nl', firstName: 'Karin', description: 'Ouder, 2 kinderen' },
 ];
 
 export const DEV_USERS: DevUser[] = [
@@ -29,7 +34,9 @@ export const DEV_ROLES: DevUser[] = [
 ];
 
 function getAllDevLoginEmails(): string[] {
-	return [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_USERS].map((user) => user.email);
+	return [...DEV_ROLES, ...DEV_TEACHERS, ...DEV_STUDENTS, ...DEV_SHARED_LOGINS, ...DEV_USERS].map(
+		(user) => user.email,
+	);
 }
 
 export function resolveStoredDevLoginValue(storedDevUser: string | null): string {
@@ -53,4 +60,11 @@ export function getDevLoginErrorMessage(errorMessage: string, email: string): st
 		return `Inloggen mislukt voor ${email}. Controleer VITE_DEV_LOGIN_PASSWORD.`;
 	}
 	return `${errorMessage} (email: ${email})`;
+}
+
+export function formatDevLoginSelectLabel(user: DevUser): string {
+	if (user.description) {
+		return `${user.firstName} (${user.description})`;
+	}
+	return user.firstName;
 }

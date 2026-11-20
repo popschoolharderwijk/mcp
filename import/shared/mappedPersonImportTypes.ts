@@ -1,9 +1,11 @@
 /** Shared mapped address/contact fields for student and teacher Mongo import rows. */
 export type MappedPersonImportRowBase = {
 	mongoOid: string;
-	/** Real email, or `missing_<mongoOid>@example.com` / `duplicate_N_…` rewrite. */
-	email: string;
-	/** From shared `allocateImportEmail` (missing / duplicate); includes replacement address. */
+	/** Real/missing login email for owners; null for shared-login members. */
+	email: string | null;
+	/** `owner` | `shared_member` | `missing` from shared `allocateImportEmail`. */
+	emailKind: 'owner' | 'shared_member' | 'missing';
+	/** From shared `allocateImportEmail` (missing / shared member); includes context. */
 	emailWarning: string | null;
 	firstName: string | null;
 	lastName: string | null;

@@ -1,46 +1,53 @@
 import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
 import {
+	buildChildMemberProfileInsert,
+	buildMemberMembershipInsert,
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
 	buildSignupStudentUpdateFields,
+	isParentOwnedSignup,
+	resolveAuthCreateUserId,
 	resolveExistingSignupStudentUserId,
+	resolveSignupLoginEmail,
 	resolveSignupStudentRowMutation,
-	shouldUpdateSignupPhoneOnCreate,
+	shouldApplySignupPhoneOnCreate,
 } from './ensureStudentFromSignupHelpers.ts';
 import type { SignupRequestRow } from './types.ts';
 
-async function createSignupStudentUser(
+async function createSignupLoginUser(
 	admin: SupabaseClient,
 	reqRow: SignupRequestRow,
-): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+): Promise<{ ok: true; loginUserId: string } | { ok: false; response: Response }> {
 	const { data: created, error: createErr } = await admin.auth.admin.createUser(buildSignupAuthCreatePayload(reqRow));
-	if (createErr || !created.user) {
+	const loginUserId = resolveAuthCreateUserId(created, createErr);
+	if (loginUserId == null) {
 		console.error('createUser error', createErr);
 		return { ok: false, response: jsonResponse(500, { error: 'Kon gebruiker niet aanmaken' }) };
 	}
 
-	if (shouldUpdateSignupPhoneOnCreate(reqRow.phone_number)) {
-		await admin.from('profiles').update({ phone_number: reqRow.phone_number }).eq('user_id', created.user.id);
+	if (shouldApplySignupPhoneOnCreate(reqRow)) {
+		await admin.from('profiles').update({ phone_number: reqRow.phone_number }).eq('user_id', loginUserId);
 	}
 
-	return { ok: true, studentUserId: created.user.id };
+	return { ok: true, loginUserId };
 }
 
-async function resolveSignupStudentUserId(
+async function resolveSignupLoginUserId(
 	admin: SupabaseClient,
 	reqRow: SignupRequestRow,
-): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+): Promise<{ ok: true; loginUserId: string } | { ok: false; response: Response }> {
+	const loginEmail = resolveSignupLoginEmail(reqRow);
 	const { data: existingProfile } = await admin
 		.from('profiles')
 		.select('user_id')
-		.eq('email', reqRow.email)
+		.eq('email', loginEmail)
 		.maybeSingle();
 
 	const existingUserId = resolveExistingSignupStudentUserId(existingProfile);
-	if (existingUserId) return { ok: true, studentUserId: existingUserId };
+	if (existingUserId) return { ok: true, loginUserId: existingUserId };
 
-	return createSignupStudentUser(admin, reqRow);
+	return createSignupLoginUser(admin, reqRow);
 }
 
 async function upsertStudentRow(admin: SupabaseClient, studentUserId: string, reqRow: SignupRequestRow): Promise<void> {
@@ -59,22 +66,59 @@ async function upsertStudentRow(admin: SupabaseClient, studentUserId: string, re
 	await admin.from('students').insert(studentPayload);
 }
 
-async function upsertSignupStudentData(
+async function createChildMemberUnderLogin(
 	admin: SupabaseClient,
-	studentUserId: string,
+	loginUserId: string,
 	reqRow: SignupRequestRow,
-): Promise<void> {
-	await upsertStudentRow(admin, studentUserId, reqRow);
-	await admin.from('user_roles').upsert({ user_id: studentUserId, role: 'student' }, { onConflict: 'user_id,role' });
+): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+	const childProfileId = crypto.randomUUID();
+	const { error: profileError } = await admin.from('profiles').insert(
+		buildChildMemberProfileInsert({
+			profileId: childProfileId,
+			firstName: reqRow.first_name,
+			lastName: reqRow.last_name,
+			phoneNumber: reqRow.phone_number,
+		}),
+	);
+	if (profileError) {
+		console.error('member profile insert', profileError);
+		return { ok: false, response: jsonResponse(500, { error: 'Kon leerlingprofiel niet aanmaken' }) };
+	}
+
+	const { error: membershipError } = await admin
+		.from('account_memberships')
+		.insert(buildMemberMembershipInsert(loginUserId, childProfileId));
+	if (membershipError) {
+		console.error('member membership insert', membershipError);
+		await admin.from('profiles').delete().eq('user_id', childProfileId);
+		return { ok: false, response: jsonResponse(500, { error: 'Kon lidmaatschap niet aanmaken' }) };
+	}
+
+	await upsertStudentRow(admin, childProfileId, reqRow);
+	return { ok: true, studentUserId: childProfileId };
+}
+
+async function ensureAdultStudentFromSignup(
+	admin: SupabaseClient,
+	reqRow: SignupRequestRow,
+): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+	const loginResult = await resolveSignupLoginUserId(admin, reqRow);
+	if (!loginResult.ok) return loginResult;
+
+	await upsertStudentRow(admin, loginResult.loginUserId, reqRow);
+	return { ok: true, studentUserId: loginResult.loginUserId };
 }
 
 export async function ensureStudentFromSignup(
 	admin: SupabaseClient,
 	reqRow: SignupRequestRow,
 ): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
-	const userResult = await resolveSignupStudentUserId(admin, reqRow);
-	if (!userResult.ok) return userResult;
+	if (!isParentOwnedSignup(reqRow)) {
+		return ensureAdultStudentFromSignup(admin, reqRow);
+	}
 
-	await upsertSignupStudentData(admin, userResult.studentUserId, reqRow);
-	return { ok: true, studentUserId: userResult.studentUserId };
+	const loginResult = await resolveSignupLoginUserId(admin, reqRow);
+	if (!loginResult.ok) return loginResult;
+
+	return createChildMemberUnderLogin(admin, loginResult.loginUserId, reqRow);
 }

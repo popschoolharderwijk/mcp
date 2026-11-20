@@ -33,6 +33,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: '65deed9a4ab30f9a3714f069',
 				email: 'Thomas_Kok68_anon@kpnmail.nl',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Femke',
 				lastName: 'Bosman',
@@ -64,6 +65,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-house',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -94,6 +96,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-nederland',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -124,6 +127,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-country',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -154,6 +158,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-bad-coc',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -184,6 +189,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: '65deed9a4ab30f9a3714f071',
 				email: 'missing_65deed9a4ab30f9a3714f071@example.com',
+				emailKind: 'missing',
 				emailWarning: 'Missing email; using "missing_65deed9a4ab30f9a3714f071@example.com"',
 				firstName: 'Roos',
 				lastName: 'de Jong',
@@ -214,6 +220,7 @@ describe('mapTeacherDoc', () => {
 			row: {
 				mongoOid: 'oid-1',
 				email: 'noa@example.com',
+				emailKind: 'owner',
 				emailWarning: null,
 				firstName: 'Noa',
 				lastName: 'Noa',
@@ -230,7 +237,7 @@ describe('mapTeacherDoc', () => {
 		});
 	});
 
-	it('rewrites duplicate emails with duplicate_N_ prefix', () => {
+	it('marks later rows with the same email as shared_member', () => {
 		expect(
 			mapTeacherDoc({
 				_id: { $oid: 'oid-first' },
@@ -251,8 +258,9 @@ describe('mapTeacherDoc', () => {
 			ok: true,
 			row: {
 				mongoOid: 'oid-second',
-				email: 'duplicate_1_teacher@example.com',
-				emailWarning: 'Duplicate email "teacher@example.com"; using "duplicate_1_teacher@example.com"',
+				email: null,
+				emailKind: 'shared_member',
+				emailWarning: 'Shared login email "teacher@example.com"; attaching as member under existing login',
 				firstName: 'Second',
 				lastName: 'Teacher',
 				phoneNumber: null,

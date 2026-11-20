@@ -1,7 +1,10 @@
-/** One auth user after teacher/student email dedupe (may hold both roles). */
+/** One person after teacher/student import (owner login or shared-login member). */
 export type ProfileSqlRow = {
 	userId: string;
-	email: string;
+	/** Owner login email; null for members. */
+	email: string | null;
+	loginUserId: string;
+	membershipRole: 'owner' | 'member';
 	firstName: string | null;
 	lastName: string | null;
 	phoneNumber: string | null;

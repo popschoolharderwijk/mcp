@@ -234,10 +234,11 @@ ALTER FUNCTION public.slugify(text) OWNER TO postgres;
 -- SECTION 2: TABLES
 -- =============================================================================
 
+-- Person row: may exist without auth.users (shared-login member profiles).
 CREATE TABLE IF NOT EXISTS public.profiles (
-  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL UNIQUE
-    CHECK (email = public.normalize_trim_text(email)),
+  user_id UUID PRIMARY KEY,
+  email TEXT UNIQUE
+    CHECK (email IS NULL OR email = public.normalize_trim_text(email)),
   first_name TEXT
     CHECK (first_name IS NULL OR first_name = public.normalize_compact_text(first_name)),
   last_name TEXT
@@ -257,6 +258,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   country_code TEXT NOT NULL DEFAULT 'NL'
     CHECK (public.is_valid_country_code(country_code))
 );
+
+COMMENT ON COLUMN public.profiles.email IS
+  'Login email for owner profiles (mirrors auth.users). NULL for member profiles without a dedicated login.';
 
 -- Add audit columns to profiles
 SELECT public.apply_audit_trail('public.profiles');
@@ -304,6 +308,90 @@ REVOKE ALL ON SCHEMA private FROM PUBLIC;
 GRANT USAGE ON SCHEMA private TO authenticated;
 COMMENT ON SCHEMA private IS
   'Non-exposed helpers for RLS and internal DEFINER use; not in PostgREST db_schemas.';
+
+-- =============================================================================
+-- SECTION 3d: ACCOUNT MEMBERSHIPS + ACTIVE PROFILE
+-- =============================================================================
+-- Shared login: one auth login → one or more person profiles (owner + members).
+
+CREATE TABLE IF NOT EXISTS public.account_memberships (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  login_user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  profile_id uuid NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('owner', 'member')),
+  UNIQUE (login_user_id, profile_id)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS account_memberships_one_owner_per_login
+  ON public.account_memberships (login_user_id)
+  WHERE role = 'owner';
+
+CREATE INDEX IF NOT EXISTS idx_account_memberships_profile_id ON public.account_memberships (profile_id);
+CREATE INDEX IF NOT EXISTS idx_account_memberships_login_user_id ON public.account_memberships (login_user_id);
+
+SELECT public.apply_audit_trail('public.account_memberships');
+
+ALTER TABLE public.account_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.account_memberships FORCE ROW LEVEL SECURITY;
+
+GRANT SELECT ON public.account_memberships TO authenticated;
+GRANT ALL ON public.account_memberships TO service_role;
+REVOKE ALL ON TABLE public.account_memberships FROM anon;
+
+COMMENT ON TABLE public.account_memberships IS
+  'Links an auth login to one or more person profiles. Exactly one owner per login.';
+
+CREATE OR REPLACE FUNCTION public.current_profile_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (
+      SELECT m.profile_id
+      FROM public.account_memberships m
+      WHERE m.login_user_id = auth.uid()
+        AND m.profile_id = NULLIF(auth.jwt() -> 'app_metadata' ->> 'active_profile_id', '')::uuid
+      LIMIT 1
+    ),
+    (
+      SELECT m.profile_id
+      FROM public.account_memberships m
+      WHERE m.login_user_id = auth.uid()
+        AND m.role = 'owner'
+      LIMIT 1
+    ),
+    auth.uid()
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.current_profile_id() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.current_profile_id() TO authenticated;
+
+COMMENT ON FUNCTION public.current_profile_id() IS
+  'Active person id for RLS: app_metadata.active_profile_id when it matches a live membership; else owner membership; else auth.uid().';
+
+CREATE OR REPLACE FUNCTION private.has_profile_membership(_profile_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+SET row_security = off
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.account_memberships m
+    WHERE m.login_user_id = public.current_user_id()
+      AND m.profile_id = _profile_id
+  );
+$$;
+
+ALTER FUNCTION private.has_profile_membership(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.has_profile_membership(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.has_profile_membership(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.has_profile_membership(uuid) TO authenticated;
 
 -- =============================================================================
 -- SECTION 4: ROLE HELPER FUNCTIONS (HARDENED)
@@ -425,6 +513,13 @@ ALTER FUNCTION public.is_admin() OWNER TO postgres;
 ALTER FUNCTION public.is_staff() OWNER TO postgres;
 ALTER FUNCTION public.is_privileged() OWNER TO postgres;
 
+CREATE POLICY account_memberships_select
+ON public.account_memberships FOR SELECT TO authenticated
+USING (
+  login_user_id = public.current_user_id()
+  OR public.is_privileged()
+);
+
 -- =============================================================================
 -- SECTION 4b: AUTHORIZATION HELPER FUNCTIONS
 -- =============================================================================
@@ -469,8 +564,9 @@ BEGIN
     CREATE POLICY profiles_select
     ON public.profiles FOR SELECT TO authenticated
     USING (
-      public.current_user_id() = user_id
+      user_id = public.current_profile_id()
       OR public.is_privileged()
+      OR private.has_profile_membership(user_id)
     );
   END IF;
 END $$;
@@ -485,19 +581,21 @@ BEGIN
     CREATE POLICY profiles_update
     ON public.profiles FOR UPDATE TO authenticated
     USING (
-      public.current_user_id() = user_id
+      user_id = public.current_profile_id()
+      OR private.has_profile_membership(user_id)
       OR public.is_admin() OR public.is_site_admin()
     )
     WITH CHECK (
-      public.current_user_id() = user_id
+      user_id = public.current_profile_id()
+      OR private.has_profile_membership(user_id)
       OR public.is_admin() OR public.is_site_admin()
     );
   END IF;
 END $$;
 
--- No INSERT policy on purpose: clients cannot INSERT into profiles; rows are created only by
--- public.handle_new_user() (trigger on auth.users). This is intentional, not an oversight.
--- No DELETE policy on purpose: profiles are removed via ON DELETE CASCADE from auth.users.
+-- No INSERT policy on purpose: clients cannot INSERT into profiles; owner rows come from
+-- handle_new_user(), member rows from service role / edge / import.
+-- No DELETE policy on purpose: owner profiles removed via handle_auth_user_deleted; members cascade from memberships.
 
 -- =============================================================================
 -- SECTION 6: RLS POLICIES - USER_ROLES
@@ -661,9 +759,11 @@ SET search_path = public
 SET row_security = off
 AS $$
 BEGIN
-  NEW.email := coalesce(public.normalize_trim_text(NEW.email), '');
-  IF NEW.email = '' THEN
-    RAISE EXCEPTION 'profiles.email cannot be blank';
+  NEW.email := public.normalize_trim_text(NEW.email);
+  IF NEW.email IS NULL THEN
+    IF EXISTS (SELECT 1 FROM auth.users u WHERE u.id = NEW.user_id) THEN
+      RAISE EXCEPTION 'profiles.email cannot be blank';
+    END IF;
   END IF;
 
   NEW.first_name := public.normalize_compact_text(NEW.first_name);
@@ -689,6 +789,7 @@ FOR EACH ROW
 EXECUTE FUNCTION public.normalize_profiles_text_fields();
 
 -- email immutable (but allow internal auth trigger sync)
+-- Owner profiles: email mirrors auth. Member profiles (no auth row): email must stay NULL.
 CREATE OR REPLACE FUNCTION public.prevent_profile_email_change()
 RETURNS TRIGGER
 LANGUAGE plpgsql
@@ -697,17 +798,25 @@ SET search_path = public
 SET row_security = off
 AS $$
 BEGIN
-  IF NEW.email IS DISTINCT FROM OLD.email THEN
-    -- Single source of truth: profile email must always match auth.users (sync via handle_auth_user_email_update).
-    -- Compare trimmed auth email so normalize_profiles_text_fields and auth stay compatible.
-    IF NEW.email IS DISTINCT FROM (
-      SELECT coalesce(public.normalize_trim_text(u.email), '')
-      FROM auth.users u
-      WHERE u.id = NEW.user_id
-    ) THEN
-      RAISE EXCEPTION 'profiles.email is read-only; it follows your auth email';
-    END IF;
+  IF NEW.email IS NOT DISTINCT FROM OLD.email THEN
+    RETURN NEW;
   END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM auth.users u WHERE u.id = NEW.user_id) THEN
+    IF NEW.email IS NOT NULL THEN
+      RAISE EXCEPTION 'member profiles.email must be null';
+    END IF;
+    RETURN NEW;
+  END IF;
+
+  IF NEW.email IS DISTINCT FROM (
+    SELECT coalesce(public.normalize_trim_text(u.email), '')
+    FROM auth.users u
+    WHERE u.id = NEW.user_id
+  ) THEN
+    RAISE EXCEPTION 'profiles.email is read-only; it follows your auth email';
+  END IF;
+
   RETURN NEW;
 END;
 $$;
@@ -736,13 +845,13 @@ SET search_path = public
 SET row_security = off
 AS $$
 BEGIN
-  -- use raw_user_meta_data.first_name and last_name (can be NULL) for atomic setting of profile name
-  -- profiles.normalize_profiles_text_fields trims/nullifies these on insert
   INSERT INTO public.profiles (user_id, email, first_name, last_name)
   VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'last_name')
   ON CONFLICT (user_id) DO NOTHING;
 
-  -- No role is assigned here. Users without a role in user_roles are regular users.
+  INSERT INTO public.account_memberships (login_user_id, profile_id, role)
+  VALUES (NEW.id, NEW.id, 'owner')
+  ON CONFLICT (login_user_id, profile_id) DO NOTHING;
 
   RETURN NEW;
 END;
@@ -756,6 +865,43 @@ CREATE TRIGGER on_auth_user_created
 AFTER INSERT ON auth.users
 FOR EACH ROW
 EXECUTE FUNCTION public.handle_new_user();
+
+CREATE OR REPLACE FUNCTION public.handle_auth_user_deleted()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+DECLARE
+  member_ids uuid[];
+BEGIN
+  SELECT coalesce(array_agg(profile_id), '{}')
+  INTO member_ids
+  FROM public.account_memberships
+  WHERE login_user_id = OLD.id
+    AND role = 'member';
+
+  DELETE FROM public.account_memberships WHERE login_user_id = OLD.id;
+  DELETE FROM public.profiles WHERE user_id = OLD.id;
+
+  IF cardinality(member_ids) > 0 THEN
+    DELETE FROM public.profiles WHERE user_id = ANY (member_ids);
+  END IF;
+
+  RETURN OLD;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.handle_auth_user_deleted() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.handle_auth_user_deleted() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.handle_auth_user_deleted() FROM authenticated;
+
+DROP TRIGGER IF EXISTS on_auth_user_deleted ON auth.users;
+CREATE TRIGGER on_auth_user_deleted
+BEFORE DELETE ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_auth_user_deleted();
 
 -- sync email updates
 CREATE OR REPLACE FUNCTION public.handle_auth_user_email_update()

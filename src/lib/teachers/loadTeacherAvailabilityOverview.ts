@@ -50,7 +50,7 @@ const EMPTY_PROFILE = {
 
 function buildTeacherAvailabilityOverviewTeachers(
 	teacherRows: { user_id: string }[],
-	profiles: { user_id: string; first_name: string | null; last_name: string | null; email: string }[],
+	profiles: { user_id: string; first_name: string | null; last_name: string | null; email: string | null }[],
 ): TeacherAvailabilityOverviewTeacher[] {
 	const profileMap = new Map(profiles.map((profile) => [profile.user_id, profile]));
 	return teacherRows.map((teacher) => {
@@ -61,7 +61,7 @@ function buildTeacherAvailabilityOverviewTeachers(
 				? {
 						first_name: profile.first_name,
 						last_name: profile.last_name,
-						email: profile.email,
+						email: profile.email ?? '',
 					}
 				: EMPTY_PROFILE,
 		};

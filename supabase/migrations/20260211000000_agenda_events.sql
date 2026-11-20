@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.agenda_events (
   source_id UUID, -- lesson_agreements(id) or projects(id) depending on source_type; cascade via trigger
 
   -- Owner: for RLS (creator for manual, teacher for lesson_agreement)
-  owner_user_id UUID NOT NULL REFERENCES auth.users(id),
+  owner_user_id UUID NOT NULL REFERENCES public.profiles(user_id),
 
   -- Event details
   title TEXT NOT NULL,
@@ -151,7 +151,7 @@ CREATE TRIGGER trg_cascade_delete_agenda_events_lesson_agreement
 CREATE TABLE IF NOT EXISTS public.agenda_participants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_id UUID NOT NULL REFERENCES public.agenda_events(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(user_id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT agenda_participants_unique UNIQUE (event_id, user_id)
@@ -350,7 +350,7 @@ AS $$
     FROM public.agenda_events
     WHERE id = ev_id
       AND (
-        owner_user_id = public.current_user_id()
+        owner_user_id = public.current_profile_id()
         OR public.is_privileged()
       )
   );
@@ -387,8 +387,8 @@ GRANT EXECUTE ON FUNCTION private.is_agenda_participant(uuid, uuid) TO authentic
 CREATE POLICY agenda_events_select
 ON public.agenda_events FOR SELECT TO authenticated
 USING (
-  owner_user_id = public.current_user_id()
-  OR private.is_agenda_participant(agenda_events.id, public.current_user_id())
+  owner_user_id = public.current_profile_id()
+  OR private.is_agenda_participant(agenda_events.id, public.current_profile_id())
   OR public.is_privileged()
 );
 
@@ -396,25 +396,25 @@ USING (
 -- Restrict: user can only insert events where they are owner, or privileged
 CREATE POLICY agenda_events_insert
 ON public.agenda_events FOR INSERT TO authenticated
-WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged());
+WITH CHECK (owner_user_id = public.current_profile_id() OR public.is_privileged());
 
 -- agenda_events: UPDATE/DELETE only owner or privileged
 CREATE POLICY agenda_events_update
 ON public.agenda_events FOR UPDATE TO authenticated
-USING (owner_user_id = public.current_user_id() OR public.is_privileged())
-WITH CHECK (owner_user_id = public.current_user_id() OR public.is_privileged());
+USING (owner_user_id = public.current_profile_id() OR public.is_privileged())
+WITH CHECK (owner_user_id = public.current_profile_id() OR public.is_privileged());
 
 CREATE POLICY agenda_events_delete
 ON public.agenda_events FOR DELETE TO authenticated
-USING (owner_user_id = public.current_user_id() OR public.is_privileged());
+USING (owner_user_id = public.current_profile_id() OR public.is_privileged());
 
 -- agenda_participants: SELECT own rows, or event owner, or privileged (use helper to avoid RLS recursion)
 CREATE POLICY agenda_participants_select
 ON public.agenda_participants FOR SELECT TO authenticated
 USING (
-  user_id = public.current_user_id()
+  user_id = public.current_profile_id()
   OR public.is_privileged()
-  OR private.get_agenda_event_owner(event_id) = public.current_user_id()
+  OR private.get_agenda_event_owner(event_id) = public.current_profile_id()
 );
 
 -- agenda_participants: INSERT only event owner or privileged
@@ -427,10 +427,10 @@ WITH CHECK (
   public.is_privileged()
   OR (
     -- Event owner can add participants...
-    private.get_agenda_event_owner(event_id) = public.current_user_id()
+    private.get_agenda_event_owner(event_id) = public.current_profile_id()
     AND (
       -- ...owner can always add themselves
-      user_id = public.current_user_id()
+      user_id = public.current_profile_id()
       -- ...or add non-teachers
       OR NOT private.is_teacher(user_id)
     )
@@ -451,7 +451,7 @@ USING (private.can_manage_agenda_event(event_id));
 CREATE POLICY agenda_event_deviations_select
 ON public.agenda_event_deviations FOR SELECT TO authenticated
 USING (
-  private.is_agenda_participant(agenda_event_deviations.event_id, public.current_user_id())
+  private.is_agenda_participant(agenda_event_deviations.event_id, public.current_profile_id())
   OR public.is_privileged()
 );
 
@@ -659,7 +659,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_profile_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -732,7 +732,7 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Agenda event not found for deviation: %', p_deviation_id;
   END IF;
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_profile_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 
@@ -790,7 +790,7 @@ BEGIN
     RAISE EXCEPTION 'Agenda event not found: %', p_event_id;
   END IF;
 
-  IF v_ev.owner_user_id IS DISTINCT FROM public.current_user_id() AND NOT public.is_privileged() THEN
+  IF v_ev.owner_user_id IS DISTINCT FROM public.current_profile_id() AND NOT public.is_privileged() THEN
     RAISE EXCEPTION 'Permission denied';
   END IF;
 

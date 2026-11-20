@@ -133,7 +133,7 @@ BEGIN
       SELECT 1
       FROM public.lesson_agreements la
       WHERE la.id = _agreement_id
-        AND la.student_user_id = public.current_user_id()
+        AND la.student_user_id = public.current_profile_id()
     )
   ) THEN
     RAISE EXCEPTION 'Permission denied' USING ERRCODE = '42501';
@@ -625,7 +625,7 @@ BEGIN
   END;
 
   v_is_privileged := public.is_privileged();
-  v_caller_id := public.current_user_id();
+  v_caller_id := public.current_profile_id();
   v_teacher_id := private.get_teacher_user_id(v_caller_id);
 
   v_needs_profile_filter :=
@@ -822,4 +822,4 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type (thin id-first when no name search/sort). SECURITY DEFINER so list scans skip FORCE RLS; access matches lesson_agreements_select via is_privileged()/current_user_id()/private.get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_lesson_agreements_paginated.test.ts.';
+COMMENT ON FUNCTION get_lesson_agreements_paginated IS 'Get paginated lesson agreements with student/teacher profiles and lesson type (thin id-first when no name search/sort). SECURITY DEFINER so list scans skip FORCE RLS; access matches lesson_agreements_select via is_privileged()/current_profile_id()/private.get_teacher_user_id() in the query body. Verified by tests/rls/pagination/get_lesson_agreements_paginated.test.ts.';

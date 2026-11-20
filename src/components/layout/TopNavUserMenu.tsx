@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LuLogOut, LuMoon, LuSearch, LuSettings, LuSquareSlash, LuSun } from 'react-icons/lu';
+import { LuLogOut, LuMoon, LuSearch, LuSettings, LuSquareSlash, LuSun, LuUsers } from 'react-icons/lu';
 import { ChangelogDialog } from '@/components/layout/ChangelogDialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,9 @@ interface TopNavUserMenuProps {
 	avatarUrl: string | null | undefined;
 	resolvedTheme: string;
 	showAppVersion: boolean;
+	canSwitchProfile: boolean;
 	onNavigateSettings: () => void;
+	onSwitchProfile: () => void;
 	onSignOut: () => void;
 	onToggleTheme: () => void;
 }
@@ -130,7 +132,9 @@ export function TopNavUserMenu({
 	avatarUrl,
 	resolvedTheme,
 	showAppVersion,
+	canSwitchProfile,
 	onNavigateSettings,
+	onSwitchProfile,
 	onSignOut,
 	onToggleTheme,
 }: TopNavUserMenuProps) {
@@ -158,6 +162,12 @@ export function TopNavUserMenu({
 						<LuSettings className="mr-2 h-4 w-4" />
 						<span>Accountinstellingen</span>
 					</DropdownMenuItem>
+					{canSwitchProfile ? (
+						<DropdownMenuItem onClick={onSwitchProfile}>
+							<LuUsers className="mr-2 h-4 w-4" />
+							<span>Profiel wisselen</span>
+						</DropdownMenuItem>
+					) : null}
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={onSignOut}>
 						<LuLogOut className="mr-2 h-4 w-4" />

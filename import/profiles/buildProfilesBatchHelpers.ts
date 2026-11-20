@@ -43,6 +43,8 @@ function mergeIntoPerson(existing: ProfileSqlRow, incoming: ProfileMergeIncoming
 	return {
 		userId: existing.userId,
 		email: existing.email,
+		loginUserId: existing.loginUserId,
+		membershipRole: existing.membershipRole,
 		firstName: coalesceNull(existing.firstName, incoming.firstName),
 		lastName: coalesceNull(existing.lastName, incoming.lastName),
 		phoneNumber: coalesceNull(existing.phoneNumber, incoming.phoneNumber),
@@ -58,10 +60,18 @@ function mergeIntoPerson(existing: ProfileSqlRow, incoming: ProfileMergeIncoming
 	};
 }
 
-function personFromTeacher(userId: string, row: MappedTeacherRow): ProfileSqlRow {
+function personFromMappedRow(
+	userId: string,
+	row: MappedPersonImportRowBase,
+	loginUserId: string,
+	membershipRole: 'owner' | 'member',
+	roles: Pick<ProfileSqlRow, 'isTeacher' | 'isStudent' | 'cocIssuedOn' | 'dateOfBirth'>,
+): ProfileSqlRow {
 	return {
 		userId,
 		email: row.email,
+		loginUserId,
+		membershipRole,
 		firstName: row.firstName,
 		lastName: row.lastName,
 		phoneNumber: row.phoneNumber,
@@ -70,30 +80,36 @@ function personFromTeacher(userId: string, row: MappedTeacherRow): ProfileSqlRow
 		postalCode: row.postalCode,
 		city: row.city,
 		countryCode: row.countryCode,
+		...roles,
+	};
+}
+
+function personFromTeacher(
+	userId: string,
+	row: MappedTeacherRow,
+	loginUserId: string,
+	membershipRole: 'owner' | 'member',
+): ProfileSqlRow {
+	return personFromMappedRow(userId, row, loginUserId, membershipRole, {
 		isTeacher: true,
 		isStudent: false,
 		cocIssuedOn: row.cocIssuedOn,
 		dateOfBirth: null,
-	};
+	});
 }
 
-function personFromStudent(userId: string, row: MappedStudentRow): ProfileSqlRow {
-	return {
-		userId,
-		email: row.email,
-		firstName: row.firstName,
-		lastName: row.lastName,
-		phoneNumber: row.phoneNumber,
-		streetName: row.streetName,
-		houseNumber: row.houseNumber,
-		postalCode: row.postalCode,
-		city: row.city,
-		countryCode: row.countryCode,
+function personFromStudent(
+	userId: string,
+	row: MappedStudentRow,
+	loginUserId: string,
+	membershipRole: 'owner' | 'member',
+): ProfileSqlRow {
+	return personFromMappedRow(userId, row, loginUserId, membershipRole, {
 		isTeacher: false,
 		isStudent: true,
 		cocIssuedOn: null,
 		dateOfBirth: row.dateOfBirth,
-	};
+	});
 }
 
 function peekPersonFields(doc: unknown): {
@@ -170,6 +186,8 @@ type ProfilesBatchState = {
 	skippedKeySet: Set<string>;
 	ignoredKeySet: Set<string>;
 	identityIndex: Map<string, string>;
+	/** Lowercase source email → owner person / login user id. */
+	emailLoginOwners: Map<string, string>;
 	emailState: ImportEmailDedupState;
 	createId: () => string;
 };
@@ -211,8 +229,31 @@ type IngestPersonDocConfig<TRow extends MappedPersonImportRowBase> = {
 	) => PersonMapResult<TRow>;
 	warningsForRow: (row: TRow) => string[];
 	mergeIncoming: (row: TRow) => ProfileMergeIncoming;
-	personFromRow: (userId: string, row: TRow) => ProfileSqlRow;
+	personFromRow: (
+		userId: string,
+		row: TRow,
+		loginUserId: string,
+		membershipRole: 'owner' | 'member',
+	) => ProfileSqlRow;
 };
+
+function resolveMembership(
+	state: ProfilesBatchState,
+	row: MappedPersonImportRowBase,
+	userId: string,
+	rawEmail: string | null,
+): { loginUserId: string; membershipRole: 'owner' | 'member' } {
+	if (row.emailKind === 'shared_member' && rawEmail != null) {
+		const ownerId = state.emailLoginOwners.get(rawEmail.toLowerCase());
+		if (ownerId != null) {
+			return { loginUserId: ownerId, membershipRole: 'member' };
+		}
+	}
+	if (rawEmail != null) {
+		state.emailLoginOwners.set(rawEmail.toLowerCase(), userId);
+	}
+	return { loginUserId: userId, membershipRole: 'owner' };
+}
 
 function ingestPersonDoc<TRow extends MappedPersonImportRowBase>(
 	state: ProfilesBatchState,
@@ -244,11 +285,16 @@ function ingestPersonDoc<TRow extends MappedPersonImportRowBase>(
 	});
 	state.idMap = resolved.idMap;
 
+	const membership = resolveMembership(state, mapped.row, resolved.userId, peek.rawEmail);
+
 	const existing = state.people.get(resolved.userId);
 	if (existing) {
 		state.people.set(resolved.userId, mergeIntoPerson(existing, config.mergeIncoming(mapped.row)));
 	} else {
-		state.people.set(resolved.userId, config.personFromRow(resolved.userId, mapped.row));
+		state.people.set(
+			resolved.userId,
+			config.personFromRow(resolved.userId, mapped.row, membership.loginUserId, membership.membershipRole),
+		);
 	}
 
 	registerIdentity(state.identityIndex, peek.rawEmail, mapped.row.firstName, mapped.row.lastName, resolved.userId);
@@ -282,10 +328,14 @@ function ingestStudentDoc(state: ProfilesBatchState, doc: unknown): void {
 	});
 }
 
+function profileSortKey(row: ProfileSqlRow): string {
+	return `${row.email ?? ''}\0${row.userId}`;
+}
+
 /**
  * Map teachers then students into profile rows.
- * Same email + same name (trim/lcase) → one user (null fields filled from either side).
- * Same email + different name → `duplicate_N_…` and a separate user.
+ * Same email + same name (trim/lcase) → one user.
+ * Same email + different name → shared login (owner + members).
  */
 export function buildProfilesBatch(
 	teacherDocs: unknown[],
@@ -300,6 +350,7 @@ export function buildProfilesBatch(
 		skippedKeySet: new Set(),
 		ignoredKeySet: new Set(),
 		identityIndex: new Map(),
+		emailLoginOwners: new Map(),
 		emailState: createImportEmailDedupState(),
 		createId,
 	};
@@ -313,6 +364,6 @@ export function buildProfilesBatch(
 	}
 
 	assignSortedReportKeys(state.report, state.skippedKeySet, state.ignoredKeySet);
-	const sqlRows = [...state.people.values()].sort((a, b) => a.email.localeCompare(b.email));
+	const sqlRows = [...state.people.values()].sort((a, b) => profileSortKey(a).localeCompare(profileSortKey(b)));
 	return { idMap: state.idMap, sqlRows, report: state.report };
 }

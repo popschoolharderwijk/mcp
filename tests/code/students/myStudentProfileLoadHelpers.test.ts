@@ -15,7 +15,13 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 		from: (table: string) => ({
 			select: () => ({
 				eq: () => ({
-					single: () => Promise.resolve(table === 'students' ? studentResult : profileResult),
+					limit: () => {
+						const result = table === 'students' ? studentResult : profileResult;
+						return Promise.resolve({
+							data: result.data ? [result.data] : [],
+							error: result.error,
+						});
+					},
 				}),
 			}),
 		}),
@@ -90,6 +96,11 @@ describe('loadMyStudentProfileData', () => {
 	it('returns error when student lookup fails', async () => {
 		studentResult = { data: null, error: { message: 'missing student' } };
 		expect(await loadMyStudentProfileData('user-1')).toEqual({ kind: 'error' });
+	});
+
+	it('returns not-found when there is no students row', async () => {
+		studentResult = { data: null, error: null };
+		expect(await loadMyStudentProfileData('user-1')).toEqual({ kind: 'not-found' });
 	});
 });
 

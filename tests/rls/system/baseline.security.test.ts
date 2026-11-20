@@ -120,7 +120,7 @@ const EXPECTED_POLICIES: Record<string, string[]> = {
 		// teachers can view students they have a lesson_agreement with
 		'students_select',
 		// UPDATE policy - admin can update student notes
-		'students_update_admin',
+		'students_update',
 		// No INSERT/DELETE policies - students are managed via triggers
 	],
 	agenda_events: [

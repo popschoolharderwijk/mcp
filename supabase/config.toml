@@ -226,6 +226,9 @@ verify_jwt = false
 [functions.create-student]
 verify_jwt = false
 
+[functions.switch-profile]
+verify_jwt = false
+
 # Stripe webhook is publiek — signature wordt in de function geverifieerd
 [functions.stripe-webhook]
 verify_jwt = false

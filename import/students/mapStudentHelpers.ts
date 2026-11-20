@@ -59,7 +59,7 @@ export function studentRowWarningReasons(row: MappedStudentRow): string[] {
 }
 
 export type MapStudentDocOptions = {
-	/** Keep source email (no duplicate_N_); same name+email as an existing profile. */
+	/** Keep source email (no shared_member); same name+email as an existing profile. */
 	keepExistingEmail?: boolean;
 };
 
@@ -94,6 +94,7 @@ export function mapStudentDoc(
 	const row: MappedStudentRow = {
 		mongoOid,
 		email: allocated.email,
+		emailKind: allocated.kind,
 		emailWarning: allocated.warning,
 		firstName: normalizeCompactTextOrNull(asOptionalString(student.name)),
 		lastName: normalizeCompactTextOrNull(asOptionalString(student.surname)),

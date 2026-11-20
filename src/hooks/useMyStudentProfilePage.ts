@@ -9,26 +9,26 @@ import {
 } from '@/lib/students/myStudentProfileLoadHelpers';
 
 export function useMyStudentProfilePage() {
-	const { user, isLoading: authLoading } = useAuth();
+	const { user, activeProfileId, isLoading: authLoading } = useAuth();
 	const [loading, setLoading] = useState(true);
 	const [profile, setProfile] = useState<MyStudentProfileData | null>(null);
 	const [agreements, setAgreements] = useState<LessonAgreement[]>([]);
 	const [signupRequests, setSignupRequests] = useState<SignupRequestDetail[]>([]);
 
 	const loadProfile = useCallback(async () => {
-		if (!user) return;
+		if (!activeProfileId) return;
 
 		setLoading(true);
-		const outcome = await loadMyStudentProfileData(user.id);
+		const outcome = await loadMyStudentProfileData(activeProfileId);
 		applyMyStudentProfileLoadOutcome(outcome, setProfile, setAgreements, setSignupRequests);
 		setLoading(false);
-	}, [user]);
+	}, [activeProfileId]);
 
 	useEffect(() => {
-		if (!authLoading && user) {
+		if (!authLoading && activeProfileId) {
 			void loadProfile();
 		}
-	}, [authLoading, user, loadProfile]);
+	}, [authLoading, activeProfileId, loadProfile]);
 
 	return {
 		user,

@@ -87,7 +87,7 @@ export function buildSignupApplicantMap(
 ): Map<string, SignupApplicantProfile> {
 	const applicants = new Map<string, SignupApplicantProfile>();
 	for (const profile of profiles ?? []) {
-		const email = profile.email.trim().toLowerCase();
+		const email = (profile.email ?? '').trim().toLowerCase();
 		if (!email || applicants.has(email)) continue;
 		applicants.set(email, profile);
 	}

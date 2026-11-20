@@ -50,8 +50,8 @@ if (projectsError || !allProjects) {
 	throw new Error(`Failed to fetch projects: ${projectsError?.message}`);
 }
 
-// Build lookup maps for fast access
-const profileByEmail = new Map(allProfiles.map((p) => [p.email, p]));
+// Build lookup maps for fast access (member profiles may have null email)
+const profileByEmail = new Map(allProfiles.filter((p) => p.email != null).map((p) => [p.email as string, p]));
 const studentByUserId = new Map(allStudents.map((s) => [s.user_id, s]));
 const teacherByUserId = new Map(allTeachers.map((t) => [t.user_id, t]));
 

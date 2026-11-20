@@ -109,11 +109,15 @@ export const LESSON_TYPE_OPTIONS = {
  */
 export const LESSON_AGREEMENTS = {
 	// Total number of lesson agreements in seed data
-	// 8 (Bandcoaching) + 12 (Alice) + 12 (Bob) + 12 (Charlie) + 8 (Diana) + 12 (Frank) + 12 (Grace) + 12 (Henry) + 12 (Iris) = 100
-	TOTAL: 100,
+	// 8 (Bandcoaching) + 12 (Alice classic) + 12 (Bob) + 12 (Charlie) + 8 (Diana) + 12 (Frank) + 12 (Grace) + 12 (Henry) + 12 (Iris)
+	// + 4 shared-login family (Karin 1 + Emma 1 + Lars 2) = 104
+	TOTAL: 104,
 
 	// Per teacher (from seeds/test.sql)
-	TEACHER_ALICE: 12, // students 009-020 (Gitaar 6, Drums 6)
+	/** Classic Alice agreements with student-009..020 (email fixtures). */
+	TEACHER_ALICE_CLASSIC_STUDENTS: 12,
+	/** All Alice agreements including shared-login family (4). */
+	TEACHER_ALICE: 16,
 	TEACHER_BOB: 12, // students 021-032 (Bas 6, Keyboard 6)
 	TEACHER_CHARLIE: 12, // students 033-044 (Saxofoon 12)
 	TEACHER_DIANA: 8, // students 045-052 (DJ/Beats 8, 45 min lessons)
@@ -192,9 +196,31 @@ export const TEACHER_VIEWED_BY_STUDENT = {
  */
 export const STUDENTS = {
 	// Total number of students in seed data
-	TOTAL: 60, // students 001-060
+	TOTAL: 63, // students 001-060 + shared-login parent Karin + 2 children
+	/** Students with their own login email (student-*@test.nl) */
+	WITH_OWN_LOGIN: 60,
 	/** First email when sorted by display_name ASC (Adam van der Wal) */
 	FIRST_EMAIL_BY_DISPLAY_NAME_ASC: 'student-017@test.nl',
+} as const;
+
+/**
+ * Shared-login family from supabase/seeds/test.sql (parent + two children).
+ * Login: parent-shared@test.nl / password
+ */
+export const SHARED_LOGIN_FAMILY = {
+	PARENT_USER_ID: '78000000-0001-0000-0000-000000000000',
+	PARENT_EMAIL: 'parent-shared@test.nl',
+	CHILD_EMMA_USER_ID: '78000000-0002-0000-0000-000000000000',
+	CHILD_LARS_USER_ID: '78000000-0003-0000-0000-000000000000',
+	MEMBER_COUNT: 2,
+	/** Owner + two members */
+	MEMBERSHIP_COUNT: 3,
+	/** Karin 1 + Emma 1 + Lars 2 */
+	AGREEMENT_COUNT: 4,
+	PARENT_AGREEMENT_COUNT: 1,
+	EMMA_AGREEMENT_COUNT: 1,
+	LARS_AGREEMENT_COUNT: 2,
+	KIDS_AGREEMENT_COUNT: 3,
 } as const;
 
 /**
@@ -230,9 +256,10 @@ export const TEACHERS = {
  */
 export const AGENDA_EVENTS = {
 	// manual + lesson_agreement + project appointments (4 projects × 3 slots in seed)
-	TOTAL: 146,
+	// +4 lesson_agreement events from shared-login family agreements (trigger)
+	TOTAL: 150,
 	MANUAL_TOTAL: 42,
-	LESSON_AGREEMENT_TOTAL: 92,
+	LESSON_AGREEMENT_TOTAL: 96,
 	PROJECT_TOTAL: 12,
 
 	// Participations per student (agenda_participants rows)
@@ -243,7 +270,8 @@ export const AGENDA_EVENTS = {
 	NON_PARTICIPATING_MANUAL_FOR_STUDENT_002: 41,
 
 	// Teacher Alice owned: lesson_agreement + manual + 3× project (Ballet Beginners owner)
-	TEACHER_ALICE_OWNED: 18,
+	// +4 shared-login family lesson_agreement events
+	TEACHER_ALICE_OWNED: 22,
 } as const;
 
 /**
@@ -265,15 +293,17 @@ export const USER_ROLES = {
  * Users counts
  */
 export const USERS = {
-	// Total number of users in seed data
-	TOTAL: 88, // 1 site_admin, 2 admins, 5 staff, 10 teachers, 60 students, 10 users without role
+	// Total profiles in seed data (auth logins + shared-login member profiles)
+	TOTAL: 91, // 88 classic + 1 parent login + 2 member children
+	/** auth.users rows (every login credential) */
+	AUTH_LOGINS: 89, // 88 classic + 1 shared-login parent
 	// Per role (from seeds/test.sql)
 	SITE_ADMIN: 1,
 	ADMIN: 2,
 	STAFF: 5,
-	// Users without app_role (teachers, students, and regular users)
-	// 10 teachers + 60 students + 10 users without role = 80
-	WITHOUT_ROLE: 80,
+	// Profiles without app_role (teachers, students, plain users, shared-login family)
+	// 10 teachers + 60 student-logins + 10 plain + 1 parent + 2 member children = 83
+	WITHOUT_ROLE: 83,
 	/** Profiles matching user-*.test.nl (no teacher/student row, no user_roles) */
 	PLAIN_USERS: 10,
 	/** First email when sorted by display_name ASC (Adam van der Wal) */

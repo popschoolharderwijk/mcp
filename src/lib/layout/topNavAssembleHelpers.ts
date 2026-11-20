@@ -22,6 +22,8 @@ export interface TopNavHookInput {
 	navigate: NavigateFunction;
 	signOut: () => Promise<void>;
 	setTheme: (theme: 'light' | 'dark') => void;
+	membershipCount: number;
+	onSwitchProfile: () => void;
 }
 
 export function assembleTopNavHookResult(input: TopNavHookInput) {
@@ -33,21 +35,25 @@ export function assembleTopNavHookResult(input: TopNavHookInput) {
 		input.setTheme,
 	);
 
-	return buildTopNavHookState(
-		{
-			open: input.open,
-			setOpen: input.setOpen,
-			breadcrumbItems: input.breadcrumbItems,
-			displayName: formatTopNavDisplayName(input.profile, input.userEmail),
-			email: input.userEmail,
-			roleLabel: formatTopNavRoleLabel(input.role),
-			userInitialsInput,
-			avatarUrl: input.profile?.avatar_url,
-			resolvedTheme: input.resolvedTheme,
-			showAppVersion: canViewAppVersion(input.isAdmin, input.isSiteAdmin),
-		},
-		navigationCallbacks,
-	);
+	return {
+		...buildTopNavHookState(
+			{
+				open: input.open,
+				setOpen: input.setOpen,
+				breadcrumbItems: input.breadcrumbItems,
+				displayName: formatTopNavDisplayName(input.profile, input.userEmail),
+				email: input.userEmail,
+				roleLabel: formatTopNavRoleLabel(input.role),
+				userInitialsInput,
+				avatarUrl: input.profile?.avatar_url,
+				resolvedTheme: input.resolvedTheme,
+				showAppVersion: canViewAppVersion(input.isAdmin, input.isSiteAdmin),
+			},
+			navigationCallbacks,
+		),
+		canSwitchProfile: input.membershipCount > 1,
+		onSwitchProfile: input.onSwitchProfile,
+	};
 }
 
 export function resolveTopNavBreadcrumbItems(
