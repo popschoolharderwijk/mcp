@@ -10,43 +10,52 @@ interface ThemeProviderContextType {
 
 const ThemeProviderContext = createContext<ThemeProviderContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'popschool-theme';
+const THEME_STORAGE_KEY = 'mplifi-theme';
+const THEME_VALUES: ReadonlySet<string> = new Set(['light', 'dark', 'system']);
 
 function getSystemTheme(): 'light' | 'dark' {
 	if (typeof window === 'undefined') return 'dark';
 	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-export function ThemeProvider({ children, defaultTheme = 'system' }: { children: ReactNode; defaultTheme?: Theme }) {
-	const [theme, setThemeState] = useState<Theme>(() => {
-		if (typeof window === 'undefined') return defaultTheme;
-		return (localStorage.getItem(STORAGE_KEY) as Theme) || defaultTheme;
-	});
+function applyDocumentTheme(theme: Theme): 'light' | 'dark' {
+	const root = document.documentElement;
+	root.classList.remove('light', 'dark');
+	const resolved = theme === 'system' ? getSystemTheme() : theme;
+	root.classList.add(resolved);
 
-	const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => {
-		if (theme === 'system') return getSystemTheme();
-		return theme;
-	});
+	const meta = document.querySelector('meta[name="color-scheme"]');
+	if (meta) {
+		meta.setAttribute('content', theme === 'system' ? 'light dark' : theme);
+	}
+
+	return resolved;
+}
+
+function readThemeFromStorage(defaultTheme: Theme): Theme {
+	if (typeof window === 'undefined') return defaultTheme;
+	const stored = localStorage.getItem(THEME_STORAGE_KEY);
+	if (!stored || !THEME_VALUES.has(stored)) return defaultTheme;
+	return stored as Theme;
+}
+
+export function ThemeProvider({ children, defaultTheme = 'system' }: { children: ReactNode; defaultTheme?: Theme }) {
+	const [theme, setThemeState] = useState<Theme>(() => readThemeFromStorage(defaultTheme));
+
+	const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() =>
+		theme === 'system' ? getSystemTheme() : theme,
+	);
 
 	useEffect(() => {
-		const root = window.document.documentElement;
-		root.classList.remove('light', 'dark');
-
-		const resolved = theme === 'system' ? getSystemTheme() : theme;
-		root.classList.add(resolved);
-		setResolvedTheme(resolved);
+		setResolvedTheme(applyDocumentTheme(theme));
 	}, [theme]);
 
-	// Listen for system theme changes
 	useEffect(() => {
 		if (theme !== 'system') return;
 
 		const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 		const handleChange = () => {
-			const resolved = getSystemTheme();
-			setResolvedTheme(resolved);
-			document.documentElement.classList.remove('light', 'dark');
-			document.documentElement.classList.add(resolved);
+			setResolvedTheme(applyDocumentTheme('system'));
 		};
 
 		mediaQuery.addEventListener('change', handleChange);
@@ -54,7 +63,11 @@ export function ThemeProvider({ children, defaultTheme = 'system' }: { children:
 	}, [theme]);
 
 	const setTheme = (newTheme: Theme) => {
-		localStorage.setItem(STORAGE_KEY, newTheme);
+		if (newTheme === 'system') {
+			localStorage.removeItem(THEME_STORAGE_KEY);
+		} else {
+			localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+		}
 		setThemeState(newTheme);
 	};
 

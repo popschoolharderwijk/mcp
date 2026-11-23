@@ -54,6 +54,10 @@ Do **not** silence Fallow with weak tests. Forbidden examples (also in [`review.
 * Asserting only Tailwind/CSS class strings
 * Identity / passthrough / constant-return / boolean-rename tests
 * **Lookup-table / string-catalog dumps** (`code→copy`, `mode→path`, `key→label` for every `Record` entry) with no rule beyond the table
+* **Allowlist round-trips** (`'light'→'light'`, `'dark'→'dark'`, …) and full pin/follow ternary tables
+* Exporting a tiny resolver/`*Helpers` only so those catalog expects can exist
 * New tiny helper + trivial test instead of a real split
+
+**CRAP playbook:** simplify the flagged function (fewer branches, `Set` membership, inline) **before** considering a test. A test is allowed only if it locks a non-obvious rule that survives inlining.
 
 Prefer: delete theater, inline trivial helpers, or assert real domain branches (default/unknown path, compose rules, silent vs error). If the only way to green Fallow is theater → escalate.

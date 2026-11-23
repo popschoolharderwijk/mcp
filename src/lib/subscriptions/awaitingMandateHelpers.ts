@@ -177,7 +177,7 @@ export function mandateStatusRowToInviteTarget(row: MandateStatusRow): AwaitingM
 export function sortMandateStatusRows<T extends { agreement_active: boolean; start_date: string }>(
 	rows: readonly T[],
 ): T[] {
-	return [...rows].sort(
+	return rows.toSorted(
 		(a, b) => Number(b.agreement_active) - Number(a.agreement_active) || b.start_date.localeCompare(a.start_date),
 	);
 }
@@ -189,7 +189,7 @@ export function daysWaiting(since: string | null | undefined, today: string): nu
 }
 
 export function sortByLongestWaiting<T extends { days_waiting: number; start_date: string }>(rows: readonly T[]): T[] {
-	return [...rows].sort((a, b) => b.days_waiting - a.days_waiting || a.start_date.localeCompare(b.start_date));
+	return rows.toSorted((a, b) => b.days_waiting - a.days_waiting || a.start_date.localeCompare(b.start_date));
 }
 
 /** Split agreements that still need a mandate into invite-not-sent vs invite-sent (awaiting). */

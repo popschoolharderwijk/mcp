@@ -23,11 +23,9 @@ const AGENDA_EVENT_LAYOUT_STYLE = `
 		container-name: agenda-event;
 	}
 	.popschool-calendar .rbc-time-view .agenda-event-title {
-		display: -webkit-box;
-		-webkit-box-orient: vertical;
 		overflow: hidden;
 		overflow-wrap: anywhere;
-		-webkit-line-clamp: 1;
+		line-clamp: 1;
 	}
 	@container agenda-event (max-height: 1.5rem) {
 		.popschool-calendar .rbc-time-view .rbc-event-label {
@@ -36,17 +34,17 @@ const AGENDA_EVENT_LAYOUT_STYLE = `
 	}
 	@container agenda-event (min-height: 2.25rem) {
 		.popschool-calendar .rbc-time-view .agenda-event-title {
-			-webkit-line-clamp: 2;
+			line-clamp: 2;
 		}
 	}
 	@container agenda-event (min-height: 3rem) {
 		.popschool-calendar .rbc-time-view .agenda-event-title {
-			-webkit-line-clamp: 3;
+			line-clamp: 3;
 		}
 	}
 	@container agenda-event (min-height: 3.75rem) {
 		.popschool-calendar .rbc-time-view .agenda-event-title {
-			-webkit-line-clamp: 4;
+			line-clamp: 4;
 		}
 	}
 `;

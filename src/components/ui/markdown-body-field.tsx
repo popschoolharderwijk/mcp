@@ -1,19 +1,14 @@
-import { type MutableRefObject, type Ref, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import type { Ref } from 'react';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { renderMarkdown } from '@/lib/markdown/render';
 import { cn } from '@/lib/utils';
 
-const MARKDOWN_PANEL_MIN_PX = 200;
-const MARKDOWN_PANEL_MAX_PX = 448; // 28rem
-
-/** Shared pixel height for editor + preview: taller content wins, within min/max. */
-function resolveMatchedMarkdownPanelHeight(editorScrollHeight: number, previewScrollHeight: number): number {
-	return Math.min(
-		MARKDOWN_PANEL_MAX_PX,
-		Math.max(MARKDOWN_PANEL_MIN_PX, Math.max(editorScrollHeight, previewScrollHeight)),
-	);
-}
+const MARKDOWN_PANEL_CLASSES = 'min-h-[12.5rem] max-h-[28rem] overflow-y-auto';
+const MARKDOWN_EDITOR_CLASSES = cn(
+	'font-mono text-sm h-auto w-full resize-none [field-sizing:content]',
+	MARKDOWN_PANEL_CLASSES,
+);
 
 interface MarkdownBodyFieldProps {
 	id: string;
@@ -31,23 +26,9 @@ interface MarkdownBodyFieldProps {
 	textareaRef?: Ref<HTMLTextAreaElement>;
 }
 
-function MarkdownPreviewPanel({
-	preview,
-	className,
-	panelRef,
-	style,
-}: {
-	preview: string;
-	className?: string;
-	panelRef?: Ref<HTMLDivElement>;
-	style?: React.CSSProperties;
-}) {
+function MarkdownPreviewPanel({ preview, className }: { preview: string; className?: string }) {
 	return (
-		<div
-			ref={panelRef}
-			style={style}
-			className={cn('rounded-md border border-border bg-muted/30 p-3 overflow-y-auto', className)}
-		>
+		<div className={cn('rounded-md border border-border bg-muted/30 p-3 overflow-y-auto', className)}>
 			{preview.trim().length > 0 ? (
 				renderMarkdown(preview)
 			) : (
@@ -55,15 +36,6 @@ function MarkdownPreviewPanel({
 			)}
 		</div>
 	);
-}
-
-function assignRef<T>(ref: Ref<T> | undefined, node: T | null) {
-	if (!ref) return;
-	if (typeof ref === 'function') {
-		ref(node);
-		return;
-	}
-	(ref as MutableRefObject<T | null>).current = node;
 }
 
 /** Shared markdown textarea + live preview (announcements / email templates). */
@@ -82,71 +54,28 @@ export function MarkdownBodyField({
 }: MarkdownBodyFieldProps) {
 	const preview = previewSource ?? value;
 	const beside = previewPlacement === 'beside' && showPreview;
-	const editorRef = useRef<HTMLTextAreaElement>(null);
-	const previewRef = useRef<HTMLDivElement>(null);
-
-	const syncMatchedHeights = useCallback(() => {
-		const editor = editorRef.current;
-		const previewEl = previewRef.current;
-		if (!editor || !previewEl) return;
-		editor.style.height = 'auto';
-		previewEl.style.height = 'auto';
-		const next = resolveMatchedMarkdownPanelHeight(editor.scrollHeight, previewEl.scrollHeight);
-		editor.style.height = `${next}px`;
-		previewEl.style.height = `${next}px`;
-	}, []);
-
-	useLayoutEffect(() => {
-		if (beside) syncMatchedHeights();
-	});
-
-	useEffect(() => {
-		if (!beside) return;
-		const previewEl = previewRef.current;
-		if (!previewEl) return;
-		const observer = new ResizeObserver(() => {
-			requestAnimationFrame(syncMatchedHeights);
-		});
-		observer.observe(previewEl);
-		return () => observer.disconnect();
-	}, [beside, syncMatchedHeights]);
-
-	const setEditorRef = (node: HTMLTextAreaElement | null) => {
-		editorRef.current = node;
-		assignRef(textareaRef, node);
-	};
-
-	const matchedPanelStyle = {
-		minHeight: MARKDOWN_PANEL_MIN_PX,
-		maxHeight: MARKDOWN_PANEL_MAX_PX,
-	} as const;
 
 	if (beside) {
 		return (
-			<div className="grid grid-cols-1 gap-x-4 gap-y-2 lg:grid-cols-2">
+			<div className="grid grid-cols-1 gap-x-4 gap-y-2 lg:grid-cols-2 lg:items-stretch">
 				<Label htmlFor={id} className="lg:col-start-1 lg:row-start-1">
 					{label}
 				</Label>
 				<Label className="hidden lg:col-start-2 lg:row-start-1 lg:block">Voorvertoning</Label>
 
-				<div className="lg:col-span-2 grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<Textarea
-						id={id}
-						ref={setEditorRef}
-						value={value}
-						onChange={(e) => {
-							onChange(e.target.value);
-							requestAnimationFrame(syncMatchedHeights);
-						}}
-						disabled={disabled}
-						placeholder={placeholder}
-						className="font-mono text-sm resize-none overflow-y-auto"
-						style={matchedPanelStyle}
-					/>
-					<div className="flex flex-col gap-2">
-						<Label className="lg:hidden">Voorvertoning</Label>
-						<MarkdownPreviewPanel preview={preview} panelRef={previewRef} style={matchedPanelStyle} />
-					</div>
+				<Textarea
+					id={id}
+					ref={textareaRef}
+					value={value}
+					onChange={(e) => onChange(e.target.value)}
+					disabled={disabled}
+					rows={rows}
+					placeholder={placeholder}
+					className={cn(MARKDOWN_EDITOR_CLASSES, 'lg:col-start-1 lg:row-start-2')}
+				/>
+				<div className="flex min-h-[12.5rem] max-h-[28rem] flex-col gap-2 lg:col-start-2 lg:row-start-2 lg:h-full">
+					<Label className="shrink-0 lg:hidden">Voorvertoning</Label>
+					<MarkdownPreviewPanel preview={preview} className="min-h-0 flex-1" />
 				</div>
 			</div>
 		);
@@ -164,13 +93,13 @@ export function MarkdownBodyField({
 					disabled={disabled}
 					rows={rows}
 					placeholder={placeholder}
-					className="font-mono text-sm min-h-[12.5rem] max-h-[28rem] overflow-y-auto"
+					className={MARKDOWN_EDITOR_CLASSES}
 				/>
 			</div>
 			{showPreview && (
 				<div className="space-y-2">
 					<Label>Voorvertoning</Label>
-					<MarkdownPreviewPanel preview={preview} className="min-h-[12.5rem] max-h-[28rem]" />
+					<MarkdownPreviewPanel preview={preview} className={MARKDOWN_PANEL_CLASSES} />
 				</div>
 			)}
 		</div>

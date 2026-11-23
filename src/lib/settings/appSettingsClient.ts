@@ -22,7 +22,7 @@ export async function saveAppSetting<K extends AppSettingKey>(
 	const { error } = await supabase
 		.from('app_settings')
 		.upsert(
-			{ key, value: JSON.parse(JSON.stringify(value)) as NonNullable<Json>, updated_by: updatedBy },
+			{ key, value: structuredClone(value) as unknown as NonNullable<Json>, updated_by: updatedBy },
 			{ onConflict: 'key' },
 		);
 	return { error: error?.message ?? null };

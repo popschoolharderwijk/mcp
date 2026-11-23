@@ -22,7 +22,7 @@ export function useLessonTypeOptionsTable({ optionsForm, setOptionsForm }: UseLe
 		[optionsForm],
 	);
 
-	const sortedOptionsForm = useMemo(() => [...optionsForm].sort(optionSort), [optionsForm]);
+	const sortedOptionsForm = useMemo(() => optionsForm.toSorted(optionSort), [optionsForm]);
 	const optionColumns = useMemo(() => createLessonTypeOptionColumns(), []);
 
 	const getOptionRowKey = useCallback(

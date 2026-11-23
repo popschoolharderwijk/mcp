@@ -85,14 +85,14 @@ export function buildInitialFormSnapshot(
 		recurringFrequency: (event.recurring_frequency as string) ?? 'weekly',
 		recurringEndDate: event.recurring_end_date ?? null,
 		color: resolveOccurrenceColor(event, occurrenceOverrides),
-		participantIds: [...initialParticipantIds].sort(),
+		participantIds: initialParticipantIds.toSorted(),
 	};
 }
 
 export function hasAgendaFormChanges(snapshot: AgendaFormSnapshot | null, current: AgendaFormCurrentValues): boolean {
 	if (!snapshot) return true;
 
-	const sortedParticipantIds = [...current.participantIds].sort();
+	const sortedParticipantIds = current.participantIds.toSorted();
 
 	return (
 		snapshot.title !== current.title.trim() ||

@@ -29,24 +29,27 @@ export const AGREEMENT_COLUMNS: DataTableColumn<AgreementTableRow>[] = [
 		key: 'student',
 		label: 'Leerling',
 		sortable: true,
+		className: 'w-[18%] min-w-48',
 		render: (row) => <UserDisplay profile={row.student} showEmail />,
 	},
 	{
 		key: 'teacher',
 		label: 'Docent',
 		sortable: true,
+		className: 'w-[14%] min-w-40',
 		render: (row) => <UserDisplay profile={row.teacher} />,
 	},
 	{
 		key: 'lesson_type',
 		label: 'Lessoort',
+		className: 'w-[14%]',
 		render: (row) => <LessonTypeBadge lessonType={row.lesson_type} size="sm" />,
 	},
 	{
 		key: 'lesson',
 		label: 'Les',
 		sortable: true,
-		className: 'w-32',
+		className: 'w-[11%]',
 		render: (row) => (
 			<div>
 				<div className="flex items-center gap-1">
@@ -70,21 +73,21 @@ export const AGREEMENT_COLUMNS: DataTableColumn<AgreementTableRow>[] = [
 		label: 'Duur',
 		sortable: true,
 		sortValue: (row) => row.duration_minutes,
-		className: 'w-24',
+		className: 'w-[7%]',
 		render: (row) => `${row.duration_minutes} min`,
 	},
 	{
 		key: 'start_date',
 		label: 'Startdatum',
 		sortable: true,
-		className: 'w-36',
+		className: 'w-[10%]',
 		render: (row) => <span className="text-muted-foreground">{formatDbDateToUi(row.start_date)}</span>,
 	},
 	{
 		key: 'end_date',
 		label: 'Einddatum',
 		sortable: true,
-		className: 'w-36',
+		className: 'w-[10%]',
 		render: (row) => {
 			const end = row.end_date ? formatDbDateToUi(row.end_date) : '∞';
 			return (
@@ -101,7 +104,7 @@ export const AGREEMENT_COLUMNS: DataTableColumn<AgreementTableRow>[] = [
 		key: 'created_at',
 		label: 'Aangemaakt',
 		sortable: true,
-		className: 'w-36',
+		className: 'w-[12%]',
 		render: (row) => <span className="text-muted-foreground">{formatDateTimeShort(new Date(row.created_at))}</span>,
 	},
 ];

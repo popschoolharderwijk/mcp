@@ -104,8 +104,8 @@ async function insertNewAgendaEvent(input: AgendaEventFormSaveInput, payload: Ag
 }
 
 function participantIdListsDiffer(current: string[], initial: string[]): boolean {
-	const sortedCurrent = [...current].sort();
-	const sortedInitial = [...initial].sort();
+	const sortedCurrent = current.toSorted();
+	const sortedInitial = initial.toSorted();
 	return sortedCurrent.length !== sortedInitial.length || sortedCurrent.some((id, i) => id !== sortedInitial[i]);
 }
 

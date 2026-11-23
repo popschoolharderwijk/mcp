@@ -189,7 +189,7 @@ export function TeacherFormDialog({ open, onOpenChange, onSuccess, teacher }: Te
 
 	return (
 		<Dialog open={open} onOpenChange={handleOpenChange}>
-			<DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+			<DialogContent className="max-w-xl max-h-[85dvh] overflow-y-auto">
 				<DialogHeader className="pb-2">
 					<DialogTitle className="text-lg">{dialogCopy.title}</DialogTitle>
 					{dialogCopy.description && (

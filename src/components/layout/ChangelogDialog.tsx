@@ -26,11 +26,11 @@ function renderInlineMarkdown(text: string): ReactNode {
 export function ChangelogDialog({ open, onClose }: ChangelogDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-			<DialogContent className="flex max-h-[min(80vh,40rem)] flex-col gap-4">
+			<DialogContent className="flex max-h-[min(80dvh,40rem)] flex-col gap-4">
 				<DialogHeader>
 					<DialogTitle>Changelog</DialogTitle>
 				</DialogHeader>
-				<ScrollArea className="h-[min(60vh,32rem)] pr-3">
+				<ScrollArea className="h-[min(60dvh,32rem)] pr-3">
 					<div className="space-y-6">
 						{CHANGELOG_SECTIONS.map((section) => (
 							<section key={section.version}>

@@ -7,7 +7,7 @@ interface AvailabilityDayItem {
 
 interface AvailabilityDayGridProps<T extends AvailabilityDayItem> {
 	dayNames: readonly string[];
-	availabilityByDay: Record<number, T[]>;
+	availabilityByDay: Partial<Record<number, T[]>>;
 	renderSlot: (item: T) => ReactNode;
 }
 

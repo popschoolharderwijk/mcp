@@ -18,8 +18,10 @@ const variantStyles = {
 };
 
 export function Alert({ variant = 'error', title, children, className }: AlertProps) {
+	const role = variant === 'error' || variant === 'warning' ? 'alert' : 'status';
+
 	return (
-		<div className={cn('border rounded-md px-4 py-3', variantStyles[variant], className)}>
+		<div role={role} className={cn('border rounded-md px-4 py-3', variantStyles[variant], className)}>
 			{title && <p className="font-medium">{title}</p>}
 			<div className={title ? 'text-sm' : ''}>{children}</div>
 		</div>

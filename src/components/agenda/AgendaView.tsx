@@ -17,7 +17,7 @@ export function AgendaView(props: AgendaViewProps = {}) {
 	if (loading) return <PageSkeleton variant="agenda" />;
 
 	return (
-		<div className="flex flex-col gap-4 h-[calc(100vh-112px)] min-h-[640px]">
+		<div className="flex flex-col gap-4 h-[calc(100dvh-112px)] min-h-[640px]">
 			<AgendaCalendarPanel
 				calendarProps={calendarProps}
 				currentView={ui.currentView}

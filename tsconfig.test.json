@@ -3,7 +3,7 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"types": ["bun-types"],
-		"lib": ["ES2023", "DOM"],
+		"lib": ["ES2024", "DOM"],
 		"jsx": "react-jsx"
 	},
 	"include": ["tests/**/*.ts", "tests/**/*.test.ts"]
