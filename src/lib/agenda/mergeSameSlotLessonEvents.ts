@@ -41,7 +41,7 @@ function deviationPriority(event: CalendarEvent): number {
 }
 
 function pickSameSlotMergePrimary(group: CalendarEvent[]): CalendarEvent {
-	return [...group].sort((left, right) => {
+	return group.toSorted((left, right) => {
 		const priorityDiff = deviationPriority(right) - deviationPriority(left);
 		if (priorityDiff !== 0) return priorityDiff;
 		return left.resource.studentName.localeCompare(right.resource.studentName, 'nl');
@@ -77,7 +77,7 @@ export function getRevertibleMergedSlotMembers(members: MergedSlotMember[] | und
 }
 
 function sortUsersByDisplayName(users: User[]): User[] {
-	return [...users].sort((left, right) => {
+	return users.toSorted((left, right) => {
 		const leftName = `${left.first_name ?? ''} ${left.last_name ?? ''}`.trim();
 		const rightName = `${right.first_name ?? ''} ${right.last_name ?? ''}`.trim();
 		return leftName.localeCompare(rightName, 'nl');

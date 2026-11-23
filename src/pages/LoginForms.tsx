@@ -107,10 +107,13 @@ export function LoginOtpForm({ email, otp, state, onOtpChange, onSubmit, onReset
 					</label>
 					<input
 						id="otp"
+						name="otp"
 						type="text"
 						inputMode="numeric"
+						autoComplete="one-time-code"
 						pattern="[0-9]{6,8}"
 						maxLength={8}
+						spellCheck={false}
 						value={otp}
 						onChange={(event) => onOtpChange(event.target.value)}
 						placeholder="00000000"

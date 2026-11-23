@@ -81,7 +81,7 @@ function EmailTemplateEditorDialog({
 				if (!open) onClose();
 			}}
 		>
-			<DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto">
+			<DialogContent className="max-h-[90dvh] max-w-5xl overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle>{editing?.event.label ?? 'E-mailtemplate'}</DialogTitle>
 				</DialogHeader>

@@ -11,14 +11,10 @@ export function filterTeacherAvailability(
 	return availability.filter((slot) => slot.teacher_user_id === selectedTeacherUserId);
 }
 
-export function groupAvailabilityByDay(availability: Availability[]): Record<number, Availability[]> {
-	const availabilityByDay: Record<number, Availability[]> = {};
-	for (const slot of availability) {
-		const daySlots = availabilityByDay[slot.day_of_week] ?? [];
-		daySlots.push(slot);
-		availabilityByDay[slot.day_of_week] = daySlots;
-	}
-	return availabilityByDay;
+export function groupAvailabilityByDay<T extends { day_of_week: number }>(
+	availability: T[],
+): Partial<Record<number, T[]>> {
+	return Object.groupBy(availability, (slot) => slot.day_of_week);
 }
 
 export function shouldShowTeacherNameOnAvailabilitySlot(selectedTeacherUserId: string | 'all'): boolean {

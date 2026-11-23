@@ -394,7 +394,7 @@ export function planAvailabilitySlotWrite(params: {
 		return { kind: 'insert', form: merged };
 	}
 
-	const keep = [...overlapping].sort((left, right) =>
+	const keep = overlapping.toSorted((left, right) =>
 		formatTime(left.startTime).localeCompare(formatTime(right.startTime)),
 	)[0];
 

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { IconType } from 'react-icons';
 import {
 	LuArrowDown,
@@ -156,6 +156,7 @@ export function DataTable<T>({
 	const hasExpandableRows = !!onExpandToggle && !!renderExpandedRow;
 	/** onEdit alone makes the row clickable; only delete/custom render need an actions column. */
 	const showActionsColumn = Boolean(rowActions?.onDelete || rowActions?.render);
+	const rowsPerPageLabelId = useId();
 	const [sortColumn, setSortColumn] = useState<string | null>(() =>
 		resolveDataTableSortColumn(columns, initialSortColumn),
 	);
@@ -288,7 +289,7 @@ export function DataTable<T>({
 			return String(value ?? '').toLowerCase();
 		};
 
-		return [...dataToSort].sort((a, b) => {
+		return dataToSort.toSorted((a, b) => {
 			const aValue = getValue(a);
 			const bValue = getValue(b);
 
@@ -523,7 +524,11 @@ export function DataTable<T>({
 					<thead className="bg-muted/30">
 						<tr className="border-b text-left text-sm text-muted-foreground">
 							{hasExpandableRows && (
-								<th className={cn('w-10 py-2 pl-2', compactRows ? 'py-2' : 'py-3')} />
+								<th
+									scope="col"
+									aria-label="Rij uitklappen"
+									className={cn('w-10 py-2 pl-2', compactRows ? 'py-2' : 'py-3')}
+								/>
 							)}
 							{columns.map((column) => {
 								const isSortable = column.sortable !== false;
@@ -537,19 +542,19 @@ export function DataTable<T>({
 								return (
 									<th
 										key={column.key}
+										scope="col"
 										aria-sort={
-											!isSortable
-												? undefined
-												: isSorted && activeSortDirection === 'asc'
+											isSortable && isSorted
+												? activeSortDirection === 'asc'
 													? 'ascending'
-													: isSorted && activeSortDirection === 'desc'
-														? 'descending'
-														: 'none'
+													: 'descending'
+												: undefined
 										}
 										className={cn('py-2 pr-4 font-medium first:pl-2 last:pr-2', column.className)}
 									>
 										{isSortable ? (
 											<Button
+												type="button"
 												variant="ghost"
 												size="sm"
 												className={cn(
@@ -564,6 +569,7 @@ export function DataTable<T>({
 												<div className="flex items-center gap-1.5">
 													<span>{column.label}</span>
 													<SortIcon
+														aria-hidden="true"
 														className={cn(
 															'h-3.5 w-3.5 shrink-0',
 															isSorted ? 'text-primary' : 'opacity-40',
@@ -578,7 +584,11 @@ export function DataTable<T>({
 								);
 							})}
 							{showActionsColumn && (
-								<th className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')} />
+								<th
+									scope="col"
+									aria-label="Acties"
+									className={cn('font-medium w-12', compactRows ? 'py-2' : 'py-3')}
+								/>
 							)}
 						</tr>
 					</thead>
@@ -748,12 +758,14 @@ export function DataTable<T>({
 					</div>
 					<div className="flex items-center gap-4">
 						<div className="flex items-center gap-2">
-							<span className="text-sm text-muted-foreground">Rijen per pagina:</span>
+							<span id={rowsPerPageLabelId} className="text-sm text-muted-foreground">
+								Rijen per pagina:
+							</span>
 							<Select
 								value={String(effectiveRowsPerPage)}
 								onValueChange={(value) => handleRowsPerPageChange(Number.parseInt(value, 10))}
 							>
-								<SelectTrigger className="h-8 w-[70px]">
+								<SelectTrigger className="h-8 w-[70px]" aria-labelledby={rowsPerPageLabelId}>
 									<SelectValue />
 								</SelectTrigger>
 								<SelectContent>
@@ -766,25 +778,29 @@ export function DataTable<T>({
 						</div>
 						<div className="flex items-center gap-2">
 							<Button
+								type="button"
 								variant="outline"
 								size="icon"
 								className="h-8 w-8"
+								aria-label="Vorige pagina"
 								onClick={() => handlePageChange(Math.max(1, effectiveCurrentPage - 1))}
 								disabled={effectiveCurrentPage === 1 || loading}
 							>
-								<LuChevronLeft className="h-4 w-4" />
+								<LuChevronLeft className="h-4 w-4" aria-hidden="true" />
 							</Button>
 							<span className="text-sm text-muted-foreground">
 								Pagina {effectiveCurrentPage} van {totalPages}
 							</span>
 							<Button
+								type="button"
 								variant="outline"
 								size="icon"
 								className="h-8 w-8"
+								aria-label="Volgende pagina"
 								onClick={() => handlePageChange(Math.min(totalPages, effectiveCurrentPage + 1))}
 								disabled={effectiveCurrentPage === totalPages || loading}
 							>
-								<LuChevronRight className="h-4 w-4" />
+								<LuChevronRight className="h-4 w-4" aria-hidden="true" />
 							</Button>
 						</div>
 					</div>

@@ -71,7 +71,7 @@ export function rankProfilesBySearch(users: User[], rawQuery: string): User[] {
 	const query = rawQuery.trim();
 	if (!query) return users;
 
-	return [...users].sort((a, b) => {
+	return users.toSorted((a, b) => {
 		const scoreDiff = profileSearchMatchScore(a, query) - profileSearchMatchScore(b, query);
 		if (scoreDiff !== 0) return scoreDiff;
 		return profileDisplayName(a).localeCompare(profileDisplayName(b));

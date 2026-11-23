@@ -11,7 +11,7 @@ import { buildLessonTypePayload } from '@/pages/lesson-type-info/validateLessonT
 import type { LessonTypeFormState, LessonTypeOptionRow, LessonTypeRow } from '@/types/lesson-agreements';
 
 async function syncLessonTypeOptions(lessonTypeId: string, optionsForm: OptionRowWithKey[]): Promise<void> {
-	const sorted = [...optionsForm].sort(optionSort);
+	const sorted = optionsForm.toSorted(optionSort);
 	for (const option of sorted) {
 		const payload = buildLessonTypeOptionRowPayload(option);
 

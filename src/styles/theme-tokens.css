@@ -3,6 +3,16 @@
    Theme toggle: .dark class on html (:root). */
 
 :root {
+	/* Follow system until an override is pinned via meta / .dark|.light */
+	color-scheme: light dark;
+
+	&:has(> head > meta[name="color-scheme"][content="dark"]) {
+		color-scheme: dark;
+	}
+	&:has(> head > meta[name="color-scheme"][content="light"]) {
+		color-scheme: light;
+	}
+
 	/* Light theme - Clean and professional */
 	--background: 210 20% 98%;
 	--foreground: 222 47% 11%;
@@ -15,6 +25,9 @@
 
 	--primary: 39.2 37.9% 62.7%;
 	--primary-foreground: 0 0% 100%;
+
+	/* Native controls (checkboxes, radios, progress) follow brand */
+	accent-color: hsl(var(--primary));
 
 	--secondary: 210 40% 96%;
 	--secondary-foreground: 222 47% 11%;
@@ -67,7 +80,13 @@
 	--agenda-group-border: color-mix(in srgb, hsl(var(--agenda-group)) 75%, black);
 }
 
+.light {
+	color-scheme: light;
+}
+
 .dark {
+	color-scheme: dark;
+
 	/* Dark theme - Matching Popschool Harderwijk screenshot */
 	--background: 222 47% 11%;
 	--foreground: 210 40% 98%;

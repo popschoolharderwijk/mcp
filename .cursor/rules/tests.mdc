@@ -8,9 +8,11 @@ alwaysApply: true
 
 ## What to test (quality bar)
 
-Tests exist to lock **behavior**. Coverage, CRAP, or Fallow scores are not a reason to add a test.
+Tests exist to lock **behavior**. Coverage, CRAP, or Fallow scores are **never** a reason to add a test.
 
 A reader must learn something the type signature does not already say: inputs → expected outputs/side-effects for real branches (edges, errors, invariants). Prefer fewer strong tests over many trivial files that restate the implementation.
+
+**Hard stop before writing a test:** If the implementation is a `Set`/`Record`/`===` allowlist, a one-line ternary, or `switch` of return literals, **do not** extract it and **do not** unit-test every accepted value. Lower CRAP by simplifying the code (or escalate). Theater that greened Fallow once is still a reject.
 
 ### NEVER (coverage / test theater)
 
@@ -21,17 +23,20 @@ A reader must learn something the type signature does not already say: inputs �
 * ❌ Tests of boolean renames like `shouldShowX(flag)` that only check `true→true` / `false→false`
 * ❌ Tests whose only assertion is a Tailwind/CSS class string (`toContain('orange')`, `toContain('border-green-500')`, `toBe('flex …')` when that is pure presentation)
 * ❌ **Dictionary / table / enum→string catalog tests** — asserting that `code X` maps to copy string `Y`, mode `M` maps to path `P`, key `K` maps to label `L`, when the implementation is a `Record`, `switch` of return literals, or similar lookup with **no rule beyond the table itself**. That only restates the source; a typo in the test updates with the table and catches nothing real.
+* ❌ **Allowlist / enum membership round-trips** — `expect(f('light')).toBe('light')`, `expect(f('dark')).toBe('dark')`, `expect(f('system')).toBe('system')` (or the same for any closed set of accepted tokens). That only proves the allowlist lists itself. Same ban for listing every pin/follow combo of a trivial ternary (`system→meta 'light dark'`, `light→'light'`, `dark→'dark'`).
+* ❌ Exporting a tiny resolver/`*Helpers` function **so** a unit test can assert the allowlist or ternary table (including “covers all Theme values” suites)
 * ❌ One shallow happy-path test on a complex helper just to paint coverage while real branches stay unasserted
 * ❌ Extracting a tiny helper plus a trivial test instead of splitting a complex function when **complexity** (not coverage) is the problem
 
-**Smell (string catalogs):** If every expect is `f(knownKey) === 'some literal from the same PR'`, and deleting the test would not hide a broken branch/invariant, delete the test. Prefer one test of an unknown/default path, a compose/forward rule (e.g. detail level on/off), or caller behavior — not the whole copy table.
+**Smell (catalogs + allowlists):** If every expect is `f(knownKey) === knownKey` or `f(knownKey) === 'literal from the same PR'`, and deleting the test would not hide a broken **rule** (unknown→default, compose/forward, silent vs error), delete the test. Prefer one unknown/default path, a compose rule, or caller-level behavior — **never** the whole copy/allowlist table.
 
 ### ALWAYS
 
-* ✅ Test logic that already has branches, **decision rules**, validation, or domain invariants — or test at the caller if the helper is trivial. “Mapping” here means rules (when silent vs error, when to append details), **not** re-listing every `Record` entry’s UI string.
-* ✅ If Fallow/CRAP needs coverage, assert outcomes of existing (or meaningfully extracted) logic — not `f(x) === x` and not a full string-catalog dump of a lookup table
+* ✅ Test logic that already has branches, **decision rules**, validation, or domain invariants — or test at the caller if the helper is trivial. “Mapping” here means rules (when silent vs error, when to append details), **not** re-listing every `Record` entry or every allowed enum token.
+* ✅ If Fallow/CRAP flags a function: **refactor to lower complexity** (simplify branches, `Set` membership, inline) first. Only add a test when it locks a non-obvious rule that would still matter after inlining. Never export + catalog-test to paint coverage.
 * ✅ Smell check: if you inlined the helper back into the caller, would the test still be worth keeping? If no → do not extract; refactor or test at the right layer
-* ✅ Prefer deleting a trivial helper over adding a theater test to keep Fallow green
+* ✅ Prefer deleting a trivial helper (and its test file) over adding a theater test to keep Fallow green
+* ✅ At most one focused assert for a default/unknown path beats three expects that restate the allowlist
 
 * **Use English for test names**: All `describe()` and `it()` strings must be in English. Do not use Dutch or other languages for suite and test names.
 * When writing tests, never start a test by deleting data to get rid of potential dirty database states. A dirty database state means some other test didn't properly clean up. THAT needs to be fixed instead.
@@ -102,6 +107,13 @@ if (result.length > 0) {
 
 // ❌ BAD: Ternary operators
 expect(result.length > 0 ? result[0].id : null).toBeDefined();
+
+// ❌ BAD: Allowlist / enum round-trip theater (Fallow bait)
+expect(resolveStoredTheme('light', 'system')).toBe('light');
+expect(resolveStoredTheme('dark', 'system')).toBe('dark');
+expect(resolveStoredTheme('system', 'light')).toBe('system');
+expect(resolveColorSchemeMetaContent('light')).toBe('light');
+expect(resolveColorSchemeMetaContent('dark')).toBe('dark');
 ```
 
 **Good examples (DO THIS):**

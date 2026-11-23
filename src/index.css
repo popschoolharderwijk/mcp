@@ -28,67 +28,79 @@ textarea::-moz-placeholder {
 	opacity: 1;
 }
 
-/* Smooth page transitions */
+/* Smooth page transitions — only when motion is preferred */
 @layer base {
 	html {
-		scroll-behavior: smooth;
 		scrollbar-gutter: stable;
 	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		html {
+			scroll-behavior: smooth;
+		}
+	}
 }
 
-/* Native scrollbars: match ScrollArea look (thin, themed) so overflow areas look consistent */
+/* Native scrollbars: themed colors, accessible thumb size (scrollbar-width: auto) */
 @layer base {
 	* {
-		scrollbar-width: thin;
-		scrollbar-color: hsl(var(--border)) transparent;
+		--scrollbar-thumb: hsl(var(--border));
+		--scrollbar-track: transparent;
+		scrollbar-width: auto;
+		scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 	}
-	*::-webkit-scrollbar {
-		width: 8px;
-		height: 8px;
-	}
-	*::-webkit-scrollbar-track {
-		background: transparent;
-	}
-	*::-webkit-scrollbar-thumb {
-		background: hsl(var(--border));
-		border-radius: 9999px;
-	}
-	*::-webkit-scrollbar-thumb:hover {
-		background: hsl(var(--muted-foreground) / 0.4);
+
+	@supports not (scrollbar-color: auto) {
+		*::-webkit-scrollbar {
+			width: 12px;
+			height: 12px;
+		}
+		*::-webkit-scrollbar-track {
+			background: var(--scrollbar-track);
+		}
+		*::-webkit-scrollbar-thumb {
+			background: var(--scrollbar-thumb);
+			border-radius: 9999px;
+		}
+		*::-webkit-scrollbar-thumb:hover {
+			background: hsl(var(--muted-foreground) / 0.4);
+		}
 	}
 }
 
-/* Animation utilities */
+/* Animation utilities — opt in only when motion is preferred */
 @layer utilities {
-	.animate-in {
-		animation: animate-in 0.3s ease-out;
-	}
+	@media (prefers-reduced-motion: no-preference) {
+		.animate-in {
+			animation: animate-in 0.3s ease-out;
+		}
 
-	.animate-fade-in {
-		animation: fade-in 0.2s ease-out;
-	}
+		.animate-fade-in {
+			animation: fade-in 0.2s ease-out;
+		}
 
-	.animate-slide-in-from-left {
-		animation: slide-in-from-left 0.3s ease-out;
-	}
+		.animate-slide-in-from-left {
+			animation: slide-in-from-left 0.3s ease-out;
+		}
 
-	.animate-slide-in-from-bottom {
-		animation: slide-in-from-bottom 0.3s ease-out;
-	}
+		.animate-slide-in-from-bottom {
+			animation: slide-in-from-bottom 0.3s ease-out;
+		}
 
-	.animate-tip-ring-pulse {
-		animation: tip-ring-pulse 1.35s ease-in-out infinite;
+		.animate-tip-ring-pulse {
+			animation: tip-ring-pulse 1.35s ease-in-out infinite;
+		}
 	}
 }
 
 @keyframes animate-in {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
+		translate: 0 10px;
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
+		translate: 0;
 	}
 }
 
@@ -104,22 +116,57 @@ textarea::-moz-placeholder {
 @keyframes slide-in-from-left {
 	from {
 		opacity: 0;
-		transform: translateX(-10px);
+		translate: -10px 0;
 	}
 	to {
 		opacity: 1;
-		transform: translateX(0);
+		translate: 0;
 	}
 }
 
 @keyframes slide-in-from-bottom {
 	from {
 		opacity: 0;
-		transform: translateY(10px);
+		translate: 0 10px;
 	}
 	to {
 		opacity: 1;
-		transform: translateY(0);
+		translate: 0;
+	}
+}
+
+@supports not (translate: 0) {
+	@keyframes animate-in {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes slide-in-from-left {
+		from {
+			opacity: 0;
+			transform: translateX(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+
+	@keyframes slide-in-from-bottom {
+		from {
+			opacity: 0;
+			transform: translateY(10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 }
 
