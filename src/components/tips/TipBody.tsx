@@ -1,5 +1,7 @@
 import type { IconType } from 'react-icons';
+import { FaWhatsapp } from 'react-icons/fa';
 import { LuCalendar, LuChevronLeft, LuFilter, LuMaximize2, LuMoon, LuSearch, LuSun } from 'react-icons/lu';
+import { SiSignal } from 'react-icons/si';
 import { TipKbd } from '@/components/tips/TipKbd';
 import { NAV_ICONS } from '@/config/nav-items';
 import { parseTipBody } from '@/lib/tips/tipBodyHelpers';
@@ -20,6 +22,8 @@ const TIP_BODY_ICONS: Record<string, { Icon: IconType; className?: string }> = {
 	'chevron-left': { Icon: LuChevronLeft },
 	maximize: { Icon: LuMaximize2 },
 	calendar: { Icon: LuCalendar },
+	whatsapp: { Icon: FaWhatsapp, className: 'text-primary' },
+	signal: { Icon: SiSignal, className: 'text-primary' },
 };
 
 export function TipBody({ body, className }: TipBodyProps) {

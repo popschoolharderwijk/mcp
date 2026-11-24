@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.0 — 2026-11-24
+
+- Aanmelden: eerst e-mail bevestigen via link; daarna pas zichtbaar voor de school
+- Aanmelden: Cloudflare-controle (“geen robot”) op het overzicht + rate limit op e-mail en IP
+- Eigen **Profiel** onder `/profile` (niet meer via Account → Profiel of aparte mijn-profiel-pagina’s)
+- Docent: **Beschikbaarheid** als tab op de docentpagina; menu **Mijn beschikbaarheid** weg
+- E-mailadres en telefoonnummer zijn direct klikbaar gemaakt (mailen of whatsapp/signal chat openen)
+
 ## 1.5.0 — 2026-11-17
 
 - Agenda: filter afspraken op lessoort (@Cas)

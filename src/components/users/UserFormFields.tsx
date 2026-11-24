@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MailtoEmailField } from '@/components/ui/mailto-email-field';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AppRole } from '@/lib/roles';
@@ -53,28 +54,22 @@ function UserNameAndContactFields({
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-3 gap-4">
-				<div className="space-y-2">
-					<Label htmlFor="user-email">Email *</Label>
-					<Input
-						id="user-email"
-						type="email"
-						value={form.email}
-						onChange={(e) => updateField('email', e.target.value)}
-						onBlur={() => updateField('email', normalizeTrimmedText(form.email))}
-						placeholder="gebruiker@voorbeeld.nl"
-						disabled={isEditMode}
-					/>
-				</div>
-				<div className="space-y-2">
-					<PhoneInput
-						id="user-phone-number"
-						label="Telefoonnummer"
-						value={form.phone_number}
-						onChange={(value) => updateField('phone_number', value)}
-						onBlur={() => updateField('phone_number', normalizeTrimmedText(form.phone_number))}
-					/>
-				</div>
+			<div className="grid grid-cols-2 gap-4">
+				{isEditMode ? (
+					<MailtoEmailField id="user-email" email={form.email} label="E-mail" />
+				) : (
+					<div className="space-y-2">
+						<Label htmlFor="user-email">E-mail *</Label>
+						<Input
+							id="user-email"
+							type="email"
+							value={form.email}
+							onChange={(e) => updateField('email', e.target.value)}
+							onBlur={() => updateField('email', normalizeTrimmedText(form.email))}
+							placeholder="gebruiker@voorbeeld.nl"
+						/>
+					</div>
+				)}
 				<DateOfBirthField
 					id="user-dob"
 					value={form.date_of_birth}
@@ -82,6 +77,13 @@ function UserNameAndContactFields({
 					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
 				/>
 			</div>
+			<PhoneInput
+				id="user-phone-number"
+				label="Telefoonnummer"
+				value={form.phone_number}
+				onChange={(value) => updateField('phone_number', value)}
+				onBlur={() => updateField('phone_number', normalizeTrimmedText(form.phone_number))}
+			/>
 		</div>
 	);
 }

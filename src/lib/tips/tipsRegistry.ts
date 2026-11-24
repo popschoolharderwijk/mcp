@@ -73,4 +73,12 @@ export const TIPS_REGISTRY: readonly TipDefinition[] = [
 		target: 'agenda-lesson-type-filter',
 		completeOn: ['target-click'],
 	},
+	{
+		id: 'phone-chat-links',
+		title: 'Appen via telefoonnummer',
+		body: 'Klik op {{icon:whatsapp}} of {{icon:signal}} naast een telefoonnummer om direct WhatsApp of Signal te openen.',
+		routes: ['*'],
+		target: 'phone-chat-links',
+		completeOn: ['target-click'],
+	},
 ] as const;
