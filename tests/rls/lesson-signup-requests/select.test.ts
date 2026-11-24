@@ -128,33 +128,15 @@ describe('RLS: lesson_signup_requests anon access', () => {
 		expectInsufficientPrivilege(unwrapError(await db.from('lesson_signup_requests').select('*').limit(1)));
 	});
 
-	it('anon CAN INSERT a pending request via the public signup form', async () => {
+	it('anon cannot INSERT a pending request (edge service_role only)', async () => {
 		const db = createClientAnon();
-		const email = `anon-${Date.now()}@popschoolharderwijk.nl`;
 		const payload: LessonSignupRequestInsert = {
 			first_name: 'Anon',
 			last_name: 'Public',
-			email,
+			email: `anon-${Date.now()}@popschoolharderwijk.nl`,
 			lesson_type_id: lessonTypeId,
 			status: 'pending',
 		};
-		// No .select(): anon has no SELECT policy, so INSERT...RETURNING would fail RLS.
-		const { error } = await db.from('lesson_signup_requests').insert(payload);
-		expect(error).toBeNull();
-		const found = unwrap(await dbNoRLS.from('lesson_signup_requests').select('id').eq('email', email));
-		expect(found).toHaveLength(1);
-		unwrap(await dbNoRLS.from('lesson_signup_requests').delete().eq('id', found[0].id));
-	});
-
-	it('anon CANNOT INSERT a non-pending request (WITH CHECK violated)', async () => {
-		const db = createClientAnon();
-		const payload: LessonSignupRequestInsert = {
-			first_name: 'Anon',
-			last_name: 'Bad',
-			email: `anon-bad-${Date.now()}@popschoolharderwijk.nl`,
-			lesson_type_id: lessonTypeId,
-			status: 'approved',
-		};
-		expectInsufficientPrivilege(unwrapError(await db.from('lesson_signup_requests').insert(payload).select()));
+		expectInsufficientPrivilege(unwrapError(await db.from('lesson_signup_requests').insert(payload)));
 	});
 });

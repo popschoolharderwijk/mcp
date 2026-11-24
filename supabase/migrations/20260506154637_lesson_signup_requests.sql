@@ -8,8 +8,10 @@ CREATE INDEX IF NOT EXISTS idx_lesson_agreements_lesson_group_id
   WHERE lesson_group_id IS NOT NULL;
 
 -- 2. Enum + table lesson_signup_requests
+-- Public signup writes only via service_role edge (submit/confirm); double-opt-in uses awaiting_confirmation.
 DO $$ BEGIN
   CREATE TYPE public.signup_request_status AS ENUM (
+    'awaiting_confirmation',
     'pending',
     'approved',
     'rejected',
@@ -32,6 +34,8 @@ CREATE TABLE IF NOT EXISTS public.lesson_signup_requests (
   parent_phone_number text NULL,
   notes text NULL,
   status public.signup_request_status NOT NULL DEFAULT 'pending',
+  confirmation_token_hash text NULL,
+  confirmation_expires_at timestamptz NULL,
   created_agreement_id uuid NULL REFERENCES public.lesson_agreements(id) ON DELETE SET NULL,
   processed_by uuid NULL,
   processed_at timestamptz NULL,
@@ -45,26 +49,18 @@ CREATE INDEX IF NOT EXISTS idx_lesson_signup_requests_status
   ON public.lesson_signup_requests(status);
 CREATE INDEX IF NOT EXISTS idx_lesson_signup_requests_lesson_group_id
   ON public.lesson_signup_requests(lesson_group_id);
+CREATE UNIQUE INDEX IF NOT EXISTS lesson_signup_requests_confirmation_token_hash_uidx
+  ON public.lesson_signup_requests (confirmation_token_hash)
+  WHERE confirmation_token_hash IS NOT NULL;
 
 DROP TRIGGER IF EXISTS trg_audit_lesson_signup_requests ON public.lesson_signup_requests;
 CREATE TRIGGER trg_audit_lesson_signup_requests
   BEFORE INSERT OR UPDATE ON public.lesson_signup_requests
   FOR EACH ROW EXECUTE FUNCTION public.set_audit_fields();
 
--- 3. RLS lesson_signup_requests
+-- 3. RLS lesson_signup_requests (no client INSERT — edge service_role only)
 ALTER TABLE public.lesson_signup_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lesson_signup_requests FORCE ROW LEVEL SECURITY;
-
-CREATE POLICY lesson_signup_requests_insert_public
-  ON public.lesson_signup_requests
-  FOR INSERT
-  TO anon, authenticated
-  WITH CHECK (
-    status = 'pending'
-    AND created_agreement_id IS NULL
-    AND processed_by IS NULL
-    AND processed_at IS NULL
-  );
 
 -- Privileged staff see all; authenticated users see requests matching their own email
 CREATE POLICY lesson_signup_requests_select
@@ -89,11 +85,10 @@ CREATE POLICY lesson_signup_requests_delete_staff
   TO authenticated
   USING (public.is_privileged());
 
-GRANT INSERT ON public.lesson_signup_requests TO anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.lesson_signup_requests TO authenticated;
+GRANT SELECT, UPDATE, DELETE ON public.lesson_signup_requests TO authenticated;
 GRANT ALL ON public.lesson_signup_requests TO service_role;
--- INSERT for anon is intentional (public signup); SELECT must not be granted (GraphQL lint 0026).
-REVOKE SELECT ON public.lesson_signup_requests FROM anon;
+-- SELECT must not be granted to anon (GraphQL lint 0026); INSERT is service_role only.
+REVOKE ALL ON public.lesson_signup_requests FROM anon;
 
 -- 4. Sync trigger lesson_group_members -> lesson_agreements
 CREATE OR REPLACE FUNCTION public.sync_group_member_to_agreement()

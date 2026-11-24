@@ -48,6 +48,8 @@ function mockSignupRequestRow(overrides: Partial<SignupRequestRowBase> = {}): Si
 		created_by: null,
 		updated_by: null,
 		created_agreement_id: null,
+		confirmation_token_hash: null,
+		confirmation_expires_at: null,
 		lesson_type_id: 'lt-1',
 		lesson_group_id: null,
 		lesson_type_option_id: 'opt-1',

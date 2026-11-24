@@ -1,4 +1,4 @@
-import type { SignupRequestRowCore } from '../_shared/signupRequestRowTypes.ts';
+import type { SignupRequestRowCore } from '../_shared/signup/requestRowTypes.ts';
 
 export interface Body {
 	signup_request_id?: string | null;

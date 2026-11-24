@@ -36,6 +36,10 @@ async function selectEmailTemplates(user: TestUser) {
 		event_key: 'agreement_created_teacher',
 		...EMAIL_TEMPLATES.BY_KEY.agreement_created_teacher,
 	});
+	expect(byKey.signup_confirm).toEqual({
+		event_key: 'signup_confirm',
+		...EMAIL_TEMPLATES.BY_KEY.signup_confirm,
+	});
 	expect(byKey.signup_received).toEqual({
 		event_key: 'signup_received',
 		...EMAIL_TEMPLATES.BY_KEY.signup_received,

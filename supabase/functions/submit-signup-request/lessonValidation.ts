@@ -1,6 +1,10 @@
 import type { SignupRequest } from './types.ts';
 
-export function buildInsertPayload(body: SignupRequest, optionId: string | null) {
+export function buildInsertPayload(
+	body: SignupRequest,
+	optionId: string | null,
+	confirmation?: { tokenHash: string; expiresAt: string },
+) {
 	return {
 		lesson_type_id: body.lesson_type_id,
 		lesson_group_id: body.lesson_group_id ?? null,
@@ -14,6 +18,8 @@ export function buildInsertPayload(body: SignupRequest, optionId: string | null)
 		parent_email: body.parent_email?.trim().toLowerCase() || null,
 		parent_phone_number: body.parent_phone_number?.trim() || null,
 		notes: body.notes?.trim() || null,
-		status: 'pending' as const,
+		status: 'awaiting_confirmation' as const,
+		confirmation_token_hash: confirmation?.tokenHash ?? null,
+		confirmation_expires_at: confirmation?.expiresAt ?? null,
 	};
 }

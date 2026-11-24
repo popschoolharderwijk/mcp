@@ -73,7 +73,19 @@ describe('buildInsertPayload', () => {
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,
 			notes: 'Voorkeur maandag',
-			status: 'pending',
+			status: 'awaiting_confirmation',
+			confirmation_token_hash: null,
+			confirmation_expires_at: null,
 		});
+	});
+
+	it('stores confirmation token fields for double opt-in', () => {
+		const payload = buildInsertPayload(baseBody as SignupRequest, null, {
+			tokenHash: 'abc',
+			expiresAt: '2026-01-02T00:00:00.000Z',
+		});
+		expect(payload.status).toBe('awaiting_confirmation');
+		expect(payload.confirmation_token_hash).toBe('abc');
+		expect(payload.confirmation_expires_at).toBe('2026-01-02T00:00:00.000Z');
 	});
 });

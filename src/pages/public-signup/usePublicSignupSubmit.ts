@@ -16,6 +16,8 @@ interface UsePublicSignupSubmitParams {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionRow[];
 	form: SignupFormFields;
+	captchaToken: string | null;
+	onCaptchaReset: () => void;
 	setSubmitting: (submitting: boolean) => void;
 	setError: (error: string | null) => void;
 	onSuccess: () => void;
@@ -27,6 +29,8 @@ export function usePublicSignupSubmit({
 	selectedOption,
 	lessonTypeOptions,
 	form,
+	captchaToken,
+	onCaptchaReset,
 	setSubmitting,
 	setError,
 	onSuccess,
@@ -45,13 +49,28 @@ export function usePublicSignupSubmit({
 				selectedOption,
 				lessonTypeOptions,
 				form,
+				captchaToken,
 				invoke: (body) => supabase.functions.invoke('submit-signup-request', { body }),
 				getInvokeErrorMessage,
 			});
 
 			setSubmitting(false);
+			if (outcome.kind !== 'success') {
+				onCaptchaReset();
+			}
 			applyPublicSignupSubmitOutcome(outcome, setError, onSuccess);
 		},
-		[selectedType, selectedGroupId, selectedOption, lessonTypeOptions, form, setSubmitting, setError, onSuccess],
+		[
+			selectedType,
+			selectedGroupId,
+			selectedOption,
+			lessonTypeOptions,
+			form,
+			captchaToken,
+			onCaptchaReset,
+			setSubmitting,
+			setError,
+			onSuccess,
+		],
 	);
 }

@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildSignupCaptchaFailedResponse,
 	buildSignupInsertErrorMessage,
 	buildSignupInsertErrorResponse,
+	buildSignupMailFailedResponse,
+	buildSignupRateLimitedResponse,
 	buildSignupSuccessResponse,
 	parseSignupRequestBody,
+	readSignupCaptchaToken,
 	readSignupServiceEnv,
 	resolveSignupInvalidJsonResponse,
 	resolveSignupMethodResponse,
-	shouldSendSignupConfirmationEmail,
 } from '../../../supabase/functions/submit-signup-request/submitSignupRequestHelpers';
 
 async function readError(response: Response): Promise<string> {
@@ -38,10 +41,44 @@ describe('buildSignupInsertErrorResponse', () => {
 });
 
 describe('buildSignupSuccessResponse', () => {
-	it('returns the created signup request id', async () => {
-		const response = buildSignupSuccessResponse('44444444-4444-4444-4444-444444444444');
+	it('returns ok without exposing a request id', async () => {
+		const response = buildSignupSuccessResponse();
 		expect(response.status).toBe(200);
-		expect(await response.json()).toEqual({ id: '44444444-4444-4444-4444-444444444444' });
+		expect(await response.json()).toEqual({ ok: true });
+	});
+});
+
+describe('buildSignupRateLimitedResponse', () => {
+	it('returns 429 with a Dutch rate limit message', async () => {
+		const response = buildSignupRateLimitedResponse();
+		expect(response.status).toBe(429);
+		expect(await readError(response)).toBe('Te veel aanmeldpogingen. Probeer het later opnieuw.');
+	});
+});
+
+describe('buildSignupCaptchaFailedResponse', () => {
+	it('returns 400 when captcha is missing or invalid', async () => {
+		const response = buildSignupCaptchaFailedResponse();
+		expect(response.status).toBe(400);
+		expect(await readError(response)).toBe('Bevestig dat je geen robot bent en probeer opnieuw.');
+	});
+});
+
+describe('buildSignupMailFailedResponse', () => {
+	it('returns 502 when confirm mail cannot be sent', async () => {
+		const response = buildSignupMailFailedResponse();
+		expect(response.status).toBe(502);
+		expect(await readError(response)).toBe(
+			'Bevestigingsmail kon niet worden verzonden. Probeer het later opnieuw.',
+		);
+	});
+});
+
+describe('readSignupCaptchaToken', () => {
+	it('returns trimmed captcha tokens and rejects empty values', () => {
+		expect(readSignupCaptchaToken({ captchaToken: ' abc ' })).toBe('abc');
+		expect(readSignupCaptchaToken({ captchaToken: ' ' })).toBeNull();
+		expect(readSignupCaptchaToken({})).toBeNull();
 	});
 });
 
@@ -83,24 +120,22 @@ describe('parseSignupRequestBody', () => {
 	});
 });
 
-describe('shouldSendSignupConfirmationEmail', () => {
-	it('returns true only for 200 responses', () => {
-		expect(shouldSendSignupConfirmationEmail(200)).toBe(true);
-		expect(shouldSendSignupConfirmationEmail(500)).toBe(false);
-	});
-});
-
 describe('readSignupServiceEnv', () => {
-	it('reads signup service env keys', () => {
+	it('reads signup service env keys including Turnstile', () => {
 		expect(
 			readSignupServiceEnv((key) => {
 				const values: Record<string, string> = {
 					SUPABASE_URL: 'https://supabase.example',
 					SUPABASE_SERVICE_ROLE_KEY: 'service',
+					TURNSTILE_SECRET_KEY: 'turnstile-secret',
 				};
 				return values[key];
 			}),
-		).toEqual({ supabaseUrl: 'https://supabase.example', serviceKey: 'service' });
+		).toEqual({
+			supabaseUrl: 'https://supabase.example',
+			serviceKey: 'service',
+			turnstileSecret: 'turnstile-secret',
+		});
 	});
 });
 

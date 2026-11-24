@@ -48,11 +48,12 @@ export const APP_SETTINGS = {
  * Bodies/subjects must match EMAIL_TEMPLATE_BOOTSTRAP in src/lib/email/emailTemplateDefaults.ts.
  */
 export const EMAIL_TEMPLATES = {
-	TOTAL: 5,
+	TOTAL: 6,
 	/** Alphabetical order matching `.order('event_key')`. */
 	EVENT_KEYS: [
 		'agreement_created',
 		'agreement_created_teacher',
+		'signup_confirm',
 		'signup_received',
 		'trial_scheduled',
 		'trial_scheduled_teacher',

@@ -525,6 +525,8 @@ export type Database = {
 			};
 			lesson_signup_requests: {
 				Row: {
+					confirmation_expires_at: string | null;
+					confirmation_token_hash: string | null;
 					created_agreement_id: string | null;
 					created_at: string;
 					created_by: string | null;
@@ -549,6 +551,8 @@ export type Database = {
 				};
 				ComputedFields: never;
 				Insert: {
+					confirmation_expires_at?: string | null;
+					confirmation_token_hash?: string | null;
 					created_agreement_id?: string | null;
 					created_at?: string;
 					created_by?: string | null;
@@ -572,6 +576,8 @@ export type Database = {
 					updated_by?: string | null;
 				};
 				Update: {
+					confirmation_expires_at?: string | null;
+					confirmation_token_hash?: string | null;
 					created_agreement_id?: string | null;
 					created_at?: string;
 					created_by?: string | null;
@@ -1023,6 +1029,28 @@ export type Database = {
 					updated_at?: string;
 					updated_by?: string | null;
 					visibility?: Database['public']['Enums']['room_visibility'];
+				};
+				Relationships: [];
+			};
+			signup_submit_attempts: {
+				Row: {
+					client_ip: string | null;
+					created_at: string;
+					email_normalized: string;
+					id: string;
+				};
+				ComputedFields: never;
+				Insert: {
+					client_ip?: string | null;
+					created_at?: string;
+					email_normalized: string;
+					id?: string;
+				};
+				Update: {
+					client_ip?: string | null;
+					created_at?: string;
+					email_normalized?: string;
+					id?: string;
 				};
 				Relationships: [];
 			};
@@ -1733,7 +1761,7 @@ export type Database = {
 			cancellation_type: 'student' | 'teacher';
 			lesson_frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly';
 			room_visibility: 'public' | 'internal' | 'hidden';
-			signup_request_status: 'pending' | 'approved' | 'rejected' | 'trial_scheduled';
+			signup_request_status: 'awaiting_confirmation' | 'pending' | 'approved' | 'rejected' | 'trial_scheduled';
 			trial_lesson_status:
 				| 'scheduled'
 				| 'completed'
@@ -1855,7 +1883,7 @@ export const Constants = {
 			cancellation_type: ['student', 'teacher'],
 			lesson_frequency: ['daily', 'weekly', 'biweekly', 'monthly'],
 			room_visibility: ['public', 'internal', 'hidden'],
-			signup_request_status: ['pending', 'approved', 'rejected', 'trial_scheduled'],
+			signup_request_status: ['awaiting_confirmation', 'pending', 'approved', 'rejected', 'trial_scheduled'],
 			trial_lesson_status: [
 				'scheduled',
 				'completed',

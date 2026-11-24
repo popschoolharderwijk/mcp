@@ -13,10 +13,24 @@ export interface EmailEventDefinition {
 }
 
 const EMAIL_EVENTS = {
+	signup_confirm: {
+		key: 'signup_confirm',
+		label: 'E-mailbevestiging aanmelding',
+		description:
+			'Verstuurd na het indienen van het publieke aanmeldformulier; bevat de link om het e-mailadres te bevestigen.',
+		variables: ['leerling_naam', 'les_type', 'frequentie', 'prijs_per_les', 'bevestigingslink'],
+		previewData: {
+			leerling_naam: 'Sanne de Vries',
+			les_type: 'Pianoles',
+			frequentie: 'Wekelijks',
+			prijs_per_les: '€ 32,50',
+			bevestigingslink: 'https://example.com/signup/confirm?token=preview',
+		},
+	},
 	signup_received: {
 		key: 'signup_received',
 		label: 'Bevestiging aanmelding',
-		description: 'Verstuurd direct na het indienen van een aanmeldformulier op de publieke aanmeldpagina.',
+		description: 'Verstuurd na e-mailbevestiging, wanneer de aanvraag in het admin-overzicht komt.',
 		variables: ['leerling_naam', 'les_type', 'frequentie', 'prijs_per_les'],
 		previewData: {
 			leerling_naam: 'Sanne de Vries',

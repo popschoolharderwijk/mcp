@@ -242,3 +242,10 @@ verify_jwt = false
 
 [functions.issue-payment-link]
 verify_jwt = false
+
+# Public signup submit + email confirm (Turnstile / token checks in function body)
+[functions.submit-signup-request]
+verify_jwt = false
+
+[functions.confirm-signup-request]
+verify_jwt = false

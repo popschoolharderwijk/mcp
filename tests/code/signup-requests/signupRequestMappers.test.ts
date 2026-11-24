@@ -8,13 +8,19 @@ const supabaseMock = {
 	from: (table: string) => ({
 		select: () => ({
 			eq: () => ({
-				order: () =>
+				neq: () => ({
+					order: () =>
+						Promise.resolve(
+							table === 'lesson_signup_requests' ? signupRequestsResult : { data: [], error: null },
+						),
+				}),
+			}),
+			in: () => ({
+				neq: () =>
 					Promise.resolve(
 						table === 'lesson_signup_requests' ? signupRequestsResult : { data: [], error: null },
 					),
 			}),
-			in: () =>
-				Promise.resolve(table === 'lesson_signup_requests' ? signupRequestsResult : { data: [], error: null }),
 		}),
 	}),
 };
