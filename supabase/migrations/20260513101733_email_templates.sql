@@ -17,7 +17,7 @@ ALTER TABLE public.email_templates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.email_templates FORCE ROW LEVEL SECURITY;
 
 CREATE POLICY email_templates_select ON public.email_templates
-	FOR SELECT TO authenticated USING (true);
+	FOR SELECT TO authenticated USING (public.is_privileged());
 
 CREATE POLICY email_templates_insert_site_admin ON public.email_templates
 	FOR INSERT TO authenticated WITH CHECK (is_site_admin());

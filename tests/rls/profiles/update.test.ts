@@ -1,12 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
-import { createClientAs } from '../../db';
-import { unwrap } from '../../utils';
+import { createClientAs, createClientBypassRLS } from '../../db';
+import { expectInsufficientPrivilege, unwrap, unwrapError } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { TestUsers } from '../test-users';
 
 let initialState: DatabaseState;
 const { setupState, verifyState } = setupDatabaseStateVerification();
+const dbNoRLS = createClientBypassRLS();
 
 beforeAll(async () => {
 	initialState = await setupState();
@@ -139,6 +140,90 @@ describe('RLS: profiles UPDATE - own profile', () => {
 			await db
 				.from('profiles')
 				.update({ first_name: profile.first_name, last_name: profile.last_name })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
+	});
+});
+
+describe('RLS: profiles UPDATE - date_of_birth protection', () => {
+	it('user without date_of_birth can set it once', async () => {
+		const db = await createClientAs(TestUsers.USER_001);
+		const profile = requireProfile(TestUsers.USER_001);
+		expect(profile.date_of_birth).toBeNull();
+
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ date_of_birth: '1995-04-01' })
+				.eq('user_id', profile.user_id)
+				.select('date_of_birth'),
+		);
+		expect(data).toEqual([{ date_of_birth: '1995-04-01' }]);
+
+		unwrap(
+			await dbNoRLS
+				.from('profiles')
+				.update({ date_of_birth: null })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
+	});
+
+	it('user cannot change date_of_birth after it is set', async () => {
+		const db = await createClientAs(TestUsers.STUDENT_001);
+		const profile = requireProfile(TestUsers.STUDENT_001);
+
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db
+					.from('profiles')
+					.update({ date_of_birth: '2000-01-01' })
+					.eq('user_id', profile.user_id)
+					.select('user_id'),
+			),
+		);
+	});
+
+	it('admin can change date_of_birth and restore it', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+		const profile = requireProfile(TestUsers.STUDENT_001);
+
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ date_of_birth: '2001-02-03' })
+				.eq('user_id', profile.user_id)
+				.select('date_of_birth'),
+		);
+		expect(data).toEqual([{ date_of_birth: '2001-02-03' }]);
+
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ date_of_birth: profile.date_of_birth })
+				.eq('user_id', profile.user_id)
+				.select('user_id'),
+		);
+	});
+
+	it('site_admin can change date_of_birth and restore it', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+		const profile = requireProfile(TestUsers.STUDENT_002);
+
+		const data = unwrap(
+			await db
+				.from('profiles')
+				.update({ date_of_birth: '2002-03-04' })
+				.eq('user_id', profile.user_id)
+				.select('date_of_birth'),
+		);
+		expect(data).toEqual([{ date_of_birth: '2002-03-04' }]);
+
+		unwrap(
+			await db
+				.from('profiles')
+				.update({ date_of_birth: profile.date_of_birth })
 				.eq('user_id', profile.user_id)
 				.select('user_id'),
 		);

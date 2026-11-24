@@ -78,12 +78,14 @@ const AUTHENTICATED_MUST_NOT_EXECUTE: string[] = [
 	'public.cleanup_student_if_no_agreements(uuid)',
 	'public.enforce_agenda_deviation_immutable_fields()',
 	'public.enforce_agenda_deviation_validity()',
+	'public.enforce_teachers_admin_fields()',
 	'public.ensure_student_exists(uuid)',
 	'public.get_lesson_group_teacher(uuid)',
 	'public.handle_auth_user_email_update()',
 	'public.handle_new_user()',
 	'public.prevent_last_site_admin_removal()',
 	'public.prevent_owner_participant_removal()',
+	'public.prevent_profile_dob_tampering()',
 	'public.prevent_profile_email_change()',
 	'public.prevent_user_id_change()',
 	'public.set_audit_fields()',
@@ -118,14 +120,14 @@ const PRIVATE_HELPERS_NOT_POSTGREST_RPC: {
 		args: { ev_id: '00000000-0000-0000-0000-000000000001', uid: '00000000-0000-0000-0000-000000000001' },
 	},
 	{ name: 'can_manage_agenda_event', args: { ev_id: '00000000-0000-0000-0000-000000000001' } },
-	{ name: 'get_agenda_event_owner', args: { ev_id: '00000000-0000-0000-0000-000000000001' } },
+	{ name: 'is_agenda_event_owner', args: { ev_id: '00000000-0000-0000-0000-000000000001' } },
 	{
 		name: 'is_lesson_group_member',
 		args: { _group_id: '00000000-0000-0000-0000-000000000001', _user_id: '00000000-0000-0000-0000-000000000001' },
 	},
 	{
-		name: 'is_lesson_group_teacher',
-		args: { _group_id: '00000000-0000-0000-0000-000000000001', _user_id: '00000000-0000-0000-0000-000000000001' },
+		name: 'is_current_lesson_group_teacher',
+		args: { _group_id: '00000000-0000-0000-0000-000000000001' },
 	},
 ];
 

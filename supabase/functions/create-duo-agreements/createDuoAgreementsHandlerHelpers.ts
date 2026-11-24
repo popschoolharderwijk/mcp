@@ -20,7 +20,7 @@ async function authenticateCreateDuoClients(
 	const auth = await requireAuthenticatedClients(authHeader);
 	if (!auth.ok) return { ok: false, response: auth.response };
 
-	const denied = await requireUserRole(auth.userClient, auth.user.id, ['admin', 'site_admin', 'teacher']);
+	const denied = await requireUserRole(auth.userClient, auth.user.id, ['admin', 'site_admin']);
 	if (denied) return { ok: false, response: denied };
 
 	return { ok: true, admin: auth.admin };

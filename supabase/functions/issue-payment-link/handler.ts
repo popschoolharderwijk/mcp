@@ -14,11 +14,8 @@ import {
 import { resolveIssuedLinkRecipientGate, resolveIssuePaymentRecipient } from '../_shared/paymentLinkHelpers.ts';
 import { sendTemplateEmail } from '../_shared/sendTemplateEmail.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
-import {
-	canOverrideStripeCheckoutInviteRecipient,
-	isStripeCheckoutInviteAdminRole,
-	resolveStripeCheckoutAgreementAccessError,
-} from '../send-stripe-checkout-invite/sendStripeCheckoutInviteHelpers.ts';
+import { isAdminRole } from '../_shared/supabaseHelpers.ts';
+import { resolveStripeCheckoutAgreementAccessError } from '../send-stripe-checkout-invite/sendStripeCheckoutInviteHelpers.ts';
 
 type Body = { lesson_agreement_id?: string; recipient_email?: string; notify_teacher?: boolean };
 type Authorized = Extract<Awaited<ReturnType<typeof authorizeIssue>>, { ok: true }>;
@@ -27,7 +24,7 @@ async function authorizeIssue(authHeader: string, agreementId: string) {
 	const auth = await requireAuthenticatedClients(authHeader);
 	if (!auth.ok) return auth;
 	const role = await fetchUserRole(auth.userClient, auth.user.id);
-	const isAdmin = isStripeCheckoutInviteAdminRole(role);
+	const isAdmin = isAdminRole(role);
 	const { data: agreement, error: agErr } = await auth.admin
 		.from('lesson_agreements')
 		.select('id, student_user_id, teacher_user_id, is_active')
@@ -35,12 +32,7 @@ async function authorizeIssue(authHeader: string, agreementId: string) {
 		.maybeSingle();
 	const access = resolveStripeCheckoutAgreementAccessError(agreement, agErr, isAdmin, auth.user.id);
 	if (!access.ok) return { ok: false as const, response: jsonResponse(access.status, { error: access.error }) };
-	const canOverrideRecipient = canOverrideStripeCheckoutInviteRecipient(
-		isAdmin,
-		access.agreement.teacher_user_id,
-		auth.user.id,
-	);
-	return { ok: true as const, auth, agreement: access.agreement, canOverrideRecipient };
+	return { ok: true as const, auth, agreement: access.agreement, canOverrideRecipient: isAdmin };
 }
 
 async function sendPaymentLinkMail(

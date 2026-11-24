@@ -6,10 +6,16 @@ export function shouldUpdateStudentPhoneOnCreate(studentPhone: string | null): b
 	return studentPhone != null && studentPhone.length > 0;
 }
 
-export function resolveStudentRowMutation(
+export type TrialStudentPersistAction = 'insert_full' | 'insert_empty' | 'noop';
+
+/** New users get full parent data; existing students are left untouched; missing student row gets an empty insert. */
+export function resolveTrialStudentPersistAction(
+	isNewUser: boolean,
 	existingStudent: { user_id: string } | null | undefined,
-): 'update' | 'insert' {
-	return existingStudent ? 'update' : 'insert';
+): TrialStudentPersistAction {
+	if (isNewUser) return 'insert_full';
+	if (existingStudent) return 'noop';
+	return 'insert_empty';
 }
 
 export function buildStudentAuthCreatePayload(args: {

@@ -17,10 +17,10 @@ afterAll(async () => {
 });
 
 /**
- * email_templates SELECT: every authenticated role can read seeded templates.
+ * email_templates SELECT: privileged roles see all templates; others see none.
  */
 
-async function selectEmailTemplates(user: TestUser) {
+async function expectSeesAllEmailTemplates(user: TestUser) {
 	const db = await createClientAs(user);
 	const data = unwrap(
 		await db.from('email_templates').select('event_key, subject, body_markdown').order('event_key'),
@@ -54,28 +54,33 @@ async function selectEmailTemplates(user: TestUser) {
 	});
 }
 
+async function expectSeesNoEmailTemplates(user: TestUser) {
+	const db = await createClientAs(user);
+	expect(unwrap(await db.from('email_templates').select('event_key'))).toHaveLength(0);
+}
+
 describe('RLS: email_templates SELECT', () => {
 	it('site_admin sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.SITE_ADMIN);
+		await expectSeesAllEmailTemplates(TestUsers.SITE_ADMIN);
 	});
 
 	it('admin sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.ADMIN_ONE);
+		await expectSeesAllEmailTemplates(TestUsers.ADMIN_ONE);
 	});
 
 	it('staff sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.STAFF_ONE);
+		await expectSeesAllEmailTemplates(TestUsers.STAFF_ONE);
 	});
 
-	it('teacher sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.TEACHER_ALICE);
+	it('teacher sees no email templates', async () => {
+		await expectSeesNoEmailTemplates(TestUsers.TEACHER_ALICE);
 	});
 
-	it('student sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.STUDENT_001);
+	it('student sees no email templates', async () => {
+		await expectSeesNoEmailTemplates(TestUsers.STUDENT_001);
 	});
 
-	it('user without role sees all email templates', async () => {
-		await selectEmailTemplates(TestUsers.USER_001);
+	it('user without role sees no email templates', async () => {
+		await expectSeesNoEmailTemplates(TestUsers.USER_001);
 	});
 });

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { canOpenPortalForOtherUser, resolvePortalForOtherUserForbiddenResponse } from './validationHelpers.ts';
+import { isAppRole } from '../_shared/supabaseHelpers.ts';
+import { resolvePortalForOtherUserForbiddenResponse } from './validationHelpers.ts';
 
 export async function resolveCustomerPortalTargetUserId(
 	userClient: SupabaseClient,
@@ -16,14 +17,7 @@ export async function resolveCustomerPortalTargetUserId(
 		.eq('user_id', requestingUserId)
 		.single();
 
-	if (roleError || !roleData) {
-		return {
-			targetUserId: requestingUserId,
-			error: resolvePortalForOtherUserForbiddenResponse(),
-		};
-	}
-
-	if (!canOpenPortalForOtherUser(roleData.role)) {
+	if (roleError || !roleData || !isAppRole(roleData.role)) {
 		return {
 			targetUserId: requestingUserId,
 			error: resolvePortalForOtherUserForbiddenResponse(),

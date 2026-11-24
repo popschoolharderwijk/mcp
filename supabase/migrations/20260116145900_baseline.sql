@@ -722,6 +722,35 @@ BEFORE UPDATE ON public.profiles
 FOR EACH ROW
 EXECUTE FUNCTION public.prevent_profile_email_change();
 
+-- date_of_birth: user may set once when null; after that only admin / site_admin (or service_role).
+CREATE OR REPLACE FUNCTION public.prevent_profile_dob_tampering()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  IF public.current_user_id() IS NOT NULL
+     AND OLD.date_of_birth IS NOT NULL
+     AND NEW.date_of_birth IS DISTINCT FROM OLD.date_of_birth
+     AND NOT (public.is_admin() OR public.is_site_admin()) THEN
+    RAISE EXCEPTION 'Permission denied' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION public.prevent_profile_dob_tampering() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.prevent_profile_dob_tampering() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.prevent_profile_dob_tampering() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.prevent_profile_dob_tampering() FROM authenticated;
+
+CREATE TRIGGER prevent_profiles_dob_tampering
+BEFORE UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.prevent_profile_dob_tampering();
+
 -- =============================================================================
 -- SECTION 8: NEW USER BOOTSTRAP
 -- =============================================================================

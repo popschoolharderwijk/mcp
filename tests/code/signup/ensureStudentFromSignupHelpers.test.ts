@@ -2,9 +2,8 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
-	buildSignupStudentUpdateFields,
+	resolveExistingSignupAccountAction,
 	resolveExistingSignupStudentUserId,
-	resolveSignupStudentRowMutation,
 	shouldUpdateSignupPhoneOnCreate,
 } from '../../../supabase/functions/approve-signup-request/ensureStudentFromSignupHelpers';
 
@@ -58,22 +57,12 @@ describe('buildSignupStudentPayload', () => {
 	});
 });
 
-describe('resolveSignupStudentRowMutation', () => {
-	it('returns update when student row exists', () => {
-		expect(resolveSignupStudentRowMutation({ user_id: 'user-1' })).toBe('update');
+describe('resolveExistingSignupAccountAction', () => {
+	it('reuses an existing student account without overwriting', () => {
+		expect(resolveExistingSignupAccountAction({ user_id: 'user-1' })).toBe('reuse');
 	});
 
-	it('returns insert when student row is missing', () => {
-		expect(resolveSignupStudentRowMutation(null)).toBe('insert');
-	});
-});
-
-describe('buildSignupStudentUpdateFields', () => {
-	it('builds student update fields from signup request', () => {
-		expect(buildSignupStudentUpdateFields(reqRow)).toEqual({
-			parent_name: 'Ouder',
-			parent_email: 'ouder@test.nl',
-			parent_phone_number: '0687654321',
-		});
+	it('conflicts when the existing account is not a student', () => {
+		expect(resolveExistingSignupAccountAction(null)).toBe('conflict');
 	});
 });

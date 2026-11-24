@@ -3,9 +3,7 @@ import {
 	buildStripeCheckoutInviteRedirectUrl,
 	buildStripeCheckoutInviteSuccessPayload,
 	canAccessStripeCheckoutInviteAgreement,
-	canOverrideStripeCheckoutInviteRecipient,
 	hasStripeCheckoutAgreementRecord,
-	isStripeCheckoutInviteAdminRole,
 	resolveStripeCheckoutAgreementAccessError,
 	resolveStripeCheckoutAgreementInactiveResponse,
 	resolveStripeCheckoutAgreementNotFoundResponse,
@@ -18,25 +16,6 @@ const AGREEMENT_ID = '11111111-1111-1111-1111-111111111111';
 const STUDENT_ID = '22222222-2222-2222-2222-222222222222';
 const TEACHER_ID = '44444444-4444-4444-4444-444444444444';
 const OTHER_USER_ID = '33333333-3333-3333-3333-333333333333';
-
-describe('isStripeCheckoutInviteAdminRole', () => {
-	it('returns true for admin and site_admin only', () => {
-		expect(isStripeCheckoutInviteAdminRole('admin')).toBe(true);
-		expect(isStripeCheckoutInviteAdminRole('site_admin')).toBe(true);
-		expect(isStripeCheckoutInviteAdminRole('teacher')).toBe(false);
-		expect(isStripeCheckoutInviteAdminRole('student')).toBe(false);
-		expect(isStripeCheckoutInviteAdminRole(null)).toBe(false);
-	});
-});
-
-describe('canOverrideStripeCheckoutInviteRecipient', () => {
-	it('allows admins and the agreement teacher only', () => {
-		expect(canOverrideStripeCheckoutInviteRecipient(true, TEACHER_ID, OTHER_USER_ID)).toBe(true);
-		expect(canOverrideStripeCheckoutInviteRecipient(false, TEACHER_ID, TEACHER_ID)).toBe(true);
-		expect(canOverrideStripeCheckoutInviteRecipient(false, TEACHER_ID, OTHER_USER_ID)).toBe(false);
-		expect(canOverrideStripeCheckoutInviteRecipient(false, TEACHER_ID, STUDENT_ID)).toBe(false);
-	});
-});
 
 describe('canAccessStripeCheckoutInviteAgreement', () => {
 	it('allows admins to access any agreement', () => {

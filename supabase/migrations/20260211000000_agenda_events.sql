@@ -321,20 +321,26 @@ ALTER TABLE public.agenda_event_deviations FORCE ROW LEVEL SECURITY;
 -- =============================================================================
 
 -- Helpers for RLS (avoid recursion). Not PostgREST-exposed (private schema).
-CREATE OR REPLACE FUNCTION private.get_agenda_event_owner(ev_id uuid)
-RETURNS uuid
+-- Whether the current session owns the agenda event (RLS; private schema).
+CREATE OR REPLACE FUNCTION private.is_agenda_event_owner(ev_id uuid)
+RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = ''
 SET row_security = off
 STABLE
 AS $$
-  SELECT owner_user_id FROM public.agenda_events WHERE id = ev_id LIMIT 1;
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.agenda_events
+    WHERE id = ev_id
+      AND owner_user_id = public.current_user_id()
+  );
 $$;
-ALTER FUNCTION private.get_agenda_event_owner(uuid) OWNER TO postgres;
-REVOKE ALL ON FUNCTION private.get_agenda_event_owner(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION private.get_agenda_event_owner(uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION private.get_agenda_event_owner(uuid) TO authenticated;
+ALTER FUNCTION private.is_agenda_event_owner(uuid) OWNER TO postgres;
+REVOKE ALL ON FUNCTION private.is_agenda_event_owner(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_agenda_event_owner(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_agenda_event_owner(uuid) TO authenticated;
 
 -- Current session user may manage event (owner or privileged). No uid argument — not spoofable.
 CREATE OR REPLACE FUNCTION private.can_manage_agenda_event(ev_id uuid)
@@ -414,7 +420,7 @@ ON public.agenda_participants FOR SELECT TO authenticated
 USING (
   user_id = public.current_user_id()
   OR public.is_privileged()
-  OR private.get_agenda_event_owner(event_id) = public.current_user_id()
+  OR private.is_agenda_event_owner(event_id)
 );
 
 -- agenda_participants: INSERT only event owner or privileged
@@ -427,7 +433,7 @@ WITH CHECK (
   public.is_privileged()
   OR (
     -- Event owner can add participants...
-    private.get_agenda_event_owner(event_id) = public.current_user_id()
+    private.is_agenda_event_owner(event_id)
     AND (
       -- ...owner can always add themselves
       user_id = public.current_user_id()
