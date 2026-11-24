@@ -21,11 +21,13 @@ export default function TeacherInfo() {
 			targetTeacherUserId={screen.targetTeacherUserId}
 			teacherProfile={screen.teacherProfile}
 			agreementsCount={page.agreementsCount}
+			availabilityCount={page.availabilityCount}
 			canAccess={page.canAccess}
 			includeAgenda={page.includeAgenda}
 			activeTab={page.activeTab}
 			onTabChange={page.onTabChange}
 			onProfileUpdate={page.onProfileUpdate}
+			onAvailabilityMutated={page.onAvailabilityMutated}
 		/>
 	);
 }

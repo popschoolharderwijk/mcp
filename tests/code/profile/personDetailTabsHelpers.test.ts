@@ -48,11 +48,23 @@ describe('person detail tab routes', () => {
 });
 
 describe('teacher detail tab items', () => {
-	it('omits agenda only when includeAgenda is false', () => {
-		expect(buildTeacherDetailTabItems(0).some((item) => item.value === 'agenda')).toBe(true);
-		expect(buildTeacherDetailTabItems(0, { includeAgenda: false }).some((item) => item.value === 'agenda')).toBe(
-			false,
-		);
+	it('places availability after agreements with block counts and omits agenda when includeAgenda is false', () => {
+		const withAgenda = buildTeacherDetailTabItems(3, 2);
+		expect(withAgenda.map((item) => item.value)).toEqual([
+			'profile',
+			'address',
+			'agreements',
+			'availability',
+			'agenda',
+		]);
+		expect(withAgenda.find((item) => item.value === 'agreements')?.label).toBe('Lesovereenkomsten (3)');
+		expect(withAgenda.find((item) => item.value === 'availability')?.label).toBe('Beschikbaarheid (2)');
+		expect(buildTeacherDetailTabItems(0, 0, { includeAgenda: false }).map((item) => item.value)).toEqual([
+			'profile',
+			'address',
+			'agreements',
+			'availability',
+		]);
 		expect(buildPersonDetailTabItems({ includeAgenda: false }).some((item) => item.value === 'agenda')).toBe(false);
 	});
 });

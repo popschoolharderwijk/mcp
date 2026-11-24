@@ -19,7 +19,6 @@ import LessonTypeInfo from './pages/LessonTypeInfo';
 import LessonTypes from './pages/LessonTypes';
 import Login from './pages/Login';
 import Mandates from './pages/Mandates';
-import MyAvailability from './pages/MyAvailability';
 import MyStatistics from './pages/MyStatistics';
 import MyStudents from './pages/MyStudents';
 import MyTrial from './pages/MyTrial';
@@ -98,7 +97,6 @@ const App = () => (
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/teachers" element={<Teachers />} />
 						<Route path="/teachers/availability" element={<TeacherAvailability />} />
-						<Route path="/teachers/my-availability" element={<MyAvailability />} />
 						<Route path="/teachers/my-statistics" element={<MyStatistics />} />
 						<Route path="/teachers/:id/:tab" element={<TeacherInfo />} />
 						<Route path="/teachers/:id" element={<TeacherInfo />} />

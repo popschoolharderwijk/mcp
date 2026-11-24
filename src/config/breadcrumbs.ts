@@ -112,13 +112,6 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		],
 	},
 	{
-		pattern: '/teachers/my-availability',
-		items: [
-			{ label: NAV_LABELS.teachers, href: '/teachers' },
-			{ label: NAV_LABELS.myAvailability, href: '/teachers/my-availability' },
-		],
-	},
-	{
 		pattern: '/teachers/my-statistics',
 		items: [
 			{ label: NAV_LABELS.teachers, href: '/teachers' },

@@ -1,6 +1,6 @@
-export type PersonDetailTabId = 'profile' | 'address' | 'agreements' | 'agenda';
+export type PersonDetailTabId = 'profile' | 'address' | 'agreements' | 'availability' | 'agenda';
 
-const PERSON_DETAIL_TABS = new Set<PersonDetailTabId>(['profile', 'address', 'agreements', 'agenda']);
+const PERSON_DETAIL_TABS = new Set<PersonDetailTabId>(['profile', 'address', 'agreements', 'availability', 'agenda']);
 
 const DEFAULT_PERSON_DETAIL_TAB: PersonDetailTabId = 'profile';
 
@@ -65,12 +65,21 @@ export function buildAgreementsTabLabel(agreementsCount: number): string {
 	return `Lesovereenkomsten (${agreementsCount})`;
 }
 
-export function buildTeacherDetailTabItems(agreementsCount: number, options?: { includeAgenda?: boolean }) {
+function buildAvailabilityTabLabel(availabilityCount: number): string {
+	return `Beschikbaarheid (${availabilityCount})`;
+}
+
+export function buildTeacherDetailTabItems(
+	agreementsCount: number,
+	availabilityCount: number,
+	options?: { includeAgenda?: boolean },
+) {
 	const includeAgenda = options?.includeAgenda ?? true;
 	const items: { value: PersonDetailTabId; label: string }[] = [
 		{ value: 'profile', label: 'Profiel' },
 		{ value: 'address', label: 'Adres' },
 		{ value: 'agreements', label: buildAgreementsTabLabel(agreementsCount) },
+		{ value: 'availability', label: buildAvailabilityTabLabel(availabilityCount) },
 	];
 	if (includeAgenda) {
 		items.push({ value: 'agenda', label: 'Agenda' });

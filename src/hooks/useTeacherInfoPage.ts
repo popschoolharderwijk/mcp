@@ -10,6 +10,7 @@ import {
 	resolvePersonDetailTabRoute,
 } from '@/lib/profile/personDetailTabsHelpers';
 import { fetchTeacherProfile } from '@/lib/teachers/fetchTeacherProfile';
+import { countTeacherAvailabilityByTeacherUserId } from '@/lib/teachers/teacherAvailabilityApi';
 import { canAccessTeacherProfile, resolveTargetTeacherUserId } from '@/lib/teachers/teacherInfoHelpers';
 import { resolveTeacherInfoPageGate } from '@/lib/teachers/teacherInfoPageShellHelpers';
 import {
@@ -26,6 +27,7 @@ export function useTeacherInfoPage() {
 	const [loading, setLoading] = useState(true);
 	const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null);
 	const [agreementsCount, setAgreementsCount] = useState(0);
+	const [availabilityCount, setAvailabilityCount] = useState(0);
 	const [profileVersion, setProfileVersion] = useState(0);
 
 	const basePath = resolveTeacherInfoBasePath(id);
@@ -48,9 +50,11 @@ export function useTeacherInfoPage() {
 		void Promise.all([
 			fetchTeacherProfile(targetTeacherUserId),
 			countLessonAgreementsByTeacherUserId(targetTeacherUserId),
-		]).then(([profile, count]) => {
+			countTeacherAvailabilityByTeacherUserId(targetTeacherUserId),
+		]).then(([profile, nextAgreementsCount, nextAvailabilityCount]) => {
 			setTeacherProfile(profile);
-			setAgreementsCount(count);
+			setAgreementsCount(nextAgreementsCount);
+			setAvailabilityCount(nextAvailabilityCount);
 			setLoading(false);
 		});
 	}, [targetTeacherUserId, profileVersion]);
@@ -90,11 +94,16 @@ export function useTeacherInfoPage() {
 		targetTeacherUserId,
 		teacherProfile,
 		agreementsCount,
+		availabilityCount,
 		canAccess,
 		includeAgenda,
 		activeTab,
 		tabRedirectTo,
 		onTabChange,
 		onProfileUpdate: () => setProfileVersion((version) => version + 1),
+		onAvailabilityMutated: () => {
+			if (!targetTeacherUserId) return;
+			void countTeacherAvailabilityByTeacherUserId(targetTeacherUserId).then(setAvailabilityCount);
+		},
 	};
 }

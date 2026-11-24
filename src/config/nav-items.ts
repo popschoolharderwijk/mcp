@@ -71,11 +71,6 @@ const NAV_ITEMS = {
 		icon: LuUser,
 		description: 'Bekijk je profielgegevens en lesovereenkomsten',
 	},
-	myAvailability: {
-		label: 'Mijn beschikbaarheid',
-		icon: LuCalendar,
-		description: 'Beheer je beschikbare dagen en tijden voor het plannen van lessen',
-	},
 	myStatistics: {
 		label: 'Mijn statistieken',
 		icon: LuChartBar,

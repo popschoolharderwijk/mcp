@@ -1,6 +1,7 @@
 import { AgendaView } from '@/components/agenda/AgendaView';
 import { ScopedAgreementsTable } from '@/components/agreements/ScopedAgreementsTable';
 import { ProfileAddressSection } from '@/components/profile/ProfileAddressSection';
+import { TeacherAvailabilitySection } from '@/components/teachers/TeacherAvailabilitySection';
 import { TeacherInfoProfileTab } from '@/components/teachers/TeacherInfoProfileTab';
 import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,26 +13,30 @@ import {
 import { profileAddressFieldsFromRow } from '@/lib/profile/profileAddressSectionHelpers';
 import type { Teacher } from '@/types/teachers';
 
-interface TeacherInfoTabsProps {
+export interface TeacherInfoTabsProps {
 	targetTeacherUserId: string;
 	teacherProfile: Teacher;
 	agreementsCount: number;
+	availabilityCount: number;
 	canAccess: boolean;
 	includeAgenda: boolean;
 	activeTab: PersonDetailTabId;
 	onTabChange: (tab: PersonDetailTabId) => void;
 	onProfileUpdate: () => void;
+	onAvailabilityMutated: () => void;
 }
 
 export function TeacherInfoTabs({
 	targetTeacherUserId,
 	teacherProfile,
 	agreementsCount,
+	availabilityCount,
 	canAccess,
 	includeAgenda,
 	activeTab,
 	onTabChange,
 	onProfileUpdate,
+	onAvailabilityMutated,
 }: TeacherInfoTabsProps) {
 	const { isPrivileged } = useAuth();
 
@@ -40,9 +45,9 @@ export function TeacherInfoTabs({
 			value={activeTab}
 			onValueChange={onTabChange}
 			isTabId={isPersonDetailTabId}
-			items={buildTeacherDetailTabItems(agreementsCount, { includeAgenda })}
+			items={buildTeacherDetailTabItems(agreementsCount, availabilityCount, { includeAgenda })}
 		>
-			<PageTabsContent value="profile">
+			<PageTabsContent value="profile" panelWidth="1/2">
 				<TeacherInfoProfileTab
 					targetTeacherUserId={targetTeacherUserId}
 					teacherProfile={teacherProfile}
@@ -66,6 +71,14 @@ export function TeacherInfoTabs({
 					teacherUserId={targetTeacherUserId}
 					canMutate={isPrivileged}
 					onAgreementsMutated={onProfileUpdate}
+				/>
+			</PageTabsContent>
+
+			<PageTabsContent value="availability" panelWidth="1/2">
+				<TeacherAvailabilitySection
+					teacherUserId={targetTeacherUserId}
+					canEdit={canAccess}
+					onBlocksMutated={onAvailabilityMutated}
 				/>
 			</PageTabsContent>
 

@@ -45,7 +45,7 @@ export function buildTeacherDashboardStatItems(stats: TeacherDashboardStats): Da
 			key: 'agreements',
 			title: NAV_LABELS.agreements,
 			value: stats.lessonsPerWeek,
-			href: '/agenda',
+			href: '/profile/agreements',
 		},
 		{
 			key: 'lessonGroups',
@@ -54,10 +54,10 @@ export function buildTeacherDashboardStatItems(stats: TeacherDashboardStats): Da
 			href: '/agenda',
 		},
 		{
-			key: 'myAvailability',
-			title: NAV_LABELS.myAvailability,
+			key: 'availability',
+			title: NAV_LABELS.availability,
 			value: stats.availableSlots,
-			href: '/teachers/my-availability',
+			href: '/profile/availability',
 		},
 	];
 }

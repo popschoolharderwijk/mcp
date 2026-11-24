@@ -197,11 +197,11 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.myAvailability,
+		icon: NAV_ICONS.availability,
 		title: 'Docent-portal',
 		description: 'Functies die alleen zichtbaar zijn voor ingelogde docenten.',
 		details: [
-			'Mijn beschikbaarheid: stel je beschikbare dagen en tijdsblokken in; deze bepalen welke slots aan leerlingen worden aangeboden.',
+			'Beschikbaarheid: via Mijn profiel → Beschikbaarheid stel je beschikbare dagen en tijdsblokken in; deze bepalen welke slots aan leerlingen worden aangeboden.',
 			'Mijn leerlingen: leerlingen waarmee je een actieve overeenkomst hebt, inclusief contactgegevens.',
 			'Mijn statistieken: persoonlijk overzicht van gegeven uren, aantal leerlingen en projecturen per periode.',
 			'Agenda: jouw eigen planning met lessen, projecten en afwijkingen.',

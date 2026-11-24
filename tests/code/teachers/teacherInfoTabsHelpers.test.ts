@@ -15,6 +15,7 @@ describe('teacher info tab routes', () => {
 		expect(buildTeacherInfoPath('teacher-1')).toBe('/teachers/teacher-1/profile');
 		expect(buildTeacherInfoPath('teacher-1', 'address')).toBe('/teachers/teacher-1/address');
 		expect(buildTeacherInfoPath('teacher-1', 'agreements')).toBe('/teachers/teacher-1/agreements');
+		expect(buildTeacherInfoPath('teacher-1', 'availability')).toBe('/teachers/teacher-1/availability');
 	});
 
 	it('redirects when the tab segment is missing or invalid', () => {
@@ -22,8 +23,10 @@ describe('teacher info tab routes', () => {
 		expect(resolveTeacherInfoTabRedirect('/teachers/teacher-1', 'nope')).toBe('/teachers/teacher-1/profile');
 		expect(resolveTeacherInfoTabRedirect('/teachers/teacher-1', 'profile')).toBeNull();
 		expect(resolveTeacherInfoTabRedirect('/teachers/teacher-1', 'agreements')).toBeNull();
+		expect(resolveTeacherInfoTabRedirect('/teachers/teacher-1', 'availability')).toBeNull();
 		expect(resolveTeacherInfoTabRedirect('/profile', undefined)).toBeNull();
 		expect(resolveTeacherInfoTabRedirect('/profile', 'profile')).toBe('/profile');
 		expect(resolveTeacherInfoTabRedirect('/profile', 'agenda')).toBe('/profile');
+		expect(resolveTeacherInfoTabRedirect('/profile', 'availability')).toBeNull();
 	});
 });

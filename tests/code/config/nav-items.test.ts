@@ -37,7 +37,6 @@ describe('NAV_DESCRIPTIONS', () => {
 			'lessonGroups',
 			'lessonTypes',
 			'mandates',
-			'myAvailability',
 			'myProfile',
 			'myStatistics',
 			'myStudents',
