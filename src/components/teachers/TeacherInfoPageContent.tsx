@@ -8,6 +8,7 @@ interface TeacherInfoPageContentProps {
 	teacherProfile: Teacher;
 	agreementsCount: number;
 	canAccess: boolean;
+	includeAgenda: boolean;
 	activeTab: PersonDetailTabId;
 	onTabChange: (tab: PersonDetailTabId) => void;
 	onProfileUpdate: () => void;
@@ -18,6 +19,7 @@ export function TeacherInfoPageContent({
 	teacherProfile,
 	agreementsCount,
 	canAccess,
+	includeAgenda,
 	activeTab,
 	onTabChange,
 	onProfileUpdate,
@@ -31,6 +33,7 @@ export function TeacherInfoPageContent({
 				teacherProfile={teacherProfile}
 				agreementsCount={agreementsCount}
 				canAccess={canAccess}
+				includeAgenda={includeAgenda}
 				activeTab={activeTab}
 				onTabChange={onTabChange}
 				onProfileUpdate={onProfileUpdate}

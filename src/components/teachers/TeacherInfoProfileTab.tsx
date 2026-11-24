@@ -29,6 +29,7 @@ export function TeacherInfoProfileTab({
 					initialLastName={teacherProfile.last_name}
 					initialEmail={teacherProfile.email}
 					initialPhoneNumber={teacherProfile.phone_number}
+					initialAvatarUrl={teacherProfile.avatar_url}
 					initialCocIssuedOn={teacherProfile.coc_issued_on}
 				/>
 				<TeacherLessonTypesSection teacherUserId={targetTeacherUserId} canEdit={canAccess} />

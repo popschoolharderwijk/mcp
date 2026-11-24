@@ -1,3 +1,4 @@
+import { deepEqual } from '@/lib/deepEqual';
 import { normalizeCompactTextOrNull, normalizeTrimmedTextOrNull } from '@/lib/text/normalizeText';
 
 export interface TeacherProfileInitials {
@@ -80,13 +81,26 @@ export function isTeacherProfileCocValid(input: Pick<TeacherProfileSaveInput, 'h
 	return Boolean(input.cocIssuedOn.trim());
 }
 
-/** Submit enabled only when editable, VOG rules pass, and typed VOG date draft is synced. */
+/** True when normalized teacher/profile save payloads differ from the baseline. */
+export function hasTeacherProfileFormChanges(
+	initial: TeacherProfileSaveInput,
+	current: TeacherProfileSaveInput,
+): boolean {
+	return !deepEqual(
+		{ ...buildTeacherProfileUpdate(initial), ...buildTeacherProfileNameUpdate(initial) },
+		{ ...buildTeacherProfileUpdate(current), ...buildTeacherProfileNameUpdate(current) },
+	);
+}
+
+/** Submit enabled only when editable, dirty, VOG rules pass, and typed VOG date draft is synced. */
 export function canSubmitTeacherProfileForm(
 	canEdit: boolean,
 	form: Pick<TeacherProfileSaveInput, 'hasCoc' | 'cocIssuedOn'>,
 	cocIssuedOnDraftSynced: boolean,
+	hasChanges: boolean,
 ): boolean {
 	if (!canEdit) return false;
+	if (!hasChanges) return false;
 	if (!isTeacherProfileCocValid(form)) return false;
 	if (form.hasCoc && !cocIssuedOnDraftSynced) return false;
 	return true;

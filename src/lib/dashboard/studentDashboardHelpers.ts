@@ -72,7 +72,7 @@ export function buildStudentDashboardStatItems(stats: StudentDashboardStats): Da
 			key: 'agreements',
 			title: NAV_LABELS.agreements,
 			value: stats.activeAgreements,
-			href: '/students/my-profile',
+			href: '/profile',
 			description: inactiveCountDescription(stats.inactiveAgreements),
 		},
 		{

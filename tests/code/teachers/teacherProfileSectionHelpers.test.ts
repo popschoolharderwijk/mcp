@@ -6,6 +6,7 @@ import {
 	canSaveTeacherProfile,
 	canSubmitTeacherProfileForm,
 	createTeacherProfileFormState,
+	hasTeacherProfileFormChanges,
 	isTeacherProfileCocValid,
 	mapLoadedTeacherProfile,
 	shouldFetchTeacherProfile,
@@ -79,25 +80,39 @@ describe('isTeacherProfileCocValid', () => {
 	});
 });
 
+describe('hasTeacherProfileFormChanges', () => {
+	it('returns false when only whitespace differs on saved fields', () => {
+		const base = {
+			bio: 'Bio',
+			hasCoc: true,
+			cocIssuedOn: '2023-12-06',
+			firstName: 'Jan',
+			lastName: 'Docent',
+			phoneNumber: '0612345678',
+		};
+		expect(hasTeacherProfileFormChanges(base, { ...base, firstName: ' Jan ', bio: ' Bio ' })).toBe(false);
+	});
+});
+
 describe('canSubmitTeacherProfileForm', () => {
 	it('requires edit permission', () => {
-		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true)).toBe(false);
+		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true, true)).toBe(false);
 	});
 
 	it('requires a VOG date when VOG is on', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true)).toBe(false);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true, true)).toBe(false);
 	});
 
 	it('blocks submit when VOG date draft is not synced', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false)).toBe(false);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false, true)).toBe(false);
 	});
 
 	it('allows submit when VOG is off', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false)).toBe(true);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false, true)).toBe(true);
 	});
 
 	it('allows submit when VOG date is present and draft is synced', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true)).toBe(true);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true, true)).toBe(true);
 	});
 });
 

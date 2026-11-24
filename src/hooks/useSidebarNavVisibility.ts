@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useHasOwnedProjects } from '@/hooks/useHasOwnedProjects';
 
 export function useSidebarNavVisibility() {
-	const { isAdmin, isSiteAdmin, isPrivileged, isTeacher, teacherUserId } = useAuth();
+	const { isAdmin, isSiteAdmin, isPrivileged, isTeacher } = useAuth();
 	const { hasOwnedProjects, isLoading: ownedProjectsLoading } = useHasOwnedProjects();
 
 	return computeSidebarNavVisibility({
@@ -11,7 +11,6 @@ export function useSidebarNavVisibility() {
 		isSiteAdmin,
 		isPrivileged,
 		isTeacher,
-		teacherUserId,
 		hasOwnedProjects,
 		ownedProjectsLoading,
 	});

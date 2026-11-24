@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'bun:test';
-import { mapUserDetailQueriesToOutcome, resolveUserDetailScreen } from '../../../src/lib/users/userDetailPageHelpers';
+import {
+	mapUserDetailQueriesToOutcome,
+	resolveUserDetailRouteState,
+	resolveUserDetailScreen,
+} from '../../../src/lib/users/userDetailPageHelpers';
 
 const user = {
 	user_id: 'u-1',
@@ -134,6 +138,46 @@ describe('mapUserDetailQueriesToOutcome', () => {
 		).toEqual({
 			outcome: { kind: 'success', user },
 			toastDescription: null,
+		});
+	});
+});
+
+describe('resolveUserDetailRouteState', () => {
+	it('uses bare /profile and omits agenda for self profile', () => {
+		expect(
+			resolveUserDetailRouteState({
+				routeUserId: undefined,
+				authUserId: 'u-1',
+				isAdmin: true,
+				isSiteAdmin: false,
+				tabParam: 'agenda',
+			}),
+		).toEqual({
+			userId: 'u-1',
+			hasAccess: true,
+			basePath: '/profile',
+			includeAgenda: false,
+			activeTab: 'profile',
+			tabRedirectTo: '/profile',
+		});
+	});
+
+	it('keeps agenda on user id routes', () => {
+		expect(
+			resolveUserDetailRouteState({
+				routeUserId: 'u-2',
+				authUserId: 'u-1',
+				isAdmin: true,
+				isSiteAdmin: false,
+				tabParam: 'agenda',
+			}),
+		).toEqual({
+			userId: 'u-2',
+			hasAccess: true,
+			basePath: '/users/u-2',
+			includeAgenda: true,
+			activeTab: 'agenda',
+			tabRedirectTo: null,
 		});
 	});
 });

@@ -7,7 +7,6 @@ describe('buildSidebarMainNavItems', () => {
 		collapsed: false,
 		isStudent: false,
 		isTeacher: false,
-		teacherUserId: null as string | null,
 		showTeachersNav: false,
 		showStudentsNav: false,
 		showReportsNav: false,
@@ -15,32 +14,24 @@ describe('buildSidebarMainNavItems', () => {
 		showAdminNav: false,
 	};
 
-	const teacherUserId = '40000000-0001-0000-0000-000000000000';
-
 	it('returns student nav items for students', () => {
 		const items = buildSidebarMainNavItems({ ...baseVisibility, isStudent: true });
-		expect(items.map((item) => item.key)).toEqual(['dashboard', 'my-profile', 'my-trial', 'agenda']);
+		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'profile', 'my-trial']);
 	});
 
-	it('returns dashboard and agenda for non-students', () => {
-		const items = buildSidebarMainNavItems(baseVisibility);
-		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda']);
+	it('puts agenda above profile for everyone', () => {
+		const items = buildSidebarMainNavItems({ ...baseVisibility, showAdminNav: true });
+		expect(items.map((item) => item.key).slice(0, 3)).toEqual(['dashboard', 'agenda', 'profile']);
+		expect(items.find((item) => item.key === 'profile')?.href).toBe('/profile');
 	});
 
-	it('includes teacher my-profile and my-students for teachers without admin teacher nav', () => {
+	it('includes teacher my-students for teachers without admin teacher nav', () => {
 		const items = buildSidebarMainNavItems({
 			...baseVisibility,
 			isTeacher: true,
-			teacherUserId,
 			showReportsNav: true,
 		});
-		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'my-profile', 'my-students', 'reports']);
-		expect(items.find((item) => item.key === 'my-profile')?.href).toBe(`/teachers/${teacherUserId}/profile`);
-	});
-
-	it('omits teacher my-profile when teacherUserId is missing', () => {
-		const items = buildSidebarMainNavItems({ ...baseVisibility, isTeacher: true, showReportsNav: true });
-		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'my-students', 'reports']);
+		expect(items.map((item) => item.key)).toEqual(['dashboard', 'agenda', 'profile', 'my-students', 'reports']);
 	});
 
 	it('includes admin operational items when admin nav is visible', () => {
@@ -48,6 +39,7 @@ describe('buildSidebarMainNavItems', () => {
 		expect(items.map((item) => item.href)).toEqual([
 			'/',
 			'/agenda',
+			'/profile',
 			'/agreements',
 			'/lesson-groups',
 			'/signup-requests',

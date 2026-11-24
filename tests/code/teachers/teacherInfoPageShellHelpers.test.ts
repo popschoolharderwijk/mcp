@@ -1,35 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
 	resolveTeacherInfoPageGate,
-	shouldRedirectTeacherInfo,
-	shouldShowTeacherInfoSkeleton,
+	resolveTeacherInfoScreen,
 } from '../../../src/lib/teachers/teacherInfoPageShellHelpers';
+import type { Teacher } from '../../../src/types/teachers';
 
-describe('shouldRedirectTeacherInfo', () => {
-	it('returns true when access is denied', () => {
-		expect(shouldRedirectTeacherInfo('denied')).toBe(true);
-	});
-
-	it('returns false for other gates', () => {
-		expect(shouldRedirectTeacherInfo('ready')).toBe(false);
-	});
-});
-
-describe('shouldShowTeacherInfoSkeleton', () => {
-	it('returns true while auth or profile is loading', () => {
-		expect(shouldShowTeacherInfoSkeleton('loading', null, 'teacher-1')).toBe(true);
-		expect(shouldShowTeacherInfoSkeleton('profile-loading', null, 'teacher-1')).toBe(true);
-	});
-
-	it('returns true when profile or user id is missing after loading', () => {
-		expect(shouldShowTeacherInfoSkeleton('ready', null, 'teacher-1')).toBe(true);
-		expect(shouldShowTeacherInfoSkeleton('ready', {}, null)).toBe(true);
-	});
-
-	it('returns false when profile and user id are available', () => {
-		expect(shouldShowTeacherInfoSkeleton('ready', { id: 'teacher-1' }, 'teacher-1')).toBe(false);
-	});
-});
+const teacher = { user_id: 'teacher-1' } as Teacher;
 
 describe('resolveTeacherInfoPageGate', () => {
 	it('returns loading while auth is loading', () => {
@@ -78,5 +54,63 @@ describe('resolveTeacherInfoPageGate', () => {
 				hasProfile: true,
 			}),
 		).toBe('ready');
+	});
+});
+
+describe('resolveTeacherInfoScreen', () => {
+	it('navigates when the tab needs a redirect', () => {
+		expect(
+			resolveTeacherInfoScreen({
+				tabRedirectTo: '/teachers/teacher-1/profile',
+				pageGate: 'ready',
+				targetTeacherUserId: 'teacher-1',
+				teacherProfile: teacher,
+			}),
+		).toEqual({ kind: 'navigate', to: '/teachers/teacher-1/profile' });
+	});
+
+	it('navigates home when access is denied', () => {
+		expect(
+			resolveTeacherInfoScreen({
+				tabRedirectTo: null,
+				pageGate: 'denied',
+				targetTeacherUserId: 'teacher-1',
+				teacherProfile: teacher,
+			}),
+		).toEqual({ kind: 'navigate', to: '/' });
+	});
+
+	it('shows loading while gate or profile is incomplete', () => {
+		expect(
+			resolveTeacherInfoScreen({
+				tabRedirectTo: null,
+				pageGate: 'loading',
+				targetTeacherUserId: null,
+				teacherProfile: null,
+			}),
+		).toEqual({ kind: 'loading' });
+		expect(
+			resolveTeacherInfoScreen({
+				tabRedirectTo: null,
+				pageGate: 'ready',
+				targetTeacherUserId: 'teacher-1',
+				teacherProfile: null,
+			}),
+		).toEqual({ kind: 'loading' });
+	});
+
+	it('returns ready with teacher data', () => {
+		expect(
+			resolveTeacherInfoScreen({
+				tabRedirectTo: null,
+				pageGate: 'ready',
+				targetTeacherUserId: 'teacher-1',
+				teacherProfile: teacher,
+			}),
+		).toEqual({
+			kind: 'ready',
+			targetTeacherUserId: 'teacher-1',
+			teacherProfile: teacher,
+		});
 	});
 });

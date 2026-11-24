@@ -1,18 +1,96 @@
-import type { ChangeEvent } from 'react';
+import { type ChangeEvent, useId } from 'react';
 import { LuTrash2, LuUpload } from 'react-icons/lu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { getAvatarUploadInputId, resolveAvatarImageSrc } from '@/lib/account/accountProfileAvatarHelpers';
+import { AVATAR_UPLOAD_ACCEPT } from '@/lib/account/accountProfileAvatarHelpers';
 import type { AccountProfileState } from '@/lib/account/persistence';
+import { cn } from '@/lib/utils';
 
 interface AccountProfileAvatarSectionProps {
-	profile: AccountProfileState | null;
+	profile: Pick<AccountProfileState, 'avatar_url'> | null;
 	userInitials: string;
 	saving: boolean;
 	onUploadAvatar: (e: ChangeEvent<HTMLInputElement>) => void;
 	onDeleteAvatar: () => void;
+}
+
+function AvatarUploadControl({
+	uploadInputId,
+	avatarSrc,
+	userInitials,
+	saving,
+	onUploadAvatar,
+}: {
+	uploadInputId: string;
+	avatarSrc: string | undefined;
+	userInitials: string;
+	saving: boolean;
+	onUploadAvatar: (e: ChangeEvent<HTMLInputElement>) => void;
+}) {
+	return (
+		<label
+			htmlFor={uploadInputId}
+			className={cn(
+				'group relative block h-20 w-20 cursor-pointer overflow-hidden rounded-full',
+				'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+				saving && 'pointer-events-none opacity-50',
+			)}
+		>
+			<input
+				id={uploadInputId}
+				type="file"
+				accept={AVATAR_UPLOAD_ACCEPT}
+				onChange={onUploadAvatar}
+				disabled={saving}
+				className="sr-only"
+			/>
+			<Avatar className="h-20 w-20">
+				<AvatarImage src={avatarSrc} alt="" />
+				<AvatarFallback className="bg-primary text-primary-foreground text-lg">{userInitials}</AvatarFallback>
+			</Avatar>
+			<span
+				className={cn(
+					'pointer-events-none absolute inset-0 flex items-center justify-center rounded-full',
+					'bg-black/50 text-white opacity-0 transition-opacity',
+					'group-hover:opacity-100 group-focus-within:opacity-100',
+					'[@media(hover:none)]:opacity-100',
+				)}
+				aria-hidden="true"
+			>
+				<LuUpload className="h-6 w-6" aria-hidden="true" />
+			</span>
+			<span className="sr-only">Profielfoto uploaden</span>
+		</label>
+	);
+}
+
+function AvatarDeleteButton({
+	visible,
+	saving,
+	onDeleteAvatar,
+}: {
+	visible: boolean;
+	saving: boolean;
+	onDeleteAvatar: () => void;
+}) {
+	if (!visible) return null;
+
+	return (
+		<button
+			type="button"
+			onClick={onDeleteAvatar}
+			disabled={saving}
+			aria-label="Profielfoto verwijderen"
+			className={cn(
+				'absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full',
+				'border border-border bg-background text-destructive shadow-sm',
+				'hover:bg-destructive hover:text-destructive-foreground',
+				'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+				'disabled:pointer-events-none disabled:opacity-50',
+			)}
+		>
+			<LuTrash2 className="h-3.5 w-3.5" aria-hidden="true" />
+		</button>
+	);
 }
 
 export function AccountProfileAvatarSection({
@@ -22,51 +100,19 @@ export function AccountProfileAvatarSection({
 	onUploadAvatar,
 	onDeleteAvatar,
 }: AccountProfileAvatarSectionProps) {
-	const uploadInputId = getAvatarUploadInputId();
-	const avatarSrc = resolveAvatarImageSrc(profile?.avatar_url);
-	const showDeleteButton = Boolean(profile?.avatar_url);
+	const uploadInputId = useId();
+	const avatarUrl = profile?.avatar_url ?? null;
 
 	return (
-		<div className="flex items-center gap-4">
-			<Avatar className="h-20 w-20">
-				<AvatarImage src={avatarSrc} alt="Avatar" />
-				<AvatarFallback className="bg-primary text-primary-foreground text-lg">{userInitials}</AvatarFallback>
-			</Avatar>
-			<div className="space-y-2">
-				<Label htmlFor={uploadInputId}>Profielfoto</Label>
-				<div className="flex items-center gap-2">
-					<Input
-						id={uploadInputId}
-						type="file"
-						accept="image/*"
-						onChange={onUploadAvatar}
-						disabled={saving}
-						className="hidden"
-					/>
-					<Button
-						type="button"
-						variant="outline"
-						onClick={() => document.getElementById(uploadInputId)?.click()}
-						disabled={saving}
-					>
-						<LuUpload className="mr-2 h-4 w-4" />
-						Upload avatar
-					</Button>
-					{showDeleteButton ? (
-						<Button
-							type="button"
-							variant="outline"
-							onClick={onDeleteAvatar}
-							disabled={saving}
-							className="text-destructive hover:text-destructive"
-						>
-							<LuTrash2 className="mr-2 h-4 w-4" />
-							Verwijderen
-						</Button>
-					) : null}
-				</div>
-				<p className="text-xs text-muted-foreground">JPG, PNG of GIF. Max 5MB.</p>
-			</div>
+		<div className="relative shrink-0 pt-5">
+			<AvatarUploadControl
+				uploadInputId={uploadInputId}
+				avatarSrc={avatarUrl ?? undefined}
+				userInitials={userInitials}
+				saving={saving}
+				onUploadAvatar={onUploadAvatar}
+			/>
+			<AvatarDeleteButton visible={avatarUrl != null} saving={saving} onDeleteAvatar={onDeleteAvatar} />
 		</div>
 	);
 }

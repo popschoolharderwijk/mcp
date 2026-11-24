@@ -222,11 +222,11 @@ const sections: ManualSection[] = [
 		],
 	},
 	{
-		icon: NAV_ICONS.accountProfile,
-		title: 'Mijn account',
-		description: 'Persoonlijke instellingen die elke ingelogde gebruiker zelf kan aanpassen.',
+		icon: NAV_ICONS.myProfile,
+		title: 'Mijn profiel & account',
+		description: 'Persoonlijke gegevens en accountinstellingen die elke ingelogde gebruiker zelf kan aanpassen.',
 		details: [
-			'Profiel: eigen naam, telefoonnummer en avatar bijwerken (avatars in de publieke storage-bucket "avatars", max. 5 MB).',
+			'Mijn profiel: eigen naam, telefoonnummer, adres en avatar bijwerken (avatars in de publieke storage-bucket "avatars", max. 5 MB).',
 			'Weergave: schakel tussen licht, donker en systeem-thema; voorkeur wordt lokaal per browser opgeslagen.',
 			'Account verwijderen: verwijdert het eigen account inclusief docent-/leerlingprofiel (cascade). Het laatste site_admin-account kan niet verwijderd worden (databasetrigger).',
 		],

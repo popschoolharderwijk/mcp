@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './components/AuthProvider';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -21,11 +21,11 @@ import Login from './pages/Login';
 import Mandates from './pages/Mandates';
 import MyAvailability from './pages/MyAvailability';
 import MyStatistics from './pages/MyStatistics';
-import MyStudentProfile from './pages/MyStudentProfile';
 import MyStudents from './pages/MyStudents';
 import MyTrial from './pages/MyTrial';
 import NotFound from './pages/NotFound';
 import Pay from './pages/Pay';
+import Profile from './pages/Profile';
 import Projects from './pages/Projects';
 import PublicSignup from './pages/PublicSignup';
 import Reports from './pages/Reports';
@@ -89,23 +89,21 @@ const App = () => (
 
 						<Route path="/settings" element={<AppSettings />} />
 						<Route path="/settings/:tab" element={<AppSettings />} />
-						<Route path="/account" element={<Account defaultTab="profile" />} />
-						<Route path="/account/profile" element={<Account defaultTab="profile" />} />
+						<Route path="/profile/:tab" element={<Profile />} />
+						<Route path="/profile" element={<Profile />} />
+						<Route path="/account" element={<Navigate to="/account/appearance" replace />} />
 						<Route path="/account/appearance" element={<Account defaultTab="appearance" />} />
 						<Route path="/account/security" element={<Account defaultTab="security" />} />
 						<Route path="/account/danger" element={<Account defaultTab="danger" />} />
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/teachers" element={<Teachers />} />
 						<Route path="/teachers/availability" element={<TeacherAvailability />} />
-						<Route path="/teachers/my-profile/:tab" element={<TeacherInfo />} />
-						<Route path="/teachers/my-profile" element={<TeacherInfo />} />
 						<Route path="/teachers/my-availability" element={<MyAvailability />} />
 						<Route path="/teachers/my-statistics" element={<MyStatistics />} />
 						<Route path="/teachers/:id/:tab" element={<TeacherInfo />} />
 						<Route path="/teachers/:id" element={<TeacherInfo />} />
 						<Route path="/students" element={<Students />} />
 						<Route path="/students/my-students" element={<MyStudents />} />
-						<Route path="/students/my-profile" element={<MyStudentProfile />} />
 						<Route path="/students/:userId/:tab" element={<StudentDetail />} />
 						<Route path="/students/:userId" element={<StudentDetail />} />
 						<Route path="/reports" element={<Reports />} />

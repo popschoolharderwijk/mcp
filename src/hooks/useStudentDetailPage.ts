@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { SignupRequestDetail } from '@/components/students/SignupRequestDialog';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { getDisplayName } from '@/lib/display-name';
 import type { StudentProfileData } from '@/lib/students/studentDetailHelpers';
@@ -11,39 +12,12 @@ import {
 	runStudentDetailPageLoad,
 } from '@/lib/students/studentDetailPageLoadHelpers';
 import {
-	resolveStudentDetailTabState,
+	resolveStudentDetailRouteState,
 	resolveStudentInfoTabRoute,
 	type StudentInfoTabId,
 } from '@/lib/students/studentInfoTabsHelpers';
 import type { LessonAgreementWithTeacher } from '@/types/lesson-agreements';
 import type { Student } from '@/types/students';
-
-interface UseStudentDetailPageParams {
-	authLoading: boolean;
-	canView: boolean;
-	isPrivileged: boolean;
-}
-
-function useStudentDetailTabRouting(authLoading: boolean, isPrivileged: boolean) {
-	const { userId, tab: tabParam } = useParams<{ userId: string; tab?: string }>();
-	const navigate = useNavigate();
-	const { activeTab, tabRedirectTo } = resolveStudentDetailTabState({
-		userId,
-		tabParam,
-		authLoading,
-		isPrivileged,
-	});
-
-	const onTabChange = useCallback(
-		(tab: StudentInfoTabId) => {
-			if (!userId) return;
-			navigate(resolveStudentInfoTabRoute(userId, tab), { replace: true });
-		},
-		[navigate, userId],
-	);
-
-	return { userId, activeTab, tabRedirectTo, onTabChange };
-}
 
 function useStudentDetailBreadcrumb(profile: StudentProfileData | null) {
 	const { setBreadcrumbSuffix } = useBreadcrumb();
@@ -57,11 +31,28 @@ function useStudentDetailBreadcrumb(profile: StudentProfileData | null) {
 	}, [profile, setBreadcrumbSuffix]);
 }
 
-export function useStudentDetailPage(params: UseStudentDetailPageParams) {
-	const { userId, activeTab, tabRedirectTo, onTabChange } = useStudentDetailTabRouting(
-		params.authLoading,
-		params.isPrivileged,
+export function useStudentDetailPage() {
+	const { userId: routeUserId, tab: tabParam } = useParams<{ userId?: string; tab?: string }>();
+	const navigate = useNavigate();
+	const { user, isPrivileged, isTeacher, isLoading: authLoading } = useAuth();
+
+	const route = resolveStudentDetailRouteState({
+		routeUserId,
+		viewerUserId: user?.id,
+		isPrivileged,
+		isTeacher,
+		tabParam,
+		authLoading,
+	});
+
+	const onTabChange = useCallback(
+		(tab: StudentInfoTabId) => {
+			if (!route.basePath) return;
+			navigate(resolveStudentInfoTabRoute(route.basePath, tab), { replace: true });
+		},
+		[navigate, route.basePath],
 	);
+
 	const [loading, setLoading] = useState(true);
 	const [profile, setProfile] = useState<StudentProfileData | null>(null);
 	const [student, setStudent] = useState<Student | null>(null);
@@ -75,13 +66,13 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
 		setStudent(null);
 		setAgreements([]);
 		setSignupRequests([]);
-		if (userId) setLoading(true);
-	}, [userId]);
+		if (route.userId) setLoading(true);
+	}, [route.userId]);
 
 	const load = useCallback(async () => {
-		if (!userId) return;
+		if (!route.userId) return;
 		if (!hasLoadedContentRef.current) setLoading(true);
-		const outcome = await executeStudentDetailHookLoad(() => runStudentDetailPageLoad(supabase, userId));
+		const outcome = await executeStudentDetailHookLoad(() => runStudentDetailPageLoad(supabase, route.userId));
 		applyStudentDetailHookLoadOutcome(outcome, {
 			setLoading,
 			applySuccess: (result) => {
@@ -92,11 +83,11 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
 				hasLoadedContentRef.current = true;
 			},
 		});
-	}, [userId]);
+	}, [route.userId]);
 
 	useEffect(() => {
-		if (!params.authLoading && params.canView) void load();
-	}, [params.authLoading, params.canView, load]);
+		if (!authLoading && route.access.canView) void load();
+	}, [authLoading, route.access.canView, load]);
 
 	useStudentDetailBreadcrumb(profile);
 
@@ -105,14 +96,21 @@ export function useStudentDetailPage(params: UseStudentDetailPageParams) {
 	}, [load]);
 
 	return {
-		userId,
+		authLoading,
+		userId: route.userId,
 		loading,
 		profile,
 		student,
 		agreements,
 		signupRequests,
-		activeTab,
-		tabRedirectTo,
+		activeTab: route.activeTab,
+		tabRedirectTo: route.tabRedirectTo,
+		canView: route.access.canView,
+		canEditAgenda: route.access.canEditAgenda,
+		canViewPersonalData: route.access.canViewPersonalData,
+		canManagePersonalData: route.access.canManagePersonalData,
+		includeAgenda: route.includeAgenda,
+		isPrivileged,
 		onTabChange,
 		onProfileUpdate,
 	};

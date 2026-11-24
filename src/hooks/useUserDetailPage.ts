@@ -3,47 +3,44 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useBreadcrumb } from '@/contexts/BreadcrumbContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getDisplayName } from '@/lib/display-name';
-import {
-	type PersonDetailTabId,
-	parsePersonDetailTab,
-	resolvePersonDetailTabRedirect,
-	resolvePersonDetailTabRoute,
-} from '@/lib/profile/personDetailTabsHelpers';
+import { type PersonDetailTabId, resolvePersonDetailTabRoute } from '@/lib/profile/personDetailTabsHelpers';
 import { loadUserDetail } from '@/lib/users/userDetailLoadHelpers';
 import {
 	applyUserDetailLoadOutcome,
-	resolveUserDetailBasePath,
+	resolveUserDetailRouteState,
 	type UserDetailUser,
 } from '@/lib/users/userDetailPageHelpers';
-import { shouldShowUsersPage } from '@/lib/users/usersPageShellHelpers';
 
 export function useUserDetailPage() {
-	const { userId, tab: tabParam } = useParams<{ userId: string; tab?: string }>();
+	const { userId: routeUserId, tab: tabParam } = useParams<{ userId?: string; tab?: string }>();
 	const navigate = useNavigate();
-	const { isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
+	const { user: authUser, isAdmin, isSiteAdmin, isLoading: authLoading } = useAuth();
 	const { setBreadcrumbSuffix } = useBreadcrumb();
-	const hasAccess = shouldShowUsersPage(isAdmin, isSiteAdmin);
+
+	const route = resolveUserDetailRouteState({
+		routeUserId,
+		authUserId: authUser?.id,
+		isAdmin,
+		isSiteAdmin,
+		tabParam,
+	});
 
 	const [user, setUser] = useState<UserDetailUser | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [notFound, setNotFound] = useState(false);
 	const [profileVersion, setProfileVersion] = useState(0);
 
-	const basePath = userId ? resolveUserDetailBasePath(userId) : '';
-	const activeTab = parsePersonDetailTab(tabParam);
-	const tabRedirectTo = userId ? resolvePersonDetailTabRedirect(basePath, tabParam) : null;
-
 	const reload = useCallback(async () => {
-		if (!userId || !hasAccess) {
+		if (!route.userId || !route.hasAccess) {
 			setLoading(false);
 			return;
 		}
 		setLoading(true);
 		setNotFound(false);
-		const result = await loadUserDetail(userId);
+		const result = await loadUserDetail(route.userId);
 		applyUserDetailLoadOutcome(result, setUser, setNotFound);
 		setLoading(false);
-	}, [userId, hasAccess]);
+	}, [route.userId, route.hasAccess]);
 
 	useEffect(() => {
 		void profileVersion;
@@ -60,18 +57,19 @@ export function useUserDetailPage() {
 	}, [user, setBreadcrumbSuffix]);
 
 	const onTabChange = (tab: PersonDetailTabId) => {
-		if (!basePath) return;
-		navigate(resolvePersonDetailTabRoute(basePath, tab), { replace: true });
+		if (!route.basePath) return;
+		navigate(resolvePersonDetailTabRoute(route.basePath, tab), { replace: true });
 	};
 
 	return {
 		authLoading,
-		hasAccess,
+		hasAccess: route.hasAccess,
 		loading,
 		notFound,
 		user,
-		activeTab,
-		tabRedirectTo,
+		includeAgenda: route.includeAgenda,
+		activeTab: route.activeTab,
+		tabRedirectTo: route.tabRedirectTo,
 		onTabChange,
 		onUpdate: () => setProfileVersion((version) => version + 1),
 	};

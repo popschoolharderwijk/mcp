@@ -7,6 +7,7 @@ import {
 	profileAddressFormFromFields,
 } from '@/lib/profile/profileAddressHelpers';
 import {
+	hasProfileAddressFormChanges,
 	profileAddressFormFromValueKey,
 	profileAddressValueKey,
 	resolveProfileAddressBootstrap,
@@ -32,13 +33,16 @@ export function useProfileAddressSection(
 ) {
 	const bootstrap = resolveProfileAddressBootstrap(initialAddress);
 	const [form, setForm] = useState<ProfileAddressFormState>(() => bootstrap.form);
+	const [baseline, setBaseline] = useState<ProfileAddressFormState>(() => bootstrap.form);
 	const [loading, setLoading] = useState(bootstrap.loading);
 	const [saving, setSaving] = useState(false);
 	const addressKey = profileAddressValueKey(initialAddress);
 
 	useEffect(() => {
 		if (addressKey != null) {
-			setForm(profileAddressFormFromValueKey(addressKey));
+			const next = profileAddressFormFromValueKey(addressKey);
+			setForm(next);
+			setBaseline(next);
 			setLoading(false);
 			return;
 		}
@@ -47,6 +51,7 @@ export function useProfileAddressSection(
 		void loadProfileAddress(userId)
 			.then((loaded) => {
 				setForm(loaded);
+				setBaseline(loaded);
 				setLoading(false);
 			})
 			.catch((error) => {
@@ -74,6 +79,7 @@ export function useProfileAddressSection(
 				toast.error('Fout bij opslaan adres', { description: error.message });
 				return;
 			}
+			setBaseline(form);
 			toast.success('Adres bijgewerkt');
 			onUpdate?.();
 		} finally {
@@ -81,5 +87,12 @@ export function useProfileAddressSection(
 		}
 	};
 
-	return { form, setForm, loading, saving, onSave };
+	return {
+		form,
+		setForm,
+		loading,
+		saving,
+		onSave,
+		hasChanges: hasProfileAddressFormChanges(baseline, form),
+	};
 }

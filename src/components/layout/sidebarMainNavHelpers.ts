@@ -1,6 +1,5 @@
 import { adminOperationalNavItems, teacherChildNavItems } from '@/components/layout/sidebar-config';
 import { NAV_ICONS, NAV_LABELS } from '@/config/nav-items';
-import { buildTeacherInfoPath } from '@/lib/teachers/teacherInfoTabsHelpers';
 
 export const ADMIN_SECTION_KEY = 'admin-section';
 export const ADMINISTRATION_SECTION_KEY = 'administration-section';
@@ -24,7 +23,6 @@ export interface SidebarMainNavVisibility {
 	collapsed: boolean;
 	isStudent: boolean;
 	isTeacher: boolean;
-	teacherUserId: string | null;
 	showTeachersNav: boolean;
 	showStudentsNav: boolean;
 	showReportsNav: boolean;
@@ -47,23 +45,11 @@ export function buildSidebarMainNavItems(visibility: SidebarMainNavVisibility): 
 	const items: SidebarNavItemConfig[] = [];
 
 	items.push({ key: 'dashboard', href: '/', label: NAV_LABELS.dashboard, icon: NAV_ICONS.dashboard });
+	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
+	items.push({ key: 'profile', href: '/profile', label: NAV_LABELS.myProfile, icon: NAV_ICONS.myProfile });
 
 	if (visibility.isStudent) {
-		items.push(
-			{ key: 'my-profile', href: '/students/my-profile', label: NAV_LABELS.myProfile, icon: NAV_ICONS.myProfile },
-			{ key: 'my-trial', href: '/my-trial', label: NAV_LABELS.myTrial, icon: NAV_ICONS.myTrial },
-		);
-	}
-
-	items.push({ key: 'agenda', href: '/agenda', label: NAV_LABELS.agenda, icon: NAV_ICONS.agenda });
-
-	if (visibility.isTeacher && visibility.teacherUserId) {
-		items.push({
-			key: 'my-profile',
-			href: buildTeacherInfoPath(visibility.teacherUserId),
-			label: NAV_LABELS.myProfile,
-			icon: NAV_ICONS.myProfile,
-		});
+		items.push({ key: 'my-trial', href: '/my-trial', label: NAV_LABELS.myTrial, icon: NAV_ICONS.myTrial });
 	}
 
 	if (visibility.showTeachersNav) {

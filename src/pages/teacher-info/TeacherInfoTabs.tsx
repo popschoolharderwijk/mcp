@@ -17,6 +17,7 @@ interface TeacherInfoTabsProps {
 	teacherProfile: Teacher;
 	agreementsCount: number;
 	canAccess: boolean;
+	includeAgenda: boolean;
 	activeTab: PersonDetailTabId;
 	onTabChange: (tab: PersonDetailTabId) => void;
 	onProfileUpdate: () => void;
@@ -27,6 +28,7 @@ export function TeacherInfoTabs({
 	teacherProfile,
 	agreementsCount,
 	canAccess,
+	includeAgenda,
 	activeTab,
 	onTabChange,
 	onProfileUpdate,
@@ -38,7 +40,7 @@ export function TeacherInfoTabs({
 			value={activeTab}
 			onValueChange={onTabChange}
 			isTabId={isPersonDetailTabId}
-			items={buildTeacherDetailTabItems(agreementsCount)}
+			items={buildTeacherDetailTabItems(agreementsCount, { includeAgenda })}
 		>
 			<PageTabsContent value="profile">
 				<TeacherInfoProfileTab
@@ -67,9 +69,11 @@ export function TeacherInfoTabs({
 				/>
 			</PageTabsContent>
 
-			<PageTabsContent value="agenda">
-				<AgendaView userId={targetTeacherUserId} canEdit={canAccess} />
-			</PageTabsContent>
+			{includeAgenda ? (
+				<PageTabsContent value="agenda">
+					<AgendaView userId={targetTeacherUserId} canEdit={canAccess} />
+				</PageTabsContent>
+			) : null}
 		</PageTabs>
 	);
 }

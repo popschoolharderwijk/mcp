@@ -19,30 +19,60 @@ interface StudentInfoTabsProps {
 	agreements: LessonAgreementWithTeacher[];
 	signupRequests: SignupRequestDetail[];
 	isPrivileged: boolean;
+	canViewPersonalData: boolean;
+	canManagePersonalData: boolean;
 	canEditAgenda: boolean;
+	includeAgenda: boolean;
 	activeTab: StudentInfoTabId;
 	onTabChange: (tab: StudentInfoTabId) => void;
 	onProfileUpdate: () => void;
 }
 
-function StudentPrivilegedFormTabs({ student, onProfileUpdate }: { student: Student; onProfileUpdate: () => void }) {
-	const { vm, saving, runSave, setDateOfBirthDraftSynced } = useStudentProfileForm(student, onProfileUpdate);
+function StudentPersonalFormTabs({
+	student,
+	canEdit,
+	onProfileUpdate,
+}: {
+	student: Student;
+	canEdit: boolean;
+	onProfileUpdate: () => void;
+}) {
+	const { vm, saving, runSave, setDateOfBirthDraftSynced, hasScopeChanges } = useStudentProfileForm(
+		student,
+		onProfileUpdate,
+	);
 
 	return (
 		<>
 			<PageTabsContent value="profile" panelWidth="1/2">
 				<StudentProfileSection
+					student={student}
 					vm={vm}
+					canEdit={canEdit}
 					saving={saving}
 					onSave={() => void runSave('profile')}
+					onProfileUpdate={onProfileUpdate}
+					saveDisabled={!hasScopeChanges('profile')}
 					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
 				/>
 			</PageTabsContent>
 			<PageTabsContent value="address" panelWidth="1/2">
-				<StudentAddressSection vm={vm} saving={saving} onSave={() => void runSave('address')} />
+				<StudentAddressSection
+					vm={vm}
+					canEdit={canEdit}
+					saving={saving}
+					onSave={() => void runSave('address')}
+					saveDisabled={!hasScopeChanges('address')}
+				/>
 			</PageTabsContent>
 			<PageTabsContent value="parent" panelWidth="1/2">
-				<StudentParentSection vm={vm} saving={saving} onSave={() => void runSave('parent')} />
+				<StudentParentSection
+					vm={vm}
+					canEdit={canEdit}
+					saving={saving}
+					onSave={() => void runSave('parent')}
+					saveDisabled={!hasScopeChanges('parent')}
+				/>
 			</PageTabsContent>
 		</>
 	);
@@ -53,12 +83,14 @@ function StudentInfoSharedTabs({
 	signupRequests,
 	canEditAgenda,
 	canMutateAgreements,
+	includeAgenda,
 	onAgreementsMutated,
 }: {
 	userId: string;
 	signupRequests: SignupRequestDetail[];
 	canEditAgenda: boolean;
 	canMutateAgreements: boolean;
+	includeAgenda: boolean;
 	onAgreementsMutated: () => void;
 }) {
 	return (
@@ -80,9 +112,11 @@ function StudentInfoSharedTabs({
 				/>
 			</PageTabsContent>
 
-			<PageTabsContent value="agenda">
-				<AgendaView userId={userId} canEdit={canEditAgenda} />
-			</PageTabsContent>
+			{includeAgenda ? (
+				<PageTabsContent value="agenda">
+					<AgendaView userId={userId} canEdit={canEditAgenda} />
+				</PageTabsContent>
+			) : null}
 		</>
 	);
 }
@@ -93,13 +127,16 @@ export function StudentInfoTabs({
 	agreements,
 	signupRequests,
 	isPrivileged,
+	canViewPersonalData,
+	canManagePersonalData,
 	canEditAgenda,
+	includeAgenda,
 	activeTab,
 	onTabChange,
 	onProfileUpdate,
 }: StudentInfoTabsProps) {
 	const items = [
-		...(isPrivileged
+		...(canViewPersonalData
 			? [
 					{ value: 'profile' as const, label: 'Profiel' },
 					{ value: 'address' as const, label: 'Adres' },
@@ -108,18 +145,25 @@ export function StudentInfoTabs({
 			: []),
 		{ value: 'agreements' as const, label: buildAgreementsTabLabel(agreements.length) },
 		{ value: 'signups' as const, label: `Aanmeldingen (${signupRequests.length})` },
-		{ value: 'agenda' as const, label: 'Agenda' },
+		...(includeAgenda ? [{ value: 'agenda' as const, label: 'Agenda' }] : []),
 	];
 
 	return (
 		<PageTabs value={activeTab} onValueChange={onTabChange} isTabId={isStudentInfoTabId} items={items}>
-			{isPrivileged && <StudentPrivilegedFormTabs student={student} onProfileUpdate={onProfileUpdate} />}
+			{canViewPersonalData && (
+				<StudentPersonalFormTabs
+					student={student}
+					canEdit={canManagePersonalData}
+					onProfileUpdate={onProfileUpdate}
+				/>
+			)}
 
 			<StudentInfoSharedTabs
 				userId={userId}
 				signupRequests={signupRequests}
 				canEditAgenda={canEditAgenda}
 				canMutateAgreements={isPrivileged}
+				includeAgenda={includeAgenda}
 				onAgreementsMutated={onProfileUpdate}
 			/>
 		</PageTabs>

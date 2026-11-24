@@ -9,9 +9,18 @@ interface ProfileFormSaveCardProps {
 	children: ReactNode;
 	/** When false, hide the save button (read-only). Default true. */
 	canEdit?: boolean;
+	/** When true, Opslaan is disabled (e.g. no unsaved changes). */
+	disabled?: boolean;
 }
 
-export function ProfileFormSaveCard({ title, saving, onSave, children, canEdit = true }: ProfileFormSaveCardProps) {
+export function ProfileFormSaveCard({
+	title,
+	saving,
+	onSave,
+	children,
+	canEdit = true,
+	disabled = false,
+}: ProfileFormSaveCardProps) {
 	return (
 		<Card>
 			<CardHeader className="pb-3">
@@ -21,7 +30,7 @@ export function ProfileFormSaveCard({ title, saving, onSave, children, canEdit =
 				{children}
 				{canEdit && (
 					<div className="flex justify-end pt-2">
-						<SubmitButton onClick={onSave} loading={saving} loadingLabel="Opslaan...">
+						<SubmitButton onClick={onSave} loading={saving} disabled={disabled} loadingLabel="Opslaan...">
 							Opslaan
 						</SubmitButton>
 					</div>

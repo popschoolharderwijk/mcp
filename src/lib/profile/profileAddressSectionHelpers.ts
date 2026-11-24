@@ -1,4 +1,6 @@
+import { deepEqual } from '@/lib/deepEqual';
 import {
+	buildProfileAddressUpdateFields,
 	emptyProfileAddressForm,
 	getProfileAddressValidationError,
 	profileAddressFormFromFields,
@@ -54,6 +56,14 @@ export function resolveProfileAddressSaveBlock(form: ProfileAddressFormState): P
 	const message = getProfileAddressValidationError(form);
 	if (message) return { blocked: true, message };
 	return { blocked: false };
+}
+
+/** True when normalized address fields differ from the loaded baseline. */
+export function hasProfileAddressFormChanges(
+	initial: ProfileAddressFormState,
+	current: ProfileAddressFormState,
+): boolean {
+	return !deepEqual(buildProfileAddressUpdateFields(initial), buildProfileAddressUpdateFields(current));
 }
 
 /** Address fields from a profile-like row (defaults country to NL). */

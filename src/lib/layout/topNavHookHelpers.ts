@@ -15,7 +15,7 @@ export function buildTopNavNavigationCallbacks(
 	setTheme: (theme: 'light' | 'dark') => void,
 ): TopNavNavigationCallbacks {
 	return {
-		onNavigateSettings: () => navigate('/account/profile'),
+		onNavigateSettings: () => navigate('/account/appearance'),
 		onSignOut: async () => {
 			await signOut();
 			navigate('/login');

@@ -3,6 +3,7 @@ import {
 	buildCreateStudentPayload,
 	buildStudentProfileUpdateFields,
 	buildStudentRecordUpdateFields,
+	hasStudentFormScopeChanges,
 	resolveCreateStudentInvokeResult,
 } from '../../../src/components/students/studentFormPersistenceHelpers';
 import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
@@ -132,6 +133,25 @@ describe('buildStudentRecordUpdateFields', () => {
 
 	it('returns null on address scope', () => {
 		expect(buildStudentRecordUpdateFields(emptyStudentForm, 'address')).toBeNull();
+	});
+});
+
+describe('hasStudentFormScopeChanges', () => {
+	it('ignores whitespace-only profile edits', () => {
+		const initial = { ...emptyStudentForm, first_name: 'Anna', last_name: 'Bakker' };
+		expect(
+			hasStudentFormScopeChanges(initial, { ...initial, first_name: ' Anna ', last_name: ' Bakker ' }, 'profile'),
+		).toBe(false);
+	});
+
+	it('scopes dirty detection so profile-only edits do not dirty parent', () => {
+		const initial = {
+			...emptyStudentForm,
+			first_name: 'Anna',
+			parent_name: 'Ouder',
+		};
+		expect(hasStudentFormScopeChanges(initial, { ...initial, first_name: 'Anne' }, 'parent')).toBe(false);
+		expect(hasStudentFormScopeChanges(initial, { ...initial, parent_name: 'Mama' }, 'parent')).toBe(true);
 	});
 });
 

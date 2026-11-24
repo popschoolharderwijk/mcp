@@ -38,7 +38,7 @@ async function executeAgreementDelete(
 
 export async function runAgreementPageAction(
 	action: AgreementAction,
-	deleteDialog: { open: boolean; agreement: AgreementTableRow } | null,
+	deleteDialog: { open: boolean; agreement: AgreementTableRow | null } | null,
 	setters: AgreementPageActionSetters,
 ): Promise<void> {
 	const resolved = resolveAgreementRunActionKind(action);

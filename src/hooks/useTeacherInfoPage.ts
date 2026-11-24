@@ -12,7 +12,11 @@ import {
 import { fetchTeacherProfile } from '@/lib/teachers/fetchTeacherProfile';
 import { canAccessTeacherProfile, resolveTargetTeacherUserId } from '@/lib/teachers/teacherInfoHelpers';
 import { resolveTeacherInfoPageGate } from '@/lib/teachers/teacherInfoPageShellHelpers';
-import { resolveTeacherInfoBasePath, resolveTeacherInfoTabRedirect } from '@/lib/teachers/teacherInfoTabsHelpers';
+import {
+	resolveTeacherInfoBasePath,
+	resolveTeacherInfoIncludeAgenda,
+	resolveTeacherInfoTabRedirect,
+} from '@/lib/teachers/teacherInfoTabsHelpers';
 import type { Teacher } from '@/types/teachers';
 
 export function useTeacherInfoPage() {
@@ -25,7 +29,8 @@ export function useTeacherInfoPage() {
 	const [profileVersion, setProfileVersion] = useState(0);
 
 	const basePath = resolveTeacherInfoBasePath(id);
-	const activeTab = parsePersonDetailTab(tabParam);
+	const includeAgenda = resolveTeacherInfoIncludeAgenda(basePath);
+	const activeTab = parsePersonDetailTab(tabParam, { includeAgenda });
 	const tabRedirectTo = resolveTeacherInfoTabRedirect(basePath, tabParam);
 
 	const targetTeacherUserId = resolveTargetTeacherUserId({
@@ -86,6 +91,7 @@ export function useTeacherInfoPage() {
 		teacherProfile,
 		agreementsCount,
 		canAccess,
+		includeAgenda,
 		activeTab,
 		tabRedirectTo,
 		onTabChange,

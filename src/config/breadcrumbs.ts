@@ -19,7 +19,7 @@ interface RouteBreadcrumb {
 	items: BreadcrumbItem[];
 }
 
-/** Order matters: more specific routes first (e.g. /teachers/my-profile before /teachers/:id). */
+/** Order matters: more specific routes first (e.g. /teachers/availability before /teachers/:id). */
 const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 	{ pattern: '/', items: [] },
 	{ pattern: '/agenda', items: [{ label: NAV_LABELS.agenda, href: '/agenda' }] },
@@ -80,8 +80,8 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		items: [{ label: NAV_LABELS.agreements, href: '/agreements' }],
 	},
 	{
-		pattern: '/account/profile',
-		items: [{ label: NAV_LABELS.accountProfile, href: '/account/profile' }],
+		pattern: /^\/profile(?:\/[^/]+)?$/,
+		items: [{ label: NAV_LABELS.myProfile, href: '/profile' }],
 	},
 	{
 		pattern: '/account/appearance',
@@ -112,13 +112,6 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		],
 	},
 	{
-		pattern: /^\/teachers\/my-profile(?:\/[^/]+)?$/,
-		items: [
-			{ label: NAV_LABELS.teachers, href: '/teachers' },
-			{ label: NAV_LABELS.myProfile, href: '/teachers/my-profile' },
-		],
-	},
-	{
 		pattern: '/teachers/my-availability',
 		items: [
 			{ label: NAV_LABELS.teachers, href: '/teachers' },
@@ -138,28 +131,38 @@ const ROUTE_BREADCRUMBS: RouteBreadcrumb[] = [
 		items: [{ label: NAV_LABELS.teachers, href: '/teachers' }],
 	},
 	{ pattern: '/students', items: [{ label: NAV_LABELS.students, href: '/students' }] },
-	{
-		pattern: '/students/my-students',
-		items: [
-			{ label: NAV_LABELS.students, href: '/students' },
-			{ label: NAV_LABELS.myStudents, href: '/students/my-students' },
-		],
-	},
-	{
-		pattern: '/students/my-profile',
-		items: [
-			{ label: NAV_LABELS.students, href: '/students' },
-			{ label: NAV_LABELS.myProfile, href: '/students/my-profile' },
-		],
-	},
-	// /students/:userId(/:tab) – base only; page adds student name via suffix
-	{
-		pattern: /^\/students\/[^/]+(?:\/[^/]+)?$/,
-		items: [{ label: NAV_LABELS.students, href: '/students' }],
-	},
 	{ pattern: '/reports', items: [{ label: NAV_LABELS.reports, href: '/reports' }] },
 	{ pattern: '/manual', items: [{ label: NAV_LABELS.manual, href: '/manual' }] },
 ];
+
+/** Student detail `/students/:userId(/:tab)` — not the list routes. */
+const STUDENT_DETAIL_PATH = /^\/students\/[^/]+(?:\/[^/]+)?$/;
+
+export interface BreadcrumbAccess {
+	isPrivileged: boolean;
+}
+
+function resolveStudentsOverviewBreadcrumb(isPrivileged: boolean): BreadcrumbItem {
+	if (isPrivileged) {
+		return { label: NAV_LABELS.students, href: '/students' };
+	}
+	return { label: NAV_LABELS.myStudents, href: '/students/my-students' };
+}
+
+/** Role-aware crumbs for teacher vs privileged student list routes. */
+function resolveStudentsRouteBreadcrumb(pathname: string, isPrivileged: boolean): BreadcrumbItem[] | null {
+	if (pathname === '/students/my-students') {
+		const overview = resolveStudentsOverviewBreadcrumb(isPrivileged);
+		if (isPrivileged) {
+			return [overview, { label: NAV_LABELS.myStudents, href: '/students/my-students' }];
+		}
+		return [{ label: NAV_LABELS.myStudents, href: '/students/my-students' }];
+	}
+	if (pathname !== '/students' && STUDENT_DETAIL_PATH.test(pathname)) {
+		return [resolveStudentsOverviewBreadcrumb(isPrivileged)];
+	}
+	return null;
+}
 
 function matchesPattern(pathname: string, pattern: PathPattern): boolean {
 	if (typeof pattern === 'string') {
@@ -173,7 +176,10 @@ function matchesPattern(pathname: string, pattern: PathPattern): boolean {
  * For routes with a dynamic title (e.g. teacher name) the page adds
  * extra items via useBreadcrumb().setBreadcrumbSuffix().
  */
-export function getBaseBreadcrumb(pathname: string): BreadcrumbItem[] {
+export function getBaseBreadcrumb(pathname: string, access: BreadcrumbAccess): BreadcrumbItem[] {
+	const studentsCrumb = resolveStudentsRouteBreadcrumb(pathname, access.isPrivileged);
+	if (studentsCrumb) return studentsCrumb;
+
 	for (const { pattern, items } of ROUTE_BREADCRUMBS) {
 		if (matchesPattern(pathname, pattern)) {
 			return [...items];

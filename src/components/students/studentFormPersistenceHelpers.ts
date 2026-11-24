@@ -1,6 +1,7 @@
 import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
 import { studentRecordFields } from '@/components/students/studentFormTypes';
 import type { StudentFormSaveScope } from '@/components/students/studentFormValidation';
+import { deepEqual } from '@/lib/deepEqual';
 import { buildProfileAddressUpdateFields } from '@/lib/profile/profileAddressHelpers';
 import {
 	normalizeCompactText,
@@ -44,6 +45,18 @@ export function buildStudentRecordUpdateFields(form: StudentFormState, scope: St
 	return {
 		date_of_birth: fields.date_of_birth,
 	};
+}
+
+/** True when scoped save payloads differ from the loaded student (normalized). */
+export function hasStudentFormScopeChanges(
+	initial: StudentFormState,
+	current: StudentFormState,
+	scope: StudentFormSaveScope,
+): boolean {
+	return (
+		!deepEqual(buildStudentProfileUpdateFields(initial, scope), buildStudentProfileUpdateFields(current, scope)) ||
+		!deepEqual(buildStudentRecordUpdateFields(initial, scope), buildStudentRecordUpdateFields(current, scope))
+	);
 }
 
 export function buildCreateStudentPayload(

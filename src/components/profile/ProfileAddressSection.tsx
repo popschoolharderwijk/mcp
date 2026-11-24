@@ -19,12 +19,22 @@ export function ProfileAddressSection({
 	onUpdate,
 	idPrefix = 'profile-address',
 }: ProfileAddressSectionProps) {
-	const { form, setForm, loading, saving, onSave } = useProfileAddressSection(userId, initialAddress, onUpdate);
+	const { form, setForm, loading, saving, onSave, hasChanges } = useProfileAddressSection(
+		userId,
+		initialAddress,
+		onUpdate,
+	);
 
 	if (loading) return <SectionSkeleton />;
 
 	return (
-		<ProfileFormSaveCard title="Adres" saving={saving} onSave={() => void onSave()} canEdit={canEdit}>
+		<ProfileFormSaveCard
+			title="Adres"
+			saving={saving}
+			onSave={() => void onSave()}
+			canEdit={canEdit}
+			disabled={!hasChanges}
+		>
 			<ProfileAddressFormFields idPrefix={idPrefix} form={form} onChange={setForm} disabled={!canEdit} />
 		</ProfileFormSaveCard>
 	);

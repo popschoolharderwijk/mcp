@@ -1,19 +1,11 @@
+import type { Teacher } from '@/types/teachers';
+
 export type TeacherInfoPageGate = 'loading' | 'denied' | 'profile-loading' | 'ready';
 
-export function shouldRedirectTeacherInfo(pageGate: TeacherInfoPageGate): boolean {
-	return pageGate === 'denied';
-}
-
-export function shouldShowTeacherInfoSkeleton(
-	pageGate: TeacherInfoPageGate,
-	teacherProfile: unknown,
-	targetTeacherUserId: string | null,
-): boolean {
-	if (pageGate === 'loading' || pageGate === 'profile-loading') {
-		return true;
-	}
-	return teacherProfile === null || targetTeacherUserId === null;
-}
+export type TeacherInfoScreen =
+	| { kind: 'navigate'; to: string }
+	| { kind: 'loading' }
+	| { kind: 'ready'; targetTeacherUserId: string; teacherProfile: Teacher };
 
 export function resolveTeacherInfoPageGate(params: {
 	authLoading: boolean;
@@ -26,4 +18,27 @@ export function resolveTeacherInfoPageGate(params: {
 	if (!params.canAccess) return 'denied';
 	if (params.loading || !params.hasProfile) return 'profile-loading';
 	return 'ready';
+}
+
+export function resolveTeacherInfoScreen(params: {
+	tabRedirectTo: string | null;
+	pageGate: TeacherInfoPageGate;
+	targetTeacherUserId: string | null;
+	teacherProfile: Teacher | null;
+}): TeacherInfoScreen {
+	if (params.tabRedirectTo) return { kind: 'navigate', to: params.tabRedirectTo };
+	if (params.pageGate === 'denied') return { kind: 'navigate', to: '/' };
+	if (
+		params.pageGate === 'loading' ||
+		params.pageGate === 'profile-loading' ||
+		!params.targetTeacherUserId ||
+		!params.teacherProfile
+	) {
+		return { kind: 'loading' };
+	}
+	return {
+		kind: 'ready',
+		targetTeacherUserId: params.targetTeacherUserId,
+		teacherProfile: params.teacherProfile,
+	};
 }

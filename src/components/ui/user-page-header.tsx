@@ -13,7 +13,7 @@ interface UserPageHeaderProps {
 	actions?: ReactNode;
 }
 
-/** Person detail header: large avatar + name. Use instead of PageHeader on user/teacher/student end pages. */
+/** Person end-page header: large avatar + name (+ optional subtitle/actions). */
 export function UserPageHeader({ profile, subtitle, actions }: UserPageHeaderProps) {
 	const displayName = getDisplayName(profile);
 	const initials = getUserInitials(profile);
@@ -29,9 +29,12 @@ export function UserPageHeader({ profile, subtitle, actions }: UserPageHeaderPro
 					</AvatarFallback>
 				</Avatar>
 				<div className="min-w-0">
-					<h1 className="text-2xl font-semibold leading-none tracking-tight truncate">{displayName}</h1>
+					{/* truncate overflow clips to the padding box; pb/-mb keep descenders visible over the subtitle */}
+					<h1 className="relative z-10 truncate pb-[0.2em] -mb-[0.2em] text-2xl font-semibold leading-none tracking-tight">
+						{displayName}
+					</h1>
 					{line != null && line !== '' && (
-						<p className="text-sm text-muted-foreground mt-1 truncate">{line}</p>
+						<p className="truncate text-sm text-muted-foreground mt-1">{line}</p>
 					)}
 				</div>
 			</div>

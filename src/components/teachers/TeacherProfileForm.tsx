@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { TeacherProfileCocFields } from '@/components/teachers/TeacherProfileCocFields';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +14,8 @@ interface TeacherProfileFormProps {
 	form: TeacherProfileFormValues;
 	canEdit: boolean;
 	saving: boolean;
+	hasChanges: boolean;
+	avatar?: ReactNode;
 	cocIssuedOnDraftSynced?: boolean;
 	onChange: (patch: Partial<TeacherProfileFormValues>) => void;
 	onCocIssuedOnDraftSyncedChange?: (synced: boolean) => void;
@@ -23,15 +26,17 @@ export function TeacherProfileForm({
 	form,
 	canEdit,
 	saving,
+	hasChanges,
+	avatar,
 	cocIssuedOnDraftSynced = true,
 	onChange,
 	onCocIssuedOnDraftSyncedChange,
 	onSave,
 }: TeacherProfileFormProps) {
-	const canSubmit = canSubmitTeacherProfileForm(canEdit, form, cocIssuedOnDraftSynced);
+	const canSubmit = canSubmitTeacherProfileForm(canEdit, form, cocIssuedOnDraftSynced, hasChanges);
 
-	return (
-		<div className="space-y-4">
+	const nameAndContactFields = (
+		<div className="min-w-0 flex-1 space-y-4">
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="space-y-2">
 					<Label htmlFor="first-name">Voornaam</Label>
@@ -66,6 +71,19 @@ export function TeacherProfileForm({
 					disabled={!canEdit}
 				/>
 			</div>
+		</div>
+	);
+
+	return (
+		<div className="space-y-4">
+			{avatar ? (
+				<div className="flex items-start gap-4">
+					{avatar}
+					{nameAndContactFields}
+				</div>
+			) : (
+				nameAndContactFields
+			)}
 			<div className="space-y-2">
 				<Label htmlFor="bio">Biografie</Label>
 				<Textarea
