@@ -3,6 +3,7 @@ import type { StudentFormFieldsViewModel } from '@/components/students/studentFo
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MailtoEmailField } from '@/components/ui/mailto-email-field';
 import { PhoneInput } from '@/components/ui/phone-input';
 
 interface StudentFormPersonalSectionProps {
@@ -42,27 +43,8 @@ export function StudentFormPersonalSection({
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-3 gap-4">
-				<div className="space-y-1.5">
-					<Label htmlFor="student-email">Email</Label>
-					<Input
-						id="student-email"
-						type="email"
-						value={form.email}
-						onChange={(e) => setForm({ ...form, email: e.target.value })}
-						placeholder="leerling@voorbeeld.nl"
-						disabled
-					/>
-				</div>
-				<div className="space-y-1.5">
-					<PhoneInput
-						id="student-phone-number"
-						label="Telefoonnummer"
-						value={form.phone_number}
-						onChange={(value) => setForm({ ...form, phone_number: value })}
-						disabled={!canEdit}
-					/>
-				</div>
+			<div className="grid grid-cols-2 gap-4">
+				<MailtoEmailField id="student-email" email={form.email} className="space-y-1.5" />
 				<DateOfBirthField
 					id="student-dob"
 					value={form.date_of_birth}
@@ -71,6 +53,13 @@ export function StudentFormPersonalSection({
 					disabled={!canEdit}
 				/>
 			</div>
+			<PhoneInput
+				id="student-phone-number"
+				label="Telefoonnummer"
+				value={form.phone_number}
+				onChange={(value) => setForm({ ...form, phone_number: value })}
+				disabled={!canEdit}
+			/>
 		</div>
 	);
 

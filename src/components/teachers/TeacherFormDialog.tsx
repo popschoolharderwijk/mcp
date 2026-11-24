@@ -73,30 +73,26 @@ function TeacherEditFields({
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-3">
-				<div className="space-y-1.5">
-					<Label htmlFor="teacher-email" className="text-sm">
-						Email *
-					</Label>
-					<Input
-						id="teacher-email"
-						type="email"
-						value={form.email}
-						onChange={(event) => setForm({ ...form, email: event.target.value })}
-						placeholder="docent@voorbeeld.nl"
-						disabled={isEditMode}
-						className="h-9"
-					/>
-				</div>
-				<div className="space-y-1.5">
-					<PhoneInput
-						id="teacher-phone-number"
-						label="Telefoonnummer"
-						value={form.phone_number}
-						onChange={(value) => setForm({ ...form, phone_number: value })}
-					/>
-				</div>
+			<div className="space-y-1.5">
+				<Label htmlFor="teacher-email" className="text-sm">
+					Email *
+				</Label>
+				<Input
+					id="teacher-email"
+					type="email"
+					value={form.email}
+					onChange={(event) => setForm({ ...form, email: event.target.value })}
+					placeholder="docent@voorbeeld.nl"
+					disabled={isEditMode}
+					className="h-9"
+				/>
 			</div>
+			<PhoneInput
+				id="teacher-phone-number"
+				label="Telefoonnummer"
+				value={form.phone_number}
+				onChange={(value) => setForm({ ...form, phone_number: value })}
+			/>
 		</>
 	);
 }

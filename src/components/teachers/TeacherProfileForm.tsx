@@ -3,6 +3,7 @@ import { TeacherProfileCocFields } from '@/components/teachers/TeacherProfileCoc
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { MailtoEmailField } from '@/components/ui/mailto-email-field';
 import { PhoneInput } from '@/components/ui/phone-input';
 import { SubmitButton } from '@/components/ui/submit-button';
 import { Textarea } from '@/components/ui/textarea';
@@ -68,18 +69,8 @@ export function TeacherProfileForm({
 					/>
 				</div>
 			</div>
-			<div className="grid gap-4 sm:grid-cols-3">
-				<div className="space-y-2">
-					<Label htmlFor="teacher-email">Email</Label>
-					<Input id="teacher-email" type="email" value={form.email} disabled />
-				</div>
-				<PhoneInput
-					id="phone-number"
-					label="Telefoonnummer"
-					value={form.phoneNumber}
-					onChange={(phoneNumber) => onChange({ phoneNumber })}
-					disabled={!canEdit}
-				/>
+			<div className="grid gap-4 sm:grid-cols-2">
+				<MailtoEmailField id="teacher-email" email={form.email} />
 				<DateOfBirthField
 					id="teacher-dob"
 					value={form.dateOfBirth}
@@ -88,6 +79,13 @@ export function TeacherProfileForm({
 					disabled={!canEdit}
 				/>
 			</div>
+			<PhoneInput
+				id="phone-number"
+				label="Telefoonnummer"
+				value={form.phoneNumber}
+				onChange={(phoneNumber) => onChange({ phoneNumber })}
+				disabled={!canEdit}
+			/>
 		</div>
 	);
 

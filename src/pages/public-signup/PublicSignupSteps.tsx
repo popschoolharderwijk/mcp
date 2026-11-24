@@ -247,23 +247,21 @@ function DetailsStep(props: {
 					autoComplete="email"
 					required
 				/>
-				<div className="grid grid-cols-2 gap-3">
-					<PhoneInput
-						id="signup-phone"
-						label="Telefoonnummer"
-						value={props.form.phone_number}
-						onChange={(phone_number) => props.onFormChange({ ...props.form, phone_number })}
-						autoComplete="tel-national"
-					/>
-					<DateOfBirthField
-						id="signup-dob"
-						value={props.form.date_of_birth || null}
-						onChange={(date_of_birth) =>
-							props.onFormChange({ ...props.form, date_of_birth: date_of_birth ?? '' })
-						}
-					/>
-				</div>
+				<DateOfBirthField
+					id="signup-dob"
+					value={props.form.date_of_birth || null}
+					onChange={(date_of_birth) =>
+						props.onFormChange({ ...props.form, date_of_birth: date_of_birth ?? '' })
+					}
+				/>
 			</div>
+			<PhoneInput
+				id="signup-phone"
+				label="Telefoonnummer"
+				value={props.form.phone_number}
+				onChange={(phone_number) => props.onFormChange({ ...props.form, phone_number })}
+				autoComplete="tel-national"
+			/>
 			<div className="space-y-3 border-t pt-4">
 				<p className="text-sm font-medium">Ouder/verzorger (indien minderjarig)</p>
 				<SignupFormField
@@ -274,24 +272,22 @@ function DetailsStep(props: {
 					placeholder="Jan Jansen"
 					autoComplete="name"
 				/>
-				<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-					<SignupFormField
-						id="signup-parent-email"
-						label="E-mail ouder"
-						type="email"
-						value={props.form.parent_email}
-						onChange={(parent_email) => props.onFormChange({ ...props.form, parent_email })}
-						placeholder="ouder@voorbeeld.nl"
-						autoComplete="email"
-					/>
-					<PhoneInput
-						id="signup-parent-phone"
-						label="Telefoon ouder"
-						value={props.form.parent_phone_number}
-						onChange={(parent_phone_number) => props.onFormChange({ ...props.form, parent_phone_number })}
-						autoComplete="tel-national"
-					/>
-				</div>
+				<SignupFormField
+					id="signup-parent-email"
+					label="E-mail ouder"
+					type="email"
+					value={props.form.parent_email}
+					onChange={(parent_email) => props.onFormChange({ ...props.form, parent_email })}
+					placeholder="ouder@voorbeeld.nl"
+					autoComplete="email"
+				/>
+				<PhoneInput
+					id="signup-parent-phone"
+					label="Telefoon ouder"
+					value={props.form.parent_phone_number}
+					onChange={(parent_phone_number) => props.onFormChange({ ...props.form, parent_phone_number })}
+					autoComplete="tel-national"
+				/>
 			</div>
 			<div>
 				<Label htmlFor="notes">Opmerkingen</Label>
