@@ -1,11 +1,10 @@
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { jsonResponse } from '../_shared/http.ts';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupProfileUpdateFields,
 	buildSignupStudentPayload,
 	resolveExistingNonStudentConflictResponse,
-	resolveExistingSignupAccountAction,
 	resolveExistingSignupStudentUserId,
 	shouldUpdateSignupPhoneOnCreate,
 } from './ensureStudentFromSignupHelpers.ts';
@@ -67,7 +66,7 @@ async function persistSignupStudentData(
 		.eq('user_id', studentUserId)
 		.maybeSingle();
 
-	if (resolveExistingSignupAccountAction(existingStudent) === 'conflict') {
+	if (!existingStudent) {
 		const conflict = resolveExistingNonStudentConflictResponse();
 		return { ok: false, response: jsonResponse(conflict.status, { error: conflict.error }) };
 	}

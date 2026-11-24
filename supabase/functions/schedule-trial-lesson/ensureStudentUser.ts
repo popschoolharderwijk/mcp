@@ -1,9 +1,8 @@
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { jsonResponse } from '../_shared/http.ts';
 import {
 	buildStudentAuthCreatePayload,
 	resolveExistingStudentUserId,
-	resolveTrialStudentPersistAction,
 	shouldUpdateStudentPhoneOnCreate,
 } from './ensureStudentUserHelpers.ts';
 
@@ -80,10 +79,9 @@ async function persistTrialStudentRow(
 		.eq('user_id', studentUserId)
 		.maybeSingle();
 
-	const action = resolveTrialStudentPersistAction(isNewUser, existingStudent);
-	if (action === 'noop') return;
+	if (!isNewUser && existingStudent) return;
 
-	if (action === 'insert_empty') {
+	if (!isNewUser) {
 		await admin.from('students').insert({ user_id: studentUserId });
 		return;
 	}

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildStudentAuthCreatePayload,
 	resolveExistingStudentUserId,
-	resolveTrialStudentPersistAction,
 	shouldUpdateStudentPhoneOnCreate,
 } from '../../../supabase/functions/schedule-trial-lesson/ensureStudentUserHelpers';
 
@@ -23,20 +22,6 @@ describe('shouldUpdateStudentPhoneOnCreate', () => {
 
 	it('returns false when phone number is missing', () => {
 		expect(shouldUpdateStudentPhoneOnCreate(null)).toBe(false);
-	});
-});
-
-describe('resolveTrialStudentPersistAction', () => {
-	it('inserts full parent data for a newly created user', () => {
-		expect(resolveTrialStudentPersistAction(true, null)).toBe('insert_full');
-	});
-
-	it('leaves an existing student row untouched', () => {
-		expect(resolveTrialStudentPersistAction(false, { user_id: 'user-1' })).toBe('noop');
-	});
-
-	it('inserts an empty student row when the profile exists without a student', () => {
-		expect(resolveTrialStudentPersistAction(false, null)).toBe('insert_empty');
 	});
 });
 

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
-	resolveExistingSignupAccountAction,
 	resolveExistingSignupStudentUserId,
 	shouldUpdateSignupPhoneOnCreate,
 } from '../../../supabase/functions/approve-signup-request/ensureStudentFromSignupHelpers';
@@ -54,15 +53,5 @@ describe('buildSignupAuthCreatePayload', () => {
 describe('buildSignupStudentPayload', () => {
 	it('builds student row payload', () => {
 		expect(buildSignupStudentPayload('user-1', reqRow).user_id).toBe('user-1');
-	});
-});
-
-describe('resolveExistingSignupAccountAction', () => {
-	it('reuses an existing student account without overwriting', () => {
-		expect(resolveExistingSignupAccountAction({ user_id: 'user-1' })).toBe('reuse');
-	});
-
-	it('conflicts when the existing account is not a student', () => {
-		expect(resolveExistingSignupAccountAction(null)).toBe('conflict');
 	});
 });

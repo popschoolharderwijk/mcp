@@ -36,15 +36,6 @@ export function buildSignupProfileUpdateFields(reqRow: SignupRequestRow) {
 	};
 }
 
-export type ExistingSignupAccountAction = 'reuse' | 'conflict';
-
-/** Existing non-student accounts must not be converted during signup approval. */
-export function resolveExistingSignupAccountAction(
-	existingStudent: { user_id: string } | null | undefined,
-): ExistingSignupAccountAction {
-	return existingStudent ? 'reuse' : 'conflict';
-}
-
 export function resolveExistingNonStudentConflictResponse(): { status: 409; error: string } {
 	return {
 		status: 409,
