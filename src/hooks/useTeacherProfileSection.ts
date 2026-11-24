@@ -29,6 +29,7 @@ export interface UseTeacherProfileSectionParams {
 	initialLastName?: string | null;
 	initialEmail?: string | null;
 	initialPhoneNumber?: string | null;
+	initialDateOfBirth?: string | null;
 	initialAvatarUrl?: string | null;
 	initialCocIssuedOn?: string | null;
 }
@@ -44,7 +45,7 @@ async function loadTeacherProfileData(teacherUserId: string, userId: string) {
 
 	const { data: profileData, error: profileError } = await supabase
 		.from('profiles')
-		.select('first_name, last_name, email, phone_number')
+		.select('first_name, last_name, email, phone_number, date_of_birth')
 		.eq('user_id', userId)
 		.single();
 
@@ -75,6 +76,7 @@ export function useTeacherProfileSection({
 	initialLastName,
 	initialEmail,
 	initialPhoneNumber,
+	initialDateOfBirth,
 	initialAvatarUrl,
 	initialCocIssuedOn,
 }: UseTeacherProfileSectionParams) {
@@ -86,9 +88,18 @@ export function useTeacherProfileSection({
 			initialLastName,
 			initialEmail,
 			initialPhoneNumber,
+			initialDateOfBirth,
 			initialCocIssuedOn,
 		}),
-		[initialBio, initialFirstName, initialLastName, initialEmail, initialPhoneNumber, initialCocIssuedOn],
+		[
+			initialBio,
+			initialFirstName,
+			initialLastName,
+			initialEmail,
+			initialPhoneNumber,
+			initialDateOfBirth,
+			initialCocIssuedOn,
+		],
 	);
 
 	const [form, setForm] = useState<TeacherProfileFormValues>(() => createTeacherProfileFormState(profileInitials));
@@ -100,6 +111,7 @@ export function useTeacherProfileSection({
 	const [saving, setSaving] = useState(false);
 	const [avatarSaving, setAvatarSaving] = useState(false);
 	const [cocIssuedOnDraftSynced, setCocIssuedOnDraftSynced] = useState(true);
+	const [dateOfBirthDraftSynced, setDateOfBirthDraftSynced] = useState(true);
 
 	useEffect(() => {
 		setAvatarUrl(initialAvatarUrl ?? null);
@@ -119,10 +131,12 @@ export function useTeacherProfileSection({
 					lastName: loaded.lastName,
 					email: loaded.email,
 					phoneNumber: loaded.phoneNumber,
+					dateOfBirth: loaded.dateOfBirth,
 				};
 				setForm(next);
 				setBaseline(next);
 				setCocIssuedOnDraftSynced(true);
+				setDateOfBirthDraftSynced(true);
 				setLoading(false);
 			})
 			.catch((error) => {
@@ -136,6 +150,7 @@ export function useTeacherProfileSection({
 		setForm((current) => applyTeacherProfileInitials(current, profileInitials));
 		setBaseline((current) => applyTeacherProfileInitials(current, profileInitials));
 		setCocIssuedOnDraftSynced(true);
+		setDateOfBirthDraftSynced(true);
 	}, [profileInitials]);
 
 	const runAction = async () => {
@@ -191,6 +206,8 @@ export function useTeacherProfileSection({
 		avatarSaving,
 		cocIssuedOnDraftSynced,
 		setCocIssuedOnDraftSynced,
+		dateOfBirthDraftSynced,
+		setDateOfBirthDraftSynced,
 		hasChanges: hasTeacherProfileFormChanges(baseline, form),
 		runAction,
 		onUploadAvatar,

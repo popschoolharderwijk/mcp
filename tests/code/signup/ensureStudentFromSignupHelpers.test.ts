@@ -71,7 +71,6 @@ describe('resolveSignupStudentRowMutation', () => {
 describe('buildSignupStudentUpdateFields', () => {
 	it('builds student update fields from signup request', () => {
 		expect(buildSignupStudentUpdateFields(reqRow)).toEqual({
-			date_of_birth: '2010-01-01',
 			parent_name: 'Ouder',
 			parent_email: 'ouder@test.nl',
 			parent_phone_number: '0687654321',

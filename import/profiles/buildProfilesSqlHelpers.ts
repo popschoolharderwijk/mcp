@@ -1,11 +1,11 @@
 import { SEED_ENCRYPTED_PASSWORD } from '../shared/seedAuthPassword';
-import { sqlString, sqlUuid } from '../shared/sqlEscapeHelpers';
+import { sqlDate, sqlString, sqlUuid } from '../shared/sqlEscapeHelpers';
 import type { ProfileSqlRow } from './types';
 
 function buildPeopleValues(rows: ProfileSqlRow[]): string {
 	return rows
 		.map((row) => {
-			return `    (${sqlUuid(row.userId)}, ${sqlString(row.email)}, ${sqlString(row.firstName)}, ${sqlString(row.lastName)}, ${sqlString(row.phoneNumber)}, ${sqlString(row.streetName)}, ${sqlString(row.houseNumber)}, ${sqlString(row.postalCode)}, ${sqlString(row.city)}, ${sqlString(row.countryCode)})`;
+			return `    (${sqlUuid(row.userId)}, ${sqlString(row.email)}, ${sqlString(row.firstName)}, ${sqlString(row.lastName)}, ${sqlString(row.phoneNumber)}, ${sqlString(row.streetName)}, ${sqlString(row.houseNumber)}, ${sqlString(row.postalCode)}, ${sqlString(row.city)}, ${sqlString(row.countryCode)}, ${sqlDate(row.dateOfBirth)})`;
 		})
 		.join(',\n');
 }
@@ -31,12 +31,13 @@ BEGIN
     house_number TEXT,
     postal_code TEXT,
     city TEXT,
-    country_code TEXT NOT NULL DEFAULT 'NL'
+    country_code TEXT NOT NULL DEFAULT 'NL',
+    date_of_birth DATE
   ) ON COMMIT DROP;
 
   INSERT INTO mongo_import_profiles (
     id, email, first_name, last_name, phone_number, street_name, house_number,
-    postal_code, city, country_code
+    postal_code, city, country_code, date_of_birth
   )
   VALUES
 ${buildPeopleValues(rows)};
@@ -124,7 +125,8 @@ ${buildPeopleValues(rows)};
     house_number = t.house_number,
     postal_code = t.postal_code,
     city = t.city,
-    country_code = t.country_code
+    country_code = t.country_code,
+    date_of_birth = t.date_of_birth
   FROM mongo_import_profiles t
   WHERE p.user_id = t.id;
   GET DIAGNOSTICS n = ROW_COUNT;

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -15,16 +16,19 @@ interface UserFormFieldsProps {
 	roles: AppRole[];
 	avatar?: ReactNode;
 	onFieldChange: (form: UserFormState) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 }
 
 function UserNameAndContactFields({
 	form,
 	isEditMode,
 	updateField,
+	onDateOfBirthDraftSyncedChange,
 }: {
 	form: UserFormState;
 	isEditMode: boolean;
 	updateField: <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 }) {
 	return (
 		<div className="min-w-0 flex-1 space-y-4">
@@ -49,7 +53,7 @@ function UserNameAndContactFields({
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-3 gap-4">
 				<div className="space-y-2">
 					<Label htmlFor="user-email">Email *</Label>
 					<Input
@@ -61,9 +65,6 @@ function UserNameAndContactFields({
 						placeholder="gebruiker@voorbeeld.nl"
 						disabled={isEditMode}
 					/>
-					{isEditMode ? (
-						<p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>
-					) : null}
 				</div>
 				<div className="space-y-2">
 					<PhoneInput
@@ -74,6 +75,12 @@ function UserNameAndContactFields({
 						onBlur={() => updateField('phone_number', normalizeTrimmedText(form.phone_number))}
 					/>
 				</div>
+				<DateOfBirthField
+					id="user-dob"
+					value={form.date_of_birth}
+					onChange={(date_of_birth) => updateField('date_of_birth', date_of_birth)}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+				/>
 			</div>
 		</div>
 	);
@@ -124,13 +131,26 @@ function UserRoleField({
 	);
 }
 
-export function UserFormFields({ form, isEditMode, roleLocked, roles, avatar, onFieldChange }: UserFormFieldsProps) {
+export function UserFormFields({
+	form,
+	isEditMode,
+	roleLocked,
+	roles,
+	avatar,
+	onFieldChange,
+	onDateOfBirthDraftSyncedChange,
+}: UserFormFieldsProps) {
 	const updateField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
 		onFieldChange({ ...form, [key]: value });
 	};
 
 	const nameAndContactFields = (
-		<UserNameAndContactFields form={form} isEditMode={isEditMode} updateField={updateField} />
+		<UserNameAndContactFields
+			form={form}
+			isEditMode={isEditMode}
+			updateField={updateField}
+			onDateOfBirthDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+		/>
 	);
 
 	return (

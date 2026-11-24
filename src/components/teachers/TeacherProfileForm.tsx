@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { TeacherProfileCocFields } from '@/components/teachers/TeacherProfileCocFields';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -17,8 +18,10 @@ interface TeacherProfileFormProps {
 	hasChanges: boolean;
 	avatar?: ReactNode;
 	cocIssuedOnDraftSynced?: boolean;
+	dateOfBirthDraftSynced?: boolean;
 	onChange: (patch: Partial<TeacherProfileFormValues>) => void;
 	onCocIssuedOnDraftSyncedChange?: (synced: boolean) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 	onSave: () => void;
 }
 
@@ -29,11 +32,19 @@ export function TeacherProfileForm({
 	hasChanges,
 	avatar,
 	cocIssuedOnDraftSynced = true,
+	dateOfBirthDraftSynced = true,
 	onChange,
 	onCocIssuedOnDraftSyncedChange,
+	onDateOfBirthDraftSyncedChange,
 	onSave,
 }: TeacherProfileFormProps) {
-	const canSubmit = canSubmitTeacherProfileForm(canEdit, form, cocIssuedOnDraftSynced, hasChanges);
+	const canSubmit = canSubmitTeacherProfileForm(
+		canEdit,
+		form,
+		cocIssuedOnDraftSynced,
+		dateOfBirthDraftSynced,
+		hasChanges,
+	);
 
 	const nameAndContactFields = (
 		<div className="min-w-0 flex-1 space-y-4">
@@ -57,17 +68,23 @@ export function TeacherProfileForm({
 					/>
 				</div>
 			</div>
-			<div className="grid gap-4 sm:grid-cols-2">
+			<div className="grid gap-4 sm:grid-cols-3">
 				<div className="space-y-2">
 					<Label htmlFor="teacher-email">Email</Label>
 					<Input id="teacher-email" type="email" value={form.email} disabled />
-					{canEdit && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
 				</div>
 				<PhoneInput
 					id="phone-number"
 					label="Telefoonnummer"
 					value={form.phoneNumber}
 					onChange={(phoneNumber) => onChange({ phoneNumber })}
+					disabled={!canEdit}
+				/>
+				<DateOfBirthField
+					id="teacher-dob"
+					value={form.dateOfBirth}
+					onChange={(dateOfBirth) => onChange({ dateOfBirth })}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
 					disabled={!canEdit}
 				/>
 			</div>

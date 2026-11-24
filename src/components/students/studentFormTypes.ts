@@ -41,12 +41,17 @@ export function isValidPhone(phone: string): boolean {
 	return /^[0-9]{10}$/.test(phone.replace(/\s/g, ''));
 }
 
-export function studentRecordFields(form: StudentFormState) {
+export function studentParentFields(form: StudentFormState) {
 	return {
-		date_of_birth: form.date_of_birth || null,
 		parent_name: normalizeCompactTextOrNull(form.parent_name),
 		parent_email: normalizeTrimmedTextOrNull(form.parent_email),
 		parent_phone_number: normalizeTrimmedTextOrNull(form.parent_phone_number),
+	};
+}
+
+export function studentProfilePersonalFields(form: StudentFormState) {
+	return {
+		date_of_birth: form.date_of_birth || null,
 	};
 }
 

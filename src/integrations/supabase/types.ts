@@ -796,6 +796,7 @@ export type Database = {
 					country_code: string;
 					created_at: string;
 					created_by: string | null;
+					date_of_birth: string | null;
 					email: string;
 					first_name: string | null;
 					house_number: string | null;
@@ -814,6 +815,7 @@ export type Database = {
 					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
+					date_of_birth?: string | null;
 					email: string;
 					first_name?: string | null;
 					house_number?: string | null;
@@ -831,6 +833,7 @@ export type Database = {
 					country_code?: string;
 					created_at?: string;
 					created_by?: string | null;
+					date_of_birth?: string | null;
 					email?: string;
 					first_name?: string | null;
 					house_number?: string | null;
@@ -1091,7 +1094,6 @@ export type Database = {
 				Row: {
 					created_at: string;
 					created_by: string | null;
-					date_of_birth: string | null;
 					parent_email: string | null;
 					parent_name: string | null;
 					parent_phone_number: string | null;
@@ -1103,7 +1105,6 @@ export type Database = {
 				Insert: {
 					created_at?: string;
 					created_by?: string | null;
-					date_of_birth?: string | null;
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;
@@ -1114,7 +1115,6 @@ export type Database = {
 				Update: {
 					created_at?: string;
 					created_by?: string | null;
-					date_of_birth?: string | null;
 					parent_email?: string | null;
 					parent_name?: string | null;
 					parent_phone_number?: string | null;

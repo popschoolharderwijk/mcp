@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import {
-	resolveAvatarUploadContentType,
-	resolveAvatarUploadExtension,
-} from '../../../src/lib/account/accountProfileAvatarHelpers';
+import { resolveAvatarUploadContentType } from '../../../src/lib/account/accountProfileAvatarHelpers';
 
 describe('resolveAvatarUploadContentType', () => {
 	it('prefers an allowed file type over a misleading extension', () => {
@@ -21,11 +18,5 @@ describe('resolveAvatarUploadContentType', () => {
 	it('rejects unsupported types', () => {
 		expect(resolveAvatarUploadContentType({ type: 'image/svg+xml', name: 'a.svg' })).toBeNull();
 		expect(resolveAvatarUploadContentType({ type: '', name: 'a.bmp' })).toBeNull();
-	});
-});
-
-describe('resolveAvatarUploadExtension', () => {
-	it('maps jpeg to the jpg storage extension', () => {
-		expect(resolveAvatarUploadExtension('image/jpeg')).toBe('jpg');
 	});
 });

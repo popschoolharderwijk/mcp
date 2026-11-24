@@ -940,16 +940,28 @@ BEGIN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- STUDENT DATE_OF_BIRTH
+-- PROFILE DATE_OF_BIRTH
 -- -----------------------------------------------------------------------------
--- Billing age tariff uses threshold 21 (youth vs adult Stripe prices).
+-- Students: billing age tariff uses threshold 21 (youth vs adult Stripe prices).
 -- As of 2026-11: under 18 → kids; 18–20 → youth tariff; 21+ → adult tariff.
 -- Mix youth and adult on the same lesson options so both Prices can be tested.
+-- Teachers / staff / admins: half of each group gets an adult DOB for UI testing.
 -- -----------------------------------------------------------------------------
-UPDATE public.students s
+UPDATE public.profiles p
 SET date_of_birth = dob.date_of_birth
 FROM (
   SELECT user_id, date_of_birth FROM (VALUES
+    -- Privileged (4 of 8): site_admin, 1 admin, 2 staff
+    ('10000000-0001-0000-0000-000000000000'::uuid, '1985-04-12'::date), -- site_admin ~41
+    ('20000000-0001-0000-0000-000000000000'::uuid, '1988-09-03'::date), -- admin-one ~38
+    ('30000000-0001-0000-0000-000000000000'::uuid, '1992-01-20'::date), -- staff-one ~34
+    ('30000000-0002-0000-0000-000000000000'::uuid, '1990-06-15'::date), -- staff-two ~36
+    -- Teachers (5 of 10): Alice–Eva
+    ('40000000-0001-0000-0000-000000000000'::uuid, '1987-03-08'::date), -- Alice ~39
+    ('40000000-0002-0000-0000-000000000000'::uuid, '1991-11-22'::date), -- Bob ~35
+    ('40000000-0003-0000-0000-000000000000'::uuid, '1989-07-14'::date), -- Charlotte ~37
+    ('40000000-0004-0000-0000-000000000000'::uuid, '1993-02-28'::date), -- Diana ~33
+    ('40000000-0005-0000-0000-000000000000'::uuid, '1986-12-01'::date), -- Eva ~40
     -- 001–008 Bandcoaching (60 biweekly): kids, teens, youth 18–20, adults
     ('50000000-0001-0000-0000-000000000000'::uuid, '2016-03-12'::date), -- ~10
     ('50000000-0002-0000-0000-000000000000'::uuid, '2014-07-22'::date), -- ~12
@@ -1019,7 +1031,7 @@ FROM (
     ('50000000-0060-0000-0000-000000000000'::uuid, '1994-09-21'::date)  -- ~32
   ) AS t(user_id, date_of_birth)
 ) dob
-WHERE s.user_id = dob.user_id;
+WHERE p.user_id = dob.user_id;
 
 -- -----------------------------------------------------------------------------
 -- MANUAL AGENDA EVENTS (for dev menu users)

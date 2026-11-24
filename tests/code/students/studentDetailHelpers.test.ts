@@ -15,6 +15,7 @@ const profile = {
 	last_name: 'Leerling',
 	phone_number: null,
 	avatar_url: null,
+	date_of_birth: null,
 	street_name: null,
 	house_number: null,
 	postal_code: null,

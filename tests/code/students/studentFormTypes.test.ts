@@ -4,7 +4,7 @@ import {
 	isValidEmail,
 	isValidPhone,
 	studentFormFromStudent,
-	studentRecordFields,
+	studentParentFields,
 } from '../../../src/components/students/studentFormTypes';
 import type { Student } from '../../../src/types/students';
 
@@ -49,7 +49,7 @@ describe('isValidPhone', () => {
 	});
 });
 
-describe('studentRecordFields', () => {
+describe('studentParentFields', () => {
 	it('maps empty strings to null', () => {
 		const form = {
 			...emptyStudentForm,
@@ -58,8 +58,7 @@ describe('studentRecordFields', () => {
 			parent_phone_number: '',
 		};
 
-		expect(studentRecordFields(form)).toEqual({
-			date_of_birth: null,
+		expect(studentParentFields(form)).toEqual({
 			parent_name: null,
 			parent_email: null,
 			parent_phone_number: null,
@@ -68,13 +67,12 @@ describe('studentRecordFields', () => {
 
 	it('collapses parent name fields', () => {
 		expect(
-			studentRecordFields({
+			studentParentFields({
 				...emptyStudentForm,
 				parent_name: '  Ouder   Anna  ',
 				parent_email: '  ouder@example.com  ',
 			}),
 		).toEqual({
-			date_of_birth: null,
 			parent_name: 'Ouder Anna',
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,

@@ -21,6 +21,7 @@ export function buildUserFormStateForOpen(
 				first_name: string | null;
 				last_name: string | null;
 				phone_number: string | null;
+				date_of_birth?: string | null;
 				role: UserFormState['role'];
 		  }
 		| undefined,
@@ -32,6 +33,7 @@ export function buildUserFormStateForOpen(
 		first_name: user.first_name ?? '',
 		last_name: user.last_name ?? '',
 		phone_number: user.phone_number ?? '',
+		date_of_birth: user.date_of_birth ?? null,
 		role: user.role,
 	});
 }

@@ -24,7 +24,6 @@ export function buildSignupAuthCreatePayload(reqRow: SignupRequestRow) {
 export function buildSignupStudentPayload(studentUserId: string, reqRow: SignupRequestRow) {
 	return {
 		user_id: studentUserId,
-		date_of_birth: reqRow.date_of_birth ?? null,
 		parent_name: reqRow.parent_name ?? null,
 		parent_email: reqRow.parent_email ?? null,
 		parent_phone_number: reqRow.parent_phone_number ?? null,
@@ -39,9 +38,14 @@ export function resolveSignupStudentRowMutation(
 
 export function buildSignupStudentUpdateFields(reqRow: SignupRequestRow) {
 	return {
-		date_of_birth: reqRow.date_of_birth ?? null,
 		parent_name: reqRow.parent_name ?? null,
 		parent_email: reqRow.parent_email ?? null,
 		parent_phone_number: reqRow.parent_phone_number ?? null,
+	};
+}
+
+export function buildSignupProfileUpdateFields(reqRow: SignupRequestRow) {
+	return {
+		date_of_birth: reqRow.date_of_birth ?? null,
 	};
 }

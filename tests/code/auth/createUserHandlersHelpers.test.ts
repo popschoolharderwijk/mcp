@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+	buildCreatedUserProfilePatch,
 	buildCreateUserRoleWarningResponse,
 	buildCreateUserSuccessResponse,
 	hasCreatedAuthUser,
 	resolveMissingCreatedUserError,
 	shouldAssignCreateUserRole,
-	shouldUpdateCreatedUserPhone,
 } from '../../../supabase/functions/_shared/createUserHandlersHelpers';
 
 describe('buildCreateUserSuccessResponse', () => {
@@ -28,10 +28,16 @@ describe('buildCreateUserRoleWarningResponse', () => {
 	});
 });
 
-describe('shouldUpdateCreatedUserPhone', () => {
-	it('returns true only when a phone number is present', () => {
-		expect(shouldUpdateCreatedUserPhone('0612345678')).toBe(true);
-		expect(shouldUpdateCreatedUserPhone(undefined)).toBe(false);
+describe('buildCreatedUserProfilePatch', () => {
+	it('returns null when neither phone nor date of birth is set', () => {
+		expect(buildCreatedUserProfilePatch({})).toBeNull();
+	});
+
+	it('includes phone and date of birth when present', () => {
+		expect(buildCreatedUserProfilePatch({ phone_number: '0612345678', date_of_birth: '1990-05-05' })).toEqual({
+			phone_number: '0612345678',
+			date_of_birth: '1990-05-05',
+		});
 	});
 });
 

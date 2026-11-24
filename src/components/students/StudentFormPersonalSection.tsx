@@ -18,7 +18,7 @@ export function StudentFormPersonalSection({
 	canEdit = true,
 	onDateOfBirthDraftSyncedChange,
 }: StudentFormPersonalSectionProps) {
-	const { form, setForm, isEditMode } = vm;
+	const { form, setForm } = vm;
 
 	const nameAndContactFields = (
 		<div className="min-w-0 flex-1 space-y-3">
@@ -42,7 +42,7 @@ export function StudentFormPersonalSection({
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-3 gap-4">
 				<div className="space-y-1.5">
 					<Label htmlFor="student-email">Email</Label>
 					<Input
@@ -53,9 +53,6 @@ export function StudentFormPersonalSection({
 						placeholder="leerling@voorbeeld.nl"
 						disabled
 					/>
-					{canEdit && isEditMode && (
-						<p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>
-					)}
 				</div>
 				<div className="space-y-1.5">
 					<PhoneInput
@@ -66,6 +63,13 @@ export function StudentFormPersonalSection({
 						disabled={!canEdit}
 					/>
 				</div>
+				<DateOfBirthField
+					id="student-dob"
+					value={form.date_of_birth}
+					onChange={(value) => setForm({ ...form, date_of_birth: value })}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+					disabled={!canEdit}
+				/>
 			</div>
 		</div>
 	);
@@ -80,13 +84,6 @@ export function StudentFormPersonalSection({
 			) : (
 				nameAndContactFields
 			)}
-			<DateOfBirthField
-				id="student-dob"
-				value={form.date_of_birth}
-				onChange={(value) => setForm({ ...form, date_of_birth: value })}
-				onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
-				disabled={!canEdit}
-			/>
 		</div>
 	);
 }

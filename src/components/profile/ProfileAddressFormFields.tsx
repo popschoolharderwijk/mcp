@@ -32,6 +32,7 @@ export function ProfileAddressFormFields({
 						value={form.street_name}
 						onChange={(e) => set('street_name')(e.target.value)}
 						disabled={disabled}
+						autoFocus={!disabled}
 						placeholder="Hoofdstraat"
 					/>
 				</div>

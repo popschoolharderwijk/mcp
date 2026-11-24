@@ -46,6 +46,7 @@ describe('buildStudentProfileUpdateFields', () => {
 			first_name: null,
 			last_name: 'Bakker',
 			phone_number: null,
+			date_of_birth: null,
 		});
 	});
 
@@ -57,6 +58,7 @@ describe('buildStudentProfileUpdateFields', () => {
 					first_name: '  Anna   Marie ',
 					last_name: '  Bakker  ',
 					phone_number: ' 0612345678 ',
+					date_of_birth: '2010-02-14',
 					postal_code: '1234A',
 				},
 				'profile',
@@ -65,6 +67,7 @@ describe('buildStudentProfileUpdateFields', () => {
 			first_name: 'Anna Marie',
 			last_name: 'Bakker',
 			phone_number: '0612345678',
+			date_of_birth: '2010-02-14',
 		});
 	});
 
@@ -97,7 +100,7 @@ describe('buildStudentProfileUpdateFields', () => {
 });
 
 describe('buildStudentRecordUpdateFields', () => {
-	it('returns date of birth on profile scope', () => {
+	it('returns null on profile scope', () => {
 		expect(
 			buildStudentRecordUpdateFields(
 				{
@@ -107,9 +110,7 @@ describe('buildStudentRecordUpdateFields', () => {
 				},
 				'profile',
 			),
-		).toEqual({
-			date_of_birth: '2010-02-14',
-		});
+		).toBeNull();
 	});
 
 	it('returns only parent fields on parent scope', () => {

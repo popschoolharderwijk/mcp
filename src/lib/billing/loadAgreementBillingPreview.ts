@@ -29,7 +29,7 @@ export async function loadAgreementBillingPreview(
 			.eq('frequency', agreement.frequency)
 			.eq('duration_minutes', agreement.duration_minutes)
 			.maybeSingle(),
-		supabase.from('students').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
+		supabase.from('profiles').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
 		supabase.from('no_lesson_periods').select('start_date, end_date'),
 		supabase.from('app_settings').select('key, value').in('key', ['school_year', 'vat']),
 	]);

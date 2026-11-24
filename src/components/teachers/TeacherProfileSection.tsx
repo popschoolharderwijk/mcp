@@ -15,6 +15,8 @@ export function TeacherProfileSection(props: UseTeacherProfileSectionParams) {
 		avatarSaving,
 		cocIssuedOnDraftSynced,
 		setCocIssuedOnDraftSynced,
+		dateOfBirthDraftSynced,
+		setDateOfBirthDraftSynced,
 		hasChanges,
 		runAction,
 		onUploadAvatar,
@@ -43,8 +45,10 @@ export function TeacherProfileSection(props: UseTeacherProfileSectionParams) {
 					saving={saving}
 					hasChanges={hasChanges}
 					cocIssuedOnDraftSynced={cocIssuedOnDraftSynced}
+					dateOfBirthDraftSynced={dateOfBirthDraftSynced}
 					onChange={(patch) => setForm((current) => ({ ...current, ...patch }))}
 					onCocIssuedOnDraftSyncedChange={setCocIssuedOnDraftSynced}
+					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
 					onSave={() => void runAction()}
 					avatar={
 						props.canEdit ? (

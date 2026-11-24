@@ -12,6 +12,7 @@ const form = {
 	lastName: 'Jansen',
 	email: 'jan@example.com',
 	phoneNumber: '0612345678',
+	dateOfBirth: null as string | null,
 	hasCoc: true,
 	cocIssuedOn: '2023-12-06',
 };

@@ -8,6 +8,7 @@ export interface UserFormState {
 	first_name: string;
 	last_name: string;
 	phone_number: string;
+	date_of_birth: string | null;
 	role: AppRole | null;
 }
 
@@ -16,6 +17,7 @@ export const emptyUserForm: UserFormState = {
 	first_name: '',
 	last_name: '',
 	phone_number: '',
+	date_of_birth: null,
 	role: null,
 };
 
@@ -32,6 +34,7 @@ export function trimUserFormState(form: UserFormState): UserFormState {
 		first_name: normalizeCompactText(form.first_name),
 		last_name: normalizeCompactText(form.last_name),
 		phone_number: normalizeTrimmedText(form.phone_number),
+		date_of_birth: form.date_of_birth || null,
 		role: form.role,
 	};
 }
@@ -62,6 +65,7 @@ export function buildProfileUpdatePayload(form: UserFormState) {
 		first_name: trimmed.first_name || null,
 		last_name: trimmed.last_name || null,
 		phone_number: trimmed.phone_number || null,
+		date_of_birth: trimmed.date_of_birth,
 	};
 }
 
@@ -72,6 +76,7 @@ export function buildCreateUserPayload(form: UserFormState) {
 		first_name: trimmed.first_name || undefined,
 		last_name: trimmed.last_name || undefined,
 		phone_number: trimmed.phone_number || undefined,
+		date_of_birth: trimmed.date_of_birth || undefined,
 		role: trimmed.role || undefined,
 	};
 }
@@ -85,6 +90,7 @@ export function buildCreatedUserInfo(form: UserFormState, data: { user_id: strin
 		last_name: trimmed.last_name || null,
 		avatar_url: null,
 		phone_number: trimmed.phone_number || null,
+		date_of_birth: trimmed.date_of_birth,
 	};
 }
 
@@ -120,6 +126,7 @@ export function hasUserFormChanges(initial: UserFormState, current: UserFormStat
 		trimmedInitial.first_name !== trimmedCurrent.first_name ||
 		trimmedInitial.last_name !== trimmedCurrent.last_name ||
 		trimmedInitial.phone_number !== trimmedCurrent.phone_number ||
+		trimmedInitial.date_of_birth !== trimmedCurrent.date_of_birth ||
 		trimmedInitial.role !== trimmedCurrent.role
 	);
 }
@@ -128,8 +135,10 @@ export function resolveUserFormSubmitDisabled(
 	isEditMode: boolean,
 	form: UserFormState,
 	initialForm: UserFormState,
+	dateOfBirthDraftSynced = true,
 ): boolean {
 	if (!trimUserFormState(form).email) return true;
+	if (!dateOfBirthDraftSynced) return true;
 	if (isEditMode && !hasUserFormChanges(initialForm, form)) return true;
 	return false;
 }

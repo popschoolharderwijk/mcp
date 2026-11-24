@@ -31,7 +31,6 @@ export function validateCreateStudentBody(body: CreateStudentRequestBody): strin
 
 export function buildStudentRowFields(body: CreateStudentRequestBody) {
 	return {
-		date_of_birth: body.date_of_birth ?? null,
 		parent_name: compactOrNull(body.parent_name),
 		parent_email: trimOrNull(body.parent_email),
 		parent_phone_number: trimOrNull(body.parent_phone_number),
@@ -43,6 +42,7 @@ export function buildStudentProfileFields(body: CreateStudentRequestBody) {
 		first_name: compactOrNull(body.first_name),
 		last_name: compactOrNull(body.last_name),
 		phone_number: trimOrNull(body.phone_number),
+		date_of_birth: body.date_of_birth ?? null,
 	};
 }
 

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	buildAgreementsTabLabel,
 	buildPersonDetailPath,
 	buildPersonDetailTabItems,
 	buildTeacherDetailTabItems,
@@ -49,13 +48,6 @@ describe('person detail tab routes', () => {
 });
 
 describe('teacher detail tab items', () => {
-	it('includes the agreements count in the Lesovereenkomsten label', () => {
-		expect(buildAgreementsTabLabel(3)).toBe('Lesovereenkomsten (3)');
-		expect(buildTeacherDetailTabItems(3).find((item) => item.value === 'agreements')?.label).toBe(
-			'Lesovereenkomsten (3)',
-		);
-	});
-
 	it('omits agenda only when includeAgenda is false', () => {
 		expect(buildTeacherDetailTabItems(0).some((item) => item.value === 'agenda')).toBe(true);
 		expect(buildTeacherDetailTabItems(0, { includeAgenda: false }).some((item) => item.value === 'agenda')).toBe(

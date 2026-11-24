@@ -16,7 +16,9 @@ export async function fetchTeacherProfile(userId: string): Promise<Teacher | nul
 
 	const profileQuery = await supabase
 		.from('profiles')
-		.select(`user_id, first_name, last_name, email, avatar_url, phone_number, ${PROFILE_ADDRESS_SELECT}`)
+		.select(
+			`user_id, first_name, last_name, email, avatar_url, phone_number, date_of_birth, ${PROFILE_ADDRESS_SELECT}`,
+		)
 		.eq('user_id', teacherData.user_id)
 		.single();
 

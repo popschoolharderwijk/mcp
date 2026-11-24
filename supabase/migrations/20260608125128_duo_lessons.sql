@@ -346,9 +346,9 @@ BEGIN
       nco.*,
       lt.is_duo_lesson,
       CASE
-        WHEN s.date_of_birth IS NOT NULL THEN
+        WHEN p.date_of_birth IS NOT NULL THEN
           CASE
-            WHEN AGE(nco.occurrence_date, s.date_of_birth) >= make_interval(years => v_age_threshold_years)
+            WHEN AGE(nco.occurrence_date, p.date_of_birth) >= make_interval(years => v_age_threshold_years)
             THEN 'adult'
             ELSE 'youth'
           END
@@ -356,7 +356,7 @@ BEGIN
       END AS age_category
     FROM non_cancelled_occurrences nco
     JOIN lesson_types lt ON lt.id = nco.lesson_type_id
-    LEFT JOIN students s ON s.user_id = nco.student_user_id
+    LEFT JOIN profiles p ON p.user_id = nco.student_user_id
   ),
   -- Standard (non-duo) lessons: 1 lesson + full duration per student occurrence
   enriched_standard AS (

@@ -12,6 +12,7 @@ const emptyForm: UserFormState = {
 	first_name: '',
 	last_name: '',
 	phone_number: '',
+	date_of_birth: null,
 	role: null,
 };
 
@@ -37,6 +38,7 @@ describe('buildUserFormStateForOpen', () => {
 			first_name: '',
 			last_name: 'Jansen',
 			phone_number: '',
+			date_of_birth: null,
 			role: 'admin',
 		});
 	});
@@ -58,6 +60,7 @@ describe('buildUserFormStateForOpen', () => {
 			first_name: 'Jan Piet',
 			last_name: 'van der Berg',
 			phone_number: '0612345678',
+			date_of_birth: null,
 			role: 'admin',
 		});
 	});
@@ -83,6 +86,7 @@ describe('handleUserFormDialogCancel', () => {
 			first_name: 'Jan',
 			last_name: 'Jansen',
 			phone_number: '',
+			date_of_birth: null,
 			role: null,
 		};
 		let closed = false;
@@ -122,6 +126,7 @@ describe('handleUserFormDialogOpenChange', () => {
 			first_name: 'Jan',
 			last_name: 'Jansen',
 			phone_number: '',
+			date_of_birth: null,
 			role: null,
 		};
 		let closed = false;
@@ -170,6 +175,7 @@ describe('runUserFormDialogSubmit', () => {
 			first_name: 'Jan',
 			last_name: 'Jansen',
 			phone_number: '',
+			date_of_birth: null,
 			role: null,
 		};
 		let closed = true;

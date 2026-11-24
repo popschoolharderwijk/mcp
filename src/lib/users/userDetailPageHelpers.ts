@@ -10,6 +10,7 @@ import type { UserWithRole } from '@/lib/users/usersPageHelpers';
 import { shouldShowUsersPage } from '@/lib/users/usersPageShellHelpers';
 
 export type UserDetailUser = UserWithRole & {
+	date_of_birth: string | null;
 	street_name: string | null;
 	house_number: string | null;
 	postal_code: string | null;
@@ -34,6 +35,7 @@ export interface UserDetailProfileRow {
 	last_name: string | null;
 	phone_number: string | null;
 	avatar_url: string | null;
+	date_of_birth: string | null;
 	created_at: string;
 	street_name: string | null;
 	house_number: string | null;
@@ -138,6 +140,7 @@ export function mapUserDetailQueriesToOutcome(
 				last_name: profile.last_name,
 				phone_number: profile.phone_number,
 				avatar_url: profile.avatar_url,
+				date_of_birth: profile.date_of_birth,
 				created_at: profile.created_at,
 				last_sign_in_at: null,
 				role,

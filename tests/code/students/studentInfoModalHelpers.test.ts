@@ -6,9 +6,7 @@ import {
 } from '../../../src/lib/students/studentInfoModalHelpers';
 
 const studentRecord = {
-	id: 'student-1',
 	user_id: 'user-1',
-	date_of_birth: '2010-01-01',
 	parent_name: 'Parent',
 	parent_email: 'parent@example.com',
 	parent_phone_number: '0612345678',
@@ -25,6 +23,7 @@ const profileRecord = {
 	last_name: 'Bakker',
 	avatar_url: null,
 	phone_number: '0687654321',
+	date_of_birth: '2010-01-01',
 };
 
 describe('mergeStudentWithProfile', () => {

@@ -24,19 +24,23 @@ interface UserProfileSectionProps {
 export function UserProfileSection({ user, onUpdate }: UserProfileSectionProps) {
 	const { isAdmin, isSiteAdmin } = useAuth();
 	const [form, setForm] = useState<UserFormState>(() => buildUserFormStateForOpen(user, emptyUserForm));
+	const [baseline, setBaseline] = useState<UserFormState>(() => buildUserFormStateForOpen(user, emptyUserForm));
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(user.avatar_url);
 	const [saving, setSaving] = useState(false);
 	const [avatarSaving, setAvatarSaving] = useState(false);
+	const [dateOfBirthDraftSynced, setDateOfBirthDraftSynced] = useState(true);
 
 	useEffect(() => {
-		setForm(buildUserFormStateForOpen(user, emptyUserForm));
+		const next = buildUserFormStateForOpen(user, emptyUserForm);
+		setForm(next);
+		setBaseline(next);
 		setAvatarUrl(user.avatar_url);
+		setDateOfBirthDraftSynced(true);
 	}, [user]);
 
-	const initialForm = buildUserFormStateForOpen(user, emptyUserForm);
 	const roleLocked = isUserRoleLocked(true, isAdmin, isSiteAdmin, user.role);
 	const roles = assignableRoles(isSiteAdmin);
-	const saveDisabled = resolveUserFormSubmitDisabled(true, form, initialForm);
+	const saveDisabled = resolveUserFormSubmitDisabled(true, form, baseline, dateOfBirthDraftSynced);
 
 	const onSave = async () => {
 		setSaving(true);
@@ -45,7 +49,10 @@ export function UserProfileSection({ user, onUpdate }: UserProfileSectionProps) 
 				user_id: user.user_id,
 				role: user.role,
 			});
-			if (result.ok) onUpdate();
+			if (result.ok) {
+				setBaseline(form);
+				onUpdate();
+			}
 		} finally {
 			setSaving(false);
 		}
@@ -91,6 +98,7 @@ export function UserProfileSection({ user, onUpdate }: UserProfileSectionProps) 
 				roleLocked={roleLocked}
 				roles={roles}
 				onFieldChange={setForm}
+				onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
 				avatar={
 					<AccountProfileAvatarSection
 						profile={{ avatar_url: avatarUrl }}

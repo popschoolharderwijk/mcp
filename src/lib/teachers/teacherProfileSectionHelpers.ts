@@ -7,6 +7,7 @@ export interface TeacherProfileInitials {
 	initialLastName?: string | null;
 	initialEmail?: string | null;
 	initialPhoneNumber?: string | null;
+	initialDateOfBirth?: string | null;
 	initialCocIssuedOn?: string | null;
 }
 
@@ -20,7 +21,8 @@ export function shouldFetchTeacherProfile(
 		initials.initialFirstName ||
 		initials.initialLastName ||
 		initials.initialEmail ||
-		initials.initialPhoneNumber
+		initials.initialPhoneNumber ||
+		initials.initialDateOfBirth
 	) {
 		return false;
 	}
@@ -41,6 +43,7 @@ export interface ProfileRecord {
 	last_name: string | null;
 	email: string | null;
 	phone_number: string | null;
+	date_of_birth: string | null;
 }
 
 export interface LoadedTeacherProfile {
@@ -49,6 +52,7 @@ export interface LoadedTeacherProfile {
 	lastName: string;
 	email: string;
 	phoneNumber: string;
+	dateOfBirth: string | null;
 	cocIssuedOn: string;
 	hasCoc: boolean;
 }
@@ -63,6 +67,7 @@ export function mapLoadedTeacherProfile(teacher: TeacherRecord | null, profile: 
 		lastName: profile.last_name || '',
 		email: profile.email || '',
 		phoneNumber: profile.phone_number || '',
+		dateOfBirth: profile.date_of_birth,
 	};
 }
 
@@ -73,6 +78,7 @@ export interface TeacherProfileSaveInput {
 	firstName: string;
 	lastName: string;
 	phoneNumber: string;
+	dateOfBirth: string | null;
 }
 
 /** When VOG is off, persist NULL; when on, require a non-empty issue date. */
@@ -92,17 +98,19 @@ export function hasTeacherProfileFormChanges(
 	);
 }
 
-/** Submit enabled only when editable, dirty, VOG rules pass, and typed VOG date draft is synced. */
+/** Submit enabled only when editable, dirty, VOG rules pass, and typed date drafts are synced. */
 export function canSubmitTeacherProfileForm(
 	canEdit: boolean,
 	form: Pick<TeacherProfileSaveInput, 'hasCoc' | 'cocIssuedOn'>,
 	cocIssuedOnDraftSynced: boolean,
+	dateOfBirthDraftSynced: boolean,
 	hasChanges: boolean,
 ): boolean {
 	if (!canEdit) return false;
 	if (!hasChanges) return false;
 	if (!isTeacherProfileCocValid(form)) return false;
 	if (form.hasCoc && !cocIssuedOnDraftSynced) return false;
+	if (!dateOfBirthDraftSynced) return false;
 	return true;
 }
 
@@ -118,6 +126,7 @@ export function buildTeacherProfileNameUpdate(input: TeacherProfileSaveInput) {
 		first_name: normalizeCompactTextOrNull(input.firstName),
 		last_name: normalizeCompactTextOrNull(input.lastName),
 		phone_number: normalizeTrimmedTextOrNull(input.phoneNumber),
+		date_of_birth: input.dateOfBirth || null,
 	};
 }
 
@@ -136,6 +145,7 @@ export interface TeacherProfileFormValues {
 	lastName: string;
 	email: string;
 	phoneNumber: string;
+	dateOfBirth: string | null;
 	cocIssuedOn: string;
 	hasCoc: boolean;
 }
@@ -153,6 +163,7 @@ export function applyTeacherProfileInitials(
 		email: initials.initialEmail !== undefined ? initials.initialEmail || '' : current.email,
 		phoneNumber:
 			initials.initialPhoneNumber !== undefined ? initials.initialPhoneNumber || '' : current.phoneNumber,
+		dateOfBirth: initials.initialDateOfBirth !== undefined ? initials.initialDateOfBirth : current.dateOfBirth,
 		cocIssuedOn,
 		hasCoc: initials.initialCocIssuedOn !== undefined ? Boolean(initials.initialCocIssuedOn) : current.hasCoc,
 	};
@@ -166,6 +177,7 @@ export function createTeacherProfileFormState(initials: TeacherProfileInitials):
 		lastName: initials.initialLastName || '',
 		email: initials.initialEmail || '',
 		phoneNumber: initials.initialPhoneNumber || '',
+		dateOfBirth: initials.initialDateOfBirth ?? null,
 		cocIssuedOn,
 		hasCoc: Boolean(cocIssuedOn),
 	};

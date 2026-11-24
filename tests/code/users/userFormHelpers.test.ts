@@ -18,6 +18,7 @@ const baseForm = {
 	first_name: 'Anna',
 	last_name: 'Jansen',
 	phone_number: '0612345678',
+	date_of_birth: null,
 	role: 'admin' as const,
 };
 
@@ -29,6 +30,7 @@ describe('trimUserFormState', () => {
 				first_name: '\tAnna   Marie\n',
 				last_name: 'van   der  Berg',
 				phone_number: ' 0612345678 ',
+				date_of_birth: null,
 				role: null,
 			}),
 		).toEqual({
@@ -36,6 +38,7 @@ describe('trimUserFormState', () => {
 			first_name: 'Anna Marie',
 			last_name: 'van der Berg',
 			phone_number: '0612345678',
+			date_of_birth: null,
 			role: null,
 		});
 	});
@@ -44,13 +47,19 @@ describe('trimUserFormState', () => {
 describe('validateUserFormSubmit', () => {
 	it('requires email', () => {
 		expect(
-			validateUserFormSubmit({ email: '', first_name: '', last_name: '', phone_number: '', role: null }, true),
+			validateUserFormSubmit(
+				{ email: '', first_name: '', last_name: '', phone_number: '', date_of_birth: null, role: null },
+				true,
+			),
 		).toEqual({ ok: false, message: 'Email is verplicht' });
 	});
 
 	it('requires email when only whitespace', () => {
 		expect(
-			validateUserFormSubmit({ email: '   ', first_name: '', last_name: '', phone_number: '', role: null }, true),
+			validateUserFormSubmit(
+				{ email: '   ', first_name: '', last_name: '', phone_number: '', date_of_birth: null, role: null },
+				true,
+			),
 		).toEqual({ ok: false, message: 'Email is verplicht' });
 	});
 
@@ -62,6 +71,7 @@ describe('validateUserFormSubmit', () => {
 					first_name: '',
 					last_name: '',
 					phone_number: '',
+					date_of_birth: null,
 					role: 'site_admin',
 				},
 				false,
@@ -92,6 +102,7 @@ describe('buildProfileUpdatePayload', () => {
 				first_name: '',
 				last_name: 'Jansen',
 				phone_number: '',
+				date_of_birth: null,
 				role: null,
 			}),
 		).toEqual({
@@ -99,6 +110,7 @@ describe('buildProfileUpdatePayload', () => {
 			first_name: null,
 			last_name: 'Jansen',
 			phone_number: null,
+			date_of_birth: null,
 		});
 	});
 
@@ -109,6 +121,7 @@ describe('buildProfileUpdatePayload', () => {
 				first_name: ' Anna ',
 				last_name: '  ',
 				phone_number: ' 0612345678 ',
+				date_of_birth: null,
 				role: null,
 			}),
 		).toEqual({
@@ -116,6 +129,7 @@ describe('buildProfileUpdatePayload', () => {
 			first_name: 'Anna',
 			last_name: null,
 			phone_number: '0612345678',
+			date_of_birth: null,
 		});
 	});
 });
@@ -128,6 +142,7 @@ describe('buildCreateUserPayload', () => {
 				first_name: '',
 				last_name: 'Jansen',
 				phone_number: '',
+				date_of_birth: null,
 				role: 'admin',
 			}),
 		).toEqual({
@@ -135,6 +150,7 @@ describe('buildCreateUserPayload', () => {
 			first_name: undefined,
 			last_name: 'Jansen',
 			phone_number: undefined,
+			date_of_birth: undefined,
 			role: 'admin',
 		});
 	});
@@ -146,6 +162,7 @@ describe('buildCreateUserPayload', () => {
 				first_name: ' Anna ',
 				last_name: ' Jansen ',
 				phone_number: '  ',
+				date_of_birth: null,
 				role: 'admin',
 			}),
 		).toEqual({
@@ -153,6 +170,7 @@ describe('buildCreateUserPayload', () => {
 			first_name: 'Anna',
 			last_name: 'Jansen',
 			phone_number: undefined,
+			date_of_birth: undefined,
 			role: 'admin',
 		});
 	});
@@ -167,6 +185,7 @@ describe('buildCreatedUserInfo', () => {
 					first_name: 'Anna',
 					last_name: '',
 					phone_number: '0612345678',
+					date_of_birth: null,
 					role: null,
 				},
 				{ user_id: 'user-1', email: 'user@example.com' },
@@ -178,6 +197,7 @@ describe('buildCreatedUserInfo', () => {
 			last_name: null,
 			avatar_url: null,
 			phone_number: '0612345678',
+			date_of_birth: null,
 		});
 	});
 });
@@ -190,6 +210,7 @@ describe('getUserFormDialogCopy', () => {
 				first_name: '',
 				last_name: '',
 				phone_number: '',
+				date_of_birth: null,
 				role: null,
 			}),
 		).toEqual({

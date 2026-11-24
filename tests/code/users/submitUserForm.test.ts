@@ -104,6 +104,7 @@ function baseForm(overrides: Partial<UserFormState> = {}): UserFormState {
 		first_name: 'Nieuw',
 		last_name: 'Gebruiker',
 		phone_number: '0612345678',
+		date_of_birth: null,
 		role: 'staff',
 		...overrides,
 	};
@@ -162,6 +163,7 @@ describe('submitUserForm', () => {
 					first_name: 'Nieuw',
 					last_name: 'Gebruiker',
 					phone_number: '0612345678',
+					date_of_birth: null,
 				},
 				filters: { user_id: 'user-1' },
 			},
@@ -248,6 +250,7 @@ describe('submitUserForm', () => {
 				last_name: 'Gebruiker',
 				avatar_url: null,
 				phone_number: '0612345678',
+				date_of_birth: null,
 			},
 		});
 		expect(recordedCalls[0]).toEqual({

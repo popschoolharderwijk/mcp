@@ -19,8 +19,27 @@ export function buildCreateUserRoleWarningResponse(
 	};
 }
 
-export function shouldUpdateCreatedUserPhone(phoneNumber: string | undefined): phoneNumber is string {
+function shouldUpdateCreatedUserPhone(phoneNumber: string | undefined): phoneNumber is string {
 	return Boolean(phoneNumber);
+}
+
+function shouldUpdateCreatedUserDateOfBirth(dateOfBirth: string | null | undefined): dateOfBirth is string {
+	return Boolean(dateOfBirth);
+}
+
+export function buildCreatedUserProfilePatch(body: {
+	phone_number?: string;
+	date_of_birth?: string | null;
+}): { phone_number?: string; date_of_birth?: string } | null {
+	const patch: { phone_number?: string; date_of_birth?: string } = {};
+	if (shouldUpdateCreatedUserPhone(body.phone_number)) {
+		patch.phone_number = body.phone_number;
+	}
+	if (shouldUpdateCreatedUserDateOfBirth(body.date_of_birth)) {
+		patch.date_of_birth = body.date_of_birth;
+	}
+	if (!patch.phone_number && !patch.date_of_birth) return null;
+	return patch;
 }
 
 export function shouldAssignCreateUserRole(
