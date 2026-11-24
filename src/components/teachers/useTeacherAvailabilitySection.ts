@@ -21,7 +21,11 @@ import {
 } from '@/lib/teachers/teacherAvailabilitySectionHelpers';
 import { formatTime } from '@/lib/time/time-format';
 
-export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: boolean) {
+export function useTeacherAvailabilitySection(
+	teacherUserId: string,
+	canEdit: boolean,
+	onBlocksMutated: () => void = () => {},
+) {
 	const { settings } = useAppSettingsContext();
 	const agenda = settings.agenda;
 	const { availability, loading, loadAvailability, applyLocalAvailabilityTimes } =
@@ -74,7 +78,8 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 
 		closeDialog();
 		setForm(resetAvailabilityDialogForm(agenda));
-		loadAvailability();
+		await loadAvailability();
+		onBlocksMutated();
 	};
 
 	const handleUpdate = async () => {
@@ -89,7 +94,7 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 
 		closeDialog();
 		setForm(resetAvailabilityDialogForm(agenda));
-		loadAvailability();
+		await loadAvailability();
 	};
 
 	const handleDelete = async (id: string) => {
@@ -97,7 +102,8 @@ export function useTeacherAvailabilitySection(teacherUserId: string, canEdit: bo
 		if (!removed) return;
 
 		closeDialog();
-		loadAvailability();
+		await loadAvailability();
+		onBlocksMutated();
 	};
 
 	const handleEmptySlotClick = (dayIndex: number, time: string) => {

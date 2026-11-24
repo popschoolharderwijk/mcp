@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 interface LessonType {
 	id: string;
 	name: string;
-	icon: string | null;
-	color: string | null;
+	icon: string;
+	color: string;
 }
 
 interface LessonTypeOption {
@@ -66,14 +66,14 @@ export function useTeacherLessonTypes(teacherUserId: string, canEdit: boolean) {
 				const lt = item.lesson_types as unknown as {
 					id: string;
 					name: string;
-					icon: string;
-					color: string;
+					icon: string | null;
+					color: string | null;
 				};
 				return {
 					id: item.lesson_type_id,
 					name: lt.name,
-					icon: lt.icon,
-					color: lt.color,
+					icon: lt.icon ?? '',
+					color: lt.color ?? '#000000',
 				};
 			}) ?? [];
 

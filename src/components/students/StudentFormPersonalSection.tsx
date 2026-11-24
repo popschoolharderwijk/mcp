@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { StudentFormFieldsViewModel } from '@/components/students/studentFormFieldsViewModel';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
@@ -6,14 +7,21 @@ import { PhoneInput } from '@/components/ui/phone-input';
 
 interface StudentFormPersonalSectionProps {
 	vm: StudentFormFieldsViewModel;
+	avatar?: ReactNode;
+	canEdit?: boolean;
 	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 }
 
-export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange }: StudentFormPersonalSectionProps) {
-	const { form, setForm, isEditMode } = vm;
+export function StudentFormPersonalSection({
+	vm,
+	avatar,
+	canEdit = true,
+	onDateOfBirthDraftSyncedChange,
+}: StudentFormPersonalSectionProps) {
+	const { form, setForm } = vm;
 
-	return (
-		<div className="space-y-3">
+	const nameAndContactFields = (
+		<div className="min-w-0 flex-1 space-y-3">
 			<div className="grid grid-cols-2 gap-4">
 				<div className="space-y-1.5">
 					<Label htmlFor="student-first-name">Voornaam</Label>
@@ -21,6 +29,7 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 						id="student-first-name"
 						value={form.first_name}
 						onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+						disabled={!canEdit}
 					/>
 				</div>
 				<div className="space-y-1.5">
@@ -29,10 +38,11 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 						id="student-last-name"
 						value={form.last_name}
 						onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+						disabled={!canEdit}
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-3 gap-4">
 				<div className="space-y-1.5">
 					<Label htmlFor="student-email">Email</Label>
 					<Input
@@ -43,7 +53,6 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 						placeholder="leerling@voorbeeld.nl"
 						disabled
 					/>
-					{isEditMode && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
 				</div>
 				<div className="space-y-1.5">
 					<PhoneInput
@@ -51,6 +60,7 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 						label="Telefoonnummer"
 						value={form.phone_number}
 						onChange={(value) => setForm({ ...form, phone_number: value })}
+						disabled={!canEdit}
 					/>
 				</div>
 				<DateOfBirthField
@@ -58,8 +68,22 @@ export function StudentFormPersonalSection({ vm, onDateOfBirthDraftSyncedChange 
 					value={form.date_of_birth}
 					onChange={(value) => setForm({ ...form, date_of_birth: value })}
 					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+					disabled={!canEdit}
 				/>
 			</div>
+		</div>
+	);
+
+	return (
+		<div className="space-y-3">
+			{avatar ? (
+				<div className="flex items-start gap-4">
+					{avatar}
+					{nameAndContactFields}
+				</div>
+			) : (
+				nameAndContactFields
+			)}
 		</div>
 	);
 }

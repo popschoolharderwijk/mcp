@@ -33,7 +33,7 @@ export function resolveMissingStripeCustomerResponse(): Response {
 
 /** Allow-listed return_url, or profile path on the allow-listed origin when omitted. */
 export function resolvePortalReturnUrl(origin: string, returnUrl: string | undefined): PortalReturnUrlResult {
-	const defaultReturnUrl = `${origin}/account/profile`;
+	const defaultReturnUrl = `${origin}/profile`;
 	if (!returnUrl) return { ok: true, returnUrl: defaultReturnUrl };
 	const allowed = resolveAllowedRedirectUrl(returnUrl);
 	if (!allowed) return { ok: false, error: 'Ongeldige return_url' };

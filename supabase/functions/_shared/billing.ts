@@ -273,7 +273,7 @@ async function loadBillingContext(
 	const agreement = await loadAgreementRow(admin, lessonAgreementId);
 	const [option, studentResult, noPeriodsResult, lessonTypeResult] = await Promise.all([
 		loadLessonTypeOptionRow(admin, agreement),
-		admin.from('students').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
+		admin.from('profiles').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
 		admin.from('no_lesson_periods').select('start_date, end_date'),
 		admin.from('lesson_types').select('name').eq('id', agreement.lesson_type_id).maybeSingle(),
 	]);

@@ -255,7 +255,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   city TEXT
     CHECK (city IS NULL OR city = public.normalize_compact_text(city)),
   country_code TEXT NOT NULL DEFAULT 'NL'
-    CHECK (public.is_valid_country_code(country_code))
+    CHECK (public.is_valid_country_code(country_code)),
+  date_of_birth DATE
 );
 
 -- Add audit columns to profiles

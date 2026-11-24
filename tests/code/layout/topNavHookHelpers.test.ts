@@ -25,7 +25,7 @@ describe('buildTopNavNavigationCallbacks', () => {
 		await callbacks.onSignOut();
 		callbacks.onToggleTheme();
 
-		expect(navigated).toEqual(['/account/profile', '/login']);
+		expect(navigated).toEqual(['/account/appearance', '/login']);
 		expect(signedOut).toBe(true);
 		expect(state.theme).toBe('dark');
 	});

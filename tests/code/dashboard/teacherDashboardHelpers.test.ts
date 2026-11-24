@@ -50,7 +50,7 @@ describe('buildTeacherDashboardStatItems', () => {
 				key: 'agreements',
 				title: NAV_LABELS.agreements,
 				value: 3,
-				href: '/agenda',
+				href: '/profile/agreements',
 			},
 			{
 				key: 'lessonGroups',
@@ -59,10 +59,10 @@ describe('buildTeacherDashboardStatItems', () => {
 				href: '/agenda',
 			},
 			{
-				key: 'myAvailability',
-				title: NAV_LABELS.myAvailability,
+				key: 'availability',
+				title: NAV_LABELS.availability,
 				value: 4,
-				href: '/teachers/my-availability',
+				href: '/profile/availability',
 			},
 		]);
 	});

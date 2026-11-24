@@ -3,6 +3,7 @@ export interface CreateUserRequestBody {
 	first_name?: string;
 	last_name?: string;
 	phone_number?: string;
+	date_of_birth?: string | null;
 	role?: 'site_admin' | 'admin' | 'staff';
 }
 

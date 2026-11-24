@@ -6,6 +6,7 @@ import {
 	canSaveTeacherProfile,
 	canSubmitTeacherProfileForm,
 	createTeacherProfileFormState,
+	hasTeacherProfileFormChanges,
 	isTeacherProfileCocValid,
 	mapLoadedTeacherProfile,
 	shouldFetchTeacherProfile,
@@ -37,7 +38,13 @@ describe('mapLoadedTeacherProfile', () => {
 		expect(
 			mapLoadedTeacherProfile(
 				{ bio: 'Docent bio', coc_issued_on: '2023-12-06' },
-				{ first_name: 'Jan', last_name: 'Docent', email: 'jan@example.com', phone_number: '0612345678' },
+				{
+					first_name: 'Jan',
+					last_name: 'Docent',
+					email: 'jan@example.com',
+					phone_number: '0612345678',
+					date_of_birth: '1990-05-05',
+				},
 			),
 		).toEqual({
 			bio: 'Docent bio',
@@ -47,6 +54,7 @@ describe('mapLoadedTeacherProfile', () => {
 			lastName: 'Docent',
 			email: 'jan@example.com',
 			phoneNumber: '0612345678',
+			dateOfBirth: '1990-05-05',
 		});
 	});
 
@@ -54,7 +62,7 @@ describe('mapLoadedTeacherProfile', () => {
 		expect(
 			mapLoadedTeacherProfile(
 				{ bio: null, coc_issued_on: null },
-				{ first_name: 'Jan', last_name: 'Docent', email: null, phone_number: null },
+				{ first_name: 'Jan', last_name: 'Docent', email: null, phone_number: null, date_of_birth: null },
 			),
 		).toEqual({
 			bio: '',
@@ -64,6 +72,7 @@ describe('mapLoadedTeacherProfile', () => {
 			lastName: 'Docent',
 			email: '',
 			phoneNumber: '',
+			dateOfBirth: null,
 		});
 	});
 });
@@ -79,25 +88,44 @@ describe('isTeacherProfileCocValid', () => {
 	});
 });
 
+describe('hasTeacherProfileFormChanges', () => {
+	it('returns false when only whitespace differs on saved fields', () => {
+		const base = {
+			bio: 'Bio',
+			hasCoc: true,
+			cocIssuedOn: '2023-12-06',
+			firstName: 'Jan',
+			lastName: 'Docent',
+			phoneNumber: '0612345678',
+			dateOfBirth: null as string | null,
+		};
+		expect(hasTeacherProfileFormChanges(base, { ...base, firstName: ' Jan ', bio: ' Bio ' })).toBe(false);
+	});
+});
+
 describe('canSubmitTeacherProfileForm', () => {
 	it('requires edit permission', () => {
-		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true)).toBe(false);
+		expect(canSubmitTeacherProfileForm(false, { hasCoc: false, cocIssuedOn: '' }, true, true, true)).toBe(false);
 	});
 
 	it('requires a VOG date when VOG is on', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true)).toBe(false);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '' }, true, true, true)).toBe(false);
 	});
 
 	it('blocks submit when VOG date draft is not synced', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false)).toBe(false);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, false, true, true)).toBe(
+			false,
+		);
 	});
 
 	it('allows submit when VOG is off', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false)).toBe(true);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: false, cocIssuedOn: '' }, false, true, true)).toBe(true);
 	});
 
 	it('allows submit when VOG date is present and draft is synced', () => {
-		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true)).toBe(true);
+		expect(canSubmitTeacherProfileForm(true, { hasCoc: true, cocIssuedOn: '2023-12-06' }, true, true, true)).toBe(
+			true,
+		);
 	});
 });
 
@@ -111,6 +139,7 @@ describe('buildTeacherProfileUpdate', () => {
 				firstName: 'Jan',
 				lastName: 'Docent',
 				phoneNumber: '',
+				dateOfBirth: null,
 			}),
 		).toEqual({
 			bio: null,
@@ -127,6 +156,7 @@ describe('buildTeacherProfileUpdate', () => {
 				firstName: 'Jan',
 				lastName: 'Docent',
 				phoneNumber: '',
+				dateOfBirth: null,
 			}),
 		).toEqual({
 			bio: 'Hello   world',
@@ -145,11 +175,13 @@ describe('buildTeacherProfileNameUpdate', () => {
 				firstName: '\tJan   Piet  ',
 				lastName: '  ',
 				phoneNumber: ' 0612345678 ',
+				dateOfBirth: '1990-05-05',
 			}),
 		).toEqual({
 			first_name: 'Jan Piet',
 			last_name: null,
 			phone_number: '0612345678',
+			date_of_birth: '1990-05-05',
 		});
 	});
 });
@@ -181,6 +213,7 @@ describe('createTeacherProfileFormState', () => {
 			lastName: 'Docent',
 			email: 'jan@example.com',
 			phoneNumber: '0612345678',
+			dateOfBirth: null,
 			cocIssuedOn: '2023-12-06',
 			hasCoc: true,
 		});
@@ -197,6 +230,7 @@ describe('applyTeacherProfileInitials', () => {
 					lastName: 'Name',
 					email: 'current@example.com',
 					phoneNumber: '0612345678',
+					dateOfBirth: null,
 					cocIssuedOn: '',
 					hasCoc: false,
 				},
@@ -208,6 +242,7 @@ describe('applyTeacherProfileInitials', () => {
 			lastName: 'Name',
 			email: 'current@example.com',
 			phoneNumber: '0612345678',
+			dateOfBirth: null,
 			cocIssuedOn: '',
 			hasCoc: false,
 		});

@@ -1,26 +1,12 @@
-import type { User } from '@supabase/supabase-js';
-import type { ChangeEvent, Dispatch, FormEvent, SetStateAction } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import type { NavigateFunction } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { resolveDeleteAccountToastKind, runSaveProfile, runUploadAvatar } from '@/lib/account/accountActionsHelpers';
-import {
-	type AccountFormData,
-	type AccountFormErrors,
-	type AccountProfileState,
-	dispatchProfileUpdated,
-	persistAccountDelete,
-	persistAvatarDelete,
-} from '@/lib/account/persistence';
+import { resolveDeleteAccountToastKind } from '@/lib/account/accountActionsHelpers';
+import { persistAccountDelete } from '@/lib/account/persistence';
 
 interface UseAccountActionsParams {
-	user: User | null;
-	profile: AccountProfileState | null;
-	formData: AccountFormData;
-	setProfile: Dispatch<SetStateAction<AccountProfileState | null>>;
-	setSaving: Dispatch<SetStateAction<boolean>>;
 	setDeleting: Dispatch<SetStateAction<boolean>>;
-	setErrors: Dispatch<SetStateAction<AccountFormErrors>>;
 	navigate: NavigateFunction;
 }
 
@@ -37,42 +23,7 @@ function showDeleteAccountError(error: string, code?: string): void {
 	toast.error('Fout bij verwijderen account', { description: error });
 }
 
-export function useAccountActions({
-	user,
-	profile,
-	formData,
-	setProfile,
-	setSaving,
-	setDeleting,
-	setErrors,
-	navigate,
-}: UseAccountActionsParams) {
-	const handleSaveProfile = (event: FormEvent) => {
-		if (!user) return;
-		event.preventDefault();
-		return runSaveProfile({ userId: user.id, formData, profile, setErrors, setSaving, setProfile });
-	};
-
-	const handleUploadAvatar = (event: ChangeEvent<HTMLInputElement>) => {
-		if (!user) return;
-		return runUploadAvatar({ userId: user.id, event, profile, setSaving, setProfile });
-	};
-
-	const handleDeleteAvatar = async () => {
-		if (!user) return;
-
-		setSaving(true);
-		const { error } = await persistAvatarDelete(user.id);
-		if (error) {
-			toast.error('Fout bij verwijderen avatar', { description: error });
-		} else if (profile) {
-			setProfile({ ...profile, avatar_url: null });
-			toast.success('Avatar verwijderd!');
-			dispatchProfileUpdated();
-		}
-		setSaving(false);
-	};
-
+export function useAccountActions({ setDeleting, navigate }: UseAccountActionsParams) {
 	const handleDeleteAccount = async () => {
 		setDeleting(true);
 		try {
@@ -97,9 +48,6 @@ export function useAccountActions({
 	};
 
 	return {
-		handleSaveProfile,
-		handleUploadAvatar,
-		handleDeleteAvatar,
 		handleDeleteAccount,
 	};
 }

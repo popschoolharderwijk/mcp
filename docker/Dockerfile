@@ -3,10 +3,10 @@ FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d
 
 # BuildKit sets this from --platform; do not default it.
 ARG TARGETARCH
-ENV BUN_VERSION=1.4.4
-ENV SUPABASE_CLI_VERSION=3.2.0
-ENV STRIPE_CLI_VERSION=1.55.11
-ENV CURSOR_AGENT_VERSION=2026.11.05-86047df
+ENV BUN_VERSION=1.4.5
+ENV SUPABASE_CLI_VERSION=3.3.0
+ENV STRIPE_CLI_VERSION=1.55.14
+ENV CURSOR_AGENT_VERSION=2026.11.22-e9042b2
 
 COPY docker/install-cli-tools.sh /tmp/install-cli-tools.sh
 RUN chmod +x /tmp/install-cli-tools.sh \

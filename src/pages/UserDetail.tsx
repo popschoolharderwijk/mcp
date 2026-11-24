@@ -21,6 +21,7 @@ export default function UserDetail() {
 	return (
 		<UserDetailContent
 			user={screen.user}
+			includeAgenda={page.includeAgenda}
 			activeTab={page.activeTab}
 			onTabChange={page.onTabChange}
 			onUpdate={page.onUpdate}

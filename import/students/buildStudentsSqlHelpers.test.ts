@@ -41,7 +41,7 @@ describe('buildStudentsSql', () => {
 		]);
 		expect(sql).toContain('INSERT INTO public.students');
 		expect(sql).not.toContain('INSERT INTO auth.users');
-		expect(sql).toContain('2010-01-01');
+		expect(sql).not.toContain('date_of_birth');
 		expect(sql.split("'11111111-1111-1111-1111-111111111111'::uuid")).toHaveLength(2);
 	});
 });

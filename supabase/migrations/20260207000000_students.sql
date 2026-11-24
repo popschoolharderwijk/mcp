@@ -29,8 +29,7 @@ CREATE TABLE IF NOT EXISTS public.students (
     CHECK (parent_email IS NULL OR parent_email = public.normalize_trim_text(parent_email)),
   parent_phone_number TEXT
     CHECK (public.is_valid_phone_number(parent_phone_number))
-    CHECK (parent_phone_number IS NULL OR parent_phone_number = public.normalize_trim_text(parent_phone_number)),
-  date_of_birth DATE
+    CHECK (parent_phone_number IS NULL OR parent_phone_number = public.normalize_trim_text(parent_phone_number))
 );
 
 -- Add audit columns to students
@@ -160,9 +159,6 @@ BEGIN
     -- Add check constraint if column was just created
     ALTER TABLE public.students ADD CONSTRAINT students_parent_phone_number_check
       CHECK (public.is_valid_phone_number(parent_phone_number));
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'students' AND column_name = 'date_of_birth') THEN
-    ALTER TABLE public.students ADD COLUMN date_of_birth DATE;
   END IF;
 END $$;
 

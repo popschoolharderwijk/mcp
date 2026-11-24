@@ -342,6 +342,115 @@ BEGIN
   WHERE p.user_id = r.id;
 
   -- -------------------------------------------------------------------------
+  -- SAMPLE AVATARS (abstract SVG shapes as data URLs — no storage / network)
+  -- Cycles 10 shapes across site_admin, admins, staff, all teachers, students
+  -- 001–024, and users 001–004 (~50 profiles). Distinct from AvatarFallback.
+  -- -------------------------------------------------------------------------
+  WITH shapes(shape_i, avatar_url) AS (
+    VALUES
+      -- 0 overlapping circles
+      (0, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%231e3a5f%22/%3E' ||
+        '%3Ccircle cx=%2222%22 cy=%2228%22 r=%2218%22 fill=%22%233b82f6%22/%3E' ||
+        '%3Ccircle cx=%2244%22 cy=%2238%22 r=%2216%22 fill=%22%2393c5fd%22 opacity=%220.9%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 1 diagonal triangles
+      (1, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%23064e3b%22/%3E' ||
+        '%3Cpolygon points=%220,64 64,0 64,64%22 fill=%22%2310b981%22/%3E' ||
+        '%3Cpolygon points=%220,0 40,0 0,40%22 fill=%22%236ee7b7%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 2 rounded bars
+      (2, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%237c2d12%22/%3E' ||
+        '%3Crect x=%2210%22 y=%2212%22 width=%2244%22 height=%2212%22 rx=%226%22 fill=%22%23f59e0b%22/%3E' ||
+        '%3Crect x=%2210%22 y=%2226%22 width=%2232%22 height=%2212%22 rx=%226%22 fill=%22%23fdba74%22/%3E' ||
+        '%3Crect x=%2210%22 y=%2240%22 width=%2238%22 height=%2212%22 rx=%226%22 fill=%22%23fef3c7%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 3 ring + square
+      (3, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%23831d4a%22/%3E' ||
+        '%3Crect x=%2218%22 y=%2218%22 width=%2228%22 height=%2228%22 rx=%224%22 fill=%22%23f472b6%22/%3E' ||
+        '%3Ccircle cx=%2232%22 cy=%2232%22 r=%2218%22 fill=%22none%22 stroke=%22%23fce7f3%22 stroke-width=%224%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 4 soft blobs
+      (4, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%234c1d95%22/%3E' ||
+        '%3Cellipse cx=%2224%22 cy=%2230%22 rx=%2220%22 ry=%2216%22 fill=%22%238b5cf6%22/%3E' ||
+        '%3Cellipse cx=%2242%22 cy=%2240%22 rx=%2218%22 ry=%2214%22 fill=%22%23c4b5fd%22 opacity=%220.85%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 5 chevron stripes
+      (5, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%230c4a6e%22/%3E' ||
+        '%3Cpolygon points=%220,20 32,4 64,20 64,32 32,16 0,32%22 fill=%22%230ea5e9%22/%3E' ||
+        '%3Cpolygon points=%220,40 32,24 64,40 64,52 32,36 0,52%22 fill=%22%237dd3fc%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 6 dots grid
+      (6, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%23145132%22/%3E' ||
+        '%3Ccircle cx=%2216%22 cy=%2216%22 r=%226%22 fill=%22%2322c55e%22/%3E' ||
+        '%3Ccircle cx=%2232%22 cy=%2216%22 r=%226%22 fill=%22%2386efac%22/%3E' ||
+        '%3Ccircle cx=%2248%22 cy=%2216%22 r=%226%22 fill=%22%2322c55e%22/%3E' ||
+        '%3Ccircle cx=%2216%22 cy=%2232%22 r=%226%22 fill=%22%2386efac%22/%3E' ||
+        '%3Ccircle cx=%2232%22 cy=%2232%22 r=%226%22 fill=%22%2322c55e%22/%3E' ||
+        '%3Ccircle cx=%2248%22 cy=%2232%22 r=%226%22 fill=%22%2386efac%22/%3E' ||
+        '%3Ccircle cx=%2216%22 cy=%2248%22 r=%226%22 fill=%22%2322c55e%22/%3E' ||
+        '%3Ccircle cx=%2232%22 cy=%2248%22 r=%226%22 fill=%22%2386efac%22/%3E' ||
+        '%3Ccircle cx=%2248%22 cy=%2248%22 r=%226%22 fill=%22%2322c55e%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 7 arcs
+      (7, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%237f1d1d%22/%3E' ||
+        '%3Cpath d=%22M8 48 A24 24 0 0 1 56 48%22 fill=%22none%22 stroke=%22%23f87171%22 stroke-width=%226%22/%3E' ||
+        '%3Cpath d=%22M14 40 A18 18 0 0 1 50 40%22 fill=%22none%22 stroke=%22%23fecaca%22 stroke-width=%226%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 8 diamond stack
+      (8, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%231e293b%22/%3E' ||
+        '%3Cpolygon points=%2232,6 50,24 32,42 14,24%22 fill=%22%2338bdf8%22/%3E' ||
+        '%3Cpolygon points=%2232,22 46,36 32,50 18,36%22 fill=%22%23bae6fd%22 opacity=%220.9%22/%3E' ||
+        '%3C/svg%3E'),
+      -- 9 split waves
+      (9, 'data:image/svg+xml;utf8,' ||
+        '%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2264%22 height=%2264%22 viewBox=%220 0 64 64%22%3E' ||
+        '%3Crect width=%2264%22 height=%2264%22 fill=%22%23312e81%22/%3E' ||
+        '%3Cpath d=%22M0 28 Q16 12 32 28 T64 28 V64 H0 Z%22 fill=%22%236366f1%22/%3E' ||
+        '%3Cpath d=%22M0 44 Q16 28 32 44 T64 44 V64 H0 Z%22 fill=%22%23a5b4fc%22 opacity=%220.9%22/%3E' ||
+        '%3C/svg%3E')
+  ),
+  targets AS (
+    SELECT
+      p.user_id,
+      (row_number() OVER (ORDER BY p.user_id) - 1) % 10 AS shape_i
+    FROM public.profiles p
+    WHERE
+      -- site_admin + admins + staff
+      p.user_id::text LIKE '10000000-%'
+      OR p.user_id::text LIKE '20000000-%'
+      OR p.user_id::text LIKE '30000000-%'
+      -- all teachers
+      OR p.user_id::text LIKE '40000000-%'
+      -- students 001–024
+      OR p.user_id::text ~ '^50000000-00(0[1-9]|1[0-9]|2[0-4])-'
+      -- plain users 001–004
+      OR p.user_id::text ~ '^60000000-000[1-4]-'
+  )
+  UPDATE public.profiles AS p
+  SET avatar_url = s.avatar_url
+  FROM targets t
+  JOIN shapes s ON s.shape_i = t.shape_i
+  WHERE p.user_id = t.user_id;
+
+  -- -------------------------------------------------------------------------
   -- Drop the temporary table
   -- -------------------------------------------------------------------------
   DROP TABLE IF EXISTS new_users;
@@ -831,16 +940,28 @@ BEGIN
 END $$;
 
 -- -----------------------------------------------------------------------------
--- STUDENT DATE_OF_BIRTH
+-- PROFILE DATE_OF_BIRTH
 -- -----------------------------------------------------------------------------
--- Billing age tariff uses threshold 21 (youth vs adult Stripe prices).
+-- Students: billing age tariff uses threshold 21 (youth vs adult Stripe prices).
 -- As of 2026-11: under 18 → kids; 18–20 → youth tariff; 21+ → adult tariff.
 -- Mix youth and adult on the same lesson options so both Prices can be tested.
+-- Teachers / staff / admins: half of each group gets an adult DOB for UI testing.
 -- -----------------------------------------------------------------------------
-UPDATE public.students s
+UPDATE public.profiles p
 SET date_of_birth = dob.date_of_birth
 FROM (
   SELECT user_id, date_of_birth FROM (VALUES
+    -- Privileged (4 of 8): site_admin, 1 admin, 2 staff
+    ('10000000-0001-0000-0000-000000000000'::uuid, '1985-04-12'::date), -- site_admin ~41
+    ('20000000-0001-0000-0000-000000000000'::uuid, '1988-09-03'::date), -- admin-one ~38
+    ('30000000-0001-0000-0000-000000000000'::uuid, '1992-01-20'::date), -- staff-one ~34
+    ('30000000-0002-0000-0000-000000000000'::uuid, '1990-06-15'::date), -- staff-two ~36
+    -- Teachers (5 of 10): Alice–Eva
+    ('40000000-0001-0000-0000-000000000000'::uuid, '1987-03-08'::date), -- Alice ~39
+    ('40000000-0002-0000-0000-000000000000'::uuid, '1991-11-22'::date), -- Bob ~35
+    ('40000000-0003-0000-0000-000000000000'::uuid, '1989-07-14'::date), -- Charlotte ~37
+    ('40000000-0004-0000-0000-000000000000'::uuid, '1993-02-28'::date), -- Diana ~33
+    ('40000000-0005-0000-0000-000000000000'::uuid, '1986-12-01'::date), -- Eva ~40
     -- 001–008 Bandcoaching (60 biweekly): kids, teens, youth 18–20, adults
     ('50000000-0001-0000-0000-000000000000'::uuid, '2016-03-12'::date), -- ~10
     ('50000000-0002-0000-0000-000000000000'::uuid, '2014-07-22'::date), -- ~12
@@ -910,7 +1031,7 @@ FROM (
     ('50000000-0060-0000-0000-000000000000'::uuid, '1994-09-21'::date)  -- ~32
   ) AS t(user_id, date_of_birth)
 ) dob
-WHERE s.user_id = dob.user_id;
+WHERE p.user_id = dob.user_id;
 
 -- -----------------------------------------------------------------------------
 -- MANUAL AGENDA EVENTS (for dev menu users)

@@ -35,6 +35,7 @@ interface UserData {
 	first_name: string | null;
 	last_name: string | null;
 	phone_number: string | null;
+	date_of_birth?: string | null;
 	role: AppRole | null;
 }
 
@@ -50,10 +51,12 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 	const isEditMode = !!user;
 	const [form, setForm] = useState<UserFormState>(emptyUserForm);
 	const [saving, setSaving] = useState(false);
+	const [dateOfBirthDraftSynced, setDateOfBirthDraftSynced] = useState(true);
 
 	useEffect(() => {
 		if (!open) return;
 		setForm(buildUserFormStateForOpen(user, emptyUserForm));
+		setDateOfBirthDraftSynced(true);
 	}, [open, user]);
 
 	const handleSubmit = async () => {
@@ -79,7 +82,7 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 	const roleLocked = isUserRoleLocked(isEditMode, isAdmin, isSiteAdmin, user?.role);
 	const roles = assignableRoles(isSiteAdmin);
 	const initialForm = buildUserFormStateForOpen(user, emptyUserForm);
-	const submitDisabled = resolveUserFormSubmitDisabled(isEditMode, form, initialForm);
+	const submitDisabled = resolveUserFormSubmitDisabled(isEditMode, form, initialForm, dateOfBirthDraftSynced);
 
 	return (
 		<Dialog
@@ -99,6 +102,7 @@ export function UserFormDialog({ open, onOpenChange, onSuccess, user }: UserForm
 					roleLocked={roleLocked}
 					roles={roles}
 					onFieldChange={setForm}
+					onDateOfBirthDraftSyncedChange={setDateOfBirthDraftSynced}
 				/>
 				<DialogFooter>
 					<Button

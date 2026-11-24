@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { emptyProfileAddressForm } from '../../../src/lib/profile/profileAddressHelpers';
 import {
+	hasProfileAddressFormChanges,
 	profileAddressFieldsFromRow,
 	profileAddressFormFromValueKey,
 	profileAddressValueKey,
@@ -87,6 +88,17 @@ describe('profileAddressFormFromValueKey', () => {
 			city: 'Amsterdam',
 			country_code: 'NL',
 		});
+	});
+});
+
+describe('hasProfileAddressFormChanges', () => {
+	it('returns false when only NL postcode spacing differs', () => {
+		expect(
+			hasProfileAddressFormChanges(
+				{ ...emptyProfileAddressForm, postal_code: '1234 AB', country_code: 'NL' },
+				{ ...emptyProfileAddressForm, postal_code: '1234AB', country_code: 'NL' },
+			),
+		).toBe(false);
 	});
 });
 

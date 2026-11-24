@@ -6,10 +6,15 @@ import { SectionSkeleton } from '@/components/ui/page-skeleton';
 interface TeacherAvailabilitySectionProps {
 	teacherUserId: string;
 	canEdit: boolean;
+	onBlocksMutated?: () => void;
 }
 
-export function TeacherAvailabilitySection({ teacherUserId, canEdit }: TeacherAvailabilitySectionProps) {
-	const vm = useTeacherAvailabilitySection(teacherUserId, canEdit);
+export function TeacherAvailabilitySection({
+	teacherUserId,
+	canEdit,
+	onBlocksMutated,
+}: TeacherAvailabilitySectionProps) {
+	const vm = useTeacherAvailabilitySection(teacherUserId, canEdit, onBlocksMutated);
 
 	if (vm.loading) {
 		return <SectionSkeleton />;

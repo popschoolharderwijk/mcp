@@ -3,8 +3,8 @@ import { ProfileAddressSection } from '@/components/profile/ProfileAddressSectio
 import { PageTabs, PageTabsContent } from '@/components/ui/page-tabs';
 import { UserProfileSection } from '@/components/users/UserProfileSection';
 import {
+	buildPersonDetailTabItems,
 	isPersonDetailTabId,
-	PERSON_DETAIL_TAB_ITEMS,
 	type PersonDetailTabId,
 } from '@/lib/profile/personDetailTabsHelpers';
 import { profileAddressFieldsFromRow } from '@/lib/profile/profileAddressSectionHelpers';
@@ -12,18 +12,19 @@ import type { UserDetailUser } from '@/lib/users/userDetailPageHelpers';
 
 interface UserDetailTabsProps {
 	user: UserDetailUser;
+	includeAgenda: boolean;
 	activeTab: PersonDetailTabId;
 	onTabChange: (tab: PersonDetailTabId) => void;
 	onUpdate: () => void;
 }
 
-export function UserDetailTabs({ user, activeTab, onTabChange, onUpdate }: UserDetailTabsProps) {
+export function UserDetailTabs({ user, includeAgenda, activeTab, onTabChange, onUpdate }: UserDetailTabsProps) {
 	return (
 		<PageTabs
 			value={activeTab}
 			onValueChange={onTabChange}
 			isTabId={isPersonDetailTabId}
-			items={PERSON_DETAIL_TAB_ITEMS}
+			items={buildPersonDetailTabItems({ includeAgenda })}
 		>
 			<PageTabsContent value="profile" panelWidth="1/2">
 				<UserProfileSection user={user} onUpdate={onUpdate} />
@@ -39,9 +40,11 @@ export function UserDetailTabs({ user, activeTab, onTabChange, onUpdate }: UserD
 				/>
 			</PageTabsContent>
 
-			<PageTabsContent value="agenda">
-				<AgendaView userId={user.user_id} canEdit />
-			</PageTabsContent>
+			{includeAgenda ? (
+				<PageTabsContent value="agenda">
+					<AgendaView userId={user.user_id} canEdit />
+				</PageTabsContent>
+			) : null}
 		</PageTabs>
 	);
 }

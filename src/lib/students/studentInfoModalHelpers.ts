@@ -1,9 +1,7 @@
 import type { Student } from '@/types/students';
 
 export interface StudentRecordFields {
-	id: string;
 	user_id: string;
-	date_of_birth: string | null;
 	parent_name: string | null;
 	parent_email: string | null;
 	parent_phone_number: string | null;
@@ -20,6 +18,7 @@ export interface StudentProfileFields {
 	last_name: string | null;
 	avatar_url: string | null;
 	phone_number: string | null;
+	date_of_birth: string | null;
 }
 
 export function mergeStudentWithProfile(studentData: StudentRecordFields, profileData: StudentProfileFields): Student {

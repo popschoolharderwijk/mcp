@@ -24,7 +24,9 @@ async function loadStudentProfileForDetailPage(
 ): Promise<StudentProfileData | null> {
 	const { data, error } = await supabase
 		.from('profiles')
-		.select(`user_id, email, first_name, last_name, phone_number, avatar_url, ${PROFILE_ADDRESS_SELECT}`)
+		.select(
+			`user_id, email, first_name, last_name, phone_number, avatar_url, date_of_birth, ${PROFILE_ADDRESS_SELECT}`,
+		)
 		.eq('user_id', userId)
 		.maybeSingle();
 
@@ -48,6 +50,7 @@ export function mergeStudentDetailRecord(profile: StudentProfileData, studentRow
 		last_name: profile.last_name,
 		phone_number: profile.phone_number,
 		avatar_url: profile.avatar_url,
+		date_of_birth: profile.date_of_birth,
 		street_name: profile.street_name,
 		house_number: profile.house_number,
 		postal_code: profile.postal_code,

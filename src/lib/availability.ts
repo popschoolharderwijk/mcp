@@ -23,7 +23,6 @@ export function availabilityConfigFromAgenda(
 export const AVAILABILITY_CONFIG = availabilityConfigFromAgenda();
 
 export const DEFAULT_START_TIME = hourToTimeString(AVAILABILITY_CONFIG.START_HOUR);
-export const DEFAULT_END_TIME = hourToTimeString(AVAILABILITY_CONFIG.END_HOUR);
 
 export function availabilityDefaultStartTime(agenda: AgendaSetting = APP_SETTINGS_BOOTSTRAP.agenda): string {
 	return hourToTimeString(availabilityConfigFromAgenda(agenda).START_HOUR);

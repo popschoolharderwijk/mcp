@@ -14,7 +14,10 @@ interface StudentDetailBodyProps extends StudentDetailPageData {
 	profile: StudentProfileData;
 	student: Student;
 	isPrivileged: boolean;
+	canViewPersonalData: boolean;
+	canManagePersonalData: boolean;
 	canEditAgenda: boolean;
+	includeAgenda: boolean;
 	activeTab: StudentInfoTabId;
 	onTabChange: (tab: StudentInfoTabId) => void;
 }
@@ -26,7 +29,10 @@ export function StudentDetailBody({
 	agreements,
 	signupRequests,
 	isPrivileged,
+	canViewPersonalData,
+	canManagePersonalData,
 	canEditAgenda,
+	includeAgenda,
 	activeTab,
 	onTabChange,
 	onProfileUpdate,
@@ -44,7 +50,10 @@ export function StudentDetailBody({
 				agreements={agreements}
 				signupRequests={signupRequests}
 				isPrivileged={isPrivileged}
+				canViewPersonalData={canViewPersonalData}
+				canManagePersonalData={canManagePersonalData}
 				canEditAgenda={canEditAgenda}
+				includeAgenda={includeAgenda}
 				activeTab={activeTab}
 				onTabChange={onTabChange}
 				onProfileUpdate={onProfileUpdate}

@@ -1,4 +1,6 @@
+import type { ReactNode } from 'react';
 import { TeacherProfileCocFields } from '@/components/teachers/TeacherProfileCocFields';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -13,9 +15,13 @@ interface TeacherProfileFormProps {
 	form: TeacherProfileFormValues;
 	canEdit: boolean;
 	saving: boolean;
+	hasChanges: boolean;
+	avatar?: ReactNode;
 	cocIssuedOnDraftSynced?: boolean;
+	dateOfBirthDraftSynced?: boolean;
 	onChange: (patch: Partial<TeacherProfileFormValues>) => void;
 	onCocIssuedOnDraftSyncedChange?: (synced: boolean) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 	onSave: () => void;
 }
 
@@ -23,15 +29,25 @@ export function TeacherProfileForm({
 	form,
 	canEdit,
 	saving,
+	hasChanges,
+	avatar,
 	cocIssuedOnDraftSynced = true,
+	dateOfBirthDraftSynced = true,
 	onChange,
 	onCocIssuedOnDraftSyncedChange,
+	onDateOfBirthDraftSyncedChange,
 	onSave,
 }: TeacherProfileFormProps) {
-	const canSubmit = canSubmitTeacherProfileForm(canEdit, form, cocIssuedOnDraftSynced);
+	const canSubmit = canSubmitTeacherProfileForm(
+		canEdit,
+		form,
+		cocIssuedOnDraftSynced,
+		dateOfBirthDraftSynced,
+		hasChanges,
+	);
 
-	return (
-		<div className="space-y-4">
+	const nameAndContactFields = (
+		<div className="min-w-0 flex-1 space-y-4">
 			<div className="grid gap-4 sm:grid-cols-2">
 				<div className="space-y-2">
 					<Label htmlFor="first-name">Voornaam</Label>
@@ -52,11 +68,10 @@ export function TeacherProfileForm({
 					/>
 				</div>
 			</div>
-			<div className="grid gap-4 sm:grid-cols-2">
+			<div className="grid gap-4 sm:grid-cols-3">
 				<div className="space-y-2">
 					<Label htmlFor="teacher-email">Email</Label>
 					<Input id="teacher-email" type="email" value={form.email} disabled />
-					{canEdit && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
 				</div>
 				<PhoneInput
 					id="phone-number"
@@ -65,7 +80,27 @@ export function TeacherProfileForm({
 					onChange={(phoneNumber) => onChange({ phoneNumber })}
 					disabled={!canEdit}
 				/>
+				<DateOfBirthField
+					id="teacher-dob"
+					value={form.dateOfBirth}
+					onChange={(dateOfBirth) => onChange({ dateOfBirth })}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+					disabled={!canEdit}
+				/>
 			</div>
+		</div>
+	);
+
+	return (
+		<div className="space-y-4">
+			{avatar ? (
+				<div className="flex items-start gap-4">
+					{avatar}
+					{nameAndContactFields}
+				</div>
+			) : (
+				nameAndContactFields
+			)}
 			<div className="space-y-2">
 				<Label htmlFor="bio">Biografie</Label>
 				<Textarea

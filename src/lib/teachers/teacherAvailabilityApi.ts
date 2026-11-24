@@ -72,3 +72,17 @@ export async function deleteTeacherAvailability(id: string): Promise<{ error: Er
 
 	return { error: null };
 }
+
+export async function countTeacherAvailabilityByTeacherUserId(teacherUserId: string): Promise<number> {
+	const { count, error } = await supabase
+		.from('teacher_availability')
+		.select('*', { count: 'exact', head: true })
+		.eq('teacher_user_id', teacherUserId);
+
+	if (error) {
+		console.error('Error counting teacher availability:', error);
+		return 0;
+	}
+
+	return count ?? 0;
+}

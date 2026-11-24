@@ -6,13 +6,21 @@ interface StudentAddressSectionProps {
 	vm: StudentFormFieldsViewModel;
 	saving: boolean;
 	onSave: () => void;
+	canEdit?: boolean;
+	saveDisabled?: boolean;
 }
 
-export function StudentAddressSection({ vm, saving, onSave }: StudentAddressSectionProps) {
+export function StudentAddressSection({
+	vm,
+	saving,
+	onSave,
+	canEdit = true,
+	saveDisabled = false,
+}: StudentAddressSectionProps) {
 	const { form, setForm } = vm;
 
 	return (
-		<ProfileFormSaveCard title="Adres" saving={saving} onSave={onSave}>
+		<ProfileFormSaveCard title="Adres" saving={saving} onSave={onSave} canEdit={canEdit} disabled={saveDisabled}>
 			<ProfileAddressFormFields
 				idPrefix="student-address"
 				form={{
@@ -23,6 +31,7 @@ export function StudentAddressSection({ vm, saving, onSave }: StudentAddressSect
 					country_code: form.country_code,
 				}}
 				onChange={(address) => setForm({ ...form, ...address })}
+				disabled={!canEdit}
 			/>
 		</ProfileFormSaveCard>
 	);

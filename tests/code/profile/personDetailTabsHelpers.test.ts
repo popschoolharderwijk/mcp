@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
-	buildAgreementsTabLabel,
 	buildPersonDetailPath,
+	buildPersonDetailTabItems,
 	buildTeacherDetailTabItems,
 	parsePersonDetailTab,
 	resolvePersonDetailTabRedirect,
@@ -14,10 +14,9 @@ describe('parsePersonDetailTab', () => {
 		expect(parsePersonDetailTab('unknown')).toBe('profile');
 	});
 
-	it('keeps valid tab ids', () => {
-		expect(parsePersonDetailTab('address')).toBe('address');
-		expect(parsePersonDetailTab('agreements')).toBe('agreements');
-		expect(parsePersonDetailTab('agenda')).toBe('agenda');
+	it('rejects agenda when includeAgenda is false', () => {
+		expect(parsePersonDetailTab('agenda', { includeAgenda: false })).toBe('profile');
+		expect(parsePersonDetailTab('address', { includeAgenda: false })).toBe('address');
 	});
 });
 
@@ -28,18 +27,44 @@ describe('person detail tab routes', () => {
 		expect(buildPersonDetailPath('/users/u-1', 'address')).toBe('/users/u-1/address');
 	});
 
+	it('uses bare /profile for the default own-profile tab', () => {
+		expect(resolvePersonDetailTabRoute('/profile', 'profile')).toBe('/profile');
+		expect(resolvePersonDetailTabRoute('/profile', 'address')).toBe('/profile/address');
+		expect(buildPersonDetailPath('/profile')).toBe('/profile');
+	});
+
 	it('redirects when the tab segment is missing or invalid', () => {
 		expect(resolvePersonDetailTabRedirect('/users/u-1', undefined)).toBe('/users/u-1/profile');
 		expect(resolvePersonDetailTabRedirect('/users/u-1', 'nope')).toBe('/users/u-1/profile');
 		expect(resolvePersonDetailTabRedirect('/users/u-1', 'profile')).toBeNull();
 	});
+
+	it('keeps bare /profile and collapses /profile/profile', () => {
+		expect(resolvePersonDetailTabRedirect('/profile', undefined)).toBeNull();
+		expect(resolvePersonDetailTabRedirect('/profile', 'profile')).toBe('/profile');
+		expect(resolvePersonDetailTabRedirect('/profile', 'address')).toBeNull();
+		expect(resolvePersonDetailTabRedirect('/profile', 'agenda', { includeAgenda: false })).toBe('/profile');
+	});
 });
 
 describe('teacher detail tab items', () => {
-	it('includes the agreements count in the Lesovereenkomsten label', () => {
-		expect(buildAgreementsTabLabel(3)).toBe('Lesovereenkomsten (3)');
-		expect(buildTeacherDetailTabItems(3).find((item) => item.value === 'agreements')?.label).toBe(
-			'Lesovereenkomsten (3)',
-		);
+	it('places availability after agreements with block counts and omits agenda when includeAgenda is false', () => {
+		const withAgenda = buildTeacherDetailTabItems(3, 2);
+		expect(withAgenda.map((item) => item.value)).toEqual([
+			'profile',
+			'address',
+			'agreements',
+			'availability',
+			'agenda',
+		]);
+		expect(withAgenda.find((item) => item.value === 'agreements')?.label).toBe('Lesovereenkomsten (3)');
+		expect(withAgenda.find((item) => item.value === 'availability')?.label).toBe('Beschikbaarheid (2)');
+		expect(buildTeacherDetailTabItems(0, 0, { includeAgenda: false }).map((item) => item.value)).toEqual([
+			'profile',
+			'address',
+			'agreements',
+			'availability',
+		]);
+		expect(buildPersonDetailTabItems({ includeAgenda: false }).some((item) => item.value === 'agenda')).toBe(false);
 	});
 });

@@ -40,7 +40,16 @@ export function Sidebar({ collapsed = false, onToggle }: SidebarProps) {
 					<ScrollArea className="h-full">
 						<div className="w-full px-2 py-2">
 							<nav className="flex flex-col w-full" style={{ gap: NAV_GAP } as React.CSSProperties}>
-								<SidebarMainNav collapsed={collapsed} {...visibility} />
+								<SidebarMainNav
+									collapsed={collapsed}
+									isStudent={visibility.isStudent}
+									isTeacher={visibility.isTeacher}
+									showTeachersNav={visibility.showTeachersNav}
+									showStudentsNav={visibility.showStudentsNav}
+									showReportsNav={visibility.showReportsNav}
+									showProjectsNav={visibility.showProjectsNav}
+									showAdminNav={visibility.showAdminNav}
+								/>
 								{visibility.showAdminNav ? (
 									<>
 										<SidebarNavSection

@@ -1,29 +1,37 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { MyStudentsAgreementsCell, MyStudentsLessonTypesCell } from '@/components/students/MyStudentsTableParts';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DataTable, type DataTableColumn } from '@/components/ui/data-table';
+import { DataTable } from '@/components/ui/data-table';
 import { NavPageShell } from '@/components/ui/nav-page-shell';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 import { useServerPaginatedListState } from '@/hooks/useServerPaginatedListState';
 import { supabase } from '@/integrations/supabase/client';
-import {
-	applyMyStudentsLoadOutcome,
-	buildMyStudentsLoadParams,
-	mapMyStudentsPaginatedResponse,
-	myStudentDisplayName,
-	myStudentInitials,
-	shouldRedirectMyStudents,
-	shouldShowMyStudentsSkeleton,
-	shouldSkipMyStudentsLoad,
-} from '@/lib/students/myStudentsPageHelpers';
+import { buildMyStudentsLoadParams, mapMyStudentsPaginatedResponse } from '@/lib/students/myStudentsPageHelpers';
 import { buildStudentDetailPath } from '@/lib/students/studentInfoTabsHelpers';
+import { buildMyStudentColumns } from '@/lib/students/studentsTableColumns';
 import type { StudentWithAgreements } from '@/types/students';
 
-export default function MyStudents() {
-	const { isTeacher, teacherUserId, isLoading: authLoading } = useAuth();
+function applyMyStudentsLoadResult(
+	result: { data: unknown; error: { message?: string } | null },
+	handlers: {
+		setStudents: (students: StudentWithAgreements[]) => void;
+		setTotalCount: (count: number) => void;
+		setLoading: (loading: boolean) => void;
+	},
+) {
+	if (result.error) {
+		console.error('Error loading students:', result.error);
+		toast.error('Fout bij laden leerlingen');
+		handlers.setLoading(false);
+		return;
+	}
+	const mapped = mapMyStudentsPaginatedResponse(result.data);
+	handlers.setStudents(mapped.students);
+	handlers.setTotalCount(mapped.totalCount);
+	handlers.setLoading(false);
+}
+
+function useMyStudentsList(teacherUserId: string | null, enabled: boolean) {
 	const [students, setStudents] = useState<StudentWithAgreements[]>([]);
 	const {
 		loading,
@@ -44,7 +52,7 @@ export default function MyStudents() {
 	});
 
 	useEffect(() => {
-		if (shouldSkipMyStudentsLoad(authLoading, isTeacher, teacherUserId)) return;
+		if (!enabled || !teacherUserId) return;
 
 		let cancelled = false;
 		setLoading(true);
@@ -61,117 +69,81 @@ export default function MyStudents() {
 				p_sort_direction: 'asc',
 				p_include_agreements: true,
 			})
-			.then(({ data, error }) => {
+			.then((result) => {
 				if (cancelled) return;
-				if (error) {
-					console.error('Error loading students:', error);
-					toast.error('Fout bij laden leerlingen');
-					setLoading(false);
-					return;
-				}
-				applyMyStudentsLoadOutcome(mapMyStudentsPaginatedResponse(data), setStudents, setTotalCount);
-				setLoading(false);
+				applyMyStudentsLoadResult(result, { setStudents, setTotalCount, setLoading });
 			});
 
 		return () => {
 			cancelled = true;
 		};
-	}, [
-		authLoading,
-		isTeacher,
-		teacherUserId,
+	}, [enabled, teacherUserId, currentPage, rowsPerPage, debouncedSearchQuery, setLoading, setTotalCount]);
+
+	return {
+		students,
+		loading,
+		totalCount,
+		searchQuery,
+		handleSearchChange,
 		currentPage,
 		rowsPerPage,
-		debouncedSearchQuery,
-		setLoading,
-		setTotalCount,
-	]);
+		handlePageChange,
+		handleRowsPerPageChange,
+	};
+}
 
-	const columns: DataTableColumn<StudentWithAgreements>[] = useMemo(
-		() => [
-			{
-				key: 'student',
-				label: 'Leerling',
-				sortable: false,
-				className: 'w-56',
-				render: (student) => (
-					<div className="flex items-center gap-3">
-						<Avatar className="h-9 w-9 flex-shrink-0">
-							<AvatarImage src={student.avatar_url ?? undefined} alt={myStudentDisplayName(student)} />
-							<AvatarFallback className="bg-primary/10 text-primary text-sm">
-								{myStudentInitials(student)}
-							</AvatarFallback>
-						</Avatar>
-						<TooltipProvider delayDuration={200}>
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<div className="min-w-0 flex-1 overflow-hidden">
-										<Link
-											to={buildStudentDetailPath(student.user_id)}
-											className="block font-medium truncate hover:text-primary hover:underline focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-sm"
-										>
-											{myStudentDisplayName(student)}
-										</Link>
-										<p className="text-xs text-muted-foreground truncate">{student.email}</p>
-									</div>
-								</TooltipTrigger>
-								<TooltipContent side="top" align="start">
-									<p className="font-medium">{myStudentDisplayName(student)}</p>
-									<p className="text-xs text-muted-foreground">{student.email}</p>
-								</TooltipContent>
-							</Tooltip>
-						</TooltipProvider>
-					</div>
-				),
-			},
-			{
-				key: 'phone_number',
-				label: 'Telefoon',
-				sortable: false,
-				render: (student) => <span className="text-muted-foreground">{student.phone_number || '-'}</span>,
-				className: 'text-muted-foreground',
-			},
-			{
-				key: 'lesson_types',
-				label: 'Lessoorten',
-				sortable: false,
-				render: (student) => <MyStudentsLessonTypesCell student={student} />,
-			},
-			{
-				key: 'agreements',
-				label: 'Lesovereenkomsten',
-				sortable: false,
-				className: 'min-w-96',
-				render: (student) => <MyStudentsAgreementsCell student={student} />,
-			},
-		],
-		[],
-	);
+type MyStudentsView = 'loading' | 'redirect' | 'ready';
 
-	if (shouldRedirectMyStudents(authLoading, isTeacher)) {
+function resolveMyStudentsView(authLoading: boolean, isTeacher: boolean, listLoading: boolean): MyStudentsView {
+	if (authLoading) return 'loading';
+	if (!isTeacher) return 'redirect';
+	if (listLoading) return 'loading';
+	return 'ready';
+}
+
+function resolveMyStudentsLoadEnabled(authLoading: boolean, isTeacher: boolean): boolean {
+	return !authLoading && isTeacher;
+}
+
+function useMyStudentsPageModel() {
+	const navigate = useNavigate();
+	const { isTeacher, teacherUserId, isLoading: authLoading } = useAuth();
+	const list = useMyStudentsList(teacherUserId ?? null, resolveMyStudentsLoadEnabled(authLoading, isTeacher));
+	const columns = useMemo(() => buildMyStudentColumns(), []);
+	const view = resolveMyStudentsView(authLoading, isTeacher, list.loading);
+	return { navigate, list, columns, view };
+}
+
+export default function MyStudents() {
+	const { navigate, list, columns, view } = useMyStudentsPageModel();
+
+	if (view === 'redirect') {
 		return <Navigate to="/" replace />;
 	}
 
-	if (shouldShowMyStudentsSkeleton(authLoading, loading)) {
+	if (view === 'loading') {
 		return <NavPageShell item="myStudents" loading />;
 	}
 
 	return (
 		<NavPageShell item="myStudents">
 			<DataTable
-				data={students}
+				data={list.students}
 				columns={columns}
-				searchQuery={searchQuery}
-				onSearchChange={handleSearchChange}
-				loading={loading}
+				searchQuery={list.searchQuery}
+				onSearchChange={list.handleSearchChange}
+				loading={list.loading}
 				getRowKey={(student) => student.user_id}
 				emptyMessage="Geen leerlingen gevonden"
+				rowActions={{
+					onEdit: (student) => navigate(buildStudentDetailPath(student.user_id)),
+				}}
 				serverPagination={{
-					totalCount,
-					currentPage,
-					rowsPerPage,
-					onPageChange: handlePageChange,
-					onRowsPerPageChange: handleRowsPerPageChange,
+					totalCount: list.totalCount,
+					currentPage: list.currentPage,
+					rowsPerPage: list.rowsPerPage,
+					onPageChange: list.handlePageChange,
+					onRowsPerPageChange: list.handleRowsPerPageChange,
 				}}
 			/>
 		</NavPageShell>

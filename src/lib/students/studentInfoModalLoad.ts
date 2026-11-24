@@ -10,7 +10,7 @@ async function fetchStudentRecord(userId: string): Promise<StudentRecordFields |
 	const { data, error } = await supabase
 		.from('students')
 		.select(
-			'id, user_id, date_of_birth, parent_name, parent_email, parent_phone_number, created_at, updated_at, created_by, updated_by',
+			'user_id, parent_name, parent_email, parent_phone_number, created_at, updated_at, created_by, updated_by',
 		)
 		.eq('user_id', userId)
 		.single();
@@ -26,7 +26,7 @@ async function fetchStudentRecord(userId: string): Promise<StudentRecordFields |
 async function fetchStudentProfile(userId: string): Promise<StudentProfileFields | null> {
 	const { data, error } = await supabase
 		.from('profiles')
-		.select('user_id, email, first_name, last_name, avatar_url, phone_number')
+		.select('user_id, email, first_name, last_name, avatar_url, phone_number, date_of_birth')
 		.eq('user_id', userId)
 		.single();
 

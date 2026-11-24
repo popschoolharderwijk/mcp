@@ -6,12 +6,12 @@ import {
 	isValidCreateUserEmail,
 } from './create-user-validation.ts';
 import {
+	buildCreatedUserProfilePatch,
 	buildCreateUserRoleWarningResponse,
 	buildCreateUserSuccessResponse,
 	hasCreatedAuthUser,
 	resolveMissingCreatedUserError,
 	shouldAssignCreateUserRole,
-	shouldUpdateCreatedUserPhone,
 } from './createUserHandlersHelpers.ts';
 import { jsonResponse } from './http.ts';
 
@@ -59,18 +59,15 @@ async function fetchRequesterRole(
 	return { role: rolesCheck.role, error: null };
 }
 
-async function updateCreatedUserPhone(
+async function updateCreatedUserProfile(
 	supabaseAdmin: SupabaseClient,
 	userId: string,
-	phoneNumber: string,
+	patch: { phone_number?: string; date_of_birth?: string },
 ): Promise<void> {
-	const { error: profileUpdateError } = await supabaseAdmin
-		.from('profiles')
-		.update({ phone_number: phoneNumber })
-		.eq('user_id', userId);
+	const { error: profileUpdateError } = await supabaseAdmin.from('profiles').update(patch).eq('user_id', userId);
 
 	if (profileUpdateError) {
-		console.error('Error updating phone_number:', profileUpdateError);
+		console.error('Error updating profile after create-user:', profileUpdateError);
 	}
 }
 
@@ -171,8 +168,9 @@ async function finalizeCreatedUser(
 	body: CreateUserRequest,
 	user: { id: string; email?: string },
 ): Promise<Response | null> {
-	if (shouldUpdateCreatedUserPhone(body.phone_number)) {
-		await updateCreatedUserPhone(supabaseAdmin, user.id, body.phone_number);
+	const profilePatch = buildCreatedUserProfilePatch(body);
+	if (profilePatch) {
+		await updateCreatedUserProfile(supabaseAdmin, user.id, profilePatch);
 	}
 
 	if (shouldAssignCreateUserRole(body.role)) {

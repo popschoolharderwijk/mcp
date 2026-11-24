@@ -3,39 +3,23 @@ import { useTheme } from '@/components/ThemeProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { type AccountTab, navigateToAccountTab, TAB_TITLES, useAccountPage } from '@/hooks/useAccountPage';
 import { isAccountTab } from '@/lib/account/accountPageControllerHelpers';
-import {
-	AccountAppearanceTab,
-	AccountDangerTab,
-	AccountDeleteDialog,
-	AccountProfileTab,
-	AccountSecurityTab,
-} from '@/pages/AccountTabs';
+import { AccountAppearanceTab, AccountDangerTab, AccountDeleteDialog, AccountSecurityTab } from '@/pages/AccountTabs';
 
 interface AccountProps {
 	defaultTab?: AccountTab;
 }
 
-export default function Account({ defaultTab = 'profile' }: AccountProps) {
+export default function Account({ defaultTab = 'appearance' }: AccountProps) {
 	const { theme, setTheme } = useTheme();
 	const navigate = useNavigate();
 	const {
 		user,
 		loading,
-		saving,
-		profile,
-		formData,
-		setFormData,
-		errors,
-		setErrors,
 		deleteDialogOpen,
 		setDeleteDialogOpen,
 		deleteConfirmEmail,
 		setDeleteConfirmEmail,
 		deleting,
-		userInitials,
-		handleSaveProfile,
-		handleUploadAvatar,
-		handleDeleteAvatar,
 		handleDeleteAccount,
 		closeDeleteDialog,
 	} = useAccountPage(navigate);
@@ -68,28 +52,10 @@ export default function Account({ defaultTab = 'profile' }: AccountProps) {
 				}}
 			>
 				<TabsList>
-					<TabsTrigger value="profile">Profiel</TabsTrigger>
 					<TabsTrigger value="appearance">Weergave</TabsTrigger>
 					<TabsTrigger value="security">Beveiliging</TabsTrigger>
 					<TabsTrigger value="danger">Account</TabsTrigger>
 				</TabsList>
-
-				<TabsContent value="profile" className="space-y-6 mt-6">
-					<AccountProfileTab
-						profile={profile}
-						formData={formData}
-						errors={errors}
-						saving={saving}
-						userInitials={userInitials}
-						onFormDataChange={(data, nextErrors) => {
-							setFormData(data);
-							setErrors(nextErrors);
-						}}
-						onSave={handleSaveProfile}
-						onUploadAvatar={handleUploadAvatar}
-						onDeleteAvatar={handleDeleteAvatar}
-					/>
-				</TabsContent>
 
 				<TabsContent value="appearance" className="space-y-6 mt-6">
 					<AccountAppearanceTab theme={theme} onThemeChange={setTheme} />

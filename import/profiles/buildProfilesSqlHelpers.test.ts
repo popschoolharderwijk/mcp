@@ -28,5 +28,7 @@ describe('buildProfilesSql', () => {
 		expect(sql).not.toContain('INSERT INTO public.students');
 		expect(sql).toContain('shared@example.com');
 		expect(sql).toContain("'11111111-1111-1111-1111-111111111111'::uuid");
+		expect(sql).toContain('date_of_birth');
+		expect(sql).toContain("'1990-05-05'::date");
 	});
 });

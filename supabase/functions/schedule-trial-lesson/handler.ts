@@ -24,7 +24,7 @@ async function scheduleTrialLessonForStudent(
 			date_of_birth: resolved.studentDob,
 			parent_name: resolved.parentName,
 			parent_email: resolved.parentEmail,
-			parent_phone: resolved.parentPhone,
+			parent_phone_number: resolved.parentPhone,
 		},
 	});
 	if (!ensured.ok) return ensured.response;

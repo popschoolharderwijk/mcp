@@ -21,7 +21,7 @@ mock.module('../../../src/integrations/supabase/client', () => ({
 	supabase: {
 		from: (table: string) => {
 			if (table === 'lesson_type_options') return thenableResult(optionResult);
-			if (table === 'students') return thenableResult(studentResult);
+			if (table === 'profiles') return thenableResult(studentResult);
 			if (table === 'app_settings') return thenableResult(appSettingsResult);
 			return thenableResult(noLessonResult);
 		},

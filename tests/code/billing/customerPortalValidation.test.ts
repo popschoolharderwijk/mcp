@@ -159,10 +159,10 @@ describe('resolveCustomerPortalSessionSetup', () => {
 	});
 
 	it('returns the customer id and allow-listed return url', () => {
-		expect(resolveCustomerPortalSessionSetup('cus_123', ORIGIN, `${ORIGIN}/account/profile`)).toEqual({
+		expect(resolveCustomerPortalSessionSetup('cus_123', ORIGIN, `${ORIGIN}/profile`)).toEqual({
 			ok: true,
 			stripeCustomerId: 'cus_123',
-			returnUrl: `${ORIGIN}/account/profile`,
+			returnUrl: `${ORIGIN}/profile`,
 		});
 	});
 
@@ -170,16 +170,16 @@ describe('resolveCustomerPortalSessionSetup', () => {
 		expect(resolveCustomerPortalSessionSetup('cus_123', ORIGIN, undefined)).toEqual({
 			ok: true,
 			stripeCustomerId: 'cus_123',
-			returnUrl: `${ORIGIN}/account/profile`,
+			returnUrl: `${ORIGIN}/profile`,
 		});
 	});
 });
 
 describe('resolvePortalReturnUrl', () => {
 	it('uses an allow-listed return url when present', () => {
-		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://mcp.mplifi.nl/account/profile')).toEqual({
+		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', 'https://mcp.mplifi.nl/profile')).toEqual({
 			ok: true,
-			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+			returnUrl: 'https://mcp.mplifi.nl/profile',
 		});
 	});
 
@@ -193,7 +193,7 @@ describe('resolvePortalReturnUrl', () => {
 	it('falls back to the profile route on the origin', () => {
 		expect(resolvePortalReturnUrl('https://mcp.mplifi.nl', undefined)).toEqual({
 			ok: true,
-			returnUrl: 'https://mcp.mplifi.nl/account/profile',
+			returnUrl: 'https://mcp.mplifi.nl/profile',
 		});
 	});
 });

@@ -18,7 +18,7 @@ async function loadPreviewParts(
 	agreement: PaymentLinkInfoAgreement,
 ) {
 	return Promise.all([
-		admin.from('students').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
+		admin.from('profiles').select('date_of_birth').eq('user_id', agreement.student_user_id).maybeSingle(),
 		admin
 			.from('lesson_type_options')
 			.select('price_per_lesson_youth_cents, price_per_lesson_adult_cents')

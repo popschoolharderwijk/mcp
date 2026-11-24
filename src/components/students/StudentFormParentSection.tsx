@@ -5,9 +5,10 @@ import { PhoneInput } from '@/components/ui/phone-input';
 
 interface StudentFormParentSectionProps {
 	vm: StudentFormFieldsViewModel;
+	canEdit?: boolean;
 }
 
-export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) {
+export function StudentFormParentSection({ vm, canEdit = true }: StudentFormParentSectionProps) {
 	const { form, setForm } = vm;
 
 	return (
@@ -20,6 +21,7 @@ export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) 
 						value={form.parent_name}
 						onChange={(e) => setForm({ ...form, parent_name: e.target.value })}
 						placeholder="Jan Jansen"
+						disabled={!canEdit}
 					/>
 				</div>
 				<div className="space-y-1.5">
@@ -30,6 +32,7 @@ export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) 
 						value={form.parent_email}
 						onChange={(e) => setForm({ ...form, parent_email: e.target.value })}
 						placeholder="ouder@voorbeeld.nl"
+						disabled={!canEdit}
 					/>
 				</div>
 			</div>
@@ -39,6 +42,7 @@ export function StudentFormParentSection({ vm }: StudentFormParentSectionProps) 
 					label="Telefoonnummer"
 					value={form.parent_phone_number}
 					onChange={(value) => setForm({ ...form, parent_phone_number: value })}
+					disabled={!canEdit}
 				/>
 			</div>
 		</div>

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { mapUserDetailQueriesToOutcome, type UserDetailLoadOutcome } from '@/lib/users/userDetailPageHelpers';
 
 const USER_DETAIL_PROFILE_COLUMNS =
-	'user_id, email, first_name, last_name, phone_number, avatar_url, created_at, street_name, house_number, postal_code, city, country_code' as const;
+	'user_id, email, first_name, last_name, phone_number, avatar_url, date_of_birth, created_at, street_name, house_number, postal_code, city, country_code' as const;
 
 export type { UserDetailLoadOutcome };
 

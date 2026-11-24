@@ -58,7 +58,7 @@ describe('studentDashboardPanelModel', () => {
 					key: 'agreements',
 					title: NAV_LABELS.agreements,
 					value: 1,
-					href: '/students/my-profile',
+					href: '/profile',
 					description: '1 inactief',
 				},
 				{

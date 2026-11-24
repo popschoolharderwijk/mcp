@@ -87,7 +87,6 @@ function TeacherEditFields({
 						disabled={isEditMode}
 						className="h-9"
 					/>
-					{isEditMode && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
 				</div>
 				<div className="space-y-1.5">
 					<PhoneInput

@@ -3,6 +3,7 @@ import {
 	buildCreateStudentPayload,
 	buildStudentProfileUpdateFields,
 	buildStudentRecordUpdateFields,
+	hasStudentFormScopeChanges,
 	resolveCreateStudentInvokeResult,
 } from '../../../src/components/students/studentFormPersistenceHelpers';
 import { emptyStudentForm } from '../../../src/components/students/studentFormTypes';
@@ -45,6 +46,7 @@ describe('buildStudentProfileUpdateFields', () => {
 			first_name: null,
 			last_name: 'Bakker',
 			phone_number: null,
+			date_of_birth: null,
 		});
 	});
 
@@ -56,6 +58,7 @@ describe('buildStudentProfileUpdateFields', () => {
 					first_name: '  Anna   Marie ',
 					last_name: '  Bakker  ',
 					phone_number: ' 0612345678 ',
+					date_of_birth: '2010-02-14',
 					postal_code: '1234A',
 				},
 				'profile',
@@ -64,6 +67,7 @@ describe('buildStudentProfileUpdateFields', () => {
 			first_name: 'Anna Marie',
 			last_name: 'Bakker',
 			phone_number: '0612345678',
+			date_of_birth: '2010-02-14',
 		});
 	});
 
@@ -96,7 +100,7 @@ describe('buildStudentProfileUpdateFields', () => {
 });
 
 describe('buildStudentRecordUpdateFields', () => {
-	it('returns date of birth on profile scope', () => {
+	it('returns null on profile scope', () => {
 		expect(
 			buildStudentRecordUpdateFields(
 				{
@@ -106,9 +110,7 @@ describe('buildStudentRecordUpdateFields', () => {
 				},
 				'profile',
 			),
-		).toEqual({
-			date_of_birth: '2010-02-14',
-		});
+		).toBeNull();
 	});
 
 	it('returns only parent fields on parent scope', () => {
@@ -132,6 +134,25 @@ describe('buildStudentRecordUpdateFields', () => {
 
 	it('returns null on address scope', () => {
 		expect(buildStudentRecordUpdateFields(emptyStudentForm, 'address')).toBeNull();
+	});
+});
+
+describe('hasStudentFormScopeChanges', () => {
+	it('ignores whitespace-only profile edits', () => {
+		const initial = { ...emptyStudentForm, first_name: 'Anna', last_name: 'Bakker' };
+		expect(
+			hasStudentFormScopeChanges(initial, { ...initial, first_name: ' Anna ', last_name: ' Bakker ' }, 'profile'),
+		).toBe(false);
+	});
+
+	it('scopes dirty detection so profile-only edits do not dirty parent', () => {
+		const initial = {
+			...emptyStudentForm,
+			first_name: 'Anna',
+			parent_name: 'Ouder',
+		};
+		expect(hasStudentFormScopeChanges(initial, { ...initial, first_name: 'Anne' }, 'parent')).toBe(false);
+		expect(hasStudentFormScopeChanges(initial, { ...initial, parent_name: 'Mama' }, 'parent')).toBe(true);
 	});
 });
 

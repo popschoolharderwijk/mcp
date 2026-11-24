@@ -71,11 +71,6 @@ const NAV_ITEMS = {
 		icon: LuUser,
 		description: 'Bekijk je profielgegevens en lesovereenkomsten',
 	},
-	myAvailability: {
-		label: 'Mijn beschikbaarheid',
-		icon: LuCalendar,
-		description: 'Beheer je beschikbare dagen en tijden voor het plannen van lessen',
-	},
 	myStatistics: {
 		label: 'Mijn statistieken',
 		icon: LuChartBar,
@@ -90,7 +85,7 @@ const NAV_ITEMS = {
 		label: 'Mijn leerlingen',
 		icon: LuUsers,
 		description:
-			'Overzicht van alle leerlingen met lesovereenkomsten bij jou. Klik op een leerling om de leshistorie te bekijken.',
+			'Overzicht van alle leerlingen met lesovereenkomsten bij jou. Klik op een rij om de leerling te openen.',
 	},
 	agreements: {
 		label: 'Overeenkomsten',
@@ -136,7 +131,6 @@ const NAV_ITEMS = {
 	},
 	manual: { label: 'Handleiding', icon: LuBookOpen },
 	tips: { label: 'Tips', icon: LuLightbulb },
-	accountProfile: { label: 'Profiel', icon: LuUser },
 	accountAppearance: { label: 'Weergave', icon: LuSettings },
 	accountSecurity: { label: 'Beveiliging', icon: LuFingerprint },
 	accountDanger: { label: 'Account', icon: LuShieldAlert },

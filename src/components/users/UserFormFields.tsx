@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
@@ -12,24 +14,24 @@ interface UserFormFieldsProps {
 	isEditMode: boolean;
 	roleLocked: boolean;
 	roles: AppRole[];
+	avatar?: ReactNode;
 	onFieldChange: (form: UserFormState) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
 }
 
-export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldChange }: UserFormFieldsProps) {
-	const updateField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
-		onFieldChange({ ...form, [key]: value });
-	};
-
-	const normalizeNameField = (key: 'first_name' | 'last_name') => {
-		updateField(key, normalizeCompactText(form[key]));
-	};
-
-	const normalizeTrimField = (key: 'email' | 'phone_number') => {
-		updateField(key, normalizeTrimmedText(form[key]));
-	};
-
+function UserNameAndContactFields({
+	form,
+	isEditMode,
+	updateField,
+	onDateOfBirthDraftSyncedChange,
+}: {
+	form: UserFormState;
+	isEditMode: boolean;
+	updateField: <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => void;
+	onDateOfBirthDraftSyncedChange?: (synced: boolean) => void;
+}) {
 	return (
-		<div className="space-y-4 py-4">
+		<div className="min-w-0 flex-1 space-y-4">
 			<div className="grid grid-cols-2 gap-4">
 				<div className="space-y-2">
 					<Label htmlFor="user-first-name">Voornaam</Label>
@@ -37,7 +39,7 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						id="user-first-name"
 						value={form.first_name}
 						onChange={(e) => updateField('first_name', e.target.value)}
-						onBlur={() => normalizeNameField('first_name')}
+						onBlur={() => updateField('first_name', normalizeCompactText(form.first_name))}
 						autoFocus
 					/>
 				</div>
@@ -47,11 +49,11 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						id="user-last-name"
 						value={form.last_name}
 						onChange={(e) => updateField('last_name', e.target.value)}
-						onBlur={() => normalizeNameField('last_name')}
+						onBlur={() => updateField('last_name', normalizeCompactText(form.last_name))}
 					/>
 				</div>
 			</div>
-			<div className="grid grid-cols-2 gap-4">
+			<div className="grid grid-cols-3 gap-4">
 				<div className="space-y-2">
 					<Label htmlFor="user-email">Email *</Label>
 					<Input
@@ -59,11 +61,10 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						type="email"
 						value={form.email}
 						onChange={(e) => updateField('email', e.target.value)}
-						onBlur={() => normalizeTrimField('email')}
+						onBlur={() => updateField('email', normalizeTrimmedText(form.email))}
 						placeholder="gebruiker@voorbeeld.nl"
 						disabled={isEditMode}
 					/>
-					{isEditMode && <p className="text-xs text-muted-foreground">Email kan niet worden gewijzigd.</p>}
 				</div>
 				<div className="space-y-2">
 					<PhoneInput
@@ -71,40 +72,98 @@ export function UserFormFields({ form, isEditMode, roleLocked, roles, onFieldCha
 						label="Telefoonnummer"
 						value={form.phone_number}
 						onChange={(value) => updateField('phone_number', value)}
-						onBlur={() => normalizeTrimField('phone_number')}
+						onBlur={() => updateField('phone_number', normalizeTrimmedText(form.phone_number))}
 					/>
 				</div>
+				<DateOfBirthField
+					id="user-dob"
+					value={form.date_of_birth}
+					onChange={(date_of_birth) => updateField('date_of_birth', date_of_birth)}
+					onDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+				/>
 			</div>
-			<div className="space-y-2">
-				<Label htmlFor="user-role">Rol</Label>
-				<Select
-					value={form.role ?? 'none'}
-					onValueChange={(value) => updateField('role', parseUserRoleSelectValue(value))}
-					disabled={roleLocked}
-				>
-					<SelectTrigger id="user-role">
-						<SelectValue placeholder="Geen rol" />
-					</SelectTrigger>
-					<SelectContent>
-						<SelectItem value="none">Geen rol</SelectItem>
-						{roles.map((role) => {
-							const config = roleLabels[role];
-							const Icon = config.icon;
-							return (
-								<SelectItem key={role} value={role}>
-									<span className="flex items-center gap-2">
-										<Icon className="h-4 w-4" />
-										{config.label}
-									</span>
-								</SelectItem>
-							);
-						})}
-					</SelectContent>
-				</Select>
-				{roleLocked && (
-					<p className="text-xs text-muted-foreground">Je kunt de rol van een site_admin niet wijzigen.</p>
-				)}
-			</div>
+		</div>
+	);
+}
+
+function UserRoleField({
+	form,
+	roleLocked,
+	roles,
+	updateField,
+}: {
+	form: UserFormState;
+	roleLocked: boolean;
+	roles: AppRole[];
+	updateField: <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => void;
+}) {
+	return (
+		<div className="space-y-2">
+			<Label htmlFor="user-role">Rol</Label>
+			<Select
+				value={form.role ?? 'none'}
+				onValueChange={(value) => updateField('role', parseUserRoleSelectValue(value))}
+				disabled={roleLocked}
+			>
+				<SelectTrigger id="user-role">
+					<SelectValue placeholder="Geen rol" />
+				</SelectTrigger>
+				<SelectContent>
+					<SelectItem value="none">Geen rol</SelectItem>
+					{roles.map((role) => {
+						const config = roleLabels[role];
+						const Icon = config.icon;
+						return (
+							<SelectItem key={role} value={role}>
+								<span className="flex items-center gap-2">
+									<Icon className="h-4 w-4" />
+									{config.label}
+								</span>
+							</SelectItem>
+						);
+					})}
+				</SelectContent>
+			</Select>
+			{roleLocked ? (
+				<p className="text-xs text-muted-foreground">Je kunt de rol van een site_admin niet wijzigen.</p>
+			) : null}
+		</div>
+	);
+}
+
+export function UserFormFields({
+	form,
+	isEditMode,
+	roleLocked,
+	roles,
+	avatar,
+	onFieldChange,
+	onDateOfBirthDraftSyncedChange,
+}: UserFormFieldsProps) {
+	const updateField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
+		onFieldChange({ ...form, [key]: value });
+	};
+
+	const nameAndContactFields = (
+		<UserNameAndContactFields
+			form={form}
+			isEditMode={isEditMode}
+			updateField={updateField}
+			onDateOfBirthDraftSyncedChange={onDateOfBirthDraftSyncedChange}
+		/>
+	);
+
+	return (
+		<div className="space-y-4">
+			{avatar ? (
+				<div className="flex items-start gap-4">
+					{avatar}
+					{nameAndContactFields}
+				</div>
+			) : (
+				nameAndContactFields
+			)}
+			<UserRoleField form={form} roleLocked={roleLocked} roles={roles} updateField={updateField} />
 		</div>
 	);
 }

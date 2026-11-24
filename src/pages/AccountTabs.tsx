@@ -1,6 +1,4 @@
 import { LuMonitor, LuMoon, LuSun, LuTrash2, LuTriangleAlert } from 'react-icons/lu';
-import { AccountProfileAvatarSection } from '@/components/account/AccountProfileAvatarSection';
-import { AccountProfileFormFields } from '@/components/account/AccountProfileFormFields';
 import { AccountSecurityPasskeysCard } from '@/components/account/AccountSecurityPasskeysCard';
 import { AccountTipsResetCard } from '@/components/tips/AccountTipsResetCard';
 import { Alert } from '@/components/ui/alert';
@@ -17,56 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAccountPasskeys } from '@/hooks/useAccountPasskeys';
-import { canConfirmAccountDelete } from '@/lib/account/accountPageHelpers';
-import type { AccountFormData, AccountFormErrors, AccountProfileState } from '@/lib/account/persistence';
 import { cn } from '@/lib/utils';
-
-export function AccountProfileTab({
-	profile,
-	formData,
-	errors,
-	saving,
-	userInitials,
-	onFormDataChange,
-	onSave,
-	onUploadAvatar,
-	onDeleteAvatar,
-}: {
-	profile: AccountProfileState | null;
-	formData: AccountFormData;
-	errors: AccountFormErrors;
-	saving: boolean;
-	userInitials: string;
-	onFormDataChange: (data: AccountFormData, errors: AccountFormErrors) => void;
-	onSave: (e: React.FormEvent) => void;
-	onUploadAvatar: (e: React.ChangeEvent<HTMLInputElement>) => void;
-	onDeleteAvatar: () => void;
-}) {
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>Profiel</CardTitle>
-				<CardDescription>Wijzig je persoonlijke informatie</CardDescription>
-			</CardHeader>
-			<CardContent className="space-y-6">
-				<AccountProfileAvatarSection
-					profile={profile}
-					userInitials={userInitials}
-					saving={saving}
-					onUploadAvatar={onUploadAvatar}
-					onDeleteAvatar={onDeleteAvatar}
-				/>
-				<AccountProfileFormFields
-					formData={formData}
-					errors={errors}
-					saving={saving}
-					onFormDataChange={onFormDataChange}
-					onSave={onSave}
-				/>
-			</CardContent>
-		</Card>
-	);
-}
 
 export function AccountAppearanceTab({
 	theme,
@@ -222,7 +171,7 @@ export function AccountDeleteDialog({
 					<Button
 						variant="destructive"
 						onClick={onConfirm}
-						disabled={deleting || !canConfirmAccountDelete(deleteConfirmEmail, userEmail)}
+						disabled={deleting || deleteConfirmEmail !== userEmail}
 					>
 						{deleting ? 'Verwijderen...' : 'Definitief verwijderen'}
 					</Button>

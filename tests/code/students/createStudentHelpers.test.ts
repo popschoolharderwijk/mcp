@@ -65,7 +65,6 @@ describe('validateCreateStudentBody', () => {
 describe('buildStudentRowFields', () => {
 	it('maps parent contact fields and nulls empty values', () => {
 		expect(buildStudentRowFields(baseBody)).toEqual({
-			date_of_birth: null,
 			parent_name: null,
 			parent_email: null,
 			parent_phone_number: null,
@@ -80,7 +79,6 @@ describe('buildStudentRowFields', () => {
 				parent_email: '  ouder@example.com  ',
 			}),
 		).toEqual({
-			date_of_birth: null,
 			parent_name: 'Ouder Anna',
 			parent_email: 'ouder@example.com',
 			parent_phone_number: null,
@@ -96,11 +94,13 @@ describe('buildStudentProfileFields', () => {
 				first_name: '  Anna   Marie ',
 				last_name: '  Bakker  ',
 				phone_number: ' 0612345678 ',
+				date_of_birth: '2010-05-01',
 			}),
 		).toEqual({
 			first_name: 'Anna Marie',
 			last_name: 'Bakker',
 			phone_number: '0612345678',
+			date_of_birth: '2010-05-01',
 		});
 	});
 });

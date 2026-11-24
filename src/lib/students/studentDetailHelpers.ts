@@ -12,6 +12,7 @@ export interface StudentProfileData extends ProfileAddressFields {
 	last_name: string | null;
 	phone_number: string | null;
 	avatar_url: string | null;
+	date_of_birth: string | null;
 }
 
 export function buildStudentInitials(profile: StudentProfileData): string {

@@ -1,7 +1,16 @@
+import {
+	isOwnProfileBasePath,
+	OWN_PROFILE_BASE_PATH,
+	type PersonDetailTabId,
+	parsePersonDetailTab,
+	resolvePersonDetailTabRedirect,
+} from '@/lib/profile/personDetailTabsHelpers';
 import type { AppRole } from '@/lib/roles';
 import type { UserWithRole } from '@/lib/users/usersPageHelpers';
+import { shouldShowUsersPage } from '@/lib/users/usersPageShellHelpers';
 
 export type UserDetailUser = UserWithRole & {
+	date_of_birth: string | null;
 	street_name: string | null;
 	house_number: string | null;
 	postal_code: string | null;
@@ -26,6 +35,7 @@ export interface UserDetailProfileRow {
 	last_name: string | null;
 	phone_number: string | null;
 	avatar_url: string | null;
+	date_of_birth: string | null;
 	created_at: string;
 	street_name: string | null;
 	house_number: string | null;
@@ -66,8 +76,38 @@ export function userDetailHref(userId: string): string {
 	return `/users/${userId}/profile`;
 }
 
-export function resolveUserDetailBasePath(userId: string): string {
-	return `/users/${userId}`;
+function resolveUserDetailBasePath(userId: string, selfProfile = false): string {
+	return selfProfile ? OWN_PROFILE_BASE_PATH : `/users/${userId}`;
+}
+
+export function resolveUserDetailRouteState(params: {
+	routeUserId: string | undefined;
+	authUserId: string | undefined;
+	isAdmin: boolean;
+	isSiteAdmin: boolean;
+	tabParam: string | undefined;
+}): {
+	userId: string | undefined;
+	hasAccess: boolean;
+	basePath: string;
+	includeAgenda: boolean;
+	activeTab: PersonDetailTabId;
+	tabRedirectTo: string | null;
+} {
+	const selfProfile = !params.routeUserId;
+	const userId = params.routeUserId ?? params.authUserId;
+	const isSelf = Boolean(userId && params.authUserId === userId);
+	const hasAccess = shouldShowUsersPage(params.isAdmin, params.isSiteAdmin) || isSelf;
+	const basePath = userId ? resolveUserDetailBasePath(userId, selfProfile) : '';
+	const includeAgenda = !isOwnProfileBasePath(basePath);
+	return {
+		userId,
+		hasAccess,
+		basePath,
+		includeAgenda,
+		activeTab: parsePersonDetailTab(params.tabParam, { includeAgenda }),
+		tabRedirectTo: userId ? resolvePersonDetailTabRedirect(basePath, params.tabParam, { includeAgenda }) : null,
+	};
 }
 
 export function mapUserDetailQueriesToOutcome(
@@ -100,6 +140,7 @@ export function mapUserDetailQueriesToOutcome(
 				last_name: profile.last_name,
 				phone_number: profile.phone_number,
 				avatar_url: profile.avatar_url,
+				date_of_birth: profile.date_of_birth,
 				created_at: profile.created_at,
 				last_sign_in_at: null,
 				role,

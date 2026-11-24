@@ -2,8 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { computeSidebarNavVisibility } from '../../../src/hooks/sidebarNavVisibilityHelpers';
 
 describe('computeSidebarNavVisibility', () => {
-	const teacherUserId = '40000000-0001-0000-0000-000000000000';
-
 	it('shows admin and teacher nav for site admins', () => {
 		expect(
 			computeSidebarNavVisibility({
@@ -11,14 +9,12 @@ describe('computeSidebarNavVisibility', () => {
 				isSiteAdmin: true,
 				isPrivileged: true,
 				isTeacher: false,
-				teacherUserId: null,
 				hasOwnedProjects: false,
 				ownedProjectsLoading: false,
 			}),
 		).toEqual({
 			isStudent: false,
 			isTeacher: false,
-			teacherUserId: null,
 			showAdminNav: true,
 			showTeachersNav: true,
 			showStudentsNav: true,
@@ -34,14 +30,12 @@ describe('computeSidebarNavVisibility', () => {
 				isSiteAdmin: false,
 				isPrivileged: false,
 				isTeacher: true,
-				teacherUserId,
 				hasOwnedProjects: false,
 				ownedProjectsLoading: false,
 			}),
 		).toEqual({
 			isStudent: false,
 			isTeacher: true,
-			teacherUserId,
 			showAdminNav: false,
 			showTeachersNav: false,
 			showStudentsNav: false,
@@ -57,13 +51,10 @@ describe('computeSidebarNavVisibility', () => {
 				isSiteAdmin: false,
 				isPrivileged: false,
 				isTeacher: true,
-				teacherUserId,
 				hasOwnedProjects: true,
 				ownedProjectsLoading: false,
-			}),
-		).toMatchObject({
-			showProjectsNav: true,
-		});
+			}).showProjectsNav,
+		).toBe(true);
 	});
 
 	it('hides projects nav while owned projects are loading', () => {
@@ -73,7 +64,6 @@ describe('computeSidebarNavVisibility', () => {
 				isSiteAdmin: false,
 				isPrivileged: false,
 				isTeacher: true,
-				teacherUserId,
 				hasOwnedProjects: true,
 				ownedProjectsLoading: true,
 			}).showProjectsNav,
@@ -87,7 +77,6 @@ describe('computeSidebarNavVisibility', () => {
 				isSiteAdmin: false,
 				isPrivileged: false,
 				isTeacher: false,
-				teacherUserId: null,
 				hasOwnedProjects: false,
 				ownedProjectsLoading: false,
 			}).isStudent,

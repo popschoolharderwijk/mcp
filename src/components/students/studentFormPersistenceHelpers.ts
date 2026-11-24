@@ -1,6 +1,7 @@
 import type { StudentFormMode, StudentFormState } from '@/components/students/studentFormTypes';
-import { studentRecordFields } from '@/components/students/studentFormTypes';
+import { studentParentFields, studentProfilePersonalFields } from '@/components/students/studentFormTypes';
 import type { StudentFormSaveScope } from '@/components/students/studentFormValidation';
+import { deepEqual } from '@/lib/deepEqual';
 import { buildProfileAddressUpdateFields } from '@/lib/profile/profileAddressHelpers';
 import {
 	normalizeCompactText,
@@ -25,25 +26,28 @@ export function buildStudentProfileUpdateFields(form: StudentFormState, scope: S
 		first_name: normalizeCompactTextOrNull(form.first_name),
 		last_name: normalizeCompactTextOrNull(form.last_name),
 		phone_number: normalizeTrimmedTextOrNull(form.phone_number),
+		...studentProfilePersonalFields(form),
 	};
 }
 
 /** Students columns to update for a scoped save; null when that scope does not touch students. */
 export function buildStudentRecordUpdateFields(form: StudentFormState, scope: StudentFormSaveScope) {
-	if (scope === 'address') {
+	if (scope === 'address' || scope === 'profile') {
 		return null;
 	}
-	const fields = studentRecordFields(form);
-	if (scope === 'parent') {
-		return {
-			parent_name: fields.parent_name,
-			parent_email: fields.parent_email,
-			parent_phone_number: fields.parent_phone_number,
-		};
-	}
-	return {
-		date_of_birth: fields.date_of_birth,
-	};
+	return studentParentFields(form);
+}
+
+/** True when scoped save payloads differ from the loaded student (normalized). */
+export function hasStudentFormScopeChanges(
+	initial: StudentFormState,
+	current: StudentFormState,
+	scope: StudentFormSaveScope,
+): boolean {
+	return (
+		!deepEqual(buildStudentProfileUpdateFields(initial, scope), buildStudentProfileUpdateFields(current, scope)) ||
+		!deepEqual(buildStudentRecordUpdateFields(initial, scope), buildStudentRecordUpdateFields(current, scope))
+	);
 }
 
 export function buildCreateStudentPayload(
@@ -62,7 +66,8 @@ export function buildCreateStudentPayload(
 		first_name: firstName || undefined,
 		last_name: lastName || undefined,
 		phone_number: phoneNumber || undefined,
-		...studentRecordFields(form),
+		...studentProfilePersonalFields(form),
+		...studentParentFields(form),
 	};
 }
 

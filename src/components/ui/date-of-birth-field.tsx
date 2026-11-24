@@ -10,6 +10,7 @@ interface DateOfBirthFieldProps {
 	onDraftSyncedChange?: (synced: boolean) => void;
 	className?: string;
 	label?: string;
+	disabled?: boolean;
 }
 
 /** Date of birth: typeable dd-mm-yyyy + calendar, limited to past dates. */
@@ -20,6 +21,7 @@ export function DateOfBirthField({
 	onDraftSyncedChange,
 	className,
 	label = 'Geboortedatum',
+	disabled = false,
 }: DateOfBirthFieldProps) {
 	return (
 		<div className={cn('space-y-1.5', className)}>
@@ -30,6 +32,7 @@ export function DateOfBirthField({
 				value={value}
 				onChange={onChange}
 				onDraftSyncedChange={onDraftSyncedChange}
+				disabled={disabled}
 				{...pastDatePickerRange()}
 				autoComplete="bday"
 				calendarAriaLabel="Kies geboortedatum"

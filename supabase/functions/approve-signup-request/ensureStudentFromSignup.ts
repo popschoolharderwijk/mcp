@@ -2,6 +2,7 @@ import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from '../_shared/http.ts';
 import {
 	buildSignupAuthCreatePayload,
+	buildSignupProfileUpdateFields,
 	buildSignupStudentPayload,
 	buildSignupStudentUpdateFields,
 	resolveExistingSignupStudentUserId,
@@ -20,9 +21,13 @@ async function createSignupStudentUser(
 		return { ok: false, response: jsonResponse(500, { error: 'Kon gebruiker niet aanmaken' }) };
 	}
 
+	const profilePatch: { phone_number?: string | null; date_of_birth: string | null } = {
+		...buildSignupProfileUpdateFields(reqRow),
+	};
 	if (shouldUpdateSignupPhoneOnCreate(reqRow.phone_number)) {
-		await admin.from('profiles').update({ phone_number: reqRow.phone_number }).eq('user_id', created.user.id);
+		profilePatch.phone_number = reqRow.phone_number;
 	}
+	await admin.from('profiles').update(profilePatch).eq('user_id', created.user.id);
 
 	return { ok: true, studentUserId: created.user.id };
 }
@@ -49,6 +54,8 @@ async function upsertStudentRow(admin: SupabaseClient, studentUserId: string, re
 		.select('user_id')
 		.eq('user_id', studentUserId)
 		.maybeSingle();
+
+	await admin.from('profiles').update(buildSignupProfileUpdateFields(reqRow)).eq('user_id', studentUserId);
 
 	const studentPayload = buildSignupStudentPayload(studentUserId, reqRow);
 	if (resolveSignupStudentRowMutation(existingStudent) === 'update') {
