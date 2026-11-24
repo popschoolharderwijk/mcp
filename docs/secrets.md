@@ -84,12 +84,27 @@ See [cicd-workflows.md](./cicd-workflows.md) for the PR workflow (**PR - Supabas
 
 ### Project-specific secrets
 
-| Secret                  | Required for                                                            | Description                                                                 |
-| ----------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| `RESEND_API_KEY`        | Auth SMTP + Edge (`send-template-email`, checkout/signup/trial mail, …) | Resend API key (SMTP password + HTTP API).                                  |
-| `RESEND_FROM_EMAIL`     | Edge transactional mail                                                 | From-address for app mail.                                                  |
-| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                               | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                    |
-| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                        | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks). |
+| Secret                  | Required for                                                            | Description                                                                    |
+| ----------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `RESEND_API_KEY`        | Auth SMTP + Edge (`send-template-email`, checkout/signup/trial mail, …) | Resend API key (SMTP password + HTTP API).                                     |
+| `RESEND_FROM_EMAIL`     | Edge transactional mail                                                 | From-address for app mail.                                                     |
+| `TURNSTILE_SECRET_KEY`  | `submit-signup-request`                                                 | Cloudflare Turnstile secret (siteverify). Use always-pass test secret locally. |
+| `STRIPE_SECRET_KEY`     | All Stripe edge functions                                               | Server-side Stripe key (`sk_live_...` or `sk_test_...`).                       |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook`                                                        | Signing secret of the webhook endpoint (Dashboard → Developers → Webhooks).    |
+
+### Cloudflare Turnstile (public signup)
+
+| Variable / secret         | Where                            | Notes                                        |
+| ------------------------- | -------------------------------- | -------------------------------------------- |
+| `VITE_TURNSTILE_SITE_KEY` | Vite mode env (`.env.*`)         | Public site key for the widget on `/signup`. |
+| `TURNSTILE_SECRET_KEY`    | Edge secrets (`db:push:secrets`) | Server-only; never `VITE_`.                  |
+
+Cloudflare **always-pass** test keys (localdev / test only):
+
+- Site key: `1x00000000000000000000AA`
+- Secret key: `1x0000000000000000000000000000000AA`
+
+Widget hostnames on Free: production (`mcp.mplifi.nl`), Lovable previews, and `localhost`.
 
 Stripe flow / local wipe: [integrations/stripe-billing.md](./integrations/stripe-billing.md). Edge list: [deployment.md](./deployment.md).
 

@@ -61,6 +61,7 @@ describe('buildSignupRequestStatusQuickFilter', () => {
 			'Proefles ingepland',
 			'Goedgekeurd',
 			'Afgewezen',
+			'Wacht op e-mailbevestiging',
 		]);
 	});
 });
@@ -76,6 +77,7 @@ describe('signupRequestMatchesStatusFilter', () => {
 		expect(signupRequestMatchesStatusFilter('trial_scheduled', 'open')).toBe(true);
 		expect(signupRequestMatchesStatusFilter('approved', 'open')).toBe(false);
 		expect(signupRequestMatchesStatusFilter('rejected', 'open')).toBe(false);
+		expect(signupRequestMatchesStatusFilter('awaiting_confirmation', 'open')).toBe(false);
 	});
 
 	it('matches one status exactly', () => {

@@ -27,6 +27,7 @@ Therefore CSP is a **meta tag** in `index.html`:
 - Works after every Lovable publish (it is in the built HTML).
 - `connect-src` / `img-src` use `https://*.supabase.co` so that remote dev, test, and prod work; local Docker also allows `http://127.0.0.1:54421` / `http://localhost:54421` (and matching `ws://`).
 - `img-src` also allows `https://flagcdn.com` for country flags in the land picker.
+- Public signup Turnstile: `script-src` / `frame-src` / `connect-src` allow `https://challenges.cloudflare.com`.
 - `frame-ancestors` is not possible via meta; clickjacking remains partly platform-dependent.
 
 For a full HTTP CSP (Report-Only, `frame-ancestors`): host the frontend elsewhere — see [Deploying outside Lovable](https://docs.lovable.dev/tips-tricks/external-deployment-hosting) (Vercel/Netlify + `vercel.json` or `_headers`).
@@ -85,7 +86,8 @@ bun run db:push:functions production
 | ------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------ |
 | `delete-user`                   | GDPR: delete account (self or admin).                                                | Standard (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) |
 | `create-user`                   | Admin-script only: create a user with optional password.                             | Standard                                               |
-| `submit-signup-request`         | Public signup forms (trial lesson, enrolment).                                       | Standard, `RESEND_API_KEY`                             |
+| `submit-signup-request`         | Public signup (Turnstile + rate limit + confirm mail). **`verify_jwt = false`**.     | Standard, `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`     |
+| `confirm-signup-request`        | Public email confirm token → pending + `signup_received`. **`verify_jwt = false`**.  | Standard, `RESEND_API_KEY`                             |
 | `approve-signup-request`        | Admin approves signup → user + welcome email.                                        | Standard, `RESEND_API_KEY`                             |
 | `schedule-trial-lesson`         | Schedules a trial lesson on the agenda after intake.                                 | Standard, `RESEND_API_KEY`                             |
 | `send-template-email`           | Sends email from `email_templates` + variables.                                      | Standard, `RESEND_API_KEY`                             |

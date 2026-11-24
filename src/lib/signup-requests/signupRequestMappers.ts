@@ -42,6 +42,7 @@ export async function fetchSignupRequestsByEmail(email: string): Promise<SignupR
 		.from('lesson_signup_requests')
 		.select('*, lesson_types(name), lesson_groups(name)')
 		.eq('email', email)
+		.neq('status', 'awaiting_confirmation')
 		.order('created_at', { ascending: false });
 
 	if (error) {
@@ -60,7 +61,8 @@ export async function fetchSignupRequestsByEmails(emails: string[]): Promise<Map
 	const { data, error } = await supabase
 		.from('lesson_signup_requests')
 		.select('*, lesson_types(name), lesson_groups(name)')
-		.in('email', emails);
+		.in('email', emails)
+		.neq('status', 'awaiting_confirmation');
 
 	if (error) {
 		console.error('Error loading signup requests:', error);

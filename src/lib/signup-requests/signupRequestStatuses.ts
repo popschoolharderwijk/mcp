@@ -17,6 +17,7 @@ export function signupRequestMatchesStatusFilter(status: SignupRequestStatus, fi
 }
 
 export const SIGNUP_REQUEST_STATUS_LABELS: Record<SignupRequestStatus, string> = {
+	awaiting_confirmation: 'Wacht op e-mailbevestiging',
 	pending: 'In afwachting',
 	approved: 'Goedgekeurd',
 	rejected: 'Afgewezen',

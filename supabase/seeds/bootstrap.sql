@@ -20,8 +20,25 @@ ON CONFLICT (key) DO NOTHING;
 
 -- Default email templates (from email_templates migration). Bodies are markdown.
 INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
+	'signup_confirm',
+	'Bevestig je aanmelding bij Popschool Harderwijk',
+	'Hoi {{leerling_naam}},
+
+Bedankt voor je aanmelding bij Popschool Harderwijk voor **{{les_type}}** ({{frequentie}}, {{prijs_per_les}} per les).
+
+Klik op de link hieronder om je e-mailadres te bevestigen. Pas daarna kunnen we je aanvraag verwerken.
+
+[Aanmelding bevestigen]({{bevestigingslink}})
+
+De link is 48 uur geldig.
+
+Met muzikale groet,
+Popschool Harderwijk'
+) ON CONFLICT (event_key) DO NOTHING;
+
+INSERT INTO public.email_templates (event_key, subject, body_markdown) VALUES (
 	'signup_received',
-	'Bevestiging van je aanmelding bij Popschool Harderwijk',
+	'We hebben je aanmelding ontvangen — Popschool Harderwijk',
 	'Hoi {{leerling_naam}},
 
 Bedankt voor je aanmelding bij Popschool Harderwijk!

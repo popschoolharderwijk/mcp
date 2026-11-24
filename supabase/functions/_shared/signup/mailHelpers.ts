@@ -1,16 +1,26 @@
-import { type FrequencyKey, getFrequencyLabel } from '../../../src/lib/frequenciesHelpers.ts';
-import type { SignupRequest } from './types.ts';
+/**
+ * Shared signup confirmation / received mail vars + recipient. No Deno/DB IO for pure helpers.
+ */
+
+import { type FrequencyKey, getFrequencyLabel } from '../../../../src/lib/frequenciesHelpers.ts';
+
+export interface SignupMailPersonFields {
+	first_name: string;
+	last_name: string;
+	email: string;
+	parent_email?: string | null;
+}
 
 export interface SignupConfirmationOptionDetails {
 	frequentie: string;
 	prijs: string;
 }
 
-export function buildSignupConfirmationFullName(body: SignupRequest): string {
+export function buildSignupMailFullName(body: SignupMailPersonFields): string {
 	return `${body.first_name.trim()} ${body.last_name.trim()}`.trim();
 }
 
-export function resolveSignupConfirmationRecipientEmail(body: SignupRequest): string {
+export function resolveSignupMailRecipientEmail(body: SignupMailPersonFields): string {
 	const parentEmail = body.parent_email?.trim();
 	const recipient = parentEmail && parentEmail.length > 0 ? parentEmail : body.email;
 	return recipient.toLowerCase();
@@ -36,15 +46,32 @@ export function buildSignupConfirmationOptionDetails(
 	};
 }
 
-export function buildSignupConfirmationEmailVars(params: {
-	body: SignupRequest;
+export function buildSignupMailBaseVars(params: {
+	body: SignupMailPersonFields;
 	lessonTypeName: string | null | undefined;
 	optionDetails: SignupConfirmationOptionDetails;
 }) {
 	return {
-		leerling_naam: buildSignupConfirmationFullName(params.body),
+		leerling_naam: buildSignupMailFullName(params.body),
 		les_type: params.lessonTypeName ?? '',
 		frequentie: params.optionDetails.frequentie,
 		prijs_per_les: params.optionDetails.prijs,
 	};
+}
+
+export function buildSignupConfirmEmailVars(params: {
+	body: SignupMailPersonFields;
+	lessonTypeName: string | null | undefined;
+	optionDetails: SignupConfirmationOptionDetails;
+	confirmUrl: string;
+}) {
+	return {
+		...buildSignupMailBaseVars(params),
+		bevestigingslink: params.confirmUrl,
+	};
+}
+
+export function buildSignupConfirmUrl(siteUrl: string, token: string): string {
+	const base = siteUrl.replace(/\/+$/, '');
+	return `${base}/signup/confirm?token=${encodeURIComponent(token)}`;
 }

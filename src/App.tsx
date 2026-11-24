@@ -30,6 +30,7 @@ import PublicSignup from './pages/PublicSignup';
 import Reports from './pages/Reports';
 import RoomInfo from './pages/RoomInfo';
 import Rooms from './pages/Rooms';
+import SignupConfirm from './pages/SignupConfirm';
 import SignupRequests from './pages/SignupRequests';
 import StripeCheckoutStart from './pages/StripeCheckoutStart';
 import StudentDetail from './pages/StudentDetail';
@@ -52,6 +53,7 @@ const App = () => (
 					<Route path="/auth/callback" element={<AuthCallback />} />
 					<Route path="/auth/confirm" element={<AuthConfirm />} />
 					<Route path="/signup" element={<PublicSignup />} />
+					<Route path="/signup/confirm" element={<SignupConfirm />} />
 					<Route path="/pay" element={<Pay />} />
 					<Route path="/stripe/checkout/start" element={<StripeCheckoutStart />} />
 

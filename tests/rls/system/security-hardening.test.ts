@@ -39,6 +39,7 @@ const TABLES_REQUIRING_FORCE_RLS = [
 	'lesson_groups',
 	'lesson_signup_requests',
 	'no_lesson_periods',
+	'signup_submit_attempts',
 	'trial_lessons',
 ] as const;
 
@@ -56,6 +57,7 @@ const TABLES_ANON_MUST_NOT_SELECT = [
 	'lesson_signup_requests',
 	'no_lesson_periods',
 	'rooms',
+	'signup_submit_attempts',
 	'stripe_customers',
 	'subscription_invoices',
 	'subscriptions',

@@ -9,10 +9,17 @@ export interface EmailEventDefinition {
 }
 
 const EMAIL_EVENTS: Record<string, EmailEventDefinition> = {
+	signup_confirm: {
+		key: 'signup_confirm',
+		label: 'E-mailbevestiging aanmelding',
+		description:
+			'Verstuurd na het indienen van het publieke aanmeldformulier; bevat de link om het e-mailadres te bevestigen.',
+		variables: ['leerling_naam', 'les_type', 'frequentie', 'prijs_per_les', 'bevestigingslink'],
+	},
 	signup_received: {
 		key: 'signup_received',
 		label: 'Bevestiging aanmelding',
-		description: 'Verstuurd direct na het indienen van een aanmeldformulier.',
+		description: 'Verstuurd na e-mailbevestiging, wanneer de aanvraag in het admin-overzicht komt.',
 		variables: ['leerling_naam', 'les_type', 'frequentie', 'prijs_per_les'],
 	},
 	trial_scheduled: {

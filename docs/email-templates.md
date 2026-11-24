@@ -42,12 +42,12 @@ Manage via the UI: **Instellingen → E-mailtemplates** (`src/components/setting
 
 Table `email_templates` (migration `20260513101733_email_templates.sql`):
 
-| Column          | Purpose                                                                 |
-| --------------- | ----------------------------------------------------------------------- |
-| `event_key`     | Unique event key (e.g. `signup_received`, `trial_scheduled`).           |
-| `subject`       | Subject line; supports `{{variable}}` interpolation.                    |
-| `body_markdown` | Markdown body with the same variables (converted to HTML at send time). |
-| `updated_at`    | Last changed.                                                           |
+| Column          | Purpose                                                                         |
+| --------------- | ------------------------------------------------------------------------------- |
+| `event_key`     | Unique event key (e.g. `signup_confirm`, `signup_received`, `trial_scheduled`). |
+| `subject`       | Subject line; supports `{{variable}}` interpolation.                            |
+| `body_markdown` | Markdown body with the same variables (converted to HTML at send time).         |
+| `updated_at`    | Last changed.                                                                   |
 
 RLS: authenticated users may **SELECT**. Only `is_site_admin()` may **INSERT / UPDATE / DELETE**.
 

@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts';
+import { SIGNUP_RATE_LIMIT_MESSAGE } from './rateLimitHelpers.ts';
 
 export function buildSignupInsertErrorMessage(error: { message: string; code?: string | null }): string {
 	return `Kon aanmelding niet opslaan: ${error.message}${error.code ? ` (${error.code})` : ''}`;
@@ -11,11 +12,35 @@ export function buildSignupInsertErrorResponse(error: { message: string; code?: 
 	});
 }
 
-export function buildSignupSuccessResponse(id: string): Response {
-	return new Response(JSON.stringify({ id }), {
+export function buildSignupSuccessResponse(): Response {
+	return new Response(JSON.stringify({ ok: true }), {
 		status: 200,
 		headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 	});
+}
+
+export function buildSignupRateLimitedResponse(): Response {
+	return new Response(JSON.stringify({ error: SIGNUP_RATE_LIMIT_MESSAGE }), {
+		status: 429,
+		headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+	});
+}
+
+export function buildSignupCaptchaFailedResponse(): Response {
+	return new Response(JSON.stringify({ error: 'Bevestig dat je geen robot bent en probeer opnieuw.' }), {
+		status: 400,
+		headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+	});
+}
+
+export function buildSignupMailFailedResponse(): Response {
+	return new Response(
+		JSON.stringify({ error: 'Bevestigingsmail kon niet worden verzonden. Probeer het later opnieuw.' }),
+		{
+			status: 502,
+			headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+		},
+	);
 }
 
 function resolveSignupOptionsResponse(): Response {
@@ -52,18 +77,22 @@ export async function parseSignupRequestBody(
 	}
 }
 
-export function shouldSendSignupConfirmationEmail(responseStatus: number): boolean {
-	return responseStatus === 200;
+export function readSignupCaptchaToken(body: { captchaToken?: unknown }): string | null {
+	if (typeof body.captchaToken !== 'string') return null;
+	const token = body.captchaToken.trim();
+	return token.length > 0 ? token : null;
 }
 
 export interface SignupServiceEnvConfig {
 	supabaseUrl: string;
 	serviceKey: string;
+	turnstileSecret: string;
 }
 
 export function readSignupServiceEnv(getEnv: (key: string) => string | undefined): SignupServiceEnvConfig {
 	return {
 		supabaseUrl: getEnv('SUPABASE_URL') ?? '',
 		serviceKey: getEnv('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+		turnstileSecret: getEnv('TURNSTILE_SECRET_KEY') ?? '',
 	};
 }

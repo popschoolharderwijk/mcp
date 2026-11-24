@@ -1,9 +1,11 @@
-import type { FormEvent } from 'react';
+import type { FormEvent, MutableRefObject } from 'react';
 import { LessonTypeOptionSelect, type OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { DateOfBirthField } from '@/components/ui/date-of-birth-field';
 import { Label } from '@/components/ui/label';
 import { PhoneInput } from '@/components/ui/phone-input';
+import { getTurnstileSiteKey, TurnstileWidget, type TurnstileWidgetHandle } from '@/components/ui/turnstile-widget';
 import { getFrequencyLabel } from '@/lib/frequencies';
 import {
 	buildSignupOverviewRows,
@@ -306,6 +308,34 @@ function DetailsStep(props: {
 	);
 }
 
+function SignupOverviewCaptcha(props: {
+	captchaToken: string | null;
+	turnstileRef: MutableRefObject<TurnstileWidgetHandle | null>;
+	onCaptchaToken: (token: string | null) => void;
+	submitting: boolean;
+	onPrevious: () => void;
+}) {
+	const siteKey = getTurnstileSiteKey();
+	return (
+		<>
+			{siteKey ? (
+				<TurnstileWidget siteKey={siteKey} onToken={props.onCaptchaToken} widgetRef={props.turnstileRef} />
+			) : (
+				<Alert variant="warning">Turnstile is niet geconfigureerd (VITE_TURNSTILE_SITE_KEY).</Alert>
+			)}
+			<SignupStepNav
+				onPrevious={props.onPrevious}
+				justifyBetween
+				next={{
+					label: props.submitting ? 'Versturen...' : 'Aanmelden',
+					type: 'submit',
+					disabled: props.submitting || !props.captchaToken,
+				}}
+			/>
+		</>
+	);
+}
+
 function OverviewStep(props: {
 	selectedType: LessonType;
 	groups: GroupOption[];
@@ -314,6 +344,9 @@ function OverviewStep(props: {
 	form: SignupFormFields;
 	error: string | null;
 	submitting: boolean;
+	captchaToken: string | null;
+	turnstileRef: MutableRefObject<TurnstileWidgetHandle | null>;
+	onCaptchaToken: (token: string | null) => void;
 	onPrevious: () => void;
 	onSubmit: (event: FormEvent) => void;
 }) {
@@ -329,12 +362,10 @@ function OverviewStep(props: {
 	return (
 		<form className="space-y-4" onSubmit={props.onSubmit}>
 			<h2 className="text-lg font-semibold">Controleer je aanmelding</h2>
-			<p className="text-sm text-muted-foreground">Klopt alles? Dan versturen we je aanmelding.</p>
-			{props.error ? (
-				<div className="rounded border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-					{props.error}
-				</div>
-			) : null}
+			<p className="text-sm text-muted-foreground">
+				Klopt alles? Na het versturen sturen we een bevestigingslink naar je e-mail.
+			</p>
+			{props.error ? <Alert variant="error">{props.error}</Alert> : null}
 			<dl className="divide-y rounded-md border">
 				{rows.map((row) => (
 					<div key={row.label} className="grid gap-1 px-4 py-3 sm:grid-cols-[10rem_1fr] sm:gap-4">
@@ -343,14 +374,12 @@ function OverviewStep(props: {
 					</div>
 				))}
 			</dl>
-			<SignupStepNav
+			<SignupOverviewCaptcha
+				captchaToken={props.captchaToken}
+				turnstileRef={props.turnstileRef}
+				onCaptchaToken={props.onCaptchaToken}
+				submitting={props.submitting}
 				onPrevious={props.onPrevious}
-				justifyBetween
-				next={{
-					label: props.submitting ? 'Versturen...' : 'Aanmelden',
-					type: 'submit',
-					disabled: props.submitting,
-				}}
 			/>
 		</form>
 	);
@@ -383,6 +412,9 @@ function PublicSignupTypedStep(props: { step: 2 | 4; flow: PublicSignupFlowProps
 			form={flow.form}
 			error={flow.error}
 			submitting={flow.submitting}
+			captchaToken={flow.captchaToken}
+			turnstileRef={flow.turnstileRef}
+			onCaptchaToken={flow.onCaptchaToken}
 			onPrevious={() => flow.onStepChange(3)}
 			onSubmit={flow.onSubmit}
 		/>

@@ -12,6 +12,7 @@ interface SignupRequestItemProps {
 }
 
 const STATUS_BADGE_VARIANT: Record<SignupRequestDetail['status'], 'default' | 'secondary' | 'outline'> = {
+	awaiting_confirmation: 'outline',
 	pending: 'default',
 	approved: 'secondary',
 	rejected: 'outline',

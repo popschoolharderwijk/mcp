@@ -4,9 +4,11 @@ import {
 	buildSignupOverviewRows,
 	executePublicSignupSubmit,
 	getPublicSignupFormValidationError,
+	mapConfirmSignupPayload,
 	needsManualSignupChoiceNext,
 	resolveSelectedSignupGroup,
 	resolveSignupChoiceStepLabel,
+	SIGNUP_CONFIRM_LINK_INVALID,
 } from '../../../src/lib/signup/publicSignupHelpers';
 
 const baseForm = {
@@ -126,6 +128,7 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: { ...baseForm, phone_number: '06' },
+			captchaToken: 'token',
 			invoke: async () => {
 				invoked = true;
 				return { data: { success: true }, error: null };
@@ -146,6 +149,7 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
+			captchaToken: 'token',
 			invoke: async () => ({ data: { success: true }, error: null }),
 			getInvokeErrorMessage: async () => 'invoke failed',
 		});
@@ -159,6 +163,7 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
+			captchaToken: 'token',
 			invoke: async () => ({ data: null, error: { message: 'network' } }),
 			getInvokeErrorMessage: async () => 'network error',
 		});
@@ -172,6 +177,7 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
+			captchaToken: 'token',
 			invoke: async () => ({ data: { error: 'duplicate email' }, error: null }),
 			getInvokeErrorMessage: async () => 'invoke failed',
 		});
@@ -186,6 +192,7 @@ describe('executePublicSignupSubmit', () => {
 			selectedOption: null,
 			lessonTypeOptions: [],
 			form: baseForm,
+			captchaToken: 'token',
 			invoke: async (body) => {
 				invokedBodies.push(body);
 				return { data: { success: true }, error: null };
@@ -198,6 +205,7 @@ describe('executePublicSignupSubmit', () => {
 				lesson_group_id: 'group-1',
 				lesson_type_option_id: null,
 				...baseForm,
+				captchaToken: 'token',
 			},
 		]);
 	});
@@ -221,6 +229,7 @@ describe('executePublicSignupSubmit', () => {
 				},
 			],
 			form: baseForm,
+			captchaToken: 'token',
 			invoke: async (body) => {
 				invokedBodies.push(body);
 				return { data: { success: true }, error: null };
@@ -233,6 +242,7 @@ describe('executePublicSignupSubmit', () => {
 				lesson_group_id: null,
 				lesson_type_option_id: 'opt-1',
 				...baseForm,
+				captchaToken: 'token',
 			},
 		]);
 	});
@@ -265,5 +275,35 @@ describe('applyPublicSignupSubmitOutcome', () => {
 			},
 		);
 		expect(succeeded).toBe(true);
+	});
+});
+
+describe('mapConfirmSignupPayload', () => {
+	it('maps API error strings and non-ok payloads to invalid-link errors', () => {
+		expect(mapConfirmSignupPayload(null)).toEqual({
+			kind: 'error',
+			message: SIGNUP_CONFIRM_LINK_INVALID,
+		});
+		expect(mapConfirmSignupPayload({ error: 'Token verlopen' })).toEqual({
+			kind: 'error',
+			message: 'Token verlopen',
+		});
+		expect(mapConfirmSignupPayload({ ok: false })).toEqual({
+			kind: 'error',
+			message: SIGNUP_CONFIRM_LINK_INVALID,
+		});
+	});
+
+	it('treats missing mail_sent as success with mail, and false as warning payload', () => {
+		expect(mapConfirmSignupPayload({ ok: true })).toEqual({
+			kind: 'success',
+			mailSent: true,
+			message: undefined,
+		});
+		expect(mapConfirmSignupPayload({ ok: true, mail_sent: false, message: 'Mail faalde' })).toEqual({
+			kind: 'success',
+			mailSent: false,
+			message: 'Mail faalde',
+		});
 	});
 });

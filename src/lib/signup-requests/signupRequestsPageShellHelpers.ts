@@ -14,7 +14,13 @@ export function resolveSignupRequestsPageGate(isLoading: boolean, isPrivileged: 
 	return 'ready';
 }
 
-const SIGNUP_STATUS_FILTER_ORDER: SignupRequestStatus[] = ['pending', 'trial_scheduled', 'approved', 'rejected'];
+const SIGNUP_STATUS_FILTER_ORDER: SignupRequestStatus[] = [
+	'pending',
+	'trial_scheduled',
+	'approved',
+	'rejected',
+	'awaiting_confirmation',
+];
 
 export function buildSignupRequestStatusQuickFilter(
 	value: string | null,

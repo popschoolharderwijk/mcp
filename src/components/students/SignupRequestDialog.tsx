@@ -1,6 +1,7 @@
 import { SignupRequestDialogBody } from '@/components/students/SignupRequestDialogBody';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatDbDateLong } from '@/lib/date/date-format';
+import type { SignupRequestStatus } from '@/lib/signup-requests/signupRequestStatuses';
 
 export interface SignupRequestDetail {
 	id: string;
@@ -13,7 +14,7 @@ export interface SignupRequestDetail {
 	parent_phone_number: string | null;
 	date_of_birth: string | null;
 	notes: string | null;
-	status: 'pending' | 'approved' | 'rejected' | 'trial_scheduled';
+	status: SignupRequestStatus;
 	created_at: string;
 	processed_at: string | null;
 	lesson_type_name: string | null;

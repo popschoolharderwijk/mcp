@@ -1,5 +1,6 @@
-import type { FormEvent } from 'react';
+import type { FormEvent, MutableRefObject } from 'react';
 import type { OptionSnapshot } from '@/components/lesson-type-options/LessonTypeOptionSelect';
+import type { TurnstileWidgetHandle } from '@/components/ui/turnstile-widget';
 import type { SignupFormFields } from '@/lib/signup/publicSignupHelpers';
 import type { LessonFrequency, LessonTypeOptionRow } from '@/types/lesson-agreements';
 
@@ -38,6 +39,9 @@ export interface PublicSignupFlowProps {
 	form: SignupFormFields;
 	error: string | null;
 	submitting: boolean;
+	captchaToken: string | null;
+	turnstileRef: MutableRefObject<TurnstileWidgetHandle | null>;
+	onCaptchaToken: (token: string | null) => void;
 	onSelectType: (lessonType: LessonType) => void;
 	onSelectGroupId: (groupId: string | 'waitlist') => void;
 	onSelectOption: (option: OptionSnapshot | null) => void;

@@ -70,12 +70,14 @@ function buildSignupRequestBody(
 	form: SignupFormFields,
 	groupId: string | null,
 	optionId: string | null,
+	captchaToken: string,
 ) {
 	return {
 		lesson_type_id: selectedType.id,
 		lesson_group_id: groupId,
 		lesson_type_option_id: optionId,
 		...form,
+		captchaToken,
 	};
 }
 
@@ -91,12 +93,44 @@ function resolvePublicSignupSubmitPayload(params: {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionMatch[];
 	form: SignupFormFields;
+	captchaToken: string;
 }) {
 	const groupId = resolveSignupGroupId(params.selectedType, params.selectedGroupId);
 	const optionId = params.selectedType.is_group_lesson
 		? null
 		: resolveLessonTypeOptionId(params.lessonTypeOptions, params.selectedOption);
-	return buildSignupRequestBody(params.selectedType, params.form, groupId, optionId);
+	return buildSignupRequestBody(params.selectedType, params.form, groupId, optionId, params.captchaToken);
+}
+
+export function resolvePublicSignupConfirmRecipientEmail(form: SignupFormFields): string {
+	const parent = form.parent_email.trim();
+	if (parent.length > 0) return parent;
+	return form.email.trim();
+}
+
+export const SIGNUP_CONFIRM_LINK_INVALID = 'Ongeldige of al gebruikte bevestigingslink.';
+
+export type SignupConfirmViewState =
+	| { kind: 'error'; message: string }
+	| { kind: 'success'; mailSent: boolean; message?: string };
+
+/** Map confirm-signup-request JSON to UI state (invoke errors handled by caller). */
+export function mapConfirmSignupPayload(data: unknown): SignupConfirmViewState {
+	if (!data || typeof data !== 'object') {
+		return { kind: 'error', message: SIGNUP_CONFIRM_LINK_INVALID };
+	}
+	const payload = data as { ok?: boolean; mail_sent?: boolean; message?: string; error?: string };
+	if (typeof payload.error === 'string') {
+		return { kind: 'error', message: payload.error };
+	}
+	if (payload.ok !== true) {
+		return { kind: 'error', message: SIGNUP_CONFIRM_LINK_INVALID };
+	}
+	return {
+		kind: 'success',
+		mailSent: payload.mail_sent !== false,
+		message: typeof payload.message === 'string' ? payload.message : undefined,
+	};
 }
 
 export type PublicSignupSubmitOutcome =
@@ -121,6 +155,7 @@ export async function executePublicSignupSubmit(params: {
 	selectedOption: OptionSnapshot | null;
 	lessonTypeOptions: LessonTypeOptionMatch[];
 	form: SignupFormFields;
+	captchaToken: string | null;
 	invoke: (body: ReturnType<typeof buildSignupRequestBody>) => Promise<{
 		data: unknown;
 		error: { message?: string } | null;
@@ -129,6 +164,9 @@ export async function executePublicSignupSubmit(params: {
 }): Promise<PublicSignupSubmitOutcome> {
 	const validationError = getPublicSignupFormValidationError(params.form);
 	if (validationError) return { kind: 'response-error', message: validationError };
+	if (!params.captchaToken) {
+		return { kind: 'response-error', message: 'Bevestig dat je geen robot bent en probeer opnieuw.' };
+	}
 
 	const body = resolvePublicSignupSubmitPayload({
 		selectedType: params.selectedType,
@@ -136,6 +174,7 @@ export async function executePublicSignupSubmit(params: {
 		selectedOption: params.selectedOption,
 		lessonTypeOptions: params.lessonTypeOptions,
 		form: params.form,
+		captchaToken: params.captchaToken,
 	});
 
 	const { data, error } = await params.invoke(body);
