@@ -1,12 +1,11 @@
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { jsonResponse } from '../_shared/http.ts';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupProfileUpdateFields,
 	buildSignupStudentPayload,
-	buildSignupStudentUpdateFields,
+	resolveExistingNonStudentConflictResponse,
 	resolveExistingSignupStudentUserId,
-	resolveSignupStudentRowMutation,
 	shouldUpdateSignupPhoneOnCreate,
 } from './ensureStudentFromSignupHelpers.ts';
 import type { SignupRequestRow } from './types.ts';
@@ -35,7 +34,7 @@ async function createSignupStudentUser(
 async function resolveSignupStudentUserId(
 	admin: SupabaseClient,
 	reqRow: SignupRequestRow,
-): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+): Promise<{ ok: true; studentUserId: string; isNewUser: boolean } | { ok: false; response: Response }> {
 	const { data: existingProfile } = await admin
 		.from('profiles')
 		.select('user_id')
@@ -43,36 +42,36 @@ async function resolveSignupStudentUserId(
 		.maybeSingle();
 
 	const existingUserId = resolveExistingSignupStudentUserId(existingProfile);
-	if (existingUserId) return { ok: true, studentUserId: existingUserId };
+	if (existingUserId) return { ok: true, studentUserId: existingUserId, isNewUser: false };
 
-	return createSignupStudentUser(admin, reqRow);
+	const created = await createSignupStudentUser(admin, reqRow);
+	if (!created.ok) return created;
+	return { ok: true, studentUserId: created.studentUserId, isNewUser: true };
 }
 
-async function upsertStudentRow(admin: SupabaseClient, studentUserId: string, reqRow: SignupRequestRow): Promise<void> {
+async function persistSignupStudentData(
+	admin: SupabaseClient,
+	studentUserId: string,
+	isNewUser: boolean,
+	reqRow: SignupRequestRow,
+): Promise<{ ok: true } | { ok: false; response: Response }> {
+	if (isNewUser) {
+		await admin.from('students').insert(buildSignupStudentPayload(studentUserId, reqRow));
+		return { ok: true };
+	}
+
 	const { data: existingStudent } = await admin
 		.from('students')
 		.select('user_id')
 		.eq('user_id', studentUserId)
 		.maybeSingle();
 
-	await admin.from('profiles').update(buildSignupProfileUpdateFields(reqRow)).eq('user_id', studentUserId);
-
-	const studentPayload = buildSignupStudentPayload(studentUserId, reqRow);
-	if (resolveSignupStudentRowMutation(existingStudent) === 'update') {
-		await admin.from('students').update(buildSignupStudentUpdateFields(reqRow)).eq('user_id', studentUserId);
-		return;
+	if (!existingStudent) {
+		const conflict = resolveExistingNonStudentConflictResponse();
+		return { ok: false, response: jsonResponse(conflict.status, { error: conflict.error }) };
 	}
 
-	await admin.from('students').insert(studentPayload);
-}
-
-async function upsertSignupStudentData(
-	admin: SupabaseClient,
-	studentUserId: string,
-	reqRow: SignupRequestRow,
-): Promise<void> {
-	await upsertStudentRow(admin, studentUserId, reqRow);
-	await admin.from('user_roles').upsert({ user_id: studentUserId, role: 'student' }, { onConflict: 'user_id,role' });
+	return { ok: true };
 }
 
 export async function ensureStudentFromSignup(
@@ -82,6 +81,8 @@ export async function ensureStudentFromSignup(
 	const userResult = await resolveSignupStudentUserId(admin, reqRow);
 	if (!userResult.ok) return userResult;
 
-	await upsertSignupStudentData(admin, userResult.studentUserId, reqRow);
+	const persist = await persistSignupStudentData(admin, userResult.studentUserId, userResult.isNewUser, reqRow);
+	if (!persist.ok) return persist;
+
 	return { ok: true, studentUserId: userResult.studentUserId };
 }

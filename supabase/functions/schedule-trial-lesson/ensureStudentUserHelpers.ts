@@ -6,12 +6,6 @@ export function shouldUpdateStudentPhoneOnCreate(studentPhone: string | null): b
 	return studentPhone != null && studentPhone.length > 0;
 }
 
-export function resolveStudentRowMutation(
-	existingStudent: { user_id: string } | null | undefined,
-): 'update' | 'insert' {
-	return existingStudent ? 'update' : 'insert';
-}
-
 export function buildStudentAuthCreatePayload(args: {
 	studentEmail: string;
 	studentFirstName: string;

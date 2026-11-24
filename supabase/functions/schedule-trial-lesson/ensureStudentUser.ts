@@ -1,9 +1,8 @@
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { jsonResponse } from '../_shared/http.ts';
 import {
 	buildStudentAuthCreatePayload,
 	resolveExistingStudentUserId,
-	resolveStudentRowMutation,
 	shouldUpdateStudentPhoneOnCreate,
 } from './ensureStudentUserHelpers.ts';
 
@@ -53,7 +52,7 @@ async function resolveTrialStudentUserId(
 		studentPhone: string | null;
 		dateOfBirth: string | null;
 	},
-): Promise<{ ok: true; studentUserId: string } | { ok: false; response: Response }> {
+): Promise<{ ok: true; studentUserId: string; isNewUser: boolean } | { ok: false; response: Response }> {
 	const { data: existingProfile } = await admin
 		.from('profiles')
 		.select('user_id')
@@ -61,35 +60,37 @@ async function resolveTrialStudentUserId(
 		.maybeSingle();
 
 	const existingUserId = resolveExistingStudentUserId(existingProfile);
-	if (existingUserId) return { ok: true, studentUserId: existingUserId };
+	if (existingUserId) return { ok: true, studentUserId: existingUserId, isNewUser: false };
 
-	return createTrialStudentUser(admin, args);
+	const created = await createTrialStudentUser(admin, args);
+	if (!created.ok) return created;
+	return { ok: true, studentUserId: created.studentUserId, isNewUser: true };
 }
 
-async function upsertTrialStudentRow(
+async function persistTrialStudentRow(
 	admin: SupabaseClient,
 	studentUserId: string,
+	isNewUser: boolean,
 	payload: TrialStudentPayload,
 ): Promise<void> {
-	await admin.from('profiles').update({ date_of_birth: payload.date_of_birth }).eq('user_id', studentUserId);
-
-	const parentPayload: StudentParentPayload = {
-		parent_name: payload.parent_name,
-		parent_email: payload.parent_email,
-		parent_phone_number: payload.parent_phone_number,
-	};
-
 	const { data: existingStudent } = await admin
 		.from('students')
 		.select('user_id')
 		.eq('user_id', studentUserId)
 		.maybeSingle();
 
-	if (resolveStudentRowMutation(existingStudent) === 'update') {
-		await admin.from('students').update(parentPayload).eq('user_id', studentUserId);
+	if (!isNewUser && existingStudent) return;
+
+	if (!isNewUser) {
+		await admin.from('students').insert({ user_id: studentUserId });
 		return;
 	}
 
+	const parentPayload: StudentParentPayload = {
+		parent_name: payload.parent_name,
+		parent_email: payload.parent_email,
+		parent_phone_number: payload.parent_phone_number,
+	};
 	await admin.from('students').insert({ user_id: studentUserId, ...parentPayload });
 }
 
@@ -112,10 +113,7 @@ export async function ensureStudentUser(
 	});
 	if (!userResult.ok) return userResult;
 
-	await upsertTrialStudentRow(admin, userResult.studentUserId, args.studentPayload);
-	await admin
-		.from('user_roles')
-		.upsert({ user_id: userResult.studentUserId, role: 'student' }, { onConflict: 'user_id,role' });
+	await persistTrialStudentRow(admin, userResult.studentUserId, userResult.isNewUser, args.studentPayload);
 
 	return { ok: true, studentUserId: userResult.studentUserId };
 }

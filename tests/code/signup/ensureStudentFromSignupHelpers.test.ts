@@ -2,9 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import {
 	buildSignupAuthCreatePayload,
 	buildSignupStudentPayload,
-	buildSignupStudentUpdateFields,
 	resolveExistingSignupStudentUserId,
-	resolveSignupStudentRowMutation,
 	shouldUpdateSignupPhoneOnCreate,
 } from '../../../supabase/functions/approve-signup-request/ensureStudentFromSignupHelpers';
 
@@ -55,25 +53,5 @@ describe('buildSignupAuthCreatePayload', () => {
 describe('buildSignupStudentPayload', () => {
 	it('builds student row payload', () => {
 		expect(buildSignupStudentPayload('user-1', reqRow).user_id).toBe('user-1');
-	});
-});
-
-describe('resolveSignupStudentRowMutation', () => {
-	it('returns update when student row exists', () => {
-		expect(resolveSignupStudentRowMutation({ user_id: 'user-1' })).toBe('update');
-	});
-
-	it('returns insert when student row is missing', () => {
-		expect(resolveSignupStudentRowMutation(null)).toBe('insert');
-	});
-});
-
-describe('buildSignupStudentUpdateFields', () => {
-	it('builds student update fields from signup request', () => {
-		expect(buildSignupStudentUpdateFields(reqRow)).toEqual({
-			parent_name: 'Ouder',
-			parent_email: 'ouder@test.nl',
-			parent_phone_number: '0687654321',
-		});
 	});
 });

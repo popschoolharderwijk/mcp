@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1 — 2026-11-24
+
+- **Geboortedatum** na invullen alleen nog door admin te wijzigen
+- Docent: **VOG** alleen nog door admin te wijzigen
+- **Betaallink**: ander ontvangeradres alleen door admin
+- **Duo-overeenkomst** aanmaken: door staff (niet meer door docent)
+- Aanmelding goedkeuren: fout als het e-mailadres al bij een niet-leerling-account hoort
+
 ## 1.6.0 — 2026-11-24
 
 - Aanmelden: eerst e-mail bevestigen via link; daarna pas zichtbaar voor de school

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'bun:test';
 import { resolveCustomerPortalTargetUserId } from '../../../supabase/functions/create-customer-portal/validation';
 import {
 	buildCustomerPortalSuccessPayload,
-	canOpenPortalForOtherUser,
 	parseCustomerPortalBody,
 	parseCustomerPortalRequestBody,
 	resolveCustomerPortalSessionSetup,
@@ -105,19 +104,6 @@ describe('parseCustomerPortalBody', () => {
 			user_id: USER_ID,
 			return_url: 'https://example.com',
 		});
-	});
-});
-
-describe('canOpenPortalForOtherUser', () => {
-	it('returns true for staff, admin and site_admin roles', () => {
-		expect(canOpenPortalForOtherUser('staff')).toBe(true);
-		expect(canOpenPortalForOtherUser('admin')).toBe(true);
-		expect(canOpenPortalForOtherUser('site_admin')).toBe(true);
-	});
-
-	it('returns false for student and missing roles', () => {
-		expect(canOpenPortalForOtherUser('student')).toBe(false);
-		expect(canOpenPortalForOtherUser(null)).toBe(false);
 	});
 });
 

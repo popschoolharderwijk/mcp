@@ -72,20 +72,21 @@ ALTER TABLE public.lesson_group_members FORCE ROW LEVEL SECURITY;
 -- ============================================================================
 -- 3. Helpers
 -- ============================================================================
--- Boolean teacher ownership for RLS policies. Not PostgREST-exposed (private schema).
-CREATE OR REPLACE FUNCTION private.is_lesson_group_teacher(_group_id uuid, _user_id uuid)
+-- Boolean teacher ownership for RLS policies vs current session. Not PostgREST-exposed (private schema).
+CREATE OR REPLACE FUNCTION private.is_current_lesson_group_teacher(_group_id uuid)
 RETURNS boolean
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = '' SET row_security = off
 AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.lesson_groups
-    WHERE id = _group_id AND teacher_user_id = _user_id
+    WHERE id = _group_id
+      AND teacher_user_id = private.get_teacher_user_id(public.current_user_id())
   );
 $$;
-REVOKE ALL ON FUNCTION private.is_lesson_group_teacher(uuid, uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION private.is_lesson_group_teacher(uuid, uuid) FROM anon;
-GRANT EXECUTE ON FUNCTION private.is_lesson_group_teacher(uuid, uuid) TO authenticated;
+REVOKE ALL ON FUNCTION private.is_current_lesson_group_teacher(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION private.is_current_lesson_group_teacher(uuid) FROM anon;
+GRANT EXECUTE ON FUNCTION private.is_current_lesson_group_teacher(uuid) TO authenticated;
 
 -- Current membership only: left_date set means the student has left the group.
 CREATE OR REPLACE FUNCTION private.is_lesson_group_member(_group_id uuid, _user_id uuid)
@@ -135,7 +136,7 @@ CREATE POLICY lesson_group_members_select ON public.lesson_group_members
 FOR SELECT TO authenticated
 USING (
   student_user_id = public.current_user_id()
-  OR private.is_lesson_group_teacher(lesson_group_id, private.get_teacher_user_id(public.current_user_id()))
+  OR private.is_current_lesson_group_teacher(lesson_group_id)
   OR public.is_privileged()
 );
 

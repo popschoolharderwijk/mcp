@@ -30,22 +30,15 @@ export function buildSignupStudentPayload(studentUserId: string, reqRow: SignupR
 	};
 }
 
-export function resolveSignupStudentRowMutation(
-	existingStudent: { user_id: string } | null | undefined,
-): 'update' | 'insert' {
-	return existingStudent ? 'update' : 'insert';
-}
-
-export function buildSignupStudentUpdateFields(reqRow: SignupRequestRow) {
-	return {
-		parent_name: reqRow.parent_name ?? null,
-		parent_email: reqRow.parent_email ?? null,
-		parent_phone_number: reqRow.parent_phone_number ?? null,
-	};
-}
-
 export function buildSignupProfileUpdateFields(reqRow: SignupRequestRow) {
 	return {
 		date_of_birth: reqRow.date_of_birth ?? null,
+	};
+}
+
+export function resolveExistingNonStudentConflictResponse(): { status: 409; error: string } {
+	return {
+		status: 409,
+		error: 'Er bestaat al een account met dit e-mailadres dat geen leerling is',
 	};
 }

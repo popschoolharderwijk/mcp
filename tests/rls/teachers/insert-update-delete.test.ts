@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { createClientAs, createClientBypassRLS } from '../../db';
 import type { TeacherInsert } from '../../types';
-import { unwrap, unwrapError, unwrapSingleRow } from '../../utils';
+import { expectInsufficientPrivilege, unwrap, unwrapError, unwrapSingleRow } from '../../utils';
 import { type DatabaseState, setupDatabaseStateVerification } from '../db-state';
 import { fixtures } from '../fixtures';
 import { type TestUser, TestUsers } from '../test-users';
@@ -170,6 +170,32 @@ describe('RLS: teachers UPDATE - teacher own record', () => {
 		unwrap(await db.from('teachers').update({ bio: original.bio }).eq('user_id', aliceTeacherUserId).select('bio'));
 	});
 
+	it('teacher cannot self-activate via is_active', async () => {
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db
+					.from('teachers')
+					.update({ is_active: false })
+					.eq('user_id', aliceTeacherUserId)
+					.select('user_id'),
+			),
+		);
+	});
+
+	it('teacher cannot change own coc_issued_on', async () => {
+		const db = await createClientAs(TestUsers.TEACHER_ALICE);
+		expectInsufficientPrivilege(
+			unwrapError(
+				await db
+					.from('teachers')
+					.update({ coc_issued_on: '2020-01-01' })
+					.eq('user_id', aliceTeacherUserId)
+					.select('user_id'),
+			),
+		);
+	});
+
 	it('teacher cannot update other teachers records', async () => {
 		await expectUpdateBlocked(TestUsers.TEACHER_ALICE, bobTeacherUserId);
 	});
@@ -182,6 +208,47 @@ describe('RLS: teachers UPDATE - admin permissions', () => {
 
 	it('site_admin can update teacher bio and restore it', async () => {
 		await expectAdminCanUpdateBioAndRestore(TestUsers.SITE_ADMIN);
+	});
+
+	it('admin can update is_active and restore it', async () => {
+		const db = await createClientAs(TestUsers.ADMIN_ONE);
+		const original = unwrapSingleRow(
+			await db.from('teachers').select('is_active').eq('user_id', bobTeacherUserId).single(),
+		);
+		expect(original.is_active).toBe(true);
+
+		const updated = unwrap(
+			await db.from('teachers').update({ is_active: false }).eq('user_id', bobTeacherUserId).select('is_active'),
+		);
+		expect(updated).toEqual([{ is_active: false }]);
+
+		unwrap(
+			await db.from('teachers').update({ is_active: true }).eq('user_id', bobTeacherUserId).select('is_active'),
+		);
+	});
+
+	it('site_admin can update coc_issued_on and restore it', async () => {
+		const db = await createClientAs(TestUsers.SITE_ADMIN);
+		const original = unwrapSingleRow(
+			await db.from('teachers').select('coc_issued_on').eq('user_id', bobTeacherUserId).single(),
+		);
+
+		const updated = unwrap(
+			await db
+				.from('teachers')
+				.update({ coc_issued_on: '2019-06-15' })
+				.eq('user_id', bobTeacherUserId)
+				.select('coc_issued_on'),
+		);
+		expect(updated).toEqual([{ coc_issued_on: '2019-06-15' }]);
+
+		unwrap(
+			await db
+				.from('teachers')
+				.update({ coc_issued_on: original.coc_issued_on })
+				.eq('user_id', bobTeacherUserId)
+				.select('coc_issued_on'),
+		);
 	});
 });
 

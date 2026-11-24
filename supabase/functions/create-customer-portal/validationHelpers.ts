@@ -19,10 +19,6 @@ export function validateCustomerPortalUserId(userId: string | undefined): Respon
 	return null;
 }
 
-export function canOpenPortalForOtherUser(role: string | null | undefined): boolean {
-	return role === 'staff' || role === 'admin' || role === 'site_admin';
-}
-
 export function resolvePortalForOtherUserForbiddenResponse(): Response {
 	return jsonResponse(403, { error: 'Geen rechten om portal voor andere gebruiker te openen' });
 }

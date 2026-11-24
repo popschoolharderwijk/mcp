@@ -3,10 +3,10 @@ import { jsonResponse, missingSiteBaseUrlResponse, resolveSiteBaseUrl } from '..
 import type { LessonAgreementPostContext } from '../_shared/http-serve.ts';
 import { getSafeErrorMessage } from '../_shared/stripe.ts';
 import { fetchUserRole, requireAuthenticatedClients } from '../_shared/supabase.ts';
+import { isAdminRole } from '../_shared/supabaseHelpers.ts';
 import {
 	buildStripeCheckoutInviteRedirectUrl,
 	buildStripeCheckoutInviteSuccessPayload,
-	isStripeCheckoutInviteAdminRole,
 	resolveStripeCheckoutAgreementAccessError,
 	resolveStripeCheckoutInviteMissingEmailResponse,
 	resolveStripeCheckoutInviteRecipient,
@@ -35,12 +35,7 @@ async function loadStripeCheckoutInviteAfterAuth(
 		.select('id, student_user_id, teacher_user_id, is_active')
 		.eq('id', ctx.lessonAgreementId)
 		.maybeSingle();
-	const access = resolveStripeCheckoutAgreementAccessError(
-		agreement,
-		agErr,
-		isStripeCheckoutInviteAdminRole(role),
-		auth.user.id,
-	);
+	const access = resolveStripeCheckoutAgreementAccessError(agreement, agErr, isAdminRole(role), auth.user.id);
 	if (!access.ok) {
 		return { ok: false, response: jsonResponse(access.status, { error: access.error }) };
 	}

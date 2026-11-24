@@ -20,6 +20,7 @@ import {
 	resolveIssuedLinkRecipientGate,
 	resolveIssuePaymentRecipient,
 } from '../../../supabase/functions/_shared/paymentLinkHelpers';
+import { isAdminRole } from '../../../supabase/functions/_shared/supabaseHelpers';
 
 describe('payment link tokens', () => {
 	it('generates a plausible token that hashes and matches', async () => {
@@ -97,6 +98,29 @@ describe('billing recipient and request guards', () => {
 			ok: false,
 			status: 400,
 			error: 'Ongeldig e-mailadres',
+		});
+	});
+
+	it('allows recipient override only for admin and site_admin roles', () => {
+		const billing = 'billing@ex.com';
+		const override = 'other@ex.com';
+		expect(resolveIssuePaymentRecipient(override, billing, isAdminRole('staff'))).toEqual({
+			ok: false,
+			status: 403,
+			error: 'Geen rechten om de ontvanger te wijzigen',
+		});
+		expect(resolveIssuePaymentRecipient(override, billing, isAdminRole(null))).toEqual({
+			ok: false,
+			status: 403,
+			error: 'Geen rechten om de ontvanger te wijzigen',
+		});
+		expect(resolveIssuePaymentRecipient(override, billing, isAdminRole('admin'))).toEqual({
+			ok: true,
+			recipient: override,
+		});
+		expect(resolveIssuePaymentRecipient(override, billing, isAdminRole('site_admin'))).toEqual({
+			ok: true,
+			recipient: override,
 		});
 	});
 

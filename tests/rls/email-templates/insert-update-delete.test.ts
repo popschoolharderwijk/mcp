@@ -42,10 +42,12 @@ async function expectInsertBlocked(user: TestUser) {
 }
 
 async function expectUpdateBlocked(user: TestUser) {
-	const db = await createClientAs(user);
+	const privileged = await createClientAs(TestUsers.SITE_ADMIN);
 	const before = unwrapSingleRow(
-		await db.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
+		await privileged.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
 	);
+
+	const db = await createClientAs(user);
 	const data = unwrap(
 		await db
 			.from('email_templates')
@@ -56,7 +58,7 @@ async function expectUpdateBlocked(user: TestUser) {
 	expect(data).toHaveLength(0);
 
 	const verify = unwrapSingleRow(
-		await db.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
+		await privileged.from('email_templates').select('subject, body_markdown').eq('event_key', EVENT_KEY).single(),
 	);
 	expect(verify.subject).toBe(before.subject);
 	expect(verify.body_markdown).toBe(before.body_markdown);
@@ -67,7 +69,8 @@ async function expectDeleteBlocked(user: TestUser) {
 	const data = unwrap(await db.from('email_templates').delete().eq('event_key', EVENT_KEY).select());
 	expect(data).toHaveLength(0);
 
-	const remaining = unwrap(await db.from('email_templates').select('event_key').eq('event_key', EVENT_KEY));
+	const privileged = await createClientAs(TestUsers.SITE_ADMIN);
+	const remaining = unwrap(await privileged.from('email_templates').select('event_key').eq('event_key', EVENT_KEY));
 	expect(remaining).toHaveLength(1);
 }
 

@@ -58,6 +58,37 @@ BEFORE INSERT OR UPDATE ON public.teachers
 FOR EACH ROW
 EXECUTE FUNCTION public.normalize_teachers_text_fields();
 
+-- is_active and coc_issued_on: only admin / site_admin (or service_role / seeds).
+CREATE OR REPLACE FUNCTION public.enforce_teachers_admin_fields()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+SET row_security = off
+AS $$
+BEGIN
+  IF public.current_user_id() IS NOT NULL
+     AND NOT (public.is_admin() OR public.is_site_admin())
+     AND (
+       NEW.is_active IS DISTINCT FROM OLD.is_active
+       OR NEW.coc_issued_on IS DISTINCT FROM OLD.coc_issued_on
+     ) THEN
+    RAISE EXCEPTION 'Permission denied' USING ERRCODE = '42501';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+ALTER FUNCTION public.enforce_teachers_admin_fields() OWNER TO postgres;
+REVOKE ALL ON FUNCTION public.enforce_teachers_admin_fields() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.enforce_teachers_admin_fields() FROM anon;
+REVOKE EXECUTE ON FUNCTION public.enforce_teachers_admin_fields() FROM authenticated;
+
+CREATE TRIGGER enforce_teachers_admin_fields
+BEFORE UPDATE ON public.teachers
+FOR EACH ROW
+EXECUTE FUNCTION public.enforce_teachers_admin_fields();
+
 -- Add foreign key to profiles (ensures teacher always has a profile)
 DO $$
 BEGIN

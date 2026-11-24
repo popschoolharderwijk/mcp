@@ -1,7 +1,3 @@
-export function isStripeCheckoutInviteAdminRole(role: string | null | undefined): boolean {
-	return role === 'admin' || role === 'site_admin';
-}
-
 export function canAccessStripeCheckoutInviteAgreement(input: {
 	isAdmin: boolean;
 	agreementStudentUserId: string;
@@ -83,13 +79,4 @@ export function resolveStripeCheckoutAgreementAccessError(
 		return { ok: false, status: forbidden.status, error: forbidden.error };
 	}
 	return { ok: true, agreement };
-}
-
-/** Recipient override: admin, or the teacher on this agreement. */
-export function canOverrideStripeCheckoutInviteRecipient(
-	isAdmin: boolean,
-	agreementTeacherUserId: string,
-	requestingUserId: string,
-): boolean {
-	return isAdmin || agreementTeacherUserId === requestingUserId;
 }

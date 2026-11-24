@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jsonResponse } from './http.ts';
+import { type AppRole, isAdminRole, isAppRole } from './supabaseHelpers.ts';
 
 export type SupabaseClients = {
 	userClient: SupabaseClient;
@@ -33,9 +34,10 @@ export async function requireAuthenticatedUser(userClient: SupabaseClient): Prom
 	return { ok: true, user };
 }
 
-export async function fetchUserRole(userClient: SupabaseClient, userId: string): Promise<string | null> {
+export async function fetchUserRole(userClient: SupabaseClient, userId: string): Promise<AppRole | null> {
 	const { data: roleRow } = await userClient.from('user_roles').select('role').eq('user_id', userId).single();
-	return roleRow?.role ?? null;
+	const role = roleRow?.role;
+	return isAppRole(role) ? role : null;
 }
 
 export async function requireAdminUser(userClient: SupabaseClient): Promise<RequireUserResult> {
@@ -43,7 +45,7 @@ export async function requireAdminUser(userClient: SupabaseClient): Promise<Requ
 	if (!authn.ok) return authn;
 
 	const role = await fetchUserRole(userClient, authn.user.id);
-	if (role !== 'admin' && role !== 'site_admin') {
+	if (!isAdminRole(role)) {
 		return { ok: false, response: jsonResponse(403, { error: 'Geen rechten' }) };
 	}
 
@@ -64,7 +66,7 @@ export async function requireAuthenticatedClients(authHeader: string): Promise<A
 export async function requireUserRole(
 	userClient: SupabaseClient,
 	userId: string,
-	allowedRoles: string[],
+	allowedRoles: readonly AppRole[],
 	errorMessage = 'Geen rechten',
 ): Promise<Response | null> {
 	const role = await fetchUserRole(userClient, userId);
